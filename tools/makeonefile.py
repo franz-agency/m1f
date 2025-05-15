@@ -28,7 +28,7 @@ KEY FEATURES
 - Recursive file scanning in a source directory or processing a list of paths from an input file.
 - Customizable separators between file contents ('Standard', 'Detailed', 'Markdown', 'MachineReadable').
 - The 'MachineReadable' style uses unique boundary markers and JSON metadata for robust parsing.
-- Option to add a timestamp to the output filename.
+- Option to add a timestamp to the output filename (_YYYYMMDD_HHMMSS).
 - Exclusion of common project directories (e.g., 'node_modules', '.git', 'build').
 - Exclusion of binary files by default (based on extension).
 - Option to include dot-files (e.g., '.gitignore') and binary files.
@@ -992,6 +992,7 @@ def main():
         action="store_true",
         help="Add a timestamp (_yyyyMMdd_HHmmss) to the output filename.",
     )
+
     parser.add_argument(
         "--additional-excludes",
         type=str,

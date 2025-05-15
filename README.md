@@ -79,8 +79,9 @@ date, size, type, and a SHA256 checksum for integrity.
   - Archive is named after the output file with a `_backup` suffix (e.g.,
     `combined_output_backup.zip`).
 - **Logging**:
-  - Automatically creates a log file with the same name as the output file but with
-    a `.log` extension (e.g., `combined_output.log` for `combined_output.txt`).
+  - Automatically creates a log file with the same name as the output file but
+    with a `.log` extension (e.g., `combined_output.log` for
+    `combined_output.txt`).
   - The log file captures all processing information, warnings, and errors.
 - **Performance Monitoring**:
   - Measures and reports the total execution time at the end of processing.
@@ -109,19 +110,34 @@ Example `filelist.txt`:
 /home/user/project/README.md
 ```
 
-Using MachineReadable style for robust splitting and integrity checks:
+Using MachineReadable style with verbose logging for detailed output:
 
 ```bash
 python tools/makeonefile.py -s ./my_project -o ./output/bundle.m1f \
-  --separator-style MachineReadable --force
+  --separator-style MachineReadable --force --verbose
 ```
 
 Creating a combined file and a backup zip archive:
 
 ```bash
-python tools/makeonefile.py -s ./source_code -o ./dist/combined.txt \\
+python tools/makeonefile.py -s ./source_code -o ./dist/combined.txt \
   --create-archive --archive-type zip
 ```
+
+When you run the script, it will:
+
+1. Create the combined output file (e.g., `combined_output.txt`)
+2. Generate a log file with the same name (e.g., `combined_output.log`)
+   containing all processing information
+3. Display the execution time at the end (e.g.,
+   `Total execution time: 1m 45.67s`)
+
+The log file will include:
+
+- All files processed
+- Files excluded or skipped (with reasons)
+- Warning and error messages
+- Final summary with token count and execution time
 
 **Note**: When using `--input-file`, if a parent directory is included in the
 list, any child paths will be automatically excluded. For example, if both
@@ -169,6 +185,20 @@ For all available options, run:
 ```bash
 python tools/makeonefile.py --help
 ```
+
+#### Notable Command Line Options
+
+| Option                   | Description                                                                               |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| `-s, --source-directory` | Path to the directory containing files to process                                         |
+| `-i, --input-file`       | Path to a file containing a list of files/directories to process                          |
+| `-o, --output-file`      | Path for the combined output file (also determines the log file name)                     |
+| `-f, --force`            | Force overwrite of existing output file without prompting                                 |
+| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename                                |
+| `-v, --verbose`          | Enable verbose logging (more detailed log output)                                         |
+| `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`) |
+| `--create-archive`       | Create a backup archive of processed files                                                |
+| `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                             |
 
 ### tools/splitfiles.py
 
