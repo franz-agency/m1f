@@ -68,6 +68,7 @@ VERSION
 """
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -100,22 +101,24 @@ RE_MACHINE_SEP = re.compile(
 MACHINE_END_MARKER = ">>>>>PYMAKEONEFILE_END_FILE<<<<<"
 
 RE_DETAILED_SEP = re.compile(
-    r"^(========================================================================================$\r?\n"  # Optional CR before LF
-    r"== FILE: (.*?)$\r?\n"
+    r"^(========================================================================================$\r?\n"
+    r"== FILE: (.*?)$\r?\n"  # Group 2: Relative path
     r"== DATE: .*? \| SIZE: .*? \| TYPE: .*?$\r?\n"
-    r"========================================================================================$\r?\n?)" # Optional final newline
+    r"(?:== CHECKSUM_SHA256: ([0-9a-fA-F]{64})$\r?\n)?"  # Group 3: Optional Checksum
+    r"========================================================================================$\r?\n?)"
     , re.MULTILINE
 )
 
 RE_STANDARD_SEP = re.compile(
-    r"^(======= (.*?) =======$\r?\n?)" # Optional final newline
+    r"^(======= (.*?)(?: \| CHECKSUM_SHA256: ([0-9a-fA-F]{64}))? =======$\r?\n?)" # Group 2: Path, Group 3: Optional Checksum
     , re.MULTILINE
 )
 
 RE_MARKDOWN_SEP = re.compile(
-    r"^(## (.*?)$\r?\n"
-    r"\*\*Date Modified:\*\* .*? \| \*\*Size:\*\* .*? \| \*\*Type:\*\* .*?$\r?\n\r?\n" # Two newlines after metadata
-    r"```(?:.*?)$\r?\n)" # Matches up to and including the opening ```[lang] and its newline
+    r"^(## (.*?)$\r?\n"  # Group 2: Relative path
+    # Non-capturing group for the whole metadata line, with optional checksum part
+    r"(?:\*\*Date Modified:\*\* .*? \| \*\*Size:\*\* .*? \| \*\*Type:\*\* .*?(?: \| \*\*Checksum \(SHA256\):\*\* ([0-9a-fA-F]{64}))?)$\r?\n\r?\n"
+    r"```(?:.*?)$\r?\n)" # Group 3: Optional Checksum
     , re.MULTILINE
 )
 
@@ -159,7 +162,8 @@ def parse_combined_file(content: str) -> list[dict]:
     The function identifies file separators using a list of regex patterns,
     sorts them by their appearance in the file, and then extracts
     the content between each separator and the next (or to the end-of-file marker
-    for MachineReadable style).
+    for MachineReadable style). The integrity of MachineReadable files is also
+    verified using a checksum.
 
     Args:
         content: The entire string content of the combined input file.
@@ -168,6 +172,11 @@ def parse_combined_file(content: str) -> list[dict]:
         A list of dictionaries, where each dict contains:
         'path': relative_path_str
         'content': file_content_str
+        For 'MachineReadable', it also includes:
+        'modified': modification_date_str
+        'type': file_extension_str
+        'size_bytes': original_size_int
+        'checksum_sha256': original_checksum_str
     """
     extracted_files = []
 
@@ -175,15 +184,23 @@ def parse_combined_file(content: str) -> list[dict]:
     # MachineReadable is very distinct.
     separator_patterns = [
         {'id': 'MachineReadable', 'regex': RE_MACHINE_SEP, 'json_group': 2, 'header_group': 1},
-        {'id': 'Markdown', 'regex': RE_MARKDOWN_SEP, 'path_group': 2, 'header_group': 1},
-        {'id': 'Detailed', 'regex': RE_DETAILED_SEP, 'path_group': 2, 'header_group': 1},
-        {'id': 'Standard', 'regex': RE_STANDARD_SEP, 'path_group': 2, 'header_group': 1},
+        {'id': 'Markdown', 'regex': RE_MARKDOWN_SEP, 'path_group': 2, 'checksum_group': 3, 'header_group': 1},
+        {'id': 'Detailed', 'regex': RE_DETAILED_SEP, 'path_group': 2, 'checksum_group': 3, 'header_group': 1},
+        {'id': 'Standard', 'regex': RE_STANDARD_SEP, 'path_group': 2, 'checksum_group': 3, 'header_group': 1},
     ]
 
     matches = []
     for pattern_info in separator_patterns:
         for match in pattern_info['regex'].finditer(content):
             path_val = ""
+            checksum_val = None # Initialize checksum for all patterns
+            file_info_dict = {
+                'id': pattern_info['id'],
+                'match_obj': match,
+                'header_len': len(match.group(pattern_info['header_group'])),
+                'start_index': match.start(),
+            }
+
             if pattern_info['id'] == 'MachineReadable':
                 try:
                     json_str = match.group(pattern_info['json_group'])
@@ -191,23 +208,33 @@ def parse_combined_file(content: str) -> list[dict]:
                     path_val = meta.get('path', '').strip()
                     if not path_val:
                         logger.warning(f"MachineReadable block found at offset {match.start()} with missing or empty path in JSON: {json_str}")
-                        continue # Skip this invalid block
+                        continue
+                    
+                    file_info_dict.update({
+                        'path': path_val,
+                        'modified': meta.get('modified'),
+                        'type': meta.get('type'),
+                        'size_bytes': meta.get('size_bytes'),
+                        'checksum_sha256': meta.get('checksum_sha256')
+                    })
+                    matches.append(file_info_dict)
+                    continue
                 except json.JSONDecodeError as e:
                     logger.warning(f"MachineReadable block found at offset {match.start()} with invalid JSON: {json_str}. Error: {e}")
-                    continue # Skip this invalid block
-                except Exception as e: # Catch any other error during path extraction
+                    continue
+                except Exception as e:
                     logger.warning(f"Error processing MachineReadable block at offset {match.start()} with JSON '{json_str}': {e}")
                     continue
             else:
                 path_val = match.group(pattern_info['path_group']).strip()
-
-            matches.append({
-                'id': pattern_info['id'],
-                'match_obj': match,
+                if 'checksum_group' in pattern_info and pattern_info['checksum_group'] < len(match.groups()) + 1:
+                    checksum_val = match.group(pattern_info['checksum_group']) # Will be None if not captured
+            
+            file_info_dict.update({
                 'path': path_val,
-                'header_len': len(match.group(pattern_info['header_group'])),
-                'start_index': match.start()
+                'checksum_sha256': checksum_val
             })
+            matches.append(file_info_dict)
 
     # Sort matches by their start index in the original content to process files in order.
     matches.sort(key=lambda m: m['start_index'])
@@ -221,6 +248,10 @@ def parse_combined_file(content: str) -> list[dict]:
         match_obj = current_match_info['match_obj']
         relative_path = current_match_info['path']
         
+        # Extract additional metadata if MachineReadable for later use/verification
+        original_checksum = current_match_info.get('checksum_sha256') if sep_id == 'MachineReadable' else None
+        original_size_bytes = current_match_info.get('size_bytes') if sep_id == 'MachineReadable' else None
+
         content_start_pos = match_obj.end() # End of the full header (including JSON line for MachineReadable)
 
         # Determine the end of the current file's content
@@ -322,6 +353,8 @@ def parse_combined_file(content: str) -> list[dict]:
         extracted_files.append({
             'path': relative_path,
             'content': file_content,
+            'checksum_sha256': original_checksum, # Will be None for non-MachineReadable
+            'size_bytes': original_size_bytes    # Will be None for non-MachineReadable
         })
         logger.debug(f"Identified file: '{relative_path}', type: {sep_id}, content length: {len(file_content)}")
 
@@ -354,6 +387,8 @@ def _write_extracted_files(
     for file_data in extracted_files_data:
         relative_path_str = file_data['path']
         file_content_to_write = file_data['content']
+        original_checksum = file_data.get('checksum_sha256')
+        original_size_bytes = file_data.get('size_bytes')
         
         # Security check: ensure relative paths do not try to escape the destination directory.
         if ".." in Path(relative_path_str).parts:
@@ -388,6 +423,33 @@ def _write_extracted_files(
             else:
                 files_created_count += 1
                 logger.debug(f"Created file: {current_output_path}")
+
+            # Verify checksum and size for MachineReadable files
+            if original_checksum is not None: # Indicates it was a MachineReadable entry
+                try:
+                    extracted_content_bytes = file_content_to_write.encode('utf-8')
+                    calculated_checksum = hashlib.sha256(extracted_content_bytes).hexdigest()
+                    
+                    if calculated_checksum != original_checksum:
+                        logger.warning(
+                            f"CHECKSUM MISMATCH for file '{current_output_path}'. "
+                            f"Expected: {original_checksum}, Calculated: {calculated_checksum}. "
+                            f"The file content may be corrupted or was altered."
+                        )
+                    else:
+                        logger.debug(f"Checksum VERIFIED for file '{current_output_path}'.")
+
+                    if original_size_bytes is not None:
+                        extracted_size_bytes = len(extracted_content_bytes)
+                        if extracted_size_bytes != original_size_bytes:
+                            logger.warning(
+                                f"SIZE MISMATCH for file '{current_output_path}'. "
+                                f"Expected: {original_size_bytes} bytes, Extracted: {extracted_size_bytes} bytes."
+                            )
+                        else:
+                            logger.debug(f"Size VERIFIED for file '{current_output_path}'.")
+                except Exception as e:
+                    logger.error(f"Error during integrity verification for '{current_output_path}': {e}")
 
         except Exception as e:
             logger.error(f"Failed to write file '{current_output_path}': {e}")

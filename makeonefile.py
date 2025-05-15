@@ -94,6 +94,7 @@ VERSION
 
 import argparse
 import datetime
+import hashlib
 import json
 import logging
 import os
@@ -174,30 +175,57 @@ def get_file_separator(file_info: Path, relative_path: str, style: str, linesep:
     stat_info = file_info.stat()
     mod_time = datetime.datetime.fromtimestamp(stat_info.st_mtime)
     mod_date_str = mod_time.strftime('%Y-%m-%d %H:%M:%S')
-    file_size_str = get_file_size_formatted(stat_info.st_size)
+    file_size_bytes = stat_info.st_size
+    file_size_hr = get_file_size_formatted(file_size_bytes)
     file_ext = file_info.suffix.lower() if file_info.suffix else "[no extension]"
 
+    # Calculate checksum for all styles that will use it in the header
+    checksum_sha256 = ""
+    if style in ['Standard', 'Detailed', 'Markdown', 'MachineReadable']:
+        try:
+            # Read content once for checksum. This content is also written later.
+            content_for_checksum = file_info.read_text(encoding='utf-8', errors='ignore')
+            checksum_sha256 = hashlib.sha256(content_for_checksum.encode('utf-8')).hexdigest()
+        except Exception as e:
+            logger.warning(f"Could not read file {file_info} for checksum calculation: {e}. Checksum will be empty or not included.")
+            checksum_sha256 = "[CHECKSUM_ERROR]" # Indicate error clearly if it was attempted
+
     if style == 'Standard':
-        return f"======= {relative_path} ======="
+        if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
+            return f"======= {relative_path} | CHECKSUM_SHA256: {checksum_sha256} ======"
+        else:
+            return f"======= {relative_path} ======"
     elif style == 'Detailed':
         separator_lines = [
             "========================================================================================",
             f"== FILE: {relative_path}",
-            f"== DATE: {mod_date_str} | SIZE: {file_size_str} | TYPE: {file_ext}",
-            "========================================================================================"
+            f"== DATE: {mod_date_str} | SIZE: {file_size_hr} | TYPE: {file_ext}",
         ]
+        if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
+            separator_lines.append(f"== CHECKSUM_SHA256: {checksum_sha256}")
+        separator_lines.append("========================================================================================")
         return linesep.join(separator_lines)
     elif style == 'Markdown':
         md_lang_hint = file_info.suffix[1:] if file_info.suffix and len(file_info.suffix) > 1 else ""
+        metadata_line = f"**Date Modified:** {mod_date_str} | **Size:** {file_size_hr} | **Type:** {file_ext}"
+        if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
+            metadata_line += f" | **Checksum (SHA256):** {checksum_sha256}"
         separator_lines = [
             f"## {relative_path}",
-            f"**Date Modified:** {mod_date_str} | **Size:** {file_size_str} | **Type:** {file_ext}",
+            metadata_line,
             "", # Empty line before code block
             f"```{md_lang_hint}"
         ]
         return linesep.join(separator_lines)
     elif style == 'MachineReadable':
-        meta = {"path": relative_path}
+        # Checksum calculation moved above for all relevant styles
+        meta = {
+            "path": relative_path,
+            "modified": mod_date_str,
+            "type": file_ext,
+            "size_bytes": file_size_bytes,
+            "checksum_sha256": checksum_sha256 if checksum_sha256 != "[CHECKSUM_ERROR]" else ""
+        }
         json_meta = json.dumps(meta)
         return (
             f">>>>>PYMAKEONEFILE_START_FILE<<<<<{linesep}"
