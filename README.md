@@ -86,10 +86,41 @@ For all options, run:
 python splitfiles.py --help
 ```
 
+### token_counter.py
+
+A utility to count the approximate number of tokens in a given text file, similar to how OpenAI's language models count tokens. This is useful for estimating API usage costs or understanding context window limits.
+
+#### Features
+
+- Uses OpenAI's `tiktoken` library for accurate tokenization.
+- Supports various encodings used by OpenAI models (e.g., `cl100k_base` for gpt-4/gpt-3.5-turbo, `p50k_base`).
+- Command-line interface for easy integration into workflows.
+- Handles different file types (txt, md, py, php, etc.) by reading their text content.
+- Provides informative output, including the encoding used.
+- Includes error handling for file not found and encoding issues.
+
+#### Usage
+
+Basic command (uses `cl100k_base` encoding by default):
+```bash
+python token_counter.py /path/to/your/file.txt
+```
+
+Specify a different encoding:
+```bash
+python token_counter.py /path/to/your/file.txt --encoding p50k_base
+```
+
+For all options, run:
+```bash
+python token_counter.py --help
+```
+
 ## Requirements
 
 - Python 3.7+
-- Standard Python libraries only (includes `argparse`, `datetime`, `hashlib`, `json`, `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
+- Standard Python libraries (includes `argparse`, `datetime`, `hashlib`, `json`, `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
+- `tiktoken`: For the `token_counter.py` script. You can install it via `pip install tiktoken` or by installing from the `requirements.txt` file (`pip install -r requirements.txt`).
 
 ## Coming Soon
 
