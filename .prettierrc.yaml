@@ -1,0 +1,4 @@
+# .prettierrc.yaml
+parser: "markdown"
+proseWrap: "always"
+printWidth: 80 

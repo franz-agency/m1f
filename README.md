@@ -1,31 +1,40 @@
 # FUFTools
 
-A collection of Python utility tools by [Franz und Franz](https://franz.agency) for LLMs and AI that make life easier.
+A collection of Python utility tools by [Franz und Franz](https://franz.agency)
+for LLMs and AI that make life easier.
 
 ## Overview
 
-FUFTools is an open-source suite of Python utilities designed with modularity and scalability in mind. Each tool follows best practices and is thoroughly documented. These tools aim to simplify common tasks and workflows when working with Large Language Models and Artificial Intelligence.
+FUFTools is an open-source suite of Python utilities designed with modularity
+and scalability in mind. Each tool follows best practices and is thoroughly
+documented. These tools aim to simplify common tasks and workflows when working
+with Large Language Models and Artificial Intelligence.
 
 The Python scripts are located in the `tools/` directory.
 
 ## Setup
 
-1.  **Create and activate a virtual environment:**
-    ```bash
-    python -m venv .venv
-    # On Windows
-    .venv\Scripts\activate
-    # On macOS/Linux
-    source .venv/bin/activate
-    ```
+1. **Create and activate a virtual environment:**
 
-2.  **Install dependencies:**
-    The project uses `black` for code formatting and `pymarkdownlnt` for linting Markdown files. These and other dependencies (like `tiktoken` for `token_counter.py`) are listed in `requirements.txt`.
-    ```bash
-    pip install -r requirements.txt
-    pip install black pymarkdownlnt 
-    ```
-    *(Note: `requirements.txt` will be updated to include `black` and `pymarkdownlnt`)*
+   ```bash
+   python -m venv .venv
+   # On Windows
+   .venv\Scripts\activate
+   # On macOS/Linux
+   source .venv/bin/activate
+   ```
+
+2. **Install dependencies:** The project uses `black` for code formatting and
+   `pymarkdownlnt` for linting Markdown files. These and other dependencies
+   (like `tiktoken` for `token_counter.py`) are listed in `requirements.txt`.
+
+   ```bash
+   pip install -r requirements.txt
+   pip install black pymarkdownlnt
+   ```
+
+_(Note: `requirements.txt` will be updated to include `black` and
+`pymarkdownlnt`)_
 
 ## Available Tools
 
@@ -33,14 +42,21 @@ All tools are located in the `tools/` directory.
 
 ### tools/makeonefile.py
 
-A utility that combines the content of multiple text files from a specified directory and its subdirectories into a single output file. Each file's content is preceded by a separator showing metadata such as the file path, modification date, size, type, and a SHA256 checksum for integrity.
+A utility that combines the content of multiple text files from a specified
+directory and its subdirectories into a single output file. Each file's content
+is preceded by a separator showing metadata such as the file path, modification
+date, size, type, and a SHA256 checksum for integrity.
 
 #### Features
 
 - Recursive file scanning in a source directory.
-- Customizable separators between file contents: 'Standard', 'Detailed', 'Markdown', and 'MachineReadable'.
-    - The 'MachineReadable' style uses unique boundary markers and JSON metadata (including path, modification date, type, size in bytes, and SHA256 checksum) for robust parsing and splitting.
-- SHA256 checksum included in headers for all styles to help ensure data integrity.
+- Customizable separators between file contents: 'Standard', 'Detailed',
+  'Markdown', and 'MachineReadable'.
+  - The 'MachineReadable' style uses unique boundary markers and JSON metadata
+    (including path, modification date, type, size in bytes, and SHA256
+    checksum) for robust parsing and splitting.
+- SHA256 checksum included in headers for all styles to help ensure data
+  integrity.
 - Option to add a timestamp to the output filename.
 - Exclusion of common project directories (e.g., node_modules, .git, build).
 - Exclusion of binary files by default.
@@ -53,31 +69,43 @@ A utility that combines the content of multiple text files from a specified dire
 #### Usage
 
 Basic command:
+
 ```bash
-python tools/makeonefile.py --source-directory /path/to/your/code --output-file /path/to/combined_output.txt
+python tools/makeonefile.py --source-directory /path/to/your/code \
+  --output-file /path/to/combined_output.txt
 ```
 
 Using MachineReadable style for robust splitting and integrity checks:
+
 ```bash
-python tools/makeonefile.py -s ./my_project -o ./output/bundle.m1f --separator-style MachineReadable --force
+python tools/makeonefile.py -s ./my_project -o ./output/bundle.m1f \
+  --separator-style MachineReadable --force
 ```
 
 For all options, run:
+
 ```bash
 python tools/makeonefile.py --help
 ```
 
 ### tools/splitfiles.py
 
-A utility that splits a single input file (previously created by `tools/makeonefile.py`) back into multiple files, recreating the original directory structure within a specified destination directory. It also verifies file integrity using SHA256 checksums if they are present in the file headers.
+A utility that splits a single input file (previously created by
+`tools/makeonefile.py`) back into multiple files, recreating the original
+directory structure within a specified destination directory. It also verifies
+file integrity using SHA256 checksums if they are present in the file headers.
 
 #### Features
 
 - Parses combined files generated by `tools/makeonefile.py`.
-- Supports all separator styles: 'Standard', 'Detailed', 'Markdown', and 'MachineReadable'.
+- Supports all separator styles: 'Standard', 'Detailed', 'Markdown', and
+  'MachineReadable'.
 - Recreates the original directory structure based on paths found in separators.
-- Verifies file integrity by comparing calculated SHA256 checksums of extracted content against checksums stored in the headers (if available, primarily with 'MachineReadable' style).
-- Option to set file timestamps to original (default, if available from 'MachineReadable' metadata) or current system time using `--timestamp-mode`.
+- Verifies file integrity by comparing calculated SHA256 checksums of extracted
+  content against checksums stored in the headers (if available, primarily with
+  'MachineReadable' style).
+- Option to set file timestamps to original (default, if available from
+  'MachineReadable' metadata) or current system time using `--timestamp-mode`.
 - Option to force overwrite of existing files in the destination directory.
 - Verbose mode for detailed operational logging.
 - Secure path handling to prevent writing outside the destination directory.
@@ -85,56 +113,69 @@ A utility that splits a single input file (previously created by `tools/makeonef
 #### Usage
 
 Basic command:
+
 ```bash
-python tools/splitfiles.py --input-file /path/to/combined_output.txt --destination-directory /path/to/output_folder
+python tools/splitfiles.py --input-file /path/to/combined_output.txt \
+  --destination-directory /path/to/output_folder
 ```
 
 Splitting a MachineReadable file with force overwrite and verbose output:
+
 ```bash
 python tools/splitfiles.py -i ./output/bundle.m1f -d ./extracted_project -f -v
 ```
 
 Using original timestamps (default behavior if available, or explicitly):
+
 ```bash
 python tools/splitfiles.py -i bundle.m1f -d extracted --timestamp-mode original
 ```
 
 Using current system timestamps for all extracted files:
+
 ```bash
 python tools/splitfiles.py -i bundle.m1f -d extracted --timestamp-mode current
 ```
 
 For all options, run:
+
 ```bash
 python tools/splitfiles.py --help
 ```
 
 ### tools/token_counter.py
 
-A utility to count the approximate number of tokens in a given text file, similar to how OpenAI's language models count tokens. This is useful for estimating API usage costs or understanding context window limits.
+A utility to count the approximate number of tokens in a given text file,
+similar to how OpenAI's language models count tokens. This is useful for
+estimating API usage costs or understanding context window limits.
 
 #### Features
 
 - Uses OpenAI's `tiktoken` library for accurate tokenization.
-- Supports various encodings used by OpenAI models (e.g., `cl100k_base` for gpt-4/gpt-3.5-turbo, `p50k_base`).
+- Supports various encodings used by OpenAI models (e.g., `cl100k_base` for
+  gpt-4/gpt-3.5-turbo, `p50k_base`).
 - Command-line interface for easy integration into workflows.
-- Handles different file types (txt, md, py, php, etc.) by reading their text content.
+- Handles different file types (txt, md, py, php, etc.) by reading their text
+  content.
 - Provides informative output, including the encoding used.
 - Includes error handling for file not found and encoding issues.
 
 #### Usage
 
 Basic command (uses `cl100k_base` encoding by default):
+
 ```bash
 python tools/token_counter.py /path/to/your/file.txt
 ```
 
 Specify a different encoding:
+
 ```bash
 python tools/token_counter.py /path/to/your/file.txt --encoding p50k_base
 ```
 
 For all options, run:
+
 ```bash
 python tools/token_counter.py --help
 ```
@@ -142,14 +183,16 @@ python tools/token_counter.py --help
 ## Requirements
 
 - Python 3.7+
-- Standard Python libraries (includes `argparse`, `datetime`, `hashlib`, `json`, `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
+- Standard Python libraries (includes `argparse`, `datetime`, `hashlib`, `json`,
+  `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
 - `tiktoken`: For the `tools/token_counter.py` script.
 - `black`: For code formatting.
 - `pymarkdownlnt`: For linting Markdown files.
 
 You can install all Python dependencies using:
+
 ```bash
-pip install -r requirements.txt 
+pip install -r requirements.txt
 # (requirements.txt will be updated)
 # or individually:
 pip install tiktoken black pymarkdownlnt
@@ -157,12 +200,14 @@ pip install tiktoken black pymarkdownlnt
 
 ## Coming Soon
 
-Additional Python tools are under development and will be added to this repository in the future.
+Additional Python tools are under development and will be added to this
+repository in the future.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md)
+file for details.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. 
+Contributions are welcome! Please feel free to submit a Pull Request.

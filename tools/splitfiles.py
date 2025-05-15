@@ -79,11 +79,11 @@ from datetime import datetime, timezone
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(levelname)-8s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)-8s: %(message)s")
 
 # --- Global Definitions ---
-LF = '\n'
-CRLF = '\r\n'
+LF = "\n"
+CRLF = "\r\n"
 
 # Separator Regex Patterns
 # These regexes are designed to match the beginning of a separator block
@@ -96,8 +96,8 @@ CRLF = '\r\n'
 
 RE_MACHINE_SEP = re.compile(
     r"^(>>>>>PYMAKEONEFILE_START_FILE<<<<<$\r?\n"  # Start marker line (Group 1, part 1)
-    r"(\{.*?\})$\r?\n)"                             # JSON metadata line (Group 2: JSON string; whole Group 1, part 2)
-    , re.MULTILINE
+    r"(\{.*?\})$\r?\n)",  # JSON metadata line (Group 2: JSON string; whole Group 1, part 2)
+    re.MULTILINE,
 )
 MACHINE_END_MARKER = ">>>>>PYMAKEONEFILE_END_FILE<<<<<"
 
@@ -106,31 +106,33 @@ RE_DETAILED_SEP = re.compile(
     r"== FILE: (.*?)$\r?\n"  # Group 2: Relative path
     r"== DATE: .*? \| SIZE: .*? \| TYPE: .*?$\r?\n"
     r"(?:== CHECKSUM_SHA256: ([0-9a-fA-F]{64})$\r?\n)?"  # Group 3: Optional Checksum
-    r"========================================================================================$\r?\n?)"
-    , re.MULTILINE
+    r"========================================================================================$\r?\n?)",
+    re.MULTILINE,
 )
 
 RE_STANDARD_SEP = re.compile(
-    r"^(======= (.*?)(?: \| CHECKSUM_SHA256: ([0-9a-fA-F]{64}))? =======$\r?\n?)" # Group 2: Path, Group 3: Optional Checksum
-    , re.MULTILINE
+    r"^(======= (.*?)(?: \| CHECKSUM_SHA256: ([0-9a-fA-F]{64}))? =======$\r?\n?)",  # Group 2: Path, Group 3: Optional Checksum
+    re.MULTILINE,
 )
 
 RE_MARKDOWN_SEP = re.compile(
     r"^(## (.*?)$\r?\n"  # Group 2: Relative path
     # Non-capturing group for the whole metadata line, with optional checksum part
     r"(?:\*\*Date Modified:\*\* .*? \| \*\*Size:\*\* .*? \| \*\*Type:\*\* .*?(?: \| \*\*Checksum \(SHA256\):\*\* ([0-9a-fA-F]{64}))?)$\r?\n\r?\n"
-    r"```(?:.*?)$\r?\n)" # Group 3: Optional Checksum
-    , re.MULTILINE
+    r"```(?:.*?)$\r?\n)",  # Group 3: Optional Checksum
+    re.MULTILINE,
 )
 
 
 # --- Helper Functions ---
+
 
 def _configure_logging(verbose: bool):
     """Configures logging level based on verbosity."""
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
         logger.debug("Verbose mode enabled.")
+
 
 def _resolve_input_file(input_file_str: str) -> Path:
     """Resolves and validates the source input file path."""
@@ -147,6 +149,7 @@ def _resolve_input_file(input_file_str: str) -> Path:
         logger.error(f"Error resolving input file '{input_file_str}': {e}")
         sys.exit(1)
 
+
 def _prepare_destination_dir(dest_dir_str: str) -> Path:
     """Resolves the destination directory path and creates it if it doesn't exist."""
     dest_dir = Path(dest_dir_str).resolve()
@@ -154,8 +157,11 @@ def _prepare_destination_dir(dest_dir_str: str) -> Path:
         dest_dir.mkdir(parents=True, exist_ok=True)
         return dest_dir
     except Exception as e:
-        logger.error(f"Could not create or access destination directory '{dest_dir}': {e}")
+        logger.error(
+            f"Could not create or access destination directory '{dest_dir}': {e}"
+        )
         sys.exit(1)
+
 
 def parse_combined_file(content: str) -> list[dict]:
     """
@@ -184,93 +190,141 @@ def parse_combined_file(content: str) -> list[dict]:
     # Order matters: More specific/distinct patterns should come first.
     # MachineReadable is very distinct.
     separator_patterns = [
-        {'id': 'MachineReadable', 'regex': RE_MACHINE_SEP, 'json_group': 2, 'header_group': 1},
-        {'id': 'Markdown', 'regex': RE_MARKDOWN_SEP, 'path_group': 2, 'checksum_group': 3, 'header_group': 1},
-        {'id': 'Detailed', 'regex': RE_DETAILED_SEP, 'path_group': 2, 'checksum_group': 3, 'header_group': 1},
-        {'id': 'Standard', 'regex': RE_STANDARD_SEP, 'path_group': 2, 'checksum_group': 3, 'header_group': 1},
+        {
+            "id": "MachineReadable",
+            "regex": RE_MACHINE_SEP,
+            "json_group": 2,
+            "header_group": 1,
+        },
+        {
+            "id": "Markdown",
+            "regex": RE_MARKDOWN_SEP,
+            "path_group": 2,
+            "checksum_group": 3,
+            "header_group": 1,
+        },
+        {
+            "id": "Detailed",
+            "regex": RE_DETAILED_SEP,
+            "path_group": 2,
+            "checksum_group": 3,
+            "header_group": 1,
+        },
+        {
+            "id": "Standard",
+            "regex": RE_STANDARD_SEP,
+            "path_group": 2,
+            "checksum_group": 3,
+            "header_group": 1,
+        },
     ]
 
     matches = []
     for pattern_info in separator_patterns:
-        for match in pattern_info['regex'].finditer(content):
+        for match in pattern_info["regex"].finditer(content):
             path_val = ""
-            checksum_val = None # Initialize checksum for all patterns
-            modified_val = None # Initialize modified timestamp
+            checksum_val = None  # Initialize checksum for all patterns
+            modified_val = None  # Initialize modified timestamp
             file_info_dict = {
-                'id': pattern_info['id'],
-                'match_obj': match,
-                'header_len': len(match.group(pattern_info['header_group'])),
-                'start_index': match.start(),
+                "id": pattern_info["id"],
+                "match_obj": match,
+                "header_len": len(match.group(pattern_info["header_group"])),
+                "start_index": match.start(),
             }
 
-            if pattern_info['id'] == 'MachineReadable':
+            if pattern_info["id"] == "MachineReadable":
                 try:
-                    json_str = match.group(pattern_info['json_group'])
+                    json_str = match.group(pattern_info["json_group"])
                     meta = json.loads(json_str)
-                    path_val = meta.get('path', '').strip()
+                    path_val = meta.get("path", "").strip()
                     if not path_val:
-                        logger.warning(f"MachineReadable block found at offset {match.start()} with missing or empty path in JSON: {json_str}")
+                        logger.warning(
+                            f"MachineReadable block found at offset {match.start()} with missing or empty path in JSON: {json_str}"
+                        )
                         continue
-                    
-                    modified_val = meta.get('modified') # Extract modified timestamp
-                    file_info_dict.update({
-                        'path': path_val,
-                        'modified': modified_val, # Store it
-                        'type': meta.get('type'),
-                        'size_bytes': meta.get('size_bytes'),
-                        'checksum_sha256': meta.get('checksum_sha256')
-                    })
+
+                    modified_val = meta.get("modified")  # Extract modified timestamp
+                    file_info_dict.update(
+                        {
+                            "path": path_val,
+                            "modified": modified_val,  # Store it
+                            "type": meta.get("type"),
+                            "size_bytes": meta.get("size_bytes"),
+                            "checksum_sha256": meta.get("checksum_sha256"),
+                        }
+                    )
                     matches.append(file_info_dict)
                     continue
                 except json.JSONDecodeError as e:
-                    logger.warning(f"MachineReadable block found at offset {match.start()} with invalid JSON: {json_str}. Error: {e}")
+                    logger.warning(
+                        f"MachineReadable block found at offset {match.start()} with invalid JSON: {json_str}. Error: {e}"
+                    )
                     continue
                 except Exception as e:
-                    logger.warning(f"Error processing MachineReadable block at offset {match.start()} with JSON '{json_str}': {e}")
+                    logger.warning(
+                        f"Error processing MachineReadable block at offset {match.start()} with JSON '{json_str}': {e}"
+                    )
                     continue
             else:
-                path_val = match.group(pattern_info['path_group']).strip()
-                if 'checksum_group' in pattern_info and pattern_info['checksum_group'] < len(match.groups()) + 1:
-                    checksum_val = match.group(pattern_info['checksum_group']) # Will be None if not captured
-            
-            file_info_dict.update({
-                'path': path_val,
-                'checksum_sha256': checksum_val,
-                'modified': modified_val # Will be None for non-MachineReadable types
-            })
+                path_val = match.group(pattern_info["path_group"]).strip()
+                if (
+                    "checksum_group" in pattern_info
+                    and pattern_info["checksum_group"] < len(match.groups()) + 1
+                ):
+                    checksum_val = match.group(
+                        pattern_info["checksum_group"]
+                    )  # Will be None if not captured
+
+            file_info_dict.update(
+                {
+                    "path": path_val,
+                    "checksum_sha256": checksum_val,
+                    "modified": modified_val,  # Will be None for non-MachineReadable types
+                }
+            )
             matches.append(file_info_dict)
 
     # Sort matches by their start index in the original content to process files in order.
-    matches.sort(key=lambda m: m['start_index'])
+    matches.sort(key=lambda m: m["start_index"])
 
     if not matches:
         logger.warning("No recognizable file separators found in the input file.")
         return []
 
     for i, current_match_info in enumerate(matches):
-        sep_id = current_match_info['id']
-        match_obj = current_match_info['match_obj']
-        relative_path = current_match_info['path']
-        
-        original_checksum = current_match_info.get('checksum_sha256')
-        original_size_bytes = current_match_info.get('size_bytes')
-        original_modified = current_match_info.get('modified')
+        sep_id = current_match_info["id"]
+        match_obj = current_match_info["match_obj"]
+        relative_path = current_match_info["path"]
+
+        original_checksum = current_match_info.get("checksum_sha256")
+        original_size_bytes = current_match_info.get("size_bytes")
+        original_modified = current_match_info.get("modified")
 
         content_start_pos = match_obj.end()
 
         # Determine the end of the current file's content
-        next_separator_start_pos = len(content) # Default: end of the whole content string
+        next_separator_start_pos = len(
+            content
+        )  # Default: end of the whole content string
 
-        if sep_id == 'MachineReadable':
+        if sep_id == "MachineReadable":
             # Find the end marker for this specific MachineReadable block
             end_marker_pos = content.find(MACHINE_END_MARKER, content_start_pos)
             if end_marker_pos != -1:
                 # Check for CRLF before the marker (e.g., content\r\nMARKER)
-                if end_marker_pos > 1 and content[end_marker_pos-len(CRLF):end_marker_pos] == CRLF:
-                    next_separator_start_pos = end_marker_pos - len(CRLF) # Exclude CRLF
+                if (
+                    end_marker_pos > 1
+                    and content[end_marker_pos - len(CRLF) : end_marker_pos] == CRLF
+                ):
+                    next_separator_start_pos = end_marker_pos - len(
+                        CRLF
+                    )  # Exclude CRLF
                 # Else, check for LF before the marker (e.g., content\nMARKER)
-                elif end_marker_pos > 0 and content[end_marker_pos-len(LF):end_marker_pos] == LF:
-                    next_separator_start_pos = end_marker_pos - len(LF) # Exclude LF
+                elif (
+                    end_marker_pos > 0
+                    and content[end_marker_pos - len(LF) : end_marker_pos] == LF
+                ):
+                    next_separator_start_pos = end_marker_pos - len(LF)  # Exclude LF
                 else:
                     # No expected newline (LF or CRLF) found before the end marker.
                     # This implies the content runs flush to the marker, or the file is structured unexpectedly.
@@ -280,80 +334,103 @@ def parse_combined_file(content: str) -> list[dict]:
                         f"before its end marker at offset {end_marker_pos}. "
                         f"The extracted content will go up to the marker. This might be incorrect if a separator was missing."
                     )
-                    next_separator_start_pos = end_marker_pos # Content up to the marker
-            else: # MACHINE_END_MARKER not found
-                logger.warning(f"MachineReadable file '{relative_path}' is missing its end marker ({MACHINE_END_MARKER}). Content might be incomplete or incorrect.")
+                    next_separator_start_pos = (
+                        end_marker_pos  # Content up to the marker
+                    )
+            else:  # MACHINE_END_MARKER not found
+                logger.warning(
+                    f"MachineReadable file '{relative_path}' is missing its end marker ({MACHINE_END_MARKER}). Content might be incomplete or incorrect."
+                )
                 # Fallback: content runs to the start of the next found separator or EOF.
                 if i + 1 < len(matches):
-                    next_separator_start_pos = matches[i+1]['start_index']
+                    next_separator_start_pos = matches[i + 1]["start_index"]
                 # else: next_separator_start_pos remains len(content)
-        elif i + 1 < len(matches): # For non-MachineReadable types, content ends before the next separator
-            next_separator_start_pos = matches[i+1]['start_index']
+        elif i + 1 < len(
+            matches
+        ):  # For non-MachineReadable types, content ends before the next separator
+            next_separator_start_pos = matches[i + 1]["start_index"]
         # else: for the last file (non-MachineReadable), next_separator_start_pos remains len(content)
 
         file_content_raw = content[content_start_pos:next_separator_start_pos]
         file_content = ""
 
-        if sep_id == 'MachineReadable':
+        if sep_id == "MachineReadable":
             file_content = file_content_raw
             # ---- START PRAGMATIC FIX FOR TRAILING \r ----
-            if original_size_bytes is not None and original_checksum is not None: # Only apply if we have original metadata
+            if (
+                original_size_bytes is not None and original_checksum is not None
+            ):  # Only apply if we have original metadata
                 try:
-                    current_content_bytes = file_content.encode('utf-8')
+                    current_content_bytes = file_content.encode("utf-8")
                     current_size_bytes = len(current_content_bytes)
-                    if current_size_bytes == original_size_bytes + 1 and file_content.endswith('\r'):
+                    if (
+                        current_size_bytes == original_size_bytes + 1
+                        and file_content.endswith("\r")
+                    ):
                         # Verify if stripping the 'r' would match the original checksum
                         # This avoids incorrectly stripping an 'r' that was part of legitimate content
                         # and coincidentally made the size +1.
-                        potential_fixed_content_bytes = file_content[:-1].encode('utf-8')
-                        potential_fixed_checksum = hashlib.sha256(potential_fixed_content_bytes).hexdigest()
-                        
-                        if potential_fixed_checksum == original_checksum and len(potential_fixed_content_bytes) == original_size_bytes:
+                        potential_fixed_content_bytes = file_content[:-1].encode(
+                            "utf-8"
+                        )
+                        potential_fixed_checksum = hashlib.sha256(
+                            potential_fixed_content_bytes
+                        ).hexdigest()
+
+                        if (
+                            potential_fixed_checksum == original_checksum
+                            and len(potential_fixed_content_bytes)
+                            == original_size_bytes
+                        ):
                             logger.info(
                                 f"Applying pragmatic fix for '{relative_path}': stripping trailing '\r'. "
                                 f"Original size: {original_size_bytes}, current size before fix: {current_size_bytes}. "
                                 f"Checksum matches after fix."
                             )
                             file_content = file_content[:-1]
-                        elif current_size_bytes == original_size_bytes + 1: # still off by 1 byte, but checksum didn't match
-                             logger.warning(
-                                f"Pragmatic fix condition (size +1 byte, ends with \'\\r\') met for '{relative_path}', "
+                        elif (
+                            current_size_bytes == original_size_bytes + 1
+                        ):  # still off by 1 byte, but checksum didn't match
+                            logger.warning(
+                                f"Pragmatic fix condition (size +1 byte, ends with '\\r') met for '{relative_path}', "
                                 f"but stripping '\\r' would NOT match the original checksum. "
                                 f"Expected checksum: {original_checksum}, checksum after potential fix: {potential_fixed_checksum}. "
                                 f"File will be left as is, but is likely corrupted or was altered from original."
                             )
                 except Exception as e_fix:
-                    logger.warning(f"Error during pragmatic fix attempt for '{relative_path}': {e_fix}")
+                    logger.warning(
+                        f"Error during pragmatic fix attempt for '{relative_path}': {e_fix}"
+                    )
             # ---- END PRAGMATIC FIX ----
-        elif sep_id == 'Markdown':
+        elif sep_id == "Markdown":
             # makeonefile.py writes:
             #   NormalizedFileContent
             #   "```" (from get_closing_separator)
             #   chosen_linesep (after closing separator)
             #   chosen_linesep (inter-file, if applicable)
             # So, file_content_raw is NormalizedFileContent + "```" + linesep1 + [optional_linesep2]
-            
+
             _processed_content = file_content_raw
             # Strip the optional inter-file newline separator (if this is not the last file segment).
             if i + 1 < len(matches):
                 if _processed_content.endswith(CRLF):
-                    _processed_content = _processed_content[:-len(CRLF)]
+                    _processed_content = _processed_content[: -len(CRLF)]
                 elif _processed_content.endswith(LF):
-                    _processed_content = _processed_content[:-len(LF)]
-            
+                    _processed_content = _processed_content[: -len(LF)]
+
             # Strip the "```" + its own trailing newline (closing marker part).
             if _processed_content.endswith("```" + CRLF):
-                file_content = _processed_content[:-(len("```" + CRLF))]
+                file_content = _processed_content[: -(len("```" + CRLF))]
             elif _processed_content.endswith("```" + LF):
-                file_content = _processed_content[:-(len("```" + LF))]
+                file_content = _processed_content[: -(len("```" + LF))]
             else:
                 logger.warning(
                     f"Markdown file '{relative_path}' closing sequence '```[newline]' "
                     f"not found as expected. Content might be incorrect."
                 )
-                file_content = file_content_raw # Fallback
-        
-        else: # Standard or Detailed
+                file_content = file_content_raw  # Fallback
+
+        else:  # Standard or Detailed
             # makeonefile.py writes:
             #   chosen_linesep (blank line after header)
             #   NormalizedFileContent
@@ -361,30 +438,34 @@ def parse_combined_file(content: str) -> list[dict]:
             # So, file_content_raw is: BlankLinesep_after_header + ActualFileContent + [optional_InterFileLinesep]
 
             _processed_content = file_content_raw
-            
+
             # Strip the leading blank line (the first linesep written by makeonefile after the header for these styles).
             if _processed_content.startswith(CRLF):
-                _processed_content = _processed_content[len(CRLF):]
+                _processed_content = _processed_content[len(CRLF) :]
             elif _processed_content.startswith(LF):
-                _processed_content = _processed_content[len(LF):]
-            
+                _processed_content = _processed_content[len(LF) :]
+
             # Strip the optional trailing inter-file newline separator (if this is not the last file segment).
             if i + 1 < len(matches):
                 if _processed_content.endswith(CRLF):
-                    _processed_content = _processed_content[:-len(CRLF)]
+                    _processed_content = _processed_content[: -len(CRLF)]
                 elif _processed_content.endswith(LF):
-                    _processed_content = _processed_content[:-len(LF)]
-            
+                    _processed_content = _processed_content[: -len(LF)]
+
             file_content = _processed_content
 
-        extracted_files.append({
-            'path': relative_path,
-            'content': file_content,
-            'checksum_sha256': original_checksum, # Will be None for non-MachineReadable
-            'size_bytes': original_size_bytes,    # Will be None for non-MachineReadable
-            'modified': original_modified         # Pass through the original modified timestamp
-        })
-        logger.debug(f"Identified file: '{relative_path}', type: {sep_id}, content length: {len(file_content)}")
+        extracted_files.append(
+            {
+                "path": relative_path,
+                "content": file_content,
+                "checksum_sha256": original_checksum,  # Will be None for non-MachineReadable
+                "size_bytes": original_size_bytes,  # Will be None for non-MachineReadable
+                "modified": original_modified,  # Pass through the original modified timestamp
+            }
+        )
+        logger.debug(
+            f"Identified file: '{relative_path}', type: {sep_id}, content length: {len(file_content)}"
+        )
 
     return extracted_files
 
@@ -393,7 +474,7 @@ def _write_extracted_files(
     dest_dir_path: Path,
     extracted_files_data: list[dict],
     force_overwrite: bool,
-    timestamp_mode: str
+    timestamp_mode: str,
 ) -> tuple[int, int, int]:
     """
     Writes the extracted file data to the destination directory.
@@ -413,18 +494,24 @@ def _write_extracted_files(
     files_overwritten_count = 0
     files_failed_count = 0
 
-    logger.info(f"Writing {len(extracted_files_data)} extracted file(s) to '{dest_dir_path}'...")
+    logger.info(
+        f"Writing {len(extracted_files_data)} extracted file(s) to '{dest_dir_path}'..."
+    )
     for file_data in extracted_files_data:
-        relative_path_str = file_data['path']
-        file_content_to_write = file_data['content']
-        original_checksum = file_data.get('checksum_sha256')
-        original_size_bytes = file_data.get('size_bytes')
-        original_modified = file_data.get('modified') # Get original modification timestamp
+        relative_path_str = file_data["path"]
+        file_content_to_write = file_data["content"]
+        original_checksum = file_data.get("checksum_sha256")
+        original_size_bytes = file_data.get("size_bytes")
+        original_modified = file_data.get(
+            "modified"
+        )  # Get original modification timestamp
 
         # Security check: ensure relative paths do not try to escape the destination directory.
         if ".." in Path(relative_path_str).parts:
-            logger.error(f"Skipping file '{relative_path_str}' due to invalid path components ('..').")
-            files_failed_count +=1
+            logger.error(
+                f"Skipping file '{relative_path_str}' due to invalid path components ('..')."
+            )
+            files_failed_count += 1
             continue
 
         current_output_path = dest_dir_path / relative_path_str
@@ -434,20 +521,24 @@ def _write_extracted_files(
         try:
             # Ensure parent directory exists.
             current_output_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             if current_output_path.exists() and not force_overwrite:
                 try:
-                    confirmation = input(f"Output file '{current_output_path}' already exists. Overwrite? (y/N): ")
-                    if confirmation.lower() != 'y':
+                    confirmation = input(
+                        f"Output file '{current_output_path}' already exists. Overwrite? (y/N): "
+                    )
+                    if confirmation.lower() != "y":
                         logger.info(f"Skipping existing file '{current_output_path}'.")
                         continue
-                except KeyboardInterrupt: # Handle Ctrl+C during prompt
-                    logger.info(f"{(LF if os.name != 'nt' else CRLF)}Operation cancelled by user (Ctrl+C).")
-                    sys.exit(0) # Graceful exit as user initiated stop before action
+                except KeyboardInterrupt:  # Handle Ctrl+C during prompt
+                    logger.info(
+                        f"{(LF if os.name != 'nt' else CRLF)}Operation cancelled by user (Ctrl+C)."
+                    )
+                    sys.exit(0)  # Graceful exit as user initiated stop before action
 
             is_overwrite = current_output_path.exists()
-            current_output_path.write_text(file_content_to_write, encoding='utf-8')
-            
+            current_output_path.write_text(file_content_to_write, encoding="utf-8")
+
             if is_overwrite:
                 files_overwritten_count += 1
                 logger.debug(f"Overwrote file: {current_output_path}")
@@ -456,34 +547,48 @@ def _write_extracted_files(
                 logger.debug(f"Created file: {current_output_path}")
 
             # Set file modification time if requested and available
-            if timestamp_mode == 'original' and original_modified:
+            if timestamp_mode == "original" and original_modified:
                 try:
                     # Ensure the timestamp is offset-aware, assuming UTC if 'Z' is present.
                     # fromisoformat expects +HH:MM for timezone, so replace 'Z' if needed.
-                    if original_modified.endswith('Z'):
-                        dt_obj = datetime.fromisoformat(original_modified.replace('Z', '+00:00'))
+                    if original_modified.endswith("Z"):
+                        dt_obj = datetime.fromisoformat(
+                            original_modified.replace("Z", "+00:00")
+                        )
                     else:
                         # If no 'Z' and no explicit offset, it might be naive or already have an offset.
                         # We'll try parsing directly. If it's naive, timestamp() might use local timezone.
                         # For pymakeonefile, 'Z' (UTC) is standard for MachineReadable.
                         dt_obj = datetime.fromisoformat(original_modified)
-                    
+
                     # Convert to POSIX timestamp (seconds since epoch, UTC)
                     mod_time = dt_obj.timestamp()
-                    access_time = mod_time # Set access time to the same as modification time
+                    access_time = (
+                        mod_time  # Set access time to the same as modification time
+                    )
                     os.utime(current_output_path, (access_time, mod_time))
-                    logger.debug(f"Set original modification time for '{current_output_path}' to {original_modified}")
+                    logger.debug(
+                        f"Set original modification time for '{current_output_path}' to {original_modified}"
+                    )
                 except ValueError:
-                    logger.warning(f"Could not parse original modification timestamp '{original_modified}' for '{current_output_path}'. Using current timestamp.")
+                    logger.warning(
+                        f"Could not parse original modification timestamp '{original_modified}' for '{current_output_path}'. Using current timestamp."
+                    )
                 except Exception as e:
-                    logger.warning(f"Could not set original modification time for '{current_output_path}' using timestamp '{original_modified}': {e}")
-            
+                    logger.warning(
+                        f"Could not set original modification time for '{current_output_path}' using timestamp '{original_modified}': {e}"
+                    )
+
             # Verify checksum and size for MachineReadable files
-            if original_checksum is not None: # Indicates it was a MachineReadable entry
+            if (
+                original_checksum is not None
+            ):  # Indicates it was a MachineReadable entry
                 try:
-                    extracted_content_bytes = file_content_to_write.encode('utf-8')
-                    calculated_checksum = hashlib.sha256(extracted_content_bytes).hexdigest()
-                    
+                    extracted_content_bytes = file_content_to_write.encode("utf-8")
+                    calculated_checksum = hashlib.sha256(
+                        extracted_content_bytes
+                    ).hexdigest()
+
                     if calculated_checksum != original_checksum:
                         logger.warning(
                             f"CHECKSUM MISMATCH for file '{current_output_path}'. "
@@ -491,7 +596,9 @@ def _write_extracted_files(
                             f"The file content may be corrupted or was altered."
                         )
                     else:
-                        logger.debug(f"Checksum VERIFIED for file '{current_output_path}'.")
+                        logger.debug(
+                            f"Checksum VERIFIED for file '{current_output_path}'."
+                        )
 
                     if original_size_bytes is not None:
                         extracted_size_bytes = len(extracted_content_bytes)
@@ -501,15 +608,20 @@ def _write_extracted_files(
                                 f"Expected: {original_size_bytes} bytes, Extracted: {extracted_size_bytes} bytes."
                             )
                         else:
-                            logger.debug(f"Size VERIFIED for file '{current_output_path}'.")
+                            logger.debug(
+                                f"Size VERIFIED for file '{current_output_path}'."
+                            )
                 except Exception as e:
-                    logger.error(f"Error during integrity verification for '{current_output_path}': {e}")
+                    logger.error(
+                        f"Error during integrity verification for '{current_output_path}': {e}"
+                    )
 
         except Exception as e:
             logger.error(f"Failed to write file '{current_output_path}': {e}")
-            files_failed_count +=1
-    
+            files_failed_count += 1
+
     return files_created_count, files_overwritten_count, files_failed_count
+
 
 def main():
     """
@@ -520,38 +632,42 @@ def main():
     parser = argparse.ArgumentParser(
         description="Splits a combined file (from pymakeonefile.py) back into individual files.",
         epilog="Example: %(prog)s -i combined.txt -d ./output_src --force",
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
-        '-i', '--input-file',
+        "-i",
+        "--input-file",
         type=str,
         required=True,
-        help="Path to the combined input file."
+        help="Path to the combined input file.",
     )
     parser.add_argument(
-        '-d', '--destination-directory',
+        "-d",
+        "--destination-directory",
         type=str,
         required=True,
-        help="Directory where extracted files will be saved."
+        help="Directory where extracted files will be saved.",
     )
     parser.add_argument(
-        '-f', '--force',
-        action='store_true',
-        help="Force overwrite of existing files in the destination directory without prompting."
+        "-f",
+        "--force",
+        action="store_true",
+        help="Force overwrite of existing files in the destination directory without prompting.",
     )
     parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help="Enable verbose output (DEBUG level logging)."
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Enable verbose output (DEBUG level logging).",
     )
     parser.add_argument(
-        '--timestamp-mode',
+        "--timestamp-mode",
         type=str,
-        choices=['original', 'current'],
-        default='original',
+        choices=["original", "current"],
+        default="original",
         help="Specify how to set file timestamps:\\n"
-             "  original: Try to restore original modification timestamp (default, only for MachineReadable format with timestamp).\\n"
-             "  current: Use the current system timestamp for all extracted files."
+        "  original: Try to restore original modification timestamp (default, only for MachineReadable format with timestamp).\\n"
+        "  current: Use the current system timestamp for all extracted files.",
     )
 
     args = parser.parse_args()
@@ -562,7 +678,7 @@ def main():
 
     logger.info(f"Reading input file: {input_file_path}")
     try:
-        combined_content = input_file_path.read_text(encoding='utf-8')
+        combined_content = input_file_path.read_text(encoding="utf-8")
     except Exception as e:
         logger.error(f"Failed to read input file '{input_file_path}': {e}")
         sys.exit(1)
@@ -574,35 +690,39 @@ def main():
         logger.info("No files extracted. Output directory will be empty or unchanged.")
         sys.exit(0)
 
-    files_created_count, files_overwritten_count, files_failed_count = _write_extracted_files(
-        dest_dir_path,
-        extracted_files_data,
-        args.force,
-        args.timestamp_mode
+    files_created_count, files_overwritten_count, files_failed_count = (
+        _write_extracted_files(
+            dest_dir_path, extracted_files_data, args.force, args.timestamp_mode
+        )
     )
 
     logger.info("File splitting process completed.")
     logger.info(f"Files created: {files_created_count}")
-    logger.info(f"Files overwritten (with --force or confirmation): {files_overwritten_count}")
+    logger.info(
+        f"Files overwritten (with --force or confirmation): {files_overwritten_count}"
+    )
     if files_failed_count > 0:
         logger.warning(f"Files failed to write: {files_failed_count}")
-    
+
     if files_failed_count > 0:
         sys.exit(1)
     sys.exit(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         # Ensure newline after ^C
-        print(f"{(LF if os.name != 'nt' else CRLF)}Operation cancelled by user.", file=sys.stderr)
-        sys.exit(130) # Standard exit code for Ctrl+C
+        print(
+            f"{(LF if os.name != 'nt' else CRLF)}Operation cancelled by user.",
+            file=sys.stderr,
+        )
+        sys.exit(130)  # Standard exit code for Ctrl+C
     except SystemExit as e:
         # Catch sys.exit() calls to ensure they propagate correctly
         sys.exit(e.code)
     except Exception as e:
         # Fallback for any unexpected errors not caught in main()
         logger.critical(f"An unexpected critical error occurred: {e}", exc_info=True)
-        sys.exit(1) 
+        sys.exit(1)
