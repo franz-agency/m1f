@@ -49,30 +49,45 @@ date, size, type, and a SHA256 checksum for integrity.
 
 #### Features
 
-- Recursive file scanning in a source directory.
-- Customizable separators between file contents: 'Standard', 'Detailed',
-  'Markdown', and 'MachineReadable'.
-  - The 'MachineReadable' style uses unique boundary markers and JSON metadata
-    (including path, modification date, type, size in bytes, and SHA256
-    checksum) for robust parsing and splitting.
-- SHA256 checksum included in headers for all styles to help ensure data
-  integrity.
-- Option to add a timestamp to the output filename.
-- Exclusion of common project directories (e.g., node_modules, .git, build).
-- Exclusion of binary files by default.
-- Option to include dot-files and binary files.
-- Case-insensitive exclusion of additional specified directory names.
-- Control over line endings (LF or CRLF) for script-generated separators.
-- Verbose mode for detailed logging.
-- Prompts for overwriting existing output file unless `--force` is used.
+- **Multiple Input Sources**:
+  - Recursive file scanning in a source directory
+  - Process files and directories from an input file list
+  - Automatic deduplication of paths (parent directories take precedence)
+- **Flexible Output**:
+  - Customizable separators between file contents: 'Standard', 'Detailed', 'Markdown', and 'MachineReadable'
+  - The 'MachineReadable' style uses unique boundary markers and JSON metadata (including path, modification date, type, size in bytes, and SHA256 checksum) for robust parsing and splitting
+  - SHA256 checksum included in headers for all styles to help ensure data integrity
+  - Option to add a timestamp to the output filename
+- **Smart Filtering**:
+  - Exclusion of common project directories (e.g., node_modules, .git, build)
+  - Exclusion of binary files by default
+  - Option to include dot-files and binary files
+  - Case-insensitive exclusion of additional specified directory names
+- **Customization**:
+  - Control over line endings (LF or CRLF) for script-generated separators
+  - Verbose mode for detailed logging
+  - Prompts for overwriting existing output file unless `--force` is used
 
 #### Usage
 
-Basic command:
+Basic command using a source directory:
 
 ```bash
 python tools/makeonefile.py --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
+```
+
+Using an input file containing paths to process (one per line):
+
+```bash
+python tools/makeonefile.py -i filelist.txt -o combined_output.txt
+```
+
+Example `filelist.txt`:
+```
+/home/user/project/src/main.py
+/home/user/project/tests
+/home/user/project/README.md
 ```
 
 Using MachineReadable style for robust splitting and integrity checks:
@@ -82,7 +97,40 @@ python tools/makeonefile.py -s ./my_project -o ./output/bundle.m1f \
   --separator-style MachineReadable --force
 ```
 
-For all options, run:
+**Note**: When using `--input-file`, if a parent directory is included in the list, any child paths will be automatically excluded. For example, if both `/home/user/project` and `/home/user/project/src` are listed, only files under `/home/user/project` will be processed.
+
+### Input File Format
+
+The input file should be a plain text file with one file or directory path per line. Empty lines are ignored. Example:
+
+```
+# This is a comment
+/home/user/project/README.md
+
+# Directory (will be processed recursively)
+/home/user/project/src
+
+# Another file
+/home/user/project/requirements.txt
+```
+
+### Path Deduplication
+
+When processing the input file, the script automatically handles path deduplication:
+- If a parent directory is included, all its children are excluded
+- The most specific (deepest) parent directory is used
+- This ensures no duplicate content in the output
+
+For example, with these paths in the input file:
+```
+/path/to/project
+/path/to/project/src/utils
+/path/to/project/src/main.py
+```
+
+Only files under `/path/to/project` will be processed, and the other two paths will be ignored as they're already covered by the parent directory.
+
+For all available options, run:
 
 ```bash
 python tools/makeonefile.py --help
