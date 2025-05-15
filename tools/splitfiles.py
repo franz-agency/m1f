@@ -151,14 +151,26 @@ def _resolve_input_file(input_file_str: str) -> Path:
 
 
 def _prepare_destination_dir(dest_dir_str: str) -> Path:
-    """Resolves the destination directory path and creates it if it doesn't exist."""
-    dest_dir = Path(dest_dir_str).resolve()
+    """
+    Resolves the destination directory path and creates it if it doesn't exist.
+    
+    Args:
+        dest_dir_str: The path to the destination directory as a string.
+        
+    Returns:
+        Path: The resolved and created directory path.
+        
+    Exits:
+        SystemExit: If the directory cannot be created or accessed.
+    """
     try:
+        dest_dir = Path(dest_dir_str).resolve()
         dest_dir.mkdir(parents=True, exist_ok=True)
+        logger.debug(f"Using destination directory: {dest_dir}")
         return dest_dir
     except Exception as e:
         logger.error(
-            f"Could not create or access destination directory '{dest_dir}': {e}"
+            f"Error: Could not create or access destination directory '{dest_dir_str}': {e}"
         )
         sys.exit(1)
 
@@ -582,7 +594,9 @@ def _write_extracted_files(
                     )
 
             # Verify checksum and size for MachineReadable files if not ignored
-            if original_checksum is not None:  # Indicates it was a MachineReadable entry
+            if (
+                original_checksum is not None
+            ):  # Indicates it was a MachineReadable entry
                 if ignore_checksum:
                     logger.debug(
                         f"Skipping checksum verification for '{current_output_path}' (--ignore-checksum flag set)."
@@ -702,11 +716,11 @@ def main():
 
     files_created_count, files_overwritten_count, files_failed_count = (
         _write_extracted_files(
-            dest_dir_path, 
-            extracted_files_data, 
-            args.force, 
+            dest_dir_path,
+            extracted_files_data,
+            args.force,
             args.timestamp_mode,
-            args.ignore_checksum
+            args.ignore_checksum,
         )
     )
 
