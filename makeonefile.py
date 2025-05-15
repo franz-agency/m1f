@@ -35,11 +35,13 @@ KEY FEATURES
 - Control over line endings (LF or CRLF) for script-generated separators.
 - Verbose mode for detailed logging.
 - Prompts for overwriting an existing output file unless `--force` is used.
+- Estimates and displays the token count of the combined output file using tiktoken.
 
 REQUIREMENTS
 ============
 - Python 3.7+ (due to `pathlib` usage, f-strings, and json module usage)
 - Standard Python libraries only (argparse, datetime, json, logging, os, pathlib, shutil, sys).
+- tiktoken (for token counting of the output file)
 
 INSTALLATION
 ============
@@ -89,7 +91,7 @@ AI (Python conversion and enhancements)
 
 VERSION
 =======
-1.2.0 (Python Version, added MachineReadable format)
+1.3.0 (Python Version, added MachineReadable format, added token counting)
 """
 
 import argparse
@@ -100,6 +102,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+import tiktoken # Added for token counting
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
@@ -147,6 +150,46 @@ BINARY_FILE_EXTENSIONS = {
 # Line Ending Constants
 LF = '\n'
 CRLF = '\r\n'
+
+# --- Token Counting Function ---
+def _count_tokens_in_file_content(file_path_str: str, encoding_name: str = "cl100k_base") -> int:
+    """
+    Reads a file and counts the number of tokens using a specified tiktoken encoding.
+
+    Args:
+        file_path_str (str): The path to the file.
+        encoding_name (str): The name of the encoding to use (e.g., "cl100k_base", "p50k_base").
+                             "cl100k_base" is the encoding used by gpt-4, gpt-3.5-turbo.
+
+    Returns:
+        int: The number of tokens in the file.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        Exception: For other issues like encoding errors or tiktoken issues.
+    """
+    if not os.path.exists(file_path_str):
+        # This check is somewhat redundant if called after file creation,
+        # but good for a generic helper.
+        raise FileNotFoundError(f"Error: File not found at {file_path_str}")
+
+    try:
+        with open(file_path_str, 'r', encoding='utf-8') as f:
+            text_content = f.read()
+    except UnicodeDecodeError:
+        logger.debug(f"UTF-8 decoding failed for {file_path_str}, trying with error replacement.")
+        with open(file_path_str, 'rb') as f:
+            byte_content = f.read()
+        text_content = byte_content.decode('utf-8', errors='replace')
+    except Exception as e:
+        raise Exception(f"Error reading file {file_path_str} for token counting: {e}")
+
+    try:
+        encoding = tiktoken.get_encoding(encoding_name)
+        tokens = encoding.encode(text_content)
+        return len(tokens)
+    except Exception as e:
+        raise Exception(f"Error using tiktoken: {e}. Ensure tiktoken is installed and encoding_name is valid.")
 
 # --- Helper Functions ---
 
@@ -551,6 +594,23 @@ def main():
     processed_count = _write_combined_data(output_file_path, files_to_process, args, chosen_linesep)
 
     logger.info(f"Successfully combined {processed_count} file(s) into '{output_file_path}'.")
+
+    # --- Token Counting for Output File ---
+    if processed_count > 0: # Only count tokens if files were actually processed
+        try:
+            logger.info(f"Attempting to count tokens in '{output_file_path.name}'...")
+            # Defaulting to "cl100k_base" as it's common for GPT models
+            token_count = _count_tokens_in_file_content(str(output_file_path))
+            logger.info(f"The output file '{output_file_path.name}' contains approximately {token_count} tokens (using 'cl100k_base' encoding).")
+        except FileNotFoundError:
+            # Should ideally not happen if _write_combined_data was successful
+            logger.warning(f"Could not count tokens: Output file '{output_file_path.name}' not found after creation.")
+        except Exception as e:
+            logger.warning(f"Could not count tokens for '{output_file_path.name}': {e}")
+            logger.warning("  To enable token counting, please ensure 'tiktoken' library is installed (e.g., 'pip install tiktoken').")
+    elif output_file_path.exists(): # An empty note file might have been created
+        logger.info(f"Output file '{output_file_path.name}' was created but is empty or contains no processed files; skipping token count.")
+
     sys.exit(0)
 
 
