@@ -2,22 +2,32 @@
 
 ## Overview
 
-This directory contains tasks for creating selective file bundles that serve as context for AI interactions. Using the `makeonefile.py` tool, you can combine selected important files from your project into a single file that can be loaded into an AI's context window.
+This directory contains tasks for creating selective file bundles that serve as
+context for AI interactions. Using the `makeonefile.py` tool, you can combine
+selected important files from your project into a single file that can be loaded
+into an AI's context window.
 
 ## When to Use This Tool
 
 **Do NOT use this tool if:**
+
 - You only have a few files to work with (just reference them directly)
-- You want to include your entire project (this will overwhelm the AI with irrelevant information)
+- You want to include your entire project (this will overwhelm the AI with
+  irrelevant information)
 
 **DO use this tool when:**
+
 - You have a large project (hundreds or thousands of files)
-- You need to provide context from ~50 key files that are most relevant to your current task
-- You want to give the AI a focused understanding of specific parts of your codebase
+- You need to provide context from ~50 key files that are most relevant to your
+  current task
+- You want to give the AI a focused understanding of specific parts of your
+  codebase
 
 ## Purpose
 
-When working with AI assistants (like those in Windsurf, Cursor, VS Code, or other AI-enabled editors), providing selective but sufficient context is essential. This tool helps you to:
+When working with AI assistants (like those in Windsurf, Cursor, VS Code, or
+other AI-enabled editors), providing selective but sufficient context is
+essential. This tool helps you to:
 
 1. Select and combine only the most important files into a single document
 2. Include metadata that helps AI systems understand file relationships
@@ -54,13 +64,16 @@ This task combines only the specific files you select:
 Start by identifying the most important files for your current task:
 
 - **Core files**: Main entry points, key modules, and configuration files
-- **Relevant to your task**: Files you're actively working on or need to understand
+- **Relevant to your task**: Files you're actively working on or need to
+  understand
 - **Context providers**: Files that explain project structure or domain concepts
-- **Aim for 20-50 files**: This provides enough context without overwhelming the AI
+- **Aim for 20-50 files**: This provides enough context without overwhelming the
+  AI
 
 ### Step 2: Create Your Custom File List
 
-The recommended approach is to create a task-specific file list in `ai_context_files.txt`:
+The recommended approach is to create a task-specific file list in
+`ai_context_files.txt`:
 
 ```
 # Core modules for authentication feature
@@ -91,15 +104,21 @@ d:\web\fuftools\utils\crypto.py
 
 ## Best Practices for Effective AI Context
 
-1. **Be selective**: Choose only the most important 20-50 files for your current task
-2. **Include structure files**: Add README.md, configuration files, and key interfaces 
-3. **Group related files**: When customizing your list, organize files by related functionality
-4. **Refresh context files**: Create new context files for different tasks rather than using one for everything
-5. **Comment your file lists**: Add comments in `ai_context_files.txt` to explain why files are included
+1. **Be selective**: Choose only the most important 20-50 files for your current
+   task
+2. **Include structure files**: Add README.md, configuration files, and key
+   interfaces
+3. **Group related files**: When customizing your list, organize files by
+   related functionality
+4. **Refresh context files**: Create new context files for different tasks
+   rather than using one for everything
+5. **Comment your file lists**: Add comments in `ai_context_files.txt` to
+   explain why files are included
 
 ## Customizing the Process
 
-You can customize the tasks by editing `makeonefile.json` for your specific needs:
+You can customize the tasks by editing `makeonefile.json` for your specific
+needs:
 
 - Modify output file locations and naming conventions
 - Adjust file exclusion patterns for your project structure
@@ -109,19 +128,23 @@ You can customize the tasks by editing `makeonefile.json` for your specific need
 
 Advanced options available in the `makeonefile.py` script:
 
-- `--include-dot-files`: Include configuration files like `.gitignore` when needed
+- `--include-dot-files`: Include configuration files like `.gitignore` when
+  needed
 - `--add-timestamp`: Track different versions of context files with timestamps
 - `--create-archive`: Create a reference archive of all included files
-- `--separator-style`: Choose format for file separators (MachineReadable recommended)
+- `--separator-style`: Choose format for file separators (MachineReadable
+  recommended)
 
 For a complete list of options, run:
+
 ```
 python tools/makeonefile.py --help
 ```
 
 ## Machine-Readable Format
 
-The default separator style "MachineReadable" optimizes the combined file for AI understanding:
+The default separator style "MachineReadable" optimizes the combined file for AI
+understanding:
 
 ```
 # ===============================================================================
@@ -137,7 +160,9 @@ The default separator style "MachineReadable" optimizes the combined file for AI
 # ===============================================================================
 ```
 
-This format ensures the AI can clearly identify file boundaries and understand metadata about each file, making it more effective in processing your selected files.
+This format ensures the AI can clearly identify file boundaries and understand
+metadata about each file, making it more effective in processing your selected
+files.
 
 ## Author
 
