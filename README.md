@@ -55,12 +55,14 @@ date, size, type, and a SHA256 checksum for integrity.
   - Automatic deduplication of paths (parent directories take precedence)
 - **Flexible Output**:
   - Customizable separators between file contents: 'Standard', 'Detailed',
-    'Markdown', and 'MachineReadable'
+    'Markdown', 'MachineReadable', and 'None'
   - The 'MachineReadable' style uses unique boundary markers and JSON metadata
     (including path, modification date, type, size in bytes, and SHA256
     checksum) for robust parsing and splitting
-  - SHA256 checksum included in headers for all styles to help ensure data
-    integrity
+  - The 'None' style concatenates files without any separators or newlines
+    between them, creating a seamless combined file
+  - SHA256 checksum included in headers for all styles (except 'None') to help
+    ensure data integrity
   - Option to add a timestamp to the output filename
 - **Smart Filtering**:
   - Exclusion of common project directories (e.g., node_modules, .git, build)
@@ -122,6 +124,13 @@ Creating a combined file and a backup zip archive:
 ```bash
 python tools/makeonefile.py -s ./source_code -o ./dist/combined.txt \
   --create-archive --archive-type zip
+```
+
+Concatenating files without any separators between them:
+
+```bash
+python tools/makeonefile.py -s ./source_code -o ./dist/seamless.txt \
+  --separator-style None
 ```
 
 When you run the script, it will:
@@ -188,17 +197,17 @@ python tools/makeonefile.py --help
 
 #### Notable Command Line Options
 
-| Option                   | Description                                                                               |
-| ------------------------ | ----------------------------------------------------------------------------------------- |
-| `-s, --source-directory` | Path to the directory containing files to process                                         |
-| `-i, --input-file`       | Path to a file containing a list of files/directories to process                          |
-| `-o, --output-file`      | Path for the combined output file (also determines the log file name)                     |
-| `-f, --force`            | Force overwrite of existing output file without prompting                                 |
-| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename                                |
-| `-v, --verbose`          | Enable verbose logging (more detailed log output)                                         |
-| `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`) |
-| `--create-archive`       | Create a backup archive of processed files                                                |
-| `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                             |
+| Option                   | Description                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `-s, --source-directory` | Path to the directory containing files to process                                                 |
+| `-i, --input-file`       | Path to a file containing a list of files/directories to process                                  |
+| `-o, --output-file`      | Path for the combined output file (also determines the log file name)                             |
+| `-f, --force`            | Force overwrite of existing output file without prompting                                         |
+| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename                                        |
+| `-v, --verbose`          | Enable verbose logging (more detailed log output)                                                 |
+| `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`) |
+| `--create-archive`       | Create a backup archive of processed files                                                        |
+| `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                     |
 
 ### tools/splitfiles.py
 

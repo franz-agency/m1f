@@ -26,8 +26,9 @@ into a single file, which can be useful for:
 KEY FEATURES
 ============
 - Recursive file scanning in a source directory or processing a list of paths from an input file.
-- Customizable separators between file contents ('Standard', 'Detailed', 'Markdown', 'MachineReadable').
+- Customizable separators between file contents ('Standard', 'Detailed', 'Markdown', 'MachineReadable', 'None').
 - The 'MachineReadable' style uses unique boundary markers and JSON metadata for robust parsing.
+- The 'None' style concatenates files without any separators or newlines between them.
 - Option to add a timestamp to the output filename (_YYYYMMDD_HHMMSS).
 - Exclusion of common project directories (e.g., 'node_modules', '.git', 'build').
 - Exclusion of binary files by default (based on extension).
@@ -334,7 +335,10 @@ def get_file_separator(
                 "[CHECKSUM_ERROR]"  # Indicate error clearly if it was attempted
             )
 
-    if style == "Standard":
+    if style == "None":
+        # Return an empty string as separator when 'None' style is selected
+        return ""
+    elif style == "Standard":
         if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
             return (
                 f"======= {relative_path} | CHECKSUM_SHA256: {checksum_sha256} ======"
@@ -398,7 +402,9 @@ def get_closing_separator(style: str, linesep: str) -> str | None:
     Returns:
         The closing separator string, or None if no closing separator is needed.
     """
-    if style == "Markdown":
+    if style == "None":
+        return ""
+    elif style == "Markdown":
         return "```"
     elif style == "MachineReadable":
         # The preceding linesep ensures the marker is on its own line after content.
@@ -815,14 +821,18 @@ def _write_combined_data(
                 )
 
                 # For MachineReadable, separator_text already includes its final necessary newline after JSON.
-                # For other styles, we add one after the separator text itself.
+                # For other styles, we add one after the separator text itself (except for "None" style).
                 if args.separator_style == "MachineReadable":
                     outfile.write(separator_text)
+                elif args.separator_style == "None":
+                    # For None style, don't add any separator or newline
+                    pass
                 else:
                     outfile.write(separator_text + chosen_linesep)
 
                 # Add an additional blank line for Standard and Detailed styles
                 # after their header and before the actual file content begins.
+                # (Skip this for the "None" style)
                 if args.separator_style in ["Standard", "Detailed"]:
                     outfile.write(chosen_linesep)
 
@@ -859,8 +869,8 @@ def _write_combined_data(
                     outfile.write(closing_separator_text + chosen_linesep)
 
                 # Add a separating newline IF this is not the last file.
-                # This serves as the blank line between file entries for all styles.
-                if file_counter < total_files:
+                # This serves as the blank line between file entries for all styles except "None".
+                if file_counter < total_files and args.separator_style != "None":
                     outfile.write(chosen_linesep)
         return file_counter
     except IOError as e:
@@ -1013,13 +1023,14 @@ def main():
     )
     parser.add_argument(
         "--separator-style",
-        choices=["Standard", "Detailed", "Markdown", "MachineReadable"],
+        choices=["Standard", "Detailed", "Markdown", "MachineReadable", "None"],
         default="Detailed",
         help="Format of the separator between files. \n"
         "  'Standard': Simple path display.\n"
         "  'Detailed': Path, date, size, type (default).\n"
         "  'Markdown': Markdown H2 for path, metadata, and code block.\n"
-        "  'MachineReadable': Uses unique boundary markers and JSON for robust splitting.",
+        "  'MachineReadable': Uses unique boundary markers and JSON for robust splitting.\n"
+        "  'None': No separator, files are concatenated without any information between them.",
     )
     parser.add_argument(
         "--line-ending",
