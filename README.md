@@ -1,10 +1,10 @@
 # FUFTools
 
-A collection of Python utility tools by [Franz und Franz](https://franz.agency) designed for production environments.
+A collection of Python utility tools by [Franz und Franz](https://franz.agency) for LLMs and AI that make life easier.
 
 ## Overview
 
-FUFTools is an open-source suite of Python utilities designed with modularity, scalability, and production readiness in mind. Each tool follows best practices and is thoroughly documented.
+FUFTools is an open-source suite of Python utilities designed with modularity and scalability in mind. Each tool follows best practices and is thoroughly documented. These tools aim to simplify common tasks and workflows when working with Large Language Models and Artificial Intelligence.
 
 ## Available Tools
 
