@@ -619,6 +619,7 @@ def _gather_files_to_process(
     args: argparse.Namespace,
     all_excluded_dir_names_lower: Set[str],
     input_paths: Optional[List[Path]] = None,
+    ignore_symlinks: bool = True,
 ) -> List[Tuple[Path, str]]:
     """
     Gather files to process, either from a source directory or from a list of input paths.
@@ -702,17 +703,58 @@ def _gather_files_to_process(
                 f"  Excluded directory names (case-insensitive): {sorted(list(all_excluded_dir_names_lower))}"
             )
 
-        for file_path in source_dir.rglob("*"):
-            if not file_path.is_file():
-                continue  # Skip directories
+        for root, dirs, files in os.walk(source_dir):
+            root_path = Path(root)
 
-            # No need to check added_file_absolute_paths here because rglob from a single source_dir should not yield duplicates by its nature.
-            if not _is_file_excluded(file_path, args, all_excluded_dir_names_lower):
+            # Skip excluded directories
+            dirs[:] = [d for d in dirs if d.lower() not in all_excluded_dir_names_lower]
+
+            # Skip symlink directories if ignore_symlinks is True
+            if ignore_symlinks:
+                dirs[:] = [d for d in dirs if not (root_path / d).is_symlink()]
+
+            for file in files:
+                file_path = root_path / file
+                if _is_file_excluded(file_path, args, all_excluded_dir_names_lower):
+                    continue
+
+                # Skip symlinks if ignore_symlinks is True
+                if ignore_symlinks and file_path.is_symlink():
+                    logger.debug(f"Skipping symlink: {file_path}")
+                    continue
+
                 relative_path = file_path.relative_to(source_dir)
                 files_to_process.append((file_path, str(relative_path)))
-            # else: _is_file_excluded logs if verbose
 
     return sorted(files_to_process, key=lambda x: str(x[1]).lower())
+
+
+def _write_file_paths_list(
+    output_file_path: Path, files_to_process: list[tuple[Path, str]]
+):
+    """
+    Writes a list of file paths to a text file.
+
+    Args:
+        output_file_path: The path to use as the base for the file list output file.
+        files_to_process: List of (file_path, relative_path) tuples to write to the file.
+
+    Returns:
+        Path to the created file list.
+    """
+    file_list_path = output_file_path.with_name(f"{output_file_path.stem}_filelist.txt")
+
+    logger.info(f"Writing file paths list to {file_list_path}")
+
+    # Extract unique relative paths and sort them
+    unique_paths = sorted(set(rel_path for _, rel_path in files_to_process))
+
+    with open(file_list_path, "w", encoding="utf-8") as f:
+        for rel_path in unique_paths:
+            f.write(f"{rel_path}\n")
+
+    logger.info(f"Wrote {len(unique_paths)} file paths to {file_list_path}")
+    return file_list_path
 
 
 def _write_combined_data(
@@ -1003,7 +1045,11 @@ def main():
 
     all_excluded_dir_names_lower = _build_exclusion_set(args.additional_excludes)
     files_to_process = _gather_files_to_process(
-        source_dir, args, all_excluded_dir_names_lower, input_paths
+        source_dir,
+        args,
+        all_excluded_dir_names_lower,
+        input_paths,
+        ignore_symlinks=True,
     )
 
     if not files_to_process:
@@ -1024,6 +1070,9 @@ def main():
     processed_count = _write_combined_data(
         output_file_path, files_to_process, args, chosen_linesep
     )
+
+    # Write the list of file paths to a separate file
+    file_list_path = _write_file_paths_list(output_file_path, files_to_process)
 
     logger.info(
         f"Successfully combined {processed_count} file(s) into '{output_file_path}'."
