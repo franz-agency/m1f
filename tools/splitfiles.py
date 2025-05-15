@@ -475,6 +475,7 @@ def _write_extracted_files(
     extracted_files_data: list[dict],
     force_overwrite: bool,
     timestamp_mode: str,
+    ignore_checksum: bool = False,
 ) -> tuple[int, int, int]:
     """
     Writes the extracted file data to the destination directory.
@@ -486,6 +487,7 @@ def _write_extracted_files(
         force_overwrite: Boolean indicating whether to overwrite existing files
                          without prompting.
         timestamp_mode: How to handle file timestamps ('original' or 'current').
+        ignore_checksum: If True, skip checksum verification for MachineReadable files.
 
     Returns:
         A tuple containing (files_created_count, files_overwritten_count, files_failed_count).
@@ -579,42 +581,45 @@ def _write_extracted_files(
                         f"Could not set original modification time for '{current_output_path}' using timestamp '{original_modified}': {e}"
                     )
 
-            # Verify checksum and size for MachineReadable files
-            if (
-                original_checksum is not None
-            ):  # Indicates it was a MachineReadable entry
-                try:
-                    extracted_content_bytes = file_content_to_write.encode("utf-8")
-                    calculated_checksum = hashlib.sha256(
-                        extracted_content_bytes
-                    ).hexdigest()
+            # Verify checksum and size for MachineReadable files if not ignored
+            if original_checksum is not None:  # Indicates it was a MachineReadable entry
+                if ignore_checksum:
+                    logger.debug(
+                        f"Skipping checksum verification for '{current_output_path}' (--ignore-checksum flag set)."
+                    )
+                else:
+                    try:
+                        extracted_content_bytes = file_content_to_write.encode("utf-8")
+                        calculated_checksum = hashlib.sha256(
+                            extracted_content_bytes
+                        ).hexdigest()
 
-                    if calculated_checksum != original_checksum:
-                        logger.warning(
-                            f"CHECKSUM MISMATCH for file '{current_output_path}'. "
-                            f"Expected: {original_checksum}, Calculated: {calculated_checksum}. "
-                            f"The file content may be corrupted or was altered."
-                        )
-                    else:
-                        logger.debug(
-                            f"Checksum VERIFIED for file '{current_output_path}'."
-                        )
-
-                    if original_size_bytes is not None:
-                        extracted_size_bytes = len(extracted_content_bytes)
-                        if extracted_size_bytes != original_size_bytes:
+                        if calculated_checksum != original_checksum:
                             logger.warning(
-                                f"SIZE MISMATCH for file '{current_output_path}'. "
-                                f"Expected: {original_size_bytes} bytes, Extracted: {extracted_size_bytes} bytes."
+                                f"CHECKSUM MISMATCH for file '{current_output_path}'. "
+                                f"Expected: {original_checksum}, Calculated: {calculated_checksum}. "
+                                f"The file content may be corrupted or was altered."
                             )
                         else:
                             logger.debug(
-                                f"Size VERIFIED for file '{current_output_path}'."
+                                f"Checksum VERIFIED for file '{current_output_path}'."
                             )
-                except Exception as e:
-                    logger.error(
-                        f"Error during integrity verification for '{current_output_path}': {e}"
-                    )
+
+                        if original_size_bytes is not None:
+                            extracted_size_bytes = len(extracted_content_bytes)
+                            if extracted_size_bytes != original_size_bytes:
+                                logger.warning(
+                                    f"SIZE MISMATCH for file '{current_output_path}'. "
+                                    f"Expected: {original_size_bytes} bytes, Actual: {extracted_size_bytes} bytes."
+                                )
+                            else:
+                                logger.debug(
+                                    f"Size VERIFIED for file '{current_output_path}': {extracted_size_bytes} bytes."
+                                )
+                    except Exception as e:
+                        logger.warning(
+                            f"Error during checksum/size verification for '{current_output_path}': {e}"
+                        )
 
         except Exception as e:
             logger.error(f"Failed to write file '{current_output_path}': {e}")
@@ -669,6 +674,11 @@ def main():
         "  original: Try to restore original modification timestamp (default, only for MachineReadable format with timestamp).\\n"
         "  current: Use the current system timestamp for all extracted files.",
     )
+    parser.add_argument(
+        "--ignore-checksum",
+        action="store_true",
+        help="Skip checksum verification for MachineReadable files. Use this if the files were intentionally modified.",
+    )
 
     args = parser.parse_args()
     _configure_logging(args.verbose)
@@ -692,7 +702,11 @@ def main():
 
     files_created_count, files_overwritten_count, files_failed_count = (
         _write_extracted_files(
-            dest_dir_path, extracted_files_data, args.force, args.timestamp_mode
+            dest_dir_path, 
+            extracted_files_data, 
+            args.force, 
+            args.timestamp_mode,
+            args.ignore_checksum
         )
     )
 
