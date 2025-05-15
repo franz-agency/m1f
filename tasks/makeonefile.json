@@ -1,0 +1,129 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "AI Context: Create From Selected Files (Recommended)",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/tools/makeonefile.py",
+                "--input-file",
+                "${workspaceFolder}/tasks/ai_context_files.txt",
+                "--output-file",
+                "${workspaceFolder}/.gen/ai_context_selective.m1f",
+                "--separator-style",
+                "MachineReadable",
+                "--force",
+                "--verbose"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates an AI context file from your carefully selected 20-50 most important files. Best for focused tasks."
+        },
+        {
+            "label": "AI Context: Create With Default Filtering",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/tools/makeonefile.py",
+                "--source-directory",
+                "${workspaceFolder}",
+                "--output-file",
+                "${workspaceFolder}/.gen/ai_context_filtered.m1f",
+                "--separator-style",
+                "MachineReadable",
+                "--force",
+                "--verbose",
+                "--additional-excludes", 
+                "node_modules", 
+                ".git", 
+                ".venv", 
+                ".idea", 
+                "__pycache__",
+                "dist",
+                "build",
+                "cache"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates an AI context file by automatically filtering project files. Use only for initial exploration."
+        },
+        {
+            "label": "AI Context: Create Feature-Specific Bundle",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/tools/makeonefile.py",
+                "--input-file",
+                "${workspaceFolder}/tasks/feature_context_files.txt",
+                "--output-file",
+                "${workspaceFolder}/.gen/ai_context_feature.m1f",
+                "--separator-style",
+                "MachineReadable",
+                "--force",
+                "--verbose",
+                "--add-timestamp"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates a feature-specific context bundle using paths in feature_context_files.txt. Includes timestamp for versioning."
+        },
+        {
+            "label": "Lint: Format JSON/Markdown with Prettier",
+            "type": "shell",
+            "command": "npx",
+            "args": [
+                "prettier",
+                "--write",
+                "${workspaceFolder}/**/*.{json,md,yaml,yml}"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Formats all JSON/Markdown/YAML files using Prettier according to the .prettierrc.yaml configuration."
+        }
+    ]
+}

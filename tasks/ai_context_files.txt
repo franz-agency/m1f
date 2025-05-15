@@ -1,0 +1,37 @@
+# This is an example file list for AI context bundling
+# Group related files by feature/functionality with comments
+
+# Core project documentation
+/path/to/project/README.md
+/path/to/project/ARCHITECTURE.md
+/path/to/project/docs/api_reference.md
+
+# Authentication feature
+/path/to/project/auth/models.py           # Data models for users and permissions
+/path/to/project/auth/views.py            # Authentication API endpoints
+/path/to/project/auth/middleware.py       # Auth verification middleware
+/path/to/project/auth/tests/test_auth.py  # Key tests that explain requirements
+
+# Database configuration
+/path/to/project/config/database.py       # Database connection settings
+/path/to/project/db/migrations/001_init.py # Shows schema structure
+/path/to/project/db/models/base.py        # Base model classes
+
+# Frontend components
+/path/to/project/frontend/components/AuthForm.jsx
+/path/to/project/frontend/components/Dashboard.jsx
+/path/to/project/frontend/services/api.js # API integration points
+
+# Utility functions
+/path/to/project/utils/logging.py
+/path/to/project/utils/validators.py
+
+# Configuration files
+/path/to/project/.env.example             # Shows required environment variables
+/path/to/project/config/settings.py       # Application settings
+
+# Main application entry points
+/path/to/project/app.py                   # Main application initialization
+/path/to/project/server.py                # Server startup code
+
+# Add task-specific files here as needed
