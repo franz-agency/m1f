@@ -521,7 +521,15 @@ def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
         for other_path in path_objects[i+1:]:
             # If this path is a parent of another path, exclude the child
             try:
-                if other_path.is_relative_to(path):
+                # Use str path comparison for Python 3.7+ compatibility (instead of is_relative_to from 3.9+)
+                other_path_str = str(other_path.absolute())
+                path_str = str(path.absolute())
+                
+                # Check if other_path is a subpath of path
+                if (other_path_str.startswith(path_str) and 
+                    (len(other_path_str) > len(path_str) and 
+                     (other_path_str[len(path_str)] == '/' or other_path_str[len(path_str)] == '\\' or 
+                      len(path_str) == 0))):
                     include_paths.discard(other_path)
             except (ValueError, RuntimeError):
                 # Handle potential path resolution issues
