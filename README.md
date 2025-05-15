@@ -78,6 +78,13 @@ date, size, type, and a SHA256 checksum for integrity.
   - Create a backup archive (zip or tar.gz) of all processed files.
   - Archive is named after the output file with a `_backup` suffix (e.g.,
     `combined_output_backup.zip`).
+- **Logging**:
+  - Automatically creates a log file with the same name as the output file but with
+    a `.log` extension (e.g., `combined_output.log` for `combined_output.txt`).
+  - The log file captures all processing information, warnings, and errors.
+- **Performance Monitoring**:
+  - Measures and reports the total execution time at the end of processing.
+  - For longer runs, time is displayed in minutes and seconds format.
 
 #### Usage
 

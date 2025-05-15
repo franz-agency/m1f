@@ -38,6 +38,8 @@ KEY FEATURES
 - Prompts for overwriting an existing output file unless `--force` is used.
 - Estimates and displays the token count of the combined output file using tiktoken.
 - Optional creation of a zip or tar.gz archive containing all processed files, named after the output file with a `_backup` suffix.
+- Creates a log file with the same name as the output file but with a `.log` extension, capturing all processing information.
+- Measures and reports the total execution time for performance monitoring.
 
 REQUIREMENTS
 ============
@@ -107,6 +109,7 @@ import json
 import logging
 import os
 import sys
+import time  # Added for time measurement
 from pathlib import Path
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
@@ -116,6 +119,7 @@ import tarfile  # Added for archive creation
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)-8s: %(message)s")
+file_handler = None  # Will be set in configure_logging_settings
 
 # --- Global Definitions ---
 
@@ -405,10 +409,41 @@ def get_closing_separator(style: str, linesep: str) -> str | None:
 # --- Refactored Helper Functions for main() ---
 
 
-def _configure_logging_settings(verbose: bool, chosen_linesep: str) -> None:
-    """Configures logging level based on verbosity."""
+def _configure_logging_settings(
+    verbose: bool, chosen_linesep: str, output_file_path: Optional[Path] = None
+) -> None:
+    """Configures logging level based on verbosity and sets up file logging.
+
+    Args:
+        verbose: Whether to enable verbose (DEBUG) logging
+        chosen_linesep: The line separator being used (LF or CRLF)
+        output_file_path: The output file path, used to create a parallel log file
+    """
+    # Set the root logger level based on verbosity
+    log_level = logging.DEBUG if verbose else logging.INFO
+    logging.getLogger().setLevel(log_level)
+
+    # Configure file logging if an output path is provided
+    global file_handler
+    if output_file_path and file_handler is None:
+        # Create a log file with the same name as the output file but with .log extension
+        log_file_path = output_file_path.with_suffix(".log")
+        try:
+            # Create a file handler that writes to the log file
+            file_handler = logging.FileHandler(
+                log_file_path, mode="w", encoding="utf-8"
+            )
+            file_handler.setLevel(log_level)
+            file_handler.setFormatter(
+                logging.Formatter("%(asctime)s - %(levelname)-8s: %(message)s")
+            )
+
+            # Add the file handler to the root logger
+            logging.getLogger().addHandler(file_handler)
+        except Exception as e:
+            logger.error(f"Failed to create log file at {log_file_path}: {e}")
+
     if verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
         logger.debug("Verbose mode enabled.")
         logger.debug(f"Using line ending: {'LF' if chosen_linesep == LF else 'CRLF'}")
 
@@ -830,13 +865,16 @@ def _write_combined_data(
         return file_counter
     except IOError as e:
         logger.error(f"An I/O error occurred writing to '{output_file_path}': {e}")
-        sys.exit(1)
+        if file_handler:
+            file_handler.close()
+        sys.exit(1)  # Exit with error for IO issues
     except Exception as e:
         logger.error(
-            f"An unexpected error occurred during file processing: {e}",
-            exc_info=args.verbose,
+            f"An unexpected error occurred during file processing: {e}", exc_info=True
         )
-        sys.exit(1)
+        if file_handler:
+            file_handler.close()
+        sys.exit(1)  # Exit with an error code
 
 
 # --- Archive Creation Function ---
@@ -919,6 +957,8 @@ def main():
     """
     Main function to parse arguments and orchestrate the file combination process.
     """
+    # Start timing the execution
+    start_time = time.time()
     parser = argparse.ArgumentParser(
         description="Combines the content of multiple text files into a single output file, with metadata. "
         "Optionally, creates a backup archive (zip or tar.gz) of the processed files. "
@@ -1021,7 +1061,11 @@ def main():
     args = parser.parse_args()
 
     chosen_linesep = LF if args.line_ending == "lf" else CRLF
-    _configure_logging_settings(args.verbose, chosen_linesep)
+
+    output_file_path = _prepare_output_file_path(args.output_file, args.add_timestamp)
+
+    # Configure logging with the output file path to create a parallel log file
+    _configure_logging_settings(args.verbose, chosen_linesep, output_file_path)
 
     # Process input file if provided, otherwise use source directory
     input_paths = None
@@ -1038,7 +1082,7 @@ def main():
     else:
         source_dir = _resolve_and_validate_source_path(args.source_directory)
 
-    output_file_path = _prepare_output_file_path(args.output_file, args.add_timestamp)
+    # Output file path was already prepared for logging setup
     _handle_output_file_overwrite_and_creation(
         output_file_path, args.force, chosen_linesep
     )
@@ -1115,6 +1159,17 @@ def main():
         logger.info(
             "Archive creation requested, but no files were processed. Skipping archive creation."
         )
+
+    # Calculate and log the execution time
+    end_time = time.time()
+    execution_time = end_time - start_time
+    # Format time as minutes and seconds if over 60 seconds, otherwise just seconds
+    if execution_time >= 60:
+        minutes, seconds = divmod(execution_time, 60)
+        time_str = f"{int(minutes)}m {seconds:.2f}s"
+    else:
+        time_str = f"{execution_time:.2f}s"
+    logger.info(f"Total execution time: {time_str}")
 
     sys.exit(0)
 
