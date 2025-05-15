@@ -20,11 +20,13 @@ into a single file, which can be useful for:
 - Code reviews (though dedicated review tools are often better for large projects).
 - Creating a single document bundle for sharing or archiving.
 - Simple documentation generation by concatenating markdown files.
+- Creating a machine-parseable bundle for later splitting (using the 'MachineReadable' style).
 
 KEY FEATURES
 ============
 - Recursive file scanning in a source directory.
-- Customizable separators between file contents ('Standard', 'Detailed', 'Markdown').
+- Customizable separators between file contents ('Standard', 'Detailed', 'Markdown', 'MachineReadable').
+- The 'MachineReadable' style uses unique boundary markers and JSON metadata for robust parsing.
 - Option to add a timestamp to the output filename.
 - Exclusion of common project directories (e.g., 'node_modules', '.git', 'build').
 - Exclusion of binary files by default (based on extension).
@@ -36,8 +38,8 @@ KEY FEATURES
 
 REQUIREMENTS
 ============
-- Python 3.7+ (due to `pathlib` usage and f-strings; `Path.resolve(strict=True)` needs 3.6+)
-- Standard Python libraries only (argparse, datetime, logging, os, pathlib, shutil, sys).
+- Python 3.7+ (due to `pathlib` usage, f-strings, and json module usage)
+- Standard Python libraries only (argparse, datetime, json, logging, os, pathlib, shutil, sys).
 
 INSTALLATION
 ============
@@ -50,6 +52,9 @@ USAGE
 Basic command:
   python pymakeonefile.py --source-directory /path/to/your/code --output-file /path/to/combined_output.txt
 
+Using MachineReadable style for reliable splitting:
+  python pymakeonefile.py -s ./my_project -o ./output/bundle.m1f --separator-style MachineReadable
+
 With more options:
   python pymakeonefile.py -s ./my_project -o ./output/bundle.md -t --separator-style Markdown --force --verbose --additional-excludes "temp" "docs_old"
 
@@ -58,6 +63,10 @@ For all options, run:
 
 NOTES
 =====
+- MachineReadable Format: This format is designed for automated splitting.
+  It uses `>>>>>PYMAKEONEFILE_START_FILE<<<<<` and `>>>>>PYMAKEONEFILE_END_FILE<<<<<`
+  as boundary markers, with a JSON object containing `{"path": "relative/path.ext"}`
+  on the line immediately following the start marker.
 - Binary Files: While the script can attempt to include binary files using the 
   `--include-binary-files` flag, the content will be read as text (UTF-8 with 
   error ignoring). This can result in garbled/unreadable content in the output 
@@ -80,11 +89,12 @@ AI (Python conversion and enhancements)
 
 VERSION
 =======
-1.1.0 (Python Version)
+1.2.0 (Python Version, added MachineReadable format)
 """
 
 import argparse
 import datetime
+import json
 import logging
 import os
 import sys
@@ -155,7 +165,7 @@ def get_file_separator(file_info: Path, relative_path: str, style: str, linesep:
     Args:
         file_info: Path object for the file.
         relative_path: Relative path string of the file from the source directory.
-        style: The separator style ('Standard', 'Detailed', 'Markdown').
+        style: The separator style ('Standard', 'Detailed', 'Markdown', 'MachineReadable').
         linesep: The line separator string (LF or CRLF) to use.
 
     Returns:
@@ -186,22 +196,33 @@ def get_file_separator(file_info: Path, relative_path: str, style: str, linesep:
             f"```{md_lang_hint}"
         ]
         return linesep.join(separator_lines)
+    elif style == 'MachineReadable':
+        meta = {"path": relative_path}
+        json_meta = json.dumps(meta)
+        return (
+            f">>>>>PYMAKEONEFILE_START_FILE<<<<<{linesep}"
+            f"{json_meta}{linesep}"
+        )
     else: # Should not happen due to argparse choices
         logger.warning(f"Unknown separator style '{style}'. Falling back to basic.")
         return f"--- {relative_path} ---"
 
-def get_closing_separator(style: str) -> str | None:
+def get_closing_separator(style: str, linesep: str) -> str | None:
     """
     Generates the closing separator string, if any.
 
     Args:
         style: The separator style.
+        linesep: The line separator string (LF or CRLF) to use.
 
     Returns:
         The closing separator string, or None if no closing separator is needed.
     """
     if style == 'Markdown':
         return "```"
+    elif style == 'MachineReadable':
+        # The preceding linesep ensures the marker is on its own line after content.
+        return f"{linesep}>>>>>PYMAKEONEFILE_END_FILE<<<<<"
     return None
 
 # --- Refactored Helper Functions for main() ---
@@ -345,12 +366,20 @@ def _write_combined_data(output_file_path: Path, files_to_process: list[tuple[Pa
                 logger.debug(f"Processing file ({file_counter}/{total_files}): {file_info.name} (Rel: {rel_path_str})")
 
                 separator_text = get_file_separator(file_info, rel_path_str, args.separator_style, chosen_linesep)
-                outfile.write(separator_text + chosen_linesep)
+                
+                # For MachineReadable, separator_text already includes its final necessary newline after JSON.
+                # For other styles, we add one after the separator text itself.
+                if args.separator_style == 'MachineReadable':
+                    outfile.write(separator_text)
+                else:
+                    outfile.write(separator_text + chosen_linesep)
 
-                if args.separator_style != 'Markdown':
+                # Add an additional blank line for Standard and Detailed styles
+                # after their header and before the actual file content begins.
+                if args.separator_style in ['Standard', 'Detailed']:
                     outfile.write(chosen_linesep)
 
-                content = "" # Initialize content to ensure it's defined for the 'finally' like block
+                content = "" # Initialize content to ensure it's defined
                 try:
                     content = file_info.read_text(encoding='utf-8', errors='ignore')
                     outfile.write(content)
@@ -360,15 +389,22 @@ def _write_combined_data(output_file_path: Path, files_to_process: list[tuple[Pa
                     outfile.write(error_message + chosen_linesep)
                 
                 # Ensure content block is followed by a newline if it didn't originally have one.
-                # This makes sure the closing separator or next file's header starts on a new line.
+                # This makes sure the closing separator (if any) or the inter-file newline starts correctly.
                 if content and not content.endswith(('\n', '\r')):
                     outfile.write(chosen_linesep)
-                # If content was empty or already ended with a newline, this step is skipped.
+                # No special handling needed here if content is empty, as the subsequent
+                # closing_separator and inter-file newlines will still be added correctly.
 
-                closing_separator_text = get_closing_separator(args.separator_style)
+                closing_separator_text = get_closing_separator(args.separator_style, chosen_linesep)
                 if closing_separator_text:
+                    # For MachineReadable, closing_separator_text is `linesep + END_MARKER`.
+                    #   outfile.write adds `linesep + END_MARKER + chosen_linesep`.
+                    # For Markdown, closing_separator_text is ```` ``` ``` `.
+                    #   outfile.write adds ```` ``` ``` ` + chosen_linesep`.
                     outfile.write(closing_separator_text + chosen_linesep)
                 
+                # Add a separating newline IF this is not the last file.
+                # This serves as the blank line between file entries for all styles.
                 if file_counter < total_files:
                     outfile.write(chosen_linesep)
         return file_counter
@@ -439,9 +475,13 @@ def main():
     )
     parser.add_argument(
         '--separator-style',
-        choices=['Standard', 'Detailed', 'Markdown'],
+        choices=['Standard', 'Detailed', 'Markdown', 'MachineReadable'],
         default='Detailed',
-        help="Format of the separator between files. Default: Detailed."
+        help="Format of the separator between files. \n"
+             "  'Standard': Simple path display.\n"
+             "  'Detailed': Path, date, size, type (default).\n"
+             "  'Markdown': Markdown H2 for path, metadata, and code block.\n"
+             "  'MachineReadable': Uses unique boundary markers and JSON for robust splitting."
     )
     parser.add_argument(
         '--line-ending',

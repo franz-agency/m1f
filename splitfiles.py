@@ -68,6 +68,7 @@ VERSION
 """
 
 import argparse
+import json
 import logging
 import os
 import re
@@ -90,6 +91,13 @@ CRLF = '\r\n'
 # Each regex aims to capture:
 # Group 1: The entire separator header (used to determine header length).
 # Group 2: The relative file path.
+
+RE_MACHINE_SEP = re.compile(
+    r"^(>>>>>PYMAKEONEFILE_START_FILE<<<<<$\r?\n"  # Start marker line (Group 1, part 1)
+    r"(\{.*?\})$\r?\n)"                             # JSON metadata line (Group 2: JSON string; whole Group 1, part 2)
+    , re.MULTILINE
+)
+MACHINE_END_MARKER = ">>>>>PYMAKEONEFILE_END_FILE<<<<<"
 
 RE_DETAILED_SEP = re.compile(
     r"^(========================================================================================$\r?\n"  # Optional CR before LF
@@ -150,7 +158,8 @@ def parse_combined_file(content: str) -> list[dict]:
     Parses the combined file content and extracts individual file data.
     The function identifies file separators using a list of regex patterns,
     sorts them by their appearance in the file, and then extracts
-    the content between each separator and the next.
+    the content between each separator and the next (or to the end-of-file marker
+    for MachineReadable style).
 
     Args:
         content: The entire string content of the combined input file.
@@ -162,8 +171,10 @@ def parse_combined_file(content: str) -> list[dict]:
     """
     extracted_files = []
 
-    # Order matters: More specific patterns (like Markdown with its ```) should come before general ones.
+    # Order matters: More specific/distinct patterns should come first.
+    # MachineReadable is very distinct.
     separator_patterns = [
+        {'id': 'MachineReadable', 'regex': RE_MACHINE_SEP, 'json_group': 2, 'header_group': 1},
         {'id': 'Markdown', 'regex': RE_MARKDOWN_SEP, 'path_group': 2, 'header_group': 1},
         {'id': 'Detailed', 'regex': RE_DETAILED_SEP, 'path_group': 2, 'header_group': 1},
         {'id': 'Standard', 'regex': RE_STANDARD_SEP, 'path_group': 2, 'header_group': 1},
@@ -172,10 +183,28 @@ def parse_combined_file(content: str) -> list[dict]:
     matches = []
     for pattern_info in separator_patterns:
         for match in pattern_info['regex'].finditer(content):
+            path_val = ""
+            if pattern_info['id'] == 'MachineReadable':
+                try:
+                    json_str = match.group(pattern_info['json_group'])
+                    meta = json.loads(json_str)
+                    path_val = meta.get('path', '').strip()
+                    if not path_val:
+                        logger.warning(f"MachineReadable block found at offset {match.start()} with missing or empty path in JSON: {json_str}")
+                        continue # Skip this invalid block
+                except json.JSONDecodeError as e:
+                    logger.warning(f"MachineReadable block found at offset {match.start()} with invalid JSON: {json_str}. Error: {e}")
+                    continue # Skip this invalid block
+                except Exception as e: # Catch any other error during path extraction
+                    logger.warning(f"Error processing MachineReadable block at offset {match.start()} with JSON '{json_str}': {e}")
+                    continue
+            else:
+                path_val = match.group(pattern_info['path_group']).strip()
+
             matches.append({
                 'id': pattern_info['id'],
                 'match_obj': match,
-                'path': match.group(pattern_info['path_group']).strip(),
+                'path': path_val,
                 'header_len': len(match.group(pattern_info['header_group'])),
                 'start_index': match.start()
             })
@@ -192,16 +221,53 @@ def parse_combined_file(content: str) -> list[dict]:
         match_obj = current_match_info['match_obj']
         relative_path = current_match_info['path']
         
-        content_start_pos = match_obj.end()
+        content_start_pos = match_obj.end() # End of the full header (including JSON line for MachineReadable)
 
+        # Determine the end of the current file's content
+        # For MachineReadable, it's before its specific end marker.
+        # For others, it's before the start of the next separator or EOF.
         next_separator_start_pos = len(content)
-        if i + 1 < len(matches):
+        if sep_id == 'MachineReadable':
+            # Find the end marker for this specific MachineReadable block
+            # Search from content_start_pos onwards
+            end_marker_pos = content.find(MACHINE_END_MARKER, content_start_pos)
+            if end_marker_pos != -1:
+                # Content is up to the newline *before* the end marker line
+                # makeonefile.py writes content, then `\nEND_MARKER`
+                # So we need to find the position of that `\n` before END_MARKER
+                # The end_marker_pos is the start of "END_MARKER".
+                # We need to check for `\r\nEND_MARKER` or `\nEND_MARKER`
+                if end_marker_pos > 0 and content[end_marker_pos-1] == LF:
+                    if end_marker_pos > 1 and content[end_marker_pos-2] == CRLF[0]: # Check for CR in CRLF
+                         next_separator_start_pos = end_marker_pos - 2 # Exclude CRLF
+                    else:
+                        next_separator_start_pos = end_marker_pos - 1 # Exclude LF
+                else:
+                    # This case should ideally not happen if makeonefile.py is correct
+                    logger.warning(f"MachineReadable file '{relative_path}' did not have an expected newline before its end marker at offset {end_marker_pos}. Content might be incorrect.")
+                    next_separator_start_pos = end_marker_pos # Fallback, content might include unwanted parts
+            else:
+                logger.warning(f"MachineReadable file '{relative_path}' is missing its end marker ({MACHINE_END_MARKER}). Content might be incomplete or incorrect.")
+                # Content will run to the end of the file or next non-machine readable marker if any found later by sort order
+                # This relies on the global sort. If a non-machine readable header appeared *after* this one's start,
+                # it would be caught by the `elif i + 1 < len(matches):` block below. If not, it goes to len(content).
+                if i + 1 < len(matches):
+                    next_separator_start_pos = matches[i+1]['start_index']
+                else:
+                    next_separator_start_pos = len(content)
+        elif i + 1 < len(matches):
             next_separator_start_pos = matches[i+1]['start_index']
+        # else: next_separator_start_pos remains len(content) for the last file
 
         file_content_raw = content[content_start_pos:next_separator_start_pos]
         file_content = ""
 
-        if sep_id == 'Markdown':
+        if sep_id == 'MachineReadable':
+            # For MachineReadable, the content_start_pos is already after the JSON line and its newline.
+            # The next_separator_start_pos is calculated to be just before the start of the newline preceding the END_MARKER.
+            # So, file_content_raw should be the actual file content.
+            file_content = file_content_raw
+        elif sep_id == 'Markdown':
             # makeonefile.py writes:
             #   NormalizedFileContent
             #   "```" (from get_closing_separator)
