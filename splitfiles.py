@@ -75,6 +75,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from datetime import datetime, timezone
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
@@ -194,6 +195,7 @@ def parse_combined_file(content: str) -> list[dict]:
         for match in pattern_info['regex'].finditer(content):
             path_val = ""
             checksum_val = None # Initialize checksum for all patterns
+            modified_val = None # Initialize modified timestamp
             file_info_dict = {
                 'id': pattern_info['id'],
                 'match_obj': match,
@@ -210,9 +212,10 @@ def parse_combined_file(content: str) -> list[dict]:
                         logger.warning(f"MachineReadable block found at offset {match.start()} with missing or empty path in JSON: {json_str}")
                         continue
                     
+                    modified_val = meta.get('modified') # Extract modified timestamp
                     file_info_dict.update({
                         'path': path_val,
-                        'modified': meta.get('modified'),
+                        'modified': modified_val, # Store it
                         'type': meta.get('type'),
                         'size_bytes': meta.get('size_bytes'),
                         'checksum_sha256': meta.get('checksum_sha256')
@@ -232,7 +235,8 @@ def parse_combined_file(content: str) -> list[dict]:
             
             file_info_dict.update({
                 'path': path_val,
-                'checksum_sha256': checksum_val
+                'checksum_sha256': checksum_val,
+                'modified': modified_val # Will be None for non-MachineReadable types
             })
             matches.append(file_info_dict)
 
@@ -249,8 +253,9 @@ def parse_combined_file(content: str) -> list[dict]:
         relative_path = current_match_info['path']
         
         # Extract additional metadata if MachineReadable for later use/verification
-        original_checksum = current_match_info.get('checksum_sha256') if sep_id == 'MachineReadable' else None
-        original_size_bytes = current_match_info.get('size_bytes') if sep_id == 'MachineReadable' else None
+        original_checksum = current_match_info.get('checksum_sha256')
+        original_size_bytes = current_match_info.get('size_bytes')
+        original_modified = current_match_info.get('modified') # Get it for passing through
 
         content_start_pos = match_obj.end() # End of the full header (including JSON line for MachineReadable)
 
@@ -354,7 +359,8 @@ def parse_combined_file(content: str) -> list[dict]:
             'path': relative_path,
             'content': file_content,
             'checksum_sha256': original_checksum, # Will be None for non-MachineReadable
-            'size_bytes': original_size_bytes    # Will be None for non-MachineReadable
+            'size_bytes': original_size_bytes,    # Will be None for non-MachineReadable
+            'modified': original_modified         # Pass through the original modified timestamp
         })
         logger.debug(f"Identified file: '{relative_path}', type: {sep_id}, content length: {len(file_content)}")
 
@@ -364,7 +370,8 @@ def parse_combined_file(content: str) -> list[dict]:
 def _write_extracted_files(
     dest_dir_path: Path,
     extracted_files_data: list[dict],
-    force_overwrite: bool
+    force_overwrite: bool,
+    timestamp_mode: str
 ) -> tuple[int, int, int]:
     """
     Writes the extracted file data to the destination directory.
@@ -375,6 +382,7 @@ def _write_extracted_files(
                               relative path and content for a file.
         force_overwrite: Boolean indicating whether to overwrite existing files
                          without prompting.
+        timestamp_mode: How to handle file timestamps ('original' or 'current').
 
     Returns:
         A tuple containing (files_created_count, files_overwritten_count, files_failed_count).
@@ -389,7 +397,8 @@ def _write_extracted_files(
         file_content_to_write = file_data['content']
         original_checksum = file_data.get('checksum_sha256')
         original_size_bytes = file_data.get('size_bytes')
-        
+        original_modified = file_data.get('modified') # Get original modification timestamp
+
         # Security check: ensure relative paths do not try to escape the destination directory.
         if ".." in Path(relative_path_str).parts:
             logger.error(f"Skipping file '{relative_path_str}' due to invalid path components ('..').")
@@ -424,6 +433,29 @@ def _write_extracted_files(
                 files_created_count += 1
                 logger.debug(f"Created file: {current_output_path}")
 
+            # Set file modification time if requested and available
+            if timestamp_mode == 'original' and original_modified:
+                try:
+                    # Ensure the timestamp is offset-aware, assuming UTC if 'Z' is present.
+                    # fromisoformat expects +HH:MM for timezone, so replace 'Z' if needed.
+                    if original_modified.endswith('Z'):
+                        dt_obj = datetime.fromisoformat(original_modified.replace('Z', '+00:00'))
+                    else:
+                        # If no 'Z' and no explicit offset, it might be naive or already have an offset.
+                        # We'll try parsing directly. If it's naive, timestamp() might use local timezone.
+                        # For pymakeonefile, 'Z' (UTC) is standard for MachineReadable.
+                        dt_obj = datetime.fromisoformat(original_modified)
+                    
+                    # Convert to POSIX timestamp (seconds since epoch, UTC)
+                    mod_time = dt_obj.timestamp()
+                    access_time = mod_time # Set access time to the same as modification time
+                    os.utime(current_output_path, (access_time, mod_time))
+                    logger.debug(f"Set original modification time for '{current_output_path}' to {original_modified}")
+                except ValueError:
+                    logger.warning(f"Could not parse original modification timestamp '{original_modified}' for '{current_output_path}'. Using current timestamp.")
+                except Exception as e:
+                    logger.warning(f"Could not set original modification time for '{current_output_path}' using timestamp '{original_modified}': {e}")
+            
             # Verify checksum and size for MachineReadable files
             if original_checksum is not None: # Indicates it was a MachineReadable entry
                 try:
@@ -490,6 +522,15 @@ def main():
         action='store_true',
         help="Enable verbose output (DEBUG level logging)."
     )
+    parser.add_argument(
+        '--timestamp-mode',
+        type=str,
+        choices=['original', 'current'],
+        default='original',
+        help="Specify how to set file timestamps:\\n"
+             "  original: Try to restore original modification timestamp (default, only for MachineReadable format with timestamp).\\n"
+             "  current: Use the current system timestamp for all extracted files."
+    )
 
     args = parser.parse_args()
     _configure_logging(args.verbose)
@@ -512,7 +553,10 @@ def main():
         sys.exit(0)
 
     files_created_count, files_overwritten_count, files_failed_count = _write_extracted_files(
-        dest_dir_path, extracted_files_data, args.force
+        dest_dir_path,
+        extracted_files_data,
+        args.force,
+        args.timestamp_mode
     )
 
     logger.info("File splitting process completed.")
