@@ -416,9 +416,9 @@ def _write_combined_data(output_file_path: Path, files_to_process: list[tuple[Pa
                     logger.warning(error_message)
                     outfile.write(error_message + chosen_linesep)
                 
-                # Ensure content block is followed by a newline if it didn't originally have one.
-                # This makes sure the closing separator (if any) or the inter-file newline starts correctly.
-                if content and not content.endswith(('\n', '\r')):
+                # Ensure content block is followed by a newline if it didn't originally have one,
+                # for styles where the closing separator doesn't already handle this.
+                if args.separator_style != 'MachineReadable' and content and not content.endswith(('\n', '\r')):
                     outfile.write(chosen_linesep)
                 # No special handling needed here if content is empty, as the subsequent
                 # closing_separator and inter-file newlines will still be added correctly.
