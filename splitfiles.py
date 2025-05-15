@@ -252,57 +252,79 @@ def parse_combined_file(content: str) -> list[dict]:
         match_obj = current_match_info['match_obj']
         relative_path = current_match_info['path']
         
-        # Extract additional metadata if MachineReadable for later use/verification
         original_checksum = current_match_info.get('checksum_sha256')
         original_size_bytes = current_match_info.get('size_bytes')
-        original_modified = current_match_info.get('modified') # Get it for passing through
+        original_modified = current_match_info.get('modified')
 
-        content_start_pos = match_obj.end() # End of the full header (including JSON line for MachineReadable)
+        content_start_pos = match_obj.end()
 
         # Determine the end of the current file's content
-        # For MachineReadable, it's before its specific end marker.
-        # For others, it's before the start of the next separator or EOF.
-        next_separator_start_pos = len(content)
+        next_separator_start_pos = len(content) # Default: end of the whole content string
+
         if sep_id == 'MachineReadable':
             # Find the end marker for this specific MachineReadable block
-            # Search from content_start_pos onwards
             end_marker_pos = content.find(MACHINE_END_MARKER, content_start_pos)
             if end_marker_pos != -1:
-                # Content is up to the newline *before* the end marker line
-                # makeonefile.py writes content, then `\nEND_MARKER`
-                # So we need to find the position of that `\n` before END_MARKER
-                # The end_marker_pos is the start of "END_MARKER".
-                # We need to check for `\r\nEND_MARKER` or `\nEND_MARKER`
-                if end_marker_pos > 0 and content[end_marker_pos-1] == LF:
-                    if end_marker_pos > 1 and content[end_marker_pos-2] == CRLF[0]: # Check for CR in CRLF
-                         next_separator_start_pos = end_marker_pos - 2 # Exclude CRLF
-                    else:
-                        next_separator_start_pos = end_marker_pos - 1 # Exclude LF
+                # Check for CRLF before the marker (e.g., content\r\nMARKER)
+                if end_marker_pos > 1 and content[end_marker_pos-len(CRLF):end_marker_pos] == CRLF:
+                    next_separator_start_pos = end_marker_pos - len(CRLF) # Exclude CRLF
+                # Else, check for LF before the marker (e.g., content\nMARKER)
+                elif end_marker_pos > 0 and content[end_marker_pos-len(LF):end_marker_pos] == LF:
+                    next_separator_start_pos = end_marker_pos - len(LF) # Exclude LF
                 else:
-                    # This case should ideally not happen if makeonefile.py is correct
-                    logger.warning(f"MachineReadable file '{relative_path}' did not have an expected newline before its end marker at offset {end_marker_pos}. Content might be incorrect.")
-                    next_separator_start_pos = end_marker_pos # Fallback, content might include unwanted parts
-            else:
+                    # No expected newline (LF or CRLF) found before the end marker.
+                    # This implies the content runs flush to the marker, or the file is structured unexpectedly.
+                    # makeonefile.py is expected to always add a newline (os.linesep).
+                    logger.warning(
+                        f"MachineReadable file '{relative_path}' did not have an expected newline (LF or CRLF) "
+                        f"before its end marker at offset {end_marker_pos}. "
+                        f"The extracted content will go up to the marker. This might be incorrect if a separator was missing."
+                    )
+                    next_separator_start_pos = end_marker_pos # Content up to the marker
+            else: # MACHINE_END_MARKER not found
                 logger.warning(f"MachineReadable file '{relative_path}' is missing its end marker ({MACHINE_END_MARKER}). Content might be incomplete or incorrect.")
-                # Content will run to the end of the file or next non-machine readable marker if any found later by sort order
-                # This relies on the global sort. If a non-machine readable header appeared *after* this one's start,
-                # it would be caught by the `elif i + 1 < len(matches):` block below. If not, it goes to len(content).
+                # Fallback: content runs to the start of the next found separator or EOF.
                 if i + 1 < len(matches):
                     next_separator_start_pos = matches[i+1]['start_index']
-                else:
-                    next_separator_start_pos = len(content)
-        elif i + 1 < len(matches):
+                # else: next_separator_start_pos remains len(content)
+        elif i + 1 < len(matches): # For non-MachineReadable types, content ends before the next separator
             next_separator_start_pos = matches[i+1]['start_index']
-        # else: next_separator_start_pos remains len(content) for the last file
+        # else: for the last file (non-MachineReadable), next_separator_start_pos remains len(content)
 
         file_content_raw = content[content_start_pos:next_separator_start_pos]
         file_content = ""
 
         if sep_id == 'MachineReadable':
-            # For MachineReadable, the content_start_pos is already after the JSON line and its newline.
-            # The next_separator_start_pos is calculated to be just before the start of the newline preceding the END_MARKER.
-            # So, file_content_raw should be the actual file content.
             file_content = file_content_raw
+            # ---- START PRAGMATIC FIX FOR TRAILING \r ----
+            if original_size_bytes is not None and original_checksum is not None: # Only apply if we have original metadata
+                try:
+                    current_content_bytes = file_content.encode('utf-8')
+                    current_size_bytes = len(current_content_bytes)
+                    if current_size_bytes == original_size_bytes + 1 and file_content.endswith('\r'):
+                        # Verify if stripping the 'r' would match the original checksum
+                        # This avoids incorrectly stripping an 'r' that was part of legitimate content
+                        # and coincidentally made the size +1.
+                        potential_fixed_content_bytes = file_content[:-1].encode('utf-8')
+                        potential_fixed_checksum = hashlib.sha256(potential_fixed_content_bytes).hexdigest()
+                        
+                        if potential_fixed_checksum == original_checksum and len(potential_fixed_content_bytes) == original_size_bytes:
+                            logger.info(
+                                f"Applying pragmatic fix for '{relative_path}': stripping trailing '\r'. "
+                                f"Original size: {original_size_bytes}, current size before fix: {current_size_bytes}. "
+                                f"Checksum matches after fix."
+                            )
+                            file_content = file_content[:-1]
+                        elif current_size_bytes == original_size_bytes + 1: # still off by 1 byte, but checksum didn't match
+                             logger.warning(
+                                f"Pragmatic fix condition (size +1 byte, ends with \'\\r\') met for '{relative_path}', "
+                                f"but stripping '\\r' would NOT match the original checksum. "
+                                f"Expected checksum: {original_checksum}, checksum after potential fix: {potential_fixed_checksum}. "
+                                f"File will be left as is, but is likely corrupted or was altered from original."
+                            )
+                except Exception as e_fix:
+                    logger.warning(f"Error during pragmatic fix attempt for '{relative_path}': {e_fix}")
+            # ---- END PRAGMATIC FIX ----
         elif sep_id == 'Markdown':
             # makeonefile.py writes:
             #   NormalizedFileContent
