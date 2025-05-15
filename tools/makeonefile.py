@@ -495,72 +495,74 @@ def _build_exclusion_set(additional_excludes: list[str]) -> set[str]:
 def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
     """
     Deduplicate paths by removing any paths that are children of other paths in the list.
-    
+
     Args:
         path_objects: List of Path objects to deduplicate
-        
+
     Returns:
         List of Path objects with no child paths if their parent is already in the list
     """
     if not path_objects:
         return []
-    
+
     # Sort by path length (shortest first) to ensure we process parent directories first
     path_objects.sort(key=lambda p: len(p.parts))
-    
+
     # Keep track of paths to include (initially all)
     include_paths = set(path_objects)
-    
+
     # Check each path to see if it's a child of any other path
     for i, path in enumerate(path_objects):
         # Skip if already excluded
         if path not in include_paths:
             continue
-            
+
         # Check against all other paths
-        for other_path in path_objects[i+1:]:
+        for other_path in path_objects[i + 1 :]:
             # If this path is a parent of another path, exclude the child
             try:
                 # Use str path comparison for Python 3.7+ compatibility (instead of is_relative_to from 3.9+)
                 other_path_str = str(other_path.absolute())
                 path_str = str(path.absolute())
-                
-                # Check if other_path is a subpath of path
-                if (other_path_str.startswith(path_str) and 
-                    (len(other_path_str) > len(path_str) and 
-                     (other_path_str[len(path_str)] == '/' or other_path_str[len(path_str)] == '\\' or 
-                      len(path_str) == 0))):
+
+                # Check if other_path is a subpath of path (e.g., path="/a/b", other_path="/a/b/c")
+                # Ensure it's not just a common prefix (e.g., path="/a/b", other_path="/a/b_ext")
+                if (
+                    len(other_path_str) > len(path_str)
+                    and other_path_str.startswith(path_str)
+                    and other_path_str[len(path_str)] == os.sep
+                ):
                     include_paths.discard(other_path)
             except (ValueError, RuntimeError):
                 # Handle potential path resolution issues
                 continue
-    
+
     return sorted(include_paths)
 
 
 def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
     """
     Process a file containing paths (one per line) and return a list of Path objects.
-    
+
     Args:
         input_file_path: Path to the input file containing paths to process
-        
+
     Returns:
         List of deduplicated paths with proper parent-child handling
     """
     paths = []
-    
+
     try:
-        with open(input_file_path, 'r', encoding='utf-8') as f:
+        with open(input_file_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue  # Skip empty lines and comments
-                
+
                 # Convert to absolute path if not already
                 path = Path(line).expanduser().resolve()
                 paths.append(path)
-                
+
         # Deduplicate paths (keep parents, remove children)
         return _deduplicate_paths(paths)
     except Exception as e:
@@ -568,82 +570,140 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
         return []
 
 
+def _is_file_excluded(
+    file_path: Path, args: argparse.Namespace, all_excluded_dir_names_lower: Set[str]
+) -> bool:
+    """Checks if a file should be excluded based on various criteria."""
+    if not args.include_dot_files and file_path.name.startswith("."):
+        if args.verbose:
+            logger.debug(f"Excluding dot file: {file_path}")
+        return True
+
+    if (
+        not args.include_binary_files
+        and file_path.suffix.lower() in BINARY_FILE_EXTENSIONS
+    ):
+        if args.verbose:
+            logger.debug(
+                f"Excluding binary file: {file_path} (extension: {file_path.suffix.lower()})"
+            )
+        return True
+
+    # Check if any parent directory is in the global exclude list
+    # This iterates from file_path.parent up to the root.
+    p = file_path.parent
+    while p != p.parent:  # Stop when p is the root (e.g. '/' or 'C:\')
+        if p.name and p.name.lower() in all_excluded_dir_names_lower:
+            if args.verbose:
+                logger.debug(
+                    f"Excluding file '{file_path}' because parent directory '{p.name}' (path: {p}) is in exclude list."
+                )
+            return True
+        # p.parent of root is root itself, so this condition handles termination.
+        if p == p.parent:
+            break
+        p = p.parent
+    return False
+
+
 def _gather_files_to_process(
-    source_dir: Path, 
-    args: argparse.Namespace, 
+    source_dir: Path,
+    args: argparse.Namespace,
     all_excluded_dir_names_lower: Set[str],
-    input_paths: Optional[List[Path]] = None
+    input_paths: Optional[List[Path]] = None,
 ) -> List[Tuple[Path, str]]:
     """
     Gather files to process, either from a source directory or from a list of input paths.
-    
+
     Args:
         source_dir: The source directory (used when not using input paths)
         args: Command line arguments
         all_excluded_dir_names_lower: Set of directory names to exclude (lowercase)
         input_paths: Optional list of paths from input file
-        
+
     Returns:
         List of tuples containing (file_path, relative_path)
     """
     files_to_process = []
-    
+    # Use a set to track absolute paths of files already added to avoid duplicates
+    # especially when using --input-file which might list overlapping paths or individual files within listed dirs.
+    added_file_absolute_paths: Set[str] = set()
+
     if input_paths is not None:
-        # Process the list of input paths
-        for path in input_paths:
-            if not path.exists():
-                logger.warning(f"Path does not exist: {path}")
+        logger.info(
+            f"Processing {len(input_paths)} unique path(s) from input file '{args.input_file}'..."
+        )
+        for (
+            item_path
+        ) in input_paths:  # Each item_path is an absolute, resolved, deduplicated path
+            if (
+                not item_path.exists()
+            ):  # Should be rare due to prior checks but good for safety
+                logger.warning(f"Path from input file no longer exists: {item_path}")
                 continue
-                
-            if path.is_file():
-                # For files, just add them directly
-                files_to_process.append((path, path.name))
-            elif path.is_dir():
-                # For directories, walk through them
-                for file_path in path.rglob('*'):
-                    if file_path.is_file():
-                        relative_path = file_path.relative_to(path.parent) if path.parent != path else file_path.name
-                        files_to_process.append((file_path, str(relative_path)))
+
+            if item_path.is_file():
+                abs_path_str = str(item_path.resolve())
+                if abs_path_str in added_file_absolute_paths:
+                    if args.verbose:
+                        logger.debug(f"Skipping already added file: {item_path}")
+                    continue
+                if not _is_file_excluded(item_path, args, all_excluded_dir_names_lower):
+                    files_to_process.append((item_path, item_path.name))
+                    added_file_absolute_paths.add(abs_path_str)
+                # else: _is_file_excluded logs if verbose
+
+            elif item_path.is_dir():
+                # Check if the directory itself is in the excluded names list
+                if item_path.name.lower() in all_excluded_dir_names_lower:
+                    if args.verbose:
+                        logger.debug(
+                            f"Skipping directory '{item_path}' from input list as its name is excluded."
+                        )
+                    continue
+
+                if args.verbose:
+                    logger.debug(f"Scanning directory from input file: {item_path}")
+                for file_path_in_dir in item_path.rglob("*"):
+                    if file_path_in_dir.is_file():
+                        abs_path_str = str(file_path_in_dir.resolve())
+                        if abs_path_str in added_file_absolute_paths:
+                            if args.verbose:
+                                logger.debug(
+                                    f"Skipping already added file: {file_path_in_dir}"
+                                )
+                            continue
+                        if not _is_file_excluded(
+                            file_path_in_dir, args, all_excluded_dir_names_lower
+                        ):
+                            relative_path = file_path_in_dir.relative_to(item_path)
+                            files_to_process.append(
+                                (file_path_in_dir, str(relative_path))
+                            )
+                            added_file_absolute_paths.add(abs_path_str)
+                        # else: _is_file_excluded logs if verbose
     else:
         # Original directory walking logic
         logger.info(f"Scanning files in '{source_dir}'...")
         if args.verbose:
-            exclusion_summary_parts = []
-            if not args.include_dot_files:
-                exclusion_summary_parts.append("Files starting with '.'")
-            if not args.include_binary_files:
-                exclusion_summary_parts.append("Files with binary extensions")
-            if all_excluded_dir_names_lower:
-                exclusion_summary_parts.append(
-                    f"Files in directories: {', '.join(sorted(all_excluded_dir_names_lower))}"
-                )
-            if exclusion_summary_parts:
-                logger.debug("  Excluding: " + ", ".join(exclusion_summary_parts))
+            logger.debug(
+                f"  Exclusion settings: include_dot_files={args.include_dot_files}, "
+                f"include_binary_files={args.include_binary_files}"
+            )
+            logger.debug(
+                f"  Excluded directory names (case-insensitive): {sorted(list(all_excluded_dir_names_lower))}"
+            )
 
         for file_path in source_dir.rglob("*"):
             if not file_path.is_file():
                 continue  # Skip directories
 
-            # Skip dot files unless explicitly included
-            if not args.include_dot_files and file_path.name.startswith("."):
-                continue
+            # No need to check added_file_absolute_paths here because rglob from a single source_dir should not yield duplicates by its nature.
+            if not _is_file_excluded(file_path, args, all_excluded_dir_names_lower):
+                relative_path = file_path.relative_to(source_dir)
+                files_to_process.append((file_path, str(relative_path)))
+            # else: _is_file_excluded logs if verbose
 
-            # Skip binary files unless explicitly included
-            if not args.include_binary_files and file_path.suffix.lower() in BINARY_FILE_EXTENSIONS:
-                continue
-
-            # Check if any parent directory is in the exclude list
-            skip = False
-            for parent in file_path.parents:
-                if parent.name.lower() in all_excluded_dir_names_lower:
-                    skip = True
-                    break
-            if skip:
-                continue
-
-            relative_path = file_path.relative_to(source_dir)
-            files_to_process.append((file_path, str(relative_path)))
-    
     return sorted(files_to_process, key=lambda x: str(x[1]).lower())
 
 
@@ -807,7 +867,7 @@ def main():
         action="store_true",
         help="Enable verbose output (DEBUG level logging).",
     )
-    
+
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument(
         "-s",
@@ -821,7 +881,7 @@ def main():
         type=str,
         help="Path to a text file containing a list of files and directories to process (one per line).",
     )
-    
+
     args = parser.parse_args()
 
     chosen_linesep = LF if args.line_ending == "lf" else CRLF
@@ -829,21 +889,23 @@ def main():
 
     # Process input file if provided, otherwise use source directory
     input_paths = None
-    if hasattr(args, 'input_file') and args.input_file:
+    if hasattr(args, "input_file") and args.input_file:
         input_file_path = Path(args.input_file).resolve()
         if not input_file_path.exists() or not input_file_path.is_file():
             logger.error(f"Input file not found: {input_file_path}")
             sys.exit(1)
         input_paths = _process_paths_from_input_file(input_file_path)
         logger.info(f"Found {len(input_paths)} paths to process from input file")
-        
+
         # Use the first path's parent as the base directory for relative paths
         source_dir = input_paths[0].parent if input_paths else Path.cwd()
     else:
         source_dir = _resolve_and_validate_source_path(args.source_directory)
-    
+
     output_file_path = _prepare_output_file_path(args.output_file, args.add_timestamp)
-    _handle_output_file_overwrite_and_creation(output_file_path, args.force, chosen_linesep)
+    _handle_output_file_overwrite_and_creation(
+        output_file_path, args.force, chosen_linesep
+    )
 
     all_excluded_dir_names_lower = _build_exclusion_set(args.additional_excludes)
     files_to_process = _gather_files_to_process(

@@ -153,13 +153,13 @@ def _resolve_input_file(input_file_str: str) -> Path:
 def _prepare_destination_dir(dest_dir_str: str) -> Path:
     """
     Resolves the destination directory path and creates it if it doesn't exist.
-    
+
     Args:
         dest_dir_str: The path to the destination directory as a string.
-        
+
     Returns:
         Path: The resolved and created directory path.
-        
+
     Exits:
         SystemExit: If the directory cannot be created or accessed.
     """
