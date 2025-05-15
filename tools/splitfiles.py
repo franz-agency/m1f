@@ -94,12 +94,18 @@ CRLF = "\r\n"
 # Group 1: The entire separator header (used to determine header length).
 # Group 2: The relative file path.
 
+# Vereinfachte und flexiblere Regex für den Beginn des MachineReadable Formats
 RE_MACHINE_SEP = re.compile(
-    r"^(>>>>>PYMAKEONEFILE_START_FILE<<<<<$\r?\n"  # Start marker line (Group 1, part 1)
-    r"(\{.*?\})$\r?\n)",  # JSON metadata line (Group 2: JSON string; whole Group 1, part 2)
+    r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"  # Start marker line
+    r"# FILE: (.*?)\r?\n"  # File path line (Group 1: file path)
+    r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"  # Second boundary line
+    r"# METADATA: (\{.*?\})\r?\n"  # JSON metadata line (Group 2: JSON string)
+    r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n",  # Bottom separator line
     re.MULTILINE,
 )
-MACHINE_END_MARKER = ">>>>>PYMAKEONEFILE_END_FILE<<<<<"
+# Vereinfachtes Muster für den End-Marker
+MACHINE_END_MARKER_PATTERN = r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n# END FILE\r?\n# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E"
+MACHINE_END_MARKER = "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\n# END FILE\n# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E"
 
 RE_DETAILED_SEP = re.compile(
     r"^(========================================================================================$\r?\n"
@@ -205,8 +211,8 @@ def parse_combined_file(content: str) -> list[dict]:
         {
             "id": "MachineReadable",
             "regex": RE_MACHINE_SEP,
+            "path_group": 1,
             "json_group": 2,
-            "header_group": 1,
         },
         {
             "id": "Markdown",
@@ -240,18 +246,41 @@ def parse_combined_file(content: str) -> list[dict]:
             file_info_dict = {
                 "id": pattern_info["id"],
                 "match_obj": match,
-                "header_len": len(match.group(pattern_info["header_group"])),
                 "start_index": match.start(),
             }
 
+            # Berechne die Header-Länge für MachineReadable speziell
+            if pattern_info["id"] == "MachineReadable":
+                # Für das MachineReadable-Format müssen wir noch eine Leerzeile nach dem letzten Marker überspringen
+                header_text = match.group(0)
+                file_info_dict["header_len"] = len(header_text)
+                # Überprüfen, ob eine Leerzeile nach dem Header folgt
+                next_pos = match.end()
+                if next_pos < len(content) and content[next_pos : next_pos + 2] in [
+                    "\r\n",
+                    "\n",
+                ]:
+                    file_info_dict["header_len"] += (
+                        2 if content[next_pos : next_pos + 2] == "\r\n" else 1
+                    )
+            elif "header_group" in pattern_info:
+                file_info_dict["header_len"] = len(
+                    match.group(pattern_info["header_group"])
+                )
+
             if pattern_info["id"] == "MachineReadable":
                 try:
+                    # Get the path directly from the regex match
+                    path_val = match.group(pattern_info["path_group"]).strip()
+
+                    # Get metadata from JSON
                     json_str = match.group(pattern_info["json_group"])
                     meta = json.loads(json_str)
-                    path_val = meta.get("path", "").strip()
+
+                    # Check if we have a valid path
                     if not path_val:
                         logger.warning(
-                            f"MachineReadable block found at offset {match.start()} with missing or empty path in JSON: {json_str}"
+                            f"MachineReadable block found at offset {match.start()} with missing or empty path"
                         )
                         continue
 
@@ -320,9 +349,11 @@ def parse_combined_file(content: str) -> list[dict]:
         )  # Default: end of the whole content string
 
         if sep_id == "MachineReadable":
-            # Find the end marker for this specific MachineReadable block
-            end_marker_pos = content.find(MACHINE_END_MARKER, content_start_pos)
-            if end_marker_pos != -1:
+            # Find the end marker for this specific MachineReadable block using regex to handle line endings
+            end_marker_re = re.compile(MACHINE_END_MARKER_PATTERN, re.MULTILINE)
+            end_marker_search = end_marker_re.search(content, content_start_pos)
+            if end_marker_search is not None:
+                end_marker_pos = end_marker_search.start()
                 # Check for CRLF before the marker (e.g., content\r\nMARKER)
                 if (
                     end_marker_pos > 1
@@ -351,7 +382,7 @@ def parse_combined_file(content: str) -> list[dict]:
                     )
             else:  # MACHINE_END_MARKER not found
                 logger.warning(
-                    f"MachineReadable file '{relative_path}' is missing its end marker ({MACHINE_END_MARKER}). Content might be incomplete or incorrect."
+                    f"MachineReadable file '{relative_path}' is missing its end marker (a pattern like {MACHINE_END_MARKER}). Content might be incomplete or incorrect."
                 )
                 # Fallback: content runs to the start of the next found separator or EOF.
                 if i + 1 < len(matches):

@@ -70,10 +70,23 @@ For all options, run:
 
 NOTES
 =====
-- MachineReadable Format: This format is designed for automated splitting.
-  It uses `>>>>>PYMAKEONEFILE_START_FILE<<<<<` and `>>>>>PYMAKEONEFILE_END_FILE<<<<<`
-  as boundary markers, with a JSON object containing `{"path": "relative/path.ext"}`
-  on the line immediately following the start marker.
+- MachineReadable Format: This format is designed for automated splitting and LLM compatibility.
+  It uses clear comment-based boundary markers with visual separators:
+  ```
+  # ===============================================================================
+  # FILE: relative/path.ext
+  # ===============================================================================
+  # METADATA: {"modified": "2023-01-01 12:00:00", "type": ".ext", "size_bytes": 1234, "checksum_sha256": "abc..."}
+  # -------------------------------------------------------------------------------
+
+  [file content]
+
+  # ===============================================================================
+  # END FILE
+  # ===============================================================================
+  ```
+  This format is particularly suitable for use with LLMs, as it uses familiar comment syntax
+  and visual boundaries that AI models are trained to recognize.
 - Binary Files: While the script can attempt to include binary files using the
   `--include-binary-files` flag, the content will be read as text (UTF-8 with
   error ignoring). This can result in garbled/unreadable content in the output
@@ -376,7 +389,6 @@ def get_file_separator(
     elif style == "MachineReadable":
         # Checksum calculation moved above for all relevant styles
         meta = {
-            "path": relative_path,
             "modified": mod_date_str,
             "type": file_ext,
             "size_bytes": file_size_bytes,
@@ -385,7 +397,16 @@ def get_file_separator(
             ),
         }
         json_meta = json.dumps(meta)
-        return f">>>>>PYMAKEONEFILE_START_FILE<<<<<{linesep}" f"{json_meta}{linesep}"
+        # Create a more LLM-friendly format with a single unique marker that won't appear in files
+        separator_lines = [
+            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
+            f"# FILE: {relative_path}",
+            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
+            f"# METADATA: {json_meta}",
+            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
+            "",  # Empty line before content
+        ]
+        return linesep.join(separator_lines)
     else:  # Should not happen due to argparse choices
         logger.warning(f"Unknown separator style '{style}'. Falling back to basic.")
         return f"--- {relative_path} ---"
@@ -407,8 +428,14 @@ def get_closing_separator(style: str, linesep: str) -> str | None:
     elif style == "Markdown":
         return "```"
     elif style == "MachineReadable":
-        # The preceding linesep ensures the marker is on its own line after content.
-        return f"{linesep}>>>>>PYMAKEONEFILE_END_FILE<<<<<"
+        # Create a unique closing separator that won't occur in normal files
+        closing_lines = [
+            "",  # Empty line after content
+            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
+            f"# END FILE",
+            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
+        ]
+        return linesep.join(closing_lines)
     return None
 
 
