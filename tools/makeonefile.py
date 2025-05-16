@@ -463,7 +463,7 @@ def get_closing_separator(style: str, linesep: str) -> str | None:
 
 def _configure_logging_settings(
     verbose: bool, chosen_linesep: str, output_file_path: Optional[Path] = None,
-    minimal_output: bool = False
+    minimal_output: bool = False, quiet: bool = False
 ) -> None:
     """Configures logging level based on verbosity and sets up file logging.
 
@@ -472,7 +472,18 @@ def _configure_logging_settings(
         chosen_linesep: The line separator being used (LF or CRLF)
         output_file_path: The output file path, used to create a parallel log file
         minimal_output: If True, no log file will be created
+        quiet: If True, suppress all console output
     """
+    # If quiet mode is enabled, disable all logging to console
+    if quiet:
+        # Set the root logger level to ERROR (only critical errors will show)
+        logging.getLogger().setLevel(logging.ERROR)
+        # Remove any existing console handlers
+        for handler in logging.getLogger().handlers[:]:
+            if isinstance(handler, logging.StreamHandler) and handler.stream in (sys.stdout, sys.stderr):
+                logging.getLogger().removeHandler(handler)
+        return
+    
     # Set the root logger level based on verbosity
     log_level = logging.DEBUG if verbose else logging.INFO
     logging.getLogger().setLevel(log_level)
@@ -502,7 +513,7 @@ def _configure_logging_settings(
         logger.debug(f"Using line ending: {'LF' if chosen_linesep == LF else 'CRLF'}")
         if minimal_output:
             logger.debug("Minimal output mode enabled - no auxiliary files will be created.")
-
+        
 
 def _resolve_and_validate_source_path(source_directory_str: str) -> Path:
     """Resolves and validates the source directory path."""
@@ -1193,7 +1204,8 @@ def main():
   %(prog)s -i ./file_list.txt -o bundle.all --create-archive --archive-type tar.gz
   %(prog)s -s ./src -o bundle.txt --include-extensions .txt .json .md --exclude-extensions .tmp
   %(prog)s -s ./project -o all_files.txt --no-default-excludes
-  %(prog)s -s ./src -o combined.txt --minimal-output""",
+  %(prog)s -s ./src -o combined.txt --minimal-output
+  %(prog)s -s ./src -o combined.txt --quiet""",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
@@ -1289,6 +1301,12 @@ def main():
         help="Generate only the combined output file, without any auxiliary files (no log file, file list, or directory list).",
     )
     parser.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Suppress all console output. Script will run silently except for critical errors.",
+    )
+    parser.add_argument(
         "--create-archive",
         action="store_true",
         help="Create a backup archive (zip or tar.gz) of all processed files.",
@@ -1343,9 +1361,9 @@ def main():
 
     output_file_path = _prepare_output_file_path(args.output_file, args.add_timestamp)
 
-    # Configure logging with the output file path to create a parallel log file
+    # Configure logging with the output file path and quiet/verbose flags
     _configure_logging_settings(
-        args.verbose, chosen_linesep, output_file_path, args.minimal_output
+        args.verbose, chosen_linesep, output_file_path, args.minimal_output, args.quiet
     )
 
     # Process input file if provided, otherwise use source directory
@@ -1365,6 +1383,11 @@ def main():
 
     # Set source base directory for path exclusion matching
     args.source_base_dir = source_dir
+
+    # Handle prompting for overwrite in quiet mode
+    if args.quiet and not args.force and output_file_path.exists():
+        # In quiet mode with no force flag, exit if file exists
+        sys.exit(1)  # Exit silently without warning
 
     # Output file path was already prepared for logging setup
     _handle_output_file_overwrite_and_creation(
