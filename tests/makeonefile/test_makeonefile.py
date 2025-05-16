@@ -218,7 +218,7 @@ class TestMakeOneFile:
             content = f.read()
             # Check the file names which should be excluded, not the full paths
             assert "FILE: index.php" not in content, "index.php should be excluded"
-            assert "FILE: sample.jpg.txt" not in content, "sample.jpg.txt should be excluded"
+            assert "FILE: png.png" not in content, "png.png should be excluded"
 
     def test_separator_styles(self):
         """Test different separator styles."""
