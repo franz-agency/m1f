@@ -98,10 +98,10 @@ CRLF = "\r\n"
 RE_PYMK1F_SEP = re.compile(
     r"--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_([a-f0-9-]+) ---\r?\n"  # Metadata start with UUID capture (Group 1)
     r"METADATA_JSON:\r?\n"  # Metadata indicator line
-    r"(\{[\s\S]*?\})\r?\n"  # JSON metadata capture (Group 2) - multiline, non-greedy
+    r"(\{(?:.|\s)*?\})\r?\n"  # JSON metadata capture (Group 2) - better handling of multiline JSON
     r"--- PYMK1F_END_FILE_METADATA_BLOCK_\1 ---\r?\n"  # Metadata end with same UUID
-    r"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_\1 ---\r?\n",  # Content start with same UUID
-    re.MULTILINE,
+    r"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_\1 ---",  # Content start with same UUID - removed trailing \r?\n
+    re.MULTILINE | re.DOTALL,  # Added DOTALL for better handling of newlines in JSON
 )
 
 # Pattern for the end of a content block
@@ -130,7 +130,7 @@ RE_DETAILED_SEP = re.compile(
 )
 
 RE_STANDARD_SEP = re.compile(
-    r"^(======= (.*?)(?: \| CHECKSUM_SHA256: ([0-9a-fA-F]{64}))? =======$\r?\n?)",  # Group 2: Path, Group 3: Optional Checksum
+    r"======= (.*?)(?:\s*\|\s*CHECKSUM_SHA256:\s*([0-9a-fA-F]{64}))?\s*======",  # Group 1: Path, Group 2: Optional Checksum
     re.MULTILINE,
 )
 
@@ -375,11 +375,14 @@ def parse_combined_file(content: str) -> list[dict]:
                 path_val = match.group(pattern_info["path_group"]).strip()
                 if (
                     "checksum_group" in pattern_info
-                    and pattern_info["checksum_group"] < len(match.groups()) + 1
+                    and pattern_info["checksum_group"] <= len(match.groups())
+                    and match.group(pattern_info["checksum_group"]) is not None
                 ):
-                    checksum_val = match.group(
-                        pattern_info["checksum_group"]
-                    )  # Will be None if not captured
+                    checksum_val = match.group(pattern_info["checksum_group"])
+                else:
+                    checksum_val = None
+
+                logger.debug(f"Extracted path '{path_val}' with checksum: {checksum_val}")
 
             file_info_dict.update(
                 {

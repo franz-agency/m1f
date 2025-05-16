@@ -661,7 +661,7 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
                     path_obj = (input_file_dir / path_obj).resolve()
                 else:
                     path_obj = path_obj.expanduser().resolve()
-                
+
                 paths.append(path_obj)
 
         # Deduplicate paths (keep parents, remove children)

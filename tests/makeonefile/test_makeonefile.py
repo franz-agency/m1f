@@ -34,29 +34,30 @@ EXCLUDE_PATHS_FILE = TEST_DIR / "exclude_paths.txt"
 IS_WINDOWS = platform.system() == "Windows"
 PATH_SEP = os.path.sep  # \ on Windows, / on Unix
 
+
 # Helper function to run makeonefile with specific arguments for testing
 def run_makeonefile(arg_list):
     """
     Run makeonefile.main() with the specified command line arguments.
     This works by temporarily replacing sys.argv with our test arguments
     and patching sys.exit to prevent test termination.
-    
+
     Args:
         arg_list: List of command line arguments to pass to main()
-        
+
     Returns:
         None, but main() will execute with the provided arguments
     """
     # Save original argv and exit function
     original_argv = sys.argv.copy()
     original_exit = sys.exit
-    
+
     # Define a custom exit function that just records the exit code
     def mock_exit(code=0):
         if code != 0:
             print(f"WARNING: Script exited with non-zero exit code: {code}")
         return code
-    
+
     try:
         # Replace argv with our test arguments, adding script name at position 0
         sys.argv = ["makeonefile.py"] + arg_list
@@ -85,15 +86,15 @@ class TestMakeOneFile:
     def setup_method(self):
         """Setup test environment before each test."""
         # Close any open logging handlers that might keep files locked
-        logger = logging.getLogger('makeonefile')
+        logger = logging.getLogger("makeonefile")
         if logger.handlers:
             for handler in logger.handlers:
                 handler.close()
             logger.handlers = []
-        
+
         # Wait a brief moment to ensure files are released
         time.sleep(0.1)
-        
+
         # Ensure the output directory exists and is empty
         if OUTPUT_DIR.exists():
             # Delete files individually to handle locked files
@@ -102,10 +103,12 @@ class TestMakeOneFile:
                     try:
                         file_path.unlink()
                     except PermissionError:
-                        print(f"Warning: Could not delete {file_path} during setup. File is still in use.")
+                        print(
+                            f"Warning: Could not delete {file_path} during setup. File is still in use."
+                        )
                     except Exception as e:
                         print(f"Error deleting {file_path} during setup: {e}")
-            
+
             # Try to remove empty directories
             try:
                 for dir_path in [p for p in OUTPUT_DIR.glob("*") if p.is_dir()]:
@@ -123,15 +126,15 @@ class TestMakeOneFile:
         """Clean up after each test."""
         # Close any open logging handlers that might keep files locked
         # This is necessary because the makeonefile script sets up file handlers for logging
-        logger = logging.getLogger('makeonefile')
+        logger = logging.getLogger("makeonefile")
         if logger.handlers:
             for handler in logger.handlers:
                 handler.close()
             logger.handlers = []
-        
+
         # Wait a brief moment to ensure files are released
         time.sleep(0.1)
-        
+
         # Remove output files for a clean slate between tests
         for file_path in OUTPUT_DIR.glob("*"):
             if file_path.is_file():
@@ -139,23 +142,26 @@ class TestMakeOneFile:
                     file_path.unlink()
                 except PermissionError:
                     # Skip files that are still locked
-                    print(f"Warning: Could not delete {file_path}. File is still in use.")
+                    print(
+                        f"Warning: Could not delete {file_path}. File is still in use."
+                    )
                 except Exception as e:
                     print(f"Error deleting {file_path}: {e}")
-        
 
     def test_basic_execution(self):
         """Test basic execution of the script."""
         output_file = OUTPUT_DIR / "basic_output.txt"
 
         # Run the script programmatically
-        run_makeonefile([
-            "--source-directory",
-            str(SOURCE_DIR),
-            "--output-file",
-            str(output_file),
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
 
         # Verify outputs
         assert output_file.exists(), "Output file was not created"
@@ -179,14 +185,16 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "dot_files_included.txt"
 
         # Run with dot files included
-        run_makeonefile([
-            "--source-directory",
-            str(SOURCE_DIR),
-            "--output-file",
-            str(output_file),
-            "--include-dot-files",
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--include-dot-files",
+                "--force",
+            ]
+        )
 
         # Verify dot files are included
         with open(output_file, "r", encoding="utf-8") as f:
@@ -196,22 +204,26 @@ class TestMakeOneFile:
             hidden_path = ".hidden"
             assert hidden_path in content, "Dot files should be included"
             # Check for the contents of the hidden file
-            assert "SECRET_KEY=test_secret_key_12345" in content, "Hidden file contents should be included"
+            assert (
+                "SECRET_KEY=test_secret_key_12345" in content
+            ), "Hidden file contents should be included"
 
     def test_exclude_paths_file(self):
         """Test excluding paths from a file."""
         output_file = OUTPUT_DIR / "excluded_paths.txt"
 
         # Run with exclude paths file
-        run_makeonefile([
-            "--source-directory",
-            str(SOURCE_DIR),
-            "--output-file",
-            str(output_file),
-            "--exclude-paths-file",
-            str(EXCLUDE_PATHS_FILE),
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--exclude-paths-file",
+                str(EXCLUDE_PATHS_FILE),
+                "--force",
+            ]
+        )
 
         # Verify excluded paths are not in the output
         with open(output_file, "r", encoding="utf-8") as f:
@@ -228,15 +240,17 @@ class TestMakeOneFile:
             output_file = OUTPUT_DIR / f"separator_{style.lower()}.txt"
 
             # Run with specific separator style
-            run_makeonefile([
-                "--source-directory",
-                str(SOURCE_DIR),
-                "--output-file",
-                str(output_file),
-                "--separator-style",
-                style,
-                "--force"
-            ])
+            run_makeonefile(
+                [
+                    "--source-directory",
+                    str(SOURCE_DIR),
+                    "--output-file",
+                    str(output_file),
+                    "--separator-style",
+                    style,
+                    "--force",
+                ]
+            )
 
             # Verify the output file exists and has content
             assert output_file.exists(), f"Output file for {style} style not created"
@@ -258,14 +272,16 @@ class TestMakeOneFile:
     def test_timestamp_in_filename(self):
         """Test adding timestamp to output filename."""
         # Run with timestamp option
-        run_makeonefile([
-            "--source-directory",
-            str(SOURCE_DIR),
-            "--output-file",
-            str(OUTPUT_DIR / "timestamp_test.txt"),
-            "--add-timestamp",
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(OUTPUT_DIR / "timestamp_test.txt"),
+                "--add-timestamp",
+                "--force",
+            ]
+        )
 
         # Check if a file with timestamp exists
         timestamp_files = list(OUTPUT_DIR.glob("timestamp_test_*.txt"))
@@ -280,16 +296,18 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "additional_excludes.txt"
 
         # Run with additional excludes
-        run_makeonefile([
-            "--source-directory",
-            str(SOURCE_DIR),
-            "--output-file",
-            str(output_file),
-            "--additional-excludes",
-            "docs",
-            "images",
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--additional-excludes",
+                "docs",
+                "images",
+                "--force",
+            ]
+        )
 
         # Verify excluded dirs are not in the output
         with open(output_file, "r", encoding="utf-8") as f:
@@ -297,22 +315,24 @@ class TestMakeOneFile:
             # Using platform-agnostic approach to check for excluded directories
             assert "FILE: docs" not in content, "docs directory should be excluded"
             assert "FILE: images" not in content, "images directory should be excluded"
-    
+
     def test_create_archive_zip(self):
         """Test creating a zip archive of processed files."""
         output_file = OUTPUT_DIR / "archive_test.txt"
-        
+
         # Run with archive creation
-        run_makeonefile([
-            "--source-directory",
-            str(SOURCE_DIR),
-            "--output-file",
-            str(output_file),
-            "--create-archive",
-            "--archive-type",
-            "zip",
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--create-archive",
+                "--archive-type",
+                "zip",
+                "--force",
+            ]
+        )
 
         # Verify archive was created
         archive_file = OUTPUT_DIR / "archive_test_backup.zip"
@@ -339,16 +359,18 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "archive_tar_test.txt"
 
         # Run with tar.gz archive creation
-        run_makeonefile([
-            "--source-directory",
-            str(SOURCE_DIR),
-            "--output-file",
-            str(output_file),
-            "--create-archive",
-            "--archive-type",
-            "tar.gz",
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--create-archive",
+                "--archive-type",
+                "tar.gz",
+                "--force",
+            ]
+        )
 
         # Verify archive was created
         archive_file = OUTPUT_DIR / "archive_tar_test_backup.tar.gz"
@@ -368,15 +390,17 @@ class TestMakeOneFile:
         for ending in ["LF", "CRLF"]:
             output_file = OUTPUT_DIR / f"line_ending_{ending.lower()}.txt"
 
-            run_makeonefile([
-                "--source-directory",
-                str(SOURCE_DIR),
-                "--output-file",
-                str(output_file),
-                "--line-ending",
-                ending.lower(),
-                "--force"
-            ])
+            run_makeonefile(
+                [
+                    "--source-directory",
+                    str(SOURCE_DIR),
+                    "--output-file",
+                    str(output_file),
+                    "--line-ending",
+                    ending.lower(),
+                    "--force",
+                ]
+            )
 
             # Verify output file exists
             assert (
@@ -417,13 +441,15 @@ class TestMakeOneFile:
         input_file = TEST_DIR / "input_paths.txt"
 
         # Run with input paths file
-        run_makeonefile([
-            "--input-file",
-            str(input_file),
-            "--output-file",
-            str(output_file),
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--input-file",
+                str(input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
 
         # Verify only specified files are included
         with open(output_file, "r", encoding="utf-8") as f:
@@ -444,13 +470,15 @@ class TestMakeOneFile:
             f.write(f"../source/docs/unicode_sample.md")
 
         # Run with the temp input paths file
-        run_makeonefile([
-            "--input-file",
-            str(temp_input_file),
-            "--output-file",
-            str(output_file),
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--input-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
 
         # Verify Unicode content is preserved
         with open(output_file, "r", encoding="utf-8") as f:
@@ -471,13 +499,15 @@ class TestMakeOneFile:
             f.write(f"../source/code/edge_case.html")
 
         # Run with the temp input paths file
-        run_makeonefile([
-            "--input-file",
-            str(temp_input_file),
-            "--output-file",
-            str(output_file),
-            "--force"
-        ])
+        run_makeonefile(
+            [
+                "--input-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
 
         # Verify edge case content is handled correctly
         with open(output_file, "r", encoding="utf-8") as f:
@@ -499,16 +529,18 @@ class TestMakeOneFile:
 
         # Measure execution time for performance testing
         start_time = time.time()
-        
+
         # Run with the temp input paths file
-        run_makeonefile([
-            "--input-file",
-            str(temp_input_file),
-            "--output-file",
-            str(output_file),
-            "--force"
-        ])
-        
+        run_makeonefile(
+            [
+                "--input-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
+
         execution_time = time.time() - start_time
 
         # Verify large file was processed successfully
@@ -522,14 +554,76 @@ class TestMakeOneFile:
         with open(output_file, "r", encoding="utf-8") as f:
             content = f.read()
             assert "Large Sample Text File" in content, "File header missing"
-            
+
             # Check for code patterns that would indicate the file was processed correctly
-            assert "This is a large sample text file" in content, "File description missing"
-            assert "Generate a large amount of text content" in content, "Content generation comment missing"
-            
+            assert (
+                "This is a large sample text file" in content
+            ), "File description missing"
+            assert (
+                "Generate a large amount of text content" in content
+            ), "Content generation comment missing"
+
             # Check for the long string of 'a' characters (checking for at least 100 consecutive 'a's)
             # We don't check for the exact 3000 characters as the content might be truncated in display
             assert "a" * 100 in content, "Long string of 'a' characters is missing"
+
+    def test_include_binary_files(self):
+        """Test inclusion of binary files."""
+        # Test 1: Without --include-binary-files (default behavior - binary files should be excluded)
+        output_file_excluded = OUTPUT_DIR / "binary_excluded.txt"
+
+        # Create a temporary input paths file pointing to a binary file
+        temp_input_file = OUTPUT_DIR / "temp_binary_input.txt"
+        with open(temp_input_file, "w", encoding="utf-8") as f:
+            # Using the png.png file which exists in the test source
+            f.write(f"../source/docs/png.png")
+
+        # Run without include-binary-files flag
+        run_makeonefile(
+            [
+                "--input-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file_excluded),
+                "--force",
+            ]
+        )
+
+        # Verify binary file was excluded by default
+        with open(output_file_excluded, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "png.png" not in content, "Binary file should be excluded by default"
+
+        # Test 2: With --include-binary-files flag
+        output_file_included = OUTPUT_DIR / "binary_included.txt"
+
+        # Run with include-binary-files flag
+        run_makeonefile(
+            [
+                "--input-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file_included),
+                "--include-binary-files",
+                "--force",
+            ]
+        )
+
+        # Verify binary file was included
+        with open(output_file_included, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert (
+                "png.png" in content
+            ), "Binary file should be included with --include-binary-files flag"
+
+        # Additional check: Verify that some binary content is present
+        # This might include some non-printable characters or PNG header bytes like "PNG" signature
+        with open(output_file_included, "rb") as f:
+            binary_content = f.read()
+            # Check for PNG signature or some binary content
+            assert (
+                b"PNG" in binary_content
+            ), "PNG signature should be present in binary content"
 
 
 # Run the tests when the script is executed directly
