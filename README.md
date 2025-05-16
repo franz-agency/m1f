@@ -209,6 +209,31 @@ python tools/makeonefile.py --help
 | `--create-archive`       | Create a backup archive of processed files                                                        |
 | `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                     |
 
+### MachineReadable Format
+
+The MachineReadable format is designed for automated parsing and uses unique
+boundary markers with a consistent pattern:
+
+```
+# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E
+# FILE: relative/path.ext
+# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E
+# METADATA: {"modified": "2023-01-01 12:00:00", "type": ".ext", "size_bytes": 1234, "checksum_sha256": "abc..."}
+# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E
+
+[file content]
+
+# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E
+# END FILE
+# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E
+```
+
+This format ensures reliable parsing with unique boundary markers that won't
+appear in regular files. The JSON metadata includes modification date, file
+type, size in bytes, and SHA256 checksum for data integrity verification. It's
+particularly suitable for use with LLMs and automated tools, as it uses familiar
+comment syntax with consistent boundaries.
+
 ### tools/splitfiles.py
 
 A utility that splits a single input file (previously created by
