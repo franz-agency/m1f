@@ -10,7 +10,7 @@
                 "--input-file",
                 "${workspaceFolder}/tasks/ai_context_files.txt",
                 "--output-file",
-                "${workspaceFolder}/.gen/ai_context_selective.m1f",
+                "${workspaceFolder}/.gen/ai_context_selective.m1f.txt",
                 "--separator-style",
                 "MachineReadable",
                 "--force",
@@ -41,7 +41,7 @@
                 "--source-directory",
                 "${workspaceFolder}",
                 "--output-file",
-                "${workspaceFolder}/.gen/ai_context_filtered.m1f",
+                "${workspaceFolder}/.gen/ai_context_filtered.m1f.txt",
                 "--separator-style",
                 "MachineReadable",
                 "--force",
@@ -81,7 +81,7 @@
                 "--input-file",
                 "${workspaceFolder}/tasks/feature_context_files.txt",
                 "--output-file",
-                "${workspaceFolder}/.gen/ai_context_feature.m1f",
+                "${workspaceFolder}/.gen/ai_context_feature.m1f.txt",
                 "--separator-style",
                 "MachineReadable",
                 "--force",
@@ -109,10 +109,12 @@
             "command": "python",
             "args": [
                 "${workspaceFolder}/tools/makeonefile.py",
-                "--input-file",
-                "${workspaceFolder}/tasks/wp_theme_files.txt",
+                "--source-directory",
+                "${workspaceFolder}/wp-content/themes/mytheme",
+                "--exclude-paths-file",
+                "${workspaceFolder}/tasks/wp_excludes.txt",
                 "--output-file",
-                "${workspaceFolder}/.ai-context/mytheme.m1f",
+                "${workspaceFolder}/.ai-context/mytheme.m1f.txt",
                 "--separator-style",
                 "MachineReadable",
                 "--force",
@@ -131,28 +133,63 @@
             "detail": "Creates an AI context file containing all files from the mytheme WordPress theme."
         },
         {
-            "label": "Lint: Format JSON/Markdown with Prettier",
+            "label": "WordPress: Generate Plugin Context",
             "type": "shell",
-            "command": "npx",
+            "command": "python",
             "args": [
-                "prettier",
-                "--write",
-                "${workspaceFolder}/**/*.{json,md,yaml,yml}"
+                "${workspaceFolder}/tools/makeonefile.py",
+                "--source-directory",
+                "${workspaceFolder}/wp-content/plugins/myplugin",
+                "--exclude-paths-file",
+                "${workspaceFolder}/tasks/wp_excludes.txt",
+                "--output-file",
+                "${workspaceFolder}/.ai-context/myplugin.m1f.txt",
+                "--separator-style",
+                "MachineReadable",
+                "--force",
+                "--minimal-output",
+                "--quiet"
             ],
             "problemMatcher": [],
             "group": {
-                "kind": "test",
-                "isDefault": false
+                "kind": "build"
             },
             "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
+                "reveal": "silent",
                 "panel": "shared",
-                "showReuseMessage": false,
                 "clear": true
             },
-            "detail": "Formats all JSON/Markdown/YAML files using Prettier according to the .prettierrc.yaml configuration."
+            "detail": "Creates an AI context file containing all files from the myplugin WordPress plugin."
+        },
+        {
+            "label": "WordPress: Generate Both Theme and Plugin Context",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/tools/makeonefile.py",
+                "--input-file",
+                "${workspaceFolder}/tasks/wp_theme_includes.txt",
+                "${workspaceFolder}/tasks/wp_plugin_includes.txt",
+                "--exclude-paths-file",
+                "${workspaceFolder}/tasks/wp_excludes.txt",
+                "--output-file",
+                "${workspaceFolder}/.ai-context/wordpress_project.m1f.txt",
+                "--separator-style",
+                "MachineReadable",
+                "--force",
+                "--minimal-output",
+                "--quiet"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared",
+                "clear": true
+            },
+            "detail": "Creates a combined AI context file containing both theme and plugin files for a complete WordPress project."
         }
     ]
 }

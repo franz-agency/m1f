@@ -1,0 +1,38 @@
+# WordPress Theme Files to Include
+
+# Core theme files
+wp-content/themes/mytheme/style.css
+wp-content/themes/mytheme/functions.php
+wp-content/themes/mytheme/index.php
+wp-content/themes/mytheme/header.php
+wp-content/themes/mytheme/footer.php
+wp-content/themes/mytheme/sidebar.php
+wp-content/themes/mytheme/page.php
+wp-content/themes/mytheme/single.php
+wp-content/themes/mytheme/archive.php
+wp-content/themes/mytheme/search.php
+wp-content/themes/mytheme/404.php
+wp-content/themes/mytheme/comments.php
+
+# Template parts
+wp-content/themes/mytheme/template-parts/*.php
+
+# Theme includes and functionality
+wp-content/themes/mytheme/inc/*.php
+wp-content/themes/mytheme/includes/*.php
+
+# Theme assets
+wp-content/themes/mytheme/assets/js/*.js
+wp-content/themes/mytheme/assets/css/*.css
+wp-content/themes/mytheme/assets/scss/*.scss
+
+# WooCommerce templates (if used)
+wp-content/themes/mytheme/woocommerce/*.php
+
+# Block patterns and templates
+wp-content/themes/mytheme/patterns/*.php
+wp-content/themes/mytheme/block-templates/*.html
+wp-content/themes/mytheme/block-template-parts/*.html
+
+# Configuration files
+wp-content/themes/mytheme/theme.json 

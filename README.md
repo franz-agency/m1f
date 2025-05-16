@@ -125,7 +125,7 @@ Example `filelist.txt`:
 Using MachineReadable style with verbose logging for detailed output:
 
 ```bash
-python tools/makeonefile.py -s ./my_project -o ./output/bundle.m1f \
+python tools/makeonefile.py -s ./my_project -o ./output/bundle.m1f.txt \
   --separator-style MachineReadable --force --verbose
 ```
 
@@ -385,19 +385,19 @@ python tools/splitfiles.py --input-file /path/to/combined_output.txt \
 Splitting a MachineReadable file with force overwrite and verbose output:
 
 ```bash
-python tools/splitfiles.py -i ./output/bundle.m1f -d ./extracted_project -f -v
+python tools/splitfiles.py -i ./output/bundle.m1f.txt -d ./extracted_project -f -v
 ```
 
 Using original timestamps (default behavior if available, or explicitly):
 
 ```bash
-python tools/splitfiles.py -i bundle.m1f -d extracted --timestamp-mode original
+python tools/splitfiles.py -i bundle.m1f.txt -d extracted --timestamp-mode original
 ```
 
 Using current system timestamps for all extracted files:
 
 ```bash
-python tools/splitfiles.py -i bundle.m1f -d extracted --timestamp-mode current
+python tools/splitfiles.py -i bundle.m1f.txt -d extracted --timestamp-mode current
 ```
 
 For all options, run:

@@ -62,7 +62,7 @@ Basic command:
   python pymakeonefile.py --source-directory /path/to/your/code --output-file /path/to/combined_output.txt
 
 Using MachineReadable style and creating a zip archive:
-  python pymakeonefile.py -s ./my_project -o ./output/bundle.m1f --separator-style MachineReadable --create-archive --archive-type zip
+  python pymakeonefile.py -s ./my_project -o ./output/bundle.m1f.txt --separator-style MachineReadable --create-archive --archive-type zip
 
 With more options including tar.gz archive:
   python pymakeonefile.py -s ./my_project -o ./output/bundle.md -t --separator-style Markdown --force --verbose --additional-excludes "temp" "docs_old" --create-archive --archive-type tar.gz

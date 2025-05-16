@@ -1,0 +1,65 @@
+# WordPress Paths to Exclude
+
+# Core WordPress system files
+wp-admin/
+wp-includes/
+
+# Uploads directory (usually too large and contains only binary media files)
+wp-content/uploads/
+
+# Cache files
+wp-content/cache/
+wp-content/advanced-cache.php
+wp-content/wp-cache-config.php
+wp-content/object-cache.php
+
+# Default and inactive themes
+wp-content/themes/twentytwenty/
+wp-content/themes/twentytwentyone/
+wp-content/themes/twentytwentytwo/
+wp-content/themes/twentytwentythree/
+wp-content/themes/twentytwentyfour/
+
+# Common plugins not relevant for development
+wp-content/plugins/akismet/
+wp-content/plugins/hello-dolly/
+wp-content/plugins/wordpress-seo/
+wp-content/plugins/wp-super-cache/
+wp-content/plugins/wordfence/
+wp-content/plugins/elementor/
+wp-content/plugins/woocommerce/
+
+# Language files
+wp-content/languages/plugins/
+wp-content/languages/themes/
+wp-content/languages/continents-cities*.po
+wp-content/languages/admin*.po
+
+# Backup files
+*.bak
+*.backup
+*.old
+*-backup.*
+~*
+
+# Plugin/theme development build artifacts
+node_modules/
+dist/
+build/
+vendor/
+.git/
+.github/
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Database dumps
+*.sql
+
+# Minified files (keep the source files, exclude minified versions)
+*.min.js
+*.min.css 
