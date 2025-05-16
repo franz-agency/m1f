@@ -523,6 +523,10 @@ class TestMakeOneFile:
             # Check for code patterns that would indicate the file was processed correctly
             assert "This is a large sample text file" in content, "File description missing"
             assert "Generate a large amount of text content" in content, "Content generation comment missing"
+            
+            # Check for the long string of 'a' characters (checking for at least 100 consecutive 'a's)
+            # We don't check for the exact 3000 characters as the content might be truncated in display
+            assert "a" * 100 in content, "Long string of 'a' characters is missing"
 
 
 # Run the tests when the script is executed directly
