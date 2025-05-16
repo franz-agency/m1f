@@ -577,10 +577,23 @@ def _handle_output_file_overwrite_and_creation(
         sys.exit(1)
 
 
-def _build_exclusion_set(additional_excludes: list[str]) -> set[str]:
-    """Builds the set of lowercased directory names to exclude."""
-    all_excluded_dir_names_lower = {name.lower() for name in DEFAULT_EXCLUDED_DIR_NAMES}
+def _build_exclusion_set(additional_excludes: list[str], use_default_excludes: bool = True) -> set[str]:
+    """Builds the set of lowercased directory names to exclude.
+    
+    Args:
+        additional_excludes: Additional directory names to exclude
+        use_default_excludes: Whether to include the default excluded directory names
+        
+    Returns:
+        Set of directory names to exclude (all lowercase)
+    """
+    all_excluded_dir_names_lower = set()
+    
+    if use_default_excludes:
+        all_excluded_dir_names_lower = {name.lower() for name in DEFAULT_EXCLUDED_DIR_NAMES}
+        
     all_excluded_dir_names_lower.update(name.lower() for name in additional_excludes)
+    
     logger.debug(
         f"Effective excluded directory names (case-insensitive): {sorted(list(all_excluded_dir_names_lower))}"
     )
@@ -745,6 +758,24 @@ def _is_file_excluded(
                 f"Excluding binary file: {file_path} (extension: {file_path.suffix.lower()})"
             )
         return True
+    
+    # Check if the file extension is in the exclude-extensions list
+    if hasattr(args, "exclude_extensions") and args.exclude_extensions:
+        if file_path.suffix.lower() in args.exclude_extensions:
+            if args.verbose:
+                logger.debug(
+                    f"Excluding file with extension filter: {file_path} (extension: {file_path.suffix.lower()})"
+                )
+            return True
+    
+    # Check if include-extensions is set and this file's extension is not in the list
+    if hasattr(args, "include_extensions") and args.include_extensions:
+        if file_path.suffix.lower() not in args.include_extensions:
+            if args.verbose:
+                logger.debug(
+                    f"Excluding file not matching include extension filter: {file_path} (extension: {file_path.suffix.lower()})"
+                )
+            return True
 
     # Check if any parent directory is in the global exclude list
     # This iterates from file_path.parent up to the root.
@@ -1145,7 +1176,9 @@ def main():
   %(prog)s -s "/home/user/projects/my_app" -o "/tmp/app_bundle.md" -t --separator-style Markdown --force
   %(prog)s -s . -o archive.txt --additional-excludes "docs_archive" "test_data" --include-dot-files --line-ending crlf
   %(prog)s -s ./config_files --include-dot-files --include-binary-files -o all_configs.txt --verbose
-  %(prog)s -i ./file_list.txt -o bundle.all --create-archive --archive-type tar.gz""",
+  %(prog)s -i ./file_list.txt -o bundle.all --create-archive --archive-type tar.gz
+  %(prog)s -s ./src -o bundle.txt --include-extensions .txt .json .md --exclude-extensions .tmp
+  %(prog)s -s ./project -o all_files.txt --no-default-excludes""",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
@@ -1177,6 +1210,25 @@ def main():
         default=[],
         metavar="DIR_NAME",
         help="Space-separated list of additional directory NAMES to exclude (e.g., 'obj', 'debug'). Case-insensitive.",
+    )
+    parser.add_argument(
+        "--no-default-excludes",
+        action="store_true",
+        help="Disable the default directory exclusions. This allows including content from directories like 'node_modules', '.git', etc.",
+    )
+    parser.add_argument(
+        "--include-extensions",
+        type=str,
+        nargs="*",
+        metavar="EXT",
+        help="Space-separated list of file extensions to include (e.g., '.txt', '.json'). Only files with these extensions will be included.",
+    )
+    parser.add_argument(
+        "--exclude-extensions",
+        type=str,
+        nargs="*",
+        metavar="EXT",
+        help="Space-separated list of file extensions to exclude (e.g., '.tmp', '.log').",
     )
     parser.add_argument(
         "--exclude-paths-file",
@@ -1244,6 +1296,23 @@ def main():
 
     args = parser.parse_args()
 
+    # Process and normalize include/exclude extensions if provided
+    if hasattr(args, "include_extensions") and args.include_extensions:
+        # Normalize extensions to lowercase and ensure they start with a dot
+        args.include_extensions = {
+            ext.lower() if ext.startswith(".") else f".{ext.lower()}" 
+            for ext in args.include_extensions
+        }
+        logger.debug(f"Including only files with extensions: {args.include_extensions}")
+    
+    if hasattr(args, "exclude_extensions") and args.exclude_extensions:
+        # Normalize extensions to lowercase and ensure they start with a dot
+        args.exclude_extensions = {
+            ext.lower() if ext.startswith(".") else f".{ext.lower()}" 
+            for ext in args.exclude_extensions
+        }
+        logger.debug(f"Excluding files with extensions: {args.exclude_extensions}")
+
     # Load exclude paths from file if specified
     if hasattr(args, "exclude_paths_file") and args.exclude_paths_file:
         args.exclude_paths = _load_exclude_paths_from_file(args.exclude_paths_file)
@@ -1280,7 +1349,14 @@ def main():
         output_file_path, args.force, chosen_linesep
     )
 
-    all_excluded_dir_names_lower = _build_exclusion_set(args.additional_excludes)
+    all_excluded_dir_names_lower = _build_exclusion_set(
+        args.additional_excludes, 
+        not args.no_default_excludes  # If --no-default-excludes is set, pass False here
+    )
+    
+    if args.no_default_excludes:
+        logger.info("Default directory exclusions are disabled.")
+    
     files_to_process = _gather_files_to_process(
         source_dir,
         args,
