@@ -1,16 +1,19 @@
 # Makeonefile.py Tests
 
-This directory contains comprehensive tests for the `makeonefile.py` script located in the `tools` directory.
+This directory contains comprehensive tests for the `makeonefile.py` script
+located in the `tools` directory.
 
 ## Test Structure
 
 The test suite consists of:
 
-1. **Test Files**: 
+1. **Test Files**:
+
    - `test_makeonefile.py`: The main test file containing all test cases
    - `run_tests.py`: A utility script to run tests selectively
 
 2. **Test Directories**:
+
    - `source/`: Contains test files with various formats and edge cases
    - `output/`: Contains generated output files (this directory is git-ignored)
 
@@ -48,25 +51,30 @@ python tests/makeonefile/run_tests.py --all --verbose
 The tests cover all major functionality of the `makeonefile.py` script:
 
 1. **Basic functionality**:
+
    - Combining files from source directory
    - File separators
    - Excluding directories
 
 2. **File selection**:
+
    - Including/excluding dot files
    - Excluding paths from file
    - Additional directory exclusions
 
 3. **Output options**:
+
    - Different separator styles
    - Line ending options
    - Timestamp in filename
 
 4. **Archive creation**:
+
    - ZIP archive
    - TAR.GZ archive
 
 5. **Edge cases**:
+
    - Unicode character handling
    - HTML with complex syntax
    - Large files

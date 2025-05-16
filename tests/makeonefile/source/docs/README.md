@@ -5,6 +5,7 @@ This is a test markdown file for the makefileonefile.py test suite.
 ## Purpose
 
 To demonstrate how the script handles Markdown files with:
+
 - Lists
 - Headers
 - Code blocks
@@ -17,4 +18,5 @@ def example():
 
 ## Notes
 
-The script should correctly include this file in the combined output unless specifically excluded.
+The script should correctly include this file in the combined output unless
+specifically excluded.

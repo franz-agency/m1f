@@ -20,4 +20,4 @@ This is a test markdown file for splitfiles.py testing.
 ```python
 def example_function():
     return "This is an example function!"
-``` 
+```

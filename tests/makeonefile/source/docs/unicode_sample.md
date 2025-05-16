@@ -37,6 +37,7 @@ This file contains various Unicode characters to test encoding handling:
 ## Test cases with BOM and other special characters
 
 Zero-width spaces and non-breaking spaces below:
+
 - [​] (zero-width space between brackets)
 - [ ] (non-breaking space between brackets)
 - Control characters test: test
