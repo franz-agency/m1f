@@ -625,6 +625,177 @@ class TestMakeOneFile:
                 b"PNG" in binary_content
             ), "PNG signature should be present in binary content"
 
+    def test_no_default_excludes(self):
+        """Test disabling default directory exclusions."""
+        output_file = OUTPUT_DIR / "no_default_excludes.txt"
+
+        # Run with --no-default-excludes flag
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--no-default-excludes",
+                "--force",
+            ]
+        )
+
+        # Verify normally excluded directories are now included
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            # Check for content from normally excluded directories
+            assert "node_modules" in content, "node_modules should be included when using --no-default-excludes"
+            assert ".git" in content, "Git directory should be included when using --no-default-excludes"
+            
+            # Verify log message indicates default exclusions are disabled
+            log_file = output_file.with_name(f"{output_file.stem}.log")
+            with open(log_file, 'r', encoding='utf-8') as log:
+                log_content = log.read()
+                assert "Default directory exclusions are disabled" in log_content, "Log should indicate default exclusions are disabled"
+
+    def test_include_extensions(self):
+        """Test including only specific file extensions."""
+        output_file = OUTPUT_DIR / "include_extensions.txt"
+
+        # Run with --include-extensions to include only .txt and .json files
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR / "file_extensions_test"),
+                "--output-file",
+                str(output_file),
+                "--include-extensions",
+                ".txt",
+                ".json",
+                "--force",
+            ]
+        )
+
+        # Verify only specified extensions are included
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "test.txt" in content, ".txt files should be included"
+            assert "test.json" in content, ".json files should be included"
+            assert "test.md" not in content, ".md files should not be included"
+            assert "test.py" not in content, ".py files should not be included"
+            assert "test.log" not in content, ".log files should not be included"
+            assert "test.tmp" not in content, ".tmp files should not be included"
+
+    def test_exclude_extensions(self):
+        """Test excluding specific file extensions."""
+        output_file = OUTPUT_DIR / "exclude_extensions.txt"
+
+        # Run with --exclude-extensions to exclude .log and .tmp files
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR / "file_extensions_test"),
+                "--output-file",
+                str(output_file),
+                "--exclude-extensions",
+                ".log",
+                ".tmp",
+                "--force",
+            ]
+        )
+
+        # Verify specified extensions are excluded
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "test.txt" in content, ".txt files should be included"
+            assert "test.json" in content, ".json files should be included"
+            assert "test.md" in content, ".md files should be included"
+            assert "test.py" in content, ".py files should be included"
+            assert "test.log" not in content, ".log files should be excluded"
+            assert "test.tmp" not in content, ".tmp files should be excluded"
+
+    def test_extension_filtering_without_dot(self):
+        """Test extension filtering when extensions are provided without leading dots."""
+        output_file = OUTPUT_DIR / "extension_no_dots.txt"
+
+        # Run with extensions specified without dots
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR / "file_extensions_test"),
+                "--output-file",
+                str(output_file),
+                "--include-extensions",
+                "txt",
+                "json",
+                "--force",
+            ]
+        )
+
+        # Verify the behavior is the same as if dots were included
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "test.txt" in content, ".txt files should be included when specified without dot"
+            assert "test.json" in content, ".json files should be included when specified without dot"
+            assert "test.md" not in content, ".md files should not be included"
+
+    def test_no_default_excludes_with_additional_excludes(self):
+        """Test combining --no-default-excludes with --additional-excludes."""
+        output_file = OUTPUT_DIR / "no_default_with_additional.txt"
+
+        # Run with --no-default-excludes but add some specific excludes
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--no-default-excludes",
+                "--additional-excludes",
+                "node_modules",
+                "--force",
+            ]
+        )
+
+        # Verify default excluded directories are included except those specified
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "node_modules" not in content, "node_modules should be excluded by --additional-excludes"
+            assert ".git" in content, "Git directory should be included (no default excludes)"
+            
+            # Verify the dirlist and filelist don't contain node_modules
+            filelist_path = output_file.with_name(f"{output_file.stem}_filelist.txt")
+            with open(filelist_path, 'r', encoding='utf-8') as fl:
+                filelist_content = fl.read()
+                assert "node_modules" not in filelist_content, "node_modules should not be in file list"
+
+    def test_combined_extension_filters(self):
+        """Test combining include and exclude extension filters."""
+        output_file = OUTPUT_DIR / "combined_extension_filters.txt"
+
+        # Run with both include and exclude extensions
+        run_makeonefile(
+            [
+                "--source-directory",
+                str(SOURCE_DIR / "file_extensions_test"),
+                "--output-file",
+                str(output_file),
+                "--include-extensions",
+                ".txt",
+                ".json",
+                ".log",
+                "--exclude-extensions",
+                ".log",
+                "--force",
+            ]
+        )
+
+        # Verify the exclude filter takes precedence over include
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "test.txt" in content, ".txt files should be included"
+            assert "test.json" in content, ".json files should be included"
+            assert "test.log" not in content, ".log files should be excluded despite being in include list"
+            assert "test.md" not in content, ".md files should not be included"
+            assert "test.py" not in content, ".py files should not be included"
+            assert "test.tmp" not in content, ".tmp files should not be included"
+
 
 # Run the tests when the script is executed directly
 if __name__ == "__main__":
