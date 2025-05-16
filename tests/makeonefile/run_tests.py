@@ -12,6 +12,7 @@ Usage:
 import argparse
 import sys
 import pytest
+from pathlib import Path
 
 
 def parse_args():
@@ -48,7 +49,7 @@ def main():
 
     if args.all:
         # Run all tests
-        pytest_args.append("test_makeonefile.py")
+        pytest_args.append(str(Path(__file__).parent / "test_makeonefile.py"))
     else:
         # Build test selection expression
         test_expr = []
@@ -79,7 +80,7 @@ def main():
             test_selection = " or ".join(
                 f"test_makeonefile.TestMakeOneFile.{test}" for test in test_expr
             )
-            pytest_args.extend(["-k", test_selection, "test_makeonefile.py"])
+            pytest_args.extend(["-k", test_selection, str(Path(__file__).parent / "test_makeonefile.py")])
 
     # Run the tests
     return pytest.main(pytest_args)

@@ -440,7 +440,8 @@ class TestMakeOneFile:
         # Create a temporary input paths file specifically for the Unicode test
         temp_input_file = OUTPUT_DIR / "temp_unicode_input.txt"
         with open(temp_input_file, "w", encoding="utf-8") as f:
-            f.write(f"source/docs/unicode_sample.md")
+            # Use a path that's relative to the test directory
+            f.write(f"../source/docs/unicode_sample.md")
 
         # Run with the temp input paths file
         run_makeonefile([
@@ -466,7 +467,8 @@ class TestMakeOneFile:
         # Create a temporary input paths file specifically for the edge case test
         temp_input_file = OUTPUT_DIR / "temp_edge_case_input.txt"
         with open(temp_input_file, "w", encoding="utf-8") as f:
-            f.write(f"source/code/edge_case.html")
+            # Use a path that's relative to the test directory
+            f.write(f"../source/code/edge_case.html")
 
         # Run with the temp input paths file
         run_makeonefile([
@@ -492,7 +494,8 @@ class TestMakeOneFile:
         # Create a temporary input paths file specifically for the large file test
         temp_input_file = OUTPUT_DIR / "temp_large_file_input.txt"
         with open(temp_input_file, "w", encoding="utf-8") as f:
-            f.write(f"source/code/large_sample.txt")
+            # Use a path that's relative to the test directory
+            f.write(f"../source/code/large_sample.txt")
 
         # Measure execution time for performance testing
         start_time = time.time()

@@ -646,6 +646,7 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
         List of deduplicated paths with proper parent-child handling
     """
     paths = []
+    input_file_dir = input_file_path.parent
 
     try:
         with open(input_file_path, "r", encoding="utf-8") as f:
@@ -654,9 +655,14 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
                 if not line or line.startswith("#"):
                     continue  # Skip empty lines and comments
 
-                # Convert to absolute path if not already
-                path = Path(line).expanduser().resolve()
-                paths.append(path)
+                path_obj = Path(line)
+                # If the path is relative (doesn't have a root), make it relative to the input file's directory
+                if not path_obj.is_absolute():
+                    path_obj = (input_file_dir / path_obj).resolve()
+                else:
+                    path_obj = path_obj.expanduser().resolve()
+                
+                paths.append(path_obj)
 
         # Deduplicate paths (keep parents, remove children)
         return _deduplicate_paths(paths)
