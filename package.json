@@ -1,5 +1,9 @@
 {
   "devDependencies": {
     "prettier": "3.5.3"
+  },
+  "scripts": {
+    "lint:md": "prettier --write \"**/*.md\"",
+    "lint:md:check": "prettier --check \"**/*.md\""
   }
 }
