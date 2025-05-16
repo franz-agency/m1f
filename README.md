@@ -86,6 +86,11 @@ date, size, type, and a SHA256 checksum for integrity.
     with a `.log` extension (e.g., `combined_output.log` for
     `combined_output.txt`).
   - The log file captures all processing information, warnings, and errors.
+- **Additional Output Files**:
+  - Generates a file list in `{output_file_stem}_filelist.txt` containing all
+    included files sorted alphabetically.
+  - Creates a directory list in `{output_file_stem}_dirlist.txt` containing all
+    unique directories (sorted) where the included files are located.
 - **Performance Monitoring**:
   - Measures and reports the total execution time at the end of processing.
   - For longer runs, time is displayed in minutes and seconds format.
@@ -220,7 +225,9 @@ python tools/makeonefile.py --help
 
 ### Exclude Paths File Format
 
-When using the `--exclude-paths-file` option, the file should contain one path per line. Paths are matched exactly as written, and empty lines and lines starting with `#` are ignored (treated as comments).
+When using the `--exclude-paths-file` option, the file should contain one path
+per line. Paths are matched exactly as written, and empty lines and lines
+starting with `#` are ignored (treated as comments).
 
 Example of an exclude paths file:
 
@@ -236,11 +243,16 @@ dir4
 ```
 
 In this example:
+
 - The path `myproject/dir1/dir2` will be excluded exactly as written
 - The path `myproject/dir3/dir4` will be excluded exactly as written
-- The path `dir4` will only exclude a file or directory named exactly `dir4` at the root level
+- The path `dir4` will only exclude a file or directory named exactly `dir4` at
+  the root level
 
-Important: Unlike directory name-based exclusion, the path-based exclusion matches exactly. So, for example, if you list `dir4` in the exclude file, it will not exclude `myproject/dir4` or other paths that contain `dir4` as a substring.
+Important: Unlike directory name-based exclusion, the path-based exclusion
+matches exactly. So, for example, if you list `dir4` in the exclude file, it
+will not exclude `myproject/dir4` or other paths that contain `dir4` as a
+substring.
 
 ### MachineReadable Format
 

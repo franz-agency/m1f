@@ -41,6 +41,7 @@ KEY FEATURES
 - Estimates and displays the token count of the combined output file using tiktoken.
 - Optional creation of a zip or tar.gz archive containing all processed files, named after the output file with a `_backup` suffix.
 - Creates a log file with the same name as the output file but with a `.log` extension, capturing all processing information.
+- Generates two additional output files: one with all included file paths (_filelist.txt) and another with all unique directories (_dirlist.txt).
 - Measures and reports the total execution time for performance monitoring.
 
 REQUIREMENTS
@@ -402,30 +403,32 @@ def get_file_separator(
     elif style == "MachineReadable":
         # Generate a unique UUID for this file block
         file_uuid = str(uuid.uuid4())
-        
+
         # Create metadata for the file
         meta = {
             "original_filepath": str(relative_path),
             "original_filename": os.path.basename(relative_path),
             "timestamp_utc_iso": datetime.datetime.fromtimestamp(
                 stat_info.st_mtime, tz=datetime.timezone.utc
-            ).isoformat().replace("+00:00", "Z"),
+            )
+            .isoformat()
+            .replace("+00:00", "Z"),
             "type": file_ext,
             "size_bytes": file_size_bytes,
             "checksum_sha256": (
                 checksum_sha256 if checksum_sha256 != "[CHECKSUM_ERROR]" else ""
-            )
+            ),
         }
-        
+
         json_meta = json.dumps(meta, indent=4)
-        
+
         # Create the new format with UUIDs for metadata and content blocks
         separator_lines = [
             f"--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_{file_uuid} ---",
             "METADATA_JSON:",
             json_meta,
             f"--- PYMK1F_END_FILE_METADATA_BLOCK_{file_uuid} ---",
-            f"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_{file_uuid} ---"
+            f"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_{file_uuid} ---",
         ]
         return linesep.join(separator_lines)
     else:  # Should not happen due to argparse choices
@@ -664,7 +667,7 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
 
 def _load_exclude_paths_from_file(exclude_paths_file: str) -> Set[str]:
     """Load paths to exclude from a file.
-    
+
     Args:
         exclude_paths_file: Path to a file containing paths to exclude (one per line).
             Format: Each line contains a single path to exclude. The paths are matched exactly
@@ -673,32 +676,34 @@ def _load_exclude_paths_from_file(exclude_paths_file: str) -> Set[str]:
                 # This is a comment
                 dir1/dir2
                 project/file.txt
-        
+
     Returns:
         A set of normalized paths to exclude
     """
     exclude_paths = set()
     if not exclude_paths_file:
         return exclude_paths
-        
+
     try:
         exclude_file_path = Path(exclude_paths_file).resolve()
         if not exclude_file_path.exists():
             logger.warning(f"Exclude paths file not found: {exclude_file_path}")
             return exclude_paths
-            
-        with open(exclude_file_path, 'r', encoding='utf-8') as f:
+
+        with open(exclude_file_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith('#'):  # Skip empty lines and comments
+                if line and not line.startswith("#"):  # Skip empty lines and comments
                     # Normalize path (OS-appropriate path separators)
                     normalized_path = str(Path(line))
                     exclude_paths.add(normalized_path)
-        
-        logger.info(f"Loaded {len(exclude_paths)} paths to exclude from {exclude_file_path}")
+
+        logger.info(
+            f"Loaded {len(exclude_paths)} paths to exclude from {exclude_file_path}"
+        )
     except Exception as e:
         logger.error(f"Error loading exclude paths file: {e}")
-    
+
     return exclude_paths
 
 
@@ -707,13 +712,19 @@ def _is_file_excluded(
 ) -> bool:
     """Checks if a file should be excluded based on various criteria."""
     # Check if the path is in the exclude paths list
-    if hasattr(args, 'exclude_paths') and args.exclude_paths:
-        rel_path_str = str(file_path.relative_to(args.source_base_dir) if hasattr(args, 'source_base_dir') else file_path)
+    if hasattr(args, "exclude_paths") and args.exclude_paths:
+        rel_path_str = str(
+            file_path.relative_to(args.source_base_dir)
+            if hasattr(args, "source_base_dir")
+            else file_path
+        )
         if rel_path_str in args.exclude_paths:
             if args.verbose:
-                logger.debug(f"Excluding path (exact match from exclude file): {rel_path_str}")
+                logger.debug(
+                    f"Excluding path (exact match from exclude file): {rel_path_str}"
+                )
             return True
-    
+
     if not args.include_dot_files and file_path.name.startswith("."):
         if args.verbose:
             logger.debug(f"Excluding dot file: {file_path}")
@@ -889,6 +900,54 @@ def _write_file_paths_list(
     return file_list_path
 
 
+def _write_directory_paths_list(
+    output_file_path: Path, files_to_process: list[tuple[Path, str]]
+):
+    """
+    Writes a list of unique directory paths to a text file.
+
+    This function extracts all unique directories from the list of processed files,
+    including all parent directories in the path hierarchy. For example, if a file is
+    located at 'src/components/Button.js', both 'src' and 'src/components' will be
+    included in the directory list. The directories are sorted alphabetically in the
+    output file.
+
+    Args:
+        output_file_path: The path to use as the base for the directory list output file.
+            The output will be named '{output_file_stem}_dirlist.txt'.
+        files_to_process: List of (file_path, relative_path) tuples to extract directories from.
+            Only the relative_path part is used to determine directories.
+
+    Returns:
+        Path to the created directory list file.
+    """
+    dir_list_path = output_file_path.with_name(f"{output_file_path.stem}_dirlist.txt")
+
+    logger.info(f"Writing directory paths list to {dir_list_path}")
+
+    # Extract unique directory paths and sort them
+    unique_dirs = set()
+
+    for _, rel_path in files_to_process:
+        # Get the parent directory of each file
+        path_obj = Path(rel_path)
+        # Add all parent directories
+        current_path = path_obj.parent
+        while str(current_path) != ".":
+            unique_dirs.add(str(current_path))
+            current_path = current_path.parent
+
+    # Sort the directories alphabetically
+    sorted_dirs = sorted(unique_dirs)
+
+    with open(dir_list_path, "w", encoding="utf-8") as f:
+        for dir_path in sorted_dirs:
+            f.write(f"{dir_path}\n")
+
+    logger.info(f"Wrote {len(sorted_dirs)} unique directory paths to {dir_list_path}")
+    return dir_list_path
+
+
 def _write_combined_data(
     output_file_path: Path,
     files_to_process: list[tuple[Path, str]],
@@ -916,8 +975,13 @@ def _write_combined_data(
                 if args.separator_style == "MachineReadable":
                     # Extract the UUID from the separator text
                     import re
-                    uuid_match = re.search(r'PYMK1F_BEGIN_FILE_METADATA_BLOCK_([a-f0-9-]+)', separator_text)
-                    current_file_uuid = uuid_match.group(1) if uuid_match else str(uuid.uuid4())
+
+                    uuid_match = re.search(
+                        r"PYMK1F_BEGIN_FILE_METADATA_BLOCK_([a-f0-9-]+)", separator_text
+                    )
+                    current_file_uuid = (
+                        uuid_match.group(1) if uuid_match else str(uuid.uuid4())
+                    )
                     outfile.write(separator_text)
                 elif args.separator_style == "None":
                     # For None style, don't add any separator or newline
@@ -958,8 +1022,10 @@ def _write_combined_data(
                 if closing_separator_text:
                     # For MachineReadable, insert the UUID into the closing separator
                     if args.separator_style == "MachineReadable" and current_file_uuid:
-                        closing_separator_text = closing_separator_text.replace("{{file_uuid}}", current_file_uuid)
-                    
+                        closing_separator_text = closing_separator_text.replace(
+                            "{{file_uuid}}", current_file_uuid
+                        )
+
                     # Write the closing separator
                     outfile.write(closing_separator_text + chosen_linesep)
 
@@ -1173,7 +1239,7 @@ def main():
     args = parser.parse_args()
 
     # Load exclude paths from file if specified
-    if hasattr(args, 'exclude_paths_file') and args.exclude_paths_file:
+    if hasattr(args, "exclude_paths_file") and args.exclude_paths_file:
         args.exclude_paths = _load_exclude_paths_from_file(args.exclude_paths_file)
     else:
         args.exclude_paths = set()
@@ -1199,7 +1265,7 @@ def main():
         source_dir = input_paths[0].parent if input_paths else Path.cwd()
     else:
         source_dir = _resolve_and_validate_source_path(args.source_directory)
-    
+
     # Set source base directory for path exclusion matching
     args.source_base_dir = source_dir
 
@@ -1238,6 +1304,9 @@ def main():
 
     # Write the list of file paths to a separate file
     file_list_path = _write_file_paths_list(output_file_path, files_to_process)
+
+    # Write the list of directories to a separate file
+    dir_list_path = _write_directory_paths_list(output_file_path, files_to_process)
 
     logger.info(
         f"Successfully combined {processed_count} file(s) into '{output_file_path}'."
