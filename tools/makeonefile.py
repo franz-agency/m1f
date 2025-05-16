@@ -462,7 +462,8 @@ def get_closing_separator(style: str, linesep: str) -> str | None:
 
 
 def _configure_logging_settings(
-    verbose: bool, chosen_linesep: str, output_file_path: Optional[Path] = None
+    verbose: bool, chosen_linesep: str, output_file_path: Optional[Path] = None,
+    minimal_output: bool = False
 ) -> None:
     """Configures logging level based on verbosity and sets up file logging.
 
@@ -470,14 +471,15 @@ def _configure_logging_settings(
         verbose: Whether to enable verbose (DEBUG) logging
         chosen_linesep: The line separator being used (LF or CRLF)
         output_file_path: The output file path, used to create a parallel log file
+        minimal_output: If True, no log file will be created
     """
     # Set the root logger level based on verbosity
     log_level = logging.DEBUG if verbose else logging.INFO
     logging.getLogger().setLevel(log_level)
 
-    # Configure file logging if an output path is provided
+    # Configure file logging if an output path is provided and minimal_output is False
     global file_handler
-    if output_file_path and file_handler is None:
+    if output_file_path and file_handler is None and not minimal_output:
         # Create a log file with the same name as the output file but with .log extension
         log_file_path = output_file_path.with_suffix(".log")
         try:
@@ -498,6 +500,8 @@ def _configure_logging_settings(
     if verbose:
         logger.debug("Verbose mode enabled.")
         logger.debug(f"Using line ending: {'LF' if chosen_linesep == LF else 'CRLF'}")
+        if minimal_output:
+            logger.debug("Minimal output mode enabled - no auxiliary files will be created.")
 
 
 def _resolve_and_validate_source_path(source_directory_str: str) -> Path:
@@ -910,7 +914,7 @@ def _gather_files_to_process(
 
 
 def _write_file_paths_list(
-    output_file_path: Path, files_to_process: list[tuple[Path, str]]
+    output_file_path: Path, files_to_process: list[tuple[Path, str]], minimal_output: bool = False
 ):
     """
     Writes a list of file paths to a text file.
@@ -918,10 +922,15 @@ def _write_file_paths_list(
     Args:
         output_file_path: The path to use as the base for the file list output file.
         files_to_process: List of (file_path, relative_path) tuples to write to the file.
+        minimal_output: If True, no file list will be created
 
     Returns:
-        Path to the created file list.
+        Path to the created file list or None if minimal_output is True.
     """
+    if minimal_output:
+        logger.debug("Skipping file paths list creation (minimal output mode)")
+        return None
+        
     file_list_path = output_file_path.with_name(f"{output_file_path.stem}_filelist.txt")
 
     logger.info(f"Writing file paths list to {file_list_path}")
@@ -938,7 +947,7 @@ def _write_file_paths_list(
 
 
 def _write_directory_paths_list(
-    output_file_path: Path, files_to_process: list[tuple[Path, str]]
+    output_file_path: Path, files_to_process: list[tuple[Path, str]], minimal_output: bool = False
 ):
     """
     Writes a list of unique directory paths to a text file.
@@ -954,10 +963,15 @@ def _write_directory_paths_list(
             The output will be named '{output_file_stem}_dirlist.txt'.
         files_to_process: List of (file_path, relative_path) tuples to extract directories from.
             Only the relative_path part is used to determine directories.
+        minimal_output: If True, no directory list will be created
 
     Returns:
-        Path to the created directory list file.
+        Path to the created directory list file or None if minimal_output is True.
     """
+    if minimal_output:
+        logger.debug("Skipping directory paths list creation (minimal output mode)")
+        return None
+        
     dir_list_path = output_file_path.with_name(f"{output_file_path.stem}_dirlist.txt")
 
     logger.info(f"Writing directory paths list to {dir_list_path}")
@@ -1178,7 +1192,8 @@ def main():
   %(prog)s -s ./config_files --include-dot-files --include-binary-files -o all_configs.txt --verbose
   %(prog)s -i ./file_list.txt -o bundle.all --create-archive --archive-type tar.gz
   %(prog)s -s ./src -o bundle.txt --include-extensions .txt .json .md --exclude-extensions .tmp
-  %(prog)s -s ./project -o all_files.txt --no-default-excludes""",
+  %(prog)s -s ./project -o all_files.txt --no-default-excludes
+  %(prog)s -s ./src -o combined.txt --minimal-output""",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
@@ -1269,6 +1284,11 @@ def main():
         help="Enable verbose output (DEBUG level logging).",
     )
     parser.add_argument(
+        "--minimal-output",
+        action="store_true",
+        help="Generate only the combined output file, without any auxiliary files (no log file, file list, or directory list).",
+    )
+    parser.add_argument(
         "--create-archive",
         action="store_true",
         help="Create a backup archive (zip or tar.gz) of all processed files.",
@@ -1324,7 +1344,9 @@ def main():
     output_file_path = _prepare_output_file_path(args.output_file, args.add_timestamp)
 
     # Configure logging with the output file path to create a parallel log file
-    _configure_logging_settings(args.verbose, chosen_linesep, output_file_path)
+    _configure_logging_settings(
+        args.verbose, chosen_linesep, output_file_path, args.minimal_output
+    )
 
     # Process input file if provided, otherwise use source directory
     input_paths = None
@@ -1384,18 +1406,19 @@ def main():
         output_file_path, files_to_process, args, chosen_linesep
     )
 
-    # Write the list of file paths to a separate file
-    file_list_path = _write_file_paths_list(output_file_path, files_to_process)
+    # Write the list of file paths to a separate file, unless in minimal output mode
+    if not args.minimal_output:
+        file_list_path = _write_file_paths_list(output_file_path, files_to_process)
 
-    # Write the list of directories to a separate file
-    dir_list_path = _write_directory_paths_list(output_file_path, files_to_process)
-
+        # Write the list of directories to a separate file, unless in minimal output mode
+        dir_list_path = _write_directory_paths_list(output_file_path, files_to_process)
+    
     logger.info(
         f"Successfully combined {processed_count} file(s) into '{output_file_path}'."
     )
 
     # --- Token Counting for Output File ---
-    if processed_count > 0:  # Only count tokens if files were actually processed
+    if processed_count > 0 and not args.minimal_output:  # Only count tokens if files were processed and not in minimal output mode
         try:
             logger.info(f"Attempting to count tokens in '{output_file_path.name}'...")
             # Defaulting to "cl100k_base" as it's common for GPT models
@@ -1413,7 +1436,7 @@ def main():
             logger.warning(
                 "  To enable token counting, please ensure 'tiktoken' library is installed (e.g., 'pip install tiktoken')."
             )
-    elif output_file_path.exists():  # An empty note file might have been created
+    elif output_file_path.exists() and not args.minimal_output:  # An empty note file might have been created
         logger.info(
             f"Output file '{output_file_path.name}' was created but is empty or contains no processed files; skipping token count."
         )
