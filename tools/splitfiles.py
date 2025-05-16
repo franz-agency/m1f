@@ -94,7 +94,20 @@ CRLF = "\r\n"
 # Group 1: The entire separator header (used to determine header length).
 # Group 2: The relative file path.
 
-# Vereinfachte und flexiblere Regex für den Beginn des MachineReadable Formats
+# New regex pattern for the PYMK1F format with UUID-based separators
+RE_PYMK1F_SEP = re.compile(
+    r"--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_([a-f0-9-]+) ---\r?\n"  # Metadata start with UUID capture (Group 1)
+    r"METADATA_JSON:\r?\n"  # Metadata indicator line
+    r"(\{[\s\S]*?\})\r?\n"  # JSON metadata capture (Group 2) - multiline, non-greedy
+    r"--- PYMK1F_END_FILE_METADATA_BLOCK_\1 ---\r?\n"  # Metadata end with same UUID
+    r"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_\1 ---\r?\n",  # Content start with same UUID
+    re.MULTILINE,
+)
+
+# Pattern for the end of a content block
+PYMK1F_END_MARKER_PATTERN = r"--- PYMK1F_END_FILE_CONTENT_BLOCK_([a-f0-9-]+) ---"
+
+# Legacy format patterns (keeping for backward compatibility)
 RE_MACHINE_SEP = re.compile(
     r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"  # Start marker line
     r"# FILE: (.*?)\r?\n"  # File path line (Group 1: file path)
@@ -103,7 +116,7 @@ RE_MACHINE_SEP = re.compile(
     r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n",  # Bottom separator line
     re.MULTILINE,
 )
-# Vereinfachtes Muster für den End-Marker
+# Legacy format end marker patterns
 MACHINE_END_MARKER_PATTERN = r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n# END FILE\r?\n# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E"
 MACHINE_END_MARKER = "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\n# END FILE\n# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E"
 
@@ -206,8 +219,14 @@ def parse_combined_file(content: str) -> list[dict]:
     extracted_files = []
 
     # Order matters: More specific/distinct patterns should come first.
-    # MachineReadable is very distinct.
+    # PYMK1F and MachineReadable are very distinct.
     separator_patterns = [
+        {
+            "id": "PYMK1F",
+            "regex": RE_PYMK1F_SEP,
+            "uuid_group": 1,  # UUID capture in the regex
+            "json_group": 2,  # JSON metadata
+        },
         {
             "id": "MachineReadable",
             "regex": RE_MACHINE_SEP,
@@ -249,12 +268,18 @@ def parse_combined_file(content: str) -> list[dict]:
                 "start_index": match.start(),
             }
 
-            # Berechne die Header-Länge für MachineReadable speziell
-            if pattern_info["id"] == "MachineReadable":
-                # Für das MachineReadable-Format müssen wir noch eine Leerzeile nach dem letzten Marker überspringen
+            # Calculate header length for different formats
+            if pattern_info["id"] == "PYMK1F":
+                # For PYMK1F format, the header is everything from the beginning of metadata marker to the end of content marker
                 header_text = match.group(0)
                 file_info_dict["header_len"] = len(header_text)
-                # Überprüfen, ob eine Leerzeile nach dem Header folgt
+                # Store the UUID for later use in finding the closing separator
+                file_info_dict["uuid"] = match.group(pattern_info["uuid_group"])
+            elif pattern_info["id"] == "MachineReadable":
+                # For MachineReadable format, we need to account for a blank line after the last marker
+                header_text = match.group(0)
+                file_info_dict["header_len"] = len(header_text)
+                # Check if a blank line follows the header
                 next_pos = match.end()
                 if next_pos < len(content) and content[next_pos : next_pos + 2] in [
                     "\r\n",
@@ -268,7 +293,45 @@ def parse_combined_file(content: str) -> list[dict]:
                     match.group(pattern_info["header_group"])
                 )
 
-            if pattern_info["id"] == "MachineReadable":
+            if pattern_info["id"] == "PYMK1F":
+                try:
+                    # Get metadata from JSON
+                    json_str = match.group(pattern_info["json_group"])
+                    meta = json.loads(json_str)
+                    
+                    # Extract path from metadata
+                    path_val = meta.get("original_filepath", "").strip()
+                    
+                    # Check if we have a valid path
+                    if not path_val:
+                        logger.warning(
+                            f"PYMK1F block found at offset {match.start()} with missing or empty path in metadata"
+                        )
+                        continue
+                    
+                    # Extract timestamp from metadata (new format uses timestamp_utc_iso)
+                    modified_val = meta.get("timestamp_utc_iso")
+                    
+                    file_info_dict.update({
+                        "path": path_val,
+                        "modified": modified_val,
+                        "type": meta.get("type"),
+                        "size_bytes": meta.get("size_bytes"),
+                        "checksum_sha256": meta.get("checksum_sha256"),
+                    })
+                    matches.append(file_info_dict)
+                    continue
+                except json.JSONDecodeError as e:
+                    logger.warning(
+                        f"PYMK1F block found at offset {match.start()} with invalid JSON: {json_str}. Error: {e}"
+                    )
+                    continue
+                except Exception as e:
+                    logger.warning(
+                        f"Error processing PYMK1F block at offset {match.start()} with JSON '{json_str}': {e}"
+                    )
+                    continue
+            elif pattern_info["id"] == "MachineReadable":
                 try:
                     # Get the path directly from the regex match
                     path_val = match.group(pattern_info["path_group"]).strip()
@@ -348,7 +411,33 @@ def parse_combined_file(content: str) -> list[dict]:
             content
         )  # Default: end of the whole content string
 
-        if sep_id == "MachineReadable":
+        if sep_id == "PYMK1F":
+            # For PYMK1F format, find the corresponding closing marker using the UUID
+            file_uuid = current_match_info.get("uuid")
+            if file_uuid:
+                end_marker_pattern = f"--- PYMK1F_END_FILE_CONTENT_BLOCK_{file_uuid} ---"
+                end_marker_pos = content.find(end_marker_pattern, content_start_pos)
+                
+                if end_marker_pos != -1:
+                    # Found the end marker
+                    next_separator_start_pos = end_marker_pos
+                else:
+                    # End marker with matching UUID not found
+                    logger.warning(
+                        f"PYMK1F file '{relative_path}' is missing its end marker with UUID {file_uuid}. Content might be incomplete or incorrect."
+                    )
+                    # Fallback: content runs to the start of the next found separator or EOF
+                    if i + 1 < len(matches):
+                        next_separator_start_pos = matches[i + 1]["start_index"]
+            else:
+                # If UUID is not available (shouldn't happen with proper regex)
+                logger.warning(
+                    f"PYMK1F block for '{relative_path}' has no UUID. Cannot find matching end marker."
+                )
+                # Fallback: content runs to the start of the next found separator or EOF
+                if i + 1 < len(matches):
+                    next_separator_start_pos = matches[i + 1]["start_index"]
+        elif sep_id == "MachineReadable":
             # Find the end marker for this specific MachineReadable block using regex to handle line endings
             end_marker_re = re.compile(MACHINE_END_MARKER_PATTERN, re.MULTILINE)
             end_marker_search = end_marker_re.search(content, content_start_pos)
@@ -397,7 +486,7 @@ def parse_combined_file(content: str) -> list[dict]:
         file_content_raw = content[content_start_pos:next_separator_start_pos]
         file_content = ""
 
-        if sep_id == "MachineReadable":
+        if sep_id in ["PYMK1F", "MachineReadable"]:
             file_content = file_content_raw
             # ---- START PRAGMATIC FIX FOR TRAILING \r ----
             if (

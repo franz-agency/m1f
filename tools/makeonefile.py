@@ -124,6 +124,7 @@ import logging
 import os
 import sys
 import time  # Added for time measurement
+import uuid  # Added for UUID generation
 from pathlib import Path
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
@@ -387,24 +388,32 @@ def get_file_separator(
         ]
         return linesep.join(separator_lines)
     elif style == "MachineReadable":
-        # Checksum calculation moved above for all relevant styles
+        # Generate a unique UUID for this file block
+        file_uuid = str(uuid.uuid4())
+        
+        # Create metadata for the file
         meta = {
-            "modified": mod_date_str,
+            "original_filepath": str(relative_path),
+            "original_filename": os.path.basename(relative_path),
+            "timestamp_utc_iso": datetime.datetime.fromtimestamp(
+                stat_info.st_mtime, tz=datetime.timezone.utc
+            ).isoformat().replace("+00:00", "Z"),
             "type": file_ext,
             "size_bytes": file_size_bytes,
             "checksum_sha256": (
                 checksum_sha256 if checksum_sha256 != "[CHECKSUM_ERROR]" else ""
-            ),
+            )
         }
-        json_meta = json.dumps(meta)
-        # Create a more LLM-friendly format with a single unique marker that won't appear in files
+        
+        json_meta = json.dumps(meta, indent=4)
+        
+        # Create the new format with UUIDs for metadata and content blocks
         separator_lines = [
-            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
-            f"# FILE: {relative_path}",
-            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
-            f"# METADATA: {json_meta}",
-            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
-            "",  # Empty line before content
+            f"--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_{file_uuid} ---",
+            "METADATA_JSON:",
+            json_meta,
+            f"--- PYMK1F_END_FILE_METADATA_BLOCK_{file_uuid} ---",
+            f"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_{file_uuid} ---"
         ]
         return linesep.join(separator_lines)
     else:  # Should not happen due to argparse choices
@@ -428,14 +437,9 @@ def get_closing_separator(style: str, linesep: str) -> str | None:
     elif style == "Markdown":
         return "```"
     elif style == "MachineReadable":
-        # Create a unique closing separator that won't occur in normal files
-        closing_lines = [
-            "",  # Empty line after content
-            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
-            f"# END FILE",
-            "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
-        ]
-        return linesep.join(closing_lines)
+        # The file_uuid is automatically added when writing the file in _write_combined_data
+        # We just return a simple closing marker. The UUID from the opening marker will be reused.
+        return "--- PYMK1F_END_FILE_CONTENT_BLOCK_{{file_uuid}} ---"
     return None
 
 
@@ -847,9 +851,13 @@ def _write_combined_data(
                     file_info, rel_path_str, args.separator_style, chosen_linesep
                 )
 
-                # For MachineReadable, separator_text already includes its final necessary newline after JSON.
-                # For other styles, we add one after the separator text itself (except for "None" style).
+                # For MachineReadable, we need to extract the UUID from the separator text
+                current_file_uuid = None
                 if args.separator_style == "MachineReadable":
+                    # Extract the UUID from the separator text
+                    import re
+                    uuid_match = re.search(r'PYMK1F_BEGIN_FILE_METADATA_BLOCK_([a-f0-9-]+)', separator_text)
+                    current_file_uuid = uuid_match.group(1) if uuid_match else str(uuid.uuid4())
                     outfile.write(separator_text)
                 elif args.separator_style == "None":
                     # For None style, don't add any separator or newline
@@ -859,7 +867,6 @@ def _write_combined_data(
 
                 # Add an additional blank line for Standard and Detailed styles
                 # after their header and before the actual file content begins.
-                # (Skip this for the "None" style)
                 if args.separator_style in ["Standard", "Detailed"]:
                     outfile.write(chosen_linesep)
 
@@ -889,10 +896,11 @@ def _write_combined_data(
                     args.separator_style, chosen_linesep
                 )
                 if closing_separator_text:
-                    # For MachineReadable, closing_separator_text is `linesep + END_MARKER`.
-                    #   outfile.write adds `linesep + END_MARKER + chosen_linesep`.
-                    # For Markdown, closing_separator_text is ```` ``` ``` `.
-                    #   outfile.write adds ```` ``` ``` ` + chosen_linesep`.
+                    # For MachineReadable, insert the UUID into the closing separator
+                    if args.separator_style == "MachineReadable" and current_file_uuid:
+                        closing_separator_text = closing_separator_text.replace("{{file_uuid}}", current_file_uuid)
+                    
+                    # Write the closing separator
                     outfile.write(closing_separator_text + chosen_linesep)
 
                 # Add a separating newline IF this is not the last file.
