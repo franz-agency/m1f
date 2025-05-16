@@ -1,0 +1,1 @@
+This is not actually a jpg file but we'll use it to simulate a binary file with .jpg extension for testing purposes.

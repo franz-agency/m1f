@@ -279,6 +279,19 @@ type, size in bytes, and SHA256 checksum for data integrity verification. It's
 particularly suitable for use with LLMs and automated tools, as it uses familiar
 comment syntax with consistent boundaries.
 
+#### Testing
+
+A comprehensive test suite for `makeonefile.py` is available in the `tests/makeonefile/` directory. The test suite includes tests for all major functionality of the script, including:
+
+- Basic file combining operations
+- Different separator styles
+- File inclusion/exclusion options
+- Unicode character handling
+- Archive creation
+- Edge cases and performance testing
+
+For more information on the test suite and how to run the tests, please see the [tests/makeonefile/README.md](tests/makeonefile/README.md) file.
+
 ### tools/splitfiles.py
 
 A utility that splits a single input file (previously created by

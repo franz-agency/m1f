@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Case Test</title>
+    <!-- Comment with special characters: < > & " ' -->
+    <script>
+        // JavaScript with regex patterns
+        const pattern = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/;
+        const str = "Test <!-- not a comment --> string";
+        
+        /* Multi-line comment
+         * with <!-- HTML comment syntax -->
+         * and other special characters: \ / ` ~
+         */
+        function testFunction() {
+            return `Template literal with ${variable} and nested "quotes" inside`;
+        }
+    </script>
+    <style>
+        /* CSS with complex selectors */
+        body::before {
+            content: "<!-- This is not an HTML comment -->";
+            color: #123456;
+        }
+        
+        [data-special*="test"] > .nested::after {
+            content: "/* This is not a CSS comment */";
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML comment that might confuse parsers -->
+    <div class="container">
+        <h1>Edge Case Test File</h1>
+        <p>This file contains various edge cases that might confuse parsers:</p>
+        <ul>
+            <li>HTML comments &lt;!-- like this --&gt;</li>
+            <li>Script tags with JavaScript</li>
+            <li>CSS with complex selectors</li>
+            <li>Special characters: &amp; &lt; &gt; &quot; &#39;</li>
+            <li>Code blocks that look like separators</li>
+        </ul>
+        <pre>
+# ===============================================================================
+# FILE: fake/separator.txt
+# ===============================================================================
+# METADATA: {"modified": "2023-01-01", "type": ".txt"}
+# -------------------------------------------------------------------------------
+
+This is not a real separator, just testing how the parser handles it.
+
+# ===============================================================================
+# END FILE
+# ===============================================================================
+        </pre>
+    </div>
+</body>
+</html>

@@ -1,0 +1,470 @@
+#!/usr/bin/env python3
+"""
+Tests for the makeonefile.py script.
+
+This test suite verifies the functionality of the makeonefile.py script by:
+1. Setting up a test directory with various file types
+2. Running the script with different configurations
+3. Validating the output files match expected behavior
+"""
+
+import os
+import sys
+import json
+import shutil
+import time
+import pytest
+import subprocess
+from pathlib import Path
+
+# Add the tools directory to path to import the makeonefile module
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
+import makeonefile
+
+# Test constants
+TEST_DIR = Path(__file__).parent
+SOURCE_DIR = TEST_DIR / "source"
+OUTPUT_DIR = TEST_DIR / "output"
+EXCLUDE_PATHS_FILE = TEST_DIR / "exclude_paths.txt"
+
+
+class TestMakeOneFile:
+    """Test cases for the makeonefile.py script."""
+
+    @classmethod
+    def setup_class(cls):
+        """Setup test environment once before all tests."""
+        # Print test environment information
+        print(f"\nRunning tests for makeonefile.py")
+        print(f"Python version: {sys.version}")
+        print(f"Test directory: {TEST_DIR}")
+        print(f"Source directory: {SOURCE_DIR}")
+
+    def setup_method(self):
+        """Setup test environment before each test."""
+        # Ensure the output directory exists and is empty
+        if OUTPUT_DIR.exists():
+            shutil.rmtree(OUTPUT_DIR)
+        OUTPUT_DIR.mkdir(exist_ok=True)
+
+    def teardown_method(self):
+        """Clean up after each test."""
+        # Remove output files for a clean slate between tests
+        for file_path in OUTPUT_DIR.glob("*"):
+            if file_path.is_file():
+                file_path.unlink()
+
+    def test_basic_execution(self):
+        """Test basic execution of the script."""
+        output_file = OUTPUT_DIR / "basic_output.txt"
+
+        # Run the script programmatically
+        args = makeonefile.parse_arguments(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify outputs
+        assert output_file.exists(), "Output file was not created"
+        assert output_file.stat().st_size > 0, "Output file is empty"
+
+        # Check that accompanying files were created
+        assert (OUTPUT_DIR / "basic_output.log").exists(), "Log file not created"
+        assert (
+            OUTPUT_DIR / "basic_output_filelist.txt"
+        ).exists(), "Filelist not created"
+        assert (OUTPUT_DIR / "basic_output_dirlist.txt").exists(), "Dirlist not created"
+
+        # Verify excluded directories are not in the output
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "node_modules" not in content, "node_modules should be excluded"
+            assert ".git" not in content, "Git directory should be excluded"
+
+    def test_include_dot_files(self):
+        """Test inclusion of dot files."""
+        output_file = OUTPUT_DIR / "dot_files_included.txt"
+
+        # Run with dot files included
+        args = makeonefile.parse_arguments(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--include-dot-files",
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify dot files are included
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert ".hidden/.config" in content, "Dot files should be included"
+
+    def test_exclude_paths_file(self):
+        """Test excluding paths from a file."""
+        output_file = OUTPUT_DIR / "excluded_paths.txt"
+
+        # Run with exclude paths file
+        args = makeonefile.parse_arguments(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--exclude-paths-file",
+                str(EXCLUDE_PATHS_FILE),
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify excluded paths are not in the output
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "index.php" not in content, "index.php should be excluded"
+            assert "sample.jpg.txt" not in content, "sample.jpg.txt should be excluded"
+
+    def test_separator_styles(self):
+        """Test different separator styles."""
+        styles = ["Standard", "Detailed", "Markdown", "MachineReadable", "None"]
+
+        for style in styles:
+            output_file = OUTPUT_DIR / f"separator_{style.lower()}.txt"
+
+            # Run with specific separator style
+            args = makeonefile.parse_arguments(
+                [
+                    "--source-directory",
+                    str(SOURCE_DIR),
+                    "--output-file",
+                    str(output_file),
+                    "--separator-style",
+                    style,
+                    "--force",
+                ]
+            )
+            makeonefile.main(args)
+
+            # Verify the output file exists and has content
+            assert output_file.exists(), f"Output file for {style} style not created"
+            assert (
+                output_file.stat().st_size > 0
+            ), f"Output file for {style} style is empty"
+
+            # For MachineReadable style, verify it has JSON metadata
+            if style == "MachineReadable":
+                with open(output_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    assert (
+                        "# METADATA:" in content
+                    ), "MachineReadable style should include metadata"
+                    assert (
+                        '{"modified":' in content
+                    ), "MachineReadable style should have JSON metadata"
+
+    def test_timestamp_in_filename(self):
+        """Test adding timestamp to output filename."""
+        # Run with timestamp option
+        args = makeonefile.parse_arguments(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(OUTPUT_DIR / "timestamp_test.txt"),
+                "--add-timestamp",
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Check if a file with timestamp exists
+        timestamp_files = list(OUTPUT_DIR.glob("timestamp_test_*.txt"))
+        assert len(timestamp_files) > 0, "No file with timestamp was created"
+
+        # The filename should contain numbers for date/time
+        filename = timestamp_files[0].name
+        assert "_20" in filename, "Timestamp not found in filename"
+
+    def test_additional_excludes(self):
+        """Test excluding additional directories."""
+        output_file = OUTPUT_DIR / "additional_excludes.txt"
+
+        # Run with additional excludes
+        args = makeonefile.parse_arguments(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--additional-excludes",
+                "docs",
+                "config",
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify excluded dirs are not in the output
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "docs/README.md" not in content, "docs directory should be excluded"
+            assert (
+                "config/config.json" not in content
+            ), "config directory should be excluded"
+
+    def test_create_archive_zip(self):
+        """Test creating a zip archive of processed files."""
+        output_file = OUTPUT_DIR / "archive_test.txt"
+
+        # Run with archive creation
+        args = makeonefile.parse_arguments(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--create-archive",
+                "--archive-type",
+                "zip",
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify archive was created
+        archive_file = OUTPUT_DIR / "archive_test_backup.zip"
+        assert archive_file.exists(), "Zip archive was not created"
+        assert archive_file.stat().st_size > 0, "Zip archive is empty"
+
+        # Check the content of the archive (would need zipfile module)
+        import zipfile
+
+        with zipfile.ZipFile(archive_file, "r") as zip_ref:
+            file_list = zip_ref.namelist()
+            assert len(file_list) > 0, "Zip archive contains no files"
+
+            # Check for at least one expected file
+            found_python_file = False
+            for file_path in file_list:
+                if file_path.endswith(".py"):
+                    found_python_file = True
+                    break
+            assert found_python_file, "No Python files found in the archive"
+
+    def test_create_archive_tar(self):
+        """Test creating a tar.gz archive of processed files."""
+        output_file = OUTPUT_DIR / "archive_tar_test.txt"
+
+        # Run with tar.gz archive creation
+        args = makeonefile.parse_arguments(
+            [
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--create-archive",
+                "--archive-type",
+                "tar.gz",
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify archive was created
+        archive_file = OUTPUT_DIR / "archive_tar_test_backup.tar.gz"
+        assert archive_file.exists(), "Tar.gz archive was not created"
+        assert archive_file.stat().st_size > 0, "Tar.gz archive is empty"
+
+        # Check the content of the archive
+        import tarfile
+
+        with tarfile.open(archive_file, "r:gz") as tar_ref:
+            file_list = tar_ref.getnames()
+            assert len(file_list) > 0, "Tar archive contains no files"
+
+    def test_line_ending_option(self):
+        """Test specifying line ending format."""
+        # Test both LF and CRLF options
+        for ending in ["LF", "CRLF"]:
+            output_file = OUTPUT_DIR / f"line_ending_{ending.lower()}.txt"
+
+            args = makeonefile.parse_arguments(
+                [
+                    "--source-directory",
+                    str(SOURCE_DIR),
+                    "--output-file",
+                    str(output_file),
+                    "--line-ending",
+                    ending,
+                    "--force",
+                ]
+            )
+            makeonefile.main(args)
+
+            # Verify output file exists
+            assert (
+                output_file.exists()
+            ), f"Output file for {ending} line endings not created"
+
+    def test_command_line_execution(self):
+        """Test executing the script as a command line tool."""
+        output_file = OUTPUT_DIR / "cli_execution.txt"
+
+        # Run the script as a subprocess
+        script_path = Path(__file__).parent.parent.parent / "tools" / "makeonefile.py"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(script_path),
+                "--source-directory",
+                str(SOURCE_DIR),
+                "--output-file",
+                str(output_file),
+                "--force",
+                "--verbose",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        # Check that the script executed successfully
+        assert result.returncode == 0, f"Script failed with error: {result.stderr}"
+
+        # Verify output file was created
+        assert output_file.exists(), "Output file not created from CLI execution"
+        assert output_file.stat().st_size > 0, "Output file is empty from CLI execution"
+
+    def test_input_paths_file(self):
+        """Test processing files from an input paths file rather than source directory."""
+        output_file = OUTPUT_DIR / "input_paths.txt"
+        input_file = TEST_DIR / "input_paths.txt"
+
+        # Run with input paths file
+        args = makeonefile.parse_arguments(
+            [
+                "--input-paths-file",
+                str(input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify only specified files are included
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "hello.py" in content, "hello.py should be included"
+            assert "utils.py" in content, "utils.py should be included"
+            assert "README.md" in content, "README.md should be included"
+            assert "index.php" not in content, "index.php should not be included"
+
+    def test_unicode_handling(self):
+        """Test handling of Unicode characters in files."""
+        output_file = OUTPUT_DIR / "unicode_test.txt"
+
+        # Create a temporary input paths file specifically for the Unicode test
+        temp_input_file = OUTPUT_DIR / "temp_unicode_input.txt"
+        with open(temp_input_file, "w", encoding="utf-8") as f:
+            f.write(f"source/docs/unicode_sample.md")
+
+        # Run with the temp input paths file
+        args = makeonefile.parse_arguments(
+            [
+                "--input-paths-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify Unicode content is preserved
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "Grüße aus München!" in content, "German Unicode not preserved"
+            assert "你好，世界！" in content, "Chinese Unicode not preserved"
+            assert "こんにちは世界！" in content, "Japanese Unicode not preserved"
+            assert "😀 🚀" in content, "Emojis not preserved"
+
+    def test_edge_cases(self):
+        """Test handling of edge cases like HTML with comments, fake separators, etc."""
+        output_file = OUTPUT_DIR / "edge_case_test.txt"
+
+        # Create a temporary input paths file specifically for the edge case test
+        temp_input_file = OUTPUT_DIR / "temp_edge_case_input.txt"
+        with open(temp_input_file, "w", encoding="utf-8") as f:
+            f.write(f"source/code/edge_case.html")
+
+        # Run with the temp input paths file
+        args = makeonefile.parse_arguments(
+            [
+                "--input-paths-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
+        makeonefile.main(args)
+
+        # Verify edge case content is handled correctly
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert (
+                "<!-- Comment with special characters: < > & " in content
+            ), "HTML comments not preserved"
+            assert "fake/separator.txt" in content, "Fake separator text not preserved"
+
+    def test_large_file_handling(self):
+        """Test processing of large files."""
+        output_file = OUTPUT_DIR / "large_file_test.txt"
+
+        # Create a temporary input paths file specifically for the large file test
+        temp_input_file = OUTPUT_DIR / "temp_large_file_input.txt"
+        with open(temp_input_file, "w", encoding="utf-8") as f:
+            f.write(f"source/code/large_sample.txt")
+
+        # Run with the temp input paths file
+        args = makeonefile.parse_arguments(
+            [
+                "--input-paths-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
+
+        # Measure execution time for performance testing
+        start_time = time.time()
+        makeonefile.main(args)
+        execution_time = time.time() - start_time
+
+        # Verify large file was processed successfully
+        assert output_file.exists(), "Output file not created"
+        assert output_file.stat().st_size > 0, "Output file is empty"
+
+        # Log performance information
+        print(f"Large file processing time: {execution_time:.2f} seconds")
+
+        # Basic verification of content
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "Large Sample Text File" in content, "File header missing"
+            assert "x" * 100 in content, "Long line content missing"
+
+
+# Run the tests when the script is executed directly
+if __name__ == "__main__":
+    pytest.main(["-xvs", __file__])
