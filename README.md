@@ -69,6 +69,7 @@ date, size, type, and a SHA256 checksum for integrity.
   - Exclusion of binary files by default
   - Option to include dot-files and binary files
   - Case-insensitive exclusion of additional specified directory names
+  - Exclusion of specific paths from a file with exact path matching
 - **Customization**:
   - Control over line endings (LF or CRLF) for script-generated separators
   - Verbose mode for detailed logging
@@ -131,6 +132,13 @@ Concatenating files without any separators between them:
 ```bash
 python tools/makeonefile.py -s ./source_code -o ./dist/seamless.txt \
   --separator-style None
+```
+
+Excluding specific paths using a file:
+
+```bash
+python tools/makeonefile.py -s ./my_project -o ./combined.txt \
+  --exclude-paths-file ./exclude_list.txt
 ```
 
 When you run the script, it will:
@@ -204,10 +212,35 @@ python tools/makeonefile.py --help
 | `-o, --output-file`      | Path for the combined output file (also determines the log file name)                             |
 | `-f, --force`            | Force overwrite of existing output file without prompting                                         |
 | `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename                                        |
+| `--exclude-paths-file`   | Path to a file containing exact paths to exclude                                                  |
 | `-v, --verbose`          | Enable verbose logging (more detailed log output)                                                 |
 | `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`) |
 | `--create-archive`       | Create a backup archive of processed files                                                        |
 | `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                     |
+
+### Exclude Paths File Format
+
+When using the `--exclude-paths-file` option, the file should contain one path per line. Paths are matched exactly as written, and empty lines and lines starting with `#` are ignored (treated as comments).
+
+Example of an exclude paths file:
+
+```
+# This is a comment
+myproject/dir1/dir2
+
+# Another directory to exclude
+myproject/dir3/dir4
+
+# A specific file
+dir4
+```
+
+In this example:
+- The path `myproject/dir1/dir2` will be excluded exactly as written
+- The path `myproject/dir3/dir4` will be excluded exactly as written
+- The path `dir4` will only exclude a file or directory named exactly `dir4` at the root level
+
+Important: Unlike directory name-based exclusion, the path-based exclusion matches exactly. So, for example, if you list `dir4` in the exclude file, it will not exclude `myproject/dir4` or other paths that contain `dir4` as a substring.
 
 ### MachineReadable Format
 

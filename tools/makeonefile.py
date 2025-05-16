@@ -34,6 +34,7 @@ KEY FEATURES
 - Exclusion of binary files by default (based on extension).
 - Option to include dot-files (e.g., '.gitignore') and binary files.
 - Case-insensitive exclusion of additional specified directory names.
+- Exclusion of specific paths from a file, with exact path matching.
 - Control over line endings (LF or CRLF) for script-generated separators.
 - Verbose mode for detailed logging.
 - Prompts for overwriting an existing output file unless `--force` is used.
@@ -65,11 +66,22 @@ Using MachineReadable style and creating a zip archive:
 With more options including tar.gz archive:
   python pymakeonefile.py -s ./my_project -o ./output/bundle.md -t --separator-style Markdown --force --verbose --additional-excludes "temp" "docs_old" --create-archive --archive-type tar.gz
 
+With exclude paths file:
+  python pymakeonefile.py -s ./my_project -o ./output/bundle.txt --exclude-paths-file ./exclude_list.txt
+
 For all options, run:
   python pymakeonefile.py --help
 
 NOTES
 =====
+- Path Exclusion File: When using `--exclude-paths-file`, the file should contain one path per line. Paths are matched exactly as written. For example, if the file contains:
+  ```
+  my_project/dir1/dir2
+  my_project/dir3/file.txt
+  some_file.txt
+  ```
+  Only these exact paths will be excluded. A path like `other_project/some_file.txt` would not be excluded. Empty lines and lines starting with '#' are ignored as comments.
+
 - MachineReadable Format: This format is designed for automated splitting and LLM compatibility.
   It uses clear comment-based boundary markers with visual separators:
   ```
@@ -650,10 +662,58 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
         return []
 
 
+def _load_exclude_paths_from_file(exclude_paths_file: str) -> Set[str]:
+    """Load paths to exclude from a file.
+    
+    Args:
+        exclude_paths_file: Path to a file containing paths to exclude (one per line).
+            Format: Each line contains a single path to exclude. The paths are matched exactly
+            as written. Empty lines and lines starting with '#' are treated as comments and ignored.
+            Example file content:
+                # This is a comment
+                dir1/dir2
+                project/file.txt
+        
+    Returns:
+        A set of normalized paths to exclude
+    """
+    exclude_paths = set()
+    if not exclude_paths_file:
+        return exclude_paths
+        
+    try:
+        exclude_file_path = Path(exclude_paths_file).resolve()
+        if not exclude_file_path.exists():
+            logger.warning(f"Exclude paths file not found: {exclude_file_path}")
+            return exclude_paths
+            
+        with open(exclude_file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):  # Skip empty lines and comments
+                    # Normalize path (OS-appropriate path separators)
+                    normalized_path = str(Path(line))
+                    exclude_paths.add(normalized_path)
+        
+        logger.info(f"Loaded {len(exclude_paths)} paths to exclude from {exclude_file_path}")
+    except Exception as e:
+        logger.error(f"Error loading exclude paths file: {e}")
+    
+    return exclude_paths
+
+
 def _is_file_excluded(
     file_path: Path, args: argparse.Namespace, all_excluded_dir_names_lower: Set[str]
 ) -> bool:
     """Checks if a file should be excluded based on various criteria."""
+    # Check if the path is in the exclude paths list
+    if hasattr(args, 'exclude_paths') and args.exclude_paths:
+        rel_path_str = str(file_path.relative_to(args.source_base_dir) if hasattr(args, 'source_base_dir') else file_path)
+        if rel_path_str in args.exclude_paths:
+            if args.verbose:
+                logger.debug(f"Excluding path (exact match from exclude file): {rel_path_str}")
+            return True
+    
     if not args.include_dot_files and file_path.name.startswith("."):
         if args.verbose:
             logger.debug(f"Excluding dot file: {file_path}")
@@ -1047,6 +1107,11 @@ def main():
         help="Space-separated list of additional directory NAMES to exclude (e.g., 'obj', 'debug'). Case-insensitive.",
     )
     parser.add_argument(
+        "--exclude-paths-file",
+        type=str,
+        help="Path to a file containing exact paths to exclude (one per line). Paths are matched exactly as written. Empty lines and lines starting with '#' are ignored.",
+    )
+    parser.add_argument(
         "--include-dot-files",
         action="store_true",
         help="Include files that start with a dot (e.g., .gitignore). Dot directories (e.g. .git) are generally excluded by default_excluded_dir_names.",
@@ -1107,6 +1172,12 @@ def main():
 
     args = parser.parse_args()
 
+    # Load exclude paths from file if specified
+    if hasattr(args, 'exclude_paths_file') and args.exclude_paths_file:
+        args.exclude_paths = _load_exclude_paths_from_file(args.exclude_paths_file)
+    else:
+        args.exclude_paths = set()
+
     chosen_linesep = LF if args.line_ending == "lf" else CRLF
 
     output_file_path = _prepare_output_file_path(args.output_file, args.add_timestamp)
@@ -1128,6 +1199,9 @@ def main():
         source_dir = input_paths[0].parent if input_paths else Path.cwd()
     else:
         source_dir = _resolve_and_validate_source_path(args.source_directory)
+    
+    # Set source base directory for path exclusion matching
+    args.source_base_dir = source_dir
 
     # Output file path was already prepared for logging setup
     _handle_output_file_overwrite_and_creation(
