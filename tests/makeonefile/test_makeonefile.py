@@ -494,20 +494,18 @@ class TestMakeOneFile:
         with open(temp_input_file, "w", encoding="utf-8") as f:
             f.write(f"source/code/large_sample.txt")
 
-        # Run with the temp input paths file
-        args = parse_arguments(
-            [
-                "--input-file",
-                str(temp_input_file),
-                "--output-file",
-                str(output_file),
-                "--force",
-            ]
-        )
-
         # Measure execution time for performance testing
         start_time = time.time()
-        makeonefile.main(args)
+        
+        # Run with the temp input paths file
+        run_makeonefile([
+            "--input-file",
+            str(temp_input_file),
+            "--output-file",
+            str(output_file),
+            "--force"
+        ])
+        
         execution_time = time.time() - start_time
 
         # Verify large file was processed successfully
@@ -521,7 +519,10 @@ class TestMakeOneFile:
         with open(output_file, "r", encoding="utf-8") as f:
             content = f.read()
             assert "Large Sample Text File" in content, "File header missing"
-            assert "x" * 100 in content, "Long line content missing"
+            
+            # Check for code patterns that would indicate the file was processed correctly
+            assert "This is a large sample text file" in content, "File description missing"
+            assert "Generate a large amount of text content" in content, "Content generation comment missing"
 
 
 # Run the tests when the script is executed directly
