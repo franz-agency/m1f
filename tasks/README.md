@@ -169,3 +169,120 @@ files.
 ## Author
 
 Franz und Franz - https://franz.agency
+
+## Example: WordPress Theme Development
+
+This example shows how to use the AI context generator for WordPress theme development.
+
+### Setup: Create a Directory for AI Context Files
+
+1. First, create a dedicated directory for your AI context files in your project root:
+
+```bash
+mkdir -p .ai-context
+```
+
+2. Add this directory to your `.gitignore` file to avoid committing potentially large context files:
+
+```bash
+# Add to .gitignore
+.ai-context/
+```
+
+### Creating a WordPress Theme Context
+
+Let's say you're developing a custom WordPress theme called "mytheme" and want to provide the AI with context about all your theme files:
+
+1. Create a file list in `tasks/wp_theme_files.txt`:
+
+```
+# Main theme files
+d:\projects\wordpress\wp-content\themes\mytheme\style.css
+d:\projects\wordpress\wp-content\themes\mytheme\functions.php
+d:\projects\wordpress\wp-content\themes\mytheme\index.php
+d:\projects\wordpress\wp-content\themes\mytheme\header.php
+d:\projects\wordpress\wp-content\themes\mytheme\footer.php
+
+# Template files
+d:\projects\wordpress\wp-content\themes\mytheme\template-parts\content.php
+d:\projects\wordpress\wp-content\themes\mytheme\template-parts\content-page.php
+d:\projects\wordpress\wp-content\themes\mytheme\template-parts\content-single.php
+
+# Custom functionality
+d:\projects\wordpress\wp-content\themes\mytheme\inc\template-functions.php
+d:\projects\wordpress\wp-content\themes\mytheme\inc\customizer.php
+
+# JavaScript files
+d:\projects\wordpress\wp-content\themes\mytheme\js\navigation.js
+d:\projects\wordpress\wp-content\themes\mytheme\js\customizer.js
+```
+
+2. Add a new task in `tasks/makeonefile.json`:
+
+```json
+{
+    "label": "WordPress: Generate Theme Context",
+    "type": "shell",
+    "command": "python",
+    "args": [
+        "${workspaceFolder}/tools/makeonefile.py",
+        "--input-file",
+        "${workspaceFolder}/tasks/wp_theme_files.txt",
+        "--output-file",
+        "${workspaceFolder}/.ai-context/mytheme.m1f",
+        "--separator-style",
+        "MachineReadable",
+        "--force",
+        "--minimal-output",
+        "--quiet"
+    ],
+    "problemMatcher": [],
+    "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "clear": true
+    },
+    "detail": "Creates an AI context file containing all files from the mytheme WordPress theme."
+}
+```
+
+### Running the Task
+
+1. Open Windsurf/VS Code Command Palette (`Ctrl+Shift+P`)
+2. Type "Tasks: Run Task" and press Enter
+3. Select "WordPress: Generate Theme Context"
+4. The combined file will be created in `.ai-context/mytheme.m1f`
+
+### Keeping the Context Updated
+
+To ensure your AI context stays up-to-date with your theme changes:
+
+1. **Update Automatically**: Configure the task to run automatically on file save by adding a VS Code task watch:
+
+   ```json
+   "runOptions": {
+       "runOn": "folderOpen"
+   }
+   ```
+
+2. **Manual Updates**: Run the task manually whenever you make significant changes to your theme.
+
+3. **Selective Updates**: When working on a specific feature (e.g., the theme customizer), create a feature-specific context file:
+
+   ```bash
+   # Example feature-specific list
+   d:\projects\wordpress\wp-content\themes\mytheme\inc\customizer.php
+   d:\projects\wordpress\wp-content\themes\mytheme\js\customizer.js
+   d:\projects\wordpress\wp-content\themes\mytheme\template-parts\customizer-preview.php
+   ```
+
+### Using with AI Tools
+
+When you need help with your WordPress theme:
+
+1. Open the generated `.m1f` file or add it to the AI's context
+2. Ask specific questions about your theme's implementation
+3. Request explanations of your theme's structure or functionality
+4. Get suggestions for improvements or bug fixes
+
+This approach gives you all the benefits of context-aware AI assistance while keeping your context files organized and up-to-date.

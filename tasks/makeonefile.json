@@ -104,6 +104,33 @@
             "detail": "Creates a feature-specific context bundle using paths in feature_context_files.txt. Includes timestamp for versioning."
         },
         {
+            "label": "WordPress: Generate Theme Context",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/tools/makeonefile.py",
+                "--input-file",
+                "${workspaceFolder}/tasks/wp_theme_files.txt",
+                "--output-file",
+                "${workspaceFolder}/.ai-context/mytheme.m1f",
+                "--separator-style",
+                "MachineReadable",
+                "--force",
+                "--minimal-output",
+                "--quiet"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared",
+                "clear": true
+            },
+            "detail": "Creates an AI context file containing all files from the mytheme WordPress theme."
+        },
+        {
             "label": "Lint: Format JSON/Markdown with Prettier",
             "type": "shell",
             "command": "npx",
