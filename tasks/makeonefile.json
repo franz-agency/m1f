@@ -14,7 +14,8 @@
                 "--separator-style",
                 "MachineReadable",
                 "--force",
-                "--verbose"
+                "--minimal-output",
+                "--quiet"
             ],
             "problemMatcher": [],
             "group": {
@@ -45,6 +46,7 @@
                 "MachineReadable",
                 "--force",
                 "--verbose",
+                "--minimal-output",
                 "--additional-excludes", 
                 "node_modules", 
                 ".git", 
@@ -83,7 +85,7 @@
                 "--separator-style",
                 "MachineReadable",
                 "--force",
-                "--verbose",
+                "--minimal-output",
                 "--add-timestamp"
             ],
             "problemMatcher": [],

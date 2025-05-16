@@ -46,6 +46,7 @@ This task combines files from your project with common exclusions:
 - **Output**: `.gen/ai_context.m1f`
 - **Excludes**: Non-relevant directories (`node_modules`, `.git`, `.venv`, etc.)
 - **Format**: Machine-readable format with clear file separators
+- **Optimization**: Uses `--minimal-output` to generate only the combined file without extra logs or lists
 - **Best for**: Initial exploration when you're unsure which files are important
 
 ### 2. AI Context: Create From Input List (Recommended)
@@ -55,6 +56,7 @@ This task combines only the specific files you select:
 - **Source**: Files explicitly listed in `tasks/ai_context_files.txt`
 - **Output**: `.gen/ai_context_custom.m1f`
 - **Format**: Same machine-readable format
+- **Efficiency**: Uses `--minimal-output --quiet` for silent operation with no auxiliary files
 - **Best for**: Focused work when you know which ~20-50 files are most relevant
 
 ## Practical Usage Guide
