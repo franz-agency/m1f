@@ -298,27 +298,29 @@ def parse_combined_file(content: str) -> list[dict]:
                     # Get metadata from JSON
                     json_str = match.group(pattern_info["json_group"])
                     meta = json.loads(json_str)
-                    
+
                     # Extract path from metadata
                     path_val = meta.get("original_filepath", "").strip()
-                    
+
                     # Check if we have a valid path
                     if not path_val:
                         logger.warning(
                             f"PYMK1F block found at offset {match.start()} with missing or empty path in metadata"
                         )
                         continue
-                    
+
                     # Extract timestamp from metadata (new format uses timestamp_utc_iso)
                     modified_val = meta.get("timestamp_utc_iso")
-                    
-                    file_info_dict.update({
-                        "path": path_val,
-                        "modified": modified_val,
-                        "type": meta.get("type"),
-                        "size_bytes": meta.get("size_bytes"),
-                        "checksum_sha256": meta.get("checksum_sha256"),
-                    })
+
+                    file_info_dict.update(
+                        {
+                            "path": path_val,
+                            "modified": modified_val,
+                            "type": meta.get("type"),
+                            "size_bytes": meta.get("size_bytes"),
+                            "checksum_sha256": meta.get("checksum_sha256"),
+                        }
+                    )
                     matches.append(file_info_dict)
                     continue
                 except json.JSONDecodeError as e:
@@ -415,9 +417,11 @@ def parse_combined_file(content: str) -> list[dict]:
             # For PYMK1F format, find the corresponding closing marker using the UUID
             file_uuid = current_match_info.get("uuid")
             if file_uuid:
-                end_marker_pattern = f"--- PYMK1F_END_FILE_CONTENT_BLOCK_{file_uuid} ---"
+                end_marker_pattern = (
+                    f"--- PYMK1F_END_FILE_CONTENT_BLOCK_{file_uuid} ---"
+                )
                 end_marker_pos = content.find(end_marker_pattern, content_start_pos)
-                
+
                 if end_marker_pos != -1:
                     # Found the end marker
                     next_separator_start_pos = end_marker_pos
