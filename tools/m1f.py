@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ===========================
-PyMakeOneFile - File Combiner
+m1f - Make One File
 ===========================
 
 SYNOPSIS
@@ -13,15 +13,13 @@ separator showing metadata. Optionally, it can also create a backup archive
 
 DESCRIPTION
 ===========
-This script is a Python alternative to the PowerShell `makeonefile.ps1` script.
-It's designed to help consolidate multiple source code files or text documents
-into a single file, which can be useful for:
+This script helps consolidate multiple source code files or text documents
+into a single file, which is useful for:
 
-- Code reviews (though dedicated review tools are often better for large projects).
-- Creating a single document bundle for sharing or archiving.
-- Simple documentation generation by concatenating markdown files.
-- Creating a machine-parseable bundle for later splitting (using the 'MachineReadable' style).
-- Creating a backup archive of the processed files alongside the combined text file.
+- Providing context to Large Language Models (LLMs) for code understanding
+- Creating bundled documentation for review or reference
+- Making a machine-parseable bundle for later splitting (using s1f.py)
+- Creating a backup archive of the processed files alongside the combined text file
 
 KEY FEATURES
 ============
@@ -53,29 +51,29 @@ REQUIREMENTS
 
 INSTALLATION
 ============
-No special installation is needed. Just download the script (`pymakeonefile.py`)
+No special installation is needed. Just download the script (`m1f.py`)
 and ensure it has execute permissions if you want to run it directly
-(e.g., `chmod +x pymakeonefile.py` on Linux/macOS).
+(e.g., `chmod +x m1f.py` on Linux/macOS).
 
 USAGE
 =====
 Basic command:
-  python pymakeonefile.py --source-directory /path/to/your/code --output-file /path/to/combined_output.txt
+  python tools/m1f.py --source-directory /path/to/your/code --output-file /path/to/combined_output.txt
 
 Using MachineReadable style and creating a zip archive:
-  python pymakeonefile.py -s ./my_project -o ./output/bundle.m1f.txt --separator-style MachineReadable --create-archive --archive-type zip
+  python tools/m1f.py -s ./my_project -o ./output/bundle.m1f.txt --separator-style MachineReadable --create-archive --archive-type zip
 
 With more options including tar.gz archive:
-  python pymakeonefile.py -s ./my_project -o ./output/bundle.md -t --separator-style Markdown --force --verbose --additional-excludes "temp" "docs_old" --create-archive --archive-type tar.gz
+  python tools/m1f.py -s ./my_project -o ./output/bundle.md -t --separator-style Markdown --force --verbose --additional-excludes "temp" "docs_old" --create-archive --archive-type tar.gz
 
 With exclude paths file:
-  python pymakeonefile.py -s ./my_project -o ./output/bundle.txt --exclude-paths-file ./exclude_list.txt
+  python tools/m1f.py -s ./my_project -o ./output/bundle.txt --exclude-paths-file ./exclude_list.txt
 
 Skip writing the output file but generate auxiliary files:
-  python pymakeonefile.py -s ./my_project -o ./auxiliary_only.txt --skip-output-file --verbose
+  python tools/m1f.py -s ./my_project -o ./auxiliary_only.txt --skip-output-file --verbose
 
 For all options, run:
-  python pymakeonefile.py --help
+  python tools/m1f.py --help
 
 NOTES
 =====
@@ -125,12 +123,12 @@ NOTES
 
 AUTHOR
 ======
-Franz und Franz (Original PowerShell script)
-AI (Python conversion and enhancements)
+Franz und Franz (https://franz.agency)
+Project: https://m1f.dev
 
 VERSION
 =======
-1.4.0 (Python Version, added optional archive creation)
+2.0.0
 """
 
 import argparse

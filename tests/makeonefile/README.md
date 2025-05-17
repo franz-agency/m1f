@@ -1,6 +1,6 @@
 # m1f (Make One File) Tests
 
-This directory contains comprehensive tests for the `makeonefile.py` script
+This directory contains comprehensive tests for the `m1f.py` script
 (the m1f tool) located in the `tools` directory.
 
 ## Test Structure
@@ -48,7 +48,7 @@ python tests/makeonefile/run_tests.py --all --verbose
 
 ## Test Coverage
 
-The tests cover all major functionality of the m1f tool (`makeonefile.py`):
+The tests cover all major functionality of the m1f tool (`m1f.py`):
 
 1. **Basic functionality**:
 
