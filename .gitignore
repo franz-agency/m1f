@@ -178,3 +178,14 @@ tests/splitfiles/output/
 
 # Temporary test files
 tmp/
+
+# Cloudflare configuration
+.wrangler/
+.cloudflare/
+.dev.vars
+.env.local
+.dev.vars.local
+.wrangler.toml
+# Exclude local Cloudflare Workers development files
+workers-site/
+.mf/
