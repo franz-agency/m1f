@@ -284,6 +284,7 @@ python tools/makeonefile.py --help
 | `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                     |
 | `--line-ending`          | Line ending for script-generated separators/newlines (`lf` or `crlf`)                             |
 | `--additional-excludes`  | Space-separated list of additional directory names to exclude                                     |
+| `--filename-mtime-hash`  | Append a comprehensive hash to the output filename. The hash is derived from the count of included files, their sorted relative names, and their sorted modification timestamps. This helps uniquely identify the output if the source file set or their modification dates change. |
 
 ### Exclude Paths File Format
 

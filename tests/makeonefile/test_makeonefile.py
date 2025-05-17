@@ -19,6 +19,7 @@ import argparse
 import logging
 import platform
 from pathlib import Path
+from typing import Optional
 
 # Add the tools directory to path to import the makeonefile module
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
@@ -34,6 +35,14 @@ EXCLUDE_PATHS_FILE = TEST_DIR / "exclude_paths.txt"
 IS_WINDOWS = platform.system() == "Windows"
 PATH_SEP = os.path.sep  # \ on Windows, / on Unix
 
+
+# Helper function to create test files with specific mtime
+def _create_test_file(filepath: Path, content: str = "test content", mtime: Optional[float] = None):
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(content)
+    if mtime is not None:
+        os.utime(filepath, (mtime, mtime))
 
 # Helper function to run makeonefile with specific arguments for testing
 def run_makeonefile(arg_list):
@@ -66,6 +75,26 @@ def run_makeonefile(arg_list):
         # Call main which will parse sys.argv internally
         makeonefile.main()
     finally:
+        # Aggressively find, close, and remove file handlers associated with the makeonefile logger
+        logger_instance = logging.getLogger("makeonefile")
+        for handler in logger_instance.handlers[:]:  # Iterate over a copy
+            # isinstance check ensures we only try to close FileHandlers or subclasses
+            if isinstance(handler, logging.FileHandler):
+                handler.close()
+            logger_instance.removeHandler(handler)
+
+        # Also ensure the module's global reference is cleared,
+        # as _configure_logging_settings uses it for re-initialization checks.
+        if hasattr(makeonefile, 'file_handler') and makeonefile.file_handler is not None:
+            try:
+                # This attempts to close it if it wasn't caught above for some reason,
+                # though it should have been if it was a FileHandler attached to the logger.
+                if isinstance(makeonefile.file_handler, logging.FileHandler):
+                    makeonefile.file_handler.close()
+            except Exception:
+                pass # Ignore errors if already closed or not a closable handler type
+            makeonefile.file_handler = None
+
         # Restore original argv and exit function
         sys.argv = original_argv
         sys.exit = original_exit
@@ -651,6 +680,8 @@ class TestMakeOneFile:
             # Check for log file, but don't fail the test if it doesn't exist
             log_file = output_file.with_name(f"{output_file.stem}.log")
             if log_file.exists():
+                # Add a small delay to help ensure log is flushed, especially on Windows
+                time.sleep(0.2) 
                 with open(log_file, 'r', encoding='utf-8') as log:
                     log_content = log.read()
                     assert "Default directory exclusions are disabled" in log_content, "Log should indicate default exclusions are disabled"
@@ -796,6 +827,378 @@ class TestMakeOneFile:
             assert "test.md" not in content, ".md files should not be included"
             assert "test.py" not in content, ".py files should not be included"
             assert "test.tmp" not in content, ".tmp files should not be included"
+
+    # --- Tests for --filename-mtime-hash --- 
+
+    def _get_hash_from_filename(self, filename: str, base_stem: str) -> Optional[str]:
+        """Extracts the 12-char hash from a filename like base_hash.ext"""
+        parts = filename.split(base_stem + "_")
+        if len(parts) > 1:
+            # Hash is the 12 chars after the underscore following the base_stem
+            potential_hash_and_suffix = parts[1]
+            if len(potential_hash_and_suffix) >= 12:
+                 # Check if it looks like a hash (hex characters)
+                if all(c in "0123456789abcdef" for c in potential_hash_and_suffix[:12]):
+                    return potential_hash_and_suffix[:12]
+        return None
+
+    def test_filename_mtime_hash_basic(self):
+        """Test basic --filename-mtime-hash functionality."""
+        base_output_name = "hash_basic"
+        output_file_stem = OUTPUT_DIR / base_output_name
+        
+        _create_test_file(SOURCE_DIR / "f1.txt", "file1")
+        _create_test_file(SOURCE_DIR / "f2.txt", "file2")
+
+        run_makeonefile([
+            "--source-directory", str(SOURCE_DIR),
+            "--output-file", str(output_file_stem.with_suffix(".txt")),
+            "--filename-mtime-hash",
+            "--force",
+            "--minimal-output" # To simplify checking just the main output file name
+        ])
+
+        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
+        assert len(created_files) == 1, f"Expected 1 output file with hash, found {len(created_files)}"
+        
+        filename = created_files[0].name
+        file_hash = self._get_hash_from_filename(filename, base_output_name)
+        assert file_hash is not None, f"Could not extract hash from filename: {filename}"
+        assert len(file_hash) == 12, f"Expected 12-char hash, got: {file_hash}"
+        
+        # Check auxiliary files (if not minimal-output, but we used minimal for simplicity here)
+        # If we didn't use minimal-output, we would check:
+        # assert (OUTPUT_DIR / f"{base_output_name}_{file_hash}.log").exists()
+        # assert (OUTPUT_DIR / f"{base_output_name}_{file_hash}_filelist.txt").exists()
+        # assert (OUTPUT_DIR / f"{base_output_name}_{file_hash}_dirlist.txt").exists()
+
+    def test_filename_mtime_hash_consistency(self):
+        """Test that the same file set and mtimes produce the same hash."""
+        base_output_name = "hash_consistency"
+        output_file_path = OUTPUT_DIR / base_output_name
+
+        # Ensure source dir is clean for this test or use a sub-folder
+        test_src_dir = SOURCE_DIR / "hash_consistency_src"
+        if test_src_dir.exists():
+            shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True)
+
+        _create_test_file(test_src_dir / "a.txt", "content a", mtime=1678886400) # March 15, 2023
+        _create_test_file(test_src_dir / "b.txt", "content b", mtime=1678972800) # March 16, 2023
+
+        # Run 1
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        created_files1 = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
+        assert len(created_files1) == 1
+        hash1 = self._get_hash_from_filename(created_files1[0].name, base_output_name)
+        assert hash1 is not None
+
+        # Clean output dir before second run to ensure we are checking the new file
+        self.setup_method() 
+
+        # Run 2 (same files, same mtimes)
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        created_files2 = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
+        assert len(created_files2) == 1
+        hash2 = self._get_hash_from_filename(created_files2[0].name, base_output_name)
+        assert hash2 is not None
+
+        assert hash1 == hash2, "Hashes should be identical for the same file set and mtimes."
+        shutil.rmtree(test_src_dir) # Clean up test-specific source
+
+    def test_filename_mtime_hash_changes_on_mtime_change(self):
+        """Test hash changes if a file's modification time changes."""
+        base_output_name = "hash_mtime_change"
+        output_file_path = OUTPUT_DIR / base_output_name
+        test_src_dir = SOURCE_DIR / "hash_mtime_src"
+        if test_src_dir.exists(): shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True)
+
+        file_to_change = test_src_dir / "change_me.txt"
+        _create_test_file(file_to_change, "initial content", mtime=1678886400)
+        _create_test_file(test_src_dir / "other.txt", "other content", mtime=1678886400)
+
+        # Run 1
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash1 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+
+        self.setup_method()
+        # Change mtime of one file
+        _create_test_file(file_to_change, "initial content", mtime=1678972800) # New mtime
+
+        # Run 2
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash2 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+
+        assert hash1 is not None and hash2 is not None
+        assert hash1 != hash2, "Hash should change when a file's mtime changes."
+        shutil.rmtree(test_src_dir)
+
+    def test_filename_mtime_hash_changes_on_file_added(self):
+        """Test hash changes if a file is added to the set."""
+        base_output_name = "hash_file_added"
+        output_file_path = OUTPUT_DIR / base_output_name
+        test_src_dir = SOURCE_DIR / "hash_add_src"
+        if test_src_dir.exists(): shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True)
+
+        _create_test_file(test_src_dir / "original.txt", "original", mtime=1678886400)
+
+        # Run 1 (one file)
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash1 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+        
+        self.setup_method()
+        # Add a new file
+        _create_test_file(test_src_dir / "new_file.txt", "newly added", mtime=1678886400)
+
+        # Run 2 (two files)
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash2 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+
+        assert hash1 is not None and hash2 is not None
+        assert hash1 != hash2, "Hash should change when a file is added."
+        shutil.rmtree(test_src_dir)
+
+    def test_filename_mtime_hash_changes_on_file_removed(self):
+        """Test hash changes if a file is removed from the set."""
+        base_output_name = "hash_file_removed"
+        output_file_path = OUTPUT_DIR / base_output_name
+        test_src_dir = SOURCE_DIR / "hash_remove_src"
+        if test_src_dir.exists(): shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True)
+
+        file_to_remove = test_src_dir / "to_be_removed.txt"
+        _create_test_file(test_src_dir / "keeper.txt", "keeper", mtime=1678886400)
+        _create_test_file(file_to_remove, "remove me", mtime=1678886400)
+
+        # Run 1 (two files)
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash1 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+
+        self.setup_method()
+        # Remove a file
+        file_to_remove.unlink()
+
+        # Run 2 (one file)
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash2 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+
+        assert hash1 is not None and hash2 is not None
+        assert hash1 != hash2, "Hash should change when a file is removed."
+        shutil.rmtree(test_src_dir)
+
+    def test_filename_mtime_hash_changes_on_filename_change(self):
+        """Test hash changes if a file's relative name changes."""
+        base_output_name = "hash_name_change"
+        output_file_path = OUTPUT_DIR / base_output_name
+        test_src_dir = SOURCE_DIR / "hash_rename_src"
+        if test_src_dir.exists(): shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True)
+
+        original_file = test_src_dir / "original_name.txt"
+        renamed_file = test_src_dir / "new_name.txt"
+        _create_test_file(original_file, "some content", mtime=1678886400)
+
+        # Run 1 (original name)
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash1 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+
+        self.setup_method()
+        # Rename the file
+        original_file.rename(renamed_file)
+
+        # Run 2 (new name)
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash2 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+
+        assert hash1 is not None and hash2 is not None
+        assert hash1 != hash2, "Hash should change when a file's name changes."
+        shutil.rmtree(test_src_dir)
+
+    def test_filename_mtime_hash_with_add_timestamp(self):
+        """Test --filename-mtime-hash combined with --add-timestamp."""
+        base_output_name = "hash_and_timestamp"
+        output_file_stem = OUTPUT_DIR / base_output_name
+        
+        _create_test_file(SOURCE_DIR / "f_ts1.txt", "file ts1")
+
+        run_makeonefile([
+            "--source-directory", str(SOURCE_DIR),
+            "--output-file", str(output_file_stem.with_suffix(".txt")),
+            "--filename-mtime-hash",
+            "--add-timestamp", 
+            "--force",
+            "--minimal-output"
+        ])
+
+        # Filename should be like: base_contenthash_exectimestamp.txt
+        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*_*.txt"))
+        assert len(created_files) == 1, "Expected 1 output file with content hash and exec timestamp"
+        
+        filename = created_files[0].name
+        # Extract content hash part: base_CONTENTHASH
+        # Then check for execution timestamp after that
+        
+        # Find the first underscore after base_output_name
+        parts_after_base = filename.split(base_output_name + "_", 1)
+        assert len(parts_after_base) == 2, f"Filename format incorrect: {filename}"
+
+        potential_hash_and_timestamp_part = parts_after_base[1]
+        assert len(potential_hash_and_timestamp_part) > (12 + 1 + 8), "Filename too short for hash and timestamp"
+        # 12 for hash, 1 for underscore, at least 8 for YYYYMMDD part of timestamp
+
+        content_hash = potential_hash_and_timestamp_part[:12]
+        assert all(c in "0123456789abcdef" for c in content_hash), f"Content hash part is not hex: {content_hash}"
+
+        # Check for execution timestamp after the content hash and an underscore
+        # e.g., _YYYYMMDD_HHMMSS.txt
+        timestamp_part_with_suffix = potential_hash_and_timestamp_part[12:]
+        assert timestamp_part_with_suffix.startswith("_"), f"Separator missing before execution timestamp: {filename}"
+        
+        # Check for date pattern like _20YYMMDD
+        assert timestamp_part_with_suffix[1:5].isdigit() and timestamp_part_with_suffix[1:3] == "20", \
+            f"Execution timestamp year format incorrect: {filename}"
+        assert timestamp_part_with_suffix.endswith(".txt"), f"Filename suffix incorrect: {filename}"
+
+    def test_filename_mtime_hash_no_files_processed(self):
+        """Test that no hash is added if no files are processed."""
+        base_output_name = "hash_no_files"
+        output_file_path = OUTPUT_DIR / f"{base_output_name}.txt"
+        test_src_dir = SOURCE_DIR / "hash_empty_src"
+        if test_src_dir.exists(): shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True) # Empty directory
+
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path),
+            "--filename-mtime-hash", 
+            "--force", 
+            "--minimal-output"
+        ])
+
+        assert output_file_path.exists(), "Output file should exist even if empty"
+        # Filename should be exactly base_output_name.txt, no hash
+        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}*.txt"))
+        assert len(created_files) == 1, "Should only be one output file"
+        assert created_files[0].name == f"{base_output_name}.txt", \
+            f"Filename should not contain hash if no files processed: {created_files[0].name}"
+        
+        with open(output_file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "# No files processed" in content, "Output file should indicate no files processed"
+        shutil.rmtree(test_src_dir)
+
+    def test_filename_mtime_hash_mtime_error(self):
+        """Test hash generation when os.getmtime() raises an error for a file."""
+        base_output_name = "hash_mtime_error"
+        output_file_path = OUTPUT_DIR / base_output_name
+        test_src_dir = SOURCE_DIR / "hash_mtime_err_src"
+        if test_src_dir.exists(): shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True)
+
+        file1 = test_src_dir / "file1.txt"
+        file2 = test_src_dir / "file2.txt"
+        _create_test_file(file1, "content1", mtime=1678886400)
+        _create_test_file(file2, "content2", mtime=1678886400)
+
+        # Run 1: Normal, get H1
+        run_makeonefile([
+            "--source-directory", str(test_src_dir),
+            "--output-file", str(output_file_path.with_suffix(".txt")),
+            "--filename-mtime-hash", "--force", "--minimal-output"
+        ])
+        hash1 = self._get_hash_from_filename(list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))[0].name, base_output_name)
+        assert hash1 is not None
+        self.setup_method()
+
+        # Patch os.getmtime for Run 2
+        original_getmtime = os.getmtime
+        def faulty_getmtime_for_file2(path):
+            if str(path) == str(file2.resolve()): # Path can be str or Path, resolve for consistency
+                raise OSError("Simulated mtime error for file2")
+            return original_getmtime(path)
+        
+        os.getmtime = faulty_getmtime_for_file2
+        try:
+            run_makeonefile([
+                "--source-directory", str(test_src_dir),
+                "--output-file", str(output_file_path.with_suffix(".txt")),
+                "--filename-mtime-hash", "--force", "--minimal-output", "--verbose"
+            ])
+            created_files_run2 = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
+            assert len(created_files_run2) == 1, "Expected output file in run 2"
+            hash2 = self._get_hash_from_filename(created_files_run2[0].name, base_output_name)
+            assert hash2 is not None
+            assert hash1 != hash2, "Hash should change if mtime read fails for one file (file2 failed)"
+        finally:
+            os.getmtime = original_getmtime # Unpatch
+        
+        self.setup_method()
+
+        # Patch os.getmtime for Run 3 (error on file1 instead)
+        def faulty_getmtime_for_file1(path):
+            if str(path) == str(file1.resolve()): 
+                raise OSError("Simulated mtime error for file1")
+            return original_getmtime(path)
+
+        os.getmtime = faulty_getmtime_for_file1
+        try:
+            run_makeonefile([
+                "--source-directory", str(test_src_dir),
+                "--output-file", str(output_file_path.with_suffix(".txt")),
+                "--filename-mtime-hash", "--force", "--minimal-output", "--verbose"
+            ])
+            created_files_run3 = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
+            assert len(created_files_run3) == 1, "Expected output file in run 3"
+            hash3 = self._get_hash_from_filename(created_files_run3[0].name, base_output_name)
+            assert hash3 is not None
+            assert hash1 != hash3, "Hash should change if mtime read fails for one file (file1 failed)"
+            assert hash2 != hash3, "Hashes from different mtime error scenarios should also differ"
+        finally:
+            os.getmtime = original_getmtime # Unpatch
+
+        shutil.rmtree(test_src_dir)
 
 
 # Run the tests when the script is executed directly

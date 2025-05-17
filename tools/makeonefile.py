@@ -145,8 +145,7 @@ import zipfile  # Added for archive creation
 import tarfile  # Added for archive creation
 
 # --- Logger Setup ---
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(levelname)-8s: %(message)s")
+logger = logging.getLogger("makeonefile")
 file_handler = None  # Will be set in configure_logging_settings
 
 # --- Global Definitions ---
@@ -309,6 +308,51 @@ def _count_tokens_in_file_content(
 
 
 # --- Helper Functions ---
+
+
+def _generate_filename_content_hash(files_to_process: list[tuple[Path, str]]) -> str:
+    """
+    Generates a SHA256 hash from the count, names, and modification timestamps of the given files.
+
+    Args:
+        files_to_process: A list of tuples, where each tuple contains (absolute_path, relative_path).
+
+    Returns:
+        A short (12-character) hex digest of the hash, or an empty string if no files.
+    """
+    if not files_to_process:
+        return ""
+
+    file_count = len(files_to_process)
+    relative_paths = []
+    timestamps = []
+
+    # Ensure relative_paths are strings for consistent processing
+    for abs_path, rel_path_obj in files_to_process:
+        relative_paths.append(str(rel_path_obj)) # rel_path_obj could be Path or str
+        try:
+            mtime = os.path.getmtime(abs_path)
+            timestamps.append(str(mtime))
+        except OSError as e:
+            logger.warning(f"Could not get mtime for {abs_path}: {e}. Using placeholder for hash.")
+            # To ensure hash changes if a file's mtime becomes unreadable or file is inaccessible
+            timestamps.append(f"ERROR_MTIME_{str(rel_path_obj)}")
+
+
+    # Sort components for consistent hash order
+    relative_paths.sort()
+    timestamps.sort() # Timestamps are now strings, some might be error placeholders
+    
+    # Construct a representative string
+    hash_input_parts = []
+    hash_input_parts.append(f"count:{file_count}")
+    hash_input_parts.append(f"names:{','.join(relative_paths)}")
+    hash_input_parts.append(f"mtimes:{','.join(timestamps)}") # Timestamps list might be empty if all errored
+    
+    combined_info_str = ";".join(hash_input_parts)
+    
+    hash_obj = hashlib.sha256(combined_info_str.encode("utf-8"))
+    return hash_obj.hexdigest()[:12] # Return first 12 chars of the hash
 
 
 def get_file_size_formatted(size_in_bytes: int) -> str:
@@ -486,26 +530,32 @@ def _configure_logging_settings(
     
     # Set the root logger level based on verbosity
     log_level = logging.DEBUG if verbose else logging.INFO
-    logging.getLogger().setLevel(log_level)
+    # logging.getLogger().setLevel(log_level) # Don't set root logger level here for file logging part
+
+    # Configure file logging for the specific "makeonefile" logger
+    logger_instance = logging.getLogger("makeonefile")
+    logger_instance.setLevel(log_level) # Set level on our specific logger
+
+    # Remove any old instance of our specific file handler from our logger if we are reconfiguring
+    global file_handler # Ensure we are referencing the global one
+    if file_handler in logger_instance.handlers:
+        logger_instance.removeHandler(file_handler)
+        file_handler.close()
+        file_handler = None # Explicitly reset before potential new assignment
 
     # Configure file logging if an output path is provided and minimal_output is False
-    global file_handler
+    # The guard "file_handler is None" is important if this function could be called multiple times
+    # with the intent to ADD a handler if one isn't already set for this module.
     if output_file_path and file_handler is None and not minimal_output:
-        # Create a log file with the same name as the output file but with .log extension
         log_file_path = output_file_path.with_suffix(".log")
         try:
-            # Create a file handler that writes to the log file
-            file_handler = logging.FileHandler(
-                log_file_path, mode="w", encoding="utf-8"
-            )
-            file_handler.setLevel(log_level)
-            file_handler.setFormatter(
-                logging.Formatter("%(asctime)s - %(levelname)-8s: %(message)s")
-            )
-
-            # Add the file handler to the root logger
-            logging.getLogger().addHandler(file_handler)
+            new_file_handler = logging.FileHandler(log_file_path, mode="w", encoding="utf-8")
+            new_file_handler.setLevel(log_level)
+            new_file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)-8s: %(message)s"))
+            logger_instance.addHandler(new_file_handler)
+            file_handler = new_file_handler # Store the new handler globally for this module
         except Exception as e:
+            # Use the module-level logger to log this error, it will go to console via basicConfig.
             logger.error(f"Failed to create log file at {log_file_path}: {e}")
 
     if verbose:
@@ -1229,6 +1279,12 @@ def main():
         action="store_true",
         help="Add a timestamp (_yyyyMMdd_HHmmss) to the output filename.",
     )
+    parser.add_argument(
+        "--filename-mtime-hash",
+        action="store_true",
+        help="Append a hash of all included file modification timestamps to the output filename. "
+             "This helps version the output based on source file mtime changes.",
+    )
 
     parser.add_argument(
         "--additional-excludes",
@@ -1409,6 +1465,42 @@ def main():
         input_paths,
         ignore_symlinks=True,
     )
+
+    # ---- START: Modification for filename-mtime-hash ----
+    if args.filename_mtime_hash and files_to_process:
+        logger.debug("Generating content hash for included files (count, names, mtimes)...")
+        content_hash = _generate_filename_content_hash(files_to_process)
+        if content_hash:
+            output_file_path_obj = Path(args.output_file) # Original output file arg
+            new_stem = f"{output_file_path_obj.stem}_{content_hash}"
+            
+            # Update args.output_file so that _prepare_output_file_path and logging use the hashed name
+            args.output_file = str(output_file_path_obj.with_name(f"{new_stem}{output_file_path_obj.suffix}"))
+            logger.info(f"Output filename will include content hash: {Path(args.output_file).name}")
+        else:
+            # This case should ideally not be reached if files_to_process is not empty,
+            # as _generate_filename_content_hash is designed to return a hash even if mtimes fail.
+            # It would only return empty if files_to_process was empty, but that's checked before.
+            logger.warning("Could not generate content hash. Filename will not be modified by hash.")
+    
+    # Re-prepare output file path if it was modified by mtime hash, and apply execution timestamp if requested.
+    # This ensures logging and overwrite checks use the potentially fully modified name.
+    output_file_path = _prepare_output_file_path(args.output_file, args.add_timestamp)
+    
+    # Re-configure logging if the output_file_path has changed due to mtime_hash
+    # This is crucial if the initial _configure_logging_settings was called with a non-hashed name.
+    # We need to remove the old file handler if it exists and was based on a different name.
+    global file_handler
+    if file_handler:
+        logging.getLogger().removeHandler(file_handler)
+        file_handler.close()
+        file_handler = None # Reset to allow reinitialization
+    
+    _configure_logging_settings(
+        args.verbose, chosen_linesep, output_file_path, args.minimal_output, args.quiet
+    )
+    # ---- END: Modification for filename-mtime-hash ----
+    
 
     if not files_to_process:
         logger.warning(f"No files found matching the criteria in '{source_dir}'.")
