@@ -3,7 +3,7 @@
 ## Overview
 
 This directory contains tasks for creating selective file bundles that serve as
-context for AI interactions. Using the `makeonefile.py` tool, you can combine
+context for AI interactions. Using the `m1f.py` tool, you can combine
 selected important files from your project into a single file that can be loaded
 into an AI's context window.
 
@@ -34,9 +34,9 @@ essential. This tool helps you to:
 3. Create machine-readable formats optimized for Large Language Models
 4. Efficiently manage context limitations by focusing on what matters
 
-## Tasks in makeonefile.json
+## Tasks in m1f.json
 
-The `makeonefile.json` file defines two VS Code tasks:
+The `m1f.json` file defines two VS Code tasks:
 
 ### 1. AI Context: Create Combined File
 
@@ -121,7 +121,7 @@ ${workspaceFolder}/utils/crypto.py
 
 ## Customizing the Process
 
-You can customize the tasks by editing `makeonefile.json` for your specific
+You can customize the tasks by editing `m1f.json` for your specific
 needs:
 
 - Modify output file locations and naming conventions
@@ -130,7 +130,7 @@ needs:
 
 ## Additional Options
 
-Consider these advanced options from `makeonefile.py` for specific needs:
+Consider these advanced options from `m1f.py` for specific needs:
 
 - `--include-dot-files`: Useful for including WordPress-specific configuration
   files like `.htaccess` or other dotfiles if they are relevant to your context.
@@ -145,7 +145,7 @@ For a complete list of all available options and their detailed descriptions,
 run:
 
 ```
-python tools/makeonefile.py --help
+python tools/m1f.py --help
 ```
 
 ## Machine-Readable Format
@@ -187,7 +187,7 @@ Franz und Franz - https://franz.agency
 
 When developing WordPress themes or plugins, you often need to provide an AI
 assistant with the context of your specific theme/plugin files. Here's how you
-can create a single context file for this purpose using `makeonefile.py`:
+can create a single context file for this purpose using `m1f.py`:
 
 ### 1. Strategically Select WordPress Files
 
@@ -287,17 +287,17 @@ wp-content/plugins/UtilityPlugin/includes/cpt-slides.php
 - Use comments (`#`) to organize sections or explain choices.
 - Start with a small, focused set of files and expand if the AI needs more
   context.
-- Paths are typically relative to where you run the `makeonefile.py` script, or
+- Paths are typically relative to where you run the `m1f.py` script, or
   from the `${workspaceFolder}` if using VS Code tasks.
 
 ### 3. Generate the Combined Context File
 
-Run `makeonefile.py` from your terminal, pointing to your input file list and
+Run `m1f.py` from your terminal, pointing to your input file list and
 specifying an output file. It's recommended to use the `MachineReadable`
 separator style.
 
 ```bash
-python tools/makeonefile.py \
+python tools/m1f.py \
   --input-file my_wp_context_files.txt \
   --output-file .gen/wordpress_context.m1f.txt \
   --separator-style MachineReadable \
@@ -322,7 +322,7 @@ You can also generate only the auxiliary files (file list and directory list)
 without creating the combined file:
 
 ```bash
-python tools/makeonefile.py \
+python tools/m1f.py \
   --input-file my_wp_context_files.txt \
   --output-file .gen/wordpress_auxiliary_only.m1f.txt \
   --skip-output-file \
@@ -359,7 +359,7 @@ You can automate this process by creating a VS Code task in your
       "type": "shell",
       "command": "python",
       "args": [
-        "${workspaceFolder}/tools/makeonefile.py",
+        "${workspaceFolder}/tools/m1f.py",
         "--input-file",
         "${workspaceFolder}/my_wp_context_files.txt",
         "--output-file",
@@ -382,7 +382,7 @@ You can automate this process by creating a VS Code task in your
       "type": "shell",
       "command": "python",
       "args": [
-        "${workspaceFolder}/tools/makeonefile.py",
+        "${workspaceFolder}/tools/m1f.py",
         "--input-file",
         "${workspaceFolder}/my_wp_context_files.txt",
         "--output-file",

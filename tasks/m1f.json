@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "python",
             "args": [
-                "${workspaceFolder}/tools/makeonefile.py",
+                "${workspaceFolder}/tools/m1f.py",
                 "--input-file",
                 "${workspaceFolder}/tasks/ai_context_files.txt",
                 "--output-file",
@@ -37,7 +37,7 @@
             "type": "shell",
             "command": "python",
             "args": [
-                "${workspaceFolder}/tools/makeonefile.py",
+                "${workspaceFolder}/tools/m1f.py",
                 "--source-directory",
                 "${workspaceFolder}",
                 "--output-file",
@@ -77,7 +77,7 @@
             "type": "shell",
             "command": "python",
             "args": [
-                "${workspaceFolder}/tools/makeonefile.py",
+                "${workspaceFolder}/tools/m1f.py",
                 "--input-file",
                 "${workspaceFolder}/tasks/feature_context_files.txt",
                 "--output-file",
@@ -108,7 +108,7 @@
             "type": "shell",
             "command": "python",
             "args": [
-                "${workspaceFolder}/tools/makeonefile.py",
+                "${workspaceFolder}/tools/m1f.py",
                 "--source-directory",
                 "${workspaceFolder}/wp-content/themes/mytheme",
                 "--exclude-paths-file",
@@ -137,7 +137,7 @@
             "type": "shell",
             "command": "python",
             "args": [
-                "${workspaceFolder}/tools/makeonefile.py",
+                "${workspaceFolder}/tools/m1f.py",
                 "--source-directory",
                 "${workspaceFolder}/wp-content/plugins/myplugin",
                 "--exclude-paths-file",
@@ -166,7 +166,7 @@
             "type": "shell",
             "command": "python",
             "args": [
-                "${workspaceFolder}/tools/makeonefile.py",
+                "${workspaceFolder}/tools/m1f.py",
                 "--input-file",
                 "${workspaceFolder}/tasks/wp_theme_includes.txt",
                 "${workspaceFolder}/tasks/wp_plugin_includes.txt",
@@ -192,4 +192,4 @@
             "detail": "Creates a combined AI context file containing both theme and plugin files for a complete WordPress project."
         }
     ]
-}
+} 
