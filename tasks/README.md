@@ -46,7 +46,8 @@ This task combines files from your project with common exclusions:
 - **Output**: `.gen/ai_context.m1f.txt`
 - **Excludes**: Non-relevant directories (`node_modules`, `.git`, `.venv`, etc.)
 - **Format**: Machine-readable format with clear file separators
-- **Optimization**: Uses `--minimal-output` to generate only the combined file without extra logs or lists
+- **Optimization**: Uses `--minimal-output` to generate only the combined file
+  without extra logs or lists
 - **Best for**: Initial exploration when you're unsure which files are important
 
 ### 2. AI Context: Create From Input List (Recommended)
@@ -56,7 +57,8 @@ This task combines only the specific files you select:
 - **Source**: Files explicitly listed in `tasks/ai_context_files.txt`
 - **Output**: `.gen/ai_context_custom.m1f.txt`
 - **Format**: Same machine-readable format
-- **Efficiency**: Uses `--minimal-output --quiet` for silent operation with no auxiliary files
+- **Efficiency**: Uses `--minimal-output --quiet` for silent operation with no
+  auxiliary files
 - **Best for**: Focused work when you know which ~20-50 files are most relevant
 
 ## Practical Usage Guide
@@ -128,16 +130,15 @@ needs:
 
 ## Additional Options
 
-Advanced options available in the `makeonefile.py` script:
+Consider these advanced options from `makeonefile.py` for specific needs:
 
-- `--include-dot-files`: Include configuration files like `.gitignore` when
-  needed
-- `--add-timestamp`: Track different versions of context files with timestamps
-- `--create-archive`: Create a reference archive of all included files
-- `--separator-style`: Choose format for file separators (MachineReadable
-  recommended)
+- `--include-dot-files`: Useful for including WordPress-specific configuration
+  files like `.htaccess` or other dotfiles if they are relevant to your context.
+- `--separator-style`: While `MachineReadable` is generally recommended for AI
+  context files, you can explore other styles if needed.
 
-For a complete list of options, run:
+For a complete list of all available options and their detailed descriptions,
+run:
 
 ```
 python tools/makeonefile.py --help
@@ -149,175 +150,222 @@ The default separator style "MachineReadable" optimizes the combined file for AI
 understanding:
 
 ```
-# ===============================================================================
-# FILE: auth/user.py
-# ===============================================================================
-# METADATA: {"modified": "2023-01-01 12:00:00", "type": ".py", "size_bytes": 1234}
-# -------------------------------------------------------------------------------
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_f84a9c25-b8cf-4e6a-a39d-842d7fe3b6e1 ---
+METADATA_JSON:
+{
+    "original_filepath": "relative/path.ext",
+    "original_filename": "path.ext",
+    "timestamp_utc_iso": "2023-01-01T12:00:00Z",
+    "type": ".ext",
+    "size_bytes": 1234,
+    "checksum_sha256": "abc123..."
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_f84a9c25-b8cf-4e6a-a39d-842d7fe3b6e1 ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_f84a9c25-b8cf-4e6a-a39d-842d7fe3b6e1 ---
 
 [file content]
 
-# ===============================================================================
-# END FILE
-# ===============================================================================
+--- PYMK1F_END_FILE_CONTENT_BLOCK_f84a9c25-b8cf-4e6a-a39d-842d7fe3b6e1 ---
 ```
 
 This format ensures the AI can clearly identify file boundaries and understand
 metadata about each file, making it more effective in processing your selected
-files.
+files. The JSON metadata includes the original filepath, filename, timestamp in
+ISO format, file type, size in bytes, and SHA256 checksum for data integrity
+verification. It's particularly suitable for automated processing and splitting
+back into individual files.
 
 ## Author
 
 Franz und Franz - https://franz.agency
 
-## Example: WordPress Theme Development
+## Use Case: WordPress Theme/Plugin Context File
 
-This example shows how to use the AI context generator for WordPress theme and plugin development.
+When developing WordPress themes or plugins, you often need to provide an AI
+assistant with the context of your specific theme/plugin files. Here's how you
+can create a single context file for this purpose using `makeonefile.py`:
 
-### Setup: Create a Directory for AI Context Files
+### 1. Strategically Select WordPress Files
 
-1. First, create a dedicated directory for your AI context files in your project root:
+To create an effective AI context for WordPress development, carefully select
+files that represent the functionality or problem area you're focusing on.
+Consider these categories:
+
+- **Core Theme Files**:
+
+  - `style.css` (for theme identity and metadata)
+  - `functions.php` (critical for theme logic, hooks, and filters)
+  - `index.php`, `header.php`, `footer.php`, `sidebar.php` (main template
+    structure)
+  - Specific template files relevant to your task: `single.php`, `page.php`,
+    `archive.php`, `category.php`, `tag.php`, `search.php`, `404.php`,
+    `front-page.php`, `home.php`.
+  - Template parts (e.g., files in `template-parts/` directory like
+    `content-page.php`).
+  - Customizer settings and controls if relevant (`inc/customizer.php`).
+  - Key JavaScript (e.g., `assets/js/custom.js`) and CSS files.
+
+- **Core Plugin Files**:
+
+  - The main plugin file (e.g., `your-plugin-name/your-plugin-name.php`) which
+    includes the plugin header.
+  - Files containing main classes, action/filter hooks, shortcodes, and admin
+    panel logic.
+  - AJAX handlers, REST API endpoint definitions.
+  - Files related to Custom Post Types (CPTs) or taxonomies defined by the
+    plugin.
+  - Key JavaScript and CSS files specific to the plugin's functionality.
+
+- **Feature-Specific Files**: If you are working on a particular feature (e.g.,
+  WooCommerce integration, a custom contact form, a specific admin page):
+
+  - Include all files directly related to that feature from both your theme and
+    any relevant plugins.
+  - For example, for WooCommerce: relevant template overrides in
+    `your-theme/woocommerce/`, custom functions related to WooCommerce in
+    `functions.php` or a plugin.
+
+- **Problem-Specific Files**: If debugging, include files involved in the error
+  stack trace or areas where the bug is suspected.
+
+- **Important Note on Parent/Child Themes**:
+  - If using a child theme, include relevant files from _both_ the child theme
+    and parent theme that interact or are being overridden.
+
+### 2. Structure Your Input File List (`my_wp_context_files.txt`)
+
+Create a plain text file (e.g., `my_wp_context_files.txt`) listing the absolute
+or relative paths to your selected files. Organize and comment this list for
+clarity, especially if you plan to reuse or modify it.
+
+**Example `my_wp_context_files.txt` for a theme feature and a related plugin:**
+
+```plaintext
+# Paths should be relative to your project root, or absolute.
+# For VS Code tasks, ${workspaceFolder} can be used.
+
+# =====================================
+# My Custom Theme: "AwesomeTheme"
+# Working on: Homepage Slider Feature
+# =====================================
+
+# Core Theme Files
+wp-content/themes/AwesomeTheme/style.css
+wp-content/themes/AwesomeTheme/functions.php
+wp-content/themes/AwesomeTheme/header.php
+wp-content/themes/AwesomeTheme/footer.php
+wp-content/themes/AwesomeTheme/front-page.php
+
+# Homepage Slider Specifics
+wp-content/themes/AwesomeTheme/template-parts/homepage-slider.php
+wp-content/themes/AwesomeTheme/includes/slider-customizer-settings.php
+wp-content/themes/AwesomeTheme/assets/js/homepage-slider.js
+wp-content/themes/AwesomeTheme/assets/css/homepage-slider.css
+
+# =====================================
+# Related Plugin: "UtilityPlugin"
+# Used by: Homepage Slider for data
+# =====================================
+wp-content/plugins/UtilityPlugin/utility-plugin.php
+wp-content/plugins/UtilityPlugin/includes/class-data-provider.php
+wp-content/plugins/UtilityPlugin/includes/cpt-slides.php
+
+# =====================================
+# General WordPress Context (Optional)
+# =====================================
+# Consider adding if debugging core interactions, but be selective:
+# wp-includes/post.php
+# wp-includes/query.php
+```
+
+**Tips for your list:**
+
+- Use comments (`#`) to organize sections or explain choices.
+- Start with a small, focused set of files and expand if the AI needs more
+  context.
+- Paths are typically relative to where you run the `makeonefile.py` script, or
+  from the `${workspaceFolder}` if using VS Code tasks.
+
+### 3. Generate the Combined Context File
+
+Run `makeonefile.py` from your terminal, pointing to your input file list and
+specifying an output file. It's recommended to use the `MachineReadable`
+separator style.
 
 ```bash
-mkdir -p .ai-context
+python tools/makeonefile.py \
+  --input-file my_wp_context_files.txt \
+  --output-file .gen/wordpress_context.m1f.txt \
+  --separator-style MachineReadable \
+  --force \
+  --minimal-output
 ```
 
-2. Add this directory to your `.gitignore` file to avoid committing potentially large context files:
+**Explanation of options:**
 
-```bash
-# Add to .gitignore
-.ai-context/
-```
+- `--input-file my_wp_context_files.txt`: Specifies the list of files to
+  include.
+- `--output-file .gen/wordpress_context.m1f.txt`: Defines where the combined
+  file will be saved. Using a `.gen` or `.ai-context` subfolder is good
+  practice.
+- `--separator-style MachineReadable`: Ensures the output is easily parsable by
+  AI tools.
+- `--force`: Overwrites the output file if it already exists.
+- `--minimal-output`: Prevents the script from generating auxiliary files like
+  file lists or logs, keeping your project clean.
 
-### WordPress Structured Include/Exclude Files
+### 4. Using the Context File with Your AI Assistant
 
-For WordPress development, we've created specialized include and exclude files:
+Once `wordpress_context.m1f.txt` is generated:
 
-- `tasks/wp_theme_includes.txt`: Common WordPress theme files and patterns
-- `tasks/wp_plugin_includes.txt`: Common WordPress plugin files and patterns
-- `tasks/wp_excludes.txt`: WordPress-specific paths and files to exclude
+1.  Open the file in your AI-enabled editor (e.g., Cursor, VS Code with AI
+    extensions).
+2.  Use your editor's features to add this file to the AI's context. For
+    example, in Cursor, you can type `@wordpress_context.m1f.txt` in the chat or
+    use the "Add to Context" option.
+3.  Now, when you ask the AI questions or request code related to your WordPress
+    theme/plugin, it will have the specific context of your selected files.
 
-These files contain well-structured paths with common WordPress conventions and can be easily customized for your specific project.
+### Example: Creating a VS Code Task
 
-### Creating WordPress Theme and Plugin Contexts
-
-Let's say you're developing both a custom theme "mytheme" and a plugin "myplugin" for a WordPress project:
-
-#### Theme Context
-
-Use this task to generate a context file with just your theme files:
+You can automate this process by creating a VS Code task in your
+`.vscode/tasks.json` file:
 
 ```json
 {
-    "label": "WordPress: Generate Theme Context",
-    "type": "shell",
-    "command": "python",
-    "args": [
-        "${workspaceFolder}/tools/makeonefile.py",
-        "--source-directory",
-        "${workspaceFolder}/wp-content/themes/mytheme",
-        "--exclude-paths-file",
-        "${workspaceFolder}/tasks/wp_excludes.txt",
-        "--output-file",
-        "${workspaceFolder}/.ai-context/mytheme.m1f.txt",
-        "--separator-style",
-        "MachineReadable",
-        "--force",
-        "--minimal-output",
-        "--quiet"
-    ]
-}
-```
-
-#### Plugin Context
-
-Use this task to generate a context file with just your plugin files:
-
-```json
-{
-    "label": "WordPress: Generate Plugin Context",
-    "type": "shell",
-    "command": "python",
-    "args": [
-        "${workspaceFolder}/tools/makeonefile.py",
-        "--source-directory",
-        "${workspaceFolder}/wp-content/plugins/myplugin",
-        "--exclude-paths-file",
-        "${workspaceFolder}/tasks/wp_excludes.txt",
-        "--output-file",
-        "${workspaceFolder}/.ai-context/myplugin.m1f.txt",
-        "--separator-style",
-        "MachineReadable",
-        "--force",
-        "--minimal-output",
-        "--quiet"
-    ]
-}
-```
-
-#### Combined Theme and Plugin Context
-
-This task combines both your theme and plugin files for a complete project context:
-
-```json
-{
-    "label": "WordPress: Generate Both Theme and Plugin Context",
-    "type": "shell",
-    "command": "python",
-    "args": [
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "WordPress: Generate AI Context from List",
+      "type": "shell",
+      "command": "python",
+      "args": [
         "${workspaceFolder}/tools/makeonefile.py",
         "--input-file",
-        "${workspaceFolder}/tasks/wp_theme_includes.txt",
-        "${workspaceFolder}/tasks/wp_plugin_includes.txt",
-        "--exclude-paths-file",
-        "${workspaceFolder}/tasks/wp_excludes.txt",
+        "${workspaceFolder}/my_wp_context_files.txt", // Adjust path if needed
         "--output-file",
-        "${workspaceFolder}/.ai-context/wordpress_project.m1f.txt",
+        "${workspaceFolder}/.gen/wordpress_context.m1f.txt",
         "--separator-style",
         "MachineReadable",
         "--force",
         "--minimal-output",
-        "--quiet"
-    ]
+        "--quiet" // Suppress console output from the script
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "Combines specified WordPress theme/plugin files into a single context file for AI."
+    }
+  ]
 }
 ```
 
-### Running the Tasks
+With this task, you can simply run "WordPress: Generate AI Context from List"
+from the VS Code Command Palette to update your context file. Remember to
+maintain your `my_wp_context_files.txt` list as your project evolves.
 
-1. Open VS Code Command Palette (`Ctrl+Shift+P`)
-2. Type "Tasks: Run Task" and press Enter
-3. Select one of the WordPress tasks:
-   - "WordPress: Generate Theme Context" - for theme-only work
-   - "WordPress: Generate Plugin Context" - for plugin-only work
-   - "WordPress: Generate Both Theme and Plugin Context" - for the complete project
-
-### Keeping the Context Updated
-
-To ensure your AI context stays up-to-date with your WordPress development:
-
-1. **Automatic Updates**: Configure VS Code to run the task on file save:
-
-   ```json
-   "runOptions": {
-       "runOn": "folderOpen"
-   }
-   ```
-
-2. **Update on Demand**: Run the appropriate task after making significant changes.
-
-3. **Feature-Specific Work**: Create specialized include files for different parts of your project:
-   - Templates and theme structure
-   - Plugin admin dashboard functionality
-   - WooCommerce integration features
-   - Custom post types and taxonomies
-
-### Using with AI Assistants
-
-When getting AI help with your WordPress development:
-
-1. Load the appropriate context file depending on what you're working on
-2. Ask specific questions about your code, theme structure, or plugin functionality
-3. Generate hooks, filters, and template implementations based on WordPress standards
-4. Troubleshoot theme/plugin conflicts or integration issues
-
-This approach ensures your AI assistant understands your WordPress project structure while maintaining clean, organized context files.
+This approach helps you provide targeted and relevant information to your AI
+assistant, leading to more accurate and helpful responses for your WordPress
+development tasks.

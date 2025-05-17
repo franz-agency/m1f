@@ -249,27 +249,27 @@ python tools/makeonefile.py --help
 
 #### Notable Command Line Options
 
-| Option                      | Description                                                                                       |
-| --------------------------- | ------------------------------------------------------------------------------------------------- |
-| `-s, --source-directory`    | Path to the directory containing files to process                                                 |
-| `-i, --input-file`          | Path to a file containing a list of files/directories to process                                  |
-| `-o, --output-file`         | Path for the combined output file (also determines the log file name)                             |
-| `-f, --force`               | Force overwrite of existing output file without prompting                                         |
-| `-t, --add-timestamp`       | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename                                        |
-| `--include-extensions`      | Space-separated list of file extensions to include (e.g., '.txt', '.json')                        |
-| `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., '.tmp', '.log')                         |
-| `--no-default-excludes`     | Disable default directory exclusions (include node_modules, .git, etc.)                           |
-| `--exclude-paths-file`      | Path to a file containing exact paths to exclude                                                  |
-| `--include-dot-files`       | Include files that start with a dot (e.g., .gitignore)                                            |
-| `--include-binary-files`    | Attempt to include files with binary extensions                                                   |
-| `-v, --verbose`             | Enable verbose logging (more detailed log output)                                                 |
-| `--minimal-output`          | Generate only the combined output file, without any auxiliary files                               |
-| `-q, --quiet`               | Suppress all console output (script runs silently)                                                |
-| `--separator-style`         | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`) |
-| `--create-archive`          | Create a backup archive of processed files                                                        |
-| `--archive-type`            | Type of archive to create (`zip` or `tar.gz`)                                                     |
-| `--line-ending`             | Line ending for script-generated separators/newlines (`lf` or `crlf`)                             |
-| `--additional-excludes`     | Space-separated list of additional directory names to exclude                                     |
+| Option                   | Description                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `-s, --source-directory` | Path to the directory containing files to process                                                 |
+| `-i, --input-file`       | Path to a file containing a list of files/directories to process                                  |
+| `-o, --output-file`      | Path for the combined output file (also determines the log file name)                             |
+| `-f, --force`            | Force overwrite of existing output file without prompting                                         |
+| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename                                        |
+| `--include-extensions`   | Space-separated list of file extensions to include (e.g., '.txt', '.json')                        |
+| `--exclude-extensions`   | Space-separated list of file extensions to exclude (e.g., '.tmp', '.log')                         |
+| `--no-default-excludes`  | Disable default directory exclusions (include node_modules, .git, etc.)                           |
+| `--exclude-paths-file`   | Path to a file containing exact paths to exclude                                                  |
+| `--include-dot-files`    | Include files that start with a dot (e.g., .gitignore)                                            |
+| `--include-binary-files` | Attempt to include files with binary extensions                                                   |
+| `-v, --verbose`          | Enable verbose logging (more detailed log output)                                                 |
+| `--minimal-output`       | Generate only the combined output file, without any auxiliary files                               |
+| `-q, --quiet`            | Suppress all console output (script runs silently)                                                |
+| `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`) |
+| `--create-archive`       | Create a backup archive of processed files                                                        |
+| `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                     |
+| `--line-ending`          | Line ending for script-generated separators/newlines (`lf` or `crlf`)                             |
+| `--additional-excludes`  | Space-separated list of additional directory names to exclude                                     |
 
 ### Exclude Paths File Format
 
@@ -326,11 +326,11 @@ METADATA_JSON:
 --- PYMK1F_END_FILE_CONTENT_BLOCK_f84a9c25-b8cf-4e6a-a39d-842d7fe3b6e1 ---
 ```
 
-This format ensures reliable parsing with unique identifiers using UUIDs that won't
-appear in regular files. The JSON metadata includes the original filepath,
-filename, timestamp in ISO format, file type, size in bytes, and SHA256
-checksum for data integrity verification. It's particularly suitable for
-automated processing and splitting back into individual files.
+This format ensures reliable parsing with unique identifiers using UUIDs that
+won't appear in regular files. The JSON metadata includes the original filepath,
+filename, timestamp in ISO format, file type, size in bytes, and SHA256 checksum
+for data integrity verification. It's particularly suitable for automated
+processing and splitting back into individual files.
 
 #### Testing
 
