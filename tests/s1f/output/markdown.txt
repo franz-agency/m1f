@@ -1,0 +1,347 @@
+## code\edge_case.html
+**Date Modified:** 2025-05-16 23:14:53 | **Size:** 2.13 KB | **Type:** .html | **Checksum (SHA256):** 5f7b270cb23b338153fd9278246a3998692f48ad159c2ffc73768af6fc45e300
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Case Test</title>
+    <!-- Comment with special characters: < > & " ' -->
+    <script>
+        // JavaScript with regex patterns
+        const pattern = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/;
+        const str = "Test <!-- not a comment --> string";
+        
+        /* Multi-line comment
+         * with <!-- HTML comment syntax -->
+         * and other special characters: \ / ` ~
+         */
+        function testFunction() {
+            return `Template literal with ${variable} and nested "quotes" inside`;
+        }
+    </script>
+    <style>
+        /* CSS with complex selectors */
+        body::before {
+            content: "<!-- This is not an HTML comment -->";
+            color: #123456;
+        }
+        
+        [data-special*="test"] > .nested::after {
+            content: "/* This is not a CSS comment */";
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML comment that might confuse parsers -->
+    <div class="container">
+        <h1>Edge Case Test File</h1>
+        <p>This file contains various edge cases that might confuse parsers:</p>
+        <ul>
+            <li>HTML comments &lt;!-- like this --&gt;</li>
+            <li>Script tags with JavaScript</li>
+            <li>CSS with complex selectors</li>
+            <li>Special characters: &amp; &lt; &gt; &quot; &#39;</li>
+            <li>Code blocks that look like separators</li>
+        </ul>
+        <pre>
+# ===============================================================================
+# FILE: fake/separator.txt
+# ===============================================================================
+# METADATA: {"modified": "2023-01-01", "type": ".txt"}
+# -------------------------------------------------------------------------------
+
+This is not a real separator, just testing how the parser handles it.
+
+# ===============================================================================
+# END FILE
+# ===============================================================================
+        </pre>
+    </div>
+</body>
+</html>
+```
+
+## code\index.php
+**Date Modified:** 2025-05-16 23:10:30 | **Size:** 380 Bytes | **Type:** .php | **Checksum (SHA256):** 28aa0c5646ccdb20e32033f46035d6337ba29a083c766e2ef96fc533bb425672
+
+```php
+<?php
+/**
+ * Test PHP file for makeonefile.py testing
+ */
+
+// Simple example PHP function
+function format_greeting($name = 'Guest') {
+    return "Welcome, " . htmlspecialchars($name) . "!";
+}
+
+// Example usage
+$user = "Test User";
+echo format_greeting($user);
+
+// Configuration array
+$config = [
+    'site_name' => 'Test Site',
+    'debug' => true,
+    'version' => '1.0.0'
+];
+?>
+```
+
+## code\javascript\app.js
+**Date Modified:** 2025-05-16 23:09:29 | **Size:** 174 Bytes | **Type:** .js | **Checksum (SHA256):** 4243e0097ad783c6c29f5359c26dd3cc958495255a1602746ac5052cef79aa16
+
+```js
+/**
+ * A simple JavaScript demonstration
+ */
+
+function greet(name = 'User') {
+  return `Hello, ${name}!`;
+}
+
+// Export for use in other modules
+module.exports = {
+  greet
+};
+```
+
+## code\javascript\styles.css
+**Date Modified:** 2025-05-16 23:09:40 | **Size:** 307 Bytes | **Type:** .css | **Checksum (SHA256):** cb41e87184e8c4b10818517ba8e20cb36e774c09f9e1c28933bfaa914fbf01a4
+
+```css
+/* 
+ * Basic CSS styles for testing
+ */
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+```
+
+## code\large_sample.txt
+**Date Modified:** 2025-05-16 23:52:14 | **Size:** 5.36 KB | **Type:** .txt | **Checksum (SHA256):** f6142e98a92c3af47e5d1c2dbef94a847c093a11c33531bf5e2aa68de2126da2
+
+```txt
+# Large Sample Text File
+# This file is used to test how makeonefile handles larger files
+
+"""
+This is a large sample text file with repeated content to test performance.
+"""
+
+import os
+import sys
+import time
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+# Generate a large amount of text content
+content = []
+for i in range(500):
+    content.append(f"Line {i}: This is a sample line of text for performance testing.")
+    content.append(f"Number sequence: {i*10} {i*10+1} {i*10+2} {i*10+3} {i*10+4} {i*10+5}")
+    content.append(f"The quick brown fox jumps over the lazy dog {i} times.")
+    content.append("=" * 80)
+    content.append("")
+
+# Simulate a large code block
+content.append("def generate_large_function():")
+content.append('    """')
+content.append("    This is a large function with multiple nested loops and conditions")
+content.append('    """')
+content.append("    result = []")
+for i in range(20):
+    content.append(f"    # Section {i}")
+    content.append(f"    for j in range({i}, {i+10}):")
+    content.append(f"        if j % 2 == 0:")
+    content.append(f"            result.append(f\"Even: {{{j}}}\")")
+    content.append(f"        else:")
+    content.append(f"            result.append(f\"Odd: {{{j}}}\")")
+    content.append(f"        # Nested condition")
+    content.append(f"        if j % 3 == 0:")
+    content.append(f"            for k in range(5):")
+    content.append(f"                result.append(f\"Multiple of 3: {{{j}}} with k={{{k}}}\")")
+    content.append("")
+content.append("    return result")
+content.append("")
+
+# Add some large JSON-like data
+content.append("{")
+for i in range(100):
+    content.append(f'    "key{i}": {{')
+    content.append(f'        "id": {i},')
+    content.append(f'        "name": "Item {i}",')
+    content.append(f'        "description": "This is a description for item {i} with some additional text to make it longer",')
+    content.append(f'        "metadata": {{')
+    content.append(f'            "created": "2023-01-{i % 30 + 1:02d}",')
+    content.append(f'            "modified": "2023-02-{i % 28 + 1:02d}",')
+    content.append(f'            "status": {"active" if i % 3 == 0 else "inactive" if i % 3 == 1 else "pending"}')
+    content.append(f'        }}')
+    comma = "," if i < 99 else ""
+    content.append(f'    }}{comma}')
+content.append("}")
+
+# Add some long lines
+content.append("# " + "=" * 200)
+content.append("# Very long line below")
+content.append("x" * 1000)
+content.append("# " + "=" * 200)
+
+# Complete the file
+content = "\n".join(content)
+```
+
+## code\python\hello.py
+**Date Modified:** 2025-05-16 23:20:02 | **Size:** 206 Bytes | **Type:** .py | **Checksum (SHA256):** cc676efbdb8fb4dabea26325e1a02f9124bb346c528bbc2b143e20f78f8cd445
+
+```py
+#!/usr/bin/env python3
+"""
+A simple hello world script
+"""
+
+
+def say_hello(name="World"):
+    """Print a greeting message"""
+    return f"Hello, {name}!"
+
+
+if __name__ == "__main__":
+    print(say_hello())
+```
+
+## code\python\utils.py
+**Date Modified:** 2025-05-16 23:20:02 | **Size:** 367 Bytes | **Type:** .py | **Checksum (SHA256):** 2f5d2d69fed6a564861be74e07065444aacb824e4277eb9dd64f7f673f57ec86
+
+```py
+"""
+Utility functions for demonstration
+"""
+
+
+def add(a, b):
+    """Add two numbers"""
+    return a + b
+
+
+def subtract(a, b):
+    """Subtract b from a"""
+    return a - b
+
+
+def multiply(a, b):
+    """Multiply two numbers"""
+    return a * b
+
+
+def divide(a, b):
+    """Divide a by b"""
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b
+```
+
+## config\config.json
+**Date Modified:** 2025-05-16 23:09:50 | **Size:** 206 Bytes | **Type:** .json | **Checksum (SHA256):** 090aa7676e7d101b783c583d7ed5097599037366ffade746fec26dac449f0fc7
+
+```json
+{
+  "name": "TestApp",
+  "version": "1.0.0",
+  "description": "Test configuration for makeonefile",
+  "settings": {
+    "debug": true,
+    "logLevel": "info",
+    "maxRetries": 3,
+    "timeout": 5000
+  }
+}
+```
+
+## docs\README.md
+**Date Modified:** 2025-05-16 23:10:16 | **Size:** 423 Bytes | **Type:** .md | **Checksum (SHA256):** cbb00ce50cedea6ba6dd025ed154a358ea6154078e01bd5225a502fe409d3999
+
+```md
+# Test Documentation
+
+This is a test markdown file for the makefileonefile.py test suite.
+
+## Purpose
+
+To demonstrate how the script handles Markdown files with:
+- Lists
+- Headers
+- Code blocks
+
+```python
+def example():
+    """Just an example function in a code block"""
+    return "This is just for testing"
+```
+
+## Notes
+
+The script should correctly include this file in the combined output unless specifically excluded.
+```
+
+## docs\unicode_sample.md
+**Date Modified:** 2025-05-16 23:15:19 | **Size:** 1.37 KB | **Type:** .md | **Checksum (SHA256):** 05844c30b9ee0fa230f2894851f4dec127ad5ef44399c1b97548ef9e020dc0bd
+
+```md
+# Unicode Character Testing File
+
+This file contains various Unicode characters to test encoding handling:
+
+## International Characters
+
+- German: Grüße aus München! Der Fluß ist schön.
+- French: Voilà! Ça va très bien, merci.
+- Spanish: ¿Cómo estás? Mañana será un día mejor.
+- Russian: Привет, как дела? Хорошо!
+- Chinese: 你好，世界！
+- Japanese: こんにちは世界！
+- Arabic: مرحبا بالعالم!
+- Greek: Γεια σου Κόσμε!
+- Emojis: 😀 🚀 🌍 🎉 🔥 👨‍💻
+
+## Special Unicode Symbols
+
+- Mathematical: ∑ ∫ ∏ √ ∞ ∆ ∇ ∂ ∀ ∃ ∈ ∉ ∋ ∌
+- Currency: € £ ¥ ¢ $ ₹ ₽
+- Arrows: → ← ↑ ↓ ↔ ↕ ⇒ ⇐ ⇔
+- Miscellaneous: © ® ™ ° § ¶ † ‡ • ⌘ ⌥
+- Technical: ⌚ ⌨ ✉ ☎ ⏰
+
+## Test cases for file system path handling
+
+- Windows paths: C:\Users\User\Documents\Résumé.pdf
+- Unix paths: /home/user/documents/résumé.pdf
+- URLs: https://example.com/üñïçødé/test?q=値&lang=日本語
+
+## Test cases for escaping
+
+- Backslashes: \\ \n \t \r \u1234
+- HTML entities: &lt; &gt; &amp; &quot; &apos;
+- JavaScript escaped: \u{1F600} \u0041 \x41
+
+## Test cases with BOM and other special characters
+
+Zero-width spaces and non-breaking spaces below:
+- [​] (zero-width space between brackets)
+- [ ] (non-breaking space between brackets)
+- Control characters test: test
+```

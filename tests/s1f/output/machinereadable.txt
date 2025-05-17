@@ -1,0 +1,417 @@
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_b714b08a-11c8-4dbb-a8a6-e2e2b19b2a33 ---
+METADATA_JSON:
+{
+    "original_filepath": "code\\edge_case.html",
+    "original_filename": "edge_case.html",
+    "timestamp_utc_iso": "2025-05-16T21:14:53.940476Z",
+    "type": ".html",
+    "size_bytes": 2179,
+    "checksum_sha256": "5f7b270cb23b338153fd9278246a3998692f48ad159c2ffc73768af6fc45e300"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_b714b08a-11c8-4dbb-a8a6-e2e2b19b2a33 ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_b714b08a-11c8-4dbb-a8a6-e2e2b19b2a33 ---<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Case Test</title>
+    <!-- Comment with special characters: < > & " ' -->
+    <script>
+        // JavaScript with regex patterns
+        const pattern = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/;
+        const str = "Test <!-- not a comment --> string";
+        
+        /* Multi-line comment
+         * with <!-- HTML comment syntax -->
+         * and other special characters: \ / ` ~
+         */
+        function testFunction() {
+            return `Template literal with ${variable} and nested "quotes" inside`;
+        }
+    </script>
+    <style>
+        /* CSS with complex selectors */
+        body::before {
+            content: "<!-- This is not an HTML comment -->";
+            color: #123456;
+        }
+        
+        [data-special*="test"] > .nested::after {
+            content: "/* This is not a CSS comment */";
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML comment that might confuse parsers -->
+    <div class="container">
+        <h1>Edge Case Test File</h1>
+        <p>This file contains various edge cases that might confuse parsers:</p>
+        <ul>
+            <li>HTML comments &lt;!-- like this --&gt;</li>
+            <li>Script tags with JavaScript</li>
+            <li>CSS with complex selectors</li>
+            <li>Special characters: &amp; &lt; &gt; &quot; &#39;</li>
+            <li>Code blocks that look like separators</li>
+        </ul>
+        <pre>
+# ===============================================================================
+# FILE: fake/separator.txt
+# ===============================================================================
+# METADATA: {"modified": "2023-01-01", "type": ".txt"}
+# -------------------------------------------------------------------------------
+
+This is not a real separator, just testing how the parser handles it.
+
+# ===============================================================================
+# END FILE
+# ===============================================================================
+        </pre>
+    </div>
+</body>
+</html>
+--- PYMK1F_END_FILE_CONTENT_BLOCK_b714b08a-11c8-4dbb-a8a6-e2e2b19b2a33 ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_7af57934-35fd-4579-971b-e6c36ef793cd ---
+METADATA_JSON:
+{
+    "original_filepath": "code\\index.php",
+    "original_filename": "index.php",
+    "timestamp_utc_iso": "2025-05-16T21:10:30.207526Z",
+    "type": ".php",
+    "size_bytes": 380,
+    "checksum_sha256": "28aa0c5646ccdb20e32033f46035d6337ba29a083c766e2ef96fc533bb425672"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_7af57934-35fd-4579-971b-e6c36ef793cd ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_7af57934-35fd-4579-971b-e6c36ef793cd ---<?php
+/**
+ * Test PHP file for makeonefile.py testing
+ */
+
+// Simple example PHP function
+function format_greeting($name = 'Guest') {
+    return "Welcome, " . htmlspecialchars($name) . "!";
+}
+
+// Example usage
+$user = "Test User";
+echo format_greeting($user);
+
+// Configuration array
+$config = [
+    'site_name' => 'Test Site',
+    'debug' => true,
+    'version' => '1.0.0'
+];
+?>
+--- PYMK1F_END_FILE_CONTENT_BLOCK_7af57934-35fd-4579-971b-e6c36ef793cd ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_cebc158f-772e-4770-93ae-886b9d4394a2 ---
+METADATA_JSON:
+{
+    "original_filepath": "code\\javascript\\app.js",
+    "original_filename": "app.js",
+    "timestamp_utc_iso": "2025-05-16T21:09:29.367279Z",
+    "type": ".js",
+    "size_bytes": 174,
+    "checksum_sha256": "4243e0097ad783c6c29f5359c26dd3cc958495255a1602746ac5052cef79aa16"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_cebc158f-772e-4770-93ae-886b9d4394a2 ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_cebc158f-772e-4770-93ae-886b9d4394a2 ---/**
+ * A simple JavaScript demonstration
+ */
+
+function greet(name = 'User') {
+  return `Hello, ${name}!`;
+}
+
+// Export for use in other modules
+module.exports = {
+  greet
+};
+--- PYMK1F_END_FILE_CONTENT_BLOCK_cebc158f-772e-4770-93ae-886b9d4394a2 ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_a251fc4a-ec87-4291-a5f4-aab379d299de ---
+METADATA_JSON:
+{
+    "original_filepath": "code\\javascript\\styles.css",
+    "original_filename": "styles.css",
+    "timestamp_utc_iso": "2025-05-16T21:09:40.870502Z",
+    "type": ".css",
+    "size_bytes": 307,
+    "checksum_sha256": "cb41e87184e8c4b10818517ba8e20cb36e774c09f9e1c28933bfaa914fbf01a4"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_a251fc4a-ec87-4291-a5f4-aab379d299de ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_a251fc4a-ec87-4291-a5f4-aab379d299de ---/* 
+ * Basic CSS styles for testing
+ */
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+--- PYMK1F_END_FILE_CONTENT_BLOCK_a251fc4a-ec87-4291-a5f4-aab379d299de ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_9764dc07-75e6-4dd5-9d03-1d1e3266c37f ---
+METADATA_JSON:
+{
+    "original_filepath": "code\\large_sample.txt",
+    "original_filename": "large_sample.txt",
+    "timestamp_utc_iso": "2025-05-16T21:52:14.634868Z",
+    "type": ".txt",
+    "size_bytes": 5489,
+    "checksum_sha256": "f6142e98a92c3af47e5d1c2dbef94a847c093a11c33531bf5e2aa68de2126da2"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_9764dc07-75e6-4dd5-9d03-1d1e3266c37f ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_9764dc07-75e6-4dd5-9d03-1d1e3266c37f ---# Large Sample Text File
+# This file is used to test how makeonefile handles larger files
+
+"""
+This is a large sample text file with repeated content to test performance.
+"""
+
+import os
+import sys
+import time
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+# Generate a large amount of text content
+content = []
+for i in range(500):
+    content.append(f"Line {i}: This is a sample line of text for performance testing.")
+    content.append(f"Number sequence: {i*10} {i*10+1} {i*10+2} {i*10+3} {i*10+4} {i*10+5}")
+    content.append(f"The quick brown fox jumps over the lazy dog {i} times.")
+    content.append("=" * 80)
+    content.append("")
+
+# Simulate a large code block
+content.append("def generate_large_function():")
+content.append('    """')
+content.append("    This is a large function with multiple nested loops and conditions")
+content.append('    """')
+content.append("    result = []")
+for i in range(20):
+    content.append(f"    # Section {i}")
+    content.append(f"    for j in range({i}, {i+10}):")
+    content.append(f"        if j % 2 == 0:")
+    content.append(f"            result.append(f\"Even: {{{j}}}\")")
+    content.append(f"        else:")
+    content.append(f"            result.append(f\"Odd: {{{j}}}\")")
+    content.append(f"        # Nested condition")
+    content.append(f"        if j % 3 == 0:")
+    content.append(f"            for k in range(5):")
+    content.append(f"                result.append(f\"Multiple of 3: {{{j}}} with k={{{k}}}\")")
+    content.append("")
+content.append("    return result")
+content.append("")
+
+# Add some large JSON-like data
+content.append("{")
+for i in range(100):
+    content.append(f'    "key{i}": {{')
+    content.append(f'        "id": {i},')
+    content.append(f'        "name": "Item {i}",')
+    content.append(f'        "description": "This is a description for item {i} with some additional text to make it longer",')
+    content.append(f'        "metadata": {{')
+    content.append(f'            "created": "2023-01-{i % 30 + 1:02d}",')
+    content.append(f'            "modified": "2023-02-{i % 28 + 1:02d}",')
+    content.append(f'            "status": {"active" if i % 3 == 0 else "inactive" if i % 3 == 1 else "pending"}')
+    content.append(f'        }}')
+    comma = "," if i < 99 else ""
+    content.append(f'    }}{comma}')
+content.append("}")
+
+# Add some long lines
+content.append("# " + "=" * 200)
+content.append("# Very long line below")
+content.append("x" * 1000)
+content.append("# " + "=" * 200)
+
+# Complete the file
+content = "\n".join(content)
+--- PYMK1F_END_FILE_CONTENT_BLOCK_9764dc07-75e6-4dd5-9d03-1d1e3266c37f ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_fb5d4f83-9847-4e2d-a109-54ab53956c65 ---
+METADATA_JSON:
+{
+    "original_filepath": "code\\python\\hello.py",
+    "original_filename": "hello.py",
+    "timestamp_utc_iso": "2025-05-16T21:20:02.798072Z",
+    "type": ".py",
+    "size_bytes": 206,
+    "checksum_sha256": "cc676efbdb8fb4dabea26325e1a02f9124bb346c528bbc2b143e20f78f8cd445"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_fb5d4f83-9847-4e2d-a109-54ab53956c65 ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_fb5d4f83-9847-4e2d-a109-54ab53956c65 ---#!/usr/bin/env python3
+"""
+A simple hello world script
+"""
+
+
+def say_hello(name="World"):
+    """Print a greeting message"""
+    return f"Hello, {name}!"
+
+
+if __name__ == "__main__":
+    print(say_hello())
+--- PYMK1F_END_FILE_CONTENT_BLOCK_fb5d4f83-9847-4e2d-a109-54ab53956c65 ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_8df0f76b-c611-4616-9f51-cb664e4fc2fc ---
+METADATA_JSON:
+{
+    "original_filepath": "code\\python\\utils.py",
+    "original_filename": "utils.py",
+    "timestamp_utc_iso": "2025-05-16T21:20:02.819552Z",
+    "type": ".py",
+    "size_bytes": 367,
+    "checksum_sha256": "2f5d2d69fed6a564861be74e07065444aacb824e4277eb9dd64f7f673f57ec86"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_8df0f76b-c611-4616-9f51-cb664e4fc2fc ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_8df0f76b-c611-4616-9f51-cb664e4fc2fc ---"""
+Utility functions for demonstration
+"""
+
+
+def add(a, b):
+    """Add two numbers"""
+    return a + b
+
+
+def subtract(a, b):
+    """Subtract b from a"""
+    return a - b
+
+
+def multiply(a, b):
+    """Multiply two numbers"""
+    return a * b
+
+
+def divide(a, b):
+    """Divide a by b"""
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b
+--- PYMK1F_END_FILE_CONTENT_BLOCK_8df0f76b-c611-4616-9f51-cb664e4fc2fc ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_364081c0-23d4-45c6-87db-89d4f7c00e59 ---
+METADATA_JSON:
+{
+    "original_filepath": "config\\config.json",
+    "original_filename": "config.json",
+    "timestamp_utc_iso": "2025-05-16T21:09:50.721548Z",
+    "type": ".json",
+    "size_bytes": 206,
+    "checksum_sha256": "090aa7676e7d101b783c583d7ed5097599037366ffade746fec26dac449f0fc7"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_364081c0-23d4-45c6-87db-89d4f7c00e59 ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_364081c0-23d4-45c6-87db-89d4f7c00e59 ---{
+  "name": "TestApp",
+  "version": "1.0.0",
+  "description": "Test configuration for makeonefile",
+  "settings": {
+    "debug": true,
+    "logLevel": "info",
+    "maxRetries": 3,
+    "timeout": 5000
+  }
+}
+--- PYMK1F_END_FILE_CONTENT_BLOCK_364081c0-23d4-45c6-87db-89d4f7c00e59 ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_3480f1d5-63bc-4067-8d91-27bcde4c7527 ---
+METADATA_JSON:
+{
+    "original_filepath": "docs\\README.md",
+    "original_filename": "README.md",
+    "timestamp_utc_iso": "2025-05-16T21:10:16.112168Z",
+    "type": ".md",
+    "size_bytes": 423,
+    "checksum_sha256": "cbb00ce50cedea6ba6dd025ed154a358ea6154078e01bd5225a502fe409d3999"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_3480f1d5-63bc-4067-8d91-27bcde4c7527 ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_3480f1d5-63bc-4067-8d91-27bcde4c7527 ---# Test Documentation
+
+This is a test markdown file for the makefileonefile.py test suite.
+
+## Purpose
+
+To demonstrate how the script handles Markdown files with:
+- Lists
+- Headers
+- Code blocks
+
+```python
+def example():
+    """Just an example function in a code block"""
+    return "This is just for testing"
+```
+
+## Notes
+
+The script should correctly include this file in the combined output unless specifically excluded.
+--- PYMK1F_END_FILE_CONTENT_BLOCK_3480f1d5-63bc-4067-8d91-27bcde4c7527 ---
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_7905681c-2ae8-4946-8597-b7bbf73fe4f1 ---
+METADATA_JSON:
+{
+    "original_filepath": "docs\\unicode_sample.md",
+    "original_filename": "unicode_sample.md",
+    "timestamp_utc_iso": "2025-05-16T21:15:19.332377Z",
+    "type": ".md",
+    "size_bytes": 1399,
+    "checksum_sha256": "05844c30b9ee0fa230f2894851f4dec127ad5ef44399c1b97548ef9e020dc0bd"
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_7905681c-2ae8-4946-8597-b7bbf73fe4f1 ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_7905681c-2ae8-4946-8597-b7bbf73fe4f1 ---# Unicode Character Testing File
+
+This file contains various Unicode characters to test encoding handling:
+
+## International Characters
+
+- German: Grüße aus München! Der Fluß ist schön.
+- French: Voilà! Ça va très bien, merci.
+- Spanish: ¿Cómo estás? Mañana será un día mejor.
+- Russian: Привет, как дела? Хорошо!
+- Chinese: 你好，世界！
+- Japanese: こんにちは世界！
+- Arabic: مرحبا بالعالم!
+- Greek: Γεια σου Κόσμε!
+- Emojis: 😀 🚀 🌍 🎉 🔥 👨‍💻
+
+## Special Unicode Symbols
+
+- Mathematical: ∑ ∫ ∏ √ ∞ ∆ ∇ ∂ ∀ ∃ ∈ ∉ ∋ ∌
+- Currency: € £ ¥ ¢ $ ₹ ₽
+- Arrows: → ← ↑ ↓ ↔ ↕ ⇒ ⇐ ⇔
+- Miscellaneous: © ® ™ ° § ¶ † ‡ • ⌘ ⌥
+- Technical: ⌚ ⌨ ✉ ☎ ⏰
+
+## Test cases for file system path handling
+
+- Windows paths: C:\Users\User\Documents\Résumé.pdf
+- Unix paths: /home/user/documents/résumé.pdf
+- URLs: https://example.com/üñïçødé/test?q=値&lang=日本語
+
+## Test cases for escaping
+
+- Backslashes: \\ \n \t \r \u1234
+- HTML entities: &lt; &gt; &amp; &quot; &apos;
+- JavaScript escaped: \u{1F600} \u0041 \x41
+
+## Test cases with BOM and other special characters
+
+Zero-width spaces and non-breaking spaces below:
+- [​] (zero-width space between brackets)
+- [ ] (non-breaking space between brackets)
+- Control characters test: test
+--- PYMK1F_END_FILE_CONTENT_BLOCK_7905681c-2ae8-4946-8597-b7bbf73fe4f1 ---
