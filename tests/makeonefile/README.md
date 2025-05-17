@@ -1,7 +1,7 @@
-# Makeonefile.py Tests
+# m1f (Make One File) Tests
 
 This directory contains comprehensive tests for the `makeonefile.py` script
-located in the `tools` directory.
+(the m1f tool) located in the `tools` directory.
 
 ## Test Structure
 
@@ -48,7 +48,7 @@ python tests/makeonefile/run_tests.py --all --verbose
 
 ## Test Coverage
 
-The tests cover all major functionality of the `makeonefile.py` script:
+The tests cover all major functionality of the m1f tool (`makeonefile.py`):
 
 1. **Basic functionality**:
 
@@ -80,12 +80,14 @@ The tests cover all major functionality of the `makeonefile.py` script:
    - Large files
    - Files with fake separators
 
-6. **Command line interface**:
-   - Running as a subprocess
-   - Input paths from file
+6. **LLM-specific features**:
+   - Machine-readable formatting for AI processing
+   - Token estimation for context planning
+   - Command line interface options for integration with AI workflows
 
 ## Maintainer Information
 
 - Author: Franz und Franz
 - Homepage: https://franz.agency
+- Project: https://m1f.dev
 - License: See project LICENSE file
