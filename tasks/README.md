@@ -136,6 +136,10 @@ Consider these advanced options from `makeonefile.py` for specific needs:
   files like `.htaccess` or other dotfiles if they are relevant to your context.
 - `--separator-style`: While `MachineReadable` is generally recommended for AI
   context files, you can explore other styles if needed.
+- `--skip-output-file`: Executes all operations (logs, additional files, etc.)
+  but skips writing the final .m1f.txt output file. Useful when you're only
+  interested in generating the file and directory listings or logs, but not the
+  combined content file itself.
 
 For a complete list of all available options and their detailed descriptions,
 run:
@@ -314,6 +318,21 @@ python tools/makeonefile.py \
 - `--minimal-output`: Prevents the script from generating auxiliary files like
   file lists or logs, keeping your project clean.
 
+You can also generate only the auxiliary files (file list and directory list)
+without creating the combined file:
+
+```bash
+python tools/makeonefile.py \
+  --input-file my_wp_context_files.txt \
+  --output-file .gen/wordpress_auxiliary_only.m1f.txt \
+  --skip-output-file \
+  --verbose
+```
+
+This will create `wordpress_auxiliary_only_filelist.txt` and
+`wordpress_auxiliary_only_dirlist.txt` files but won't generate the combined
+content file.
+
 ### 4. Using the Context File with Your AI Assistant
 
 Once `wordpress_context.m1f.txt` is generated:
@@ -342,14 +361,14 @@ You can automate this process by creating a VS Code task in your
       "args": [
         "${workspaceFolder}/tools/makeonefile.py",
         "--input-file",
-        "${workspaceFolder}/my_wp_context_files.txt", // Adjust path if needed
+        "${workspaceFolder}/my_wp_context_files.txt",
         "--output-file",
         "${workspaceFolder}/.gen/wordpress_context.m1f.txt",
         "--separator-style",
         "MachineReadable",
         "--force",
         "--minimal-output",
-        "--quiet" // Suppress console output from the script
+        "--quiet"
       ],
       "problemMatcher": [],
       "group": {
@@ -357,6 +376,23 @@ You can automate this process by creating a VS Code task in your
         "isDefault": true
       },
       "detail": "Combines specified WordPress theme/plugin files into a single context file for AI."
+    },
+    {
+      "label": "WordPress: Generate File Lists Only",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}/tools/makeonefile.py",
+        "--input-file",
+        "${workspaceFolder}/my_wp_context_files.txt",
+        "--output-file",
+        "${workspaceFolder}/.gen/wordpress_auxiliary.m1f.txt",
+        "--skip-output-file",
+        "--verbose"
+      ],
+      "problemMatcher": [],
+      "group": "build",
+      "detail": "Generates file and directory lists without creating the combined file."
     }
   ]
 }

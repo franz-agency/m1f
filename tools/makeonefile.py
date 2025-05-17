@@ -43,6 +43,7 @@ KEY FEATURES
 - Creates a log file with the same name as the output file but with a `.log` extension, capturing all processing information.
 - Generates two additional output files: one with all included file paths (_filelist.txt) and another with all unique directories (_dirlist.txt).
 - Measures and reports the total execution time for performance monitoring.
+- Option to skip writing the final output file while still generating all logs and auxiliary files (`--skip-output-file`).
 
 REQUIREMENTS
 ============
@@ -69,6 +70,9 @@ With more options including tar.gz archive:
 
 With exclude paths file:
   python pymakeonefile.py -s ./my_project -o ./output/bundle.txt --exclude-paths-file ./exclude_list.txt
+
+Skip writing the output file but generate auxiliary files:
+  python pymakeonefile.py -s ./my_project -o ./auxiliary_only.txt --skip-output-file --verbose
 
 For all options, run:
   python pymakeonefile.py --help
@@ -1255,7 +1259,8 @@ def main():
   %(prog)s -s ./src -o bundle.txt --include-extensions .txt .json .md --exclude-extensions .tmp
   %(prog)s -s ./project -o all_files.txt --no-default-excludes
   %(prog)s -s ./src -o combined.txt --minimal-output
-  %(prog)s -s ./src -o combined.txt --quiet""",
+  %(prog)s -s ./src -o combined.txt --quiet
+  %(prog)s -s ./src -o combined.txt --skip-output-file""",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
@@ -1357,6 +1362,11 @@ def main():
         help="Generate only the combined output file, without any auxiliary files (no log file, file list, or directory list).",
     )
     parser.add_argument(
+        "--skip-output-file",
+        action="store_true",
+        help="Execute all operations (logs, additional files, etc.) but skip writing the final .m1f.txt output file.",
+    )
+    parser.add_argument(
         "--quiet",
         "-q",
         action="store_true",
@@ -1440,15 +1450,17 @@ def main():
     # Set source base directory for path exclusion matching
     args.source_base_dir = source_dir
 
-    # Handle prompting for overwrite in quiet mode
-    if args.quiet and not args.force and output_file_path.exists():
-        # In quiet mode with no force flag, exit if file exists
-        sys.exit(1)  # Exit silently without warning
+    # If we're not skipping the output file, handle overwrite prompting
+    if not args.skip_output_file:
+        # Handle prompting for overwrite in quiet mode
+        if args.quiet and not args.force and output_file_path.exists():
+            # In quiet mode with no force flag, exit if file exists
+            sys.exit(1)  # Exit silently without warning
 
-    # Output file path was already prepared for logging setup
-    _handle_output_file_overwrite_and_creation(
-        output_file_path, args.force, chosen_linesep
-    )
+        # Output file path was already prepared for logging setup
+        _handle_output_file_overwrite_and_creation(
+            output_file_path, args.force, chosen_linesep
+        )
 
     all_excluded_dir_names_lower = _build_exclusion_set(
         args.additional_excludes, 
@@ -1504,22 +1516,40 @@ def main():
 
     if not files_to_process:
         logger.warning(f"No files found matching the criteria in '{source_dir}'.")
-        try:
-            with open(output_file_path, "w", encoding="utf-8") as f:
-                f.write(f"# No files processed from {source_dir}{chosen_linesep}")
-            logger.info(
-                f"Empty output file (with a note) created at '{output_file_path}'."
-            )
-        except Exception as e:
-            logger.error(
-                f"Could not create empty output file '{output_file_path}': {e}"
-            )
-            sys.exit(1)
+        
+        # Only create the empty output file if we're not skipping output
+        if not args.skip_output_file:
+            try:
+                with open(output_file_path, "w", encoding="utf-8") as f:
+                    f.write(f"# No files processed from {source_dir}{chosen_linesep}")
+                logger.info(
+                    f"Empty output file (with a note) created at '{output_file_path}'."
+                )
+            except Exception as e:
+                logger.error(
+                    f"Could not create empty output file '{output_file_path}': {e}"
+                )
+                sys.exit(1)
+        else:
+            logger.info("Skipping output file creation as requested.")
+            
         sys.exit(0)
 
-    processed_count = _write_combined_data(
-        output_file_path, files_to_process, args, chosen_linesep
-    )
+    # Only create the output file if not skipping
+    processed_count = 0
+    if not args.skip_output_file:
+        processed_count = _write_combined_data(
+            output_file_path, files_to_process, args, chosen_linesep
+        )
+        logger.info(
+            f"Successfully combined {processed_count} file(s) into '{output_file_path}'."
+        )
+    else:
+        # Still count the files even if we're not writing them
+        processed_count = len(files_to_process)
+        logger.info(
+            f"Found {processed_count} file(s) that would be processed, but skipped writing output file as requested."
+        )
 
     # Write the list of file paths to a separate file, unless in minimal output mode
     if not args.minimal_output:
@@ -1527,13 +1557,9 @@ def main():
 
         # Write the list of directories to a separate file, unless in minimal output mode
         dir_list_path = _write_directory_paths_list(output_file_path, files_to_process)
-    
-    logger.info(
-        f"Successfully combined {processed_count} file(s) into '{output_file_path}'."
-    )
 
     # --- Token Counting for Output File ---
-    if processed_count > 0 and not args.minimal_output:  # Only count tokens if files were processed and not in minimal output mode
+    if not args.skip_output_file and processed_count > 0 and not args.minimal_output:  # Only count tokens if files were processed, output wasn't skipped, and not in minimal output mode
         try:
             logger.info(f"Attempting to count tokens in '{output_file_path.name}'...")
             # Defaulting to "cl100k_base" as it's common for GPT models
@@ -1551,7 +1577,7 @@ def main():
             logger.warning(
                 "  To enable token counting, please ensure 'tiktoken' library is installed (e.g., 'pip install tiktoken')."
             )
-    elif output_file_path.exists() and not args.minimal_output:  # An empty note file might have been created
+    elif output_file_path.exists() and not args.skip_output_file and not args.minimal_output:  # An empty note file might have been created
         logger.info(
             f"Output file '{output_file_path.name}' was created but is empty or contains no processed files; skipping token count."
         )
