@@ -6,5 +6,11 @@
     "lint:md": "prettier --write \"**/*.md\"",
     "lint:md:check": "prettier --check \"**/*.md\""
   },
-  "homepage": "https://m1f.dev"
+  "homepage": "https://m1f.dev",
+  "name": "m1f-website",
+  "version": "1.0.0",
+  "description": "Python Development Tools by Franz Agency",
+  "main": "index.js",
+  "author": "Franz Agency",
+  "license": "See LICENSE.md"
 }
