@@ -150,6 +150,20 @@ python tools/makeonefile.py -s ./src -o ./dist/code_only.txt \
   --include-extensions .py .js .ts .jsx .tsx
 ```
 
+Concatenating all CSS files from a directory into one, without separators, and adding a timestamp to the output filename (e.g., `bundle_YYYYMMDD_HHMMSS.css`):
+
+```bash
+python tools/makeonefile.py -s ./path/to/css_project_folder -o ./output/bundle.css \
+  --include-extensions .css --separator-style None --force -t
+```
+
+Concatenating all JavaScript files from a directory into one, without separators, and adding a timestamp to the output filename (e.g., `bundle_YYYYMMDD_HHMMSS.js`):
+
+```bash
+python tools/makeonefile.py -s ./path/to/js_project_folder -o ./output/bundle.js \
+  --include-extensions .js --separator-style None --force -t
+```
+
 Excluding specific file extensions:
 
 ```bash
