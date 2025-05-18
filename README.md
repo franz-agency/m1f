@@ -422,6 +422,122 @@ The m1f toolset works seamlessly with:
 - **Custom AI applications**: Process the machine-readable format
   programmatically
 
+## Separator Styles
+
+The `--separator-style` option allows you to choose how files are separated in
+the combined output file. Each style is designed for specific use cases, from
+human readability to automated parsing.
+
+### Standard Style
+
+A simple, concise separator that shows the file path and optional checksum:
+
+```
+======= path/to/file.py | CHECKSUM_SHA256: abcdef1234567890... ======
+```
+
+**Best for:**
+
+- Quick reference and navigation when reviewing code
+- Minimizing overhead while still providing clear file boundaries
+- Situations where you want to keep separators compact
+
+### Detailed Style (Default)
+
+A more comprehensive separator that includes file metadata:
+
+```
+========================================================================================
+== FILE: path/to/file.py
+== DATE: 2023-06-15 14:30:21 | SIZE: 2.50 KB | TYPE: .py
+== CHECKSUM_SHA256: abcdef1234567890...
+========================================================================================
+```
+
+**Best for:**
+
+- Code review and analysis where file metadata is important
+- Documentation that needs to preserve timestamp and size information
+- Default choice for most use cases (good balance of information and
+  readability)
+
+### Markdown Style
+
+Formats the metadata as Markdown with proper code blocks, using the file
+extension to set syntax highlighting:
+
+````markdown
+## path/to/file.py
+
+**Date Modified:** 2023-06-15 14:30:21 | **Size:** 2.50 KB | **Type:** .py |
+**Checksum (SHA256):** abcdef1234567890...
+
+```python
+# File content starts here
+def example():
+    return "Hello, world!"
+```
+````
+
+```
+
+**Best for:**
+- Creating documentation that will be rendered in Markdown viewers
+- Sharing code snippets that benefit from syntax highlighting
+- Generating readable reports that might be included in wikis or other Markdown-based systems
+
+### MachineReadable Style
+
+A robust format designed for reliable automated parsing and processing. It uses unique boundary markers with UUIDs and structured JSON metadata:
+
+```
+
+--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-123456789abc ---
+METADATA_JSON: { "original_filepath": "path/to/file.py", "original_filename":
+"file.py", "timestamp_utc_iso": "2023-06-15T14:30:21Z", "type": ".py",
+"size_bytes": 2560, "checksum_sha256": "abcdef1234567890..." } ---
+PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-123456789abc --- ---
+PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-123456789abc ---
+
+# File content here
+
+--- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-123456789abc ---
+
+```
+
+**Best for:**
+- Working with automated tools that need to parse and extract file content
+- Integration with the `s1f.py` tool for reliable file extraction
+- Ensuring file integrity with checksums and complete metadata
+- Programmatic processing of the combined file
+- LLM prompt engineering that requires structured data
+
+### None Style
+
+Files are concatenated directly without any separators between them:
+
+```
+
+// Content of file1.js console.log("Hello"); // Content of file2.js
+console.log("World");
+
+````
+
+**Best for:**
+- Creating bundled output like combining CSS or JavaScript files
+- Generating files where separators would interfere with the content
+- Concatenating files that are meant to be used together as a single unit
+- Minimizing token usage in LLM interactions
+
+### Choosing the Right Style
+
+The best separator style depends on your specific use case:
+
+- For reading and reviewing code: **Detailed** or **Standard**
+- For documentation in Markdown format: **Markdown**
+- For automated processing and extraction: **MachineReadable**
+- For file bundling with no separators: **None**
+
 ## Setup
 
 1. **Create and activate a virtual environment:**
@@ -432,7 +548,7 @@ The m1f toolset works seamlessly with:
    .venv\Scripts\activate
    # On macOS/Linux
    source .venv/bin/activate
-   ```
+````
 
 2. **Install dependencies:**
 
