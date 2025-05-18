@@ -204,23 +204,6 @@ import uuid  # Added for UUID generation
 import re
 from pathlib import Path, PureWindowsPath
 
-if __name__ == "__main__" and not __package__:
-    # This block ensures that when the script is run directly (e.g., python tools/m1f.py),
-    # Python understands its package context, allowing relative imports like ".path_utils" to work.
-    # os and sys are imported globally earlier in the script.
-    import os
-    import sys
-    script_dir = os.path.dirname(os.path.abspath(__file__)) # e.g., /path/to/project/tools
-    package_name = os.path.basename(script_dir) # e.g., "tools"
-    project_root = os.path.dirname(script_dir) # e.g., /path/to/project
-    
-    # Add the project root to sys.path so that Python can find the package.
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-    
-    # Set __package__ to the determined package name.
-    __package__ = package_name
-
 from .path_utils import normalize_path # Changed to relative import
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
@@ -239,8 +222,9 @@ except ImportError:
 # Try to import detect_secrets for optional security scanning
 try:
     from detect_secrets.core.scan import scan_file
-    from detect_secrets.settings import get_settings
-
+    from detect_secrets.settings import get_settings, default_settings # Restore this import
+    # Attempt to explicitly import the plugins package to help with discovery
+    import detect_secrets.plugins
     DETECT_SECRETS_AVAILABLE = True
 except Exception:  # pragma: no cover - library might not be installed
     DETECT_SECRETS_AVAILABLE = False
@@ -432,18 +416,38 @@ def _contains_sensitive_info(text: str) -> bool:
 
 def _scan_files_for_sensitive_info(
     files_to_process: list[tuple[Path, str]],
-) -> list[str]:
+) -> list[str]: # MODIFIED: Will change return type later
     """Scan files for sensitive information and return list of relative paths."""
-    flagged: list[str] = []
+    # MODIFICATION: Store list of dictionaries with detailed findings
+    # Each dict will be: {'path': str, 'type': str, 'line': int, 'message': str}
+    detailed_flagged_findings: list[dict] = []
     if DETECT_SECRETS_AVAILABLE:
-        for abs_path, rel_path in files_to_process:
-            try:
-                findings = scan_file(str(abs_path), get_settings())
-            except Exception as e:  # pragma: no cover - scanning error
-                logger.warning(f"detect-secrets failed on {abs_path}: {e}")
-                continue
-            if findings:
-                flagged.append(rel_path)
+        try:
+            # Call get_settings() once to potentially initialize detect-secrets plugins
+            # This might not be strictly needed if using the context manager below,
+            # but leaving it in case it helps with initial plugin discovery.
+            get_settings()
+        except Exception as e:
+            logger.warning(f"Call to detect-secrets get_settings() failed: {e}. This might affect plugin loading.")
+
+        # Use default_settings as a context manager to ensure plugins are loaded correctly
+        with default_settings():
+            for abs_path, rel_path in files_to_process:
+                try:
+                    # For detect-secrets 1.5.0, scan_file only takes the filename.
+                    # It returns a SecretsCollection object, which is iterable, yielding PotentialSecret objects.
+                    secrets_collection_obj = scan_file(str(abs_path))
+                    for secret in secrets_collection_obj: # Iterate directly over the collection
+                        # secret is a PotentialSecret object
+                        detailed_flagged_findings.append({
+                            "path": rel_path, # Use the relative path we have
+                            "type": secret.type,
+                            "line": secret.line_number,
+                            "message": f"Detected '{secret.type}' on line {secret.line_number}"
+                        })
+                except Exception as e:  # pragma: no cover - scanning error
+                    logger.warning(f"detect-secrets failed on {abs_path}: {e}")
+                    continue
     else:
         for abs_path, rel_path in files_to_process:
             try:
@@ -451,9 +455,24 @@ def _scan_files_for_sensitive_info(
             except Exception as e:  # pragma: no cover - unlikely read error
                 logger.warning(f"Could not read {abs_path} for security check: {e}")
                 continue
+            # For regex fallback, we don't have line numbers or specific types easily
             if _contains_sensitive_info(content):
-                flagged.append(rel_path)
-    return flagged
+                detailed_flagged_findings.append({
+                    "path": rel_path,
+                    "type": "Regex Match",
+                    "line": "N/A",
+                    "message": "Potential sensitive data found by regex scan."
+                })
+    # The function's return type and usage will need to be updated where it's called.
+    # For now, to keep the change localized for this step, we'll return a list of unique paths
+    # that have findings, similar to the old behavior, but the detailed_flagged_findings
+    # will be used in a subsequent step to update the reporting.
+    # This is a temporary measure to make the edit apply cleanly.
+    # The proper fix involves changing how `args.flagged_files` is populated and used.
+    
+    # For this step, we will return the detailed findings directly.
+    # The calling code will need to be adapted.
+    return detailed_flagged_findings
 
 
 def _detect_file_encoding(file_path: Path, verbose: bool = False) -> str:
@@ -2442,6 +2461,14 @@ def main():
         args.verbose, chosen_linesep, output_file_path, args.minimal_output, args.quiet
     )
 
+    # Log whether detect-secrets is being used
+    if DETECT_SECRETS_AVAILABLE:
+        logger.info("Security scanning will use 'detect-secrets' library.")
+    else:
+        logger.info(
+            "'detect-secrets' library not found or failed to import. Falling back to regex-based security scanning."
+        )
+
     # Process input file if provided, otherwise use source directory
     input_paths = None
     if hasattr(args, "input_file") and args.input_file:
@@ -2494,26 +2521,35 @@ def main():
 
     # --- Security Check ---
     if getattr(args, "security_check", None):
-        flagged = _scan_files_for_sensitive_info(files_to_process)
-        if flagged:
+        # flagged_findings will be a list of dicts
+        flagged_findings = _scan_files_for_sensitive_info(files_to_process)
+        if flagged_findings:
             if args.security_check == "abort":
-                message = (
-                    "Security check failed. Sensitive information detected in: "
-                    + ", ".join(flagged)
-                )
-                logger.error(message)
-                if not args.quiet:
-                    print(message)
+                # Format a more detailed message for abort
+                abort_message = "Security check failed. Sensitive information detected:\n"
+                for finding in flagged_findings:
+                    abort_message += f"  - File: {finding['path']}, Type: {finding['type']}, Line: {finding['line']}\n"
+                logger.error(abort_message)
                 sys.exit(1)
             elif args.security_check == "skip":
                 logger.warning(
-                    f"Skipping {len(flagged)} file(s) due to security check."
+                    f"Skipping files due to security check. {len(flagged_findings)} findings."
                 )
+                # Get unique paths of files to skip
+                paths_to_skip = {finding['path'] for finding in flagged_findings}
+                for finding in flagged_findings:
+                    logger.debug(f"  - Skipping file {finding['path']} due to: {finding['message']}")
                 files_to_process = [
-                    item for item in files_to_process if item[1] not in flagged
+                    item for item in files_to_process if item[1] not in paths_to_skip
                 ]
             else:  # warn
-                args.flagged_files = flagged
+                # Store the detailed findings in args to be used by the final warning message
+                args.flagged_findings_details = flagged_findings
+        elif DETECT_SECRETS_AVAILABLE: # If detect-secrets ran but found nothing
+            logger.info("Security scan run with 'detect-secrets': No potential secrets detected.")
+        # If DETECT_SECRETS_AVAILABLE is False, it means regex scan was used.
+        # If regex scan was used and flagged_findings is empty, it means regex also found nothing.
+        # This case is implicitly handled as no warning will be printed.
 
     # ---- START: Modification for filename-mtime-hash ----
     if args.filename_mtime_hash and files_to_process:
@@ -2648,17 +2684,13 @@ def main():
             "Archive creation requested, but no files were processed. Skipping archive creation."
         )
 
-    if getattr(args, "security_check", None) == "warn" and getattr(
-        args, "flagged_files", []
-    ):
-        warning_msg = (
-            f"SECURITY WARNING: Sensitive information detected in {len(args.flagged_files)} file(s):\n"
-            + "\n".join(args.flagged_files)
-        )
-        logger.warning(warning_msg)
-        # Removed the redundant print statement:
-        # if not args.quiet:
-        #     print(warning_msg)
+    # Updated warning message to show details
+    if getattr(args, "security_check", None) == "warn" and hasattr(args, "flagged_findings_details") and args.flagged_findings_details:
+        detailed_warning_msg = "SECURITY WARNING: Sensitive information detected in the following locations:\n"
+        for finding in args.flagged_findings_details:
+            detailed_warning_msg += f"  - File: {finding['path']}, Line: {finding['line']}, Type: {finding['type']}\n"
+        logger.warning(detailed_warning_msg)
+        # The console print was already removed in a previous step
 
     # Calculate and log the execution time
     end_time = time.time()
