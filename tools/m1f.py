@@ -201,7 +201,7 @@ import glob
 import sys
 import time  # Added for time measurement
 import uuid  # Added for UUID generation
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation
@@ -1487,7 +1487,7 @@ def _gather_files_to_process(
                     gitignore_spec,
                     explicitly_included=True  # File paths from input file are explicitly included
                 ):
-                    files_to_process.append((item_path, item_path.name))
+                    files_to_process.append((item_path, PureWindowsPath(item_path.name).as_posix()))
                     added_file_absolute_paths.add(abs_path_str)
                 # else: _is_file_excluded logs if verbose
 
@@ -1549,7 +1549,7 @@ def _gather_files_to_process(
                         ):
                             relative_path = file_path_in_dir.relative_to(item_path)
                             files_to_process.append(
-                                (file_path_in_dir, str(relative_path))
+                                (file_path_in_dir, relative_path.as_posix())
                             )
                             added_file_absolute_paths.add(abs_path_str)
                         # else: _is_file_excluded logs if verbose
@@ -1613,7 +1613,7 @@ def _gather_files_to_process(
                     continue
 
                 relative_path = file_path.relative_to(source_dir)
-                files_to_process.append((file_path, str(relative_path)))
+                files_to_process.append((file_path, relative_path.as_posix()))
 
     return sorted(files_to_process, key=lambda x: str(x[1]).lower())
 
@@ -1643,7 +1643,9 @@ def _write_file_paths_list(
     logger.info(f"Writing file paths list to {file_list_path}")
 
     # Extract unique relative paths and sort them
-    unique_paths = sorted(set(rel_path for _, rel_path in files_to_process))
+    unique_paths = sorted(
+        set(PureWindowsPath(rel_path).as_posix() for _, rel_path in files_to_process)
+    )
 
     with open(file_list_path, "w", encoding="utf-8") as f:
         for rel_path in unique_paths:
@@ -1690,11 +1692,12 @@ def _write_directory_paths_list(
 
     for _, rel_path in files_to_process:
         # Get the parent directory of each file
-        path_obj = Path(rel_path)
+        normalized = PureWindowsPath(rel_path).as_posix()
+        path_obj = Path(normalized)
         # Add all parent directories
         current_path = path_obj.parent
         while str(current_path) != ".":
-            unique_dirs.add(str(current_path))
+            unique_dirs.add(current_path.as_posix())
             current_path = current_path.parent
 
     # Sort the directories alphabetically
