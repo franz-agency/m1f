@@ -42,6 +42,7 @@ KEY FEATURES
 - Character encoding handling:
   - Automatic detection of file encoding when using `--convert-to-charset`, with encoding information included in file metadata.
   - Conversion of files to a specific character set with `--convert-to-charset`.
+  - UTF-16-LE is recommended for handling diverse character sets across languages.
   - Strict conversion error handling with the option to abort on conversion errors.
 - Multiple output modes:
   - Full output with all auxiliary files (default).
@@ -104,6 +105,9 @@ Minimal output mode (only create combined file):
 Quiet mode (no console output):
   python tools/m1f.py -s ./src -o ./combined.txt --quiet --force
 
+Converting files to UTF-16-LE for better handling of diverse character sets:
+  python tools/m1f.py -s ./multilingual_project -o ./utf16le_compatible.txt --convert-to-charset utf-16-le
+
 For all options, run:
   python tools/m1f.py --help
 
@@ -163,6 +167,9 @@ NOTES
   When using `--convert-to-charset`, it will automatically detect the original encoding of each file and include
   this information in the metadata. Files will be converted from their detected encoding to the 
   specified charset, reporting errors if the conversion fails.
+  When working with multilingual files or exotic encodings, UTF-16-LE is recommended as it has been
+  proven to provide better character preservation and more reliable round-trip conversions, especially
+  for Asian and Middle Eastern scripts.
   Without conversion, files with non-UTF-8 encodings might not be handled perfectly,
   especially if they contain characters not representable in UTF-8 or if `errors='ignore'`
   has to discard characters.
