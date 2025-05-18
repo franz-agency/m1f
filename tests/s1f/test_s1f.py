@@ -107,7 +107,7 @@ def verify_extracted_files(original_paths, extracted_dir):
     return matching_count, missing_count, different_count
 
 
-class TestSplitFiles:
+class TestS1F:
     """Test cases for the s1f.py script."""
 
     @classmethod
