@@ -658,7 +658,7 @@ For more information and updates, visit the official project website: [https://m
   `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
 - `tiktoken`: For the `tools/token_counter.py` script.
 - `black`: For code formatting.
-- `pymarkdownlnt`: For linting Markdown files.
+- `pymarkdownlint`: For linting Markdown files.
 - `chardet`: Optional, for character encoding detection.
 
 You can install all Python dependencies using:
