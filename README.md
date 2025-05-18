@@ -106,6 +106,8 @@ formatting.
 | `--include-binary-files` | Attempt to include files with binary extensions                                                                                                                                                                                           |
 | `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                         |
 | `--line-ending`          | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                              |
+| `--convert-to-charset`   | Convert all files to the specified character encoding (`utf-8` [default], `utf-16`, `utf-16-le`, `utf-16-be`, `ascii`, `latin-1`, `cp1252`). The original encoding is automatically detected and included in the metadata when using compatible separator styles |
+| `--abort-on-encoding-error` | Abort processing if encoding conversion errors occur. Without this flag, characters that cannot be represented will be replaced                                                                                                         |
 | `-v, --verbose`          | Enable verbose logging                                                                                                                                                                                                                    |
 | `--minimal-output`       | Generate only the combined output file (no auxiliary files)                                                                                                                                                                               |
 | `--skip-output-file`     | Execute operations but skip writing the final output file                                                                                                                                                                                 |
@@ -227,18 +229,32 @@ python tools/m1f.py -s ./my_project -o ./combined.txt \
   --excludes "*.log" "build/" "!important.log"
 ```
 
-Versioning with content hash based on included files:
-
-```bash
-python tools/m1f.py -s ./project -o ./snapshots/project.txt \
-  --filename-mtime-hash
-```
-
 Skipping file generation while only creating metadata files:
 
 ```bash
 python tools/m1f.py -s ./huge_project -o ./analysis.txt \
   --skip-output-file
+```
+
+Converting files to a different character encoding:
+
+```bash
+python tools/m1f.py -s ./project -o ./utf8_only.txt \
+  --convert-to-charset utf-8
+```
+
+Converting files with strict error handling:
+
+```bash
+python tools/m1f.py -s ./project -o ./strict_conversion.txt \
+  --convert-to-charset utf-8 --abort-on-encoding-error
+```
+
+Versioning with content hash based on included files:
+
+```bash
+python tools/m1f.py -s ./project -o ./snapshots/project.txt \
+  --filename-mtime-hash
 ```
 
 ### Output Files
@@ -287,6 +303,7 @@ directory structure.
 | `-v, --verbose`               | Enable verbose output                                                                                                                            |
 | `--timestamp-mode`            | How to set file timestamps (`original` or `current`). Original preserves timestamps from when files were combined, current uses the current time |
 | `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined                         |
+| `--respect-encoding`          | Try to use the original file encoding when writing extracted files. If enabled and original encoding information is available, files will be written using that encoding instead of UTF-8 |
 
 #### Usage Examples
 
@@ -308,6 +325,13 @@ Using current system time for timestamps:
 ```bash
 python tools/s1f.py -i ./combined_file.txt -d ./extracted_files \
   --timestamp-mode current
+```
+
+Preserving original file encodings:
+
+```bash
+python tools/s1f.py -i ./with_encodings.txt -d ./extracted_files \
+  --respect-encoding
 ```
 
 Ignoring checksum verification (when files were intentionally modified):
@@ -570,7 +594,11 @@ While the script can include binary files using the `--include-binary-files` opt
 
 ### Encoding Behavior
 
-The script attempts to read files as UTF-8 and writes the output file as UTF-8. Files with other encodings might not be handled perfectly, especially if they contain characters not representable in UTF-8 or if `errors='ignore'` has to discard characters.
+The script uses UTF-8 as the default encoding for reading and writing files. When using `--convert-to-charset`, the original encoding of each file is automatically detected and recorded in the file metadata (for compatible separator styles like `Detailed`, `Markdown`, and `MachineReadable`). This enables converting from the source encoding to the target encoding.
+
+The following encodings are supported for conversion: UTF-8 (default), UTF-16, UTF-16-LE, UTF-16-BE, ASCII, Latin-1 (ISO-8859-1), and CP1252 (Windows-1252).
+
+When extracting files with s1f, you can use the `--respect-encoding` option to restore files with their original encoding (if that information was recorded during combination with m1f).
 
 ### Line Ending Behavior
 
@@ -598,7 +626,7 @@ For more information and updates, visit the official project website: [https://m
    .venv\Scripts\activate
    # On macOS/Linux
    source .venv/bin/activate
-```
+   ```
 
 2. **Install dependencies:**
 
@@ -614,6 +642,7 @@ For more information and updates, visit the official project website: [https://m
 - `tiktoken`: For the `tools/token_counter.py` script.
 - `black`: For code formatting.
 - `pymarkdownlnt`: For linting Markdown files.
+- `chardet`: Optional, for character encoding detection.
 
 You can install all Python dependencies using:
 
