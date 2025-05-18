@@ -89,31 +89,31 @@ formatting.
 
 #### Command Line Options for m1f.py
 
-| Option                   | Description                                                                                                                                                                                                                               |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-s, --source-directory` | Path to the directory containing files to process                                                                                                                                                                                         |
-| `-i, --input-file`       | Path to a file containing a list of files/directories to process                                                                                                                                                                          |
-| `-o, --output-file`      | Path for the combined output file                                                                                                                                                                                                         |
-| `-f, --force`            | Force overwrite of existing output file without prompting                                                                                                                                                                                 |
-| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename. Useful for versioning and preventing accidental overwrite of previous output files                                                                                            |
-| `--filename-mtime-hash`  | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes |
-| `--include-extensions`   | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                             |
-| `--exclude-extensions`   | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                               |
-| `--exclude-paths-file`   | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                              |
-| `--no-default-excludes`  | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, **pycache**                                                                          |
-| `--excludes`             | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                     |
-| `--include-dot-paths`    | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                 |
-| `--include-binary-files` | Attempt to include files with binary extensions                                                                                                                                                                                           |
-| `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                         |
-| `--line-ending`          | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                              |
-| `--convert-to-charset`   | Convert all files to the specified character encoding (`utf-8` [default], `utf-16`, `utf-16-le`, `utf-16-be`, `ascii`, `latin-1`, `cp1252`). The original encoding is automatically detected and included in the metadata when using compatible separator styles |
-| `--abort-on-encoding-error` | Abort processing if encoding conversion errors occur. Without this flag, characters that cannot be represented will be replaced                                                                                                         |
-| `-v, --verbose`          | Enable verbose logging                                                                                                                                                                                                                    |
-| `--minimal-output`       | Generate only the combined output file (no auxiliary files)                                                                                                                                                                               |
-| `--skip-output-file`     | Execute operations but skip writing the final output file                                                                                                                                                                                 |
-| `-q, --quiet`            | Suppress all console output                                                                                                                                                                                                               |
-| `--create-archive`       | Create a backup archive of all processed files                                                                                                                                                                                            |
-| `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                                                                                                                                                             |
+| Option                      | Description                                                                                                                                                                                                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-s, --source-directory`    | Path to the directory containing files to process                                                                                                                                                                                                                |
+| `-i, --input-file`          | Path to a file containing a list of files/directories to process                                                                                                                                                                                                 |
+| `-o, --output-file`         | Path for the combined output file                                                                                                                                                                                                                                |
+| `-f, --force`               | Force overwrite of existing output file without prompting                                                                                                                                                                                                        |
+| `-t, --add-timestamp`       | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename. Useful for versioning and preventing accidental overwrite of previous output files                                                                                                                   |
+| `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
+| `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
+| `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
+| `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
+| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, **pycache**                                                                                                 |
+| `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
+| `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
+| `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
+| `--separator-style`         | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                                                |
+| `--line-ending`             | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                                                     |
+| `--convert-to-charset`      | Convert all files to the specified character encoding (`utf-8` [default], `utf-16`, `utf-16-le`, `utf-16-be`, `ascii`, `latin-1`, `cp1252`). The original encoding is automatically detected and included in the metadata when using compatible separator styles |
+| `--abort-on-encoding-error` | Abort processing if encoding conversion errors occur. Without this flag, characters that cannot be represented will be replaced                                                                                                                                  |
+| `-v, --verbose`             | Enable verbose logging                                                                                                                                                                                                                                           |
+| `--minimal-output`          | Generate only the combined output file (no auxiliary files)                                                                                                                                                                                                      |
+| `--skip-output-file`        | Execute operations but skip writing the final output file                                                                                                                                                                                                        |
+| `-q, --quiet`               | Suppress all console output                                                                                                                                                                                                                                      |
+| `--create-archive`          | Create a backup archive of all processed files                                                                                                                                                                                                                   |
+| `--archive-type`            | Type of archive to create (`zip` or `tar.gz`)                                                                                                                                                                                                                    |
 
 #### Usage Examples
 
@@ -266,22 +266,30 @@ python tools/m1f.py -s ./project -o ./snapshots/project.txt \
 
 ### Output Files
 
-By default, `m1f.py` creates several output files to provide comprehensive information about the processed files:
+By default, `m1f.py` creates several output files to provide comprehensive
+information about the processed files:
 
-1. **Primary output file** - The combined file specified by `--output-file` containing all processed files with separators
-2. **Log file** - A `.log` file with the same base name as the output file, containing detailed processing information
-3. **File list** - A `_filelist.txt` file containing the paths of all included files
-4. **Directory list** - A `_dirlist.txt` file containing all unique directories from the included files
-5. **Archive file** - An optional backup archive (zip or tar.gz) if `--create-archive` is specified
+1. **Primary output file** - The combined file specified by `--output-file`
+   containing all processed files with separators
+2. **Log file** - A `.log` file with the same base name as the output file,
+   containing detailed processing information
+3. **File list** - A `_filelist.txt` file containing the paths of all included
+   files
+4. **Directory list** - A `_dirlist.txt` file containing all unique directories
+   from the included files
+5. **Archive file** - An optional backup archive (zip or tar.gz) if
+   `--create-archive` is specified
 
-To create only the primary output file and skip the auxiliary files, use the `--minimal-output` option:
+To create only the primary output file and skip the auxiliary files, use the
+`--minimal-output` option:
 
 ```bash
 # Create only the combined output file without any auxiliary files
 python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
 ```
 
-For situations where you want the auxiliary files (logs, lists) but not the primary output file, use `--skip-output-file`:
+For situations where you want the auxiliary files (logs, lists) but not the
+primary output file, use `--skip-output-file`:
 
 ```bash
 # Generate logs and file lists but skip writing the actual combined file
@@ -302,15 +310,15 @@ directory structure.
 
 #### Command Line Options for s1f.py
 
-| Option                        | Description                                                                                                                                      |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `-i, --input-file`            | Path to the combined input file                                                                                                                  |
-| `-d, --destination-directory` | Directory where extracted files will be saved                                                                                                    |
-| `-f, --force`                 | Force overwrite of existing files without prompting                                                                                              |
-| `-v, --verbose`               | Enable verbose output                                                                                                                            |
-| `--timestamp-mode`            | How to set file timestamps (`original` or `current`). Original preserves timestamps from when files were combined, current uses the current time |
-| `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined                         |
-| `--respect-encoding`          | Try to use the original file encoding when writing extracted files. If enabled and original encoding information is available, files will be written using that encoding instead of UTF-8 |
+| Option                        | Description                                                                                                                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-i, --input-file`            | Path to the combined input file                                                                                                                                                                               |
+| `-d, --destination-directory` | Directory where extracted files will be saved                                                                                                                                                                 |
+| `-f, --force`                 | Force overwrite of existing files without prompting                                                                                                                                                           |
+| `-v, --verbose`               | Enable verbose output                                                                                                                                                                                         |
+| `--timestamp-mode`            | How to set file timestamps (`original` or `current`). Original preserves timestamps from when files were combined, current uses the current time                                                              |
+| `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined                                                                                      |
+| `--respect-encoding`          | Try to use the original file encoding when writing extracted files. If enabled and original encoding information is available, files will be written using that encoding instead of UTF-8                     |
 | `--target-encoding`           | Explicitly specify the character encoding to use for all extracted files (e.g., `utf-8`, `latin-1`, `utf-16-le`). This overrides the `--respect-encoding` option and any encoding information in the metadata |
 
 #### Usage Examples
@@ -675,3 +683,4 @@ file for details.
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+````
