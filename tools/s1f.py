@@ -93,9 +93,9 @@ import logging
 import os
 import re
 import sys
-from pathlib import Path, PureWindowsPath
+from pathlib import Path
 
-from path_utils import convert_to_posix_path
+from path_utils import to_posix_path
 from datetime import datetime, timezone
 
 # --- Logger Setup ---
@@ -329,7 +329,7 @@ def parse_combined_file(content: str) -> list[dict]:
 
                     # Extract path from metadata
                     path_val = meta.get("original_filepath", "").strip()
-                    path_val = convert_to_posix_path(path_val)
+                    path_val = to_posix_path(path_val)
 
                     # Check if we have a valid path
                     if not path_val:
@@ -373,7 +373,7 @@ def parse_combined_file(content: str) -> list[dict]:
                 try:
                     # Get the path directly from the regex match
                     path_val = match.group(pattern_info["path_group"]).strip()
-                    path_val = convert_to_posix_path(path_val)
+                    path_val = to_posix_path(path_val)
 
                     # Get metadata from JSON
                     json_str = match.group(pattern_info["json_group"])
@@ -413,7 +413,7 @@ def parse_combined_file(content: str) -> list[dict]:
                     continue
             else:
                 path_val = match.group(pattern_info["path_group"]).strip()
-                path_val = convert_to_posix_path(path_val)
+                path_val = to_posix_path(path_val)
                 
                 # Extract encoding if available
                 if (
@@ -707,7 +707,7 @@ def _write_extracted_files(
     )
     for file_data in extracted_files_data:
         relative_path_str = file_data["path"]
-        normalized = convert_to_posix_path(relative_path_str)
+        normalized = to_posix_path(relative_path_str)
         file_content_to_write = file_data["content"]
         original_checksum = file_data.get("checksum_sha256")
         original_size_bytes = file_data.get("size_bytes")
