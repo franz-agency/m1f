@@ -39,6 +39,10 @@ KEY FEATURES
   - Case-insensitive exclusion of additional specified directory names.
   - Exclusion of specific paths from a file, with exact path matching.
 - Control over line endings (LF or CRLF) for script-generated separators.
+- Character encoding handling:
+  - Detection of file encoding with `--detect-encoding` to show original encoding in metadata.
+  - Conversion of files to a specific character set with `--convert-to-charset`.
+  - Strict conversion error handling with the option to abort on conversion errors.
 - Multiple output modes:
   - Full output with all auxiliary files (default).
   - Minimal output mode with `--minimal-output` (only create the combined file).
@@ -57,6 +61,7 @@ REQUIREMENTS
 - Python 3.7+ (due to `pathlib` usage, f-strings, and json module usage)
 - Standard Python libraries only (argparse, datetime, json, logging, os, pathlib, shutil, sys, zipfile, tarfile).
 - tiktoken (for token counting of the output file)
+- chardet (optional, for character encoding detection)
 
 INSTALLATION
 ============
@@ -154,8 +159,12 @@ NOTES
 - Performance: For extremely large directories with tens of thousands of files or
   very large individual files, the script might take some time to process.
 - Encoding: The script attempts to read files as UTF-8 and writes the output file
-  as UTF-8. Files with other encodings might not be handled perfectly, especially
-  if they contain characters not representable in UTF-8 or if `errors='ignore'`
+  as UTF-8. 
+  With `--detect-encoding`, it will attempt to detect the original encoding of each file and include
+  this information in the metadata. With `--convert-to-charset`, it will convert files from their
+  detected encoding to the specified charset, reporting errors if the conversion fails.
+  Without these options, files with non-UTF-8 encodings might not be handled perfectly,
+  especially if they contain characters not representable in UTF-8 or if `errors='ignore'`
   has to discard characters.
 - Line Endings of Source Files: The script preserves the original line endings of
   the content from the source files. The `--line-ending` option only affects the
@@ -190,6 +199,13 @@ import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation
 import tarfile  # Added for archive creation
 import pathspec  # Added for gitignore pattern support
+
+# Try to import chardet for encoding detection
+try:
+    import chardet
+    CHARDET_AVAILABLE = True
+except ImportError:
+    CHARDET_AVAILABLE = False
 
 # --- Logger Setup ---
 logger = logging.getLogger("m1f")
@@ -356,6 +372,122 @@ def _count_tokens_in_file_content(
 
 # --- Helper Functions ---
 
+def _detect_file_encoding(file_path: Path, verbose: bool = False) -> str:
+    """
+    Detects the character encoding of a file using chardet.
+    
+    Args:
+        file_path: Path to the file to detect encoding for
+        verbose: Whether to log detailed information
+        
+    Returns:
+        Detected character encoding name or 'utf-8' if detection fails
+    """
+    if not CHARDET_AVAILABLE:
+        if verbose:
+            logger.warning("chardet library not available for encoding detection. Assuming UTF-8.")
+        return "utf-8"
+    
+    try:
+        # Read a sample of the file for detection (first 64KB)
+        with open(file_path, 'rb') as f:
+            raw_data = f.read(65536)  # Read up to 64KB for detection
+        
+        if not raw_data:
+            # Empty file
+            return "utf-8"
+            
+        result = chardet.detect(raw_data)
+        
+        # If confidence is low, default to utf-8
+        if result['confidence'] < 0.7:
+            if verbose:
+                logger.debug(f"Low confidence ({result['confidence']:.2f}) encoding detection for {file_path}: {result['encoding']}. Defaulting to UTF-8.")
+            return "utf-8"
+        
+        return result['encoding'].lower()
+    except Exception as e:
+        if verbose:
+            logger.warning(f"Error detecting encoding for {file_path}: {e}. Defaulting to UTF-8.")
+        return "utf-8"
+
+def _read_file_with_encoding(file_path: Path, target_encoding: str = None, 
+                           detected_encoding: str = None, 
+                           abort_on_error: bool = False, 
+                           verbose: bool = False) -> Tuple[str, str, bool]:
+    """
+    Reads a file with its detected encoding or converts it to a target encoding.
+    
+    Args:
+        file_path: Path to the file to read
+        target_encoding: Target encoding to convert to, or None to keep original
+        detected_encoding: Previously detected encoding, or None to detect
+        abort_on_error: Whether to raise errors on encoding issues
+        verbose: Whether to log detailed information
+        
+    Returns:
+        Tuple containing (file_content, used_encoding, had_conversion_errors)
+    """
+    used_encoding = detected_encoding or _detect_file_encoding(file_path, verbose)
+    had_conversion_errors = False
+    
+    try:
+        # First try to read with the detected encoding
+        try:
+            with open(file_path, 'r', encoding=used_encoding) as f:
+                content = f.read()
+        except UnicodeDecodeError as e:
+            if verbose:
+                logger.warning(f"Could not read {file_path} with detected encoding {used_encoding}. Falling back to binary read.")
+            # Fallback to binary read
+            with open(file_path, 'rb') as f:
+                binary_data = f.read()
+            
+            # Try to decode with error replacement
+            content = binary_data.decode(used_encoding, errors='replace')
+            had_conversion_errors = True
+            
+            if abort_on_error:
+                raise RuntimeError(f"Failed to decode {file_path} with encoding {used_encoding}: {e}")
+        
+        # If conversion to a different encoding is requested
+        if target_encoding and target_encoding.lower() != used_encoding.lower():
+            if verbose:
+                logger.debug(f"Converting {file_path} from {used_encoding} to {target_encoding}")
+            
+            # For safety, first encode back to bytes using the original encoding
+            # then decode using the target encoding
+            try:
+                binary_content = content.encode(used_encoding, errors='strict')
+                content = binary_content.decode(target_encoding, errors='strict')
+            except (UnicodeEncodeError, UnicodeDecodeError) as e:
+                had_conversion_errors = True
+                
+                if abort_on_error:
+                    raise RuntimeError(f"Failed to convert {file_path} from {used_encoding} to {target_encoding}: {e}")
+                
+                # Fall back to replacement method if not aborting
+                binary_content = content.encode(used_encoding, errors='replace')
+                content = binary_content.decode(target_encoding, errors='replace')
+                
+                if verbose:
+                    logger.warning(f"Character conversion errors in {file_path} (from {used_encoding} to {target_encoding})")
+            
+            # Update used_encoding to reflect what was actually used
+            used_encoding = target_encoding
+            
+        return content, used_encoding, had_conversion_errors
+    
+    except Exception as e:
+        # Catch-all for other errors
+        if abort_on_error:
+            raise RuntimeError(f"Error processing {file_path}: {e}")
+        
+        # Last resort fallback
+        error_message = f"[ERROR: UNABLE TO READ FILE '{file_path}'. REASON: {e}]"
+        logger.error(error_message)
+        return error_message, used_encoding, True
+
 
 def _generate_filename_content_hash(files_to_process: list[tuple[Path, str]]) -> str:
     """
@@ -416,7 +548,8 @@ def get_file_size_formatted(size_in_bytes: int) -> str:
 
 
 def get_file_separator(
-    file_info: Path, relative_path: str, style: str, linesep: str
+    file_info: Path, relative_path: str, style: str, linesep: str, 
+    encoding: str = None, had_encoding_errors: bool = False
 ) -> str:
     """
     Generates the file separator string based on the chosen style.
@@ -426,6 +559,8 @@ def get_file_separator(
         relative_path: Relative path string of the file from the source directory.
         style: The separator style ('Standard', 'Detailed', 'Markdown', 'MachineReadable').
         linesep: The line separator string (LF or CRLF) to use.
+        encoding: The detected or target encoding of the file content
+        had_encoding_errors: Whether there were encoding errors when reading/converting the file
 
     Returns:
         The formatted separator string.
@@ -472,6 +607,14 @@ def get_file_separator(
             f"== FILE: {relative_path}",
             f"== DATE: {mod_date_str} | SIZE: {file_size_hr} | TYPE: {file_ext}",
         ]
+        
+        # Add encoding information if available
+        if encoding:
+            encoding_status = f"ENCODING: {encoding}"
+            if had_encoding_errors:
+                encoding_status += " (with conversion errors)"
+            separator_lines.append(f"== {encoding_status}")
+            
         if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
             separator_lines.append(f"== CHECKSUM_SHA256: {checksum_sha256}")
         separator_lines.append(
@@ -485,6 +628,14 @@ def get_file_separator(
             else ""
         )
         metadata_line = f"**Date Modified:** {mod_date_str} | **Size:** {file_size_hr} | **Type:** {file_ext}"
+        
+        # Add encoding information if available
+        if encoding:
+            encoding_status = f"**Encoding:** {encoding}"
+            if had_encoding_errors:
+                encoding_status += " (with conversion errors)"
+            metadata_line += f" | {encoding_status}"
+            
         if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
             metadata_line += f" | **Checksum (SHA256):** {checksum_sha256}"
         separator_lines = [
@@ -513,6 +664,12 @@ def get_file_separator(
                 checksum_sha256 if checksum_sha256 != "[CHECKSUM_ERROR]" else ""
             ),
         }
+        
+        # Add encoding information if available
+        if encoding:
+            meta["encoding"] = encoding
+            if had_encoding_errors:
+                meta["had_encoding_errors"] = True
 
         json_meta = json.dumps(meta, indent=4)
 
@@ -1319,6 +1476,17 @@ def _write_combined_data(
     total_files = len(files_to_process)
     logger.info(f"Processing {total_files} file(s) for inclusion...")
     file_counter = 0
+    
+    # Set up target encoding if requested
+    target_encoding = args.convert_to_charset if hasattr(args, "convert_to_charset") else None
+    detect_encoding = hasattr(args, "detect_encoding") and args.detect_encoding
+    abort_on_encoding_error = hasattr(args, "abort_on_encoding_error") and args.abort_on_encoding_error
+    
+    if target_encoding:
+        logger.info(f"Character encoding conversion enabled. Target encoding: {target_encoding}")
+        if not CHARDET_AVAILABLE and not detect_encoding:
+            logger.warning("chardet library not available. Encoding detection will be limited.")
+            
     try:
         with open(output_file_path, "w", encoding="utf-8") as outfile:
             for file_info, rel_path_str in files_to_process:
@@ -1326,9 +1494,35 @@ def _write_combined_data(
                 logger.debug(
                     f"Processing file ({file_counter}/{total_files}): {file_info.name} (Rel: {rel_path_str})"
                 )
-
+                
+                # Process file encoding if needed
+                file_encoding = None
+                had_encoding_errors = False
+                content = ""
+                
+                if detect_encoding or target_encoding:
+                    # Detect encoding or use target encoding directly
+                    try:
+                        # Read with encoding detection/conversion
+                        content, file_encoding, had_encoding_errors = _read_file_with_encoding(
+                            file_info,
+                            target_encoding=target_encoding,
+                            abort_on_error=abort_on_encoding_error,
+                            verbose=args.verbose
+                        )
+                        
+                        if had_encoding_errors and abort_on_encoding_error:
+                            raise RuntimeError(f"Encoding conversion errors in {file_info}")
+                            
+                    except RuntimeError as e:
+                        # This will only happen if abort_on_encoding_error is True
+                        logger.error(f"Aborting due to encoding errors: {e}")
+                        sys.exit(1)
+                
+                # Generate the separator with encoding info if available
                 separator_text = get_file_separator(
-                    file_info, rel_path_str, args.separator_style, chosen_linesep
+                    file_info, rel_path_str, args.separator_style, chosen_linesep,
+                    encoding=file_encoding, had_encoding_errors=had_encoding_errors
                 )
 
                 # For MachineReadable, we need to extract the UUID from the separator text
@@ -1355,16 +1549,21 @@ def _write_combined_data(
                 if args.separator_style in ["Standard", "Detailed"]:
                     outfile.write(chosen_linesep)
 
-                content = ""  # Initialize content to ensure it's defined
-                try:
-                    content = file_info.read_text(encoding="utf-8", errors="ignore")
+                # Write the file content
+                if detect_encoding or target_encoding:
+                    # Use the already processed content
                     outfile.write(content)
-                except Exception as e:
-                    error_message = (
-                        f"[ERROR: UNABLE TO READ FILE '{file_info}'. REASON: {e}]"
-                    )
-                    logger.warning(error_message)
-                    outfile.write(error_message + chosen_linesep)
+                else:
+                    # Use the original method for backward compatibility
+                    try:
+                        content = file_info.read_text(encoding="utf-8", errors="ignore")
+                        outfile.write(content)
+                    except Exception as e:
+                        error_message = (
+                            f"[ERROR: UNABLE TO READ FILE '{file_info}'. REASON: {e}]"
+                        )
+                        logger.warning(error_message)
+                        outfile.write(error_message + chosen_linesep)
 
                 # Ensure content block is followed by a newline if it didn't originally have one,
                 # for styles where the closing separator doesn't already handle this.
@@ -1595,6 +1794,25 @@ def main():
         default="lf",
         help="Line ending for script-generated separators/newlines. 'lf' (Unix) or 'crlf' (Windows). Default: lf. Does not change line endings of original file content.",
     )
+    
+    # Character encoding options
+    parser.add_argument(
+        "--detect-encoding",
+        action="store_true",
+        help="Detect and record the original character encoding of each file in metadata.",
+    )
+    parser.add_argument(
+        "--convert-to-charset",
+        type=str,
+        choices=["utf-8", "utf-16", "utf-16-le", "utf-16-be", "ascii", "latin-1", "cp1252"],
+        help="Convert all files to the specified character encoding in the output."
+    )
+    parser.add_argument(
+        "--abort-on-encoding-error",
+        action="store_true",
+        help="Abort processing if encoding conversion errors occur. Without this, conversion will skip or replace characters that cannot be represented in the target encoding."
+    )
+    
     parser.add_argument(
         "--verbose",
         "-v",

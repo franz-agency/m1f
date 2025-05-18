@@ -2,3 +2,4 @@ tiktoken
 black
 pymarkdownlnt 
 pytest
+chardet  # optional - for encoding detection
