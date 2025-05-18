@@ -3,9 +3,9 @@
 ## Overview
 
 This directory contains tasks for creating selective file bundles that serve as
-context for AI interactions. Using the `m1f.py` tool, you can combine
-selected important files from your project into a single file that can be loaded
-into an AI's context window.
+context for AI interactions. Using the `m1f.py` tool, you can combine selected
+important files from your project into a single file that can be loaded into an
+AI's context window.
 
 ## When to Use This Tool
 
@@ -121,8 +121,7 @@ ${workspaceFolder}/utils/crypto.py
 
 ## Customizing the Process
 
-You can customize the tasks by editing `m1f.json` for your specific
-needs:
+You can customize the tasks by editing `m1f.json` for your specific needs:
 
 - Modify output file locations and naming conventions
 - Adjust file exclusion patterns for your project structure
@@ -287,14 +286,13 @@ wp-content/plugins/UtilityPlugin/includes/cpt-slides.php
 - Use comments (`#`) to organize sections or explain choices.
 - Start with a small, focused set of files and expand if the AI needs more
   context.
-- Paths are typically relative to where you run the `m1f.py` script, or
-  from the `${workspaceFolder}` if using VS Code tasks.
+- Paths are typically relative to where you run the `m1f.py` script, or from the
+  `${workspaceFolder}` if using VS Code tasks.
 
 ### 3. Generate the Combined Context File
 
-Run `m1f.py` from your terminal, pointing to your input file list and
-specifying an output file. It's recommended to use the `MachineReadable`
-separator style.
+Run `m1f.py` from your terminal, pointing to your input file list and specifying
+an output file. It's recommended to use the `MachineReadable` separator style.
 
 ```bash
 python tools/m1f.py \

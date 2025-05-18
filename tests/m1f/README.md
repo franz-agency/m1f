@@ -1,7 +1,7 @@
 # m1f (Make One File) Tests
 
-This directory contains comprehensive tests for the `m1f.py` script
-(the m1f tool) located in the `tools` directory.
+This directory contains comprehensive tests for the `m1f.py` script (the m1f
+tool) located in the `tools` directory.
 
 ## Test Structure
 
@@ -90,4 +90,4 @@ The tests cover all major functionality of the m1f tool (`m1f.py`):
 - Author: Franz und Franz
 - Homepage: https://franz.agency
 - Project: https://m1f.dev
-- License: See project LICENSE file 
+- License: See project LICENSE file
