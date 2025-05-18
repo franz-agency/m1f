@@ -672,27 +672,42 @@ def _handle_output_file_overwrite_and_creation(
         sys.exit(1)
 
 
-def _build_exclusion_set(additional_excludes: list[str], use_default_excludes: bool = True) -> set[str]:
-    """Builds the set of lowercased directory names to exclude.
+def _build_exclusion_set(excludes: list[str], use_default_excludes: bool = True) -> tuple[set[str], set[str]]:
+    """Builds the sets of directory names and file paths to exclude.
     
     Args:
-        additional_excludes: Additional directory names to exclude
+        excludes: Additional paths to exclude (file paths and directory names)
         use_default_excludes: Whether to include the default excluded directory names
         
     Returns:
-        Set of directory names to exclude (all lowercase)
+        Tuple containing:
+        - Set of directory names to exclude (lowercase for case-insensitive comparison)
+        - Set of exact file paths to exclude (case-sensitive)
     """
-    all_excluded_dir_names_lower = set()
+    excluded_dir_names_lower = set()
+    excluded_file_paths = set()
     
     if use_default_excludes:
-        all_excluded_dir_names_lower = {name.lower() for name in DEFAULT_EXCLUDED_DIR_NAMES}
-        
-    all_excluded_dir_names_lower.update(name.lower() for name in additional_excludes)
+        excluded_dir_names_lower = {name.lower() for name in DEFAULT_EXCLUDED_DIR_NAMES}
+    
+    # Process each exclude entry
+    for exclude in excludes:
+        # If it contains path separators, treat as a file path
+        if os.sep in exclude or "/" in exclude:
+            # Normalize path (OS-appropriate path separators) but maintain case
+            normalized_path = str(Path(exclude))
+            excluded_file_paths.add(normalized_path)
+        else:
+            # Otherwise treat as a directory name (case-insensitive)
+            excluded_dir_names_lower.add(exclude.lower())
     
     logger.debug(
-        f"Effective excluded directory names (case-insensitive): {sorted(list(all_excluded_dir_names_lower))}"
+        f"Effective excluded directory names (case-insensitive): {sorted(list(excluded_dir_names_lower))}"
     )
-    return all_excluded_dir_names_lower
+    logger.debug(
+        f"Effective excluded file paths (case-sensitive): {sorted(list(excluded_file_paths))}"
+    )
+    return excluded_dir_names_lower, excluded_file_paths
 
 
 def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
@@ -822,10 +837,15 @@ def _load_exclude_paths_from_file(exclude_paths_file: str) -> Set[str]:
 
 
 def _is_file_excluded(
-    file_path: Path, args: argparse.Namespace, all_excluded_dir_names_lower: Set[str]
+    file_path: Path, args: argparse.Namespace, excluded_dir_names_lower: Set[str], excluded_file_paths: Set[str] = None
 ) -> bool:
     """Checks if a file should be excluded based on various criteria."""
     # Check if the path is in the exclude paths list
+    if excluded_file_paths and str(file_path) in excluded_file_paths:
+        if args.verbose:
+            logger.debug(f"Excluding file (exact match from --excludes): {file_path}")
+        return True
+        
     if hasattr(args, "exclude_paths") and args.exclude_paths:
         rel_path_str = str(
             file_path.relative_to(args.source_base_dir)
@@ -876,7 +896,7 @@ def _is_file_excluded(
     # This iterates from file_path.parent up to the root.
     p = file_path.parent
     while p != p.parent:  # Stop when p is the root (e.g. '/' or 'C:\')
-        if p.name and p.name.lower() in all_excluded_dir_names_lower:
+        if p.name and p.name.lower() in excluded_dir_names_lower:
             if args.verbose:
                 logger.debug(
                     f"Excluding file '{file_path}' because parent directory '{p.name}' (path: {p}) is in exclude list."
@@ -892,9 +912,10 @@ def _is_file_excluded(
 def _gather_files_to_process(
     source_dir: Path,
     args: argparse.Namespace,
-    all_excluded_dir_names_lower: Set[str],
+    excluded_dir_names_lower: Set[str],
     input_paths: Optional[List[Path]] = None,
     ignore_symlinks: bool = True,
+    excluded_file_paths: Set[str] = None,
 ) -> List[Tuple[Path, str]]:
     """
     Gather files to process, either from a source directory or from a list of input paths.
@@ -902,7 +923,7 @@ def _gather_files_to_process(
     Args:
         source_dir: The source directory (used when not using input paths)
         args: Command line arguments
-        all_excluded_dir_names_lower: Set of directory names to exclude (lowercase)
+        excluded_dir_names_lower: Set of directory names to exclude (lowercase)
         input_paths: Optional list of paths from input file
 
     Returns:
@@ -932,14 +953,14 @@ def _gather_files_to_process(
                     if args.verbose:
                         logger.debug(f"Skipping already added file: {item_path}")
                     continue
-                if not _is_file_excluded(item_path, args, all_excluded_dir_names_lower):
+                if not _is_file_excluded(item_path, args, excluded_dir_names_lower, excluded_file_paths):
                     files_to_process.append((item_path, item_path.name))
                     added_file_absolute_paths.add(abs_path_str)
                 # else: _is_file_excluded logs if verbose
 
             elif item_path.is_dir():
                 # Check if the directory itself is in the excluded names list
-                if item_path.name.lower() in all_excluded_dir_names_lower:
+                if item_path.name.lower() in excluded_dir_names_lower:
                     if args.verbose:
                         logger.debug(
                             f"Skipping directory '{item_path}' from input list as its name is excluded."
@@ -958,7 +979,7 @@ def _gather_files_to_process(
                                 )
                             continue
                         if not _is_file_excluded(
-                            file_path_in_dir, args, all_excluded_dir_names_lower
+                            file_path_in_dir, args, excluded_dir_names_lower, excluded_file_paths
                         ):
                             relative_path = file_path_in_dir.relative_to(item_path)
                             files_to_process.append(
@@ -975,14 +996,14 @@ def _gather_files_to_process(
                 f"include_binary_files={args.include_binary_files}"
             )
             logger.debug(
-                f"  Excluded directory names (case-insensitive): {sorted(list(all_excluded_dir_names_lower))}"
+                f"  Excluded directory names (case-insensitive): {sorted(list(excluded_dir_names_lower))}"
             )
 
         for root, dirs, files in os.walk(source_dir):
             root_path = Path(root)
 
             # Skip excluded directories
-            dirs[:] = [d for d in dirs if d.lower() not in all_excluded_dir_names_lower]
+            dirs[:] = [d for d in dirs if d.lower() not in excluded_dir_names_lower]
 
             # Skip symlink directories if ignore_symlinks is True
             if ignore_symlinks:
@@ -990,7 +1011,7 @@ def _gather_files_to_process(
 
             for file in files:
                 file_path = root_path / file
-                if _is_file_excluded(file_path, args, all_excluded_dir_names_lower):
+                if _is_file_excluded(file_path, args, excluded_dir_names_lower, excluded_file_paths):
                     continue
 
                 # Skip symlinks if ignore_symlinks is True
@@ -1318,12 +1339,12 @@ def main():
     )
 
     parser.add_argument(
-        "--additional-excludes",
+        "--excludes",
         type=str,
         nargs="*",
         default=[],
-        metavar="DIR_NAME",
-        help="Space-separated list of additional directory NAMES to exclude (e.g., 'obj', 'debug'). Case-insensitive.",
+        metavar="PATH",
+        help="Space-separated list of additional file or directory paths to exclude. Case-sensitive. Can be used for both directory names (e.g., 'logs') and specific file paths (e.g., 'config/settings.json').",
     )
     parser.add_argument(
         "--no-default-excludes",
@@ -1488,8 +1509,8 @@ def main():
             output_file_path, args.force, chosen_linesep
         )
 
-    all_excluded_dir_names_lower = _build_exclusion_set(
-        args.additional_excludes, 
+    excluded_dir_names_lower, excluded_file_paths = _build_exclusion_set(
+        args.excludes, 
         not args.no_default_excludes  # If --no-default-excludes is set, pass False here
     )
     
@@ -1499,9 +1520,10 @@ def main():
     files_to_process = _gather_files_to_process(
         source_dir,
         args,
-        all_excluded_dir_names_lower,
+        excluded_dir_names_lower,
         input_paths,
         ignore_symlinks=True,
+        excluded_file_paths=excluded_file_paths,
     )
 
     # ---- START: Modification for filename-mtime-hash ----

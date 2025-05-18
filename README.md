@@ -71,7 +71,7 @@ Combines multiple files into a single file with rich metadata and customizable f
 - Comprehensive metadata for each file
 - Versioning support through content hashing
 
-#### Command Line Options
+#### Command Line Options for m1f.py
 
 | Option                   | Description                                                      |
 | ------------------------ | ---------------------------------------------------------------- |
@@ -79,13 +79,13 @@ Combines multiple files into a single file with rich metadata and customizable f
 | `-i, --input-file`       | Path to a file containing a list of files/directories to process |
 | `-o, --output-file`      | Path for the combined output file                                |
 | `-f, --force`            | Force overwrite of existing output file without prompting        |
-| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename       |
-| `--filename-mtime-hash`  | Append a hash of file modification timestamps to the filename    |
-| `--include-extensions`   | Space-separated list of file extensions to include               |
-| `--exclude-extensions`   | Space-separated list of file extensions to exclude               |
+| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename. Useful for versioning and preventing accidental overwrite of previous output files |
+| `--filename-mtime-hash`  | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes |
+| `--include-extensions`   | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions) |
+| `--exclude-extensions`   | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types) |
 | `--exclude-paths-file`   | Path to file containing exact paths to exclude                   |
-| `--no-default-excludes`  | Disable default directory exclusions                             |
-| `--additional-excludes`  | Space-separated list of additional directory names to exclude    |
+| `--no-default-excludes`  | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, __pycache__ |
+| `--excludes`             | Space-separated list of paths to exclude. Case-sensitive. Can be used for both directory names (e.g., `--excludes logs temp`) and specific file paths (e.g., `--excludes config/settings.json src/tests/test_data.py`). Directory names exclude all files in those directories |
 | `--include-dot-files`    | Include files that start with a dot (e.g., .gitignore)           |
 | `--include-binary-files` | Attempt to include files with binary extensions                  |
 | `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`) |
@@ -213,7 +213,7 @@ Extracts individual files from a combined file, recreating the original director
 - Supports all m1f separator styles
 - Simple and secure extraction process
 
-#### Command Line Options
+#### Command Line Options for s1f.py
 
 | Option                        | Description                                              |
 | ----------------------------- | -------------------------------------------------------- |
@@ -221,8 +221,8 @@ Extracts individual files from a combined file, recreating the original director
 | `-d, --destination-directory` | Directory where extracted files will be saved            |
 | `-f, --force`                 | Force overwrite of existing files without prompting      |
 | `-v, --verbose`               | Enable verbose output                                    |
-| `--timestamp-mode`            | How to set file timestamps (`original` or `current`)     |
-| `--ignore-checksum`           | Skip checksum verification for MachineReadable files     |
+| `--timestamp-mode`            | How to set file timestamps (`original` or `current`). Original preserves timestamps from when files were combined, current uses the current time |
+| `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined |
 
 #### Usage Examples
 
