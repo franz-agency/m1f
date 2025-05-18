@@ -370,9 +370,23 @@ class TestS1F:
         # Check that the script executed successfully
         assert result.returncode == 0, f"Script failed with error: {result.stderr}"
 
-        # Verify files were extracted - check for any files, not specifically with extensions
-        extracted_files = list(Path(EXTRACTED_DIR).glob("*"))
-        assert len(extracted_files) > 0, "No files were extracted by CLI execution"
+        # Verify that all expected files were extracted with the correct paths
+        extracted_files = [p for p in EXTRACTED_DIR.rglob("*") if p.is_file()]
+        assert extracted_files, "No files were extracted by CLI execution"
+
+        # Build the list of expected relative paths from the filelist
+        with open(OUTPUT_DIR / "standard_filelist.txt", "r", encoding="utf-8") as f:
+            expected_rel_paths = [
+                Path(line.strip().replace("\\", "/")).as_posix()
+                for line in f
+                if line.strip()
+            ]
+
+        actual_rel_paths = [p.relative_to(EXTRACTED_DIR).as_posix() for p in extracted_files]
+
+        assert set(actual_rel_paths) == set(
+            expected_rel_paths
+        ), "Extracted file paths do not match the original paths"
 
     def test_respect_encoding(self):
         """Test the --respect-encoding option to preserve original file encodings."""
