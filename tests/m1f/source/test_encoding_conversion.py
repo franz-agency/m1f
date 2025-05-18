@@ -11,7 +11,12 @@ import m1f
 def test_exotic_encoding_conversion():
     """Test that m1f correctly detects and converts files with exotic encodings using UTF-16-LE."""
     # Paths for test resources
-    test_dir = Path(__file__).parent / "source" / "exotic_encodings"
+    # The exotic encoding sample files live directly under the current
+    # directory's "exotic_encodings" folder. The previous path included an
+    # extra "source" component which resulted in a nonexistent path like
+    # ".../source/source/exotic_encodings". Fix the path to point to the
+    # correct location so the test can locate the sample files.
+    test_dir = Path(__file__).parent / "exotic_encodings"
     output_dir = Path(__file__).parent / "output"
     output_file = output_dir / "test_encoding_utf16le.txt"
     
