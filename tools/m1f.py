@@ -1693,6 +1693,9 @@ def _create_archive(
 def main():
     """
     Main function to parse arguments and orchestrate the file combination process.
+    
+    Returns:
+        int: The exit code (0 for success, non-zero for failure)
     """
     # Start timing the execution
     start_time = time.time()
@@ -1909,14 +1912,21 @@ def main():
         input_file_path = Path(args.input_file).resolve()
         if not input_file_path.exists() or not input_file_path.is_file():
             logger.error(f"Input file not found: {input_file_path}")
-            sys.exit(1)
+            return 1  # Changed from sys.exit(1)
         input_paths = _process_paths_from_input_file(input_file_path)
         logger.info(f"Found {len(input_paths)} paths to process from input file")
 
         # Use the first path's parent as the base directory for relative paths
         source_dir = input_paths[0].parent if input_paths else Path.cwd()
     else:
-        source_dir = _resolve_and_validate_source_path(args.source_directory)
+        try:
+            source_dir = _resolve_and_validate_source_path(args.source_directory)
+        except FileNotFoundError:
+            logger.error(f"Source directory '{args.source_directory}' not found.")
+            return 1  # Changed from sys.exit(1)
+        except Exception as e:
+            logger.error(f"Error resolving source directory '{args.source_directory}': {e}")
+            return 1  # Changed from sys.exit(1)
 
     # Set source base directory for path exclusion matching
     args.source_base_dir = source_dir
@@ -1926,12 +1936,19 @@ def main():
         # Handle prompting for overwrite in quiet mode
         if args.quiet and not args.force and output_file_path.exists():
             # In quiet mode with no force flag, exit if file exists
-            sys.exit(1)  # Exit silently without warning
+            return 1  # Changed from sys.exit(1)
 
         # Output file path was already prepared for logging setup
-        _handle_output_file_overwrite_and_creation(
-            output_file_path, args.force, chosen_linesep
-        )
+        try:
+            _handle_output_file_overwrite_and_creation(
+                output_file_path, args.force, chosen_linesep
+            )
+        except KeyboardInterrupt:
+            logger.info(f"{chosen_linesep}Operation cancelled by user (Ctrl+C).")
+            return 130  # Changed from sys.exit(0)
+        except Exception as e:
+            logger.error(f"Could not handle output file creation: {e}")
+            return 1  # Changed from sys.exit(1)
 
     excluded_dir_names_lower, excluded_file_paths, gitignore_spec = (
         _build_exclusion_set(
@@ -2013,21 +2030,34 @@ def main():
                 logger.error(
                     f"Could not create empty output file '{output_file_path}': {e}"
                 )
-                sys.exit(1)
+                return 1  # Changed from sys.exit(1)
         else:
             logger.info("Skipping output file creation as requested.")
 
-        sys.exit(0)
+        return 0  # Changed from sys.exit(0)
 
     # Only create the output file if not skipping
     processed_count = 0
     if not args.skip_output_file:
-        processed_count = _write_combined_data(
-            output_file_path, files_to_process, args, chosen_linesep
-        )
-        logger.info(
-            f"Successfully combined {processed_count} file(s) into '{output_file_path}'."
-        )
+        try:
+            processed_count = _write_combined_data(
+                output_file_path, files_to_process, args, chosen_linesep
+            )
+            logger.info(
+                f"Successfully combined {processed_count} file(s) into '{output_file_path}'."
+            )
+        except IOError as e:
+            logger.error(f"An I/O error occurred writing to '{output_file_path}': {e}")
+            if file_handler:
+                file_handler.close()
+            return 1  # Changed from sys.exit(1)
+        except Exception as e:
+            logger.error(
+                f"An unexpected error occurred during file processing: {e}", exc_info=True
+            )
+            if file_handler:
+                file_handler.close()
+            return 1  # Changed from sys.exit(1)
     else:
         # Still count the files even if we're not writing them
         processed_count = len(files_to_process)
@@ -2097,12 +2127,17 @@ def main():
         time_str = f"{execution_time:.2f}s"
     logger.info(f"Total execution time: {time_str}")
 
-    sys.exit(0)
+    return 0  # Changed from sys.exit(0)
 
 
-if __name__ == "__main__":
+# Entry point for command-line usage
+def run_main():
+    """
+    Entry point for command-line usage that handles the exit code returned by main().
+    """
     try:
-        main()
+        exit_code = main()
+        sys.exit(exit_code)
     except KeyboardInterrupt:
         # Print newline so the prompt isn't on the same line as ^C
         print(f"{LF}Operation cancelled by user.", file=sys.stderr)
@@ -2114,3 +2149,7 @@ if __name__ == "__main__":
         # Fallback for any unexpected errors not caught in main()
         logger.critical(f"An unexpected critical error occurred: {e}", exc_info=True)
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    run_main()
