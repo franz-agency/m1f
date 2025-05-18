@@ -1,3 +1,4 @@
+
 import os
 import sys
 import pytest
@@ -7,19 +8,23 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 import m1f
 
-def test_exotic_encoding_conversion(tmp_path):
+def test_exotic_encoding_conversion():
     """Test that m1f correctly detects and converts files with exotic encodings using UTF-16-LE."""
     # Paths for test resources
+    # The generated test lives one directory above this script, so no
+    # extra "source" segment is needed when referencing the fixture
+    # directory.
     test_dir = Path(__file__).parent / "exotic_encodings"
-    # Use a temporary output directory to avoid modifying repo files
-    output_dir = tmp_path / "exotic_output"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path(__file__).parent / "output"
     output_file = output_dir / "test_encoding_utf16le.txt"
+    
+    # Create output dir if it doesn't exist
+    output_dir.mkdir(exist_ok=True)
     
     # Define encoding map for verification
     encoding_map = {
         "shiftjis.txt": "shift_jis",
-        "big5.txt": "big5",
+        "big5.txt": "big5", 
         "koi8r.txt": "koi8_r",
         "iso8859-8.txt": "iso8859_8",
         "euckr.txt": "euc_kr",
@@ -46,7 +51,7 @@ def test_exotic_encoding_conversion(tmp_path):
         # Run m1f with the test arguments
         m1f.main()
         
-        # Verify the output file exists and is non-empty
+        # Verify the output file exists
         assert output_file.exists(), "Output file was not created"
         assert output_file.stat().st_size > 0, "Output file is empty"
         
@@ -58,7 +63,7 @@ def test_exotic_encoding_conversion(tmp_path):
         for filename in encoding_map.keys():
             assert filename in content, f"File {filename} was not included in the output"
             
-        # Verify encoding information was preserved for each encoding
+        # Verify encoding information was preserved
         for encoding in encoding_map.values():
             assert f'"encoding": "{encoding}"' in content, f"Encoding {encoding} not detected correctly"
             
