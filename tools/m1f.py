@@ -27,21 +27,29 @@ KEY FEATURES
 - Customizable separators between file contents ('Standard', 'Detailed', 'Markdown', 'MachineReadable', 'None').
 - The 'MachineReadable' style uses unique boundary markers and JSON metadata for robust parsing.
 - The 'None' style concatenates files without any separators or newlines between them.
-- Option to add a timestamp to the output filename (_YYYYMMDD_HHMMSS).
-- Exclusion of common project directories (e.g., 'node_modules', '.git', 'build').
-- Exclusion of binary files by default (based on extension).
-- Option to include dot-files (e.g., '.gitignore') and binary files.
-- Case-insensitive exclusion of additional specified directory names.
-- Exclusion of specific paths from a file, with exact path matching.
+- Output filename customization:
+  - Option to add a timestamp to the output filename (_YYYYMMDD_HHMMSS) with `--add-timestamp`.
+  - Option to include a content hash based on files and their modification times with `--filename-mtime-hash`.
+- Smart file filtering:
+  - Exclusion of common project directories (e.g., 'node_modules', '.git', 'build').
+  - Exclusion of binary files by default (based on extension).
+  - Inclusion/exclusion by file extension with `--include-extensions` and `--exclude-extensions`.
+  - Option to include dot-files (e.g., '.gitignore') and binary files.
+  - Case-insensitive exclusion of additional specified directory names.
+  - Exclusion of specific paths from a file, with exact path matching.
 - Control over line endings (LF or CRLF) for script-generated separators.
-- Verbose mode for detailed logging.
+- Multiple output modes:
+  - Full output with all auxiliary files (default).
+  - Minimal output mode with `--minimal-output` (only create the combined file).
+  - Skip the output file with `--skip-output-file` (generate only logs and auxiliary files).
+  - Quiet mode with `--quiet` (suppress all console output).
+- Verbose mode for detailed logging with `--verbose`.
 - Prompts for overwriting an existing output file unless `--force` is used.
 - Estimates and displays the token count of the combined output file using tiktoken.
 - Optional creation of a zip or tar.gz archive containing all processed files, named after the output file with a `_backup` suffix.
 - Creates a log file with the same name as the output file but with a `.log` extension, capturing all processing information.
 - Generates two additional output files: one with all included file paths (_filelist.txt) and another with all unique directories (_dirlist.txt).
 - Measures and reports the total execution time for performance monitoring.
-- Option to skip writing the final output file while still generating all logs and auxiliary files (`--skip-output-file`).
 
 REQUIREMENTS
 ============
@@ -71,6 +79,21 @@ With exclude paths file:
 
 Skip writing the output file but generate auxiliary files:
   python tools/m1f.py -s ./my_project -o ./auxiliary_only.txt --skip-output-file --verbose
+
+With filename content hash for versioning:
+  python tools/m1f.py -s ./my_project -o ./output/bundle.txt --filename-mtime-hash
+
+Including only specific file extensions:
+  python tools/m1f.py -s ./src -o ./dist/code_only.txt --include-extensions .py .js .ts .jsx .tsx
+
+Excluding specific file extensions:
+  python tools/m1f.py -s ./docs -o ./dist/docs.txt --exclude-extensions .tmp .bak .log
+
+Minimal output mode (only create combined file):
+  python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
+
+Quiet mode (no console output):
+  python tools/m1f.py -s ./src -o ./combined.txt --quiet --force
 
 For all options, run:
   python tools/m1f.py --help
