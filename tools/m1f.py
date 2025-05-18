@@ -77,6 +77,9 @@ With more options including tar.gz archive:
 With exclude paths file:
   python tools/m1f.py -s ./my_project -o ./output/bundle.txt --exclude-paths-file ./exclude_list.txt
 
+Using a .gitignore file for exclusion patterns:
+  python tools/m1f.py -s ./my_project -o ./output/bundle.txt --exclude-paths-file ./.gitignore
+
 Skip writing the output file but generate auxiliary files:
   python tools/m1f.py -s ./my_project -o ./auxiliary_only.txt --skip-output-file --verbose
 
@@ -100,13 +103,19 @@ For all options, run:
 
 NOTES
 =====
-- Path Exclusion File: When using `--exclude-paths-file`, the file should contain one path per line. Paths are matched exactly as written. For example, if the file contains:
+- Path Exclusion File: When using `--exclude-paths-file`, the file can be either:
+  - A list of exact paths to exclude (one per line)
+  - A file in gitignore format with patterns (like .gitignore)
+  The system automatically detects which format is being used based on the file content or name.
+  If the file is named `.gitignore` or contains patterns with wildcards (`*`), negation (`!`), 
+  or directory markers (`/`), it will be processed using gitignore rules.
+  For exact path lists, paths are matched exactly as written, e.g.:
   ```
   my_project/dir1/dir2
   my_project/dir3/file.txt
   some_file.txt
   ```
-  Only these exact paths will be excluded. A path like `other_project/some_file.txt` would not be excluded. Empty lines and lines starting with '#' are ignored as comments.
+  Empty lines and lines starting with '#' are ignored as comments in both formats.
 
 - MachineReadable Format: This format is designed for automated splitting and LLM compatibility.
   It uses unique UUID-based boundary markers with clear JSON metadata:
@@ -173,6 +182,7 @@ from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation
 import tarfile  # Added for archive creation
+import pathspec  # Added for gitignore pattern support
 
 # --- Logger Setup ---
 logger = logging.getLogger("m1f")
@@ -794,46 +804,70 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
         return []
 
 
-def _load_exclude_paths_from_file(exclude_paths_file: str) -> Set[str]:
+def _load_exclude_paths_from_file(exclude_paths_file: str) -> Tuple[Set[str], Optional[pathspec.PathSpec]]:
     """Load paths to exclude from a file.
 
     Args:
-        exclude_paths_file: Path to a file containing paths to exclude (one per line).
-            Format: Each line contains a single path to exclude. The paths are matched exactly
-            as written. Empty lines and lines starting with '#' are treated as comments and ignored.
-            Example file content:
-                # This is a comment
-                dir1/dir2
-                project/file.txt
+        exclude_paths_file: Path to a file containing paths to exclude.
+            - If file contains exact paths (one per line), they will be matched exactly
+            - If file has gitignore-style patterns, they will be processed as gitignore patterns
+            - Empty lines and lines starting with '#' are treated as comments and ignored
 
     Returns:
-        A set of normalized paths to exclude
+        A tuple containing:
+        - A set of exact paths to exclude
+        - A pathspec.PathSpec object for gitignore pattern matching, or None if no patterns detected
     """
-    exclude_paths = set()
+    exact_paths = set()
+    patterns = []
+    
     if not exclude_paths_file:
-        return exclude_paths
+        return exact_paths, None
 
     try:
         exclude_file_path = Path(exclude_paths_file).resolve()
         if not exclude_file_path.exists():
             logger.warning(f"Exclude paths file not found: {exclude_file_path}")
-            return exclude_paths
+            return exact_paths, None
 
+        # Check if this is a .gitignore file or contains gitignore-style patterns
+        is_gitignore_format = exclude_file_path.name == '.gitignore'
+        
         with open(exclude_file_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#"):  # Skip empty lines and comments
-                    # Normalize path (OS-appropriate path separators)
+            lines = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+            
+            # Detect if file contains gitignore patterns (even if not named .gitignore)
+            if not is_gitignore_format:
+                for line in lines:
+                    if '*' in line or '!' in line or line.endswith('/'):
+                        is_gitignore_format = True
+                        logger.info(f"Detected gitignore-style patterns in {exclude_file_path}")
+                        break
+            
+            if is_gitignore_format:
+                # Process as gitignore patterns
+                patterns = lines
+                logger.info(f"Processing {len(patterns)} patterns from {exclude_file_path} in gitignore format")
+            else:
+                # Process as exact path matches (original behavior)
+                for line in lines:
                     normalized_path = str(Path(line))
-                    exclude_paths.add(normalized_path)
+                    exact_paths.add(normalized_path)
+                logger.info(f"Loaded {len(exact_paths)} exact path matches from {exclude_file_path}")
 
-        logger.info(
-            f"Loaded {len(exclude_paths)} paths to exclude from {exclude_file_path}"
-        )
     except Exception as e:
         logger.error(f"Error loading exclude paths file: {e}")
+        return exact_paths, None
 
-    return exclude_paths
+    # Create pathspec object if we have gitignore patterns
+    gitignore_spec = None
+    if patterns:
+        try:
+            gitignore_spec = pathspec.PathSpec.from_lines('gitwildmatch', patterns)
+        except Exception as e:
+            logger.error(f"Error processing gitignore patterns: {e}")
+    
+    return exact_paths, gitignore_spec
 
 
 def _is_file_excluded(
@@ -856,6 +890,22 @@ def _is_file_excluded(
             if args.verbose:
                 logger.debug(
                     f"Excluding path (exact match from exclude file): {rel_path_str}"
+                )
+            return True
+    
+    # Check gitignore patterns if available
+    if hasattr(args, "gitignore_spec") and args.gitignore_spec:
+        # Get relative path from source directory for gitignore matching
+        rel_path_str = str(
+            file_path.relative_to(args.source_base_dir)
+            if hasattr(args, "source_base_dir")
+            else file_path.name
+        )
+        # Use pathspec to check if the file matches any gitignore pattern
+        if args.gitignore_spec.match_file(rel_path_str):
+            if args.verbose:
+                logger.debug(
+                    f"Excluding file (matches gitignore pattern): {rel_path_str}"
                 )
             return True
 
@@ -1368,7 +1418,7 @@ def main():
     parser.add_argument(
         "--exclude-paths-file",
         type=str,
-        help="Path to a file containing exact paths to exclude (one per line). Paths are matched exactly as written. Empty lines and lines starting with '#' are ignored.",
+        help="Path to a file containing paths to exclude. Supports both exact paths (one per line) and gitignore-style pattern formats. If a .gitignore file is provided or gitignore patterns are detected (using wildcards like * or !), the file will be processed using gitignore pattern matching rules.",
     )
     parser.add_argument(
         "--include-dot-files",
@@ -1466,9 +1516,10 @@ def main():
 
     # Load exclude paths from file if specified
     if hasattr(args, "exclude_paths_file") and args.exclude_paths_file:
-        args.exclude_paths = _load_exclude_paths_from_file(args.exclude_paths_file)
+        args.exclude_paths, args.gitignore_spec = _load_exclude_paths_from_file(args.exclude_paths_file)
     else:
         args.exclude_paths = set()
+        args.gitignore_spec = None
 
     chosen_linesep = LF if args.line_ending == "lf" else CRLF
 

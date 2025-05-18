@@ -83,7 +83,7 @@ Combines multiple files into a single file with rich metadata and customizable f
 | `--filename-mtime-hash`  | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes |
 | `--include-extensions`   | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions) |
 | `--exclude-extensions`   | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types) |
-| `--exclude-paths-file`   | Path to file containing exact paths to exclude                   |
+| `--exclude-paths-file`   | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly |
 | `--no-default-excludes`  | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, __pycache__ |
 | `--excludes`             | Space-separated list of paths to exclude. Case-sensitive. Can be used for both directory names (e.g., `--excludes logs temp`) and specific file paths (e.g., `--excludes config/settings.json src/tests/test_data.py`). Directory names exclude all files in those directories |
 | `--include-dot-files`    | Include files that start with a dot (e.g., .gitignore)           |
@@ -187,6 +187,13 @@ Excluding specific paths using a file:
 ```bash
 python tools/m1f.py -s ./my_project -o ./combined.txt \
   --exclude-paths-file ./exclude_list.txt
+```
+
+Using a .gitignore file for exclusion patterns:
+
+```bash
+python tools/m1f.py -s ./my_project -o ./combined.txt \
+  --exclude-paths-file ./.gitignore
 ```
 
 Versioning with content hash based on included files:
@@ -308,15 +315,33 @@ For example, if an input file contains both `/project/src` and `/project/src/uti
 
 ### Exclude Paths File Format
 
-When using the `--exclude-paths-file` option, the file should contain one path per line. Paths are matched exactly as written, and empty lines and lines starting with `#` are treated as comments.
+When using the `--exclude-paths-file` option, the file can be in one of two formats:
 
-Example of an exclude paths file:
+1. **Exact Path List** - One path per line, matched exactly as written:
 ```
 # Exclude these exact paths
 /path/to/project/node_modules
 /path/to/project/temp/cache.json
 /path/to/project/logs
 ```
+
+2. **Gitignore Pattern Format** - Standard .gitignore patterns with wildcards and pattern matching:
+```
+# Ignore all .log files
+*.log
+
+# Ignore build directories
+build/
+dist/
+
+# Ignore node_modules directory
+node_modules/
+
+# Ignore but track specific files
+!important.log
+```
+
+The system automatically detects which format is being used based on the file content or name. If the file is named `.gitignore` or contains patterns with wildcards (`*`), negation (`!`), or directory markers (`/`), it will be processed using gitignore rules.
 
 ### Integration with AI Tools
 
