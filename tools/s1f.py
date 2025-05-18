@@ -28,6 +28,7 @@ KEY FEATURES
 - Recreates the original directory structure based on paths found in separators.
 - Handles both LF and CRLF line endings in separator patterns and content processing.
 - Respects original file encoding when available and requested with --respect-encoding.
+- Supports explicit output encoding specification with --target-encoding.
 - Verifies file integrity using SHA256 checksums when available.
 - Option to force overwrite of existing files in the destination.
 - Verbose mode for detailed operational logging.
@@ -49,15 +50,21 @@ With force overwrite and verbose output:
 With original encoding preservation:
   python tools/s1f.py -i combined.txt -d ./extracted_files --respect-encoding
 
+With explicit encoding specification:
+  python tools/s1f.py -i combined.txt -d ./extracted_files --target-encoding utf-8
+
 For all options, run:
   python tools/s1f.py --help
 
 NOTES
 =====
-- Encoding: The script reads the input file as UTF-8 (matching `m1f.py`'s output). 
-  By default, it writes extracted files as UTF-8. With `--respect-encoding`, 
-  it will attempt to use the original encoding of each file as recorded in the 
-  metadata by m1f.py's `--detect-encoding` or `--convert-to-charset` options.
+- Encoding: The script reads the input file as UTF-8 (matching `m1f.py`'s output).
+  By default, it writes extracted files as UTF-8. There are two ways to control output encoding:
+  1. With `--respect-encoding`, it will attempt to use the original encoding of each file 
+     as recorded in the metadata.
+  2. With `--target-encoding`, you can explicitly specify the encoding to use for all extracted files,
+     which overrides any original encoding information (e.g., `--target-encoding utf-8`).
+  When both options are provided, `--target-encoding` takes precedence.
 - Line Endings: The script correctly identifies separators and content
   regardless of LF or CRLF line endings used in the input file. The content of
   the extracted files will retain the line endings as they were in the combined file.
@@ -659,7 +666,8 @@ def _write_extracted_files(
     force_overwrite: bool,
     timestamp_mode: str,
     ignore_checksum: bool = False,
-    respect_encoding: bool = False
+    respect_encoding: bool = False,
+    target_encoding: str = None
 ) -> tuple[int, int, int]:
     """
     Writes the extracted file data to the destination directory.
@@ -673,9 +681,17 @@ def _write_extracted_files(
         timestamp_mode: How to handle file timestamps ('original' or 'current').
         ignore_checksum: If True, skip checksum verification for MachineReadable files.
         respect_encoding: If True, try to use the original file encoding when writing files.
+                          This is ignored if target_encoding is specified.
+        target_encoding: If provided, override all other encoding settings and use this encoding.
+                         This has the highest priority for determining the output encoding.
 
     Returns:
         A tuple containing (files_created_count, files_overwritten_count, files_failed_count).
+        
+    Encoding Priority Rules:
+    1. If target_encoding is specified, it is used for all files.
+    2. If respect_encoding is True and file has encoding metadata, that encoding is used.
+    3. Otherwise, UTF-8 is used as the default encoding.
     """
     files_created_count = 0
     files_overwritten_count = 0
@@ -725,10 +741,15 @@ def _write_extracted_files(
             is_overwrite = current_output_path.exists()
             
             # Determine encoding to use
-            target_encoding = "utf-8"  # Default encoding
+            output_encoding = "utf-8"  # Default encoding
             encoding_msg = ""
             
-            if respect_encoding and original_encoding:
+            # If target_encoding is specified, it takes precedence over all other options
+            if target_encoding:
+                output_encoding = target_encoding
+                encoding_msg = f" using explicitly specified encoding: {target_encoding}"
+            # Otherwise, use respect_encoding logic if enabled
+            elif respect_encoding and original_encoding:
                 # Clean up the encoding string to remove error information
                 clean_encoding = original_encoding.split(" (with conversion errors)")[0].strip()
                 
@@ -736,7 +757,7 @@ def _write_extracted_files(
                 try:
                     # Test if this is a valid encoding by trying to encode a simple string
                     "test".encode(clean_encoding)
-                    target_encoding = clean_encoding
+                    output_encoding = clean_encoding
                     encoding_msg = f" using original encoding: {clean_encoding}"
                 except (LookupError, UnicodeError):
                     logger.warning(
@@ -747,16 +768,16 @@ def _write_extracted_files(
             # Write the file with the appropriate encoding
             try:
                 # First try to encode the content with the target encoding
-                encoded_content = file_content_to_write.encode(target_encoding, errors="strict")
+                encoded_content = file_content_to_write.encode(output_encoding, errors="strict")
                 current_output_path.write_bytes(encoded_content)
                 logger.debug(f"Wrote file: {current_output_path}{encoding_msg}")
             except UnicodeEncodeError:
                 # If strict encoding fails, fall back to replace mode
                 logger.warning(
-                    f"Cannot strictly encode file '{relative_path_str}' with {target_encoding}. "
+                    f"Cannot strictly encode file '{relative_path_str}' with {output_encoding}. "
                     f"Falling back to replacement mode which may lose some characters."
                 )
-                current_output_path.write_text(file_content_to_write, encoding=target_encoding, errors="replace")
+                current_output_path.write_text(file_content_to_write, encoding=output_encoding, errors="replace")
                 logger.debug(f"Wrote file (with character replacements): {current_output_path}")
 
             if is_overwrite:
@@ -853,6 +874,13 @@ def main():
     Parses command-line arguments and orchestrates the file splitting process.
     It reads the combined input file, parses it to extract individual file data,
     and then writes these files to the specified destination directory.
+    
+    Character encoding control is provided in two ways:
+    1. Using --respect-encoding to try to use the original encoding if available in metadata
+    2. Using --target-encoding to explicitly specify an encoding for all output files
+       (this overrides --respect-encoding if both are provided)
+    
+    By default, all files are written using UTF-8 encoding.
     """
     parser = argparse.ArgumentParser(
         description="Splits a combined file (from m1f.py) back into individual files.",
@@ -906,6 +934,13 @@ def main():
         "If enabled and original encoding is available, files will be written using "
         "that encoding instead of UTF-8. Falls back to UTF-8 for unsupported encodings.",
     )
+    parser.add_argument(
+        "--target-encoding",
+        type=str,
+        help="Explicitly specify the character encoding to use for all extracted files. "
+        "This overrides the --respect-encoding option and any encoding information in the metadata. "
+        "Examples: utf-8, utf-16-le, latin-1, cp1252, etc.",
+    )
 
     args = parser.parse_args()
     _configure_logging(args.verbose)
@@ -934,7 +969,8 @@ def main():
             args.force,
             args.timestamp_mode,
             args.ignore_checksum,
-            args.respect_encoding
+            args.respect_encoding,
+            args.target_encoding
         )
     )
 

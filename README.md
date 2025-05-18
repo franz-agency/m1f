@@ -243,6 +243,13 @@ python tools/m1f.py -s ./project -o ./utf8_only.txt \
   --convert-to-charset utf-8
 ```
 
+Converting files to UTF-16-LE for better handling of diverse character sets:
+
+```bash
+python tools/m1f.py -s ./multilingual_project -o ./utf16le_compatible.txt \
+  --convert-to-charset utf-16-le
+```
+
 Converting files with strict error handling:
 
 ```bash
@@ -304,6 +311,7 @@ directory structure.
 | `--timestamp-mode`            | How to set file timestamps (`original` or `current`). Original preserves timestamps from when files were combined, current uses the current time |
 | `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined                         |
 | `--respect-encoding`          | Try to use the original file encoding when writing extracted files. If enabled and original encoding information is available, files will be written using that encoding instead of UTF-8 |
+| `--target-encoding`           | Explicitly specify the character encoding to use for all extracted files (e.g., `utf-8`, `latin-1`, `utf-16-le`). This overrides the `--respect-encoding` option and any encoding information in the metadata |
 
 #### Usage Examples
 
@@ -332,6 +340,13 @@ Preserving original file encodings:
 ```bash
 python tools/s1f.py -i ./with_encodings.txt -d ./extracted_files \
   --respect-encoding
+```
+
+Using a specific encoding for all extracted files:
+
+```bash
+python tools/s1f.py -i ./combined_file.txt -d ./extracted_files \
+  --target-encoding utf-8
 ```
 
 Ignoring checksum verification (when files were intentionally modified):
@@ -597,6 +612,8 @@ While the script can include binary files using the `--include-binary-files` opt
 The script uses UTF-8 as the default encoding for reading and writing files. When using `--convert-to-charset`, the original encoding of each file is automatically detected and recorded in the file metadata (for compatible separator styles like `Detailed`, `Markdown`, and `MachineReadable`). This enables converting from the source encoding to the target encoding.
 
 The following encodings are supported for conversion: UTF-8 (default), UTF-16, UTF-16-LE, UTF-16-BE, ASCII, Latin-1 (ISO-8859-1), and CP1252 (Windows-1252).
+
+**UTF-16-LE is recommended when working with files in multiple exotic encodings** (like Shift-JIS, Big5, KOI8-R, ISO-8859-8, EUC-KR, Windows-1256). Our testing shows it provides superior character preservation, more reliable round-trip conversions, and better handling of Asian and Middle Eastern scripts compared to UTF-8.
 
 When extracting files with s1f, you can use the `--respect-encoding` option to restore files with their original encoding (if that information was recorded during combination with m1f).
 
