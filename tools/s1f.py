@@ -121,7 +121,7 @@ RE_PYMK1F_SEP = re.compile(
     r"METADATA_JSON:\r?\n"  # Metadata indicator line
     r"(\{(?:.|\s)*?\})\r?\n"  # JSON metadata capture (Group 2) - better handling of multiline JSON
     r"--- PYMK1F_END_FILE_METADATA_BLOCK_\1 ---\r?\n"  # Metadata end with same UUID
-    r"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_\1 ---",  # Content start with same UUID - removed trailing \r?\n
+    r"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_\1 ---\r?\n",  # Content start with same UUID, now expecting a newline after it
     re.MULTILINE | re.DOTALL,  # Added DOTALL for better handling of newlines in JSON
 )
 

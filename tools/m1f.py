@@ -1032,6 +1032,7 @@ def get_file_separator(
             json_meta,
             f"--- PYMK1F_END_FILE_METADATA_BLOCK_{file_uuid} ---",
             f"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_{file_uuid} ---",
+            ""  # This will add a linesep after the BEGIN_FILE_CONTENT_BLOCK line
         ]
         return linesep.join(separator_lines)
     else:  # Should not happen due to argparse choices
