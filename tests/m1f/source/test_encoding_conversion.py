@@ -11,7 +11,7 @@ def test_exotic_encoding_conversion(tmp_path):
     """Test that m1f correctly detects and converts files with exotic encodings using UTF-16-LE."""
     # Paths for test resources
     test_dir = Path(__file__).parent / "exotic_encodings"
-    # Use a temporary output directory to avoid modifying the repo
+    # Use a temporary output directory to avoid modifying repo files
     output_dir = tmp_path / "exotic_output"
     output_dir.mkdir(exist_ok=True)
     output_file = output_dir / "test_encoding_utf16le.txt"
@@ -46,7 +46,7 @@ def test_exotic_encoding_conversion(tmp_path):
         # Run m1f with the test arguments
         m1f.main()
         
-        # Verify the output file exists
+        # Verify the output file exists and is non-empty
         assert output_file.exists(), "Output file was not created"
         assert output_file.stat().st_size > 0, "Output file is empty"
         
@@ -58,7 +58,7 @@ def test_exotic_encoding_conversion(tmp_path):
         for filename in encoding_map.keys():
             assert filename in content, f"File {filename} was not included in the output"
             
-        # Verify encoding information was preserved
+        # Verify encoding information was preserved for each encoding
         for encoding in encoding_map.values():
             assert f'"encoding": "{encoding}"' in content, f"Encoding {encoding} not detected correctly"
             
@@ -70,7 +70,7 @@ def test_exotic_encoding_conversion(tmp_path):
         if output_file.exists():
             try:
                 output_file.unlink()
-            except Exception:
+            except:
                 pass
                 
     # The test passes if we get here without assertions failing
