@@ -204,7 +204,7 @@ import uuid  # Added for UUID generation
 import re
 from pathlib import Path, PureWindowsPath
 
-from .path_utils import normalize_path # Changed to relative import
+from .path_utils import normalize_path  # Changed to relative import
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation
@@ -222,9 +222,14 @@ except ImportError:
 # Try to import detect_secrets for optional security scanning
 try:
     from detect_secrets.core.scan import scan_file
-    from detect_secrets.settings import get_settings, default_settings # Restore this import
+    from detect_secrets.settings import (
+        get_settings,
+        default_settings,
+    )  # Restore this import
+
     # Attempt to explicitly import the plugins package to help with discovery
     import detect_secrets.plugins
+
     DETECT_SECRETS_AVAILABLE = True
 except Exception:  # pragma: no cover - library might not be installed
     DETECT_SECRETS_AVAILABLE = False
@@ -232,7 +237,7 @@ except Exception:  # pragma: no cover - library might not be installed
 # --- Logger Setup ---
 logger = logging.getLogger("m1f")
 file_handler = None  # Will be set in configure_logging_settings
-m1f_console_handler = None # Will be set in configure_logging_settings
+m1f_console_handler = None  # Will be set in configure_logging_settings
 
 # --- Global Definitions ---
 
@@ -416,7 +421,7 @@ def _contains_sensitive_info(text: str) -> bool:
 
 def _scan_files_for_sensitive_info(
     files_to_process: list[tuple[Path, str]],
-) -> list[str]: # MODIFIED: Will change return type later
+) -> list[str]:  # MODIFIED: Will change return type later
     """Scan files for sensitive information and return list of relative paths."""
     # MODIFICATION: Store list of dictionaries with detailed findings
     # Each dict will be: {'path': str, 'type': str, 'line': int, 'message': str}
@@ -428,7 +433,9 @@ def _scan_files_for_sensitive_info(
             # but leaving it in case it helps with initial plugin discovery.
             get_settings()
         except Exception as e:
-            logger.warning(f"Call to detect-secrets get_settings() failed: {e}. This might affect plugin loading.")
+            logger.warning(
+                f"Call to detect-secrets get_settings() failed: {e}. This might affect plugin loading."
+            )
 
         # Use default_settings as a context manager to ensure plugins are loaded correctly
         with default_settings():
@@ -437,14 +444,18 @@ def _scan_files_for_sensitive_info(
                     # For detect-secrets 1.5.0, scan_file only takes the filename.
                     # It returns a SecretsCollection object, which is iterable, yielding PotentialSecret objects.
                     secrets_collection_obj = scan_file(str(abs_path))
-                    for secret in secrets_collection_obj: # Iterate directly over the collection
+                    for (
+                        secret
+                    ) in secrets_collection_obj:  # Iterate directly over the collection
                         # secret is a PotentialSecret object
-                        detailed_flagged_findings.append({
-                            "path": rel_path, # Use the relative path we have
-                            "type": secret.type,
-                            "line": secret.line_number,
-                            "message": f"Detected '{secret.type}' on line {secret.line_number}"
-                        })
+                        detailed_flagged_findings.append(
+                            {
+                                "path": rel_path,  # Use the relative path we have
+                                "type": secret.type,
+                                "line": secret.line_number,
+                                "message": f"Detected '{secret.type}' on line {secret.line_number}",
+                            }
+                        )
                 except Exception as e:  # pragma: no cover - scanning error
                     logger.warning(f"detect-secrets failed on {abs_path}: {e}")
                     continue
@@ -457,19 +468,21 @@ def _scan_files_for_sensitive_info(
                 continue
             # For regex fallback, we don't have line numbers or specific types easily
             if _contains_sensitive_info(content):
-                detailed_flagged_findings.append({
-                    "path": rel_path,
-                    "type": "Regex Match",
-                    "line": "N/A",
-                    "message": "Potential sensitive data found by regex scan."
-                })
+                detailed_flagged_findings.append(
+                    {
+                        "path": rel_path,
+                        "type": "Regex Match",
+                        "line": "N/A",
+                        "message": "Potential sensitive data found by regex scan.",
+                    }
+                )
     # The function's return type and usage will need to be updated where it's called.
     # For now, to keep the change localized for this step, we'll return a list of unique paths
     # that have findings, similar to the old behavior, but the detailed_flagged_findings
     # will be used in a subsequent step to update the reporting.
     # This is a temporary measure to make the edit apply cleanly.
     # The proper fix involves changing how `args.flagged_files` is populated and used.
-    
+
     # For this step, we will return the detailed findings directly.
     # The calling code will need to be adapted.
     return detailed_flagged_findings
@@ -1051,7 +1064,7 @@ def get_file_separator(
             json_meta,
             f"--- PYMK1F_END_FILE_METADATA_BLOCK_{file_uuid} ---",
             f"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_{file_uuid} ---",
-            ""  # This will add a linesep after the BEGIN_FILE_CONTENT_BLOCK line
+            "",  # This will add a linesep after the BEGIN_FILE_CONTENT_BLOCK line
         ]
         return linesep.join(separator_lines)
     else:  # Should not happen due to argparse choices
@@ -1112,16 +1125,20 @@ def _configure_logging_settings(
     if m1f_console_handler and m1f_console_handler in logger_instance.handlers:
         logger_instance.removeHandler(m1f_console_handler)
         # m1f_console_handler.close() # StreamHandler.close() is a no-op but can be called
-    m1f_console_handler = None # Reset
+    m1f_console_handler = None  # Reset
 
     # --- Configure based on quiet flag ---
     if quiet:
         # Suppress all output from m1f logger
-        logger_instance.setLevel(logging.CRITICAL + 1) # Set level higher than any standard level
-        logger_instance.propagate = False # Stop messages from going to root
+        logger_instance.setLevel(
+            logging.CRITICAL + 1
+        )  # Set level higher than any standard level
+        logger_instance.propagate = False  # Stop messages from going to root
 
         # Also ensure root logger is quiet if it had other handlers
-        logging.getLogger().setLevel(logging.ERROR) # Keep root logger only for critical errors
+        logging.getLogger().setLevel(
+            logging.ERROR
+        )  # Keep root logger only for critical errors
         # Remove any existing console handlers from the root logger
         for handler in logging.getLogger().handlers[:]:
             if isinstance(handler, logging.StreamHandler) and handler.stream in (
@@ -1129,20 +1146,22 @@ def _configure_logging_settings(
                 sys.stderr,
             ):
                 logging.getLogger().removeHandler(handler)
-        return # Exit configuration if quiet
+        return  # Exit configuration if quiet
 
     # --- Configuration for non-quiet mode ---
     log_level = logging.DEBUG if verbose else logging.INFO
     logger_instance.setLevel(log_level)
-    logger_instance.propagate = False # Explicitly manage m1f logger's output
+    logger_instance.propagate = False  # Explicitly manage m1f logger's output
 
     # Configure console handler for logger_instance
-    new_console_handler = logging.StreamHandler(sys.stdout) # Output to stdout
+    new_console_handler = logging.StreamHandler(sys.stdout)  # Output to stdout
     new_console_handler.setLevel(log_level)
-    console_formatter = logging.Formatter("%(levelname)-8s: %(message)s") # Simple console format
+    console_formatter = logging.Formatter(
+        "%(levelname)-8s: %(message)s"
+    )  # Simple console format
     new_console_handler.setFormatter(console_formatter)
     logger_instance.addHandler(new_console_handler)
-    m1f_console_handler = new_console_handler # Store the managed console handler
+    m1f_console_handler = new_console_handler  # Store the managed console handler
 
     # Configure file logging for logger_instance (if an output path is provided and not minimal_output)
     if output_file_path and not minimal_output:
@@ -1152,7 +1171,9 @@ def _configure_logging_settings(
                 log_file_path, mode="w", encoding="utf-8"
             )
             new_file_handler.setLevel(log_level)
-            file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s: %(message)s")
+            file_formatter = logging.Formatter(
+                "%(asctime)s - %(levelname)-8s: %(message)s"
+            )
             new_file_handler.setFormatter(file_formatter)
             logger_instance.addHandler(new_file_handler)
             file_handler = new_file_handler
@@ -1162,7 +1183,9 @@ def _configure_logging_settings(
 
     if verbose:
         logger_instance.debug("Verbose mode enabled.")
-        logger_instance.debug(f"Using line ending: {'LF' if chosen_linesep == LF else 'CRLF'}")
+        logger_instance.debug(
+            f"Using line ending: {'LF' if chosen_linesep == LF else 'CRLF'}"
+        )
         if minimal_output:
             logger_instance.debug(
                 "Minimal output mode enabled - no auxiliary files will be created."
@@ -1287,7 +1310,9 @@ def _build_exclusion_set(
         else:
             # Treat as a gitignore pattern (matches file or directory with this name)
             gitignore_patterns.append(exclude)
-            logger.debug(f"Treating simple name '{exclude}' as gitignore pattern from --excludes.")
+            logger.debug(
+                f"Treating simple name '{exclude}' as gitignore pattern from --excludes."
+            )
 
     logger.debug(
         f"Effective excluded directory names (case-insensitive): {sorted(list(excluded_dir_names_lower))}"
@@ -2526,7 +2551,9 @@ def main():
         if flagged_findings:
             if args.security_check == "abort":
                 # Format a more detailed message for abort
-                abort_message = "Security check failed. Sensitive information detected:\n"
+                abort_message = (
+                    "Security check failed. Sensitive information detected:\n"
+                )
                 for finding in flagged_findings:
                     abort_message += f"  - File: {finding['path']}, Type: {finding['type']}, Line: {finding['line']}\n"
                 logger.error(abort_message)
@@ -2536,17 +2563,21 @@ def main():
                     f"Skipping files due to security check. {len(flagged_findings)} findings."
                 )
                 # Get unique paths of files to skip
-                paths_to_skip = {finding['path'] for finding in flagged_findings}
+                paths_to_skip = {finding["path"] for finding in flagged_findings}
                 for finding in flagged_findings:
-                    logger.debug(f"  - Skipping file {finding['path']} due to: {finding['message']}")
+                    logger.debug(
+                        f"  - Skipping file {finding['path']} due to: {finding['message']}"
+                    )
                 files_to_process = [
                     item for item in files_to_process if item[1] not in paths_to_skip
                 ]
             else:  # warn
                 # Store the detailed findings in args to be used by the final warning message
                 args.flagged_findings_details = flagged_findings
-        elif DETECT_SECRETS_AVAILABLE: # If detect-secrets ran but found nothing
-            logger.info("Security scan run with 'detect-secrets': No potential secrets detected.")
+        elif DETECT_SECRETS_AVAILABLE:  # If detect-secrets ran but found nothing
+            logger.info(
+                "Security scan run with 'detect-secrets': No potential secrets detected."
+            )
         # If DETECT_SECRETS_AVAILABLE is False, it means regex scan was used.
         # If regex scan was used and flagged_findings is empty, it means regex also found nothing.
         # This case is implicitly handled as no warning will be printed.
@@ -2685,7 +2716,11 @@ def main():
         )
 
     # Updated warning message to show details
-    if getattr(args, "security_check", None) == "warn" and hasattr(args, "flagged_findings_details") and args.flagged_findings_details:
+    if (
+        getattr(args, "security_check", None) == "warn"
+        and hasattr(args, "flagged_findings_details")
+        and args.flagged_findings_details
+    ):
         detailed_warning_msg = "SECURITY WARNING: Sensitive information detected in the following locations:\n"
         for finding in args.flagged_findings_details:
             detailed_warning_msg += f"  - File: {finding['path']}, Line: {finding['line']}, Type: {finding['type']}\n"
