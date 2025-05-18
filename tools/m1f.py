@@ -197,11 +197,12 @@ import hashlib
 import json
 import logging
 import os
+import glob
 import sys
 import time  # Added for time measurement
 import uuid  # Added for UUID generation
 import re
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation
@@ -337,6 +338,9 @@ BINARY_FILE_EXTENSIONS = {
 # Line Ending Constants
 LF = "\n"
 CRLF = "\r\n"
+
+# Characters considered as wildcards for glob expansion
+GLOB_WILDCARD_CHARS = ["*", "?", "["]
 
 
 # --- Token Counting Function ---
@@ -1146,7 +1150,7 @@ def _build_exclusion_set(
     # Process each exclude entry
     for exclude in excludes:
         # Check if it's a gitignore-style pattern
-        if "*" in exclude or "!" in exclude or exclude.endswith("/"):
+        if any(ch in exclude for ch in GLOB_WILDCARD_CHARS) or "!" in exclude or exclude.endswith("/"):
             gitignore_patterns.append(exclude)
             logger.debug(f"Adding gitignore pattern from --excludes: {exclude}")
         # If it contains path separators, treat as a file path
@@ -1234,6 +1238,8 @@ def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
 def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
     """
     Process a file containing paths (one per line) and return a list of Path objects.
+    Supports glob patterns such as ``src/**/*.py`` which are expanded relative
+    to the directory of the list file.
 
     Args:
         input_file_path: Path to the input file containing paths to process
@@ -1252,8 +1258,22 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
                     continue  # Skip empty lines and comments
 
                 logger.info(f"Processing path from input file: {line}")
+
+                if any(ch in line for ch in GLOB_WILDCARD_CHARS):
+                    pattern_path = Path(line)
+                    if not pattern_path.is_absolute():
+                        pattern_path = input_file_dir / pattern_path
+                    pattern_path = pattern_path.expanduser()
+                    matches = glob.glob(str(pattern_path), recursive=True)
+                    if not matches:
+                        logger.warning(f"Glob pattern '{line}' did not match any files")
+                    for match in matches:
+                        matched_path = Path(match).resolve()
+                        paths.append(matched_path)
+                        logger.info(f"Expanded '{line}' -> '{matched_path}'")
+                    continue
+
                 path_obj = Path(line)
-                # If the path is relative (doesn't have a root), make it relative to the input file's directory
                 if not path_obj.is_absolute():
                     path_obj = (input_file_dir / path_obj).resolve()
                 else:
@@ -1314,7 +1334,7 @@ def _load_exclude_paths_from_file(
             # Detect if file contains gitignore patterns (even if not named .gitignore)
             if not is_gitignore_format:
                 for line in lines:
-                    if "*" in line or "!" in line or line.endswith("/"):
+                    if any(ch in line for ch in GLOB_WILDCARD_CHARS) or "!" in line or line.endswith("/"):
                         is_gitignore_format = True
                         logger.info(
                             f"Detected gitignore-style patterns in {exclude_file_path}"
@@ -1520,7 +1540,7 @@ def _gather_files_to_process(
                     gitignore_spec,
                     explicitly_included=True  # File paths from input file are explicitly included
                 ):
-                    files_to_process.append((item_path, item_path.name))
+                    files_to_process.append((item_path, PureWindowsPath(item_path.name).as_posix()))
                     added_file_absolute_paths.add(abs_path_str)
                 # else: _is_file_excluded logs if verbose
 
@@ -1582,7 +1602,7 @@ def _gather_files_to_process(
                         ):
                             relative_path = file_path_in_dir.relative_to(item_path)
                             files_to_process.append(
-                                (file_path_in_dir, str(relative_path))
+                                (file_path_in_dir, relative_path.as_posix())
                             )
                             added_file_absolute_paths.add(abs_path_str)
                         # else: _is_file_excluded logs if verbose
@@ -1646,7 +1666,7 @@ def _gather_files_to_process(
                     continue
 
                 relative_path = file_path.relative_to(source_dir)
-                files_to_process.append((file_path, str(relative_path)))
+                files_to_process.append((file_path, relative_path.as_posix()))
 
     return sorted(files_to_process, key=lambda x: str(x[1]).lower())
 
@@ -1676,7 +1696,9 @@ def _write_file_paths_list(
     logger.info(f"Writing file paths list to {file_list_path}")
 
     # Extract unique relative paths and sort them
-    unique_paths = sorted(set(rel_path for _, rel_path in files_to_process))
+    unique_paths = sorted(
+        set(PureWindowsPath(rel_path).as_posix() for _, rel_path in files_to_process)
+    )
 
     with open(file_list_path, "w", encoding="utf-8") as f:
         for rel_path in unique_paths:
@@ -1723,11 +1745,12 @@ def _write_directory_paths_list(
 
     for _, rel_path in files_to_process:
         # Get the parent directory of each file
-        path_obj = Path(rel_path)
+        normalized = PureWindowsPath(rel_path).as_posix()
+        path_obj = Path(normalized)
         # Add all parent directories
         current_path = path_obj.parent
         while str(current_path) != ".":
-            unique_dirs.add(str(current_path))
+            unique_dirs.add(current_path.as_posix())
             current_path = current_path.parent
 
     # Sort the directories alphabetically

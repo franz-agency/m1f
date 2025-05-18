@@ -116,6 +116,7 @@ formatting.
 | `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                                                                                                                                                             |
 | `--security-check`      | Scan files for secrets before merging (`abort`, `skip`, `warn`) |
 
+
 #### Usage Examples
 
 Basic command using a source directory:
@@ -287,22 +288,30 @@ a fallback.
 
 ### Output Files
 
-By default, `m1f.py` creates several output files to provide comprehensive information about the processed files:
+By default, `m1f.py` creates several output files to provide comprehensive
+information about the processed files:
 
-1. **Primary output file** - The combined file specified by `--output-file` containing all processed files with separators
-2. **Log file** - A `.log` file with the same base name as the output file, containing detailed processing information
-3. **File list** - A `_filelist.txt` file containing the paths of all included files
-4. **Directory list** - A `_dirlist.txt` file containing all unique directories from the included files
-5. **Archive file** - An optional backup archive (zip or tar.gz) if `--create-archive` is specified
+1. **Primary output file** - The combined file specified by `--output-file`
+   containing all processed files with separators
+2. **Log file** - A `.log` file with the same base name as the output file,
+   containing detailed processing information
+3. **File list** - A `_filelist.txt` file containing the paths of all included
+   files
+4. **Directory list** - A `_dirlist.txt` file containing all unique directories
+   from the included files
+5. **Archive file** - An optional backup archive (zip or tar.gz) if
+   `--create-archive` is specified
 
-To create only the primary output file and skip the auxiliary files, use the `--minimal-output` option:
+To create only the primary output file and skip the auxiliary files, use the
+`--minimal-output` option:
 
 ```bash
 # Create only the combined output file without any auxiliary files
 python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
 ```
 
-For situations where you want the auxiliary files (logs, lists) but not the primary output file, use `--skip-output-file`:
+For situations where you want the auxiliary files (logs, lists) but not the
+primary output file, use `--skip-output-file`:
 
 ```bash
 # Generate logs and file lists but skip writing the actual combined file
@@ -323,15 +332,15 @@ directory structure.
 
 #### Command Line Options for s1f.py
 
-| Option                        | Description                                                                                                                                      |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `-i, --input-file`            | Path to the combined input file                                                                                                                  |
-| `-d, --destination-directory` | Directory where extracted files will be saved                                                                                                    |
-| `-f, --force`                 | Force overwrite of existing files without prompting                                                                                              |
-| `-v, --verbose`               | Enable verbose output                                                                                                                            |
-| `--timestamp-mode`            | How to set file timestamps (`original` or `current`). Original preserves timestamps from when files were combined, current uses the current time |
-| `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined                         |
-| `--respect-encoding`          | Try to use the original file encoding when writing extracted files. If enabled and original encoding information is available, files will be written using that encoding instead of UTF-8 |
+| Option                        | Description                                                                                                                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-i, --input-file`            | Path to the combined input file                                                                                                                                                                               |
+| `-d, --destination-directory` | Directory where extracted files will be saved                                                                                                                                                                 |
+| `-f, --force`                 | Force overwrite of existing files without prompting                                                                                                                                                           |
+| `-v, --verbose`               | Enable verbose output                                                                                                                                                                                         |
+| `--timestamp-mode`            | How to set file timestamps (`original` or `current`). Original preserves timestamps from when files were combined, current uses the current time                                                              |
+| `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined                                                                                      |
+| `--respect-encoding`          | Try to use the original file encoding when writing extracted files. If enabled and original encoding information is available, files will be written using that encoding instead of UTF-8                     |
 | `--target-encoding`           | Explicitly specify the character encoding to use for all extracted files (e.g., `utf-8`, `latin-1`, `utf-16-le`). This overrides the `--respect-encoding` option and any encoding information in the metadata |
 
 #### Usage Examples
@@ -421,6 +430,10 @@ path per line. Empty lines and lines starting with `#` are ignored:
 # Another file
 /home/user/project/requirements.txt
 ```
+
+Lines can also contain glob patterns such as `src/**/*.py`. These patterns are
+expanded relative to the directory of the list file, allowing you to include
+sets of files without listing each one individually.
 
 ### Path Deduplication
 
@@ -650,6 +663,12 @@ When `--create-archive` is used, the archive will contain all files selected for
 
 For extremely large directories with tens of thousands of files or very large individual files, the script might take some time to process.
 
+### Large Project Workflow Example
+
+When a project has many files, start by creating an inventory using `tools/m1f.py` with `--skip-output-file`. This generates file and directory lists without producing the combined file. Review these lists to decide which parts of the project you want to include in your AI context.
+
+Save selected bundles into a `.m1f` directory at the project root with numbered names such as `1_doc.txt`, `2_template.txt`, or `3_plugin.txt`. Example tasks for automating this process live in `tasks/m1f.json` and are documented in `tasks/README.md`.
+
 ### Project Website
 
 For more information and updates, visit the official project website: [https://m1f.dev](https://m1f.dev)
@@ -679,7 +698,7 @@ For more information and updates, visit the official project website: [https://m
   `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
 - `tiktoken`: For the `tools/token_counter.py` script.
 - `black`: For code formatting.
-- `pymarkdownlnt`: For linting Markdown files.
+- `pymarkdownlint`: For linting Markdown files.
 - `chardet`: Optional, for character encoding detection.
 
 You can install all Python dependencies using:
@@ -696,3 +715,4 @@ file for details.
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+````
