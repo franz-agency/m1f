@@ -204,7 +204,7 @@ import uuid  # Added for UUID generation
 import re
 from pathlib import Path, PureWindowsPath
 
-from path_utils import normalize_path
+from .path_utils import normalize_path
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation
