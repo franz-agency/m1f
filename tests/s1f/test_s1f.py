@@ -169,9 +169,7 @@ class TestS1F:
 
         assert len(extracted_files) > 0, "No files were extracted"
 
-        # For now, we're just checking that files were extracted, not that they match the original paths
-        # We'll fix the path issue later
-        """
+        # Verify that the extracted files match the originals
         # Get list of original files from the filelist.txt
         with open(OUTPUT_DIR / "standard_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
@@ -186,7 +184,6 @@ class TestS1F:
         assert missing == 0, f"Found {missing} missing files"
         assert different == 0, f"Found {different} files with different content"
         assert matching > 0, "No matching files found"
-        """
 
     def test_detailed_separator(self):
         """Test extracting files from a combined file with Detailed separator style."""
@@ -207,9 +204,7 @@ class TestS1F:
         extracted_files = list(Path(EXTRACTED_DIR).glob("**/*.*"))
         assert len(extracted_files) > 0, "No files were extracted"
 
-        # For now, we're just checking that files were extracted, not that they match the original paths
-        # We'll fix the content verification issue later
-        """
+        # Verify that the extracted files match the originals
         # Get list of original files from the filelist.txt
         with open(OUTPUT_DIR / "detailed_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
@@ -224,7 +219,6 @@ class TestS1F:
         assert missing == 0, f"Found {missing} missing files"
         assert different == 0, f"Found {different} files with different content"
         assert matching > 0, "No matching files found"
-        """
 
     def test_markdown_separator(self):
         """Test extracting files from a combined file with Markdown separator style."""
@@ -245,9 +239,7 @@ class TestS1F:
         extracted_files = list(Path(EXTRACTED_DIR).glob("**/*.*"))
         assert len(extracted_files) > 0, "No files were extracted"
 
-        # For now, we're just checking that files were extracted, not that they match the original paths
-        # We'll fix the content verification issue later
-        """
+        # Verify that the extracted files match the originals
         # Get list of original files from the filelist.txt
         with open(OUTPUT_DIR / "markdown_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
@@ -262,7 +254,6 @@ class TestS1F:
         assert missing == 0, f"Found {missing} missing files"
         assert different == 0, f"Found {different} files with different content"
         assert matching > 0, "No matching files found"
-        """
 
     def test_machinereadable_separator(self):
         """Test extracting files from a combined file with MachineReadable separator style."""
@@ -283,9 +274,7 @@ class TestS1F:
         extracted_files = list(Path(EXTRACTED_DIR).glob("**/*.*"))
         assert len(extracted_files) > 0, "No files were extracted"
 
-        # For now, we're just checking that files were extracted, not that they match the original paths
-        # We'll fix the content verification issue later
-        """
+        # Verify that the extracted files match the originals
         # Get list of original files from the filelist.txt
         with open(OUTPUT_DIR / "machinereadable_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
@@ -300,7 +289,6 @@ class TestS1F:
         assert missing == 0, f"Found {missing} missing files"
         assert different == 0, f"Found {different} files with different content"
         assert matching > 0, "No matching files found"
-        """
 
     def test_force_overwrite(self):
         """Test force overwriting existing files."""
