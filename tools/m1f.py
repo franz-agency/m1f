@@ -86,22 +86,27 @@ NOTES
   Only these exact paths will be excluded. A path like `other_project/some_file.txt` would not be excluded. Empty lines and lines starting with '#' are ignored as comments.
 
 - MachineReadable Format: This format is designed for automated splitting and LLM compatibility.
-  It uses clear comment-based boundary markers with visual separators:
+  It uses unique UUID-based boundary markers with clear JSON metadata:
   ```
-  # ===============================================================================
-  # FILE: relative/path.ext
-  # ===============================================================================
-  # METADATA: {"modified": "2023-01-01 12:00:00", "type": ".ext", "size_bytes": 1234, "checksum_sha256": "abc..."}
-  # -------------------------------------------------------------------------------
+  --- PYMK1F_BEGIN_FILE_METADATA_BLOCK_{UUID} ---
+  METADATA_JSON:
+  {
+      "original_filepath": "relative/path.ext",
+      "original_filename": "path.ext",
+      "timestamp_utc_iso": "2023-01-01T12:00:00Z",
+      "type": ".ext",
+      "size_bytes": 1234,
+      "checksum_sha256": "abc..."
+  }
+  --- PYMK1F_END_FILE_METADATA_BLOCK_{UUID} ---
+  --- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_{UUID} ---
 
   [file content]
 
-  # ===============================================================================
-  # END FILE
-  # ===============================================================================
+  --- PYMK1F_END_FILE_CONTENT_BLOCK_{UUID} ---
   ```
-  This format is particularly suitable for use with LLMs, as it uses familiar comment syntax
-  and visual boundaries that AI models are trained to recognize.
+  This format ensures reliable automated parsing with unique identifiers for each file block,
+  while keeping the metadata in a structured JSON format that's easy for programs to consume.
 - Binary Files: While the script can attempt to include binary files using the
   `--include-binary-files` flag, the content will be read as text (UTF-8 with
   error ignoring). This can result in garbled/unreadable content in the output
