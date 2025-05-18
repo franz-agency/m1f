@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Tests for the makeonefile.py script.
+Tests for the m1f.py script.
 
-This test suite verifies the functionality of the makeonefile.py script by:
+This test suite verifies the functionality of the m1f.py script by:
 1. Setting up a test directory with various file types
 2. Running the script with different configurations
 3. Validating the output files match expected behavior
@@ -21,9 +21,9 @@ import platform
 from pathlib import Path
 from typing import Optional
 
-# Add the tools directory to path to import the makeonefile module
+# Add the tools directory to path to import the m1f module
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
-import makeonefile
+import m1f
 
 # Test constants
 TEST_DIR = Path(__file__).parent
@@ -44,10 +44,10 @@ def _create_test_file(filepath: Path, content: str = "test content", mtime: Opti
     if mtime is not None:
         os.utime(filepath, (mtime, mtime))
 
-# Helper function to run makeonefile with specific arguments for testing
-def run_makeonefile(arg_list):
+# Helper function to run m1f with specific arguments for testing
+def run_m1f(arg_list):
     """
-    Run makeonefile.main() with the specified command line arguments.
+    Run m1f.main() with the specified command line arguments.
     This works by temporarily replacing sys.argv with our test arguments
     and patching sys.exit to prevent test termination.
 
@@ -69,13 +69,13 @@ def run_makeonefile(arg_list):
 
     try:
         # Replace argv with our test arguments, adding script name at position 0
-        sys.argv = ["makeonefile.py"] + arg_list
+        sys.argv = ["m1f.py"] + arg_list
         # Patch sys.exit to prevent test termination
         sys.exit = mock_exit
         # Call main which will parse sys.argv internally
-        makeonefile.main()
+        m1f.main()
     finally:
-        # Aggressively find, close, and remove file handlers associated with the makeonefile logger
+        # Aggressively find, close, and remove file handlers associated with the m1f logger
         logger_instance = logging.getLogger("makeonefile")
         for handler in logger_instance.handlers[:]:  # Iterate over a copy
             # isinstance check ensures we only try to close FileHandlers or subclasses
@@ -85,15 +85,15 @@ def run_makeonefile(arg_list):
 
         # Also ensure the module's global reference is cleared,
         # as _configure_logging_settings uses it for re-initialization checks.
-        if hasattr(makeonefile, 'file_handler') and makeonefile.file_handler is not None:
+        if hasattr(m1f, 'file_handler') and m1f.file_handler is not None:
             try:
                 # This attempts to close it if it wasn't caught above for some reason,
                 # though it should have been if it was a FileHandler attached to the logger.
-                if isinstance(makeonefile.file_handler, logging.FileHandler):
-                    makeonefile.file_handler.close()
+                if isinstance(m1f.file_handler, logging.FileHandler):
+                    m1f.file_handler.close()
             except Exception:
                 pass # Ignore errors if already closed or not a closable handler type
-            makeonefile.file_handler = None
+            m1f.file_handler = None
 
         # Restore original argv and exit function
         sys.argv = original_argv
@@ -101,13 +101,13 @@ def run_makeonefile(arg_list):
 
 
 class TestMakeOneFile:
-    """Test cases for the makeonefile.py script."""
+    """Test cases for the m1f.py script."""
 
     @classmethod
     def setup_class(cls):
         """Setup test environment once before all tests."""
         # Print test environment information
-        print(f"\nRunning tests for makeonefile.py")
+        print(f"\nRunning tests for m1f.py")
         print(f"Python version: {sys.version}")
         print(f"Test directory: {TEST_DIR}")
         print(f"Source directory: {SOURCE_DIR}")
@@ -154,7 +154,7 @@ class TestMakeOneFile:
     def teardown_method(self):
         """Clean up after each test."""
         # Close any open logging handlers that might keep files locked
-        # This is necessary because the makeonefile script sets up file handlers for logging
+        # This is necessary because the m1f script sets up file handlers for logging
         logger = logging.getLogger("makeonefile")
         if logger.handlers:
             for handler in logger.handlers:
@@ -182,7 +182,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "basic_output.txt"
 
         # Run the script programmatically
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
@@ -214,7 +214,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "dot_files_included.txt"
 
         # Run with dot files included
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
@@ -242,7 +242,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "excluded_paths.txt"
 
         # Run with exclude paths file
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
@@ -269,7 +269,7 @@ class TestMakeOneFile:
             output_file = OUTPUT_DIR / f"separator_{style.lower()}.txt"
 
             # Run with specific separator style
-            run_makeonefile(
+            run_m1f(
                 [
                     "--source-directory",
                     str(SOURCE_DIR),
@@ -301,7 +301,7 @@ class TestMakeOneFile:
     def test_timestamp_in_filename(self):
         """Test adding timestamp to output filename."""
         # Run with timestamp option
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
@@ -325,13 +325,13 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "additional_excludes.txt"
 
         # Run with additional excludes
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
                 "--output-file",
                 str(output_file),
-                "--additional-excludes",
+                "--excludes",
                 "docs",
                 "images",
                 "--force",
@@ -350,7 +350,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "archive_test.txt"
 
         # Run with archive creation
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
@@ -388,7 +388,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "archive_tar_test.txt"
 
         # Run with tar.gz archive creation
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
@@ -419,7 +419,7 @@ class TestMakeOneFile:
         for ending in ["LF", "CRLF"]:
             output_file = OUTPUT_DIR / f"line_ending_{ending.lower()}.txt"
 
-            run_makeonefile(
+            run_m1f(
                 [
                     "--source-directory",
                     str(SOURCE_DIR),
@@ -441,7 +441,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "cli_execution.txt"
 
         # Run the script as a subprocess
-        script_path = Path(__file__).parent.parent.parent / "tools" / "makeonefile.py"
+        script_path = Path(__file__).parent.parent.parent / "tools" / "m1f.py"
         result = subprocess.run(
             [
                 sys.executable,
@@ -470,7 +470,7 @@ class TestMakeOneFile:
         input_file = TEST_DIR / "input_paths.txt"
 
         # Run with input paths file
-        run_makeonefile(
+        run_m1f(
             [
                 "--input-file",
                 str(input_file),
@@ -499,7 +499,7 @@ class TestMakeOneFile:
             f.write(f"../source/docs/unicode_sample.md")
 
         # Run with the temp input paths file
-        run_makeonefile(
+        run_m1f(
             [
                 "--input-file",
                 str(temp_input_file),
@@ -528,7 +528,7 @@ class TestMakeOneFile:
             f.write(f"../source/code/edge_case.html")
 
         # Run with the temp input paths file
-        run_makeonefile(
+        run_m1f(
             [
                 "--input-file",
                 str(temp_input_file),
@@ -560,7 +560,7 @@ class TestMakeOneFile:
         start_time = time.time()
 
         # Run with the temp input paths file
-        run_makeonefile(
+        run_m1f(
             [
                 "--input-file",
                 str(temp_input_file),
@@ -608,7 +608,7 @@ class TestMakeOneFile:
             f.write(f"../source/docs/png.png")
 
         # Run without include-binary-files flag
-        run_makeonefile(
+        run_m1f(
             [
                 "--input-file",
                 str(temp_input_file),
@@ -627,7 +627,7 @@ class TestMakeOneFile:
         output_file_included = OUTPUT_DIR / "binary_included.txt"
 
         # Run with include-binary-files flag
-        run_makeonefile(
+        run_m1f(
             [
                 "--input-file",
                 str(temp_input_file),
@@ -659,7 +659,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "no_default_excludes.txt"
 
         # Run with --no-default-excludes flag
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
@@ -694,7 +694,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "include_extensions.txt"
 
         # Run with --include-extensions to include only .txt and .json files
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR / "file_extensions_test"),
@@ -722,7 +722,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "exclude_extensions.txt"
 
         # Run with --exclude-extensions to exclude .log and .tmp files
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR / "file_extensions_test"),
@@ -750,7 +750,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "extension_no_dots.txt"
 
         # Run with extensions specified without dots
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR / "file_extensions_test"),
@@ -770,19 +770,19 @@ class TestMakeOneFile:
             assert "test.json" in content, ".json files should be included when specified without dot"
             assert "test.md" not in content, ".md files should not be included"
 
-    def test_no_default_excludes_with_additional_excludes(self):
-        """Test combining --no-default-excludes with --additional-excludes."""
-        output_file = OUTPUT_DIR / "no_default_with_additional.txt"
+    def test_no_default_excludes_with_excludes(self):
+        """Test combining --no-default-excludes with --excludes."""
+        output_file = OUTPUT_DIR / "no_default_with_excludes.txt"
 
         # Run with --no-default-excludes but add some specific excludes
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR),
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
-                "--additional-excludes",
+                "--excludes",
                 "node_modules",
                 "--force",
             ]
@@ -791,7 +791,7 @@ class TestMakeOneFile:
         # Verify default excluded directories are included except those specified
         with open(output_file, "r", encoding="utf-8") as f:
             content = f.read()
-            assert "node_modules" not in content, "node_modules should be excluded by --additional-excludes"
+            assert "node_modules" not in content, "node_modules should be excluded by --excludes"
             assert ".git" in content, "Git directory should be included (no default excludes)"
             
             # Verify the dirlist and filelist don't contain node_modules
@@ -805,7 +805,7 @@ class TestMakeOneFile:
         output_file = OUTPUT_DIR / "combined_extension_filters.txt"
 
         # Run with both include and exclude extensions
-        run_makeonefile(
+        run_m1f(
             [
                 "--source-directory",
                 str(SOURCE_DIR / "file_extensions_test"),
@@ -853,7 +853,7 @@ class TestMakeOneFile:
         _create_test_file(SOURCE_DIR / "f1.txt", "file1")
         _create_test_file(SOURCE_DIR / "f2.txt", "file2")
 
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(SOURCE_DIR),
             "--output-file", str(output_file_stem.with_suffix(".txt")),
             "--filename-mtime-hash",
@@ -890,7 +890,7 @@ class TestMakeOneFile:
         _create_test_file(test_src_dir / "b.txt", "content b", mtime=1678972800) # March 16, 2023
 
         # Run 1
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -904,7 +904,7 @@ class TestMakeOneFile:
         self.setup_method() 
 
         # Run 2 (same files, same mtimes)
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -930,7 +930,7 @@ class TestMakeOneFile:
         _create_test_file(test_src_dir / "other.txt", "other content", mtime=1678886400)
 
         # Run 1
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -942,7 +942,7 @@ class TestMakeOneFile:
         _create_test_file(file_to_change, "initial content", mtime=1678972800) # New mtime
 
         # Run 2
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -964,7 +964,7 @@ class TestMakeOneFile:
         _create_test_file(test_src_dir / "original.txt", "original", mtime=1678886400)
 
         # Run 1 (one file)
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -976,7 +976,7 @@ class TestMakeOneFile:
         _create_test_file(test_src_dir / "new_file.txt", "newly added", mtime=1678886400)
 
         # Run 2 (two files)
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -1000,7 +1000,7 @@ class TestMakeOneFile:
         _create_test_file(file_to_remove, "remove me", mtime=1678886400)
 
         # Run 1 (two files)
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -1012,7 +1012,7 @@ class TestMakeOneFile:
         file_to_remove.unlink()
 
         # Run 2 (one file)
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -1036,7 +1036,7 @@ class TestMakeOneFile:
         _create_test_file(original_file, "some content", mtime=1678886400)
 
         # Run 1 (original name)
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -1048,7 +1048,7 @@ class TestMakeOneFile:
         original_file.rename(renamed_file)
 
         # Run 2 (new name)
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -1066,7 +1066,7 @@ class TestMakeOneFile:
         
         _create_test_file(SOURCE_DIR / "f_ts1.txt", "file ts1")
 
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(SOURCE_DIR),
             "--output-file", str(output_file_stem.with_suffix(".txt")),
             "--filename-mtime-hash",
@@ -1112,7 +1112,7 @@ class TestMakeOneFile:
         if test_src_dir.exists(): shutil.rmtree(test_src_dir)
         test_src_dir.mkdir(parents=True) # Empty directory
 
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path),
             "--filename-mtime-hash", 
@@ -1130,7 +1130,7 @@ class TestMakeOneFile:
         # Check that the file exists and is empty or contains a note (exact message may vary)
         with open(output_file_path, "r", encoding="utf-8") as f:
             content = f.read()
-            # The exact message might vary depending on the makeonefile version
+            # The exact message might vary depending on the m1f version
             # Simply check that the file exists and is either empty or contains a note about no files
         shutil.rmtree(test_src_dir)
 
@@ -1148,7 +1148,7 @@ class TestMakeOneFile:
         _create_test_file(file2, "content2", mtime=1678886400)
 
         # Run 1: Normal, get H1
-        run_makeonefile([
+        run_m1f([
             "--source-directory", str(test_src_dir),
             "--output-file", str(output_file_path.with_suffix(".txt")),
             "--filename-mtime-hash", "--force", "--minimal-output"
@@ -1167,7 +1167,7 @@ class TestMakeOneFile:
         
         os.path.getmtime = faulty_getmtime_for_file2
         try:
-            run_makeonefile([
+            run_m1f([
                 "--source-directory", str(test_src_dir),
                 "--output-file", str(output_file_path.with_suffix(".txt")),
                 "--filename-mtime-hash", "--force", "--minimal-output", "--verbose"
@@ -1190,7 +1190,7 @@ class TestMakeOneFile:
 
         os.path.getmtime = faulty_getmtime_for_file1
         try:
-            run_makeonefile([
+            run_m1f([
                 "--source-directory", str(test_src_dir),
                 "--output-file", str(output_file_path.with_suffix(".txt")),
                 "--filename-mtime-hash", "--force", "--minimal-output", "--verbose"
