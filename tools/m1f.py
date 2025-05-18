@@ -330,6 +330,9 @@ BINARY_FILE_EXTENSIONS = {
 LF = "\n"
 CRLF = "\r\n"
 
+# Characters considered as wildcards for glob expansion
+GLOB_WILDCARD_CHARS = ["*", "?", "["]
+
 
 # --- Token Counting Function ---
 def _count_tokens_in_file_content(
@@ -1096,7 +1099,7 @@ def _build_exclusion_set(
     # Process each exclude entry
     for exclude in excludes:
         # Check if it's a gitignore-style pattern
-        if "*" in exclude or "!" in exclude or exclude.endswith("/"):
+        if any(ch in exclude for ch in GLOB_WILDCARD_CHARS) or "!" in exclude or exclude.endswith("/"):
             gitignore_patterns.append(exclude)
             logger.debug(f"Adding gitignore pattern from --excludes: {exclude}")
         # If it contains path separators, treat as a file path
@@ -1194,7 +1197,6 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
         List of deduplicated paths with proper parent-child handling
     """
     paths = []
-    wildcard_chars = ["*", "?", "["]
     input_file_dir = input_file_path.parent
 
     try:
@@ -1206,7 +1208,7 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
 
                 logger.info(f"Processing path from input file: {line}")
 
-                if any(ch in line for ch in wildcard_chars):
+                if any(ch in line for ch in GLOB_WILDCARD_CHARS):
                     pattern_path = Path(line)
                     if not pattern_path.is_absolute():
                         pattern_path = input_file_dir / pattern_path
@@ -1281,7 +1283,7 @@ def _load_exclude_paths_from_file(
             # Detect if file contains gitignore patterns (even if not named .gitignore)
             if not is_gitignore_format:
                 for line in lines:
-                    if "*" in line or "!" in line or line.endswith("/"):
+                    if any(ch in line for ch in GLOB_WILDCARD_CHARS) or "!" in line or line.endswith("/"):
                         is_gitignore_format = True
                         logger.info(
                             f"Detected gitignore-style patterns in {exclude_file_path}"
