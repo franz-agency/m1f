@@ -253,6 +253,13 @@ DEFAULT_EXCLUDED_DIR_NAMES = [
     "__pycache__",
 ]
 
+# Default files to exclude (new addition)
+DEFAULT_EXCLUDED_FILE_NAMES = [
+    "LICENSE.md",
+    "package-lock.json",
+    "composer.lock",
+]
+
 BINARY_FILE_EXTENSIONS = {
     # Images
     ".jpg",
@@ -1290,6 +1297,9 @@ def _build_exclusion_set(
 
     if use_default_excludes:
         excluded_dir_names_lower = {name.lower() for name in DEFAULT_EXCLUDED_DIR_NAMES}
+        # Add default excluded file names to excluded_file_paths
+        for file_name in DEFAULT_EXCLUDED_FILE_NAMES:
+            excluded_file_paths.add(file_name)
 
     # Process each exclude entry
     for exclude in excludes:
@@ -1529,6 +1539,12 @@ def _is_file_excluded(
     explicitly_included: bool = False,
 ) -> bool:
     """Checks if a file should be excluded based on various criteria."""
+    # Check if the filename matches a default excluded file name
+    if excluded_file_paths and file_path.name in excluded_file_paths:
+        if args.verbose:
+            logger.debug(f"Excluding file (matched default excluded file name): {file_path}")
+        return True
+
     # Check if the path is in the exclude paths list
     if excluded_file_paths and str(file_path) in excluded_file_paths:
         if args.verbose:
