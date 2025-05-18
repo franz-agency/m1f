@@ -301,8 +301,10 @@ The input file for m1f.py should be a plain text file with one file or directory
 When processing the input file, the script automatically handles path deduplication:
 
 - If a parent directory is included, all its children are excluded
-- The most specific (deepest) parent directory is used
-- This ensures no duplicate content in the output
+- Parent directories have priority over their subdirectories
+- This prevents duplicate content and ensures efficient processing
+
+For example, if an input file contains both `/project/src` and `/project/src/utils`, only `/project/src` will be processed, and `/project/src/utils` will be ignored because it's already covered by the parent directory.
 
 ### Exclude Paths File Format
 
