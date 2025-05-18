@@ -71,6 +71,14 @@ python tools/m1f.py -s ./docs -o ./snapshots/docs.m1f.txt \
   --filename-mtime-hash --add-timestamp
 ```
 
+#### Bundling an Entire Project
+
+```bash
+# Combine all files in the current project into a single file,
+# excluding LICENSE.md, package.json, package-lock.json, and files specified in .gitignore.
+python -m tools.m1f --source-directory "./" --output-file ".m1f/m1f_project.txt" --excludes LICENSE.md package*.json -f --exclude-paths-file .gitignore --separator-style MachineReadable
+```
+
 ## The m1f Toolset
 
 ### m1f (Make One File) - `tools/m1f.py`
@@ -100,7 +108,7 @@ formatting.
 | `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
-| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, **__pycache__**                                                                                                 |
+| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, ****pycache****                                                                                             |
 | `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
 | `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
 | `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
@@ -716,12 +724,12 @@ For more information and updates, visit the official project website:
    source .venv/bin/activate
    ```
 
-````
-
 2. **Install dependencies:**
 
    ```bash
    pip install -r requirements.txt
+   ```
+
 ````
 
 ## Requirements
@@ -738,7 +746,7 @@ You can install all Python dependencies using:
 
 ```bash
 pip install -r requirements.txt
-```
+````
 
 ## License
 
