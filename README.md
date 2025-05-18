@@ -114,6 +114,7 @@ formatting.
 | `-q, --quiet`            | Suppress all console output                                                                                                                                                                                                               |
 | `--create-archive`       | Create a backup archive of all processed files                                                                                                                                                                                            |
 | `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                                                                                                                                                             |
+| `--security-check`      | Scan files for secrets before merging (`abort`, `skip`, `warn`) |
 
 #### Usage Examples
 
@@ -263,6 +264,26 @@ Versioning with content hash based on included files:
 python tools/m1f.py -s ./project -o ./snapshots/project.txt \
   --filename-mtime-hash
 ```
+
+Checking for secrets and aborting if any are found:
+
+```bash
+python tools/m1f.py -s ./project -o ./clean.txt \
+  --security-check abort
+```
+
+### Security Check
+
+The `--security-check` option scans files for potential secrets using
+`detect-secrets` if the library is installed. When secrets are detected you can
+decide how the script proceeds:
+
+- `abort` – stop processing immediately and do not create the output file.
+- `skip` – omit files that contain secrets from the final output.
+- `warn` – include all files but print a summary warning at the end.
+
+If `detect-secrets` is not available, a simplified pattern-based scan is used as
+a fallback.
 
 ### Output Files
 
