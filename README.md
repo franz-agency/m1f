@@ -575,7 +575,7 @@ def example():
 ```
 ````
 
-```
+````
 
 **Best for:**
 - Creating documentation that will be rendered in Markdown viewers
@@ -586,22 +586,27 @@ def example():
 
 A robust format designed for reliable automated parsing and processing. It uses unique boundary markers with UUIDs and structured JSON metadata:
 
-```
-
+```text
 --- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-123456789abc ---
-METADATA_JSON: { "original_filepath": "path/to/file.py", "original_filename":
-"file.py", "timestamp_utc_iso": "2023-06-15T14:30:21Z", "type": ".py",
-"size_bytes": 2560, "checksum_sha256": "abcdef1234567890..." } ---
-PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-123456789abc --- ---
-PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-123456789abc ---
+METADATA_JSON:
+{
+    "original_filepath": "path/to/file.py",
+    "original_filename": "file.py",
+    "timestamp_utc_iso": "2023-06-15T14:30:21Z",
+    "type": ".py",
+    "size_bytes": 2560,
+    "checksum_sha256": "abcdef1234567890..."
+}
+--- PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-123456789abc ---
+--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-123456789abc ---
 
 # File content here
 
 --- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-123456789abc ---
-
-```
+````
 
 **Best for:**
+
 - Working with automated tools that need to parse and extract file content
 - Integration with the `s1f.py` tool for reliable file extraction
 - Ensuring file integrity with checksums and complete metadata
@@ -613,13 +618,12 @@ PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-123456789abc ---
 Files are concatenated directly without any separators between them:
 
 ```
-
 // Content of file1.js console.log("Hello"); // Content of file2.js
 console.log("World");
-
-````
+```
 
 **Best for:**
+
 - Creating bundled output like combining CSS or JavaScript files
 - Generating files where separators would interfere with the content
 - Concatenating files that are meant to be used together as a single unit
@@ -638,39 +642,67 @@ The best separator style depends on your specific use case:
 
 ### Binary File Handling
 
-While the script can include binary files using the `--include-binary-files` option, these are read as text (UTF-8 with error ignoring). This can result in garbled/unreadable content in the output and significantly increase file size. This feature is primarily intended for files that might be misidentified as binary or for specific edge cases.
+While the script can include binary files using the `--include-binary-files`
+option, these are read as text (UTF-8 with error ignoring). This can result in
+garbled/unreadable content in the output and significantly increase file size.
+This feature is primarily intended for files that might be misidentified as
+binary or for specific edge cases.
 
 ### Encoding Behavior
 
-The script uses UTF-8 as the default encoding for reading and writing files. When using `--convert-to-charset`, the original encoding of each file is automatically detected and recorded in the file metadata (for compatible separator styles like `Detailed`, `Markdown`, and `MachineReadable`). This enables converting from the source encoding to the target encoding.
+The script uses UTF-8 as the default encoding for reading and writing files.
+When using `--convert-to-charset`, the original encoding of each file is
+automatically detected and recorded in the file metadata (for compatible
+separator styles like `Detailed`, `Markdown`, and `MachineReadable`). This
+enables converting from the source encoding to the target encoding.
 
-The following encodings are supported for conversion: UTF-8 (default), UTF-16, UTF-16-LE, UTF-16-BE, ASCII, Latin-1 (ISO-8859-1), and CP1252 (Windows-1252).
+The following encodings are supported for conversion: UTF-8 (default), UTF-16,
+UTF-16-LE, UTF-16-BE, ASCII, Latin-1 (ISO-8859-1), and CP1252 (Windows-1252).
 
-**UTF-16-LE is recommended when working with files in multiple exotic encodings** (like Shift-JIS, Big5, KOI8-R, ISO-8859-8, EUC-KR, Windows-1256). Our testing shows it provides superior character preservation, more reliable round-trip conversions, and better handling of Asian and Middle Eastern scripts compared to UTF-8.
+**UTF-16-LE is recommended when working with files in multiple exotic
+encodings** (like Shift-JIS, Big5, KOI8-R, ISO-8859-8, EUC-KR, Windows-1256).
+Our testing shows it provides superior character preservation, more reliable
+round-trip conversions, and better handling of Asian and Middle Eastern scripts
+compared to UTF-8.
 
-When extracting files with s1f, you can use the `--respect-encoding` option to restore files with their original encoding (if that information was recorded during combination with m1f).
+When extracting files with s1f, you can use the `--respect-encoding` option to
+restore files with their original encoding (if that information was recorded
+during combination with m1f).
 
 ### Line Ending Behavior
 
-The `--line-ending` option only affects the line endings generated by the script (in separators and blank lines), not those in the original files. The line endings of original files remain unchanged.
+The `--line-ending` option only affects the line endings generated by the script
+(in separators and blank lines), not those in the original files. The line
+endings of original files remain unchanged.
 
 ### Archive Creation
 
-When `--create-archive` is used, the archive will contain all files selected for inclusion in the main output file, using their relative paths within the archive. The archive is named based on the output file; for example, if `output.txt` is created, the archive will be `output_backup.zip` (or .tar.gz).
+When `--create-archive` is used, the archive will contain all files selected for
+inclusion in the main output file, using their relative paths within the
+archive. The archive is named based on the output file; for example, if
+`output.txt` is created, the archive will be `output_backup.zip` (or .tar.gz).
 
 ### Performance Considerations
 
-For extremely large directories with tens of thousands of files or very large individual files, the script might take some time to process.
+For extremely large directories with tens of thousands of files or very large
+individual files, the script might take some time to process.
 
 ### Large Project Workflow Example
 
-When a project has many files, start by creating an inventory using `tools/m1f.py` with `--skip-output-file`. This generates file and directory lists without producing the combined file. Review these lists to decide which parts of the project you want to include in your AI context.
+When a project has many files, start by creating an inventory using
+`tools/m1f.py` with `--skip-output-file`. This generates file and directory
+lists without producing the combined file. Review these lists to decide which
+parts of the project you want to include in your AI context.
 
-Save selected bundles into a `.m1f` directory at the project root with numbered names such as `1_doc.txt`, `2_template.txt`, or `3_plugin.txt`. Example tasks for automating this process live in `tasks/m1f.json` and are documented in `tasks/README.md`.
+Save selected bundles into a `.m1f` directory at the project root with numbered
+names such as `1_doc.txt`, `2_template.txt`, or `3_plugin.txt`. Example tasks
+for automating this process live in `tasks/m1f.json` and are documented in
+`tasks/README.md`.
 
 ### Project Website
 
-For more information and updates, visit the official project website: [https://m1f.dev](https://m1f.dev)
+For more information and updates, visit the official project website:
+[https://m1f.dev](https://m1f.dev)
 
 ## Setup
 
@@ -684,11 +716,13 @@ For more information and updates, visit the official project website: [https://m
    source .venv/bin/activate
    ```
 
+````
+
 2. **Install dependencies:**
 
    ```bash
    pip install -r requirements.txt
-   ```
+````
 
 ## Requirements
 
@@ -714,4 +748,3 @@ file for details.
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-````
