@@ -2317,7 +2317,6 @@ def main():
                 if not args.quiet:
                     print(message)
                 sys.exit(1)
-                return
             elif args.security_check == "skip":
                 logger.warning(
                     f"Skipping {len(flagged)} file(s) due to security check."
