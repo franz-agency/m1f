@@ -204,7 +204,24 @@ import uuid  # Added for UUID generation
 import re
 from pathlib import Path, PureWindowsPath
 
-from .path_utils import normalize_path
+if __name__ == "__main__" and not __package__:
+    # This block ensures that when the script is run directly (e.g., python tools/m1f.py),
+    # Python understands its package context, allowing relative imports like ".path_utils" to work.
+    # os and sys are imported globally earlier in the script.
+    import os
+    import sys
+    script_dir = os.path.dirname(os.path.abspath(__file__)) # e.g., /path/to/project/tools
+    package_name = os.path.basename(script_dir) # e.g., "tools"
+    project_root = os.path.dirname(script_dir) # e.g., /path/to/project
+    
+    # Add the project root to sys.path so that Python can find the package.
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+    
+    # Set __package__ to the determined package name.
+    __package__ = package_name
+
+from .path_utils import normalize_path # Changed to relative import
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation
@@ -231,6 +248,7 @@ except Exception:  # pragma: no cover - library might not be installed
 # --- Logger Setup ---
 logger = logging.getLogger("m1f")
 file_handler = None  # Will be set in configure_logging_settings
+m1f_console_handler = None # Will be set in configure_logging_settings
 
 # --- Global Definitions ---
 
@@ -1053,7 +1071,7 @@ def _configure_logging_settings(
     minimal_output: bool = False,
     quiet: bool = False,
 ) -> None:
-    """Configures logging level based on verbosity and sets up file logging.
+    """Configures logging level based on verbosity and sets up file/console logging.
 
     Args:
         verbose: Whether to enable verbose (DEBUG) logging
@@ -1062,60 +1080,71 @@ def _configure_logging_settings(
         minimal_output: If True, no log file will be created
         quiet: If True, suppress all console output
     """
-    # If quiet mode is enabled, disable all logging to console
+    global file_handler, m1f_console_handler  # Use module-level handlers
+    logger_instance = logging.getLogger("m1f")
+
+    # --- Clear previously managed handlers from logger_instance ---
+    if file_handler and file_handler in logger_instance.handlers:
+        logger_instance.removeHandler(file_handler)
+        file_handler.close()
+    file_handler = None  # Reset
+
+    if m1f_console_handler and m1f_console_handler in logger_instance.handlers:
+        logger_instance.removeHandler(m1f_console_handler)
+        # m1f_console_handler.close() # StreamHandler.close() is a no-op but can be called
+    m1f_console_handler = None # Reset
+
+    # --- Configure based on quiet flag ---
     if quiet:
-        # Set the root logger level to ERROR (only critical errors will show)
-        logging.getLogger().setLevel(logging.ERROR)
-        # Remove any existing console handlers
+        # Suppress all output from m1f logger
+        logger_instance.setLevel(logging.CRITICAL + 1) # Set level higher than any standard level
+        logger_instance.propagate = False # Stop messages from going to root
+
+        # Also ensure root logger is quiet if it had other handlers
+        logging.getLogger().setLevel(logging.ERROR) # Keep root logger only for critical errors
+        # Remove any existing console handlers from the root logger
         for handler in logging.getLogger().handlers[:]:
             if isinstance(handler, logging.StreamHandler) and handler.stream in (
                 sys.stdout,
                 sys.stderr,
             ):
                 logging.getLogger().removeHandler(handler)
-        return
+        return # Exit configuration if quiet
 
-    # Set the root logger level based on verbosity
+    # --- Configuration for non-quiet mode ---
     log_level = logging.DEBUG if verbose else logging.INFO
-    # logging.getLogger().setLevel(log_level) # Don't set root logger level here for file logging part
+    logger_instance.setLevel(log_level)
+    logger_instance.propagate = False # Explicitly manage m1f logger's output
 
-    # Configure file logging for the specific "m1f" logger
-    logger_instance = logging.getLogger("m1f")
-    logger_instance.setLevel(log_level)  # Set level on our specific logger
+    # Configure console handler for logger_instance
+    new_console_handler = logging.StreamHandler(sys.stdout) # Output to stdout
+    new_console_handler.setLevel(log_level)
+    console_formatter = logging.Formatter("%(levelname)-8s: %(message)s") # Simple console format
+    new_console_handler.setFormatter(console_formatter)
+    logger_instance.addHandler(new_console_handler)
+    m1f_console_handler = new_console_handler # Store the managed console handler
 
-    # Remove any old instance of our specific file handler from our logger if we are reconfiguring
-    global file_handler  # Ensure we are referencing the global one
-    if file_handler in logger_instance.handlers:
-        logger_instance.removeHandler(file_handler)
-        file_handler.close()
-        file_handler = None  # Explicitly reset before potential new assignment
-
-    # Configure file logging if an output path is provided and minimal_output is False
-    # The guard "file_handler is None" is important if this function could be called multiple times
-    # with the intent to ADD a handler if one isn't already set for this module.
-    if output_file_path and file_handler is None and not minimal_output:
+    # Configure file logging for logger_instance (if an output path is provided and not minimal_output)
+    if output_file_path and not minimal_output:
         log_file_path = output_file_path.with_suffix(".log")
         try:
             new_file_handler = logging.FileHandler(
                 log_file_path, mode="w", encoding="utf-8"
             )
             new_file_handler.setLevel(log_level)
-            new_file_handler.setFormatter(
-                logging.Formatter("%(asctime)s - %(levelname)-8s: %(message)s")
-            )
+            file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s: %(message)s")
+            new_file_handler.setFormatter(file_formatter)
             logger_instance.addHandler(new_file_handler)
-            file_handler = (
-                new_file_handler  # Store the new handler globally for this module
-            )
+            file_handler = new_file_handler
         except Exception as e:
-            # Use the module-level logger to log this error, it will go to console via basicConfig.
-            logger.error(f"Failed to create log file at {log_file_path}: {e}")
+            # Log error to the console handler we just set up
+            logger_instance.error(f"Failed to create log file at {log_file_path}: {e}")
 
     if verbose:
-        logger.debug("Verbose mode enabled.")
-        logger.debug(f"Using line ending: {'LF' if chosen_linesep == LF else 'CRLF'}")
+        logger_instance.debug("Verbose mode enabled.")
+        logger_instance.debug(f"Using line ending: {'LF' if chosen_linesep == LF else 'CRLF'}")
         if minimal_output:
-            logger.debug(
+            logger_instance.debug(
                 "Minimal output mode enabled - no auxiliary files will be created."
             )
 
