@@ -1,6 +1,27 @@
-tiktoken
-black
-pymarkdownlnt
-pytest
-chardet  # optional - for encoding detection
-detect-secrets  # optional - for secret scanning
+application_properties==0.8.2
+black==25.1.0
+certifi==2025.4.26
+chardet==5.2.0
+charset-normalizer==3.4.2
+click==8.2.0
+colorama==0.4.6
+Columnar==1.4.1
+detect-secrets==1.5.0
+idna==3.10
+iniconfig==2.1.0
+mypy_extensions==1.1.0
+packaging==25.0
+pathspec==0.12.1
+platformdirs==4.3.8
+pluggy==1.6.0
+pymarkdownlnt==0.9.29
+pytest==8.3.5
+PyYAML==6.0.2
+regex==2024.11.6
+requests==2.32.3
+tiktoken==0.9.0
+tomli==2.2.1
+toolz==1.0.0
+typing_extensions==4.13.2
+urllib3==2.4.0
+wcwidth==0.2.13
