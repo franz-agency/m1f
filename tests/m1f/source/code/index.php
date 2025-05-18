@@ -1,6 +1,6 @@
 <?php
 /**
- * Test PHP file for makeonefile.py testing
+ * Test PHP file for m1f.py testing
  */
 
 // Simple example PHP function

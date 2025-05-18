@@ -1,5 +1,5 @@
 # Large Sample Text File
-# This file is used to test how makeonefile handles larger files
+# This file is used to test how m1f handles larger files
 
 """
 This is a large sample text file with repeated content to test performance.

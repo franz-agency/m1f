@@ -100,8 +100,7 @@ def run_m1f(arg_list):
         sys.exit = original_exit
 
 
-class TestMakeOneFile:
-    """Test cases for the m1f.py script."""
+class TestM1F:    """Test cases for the m1f.py script."""
 
     @classmethod
     def setup_class(cls):
@@ -1130,7 +1129,7 @@ class TestMakeOneFile:
         # Check that the file exists and is empty or contains a note (exact message may vary)
         with open(output_file_path, "r", encoding="utf-8") as f:
             content = f.read()
-            # The exact message might vary depending on the makeonefile version
+            # The exact message might vary depending on the m1f version
             # Simply check that the file exists and is either empty or contains a note about no files
         shutil.rmtree(test_src_dir)
 

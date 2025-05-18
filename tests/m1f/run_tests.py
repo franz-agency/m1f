@@ -78,7 +78,7 @@ def main():
         # Build expression for pytest
         if test_expr:
             test_selection = " or ".join(
-                f"test_m1f.TestMakeOneFile.{test}" for test in test_expr
+                f"test_m1f.TestM1F.{test}" for test in test_expr
             )
             pytest_args.extend(
                 [

@@ -1,7 +1,7 @@
 {
   "name": "TestApp",
   "version": "1.0.0",
-  "description": "Test configuration for makeonefile",
+  "description": "Test configuration for m1f",
   "settings": {
     "debug": true,
     "logLevel": "info",
