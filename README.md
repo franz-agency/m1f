@@ -726,7 +726,7 @@ For more information and updates, visit the official project website:
 
 ## Requirements
 
-- Python 3.7+
+- Python 3.9+
 - Standard Python libraries (includes `argparse`, `datetime`, `hashlib`, `json`,
   `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
 - `tiktoken`: For the `tools/token_counter.py` script.
