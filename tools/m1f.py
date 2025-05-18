@@ -2656,8 +2656,9 @@ def main():
             + "\n".join(args.flagged_files)
         )
         logger.warning(warning_msg)
-        if not args.quiet:
-            print(warning_msg)
+        # Removed the redundant print statement:
+        # if not args.quiet:
+        #     print(warning_msg)
 
     # Calculate and log the execution time
     end_time = time.time()
