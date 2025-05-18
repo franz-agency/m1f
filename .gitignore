@@ -180,6 +180,8 @@ tests/splitfiles/extracted/
 tests/splitfiles/output/
 tests/s1f/extracted/
 tests/s1f/output/
+tests/m1f/extracted/
+tests/**/extracted/
 
 # Temporary test files
 tmp/
