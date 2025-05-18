@@ -36,7 +36,7 @@ KEY FEATURES
 
 REQUIREMENTS
 ============
-- Python 3.7+ (due to `pathlib` usage and f-strings)
+- Python 3.9+ (due to `pathlib` usage and f-strings)
 - Standard Python libraries only (argparse, logging, os, pathlib, re, sys).
 
 USAGE
