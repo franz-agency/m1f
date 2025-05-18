@@ -27,6 +27,7 @@ KEY FEATURES
 - Properly extracts original file paths from all separator formats, ensuring consistent behavior.
 - Recreates the original directory structure based on paths found in separators.
 - Handles both LF and CRLF line endings in separator patterns and content processing.
+- Respects original file encoding when available and requested with --respect-encoding.
 - Verifies file integrity using SHA256 checksums when available.
 - Option to force overwrite of existing files in the destination.
 - Verbose mode for detailed operational logging.
@@ -45,13 +46,18 @@ Basic command:
 With force overwrite and verbose output:
   python tools/s1f.py -i combined.txt -d ./extracted_files -f -v
 
+With original encoding preservation:
+  python tools/s1f.py -i combined.txt -d ./extracted_files --respect-encoding
+
 For all options, run:
   python tools/s1f.py --help
 
 NOTES
 =====
-- Encoding: The script expects the input file to be UTF-8 encoded (matching
-  `m1f.py`'s output) and writes extracted files as UTF-8.
+- Encoding: The script reads the input file as UTF-8 (matching `m1f.py`'s output). 
+  By default, it writes extracted files as UTF-8. With `--respect-encoding`, 
+  it will attempt to use the original encoding of each file as recorded in the 
+  metadata by m1f.py's `--detect-encoding` or `--convert-to-charset` options.
 - Line Endings: The script correctly identifies separators and content
   regardless of LF or CRLF line endings used in the input file. The content of
   the extracted files will retain the line endings as they were in the combined file.
@@ -130,7 +136,8 @@ RE_DETAILED_SEP = re.compile(
     r"^(========================================================================================$\r?\n"
     r"== FILE: (.*?)$\r?\n"  # Group 2: Relative path
     r"== DATE: .*? \| SIZE: .*? \| TYPE: .*?$\r?\n"
-    r"(?:== CHECKSUM_SHA256: ([0-9a-fA-F]{64})$\r?\n)?"  # Group 3: Optional Checksum
+    r"(?:== ENCODING: (.*?)(?:\s\(with conversion errors\))?$\r?\n)?"  # Group 3: Optional Encoding
+    r"(?:== CHECKSUM_SHA256: ([0-9a-fA-F]{64})$\r?\n)?"  # Group 4: Optional Checksum
     r"========================================================================================$\r?\n?)",
     re.MULTILINE,
 )
@@ -142,9 +149,11 @@ RE_STANDARD_SEP = re.compile(
 
 RE_MARKDOWN_SEP = re.compile(
     r"^(## (.*?)$\r?\n"  # Group 2: Relative path
-    # Non-capturing group for the whole metadata line, with optional checksum part
-    r"(?:\*\*Date Modified:\*\* .*? \| \*\*Size:\*\* .*? \| \*\*Type:\*\* .*?(?: \| \*\*Checksum \(SHA256\):\*\* ([0-9a-fA-F]{64}))?)$\r?\n\r?\n"
-    r"```(?:.*?)$\r?\n)",  # Group 3: Optional Checksum
+    # Non-capturing group for the whole metadata line, with optional encoding and checksum parts
+    r"(?:\*\*Date Modified:\*\* .*? \| \*\*Size:\*\* .*? \| \*\*Type:\*\* .*?"
+    r"(?:\s\|\s\*\*Encoding:\*\*\s(.*?)(?:\s\(with conversion errors\))?)?"  # Group 3: Optional Encoding
+    r"(?:\s\|\s\*\*Checksum \(SHA256\):\*\*\s([0-9a-fA-F]{64}))?)$\r?\n\r?\n"  # Group 4: Optional Checksum
+    r"```(?:.*?)$\r?\n)",
     re.MULTILINE,
 )
 
@@ -216,6 +225,7 @@ def parse_combined_file(content: str) -> list[dict]:
         A list of dictionaries, where each dict contains:
         'path': relative_path_str
         'content': file_content_str
+        'encoding': file_encoding_str (if available)
         For 'MachineReadable', it also includes:
         'modified': modification_date_str
         'type': file_extension_str
@@ -243,14 +253,16 @@ def parse_combined_file(content: str) -> list[dict]:
             "id": "Markdown",
             "regex": RE_MARKDOWN_SEP,
             "path_group": 2,
-            "checksum_group": 3,
+            "encoding_group": 3,  # Added encoding group
+            "checksum_group": 4,  # Updated group number
             "header_group": 1,
         },
         {
             "id": "Detailed",
             "regex": RE_DETAILED_SEP,
             "path_group": 2,
-            "checksum_group": 3,
+            "encoding_group": 3,  # Added encoding group
+            "checksum_group": 4,  # Updated group number
             "header_group": 1,
         },
         {
@@ -268,6 +280,7 @@ def parse_combined_file(content: str) -> list[dict]:
             path_val = ""
             checksum_val = None  # Initialize checksum for all patterns
             modified_val = None  # Initialize modified timestamp
+            encoding_val = None  # Initialize encoding value
             file_info_dict = {
                 "id": pattern_info["id"],
                 "match_obj": match,
@@ -317,6 +330,12 @@ def parse_combined_file(content: str) -> list[dict]:
 
                     # Extract timestamp from metadata (new format uses timestamp_utc_iso)
                     modified_val = meta.get("timestamp_utc_iso")
+                    
+                    # Extract encoding information if available
+                    encoding_val = meta.get("encoding")
+                    had_encoding_errors = meta.get("had_encoding_errors", False)
+                    if had_encoding_errors and encoding_val:
+                        encoding_val += " (with conversion errors)"
 
                     file_info_dict.update(
                         {
@@ -325,6 +344,7 @@ def parse_combined_file(content: str) -> list[dict]:
                             "type": meta.get("type"),
                             "size_bytes": meta.get("size_bytes"),
                             "checksum_sha256": meta.get("checksum_sha256"),
+                            "encoding": encoding_val  # Add encoding information
                         }
                     )
                     matches.append(file_info_dict)
@@ -356,6 +376,8 @@ def parse_combined_file(content: str) -> list[dict]:
                         continue
 
                     modified_val = meta.get("modified")  # Extract modified timestamp
+                    encoding_val = meta.get("encoding")  # Extract encoding if available
+                    
                     file_info_dict.update(
                         {
                             "path": path_val,
@@ -363,6 +385,7 @@ def parse_combined_file(content: str) -> list[dict]:
                             "type": meta.get("type"),
                             "size_bytes": meta.get("size_bytes"),
                             "checksum_sha256": meta.get("checksum_sha256"),
+                            "encoding": encoding_val  # Add encoding information
                         }
                     )
                     matches.append(file_info_dict)
@@ -379,6 +402,16 @@ def parse_combined_file(content: str) -> list[dict]:
                     continue
             else:
                 path_val = match.group(pattern_info["path_group"]).strip()
+                
+                # Extract encoding if available
+                if (
+                    "encoding_group" in pattern_info
+                    and pattern_info["encoding_group"] <= len(match.groups())
+                    and match.group(pattern_info["encoding_group"]) is not None
+                ):
+                    encoding_val = match.group(pattern_info["encoding_group"])
+                
+                # Extract checksum if available
                 if (
                     "checksum_group" in pattern_info
                     and pattern_info["checksum_group"] <= len(match.groups())
@@ -389,7 +422,7 @@ def parse_combined_file(content: str) -> list[dict]:
                     checksum_val = None
 
                 logger.debug(
-                    f"Extracted path '{path_val}' with checksum: {checksum_val}"
+                    f"Extracted path '{path_val}' with encoding: {encoding_val}, checksum: {checksum_val}"
                 )
 
             file_info_dict.update(
@@ -397,6 +430,7 @@ def parse_combined_file(content: str) -> list[dict]:
                     "path": path_val,
                     "checksum_sha256": checksum_val,
                     "modified": modified_val,  # Will be None for non-MachineReadable types
+                    "encoding": encoding_val,  # Add encoding information
                 }
             )
             matches.append(file_info_dict)
@@ -416,6 +450,7 @@ def parse_combined_file(content: str) -> list[dict]:
         original_checksum = current_match_info.get("checksum_sha256")
         original_size_bytes = current_match_info.get("size_bytes")
         original_modified = current_match_info.get("modified")
+        original_encoding = current_match_info.get("encoding")
 
         content_start_pos = match_obj.end()
 
@@ -608,6 +643,7 @@ def parse_combined_file(content: str) -> list[dict]:
                 "checksum_sha256": original_checksum,  # Will be None for non-MachineReadable
                 "size_bytes": original_size_bytes,  # Will be None for non-MachineReadable
                 "modified": original_modified,  # Pass through the original modified timestamp
+                "encoding": original_encoding,  # Pass through the original encoding information
             }
         )
         logger.debug(
@@ -623,6 +659,7 @@ def _write_extracted_files(
     force_overwrite: bool,
     timestamp_mode: str,
     ignore_checksum: bool = False,
+    respect_encoding: bool = False
 ) -> tuple[int, int, int]:
     """
     Writes the extracted file data to the destination directory.
@@ -635,6 +672,7 @@ def _write_extracted_files(
                          without prompting.
         timestamp_mode: How to handle file timestamps ('original' or 'current').
         ignore_checksum: If True, skip checksum verification for MachineReadable files.
+        respect_encoding: If True, try to use the original file encoding when writing files.
 
     Returns:
         A tuple containing (files_created_count, files_overwritten_count, files_failed_count).
@@ -651,9 +689,8 @@ def _write_extracted_files(
         file_content_to_write = file_data["content"]
         original_checksum = file_data.get("checksum_sha256")
         original_size_bytes = file_data.get("size_bytes")
-        original_modified = file_data.get(
-            "modified"
-        )  # Get original modification timestamp
+        original_modified = file_data.get("modified")  # Get original modification timestamp
+        original_encoding = file_data.get("encoding")  # Get original file encoding
 
         # Security check: ensure relative paths do not try to escape the destination directory.
         if ".." in Path(relative_path_str).parts:
@@ -686,7 +723,41 @@ def _write_extracted_files(
                     sys.exit(0)  # Graceful exit as user initiated stop before action
 
             is_overwrite = current_output_path.exists()
-            current_output_path.write_text(file_content_to_write, encoding="utf-8")
+            
+            # Determine encoding to use
+            target_encoding = "utf-8"  # Default encoding
+            encoding_msg = ""
+            
+            if respect_encoding and original_encoding:
+                # Clean up the encoding string to remove error information
+                clean_encoding = original_encoding.split(" (with conversion errors)")[0].strip()
+                
+                # Only use valid encodings supported by Python
+                try:
+                    # Test if this is a valid encoding by trying to encode a simple string
+                    "test".encode(clean_encoding)
+                    target_encoding = clean_encoding
+                    encoding_msg = f" using original encoding: {clean_encoding}"
+                except (LookupError, UnicodeError):
+                    logger.warning(
+                        f"Original encoding '{clean_encoding}' for file '{relative_path_str}' is not recognized. "
+                        f"Falling back to UTF-8."
+                    )
+            
+            # Write the file with the appropriate encoding
+            try:
+                # First try to encode the content with the target encoding
+                encoded_content = file_content_to_write.encode(target_encoding, errors="strict")
+                current_output_path.write_bytes(encoded_content)
+                logger.debug(f"Wrote file: {current_output_path}{encoding_msg}")
+            except UnicodeEncodeError:
+                # If strict encoding fails, fall back to replace mode
+                logger.warning(
+                    f"Cannot strictly encode file '{relative_path_str}' with {target_encoding}. "
+                    f"Falling back to replacement mode which may lose some characters."
+                )
+                current_output_path.write_text(file_content_to_write, encoding=target_encoding, errors="replace")
+                logger.debug(f"Wrote file (with character replacements): {current_output_path}")
 
             if is_overwrite:
                 files_overwritten_count += 1
@@ -828,6 +899,13 @@ def main():
         action="store_true",
         help="Skip checksum verification for MachineReadable files. Use this if the files were intentionally modified.",
     )
+    parser.add_argument(
+        "--respect-encoding",
+        action="store_true",
+        help="Try to use the original file encoding when writing extracted files. "
+        "If enabled and original encoding is available, files will be written using "
+        "that encoding instead of UTF-8. Falls back to UTF-8 for unsupported encodings.",
+    )
 
     args = parser.parse_args()
     _configure_logging(args.verbose)
@@ -856,6 +934,7 @@ def main():
             args.force,
             args.timestamp_mode,
             args.ignore_checksum,
+            args.respect_encoding
         )
     )
 
