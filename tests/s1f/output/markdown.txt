@@ -273,7 +273,7 @@ def divide(a, b):
 ```
 
 ## docs\README.md
-**Date Modified:** 2025-05-16 23:10:16 | **Size:** 423 Bytes | **Type:** .md | **Checksum (SHA256):** cbb00ce50cedea6ba6dd025ed154a358ea6154078e01bd5225a502fe409d3999
+**Date Modified:** 2025-05-17 00:54:06 | **Size:** 424 Bytes | **Type:** .md | **Checksum (SHA256):** b43d1e399c15a25c3cea58f44ba63eb5037c271f389b3855e5f9b3d2fabf2bef
 
 ```md
 # Test Documentation
@@ -283,6 +283,7 @@ This is a test markdown file for the makefileonefile.py test suite.
 ## Purpose
 
 To demonstrate how the script handles Markdown files with:
+
 - Lists
 - Headers
 - Code blocks
@@ -295,11 +296,12 @@ def example():
 
 ## Notes
 
-The script should correctly include this file in the combined output unless specifically excluded.
+The script should correctly include this file in the combined output unless
+specifically excluded.
 ```
 
 ## docs\unicode_sample.md
-**Date Modified:** 2025-05-16 23:15:19 | **Size:** 1.37 KB | **Type:** .md | **Checksum (SHA256):** 05844c30b9ee0fa230f2894851f4dec127ad5ef44399c1b97548ef9e020dc0bd
+**Date Modified:** 2025-05-17 00:54:06 | **Size:** 1.37 KB | **Type:** .md | **Checksum (SHA256):** 76449dbd3ee05bf1be78987a02cb5a16be0a58ce20e30d662597b5d73beab1f8
 
 ```md
 # Unicode Character Testing File
@@ -341,7 +343,90 @@ This file contains various Unicode characters to test encoding handling:
 ## Test cases with BOM and other special characters
 
 Zero-width spaces and non-breaking spaces below:
+
 - [​] (zero-width space between brackets)
 - [ ] (non-breaking space between brackets)
 - Control characters test: test
+```
+
+## f1.txt
+**Date Modified:** 2025-05-18 14:10:32 | **Size:** 5 Bytes | **Type:** .txt | **Checksum (SHA256):** c147efcfc2d7ea666a9e4f5187b115c90903f0fc896a56df9a6ef5d8f3fc9f31
+
+```txt
+file1
+```
+
+## f2.txt
+**Date Modified:** 2025-05-18 14:10:32 | **Size:** 5 Bytes | **Type:** .txt | **Checksum (SHA256):** 3377870dfeaaa7adf79a374d2702a3fdb13e5e5ea0dd8aa95a802ad39044a92f
+
+```txt
+file2
+```
+
+## f_ts1.txt
+**Date Modified:** 2025-05-18 14:10:33 | **Size:** 8 Bytes | **Type:** .txt | **Checksum (SHA256):** 492d05598d6ee523a81e4894aec36be85bc660982a0a85d4231f382e780f3def
+
+```txt
+file ts1
+```
+
+## file_extensions_test\test.json
+**Date Modified:** 2025-05-17 01:05:48 | **Size:** 123 Bytes | **Type:** .json | **Checksum (SHA256):** 909829985fd6ee550dbc6131c7af19fe07abebccb8c61ab186eda9aac7ff0ab4
+
+```json
+{
+  "name": "test",
+  "description": "A sample JSON file for testing file extension filtering",
+  "version": "1.0.0"
+} 
+```
+
+## file_extensions_test\test.log
+**Date Modified:** 2025-05-17 01:06:04 | **Size:** 257 Bytes | **Type:** .log | **Checksum (SHA256):** 3d9029003b6a73f944f332f6a8acee48588d5fefd3106cbc99e4bdcf7fced4dd
+
+```log
+2023-06-15 12:34:56 INFO This is a sample log file for testing file extension filtering exclusion
+2023-06-15 12:34:57 DEBUG Should be excluded when using --exclude-extensions .log
+2023-06-15 12:34:58 ERROR Log files are typically excluded from processing 
+```
+
+## file_extensions_test\test.md
+**Date Modified:** 2025-05-17 02:03:40 | **Size:** 176 Bytes | **Type:** .md | **Checksum (SHA256):** 7c1282cb2f0005972e9c3448466f27653d00a620c1eb146bb8cd3d2aeee1b27e
+
+```md
+# Sample Markdown File
+
+This is a sample markdown file for testing file extension filtering.
+
+## Section 1
+
+Testing, testing, 1, 2, 3...
+
+## Section 2
+
+More test content here!
+```
+
+## file_extensions_test\test.py
+**Date Modified:** 2025-05-17 01:06:09 | **Size:** 255 Bytes | **Type:** .py | **Checksum (SHA256):** c8169d3bd4b9bdb7ab345f9a848cb05d4846d9e5e4d70e1569437ee6c4d3f735
+
+```py
+#!/usr/bin/env python3
+"""
+A sample Python file for testing file extension filtering
+"""
+
+def main():
+    """Main function."""
+    print("This is a sample Python file for testing file extension filtering")
+
+if __name__ == "__main__":
+    main() 
+```
+
+## file_extensions_test\test.txt
+**Date Modified:** 2025-05-17 01:05:42 | **Size:** 65 Bytes | **Type:** .txt | **Checksum (SHA256):** 34b36a9d3028150ebae089e6cad4913022da5311571e71986dfc76cc76162804
+
+```txt
+This is a sample text file for testing file extension filtering. 
 ```

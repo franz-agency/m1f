@@ -248,7 +248,7 @@ def divide(a, b):
   }
 }
 
-======= docs\README.md | CHECKSUM_SHA256: cbb00ce50cedea6ba6dd025ed154a358ea6154078e01bd5225a502fe409d3999 ======
+======= docs\README.md | CHECKSUM_SHA256: b43d1e399c15a25c3cea58f44ba63eb5037c271f389b3855e5f9b3d2fabf2bef ======
 
 # Test Documentation
 
@@ -257,6 +257,7 @@ This is a test markdown file for the makefileonefile.py test suite.
 ## Purpose
 
 To demonstrate how the script handles Markdown files with:
+
 - Lists
 - Headers
 - Code blocks
@@ -269,9 +270,10 @@ def example():
 
 ## Notes
 
-The script should correctly include this file in the combined output unless specifically excluded.
+The script should correctly include this file in the combined output unless
+specifically excluded.
 
-======= docs\unicode_sample.md | CHECKSUM_SHA256: 05844c30b9ee0fa230f2894851f4dec127ad5ef44399c1b97548ef9e020dc0bd ======
+======= docs\unicode_sample.md | CHECKSUM_SHA256: 76449dbd3ee05bf1be78987a02cb5a16be0a58ce20e30d662597b5d73beab1f8 ======
 
 # Unicode Character Testing File
 
@@ -312,6 +314,65 @@ This file contains various Unicode characters to test encoding handling:
 ## Test cases with BOM and other special characters
 
 Zero-width spaces and non-breaking spaces below:
+
 - [​] (zero-width space between brackets)
 - [ ] (non-breaking space between brackets)
 - Control characters test: test
+
+======= f1.txt | CHECKSUM_SHA256: c147efcfc2d7ea666a9e4f5187b115c90903f0fc896a56df9a6ef5d8f3fc9f31 ======
+
+file1
+
+======= f2.txt | CHECKSUM_SHA256: 3377870dfeaaa7adf79a374d2702a3fdb13e5e5ea0dd8aa95a802ad39044a92f ======
+
+file2
+
+======= f_ts1.txt | CHECKSUM_SHA256: 492d05598d6ee523a81e4894aec36be85bc660982a0a85d4231f382e780f3def ======
+
+file ts1
+
+======= file_extensions_test\test.json | CHECKSUM_SHA256: 909829985fd6ee550dbc6131c7af19fe07abebccb8c61ab186eda9aac7ff0ab4 ======
+
+{
+  "name": "test",
+  "description": "A sample JSON file for testing file extension filtering",
+  "version": "1.0.0"
+} 
+
+======= file_extensions_test\test.log | CHECKSUM_SHA256: 3d9029003b6a73f944f332f6a8acee48588d5fefd3106cbc99e4bdcf7fced4dd ======
+
+2023-06-15 12:34:56 INFO This is a sample log file for testing file extension filtering exclusion
+2023-06-15 12:34:57 DEBUG Should be excluded when using --exclude-extensions .log
+2023-06-15 12:34:58 ERROR Log files are typically excluded from processing 
+
+======= file_extensions_test\test.md | CHECKSUM_SHA256: 7c1282cb2f0005972e9c3448466f27653d00a620c1eb146bb8cd3d2aeee1b27e ======
+
+# Sample Markdown File
+
+This is a sample markdown file for testing file extension filtering.
+
+## Section 1
+
+Testing, testing, 1, 2, 3...
+
+## Section 2
+
+More test content here!
+
+======= file_extensions_test\test.py | CHECKSUM_SHA256: c8169d3bd4b9bdb7ab345f9a848cb05d4846d9e5e4d70e1569437ee6c4d3f735 ======
+
+#!/usr/bin/env python3
+"""
+A sample Python file for testing file extension filtering
+"""
+
+def main():
+    """Main function."""
+    print("This is a sample Python file for testing file extension filtering")
+
+if __name__ == "__main__":
+    main() 
+
+======= file_extensions_test\test.txt | CHECKSUM_SHA256: 34b36a9d3028150ebae089e6cad4913022da5311571e71986dfc76cc76162804 ======
+
+This is a sample text file for testing file extension filtering. 

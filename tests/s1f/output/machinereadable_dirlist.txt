@@ -3,3 +3,4 @@ code\javascript
 code\python
 config
 docs
+file_extensions_test

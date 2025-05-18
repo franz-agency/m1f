@@ -8,3 +8,11 @@ code\python\utils.py
 config\config.json
 docs\README.md
 docs\unicode_sample.md
+f1.txt
+f2.txt
+f_ts1.txt
+file_extensions_test\test.json
+file_extensions_test\test.log
+file_extensions_test\test.md
+file_extensions_test\test.py
+file_extensions_test\test.txt

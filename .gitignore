@@ -178,6 +178,8 @@ tests/makeonefile/output/
 # Test output directories
 tests/splitfiles/extracted/
 tests/splitfiles/output/
+tests/s1f/extracted/
+tests/s1f/output/
 
 # Temporary test files
 tmp/
