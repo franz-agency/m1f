@@ -527,6 +527,12 @@ def _detect_file_encoding(file_path: Path, verbose: bool = False) -> str:
             # Special handling for common ISO encodings that are often confused
             detected = result["encoding"].lower()
 
+            # Map Hebrew encoding ISO-8859-8 to Windows-1255 for correct detection
+            if detected == "iso-8859-8":
+                if verbose:
+                    logger.debug(f"Mapping ISO-8859-8 to windows-1255 for {file_path}")
+                return "windows-1255"
+
             # Common case: ISO-8859-7 (Greek) is often confused with Latin-1 (Western European)
             if detected == "iso-8859-7" and "latin1" in file_name:
                 if verbose:
