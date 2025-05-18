@@ -1,42 +1,54 @@
 # m1f - Make One File
 
-A powerful suite of tools for working efficiently with Large Language Models (LLMs) and AI, developed by [Franz und Franz](https://franz.agency).
+A powerful suite of tools for working efficiently with Large Language Models
+(LLMs) and AI, developed by [Franz und Franz](https://franz.agency).
 
 ## What is m1f?
 
-m1f ("Make One File") and s1f ("Split One File") are specialized Python utilities designed to:
+m1f ("Make One File") and s1f ("Split One File") are specialized Python
+utilities designed to:
 
-1. **Combine multiple project files into a single reference file** - perfect for providing context to LLMs
-2. **Extract individual files from a combined file** - restore original files with their structure intact
+1. **Combine multiple project files into a single reference file** - perfect for
+   providing context to LLMs
+2. **Extract individual files from a combined file** - restore original files
+   with their structure intact
 
-These tools help solve a core challenge when working with AI assistants: **providing comprehensive context efficiently**.
+These tools help solve a core challenge when working with AI assistants:
+**providing comprehensive context efficiently**.
 
 ## Why Use m1f?
 
 ### Optimized for AI Interaction
 
-- **Better Context Management**: Provide LLMs with exactly the files they need to understand your project
-- **Token Optimization**: Include only relevant files to make the most of your context window
-- **Flexible Formatting**: Choose from multiple separator styles optimized for machine readability
+- **Better Context Management**: Provide LLMs with exactly the files they need
+  to understand your project
+- **Token Optimization**: Include only relevant files to make the most of your
+  context window
+- **Flexible Formatting**: Choose from multiple separator styles optimized for
+  machine readability
 - **Smart Filtering**: Include/exclude files by extension, path, or pattern
 - **Structure Preservation**: Maintain file relationships and metadata
-- **Versioning Support**: Generate unique filenames based on content hash for tracking changes
+- **Versioning Support**: Generate unique filenames based on content hash for
+  tracking changes
 
 ### Common Use Cases
 
 #### Documentation Compilation
+
 ```bash
 # Create a complete documentation bundle from all markdown files
 python tools/m1f.py -s ./docs -o ./doc_bundle.m1f.txt --include-extensions .md
 ```
 
 #### Code Review Preparation
+
 ```bash
 # Bundle specific components for code review
 python tools/m1f.py -i code_review_files.txt -o ./review_bundle.m1f.txt
 ```
 
 #### WordPress Development
+
 ```bash
 # Combine theme or plugin files for AI analysis
 python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
@@ -44,6 +56,7 @@ python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
 ```
 
 #### Project Knowledge Base
+
 ```bash
 # Create a searchable knowledge base from project documentation
 python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
@@ -51,6 +64,7 @@ python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
 ```
 
 #### Automated Documentation Versioning
+
 ```bash
 # Create version-controlled documentation with content hash
 python tools/m1f.py -s ./docs -o ./snapshots/docs.m1f.txt \
@@ -61,9 +75,11 @@ python tools/m1f.py -s ./docs -o ./snapshots/docs.m1f.txt \
 
 ### m1f (Make One File) - `tools/m1f.py`
 
-Combines multiple files into a single file with rich metadata and customizable formatting.
+Combines multiple files into a single file with rich metadata and customizable
+formatting.
 
 **Key Features:**
+
 - Multiple input sources (directories or file lists)
 - Smart file filtering and deduplication
 - Customizable separator styles for different use cases
@@ -73,29 +89,29 @@ Combines multiple files into a single file with rich metadata and customizable f
 
 #### Command Line Options for m1f.py
 
-| Option                   | Description                                                      |
-| ------------------------ | ---------------------------------------------------------------- |
-| `-s, --source-directory` | Path to the directory containing files to process                |
-| `-i, --input-file`       | Path to a file containing a list of files/directories to process |
-| `-o, --output-file`      | Path for the combined output file                                |
-| `-f, --force`            | Force overwrite of existing output file without prompting        |
-| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename. Useful for versioning and preventing accidental overwrite of previous output files |
+| Option                   | Description                                                                                                                                                                                                                               |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-s, --source-directory` | Path to the directory containing files to process                                                                                                                                                                                         |
+| `-i, --input-file`       | Path to a file containing a list of files/directories to process                                                                                                                                                                          |
+| `-o, --output-file`      | Path for the combined output file                                                                                                                                                                                                         |
+| `-f, --force`            | Force overwrite of existing output file without prompting                                                                                                                                                                                 |
+| `-t, --add-timestamp`    | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename. Useful for versioning and preventing accidental overwrite of previous output files                                                                                            |
 | `--filename-mtime-hash`  | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes |
-| `--include-extensions`   | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions) |
-| `--exclude-extensions`   | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types) |
-| `--exclude-paths-file`   | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly |
-| `--no-default-excludes`  | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, __pycache__ |
-| `--excludes`             | Space-separated list of paths to exclude. Case-sensitive. Can be used for both directory names (e.g., `--excludes logs temp`) and specific file paths (e.g., `--excludes config/settings.json src/tests/test_data.py`). Directory names exclude all files in those directories |
-| `--include-dot-files`    | Include files that start with a dot (e.g., .gitignore)           |
-| `--include-binary-files` | Attempt to include files with binary extensions                  |
-| `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`) |
-| `--line-ending`          | Line ending for script-generated separators (`lf` or `crlf`)     |
-| `-v, --verbose`          | Enable verbose logging                                           |
-| `--minimal-output`       | Generate only the combined output file (no auxiliary files)      |
-| `--skip-output-file`     | Execute operations but skip writing the final output file        |
-| `-q, --quiet`            | Suppress all console output                                      |
-| `--create-archive`       | Create a backup archive of all processed files                   |
-| `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                    |
+| `--include-extensions`   | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                             |
+| `--exclude-extensions`   | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                               |
+| `--exclude-paths-file`   | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                              |
+| `--no-default-excludes`  | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, **pycache**                                                                          |
+| `--excludes`             | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                     |
+| `--include-dot-files`    | Include files that start with a dot (e.g., .gitignore)                                                                                                                                                                                    |
+| `--include-binary-files` | Attempt to include files with binary extensions                                                                                                                                                                                           |
+| `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                         |
+| `--line-ending`          | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                              |
+| `-v, --verbose`          | Enable verbose logging                                                                                                                                                                                                                    |
+| `--minimal-output`       | Generate only the combined output file (no auxiliary files)                                                                                                                                                                               |
+| `--skip-output-file`     | Execute operations but skip writing the final output file                                                                                                                                                                                 |
+| `-q, --quiet`            | Suppress all console output                                                                                                                                                                                                               |
+| `--create-archive`       | Create a backup archive of all processed files                                                                                                                                                                                            |
+| `--archive-type`         | Type of archive to create (`zip` or `tar.gz`)                                                                                                                                                                                             |
 
 #### Usage Examples
 
@@ -196,6 +212,13 @@ python tools/m1f.py -s ./my_project -o ./combined.txt \
   --exclude-paths-file ./.gitignore
 ```
 
+Using gitignore-style patterns directly in the command line:
+
+```bash
+python tools/m1f.py -s ./my_project -o ./combined.txt \
+  --excludes "*.log" "build/" "!important.log"
+```
+
 Versioning with content hash based on included files:
 
 ```bash
@@ -212,9 +235,11 @@ python tools/m1f.py -s ./huge_project -o ./analysis.txt \
 
 ### s1f (Split One File) - `tools/s1f.py`
 
-Extracts individual files from a combined file, recreating the original directory structure.
+Extracts individual files from a combined file, recreating the original
+directory structure.
 
 **Key Features:**
+
 - Preserves original file paths and timestamps
 - Verifies file integrity with SHA256 checksums
 - Supports all m1f separator styles
@@ -222,14 +247,14 @@ Extracts individual files from a combined file, recreating the original director
 
 #### Command Line Options for s1f.py
 
-| Option                        | Description                                              |
-| ----------------------------- | -------------------------------------------------------- |
-| `-i, --input-file`            | Path to the combined input file                          |
-| `-d, --destination-directory` | Directory where extracted files will be saved            |
-| `-f, --force`                 | Force overwrite of existing files without prompting      |
-| `-v, --verbose`               | Enable verbose output                                    |
+| Option                        | Description                                                                                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `-i, --input-file`            | Path to the combined input file                                                                                                                  |
+| `-d, --destination-directory` | Directory where extracted files will be saved                                                                                                    |
+| `-f, --force`                 | Force overwrite of existing files without prompting                                                                                              |
+| `-v, --verbose`               | Enable verbose output                                                                                                                            |
 | `--timestamp-mode`            | How to set file timestamps (`original` or `current`). Original preserves timestamps from when files were combined, current uses the current time |
-| `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined |
+| `--ignore-checksum`           | Skip checksum verification for MachineReadable files. Useful when files were intentionally modified after being combined                         |
 
 #### Usage Examples
 
@@ -265,16 +290,17 @@ python tools/s1f.py -i ./modified_bundle.m1f.txt -d ./extracted_files \
 Estimates token usage for LLM context planning.
 
 **Key Features:**
+
 - Uses OpenAI's tiktoken library for accurate estimates
 - Supports different encoding schemes
 - Helps optimize context usage
 
 #### Command Line Options
 
-| Option                | Description                                      |
-| --------------------- | ------------------------------------------------ |
-| `file_path`           | Path to the text file to analyze                 |
-| `-e, --encoding`      | The tiktoken encoding to use (default: cl100k_base) |
+| Option           | Description                                         |
+| ---------------- | --------------------------------------------------- |
+| `file_path`      | Path to the text file to analyze                    |
+| `-e, --encoding` | The tiktoken encoding to use (default: cl100k_base) |
 
 #### Usage Example
 
@@ -290,7 +316,8 @@ python tools/token_counter.py myfile.txt -e p50k_base
 
 ### Input File Format
 
-The input file for m1f.py should be a plain text file with one file or directory path per line. Empty lines and lines starting with `#` are ignored:
+The input file for m1f.py should be a plain text file with one file or directory
+path per line. Empty lines and lines starting with `#` are ignored:
 
 ```
 # This is a comment
@@ -305,19 +332,25 @@ The input file for m1f.py should be a plain text file with one file or directory
 
 ### Path Deduplication
 
-When processing the input file, the script automatically handles path deduplication:
+When processing the input file, the script automatically handles path
+deduplication:
 
 - If a parent directory is included, all its children are excluded
 - Parent directories have priority over their subdirectories
 - This prevents duplicate content and ensures efficient processing
 
-For example, if an input file contains both `/project/src` and `/project/src/utils`, only `/project/src` will be processed, and `/project/src/utils` will be ignored because it's already covered by the parent directory.
+For example, if an input file contains both `/project/src` and
+`/project/src/utils`, only `/project/src` will be processed, and
+`/project/src/utils` will be ignored because it's already covered by the parent
+directory.
 
 ### Exclude Paths File Format
 
-When using the `--exclude-paths-file` option, the file can be in one of two formats:
+When using the `--exclude-paths-file` option, the file can be in one of two
+formats:
 
 1. **Exact Path List** - One path per line, matched exactly as written:
+
 ```
 # Exclude these exact paths
 /path/to/project/node_modules
@@ -325,7 +358,9 @@ When using the `--exclude-paths-file` option, the file can be in one of two form
 /path/to/project/logs
 ```
 
-2. **Gitignore Pattern Format** - Standard .gitignore patterns with wildcards and pattern matching:
+2. **Gitignore Pattern Format** - Standard .gitignore patterns with wildcards
+   and pattern matching:
+
 ```
 # Ignore all .log files
 *.log
@@ -341,16 +376,43 @@ node_modules/
 !important.log
 ```
 
-The system automatically detects which format is being used based on the file content or name. If the file is named `.gitignore` or contains patterns with wildcards (`*`), negation (`!`), or directory markers (`/`), it will be processed using gitignore rules.
+The system automatically detects which format is being used based on the file
+content or name. If the file is named `.gitignore` or contains patterns with
+wildcards (`*`), negation (`!`), or directory markers (`/`), it will be
+processed using gitignore rules.
+
+### Gitignore Pattern Support
+
+Both `--excludes` and `--exclude-paths-file` options support gitignore-style
+patterns:
+
+- **Wildcards**: `*.log` matches all files with .log extension
+- **Directory exclusions**: `build/` excludes the build directory and all its
+  contents
+- **Negation patterns**: `!important.log` includes a specific file even if it
+  matches another pattern
+
+Some examples of using patterns with `--excludes`:
+
+```bash
+# Exclude all log files except important.log
+python tools/m1f.py -s ./project -o ./output.txt --excludes "*.log" "!important.log"
+
+# Exclude build and dist directories plus all temporary files
+python tools/m1f.py -s ./project -o ./output.txt --excludes "build/" "dist/" "*.tmp"
+```
 
 ### Integration with AI Tools
 
 The m1f toolset works seamlessly with:
 
-- **Visual Studio Code**: Reference the generated file using `@filename` in extensions like GitHub Copilot
+- **Visual Studio Code**: Reference the generated file using `@filename` in
+  extensions like GitHub Copilot
 - **Cursor**: Use `@filename` in the chat to add context
-- **ChatGPT & Claude**: Upload the generated file to provide comprehensive context
-- **Custom AI applications**: Process the machine-readable format programmatically
+- **ChatGPT & Claude**: Upload the generated file to provide comprehensive
+  context
+- **Custom AI applications**: Process the machine-readable format
+  programmatically
 
 ## Setup
 

@@ -107,7 +107,7 @@ NOTES
   - A list of exact paths to exclude (one per line)
   - A file in gitignore format with patterns (like .gitignore)
   The system automatically detects which format is being used based on the file content or name.
-  If the file is named `.gitignore` or contains patterns with wildcards (`*`), negation (`!`), 
+  If the file is named `.gitignore` or contains patterns with wildcards (`*`), negation (`!`),
   or directory markers (`/`), it will be processed using gitignore rules.
   For exact path lists, paths are matched exactly as written, e.g.:
   ```
@@ -116,6 +116,12 @@ NOTES
   some_file.txt
   ```
   Empty lines and lines starting with '#' are ignored as comments in both formats.
+
+- Exclude Patterns Support: Both `--excludes` and `--exclude-paths-file` support gitignore-style patterns:
+  - Wildcards: `*.log` (matches all .log files)
+  - Directory exclusions: `build/` (excludes the build directory and all contents)
+  - Negation patterns: `!important.txt` (includes important.txt even if it matches another pattern)
+  - Examples from command line: `--excludes "*.log" "build/" "!important.log"`
 
 - MachineReadable Format: This format is designed for automated splitting and LLM compatibility.
   It uses unique UUID-based boundary markers with clear JSON metadata:
@@ -369,30 +375,33 @@ def _generate_filename_content_hash(files_to_process: list[tuple[Path, str]]) ->
 
     # Ensure relative_paths are strings for consistent processing
     for abs_path, rel_path_obj in files_to_process:
-        relative_paths.append(str(rel_path_obj)) # rel_path_obj could be Path or str
+        relative_paths.append(str(rel_path_obj))  # rel_path_obj could be Path or str
         try:
             mtime = os.path.getmtime(abs_path)
             timestamps.append(str(mtime))
         except OSError as e:
-            logger.warning(f"Could not get mtime for {abs_path}: {e}. Using placeholder for hash.")
+            logger.warning(
+                f"Could not get mtime for {abs_path}: {e}. Using placeholder for hash."
+            )
             # To ensure hash changes if a file's mtime becomes unreadable or file is inaccessible
             timestamps.append(f"ERROR_MTIME_{str(rel_path_obj)}")
 
-
     # Sort components for consistent hash order
     relative_paths.sort()
-    timestamps.sort() # Timestamps are now strings, some might be error placeholders
-    
+    timestamps.sort()  # Timestamps are now strings, some might be error placeholders
+
     # Construct a representative string
     hash_input_parts = []
     hash_input_parts.append(f"count:{file_count}")
     hash_input_parts.append(f"names:{','.join(relative_paths)}")
-    hash_input_parts.append(f"mtimes:{','.join(timestamps)}") # Timestamps list might be empty if all errored
-    
+    hash_input_parts.append(
+        f"mtimes:{','.join(timestamps)}"
+    )  # Timestamps list might be empty if all errored
+
     combined_info_str = ";".join(hash_input_parts)
-    
+
     hash_obj = hashlib.sha256(combined_info_str.encode("utf-8"))
-    return hash_obj.hexdigest()[:12] # Return first 12 chars of the hash
+    return hash_obj.hexdigest()[:12]  # Return first 12 chars of the hash
 
 
 def get_file_size_formatted(size_in_bytes: int) -> str:
@@ -546,8 +555,11 @@ def get_closing_separator(style: str, linesep: str) -> str | None:
 
 
 def _configure_logging_settings(
-    verbose: bool, chosen_linesep: str, output_file_path: Optional[Path] = None,
-    minimal_output: bool = False, quiet: bool = False
+    verbose: bool,
+    chosen_linesep: str,
+    output_file_path: Optional[Path] = None,
+    minimal_output: bool = False,
+    quiet: bool = False,
 ) -> None:
     """Configures logging level based on verbosity and sets up file logging.
 
@@ -564,24 +576,27 @@ def _configure_logging_settings(
         logging.getLogger().setLevel(logging.ERROR)
         # Remove any existing console handlers
         for handler in logging.getLogger().handlers[:]:
-            if isinstance(handler, logging.StreamHandler) and handler.stream in (sys.stdout, sys.stderr):
+            if isinstance(handler, logging.StreamHandler) and handler.stream in (
+                sys.stdout,
+                sys.stderr,
+            ):
                 logging.getLogger().removeHandler(handler)
         return
-    
+
     # Set the root logger level based on verbosity
     log_level = logging.DEBUG if verbose else logging.INFO
     # logging.getLogger().setLevel(log_level) # Don't set root logger level here for file logging part
 
     # Configure file logging for the specific "m1f" logger
     logger_instance = logging.getLogger("m1f")
-    logger_instance.setLevel(log_level) # Set level on our specific logger
+    logger_instance.setLevel(log_level)  # Set level on our specific logger
 
     # Remove any old instance of our specific file handler from our logger if we are reconfiguring
-    global file_handler # Ensure we are referencing the global one
+    global file_handler  # Ensure we are referencing the global one
     if file_handler in logger_instance.handlers:
         logger_instance.removeHandler(file_handler)
         file_handler.close()
-        file_handler = None # Explicitly reset before potential new assignment
+        file_handler = None  # Explicitly reset before potential new assignment
 
     # Configure file logging if an output path is provided and minimal_output is False
     # The guard "file_handler is None" is important if this function could be called multiple times
@@ -589,11 +604,17 @@ def _configure_logging_settings(
     if output_file_path and file_handler is None and not minimal_output:
         log_file_path = output_file_path.with_suffix(".log")
         try:
-            new_file_handler = logging.FileHandler(log_file_path, mode="w", encoding="utf-8")
+            new_file_handler = logging.FileHandler(
+                log_file_path, mode="w", encoding="utf-8"
+            )
             new_file_handler.setLevel(log_level)
-            new_file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)-8s: %(message)s"))
+            new_file_handler.setFormatter(
+                logging.Formatter("%(asctime)s - %(levelname)-8s: %(message)s")
+            )
             logger_instance.addHandler(new_file_handler)
-            file_handler = new_file_handler # Store the new handler globally for this module
+            file_handler = (
+                new_file_handler  # Store the new handler globally for this module
+            )
         except Exception as e:
             # Use the module-level logger to log this error, it will go to console via basicConfig.
             logger.error(f"Failed to create log file at {log_file_path}: {e}")
@@ -602,8 +623,10 @@ def _configure_logging_settings(
         logger.debug("Verbose mode enabled.")
         logger.debug(f"Using line ending: {'LF' if chosen_linesep == LF else 'CRLF'}")
         if minimal_output:
-            logger.debug("Minimal output mode enabled - no auxiliary files will be created.")
-        
+            logger.debug(
+                "Minimal output mode enabled - no auxiliary files will be created."
+            )
+
 
 def _resolve_and_validate_source_path(source_directory_str: str) -> Path:
     """Resolves and validates the source directory path."""
@@ -682,42 +705,66 @@ def _handle_output_file_overwrite_and_creation(
         sys.exit(1)
 
 
-def _build_exclusion_set(excludes: list[str], use_default_excludes: bool = True) -> tuple[set[str], set[str]]:
+def _build_exclusion_set(
+    excludes: list[str], use_default_excludes: bool = True
+) -> tuple[set[str], set[str], Optional[pathspec.PathSpec]]:
     """Builds the sets of directory names and file paths to exclude.
-    
+
     Args:
-        excludes: Additional paths to exclude (file paths and directory names)
+        excludes: Additional paths to exclude (file paths, directory names, and gitignore patterns)
         use_default_excludes: Whether to include the default excluded directory names
-        
+
     Returns:
         Tuple containing:
         - Set of directory names to exclude (lowercase for case-insensitive comparison)
         - Set of exact file paths to exclude (case-sensitive)
+        - PathSpec object for gitignore pattern matching, or None if no patterns
     """
     excluded_dir_names_lower = set()
     excluded_file_paths = set()
-    
+    gitignore_patterns = []
+
     if use_default_excludes:
         excluded_dir_names_lower = {name.lower() for name in DEFAULT_EXCLUDED_DIR_NAMES}
-    
+
     # Process each exclude entry
     for exclude in excludes:
+        # Check if it's a gitignore-style pattern
+        if "*" in exclude or "!" in exclude or exclude.endswith("/"):
+            gitignore_patterns.append(exclude)
+            logger.debug(f"Adding gitignore pattern from --excludes: {exclude}")
         # If it contains path separators, treat as a file path
-        if os.sep in exclude or "/" in exclude:
+        elif os.sep in exclude or "/" in exclude:
             # Normalize path (OS-appropriate path separators) but maintain case
             normalized_path = str(Path(exclude))
             excluded_file_paths.add(normalized_path)
         else:
             # Otherwise treat as a directory name (case-insensitive)
             excluded_dir_names_lower.add(exclude.lower())
-    
+
     logger.debug(
         f"Effective excluded directory names (case-insensitive): {sorted(list(excluded_dir_names_lower))}"
     )
     logger.debug(
         f"Effective excluded file paths (case-sensitive): {sorted(list(excluded_file_paths))}"
     )
-    return excluded_dir_names_lower, excluded_file_paths
+
+    # Create PathSpec for gitignore patterns if we have any
+    gitignore_spec = None
+    if gitignore_patterns:
+        try:
+            gitignore_spec = pathspec.PathSpec.from_lines(
+                "gitwildmatch", gitignore_patterns
+            )
+            logger.info(
+                f"Added {len(gitignore_patterns)} gitignore patterns from --excludes"
+            )
+        except Exception as e:
+            logger.error(
+                f"Error creating gitignore PathSpec from --excludes patterns: {e}"
+            )
+
+    return excluded_dir_names_lower, excluded_file_paths, gitignore_spec
 
 
 def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
@@ -804,7 +851,9 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
         return []
 
 
-def _load_exclude_paths_from_file(exclude_paths_file: str) -> Tuple[Set[str], Optional[pathspec.PathSpec]]:
+def _load_exclude_paths_from_file(
+    exclude_paths_file: str,
+) -> Tuple[Set[str], Optional[pathspec.PathSpec]]:
     """Load paths to exclude from a file.
 
     Args:
@@ -820,7 +869,7 @@ def _load_exclude_paths_from_file(exclude_paths_file: str) -> Tuple[Set[str], Op
     """
     exact_paths = set()
     patterns = []
-    
+
     if not exclude_paths_file:
         return exact_paths, None
 
@@ -831,29 +880,39 @@ def _load_exclude_paths_from_file(exclude_paths_file: str) -> Tuple[Set[str], Op
             return exact_paths, None
 
         # Check if this is a .gitignore file or contains gitignore-style patterns
-        is_gitignore_format = exclude_file_path.name == '.gitignore'
-        
+        is_gitignore_format = exclude_file_path.name == ".gitignore"
+
         with open(exclude_file_path, "r", encoding="utf-8") as f:
-            lines = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
-            
+            lines = [
+                line.strip()
+                for line in f
+                if line.strip() and not line.strip().startswith("#")
+            ]
+
             # Detect if file contains gitignore patterns (even if not named .gitignore)
             if not is_gitignore_format:
                 for line in lines:
-                    if '*' in line or '!' in line or line.endswith('/'):
+                    if "*" in line or "!" in line or line.endswith("/"):
                         is_gitignore_format = True
-                        logger.info(f"Detected gitignore-style patterns in {exclude_file_path}")
+                        logger.info(
+                            f"Detected gitignore-style patterns in {exclude_file_path}"
+                        )
                         break
-            
+
             if is_gitignore_format:
                 # Process as gitignore patterns
                 patterns = lines
-                logger.info(f"Processing {len(patterns)} patterns from {exclude_file_path} in gitignore format")
+                logger.info(
+                    f"Processing {len(patterns)} patterns from {exclude_file_path} in gitignore format"
+                )
             else:
                 # Process as exact path matches (original behavior)
                 for line in lines:
                     normalized_path = str(Path(line))
                     exact_paths.add(normalized_path)
-                logger.info(f"Loaded {len(exact_paths)} exact path matches from {exclude_file_path}")
+                logger.info(
+                    f"Loaded {len(exact_paths)} exact path matches from {exclude_file_path}"
+                )
 
     except Exception as e:
         logger.error(f"Error loading exclude paths file: {e}")
@@ -863,15 +922,19 @@ def _load_exclude_paths_from_file(exclude_paths_file: str) -> Tuple[Set[str], Op
     gitignore_spec = None
     if patterns:
         try:
-            gitignore_spec = pathspec.PathSpec.from_lines('gitwildmatch', patterns)
+            gitignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
         except Exception as e:
             logger.error(f"Error processing gitignore patterns: {e}")
-    
+
     return exact_paths, gitignore_spec
 
 
 def _is_file_excluded(
-    file_path: Path, args: argparse.Namespace, excluded_dir_names_lower: Set[str], excluded_file_paths: Set[str] = None
+    file_path: Path,
+    args: argparse.Namespace,
+    excluded_dir_names_lower: Set[str],
+    excluded_file_paths: Set[str] = None,
+    gitignore_spec: Optional[pathspec.PathSpec] = None,
 ) -> bool:
     """Checks if a file should be excluded based on various criteria."""
     # Check if the path is in the exclude paths list
@@ -879,7 +942,7 @@ def _is_file_excluded(
         if args.verbose:
             logger.debug(f"Excluding file (exact match from --excludes): {file_path}")
         return True
-        
+
     if hasattr(args, "exclude_paths") and args.exclude_paths:
         rel_path_str = str(
             file_path.relative_to(args.source_base_dir)
@@ -892,8 +955,8 @@ def _is_file_excluded(
                     f"Excluding path (exact match from exclude file): {rel_path_str}"
                 )
             return True
-    
-    # Check gitignore patterns if available
+
+    # Check gitignore patterns from --exclude-paths-file if available
     if hasattr(args, "gitignore_spec") and args.gitignore_spec:
         # Get relative path from source directory for gitignore matching
         rel_path_str = str(
@@ -905,7 +968,23 @@ def _is_file_excluded(
         if args.gitignore_spec.match_file(rel_path_str):
             if args.verbose:
                 logger.debug(
-                    f"Excluding file (matches gitignore pattern): {rel_path_str}"
+                    f"Excluding file (matches gitignore pattern from exclude-paths-file): {rel_path_str}"
+                )
+            return True
+
+    # Check gitignore patterns from --excludes if available
+    if gitignore_spec is not None:
+        # Get relative path from source directory for gitignore matching
+        rel_path_str = str(
+            file_path.relative_to(args.source_base_dir)
+            if hasattr(args, "source_base_dir")
+            else file_path.name
+        )
+        # Use pathspec to check if the file matches any gitignore pattern
+        if gitignore_spec.match_file(rel_path_str):
+            if args.verbose:
+                logger.debug(
+                    f"Excluding file (matches gitignore pattern from --excludes): {rel_path_str}"
                 )
             return True
 
@@ -923,7 +1002,7 @@ def _is_file_excluded(
                 f"Excluding binary file: {file_path} (extension: {file_path.suffix.lower()})"
             )
         return True
-    
+
     # Check if the file extension is in the exclude-extensions list
     if hasattr(args, "exclude_extensions") and args.exclude_extensions:
         if file_path.suffix.lower() in args.exclude_extensions:
@@ -932,7 +1011,7 @@ def _is_file_excluded(
                     f"Excluding file with extension filter: {file_path} (extension: {file_path.suffix.lower()})"
                 )
             return True
-    
+
     # Check if include-extensions is set and this file's extension is not in the list
     if hasattr(args, "include_extensions") and args.include_extensions:
         if file_path.suffix.lower() not in args.include_extensions:
@@ -966,6 +1045,7 @@ def _gather_files_to_process(
     input_paths: Optional[List[Path]] = None,
     ignore_symlinks: bool = True,
     excluded_file_paths: Set[str] = None,
+    gitignore_spec: Optional[pathspec.PathSpec] = None,
 ) -> List[Tuple[Path, str]]:
     """
     Gather files to process, either from a source directory or from a list of input paths.
@@ -975,6 +1055,9 @@ def _gather_files_to_process(
         args: Command line arguments
         excluded_dir_names_lower: Set of directory names to exclude (lowercase)
         input_paths: Optional list of paths from input file
+        ignore_symlinks: Whether to ignore symlinks
+        excluded_file_paths: Set of file paths to exclude
+        gitignore_spec: PathSpec object for gitignore pattern matching
 
     Returns:
         List of tuples containing (file_path, relative_path)
@@ -1003,7 +1086,13 @@ def _gather_files_to_process(
                     if args.verbose:
                         logger.debug(f"Skipping already added file: {item_path}")
                     continue
-                if not _is_file_excluded(item_path, args, excluded_dir_names_lower, excluded_file_paths):
+                if not _is_file_excluded(
+                    item_path,
+                    args,
+                    excluded_dir_names_lower,
+                    excluded_file_paths,
+                    gitignore_spec,
+                ):
                     files_to_process.append((item_path, item_path.name))
                     added_file_absolute_paths.add(abs_path_str)
                 # else: _is_file_excluded logs if verbose
@@ -1029,7 +1118,11 @@ def _gather_files_to_process(
                                 )
                             continue
                         if not _is_file_excluded(
-                            file_path_in_dir, args, excluded_dir_names_lower, excluded_file_paths
+                            file_path_in_dir,
+                            args,
+                            excluded_dir_names_lower,
+                            excluded_file_paths,
+                            gitignore_spec,
                         ):
                             relative_path = file_path_in_dir.relative_to(item_path)
                             files_to_process.append(
@@ -1061,7 +1154,13 @@ def _gather_files_to_process(
 
             for file in files:
                 file_path = root_path / file
-                if _is_file_excluded(file_path, args, excluded_dir_names_lower, excluded_file_paths):
+                if _is_file_excluded(
+                    file_path,
+                    args,
+                    excluded_dir_names_lower,
+                    excluded_file_paths,
+                    gitignore_spec,
+                ):
                     continue
 
                 # Skip symlinks if ignore_symlinks is True
@@ -1076,7 +1175,9 @@ def _gather_files_to_process(
 
 
 def _write_file_paths_list(
-    output_file_path: Path, files_to_process: list[tuple[Path, str]], minimal_output: bool = False
+    output_file_path: Path,
+    files_to_process: list[tuple[Path, str]],
+    minimal_output: bool = False,
 ):
     """
     Writes a list of file paths to a text file.
@@ -1092,7 +1193,7 @@ def _write_file_paths_list(
     if minimal_output:
         logger.debug("Skipping file paths list creation (minimal output mode)")
         return None
-        
+
     file_list_path = output_file_path.with_name(f"{output_file_path.stem}_filelist.txt")
 
     logger.info(f"Writing file paths list to {file_list_path}")
@@ -1109,7 +1210,9 @@ def _write_file_paths_list(
 
 
 def _write_directory_paths_list(
-    output_file_path: Path, files_to_process: list[tuple[Path, str]], minimal_output: bool = False
+    output_file_path: Path,
+    files_to_process: list[tuple[Path, str]],
+    minimal_output: bool = False,
 ):
     """
     Writes a list of unique directory paths to a text file.
@@ -1133,7 +1236,7 @@ def _write_directory_paths_list(
     if minimal_output:
         logger.debug("Skipping directory paths list creation (minimal output mode)")
         return None
-        
+
     dir_list_path = output_file_path.with_name(f"{output_file_path.stem}_dirlist.txt")
 
     logger.info(f"Writing directory paths list to {dir_list_path}")
@@ -1385,7 +1488,7 @@ def main():
         "--filename-mtime-hash",
         action="store_true",
         help="Append a hash of all included file modification timestamps to the output filename. "
-             "This helps version the output based on source file mtime changes.",
+        "This helps version the output based on source file mtime changes.",
     )
 
     parser.add_argument(
@@ -1394,7 +1497,7 @@ def main():
         nargs="*",
         default=[],
         metavar="PATH",
-        help="Space-separated list of additional file or directory paths to exclude. Case-sensitive. Can be used for both directory names (e.g., 'logs') and specific file paths (e.g., 'config/settings.json').",
+        help="Space-separated list of file paths, directory names, or gitignore-style patterns to exclude. Case-sensitive. Can include exact paths (e.g., 'config/settings.json'), directory names (e.g., 'logs'), and patterns with wildcards (e.g., '*.log', 'build/', '!important.txt').",
     )
     parser.add_argument(
         "--no-default-excludes",
@@ -1501,22 +1604,24 @@ def main():
     if hasattr(args, "include_extensions") and args.include_extensions:
         # Normalize extensions to lowercase and ensure they start with a dot
         args.include_extensions = {
-            ext.lower() if ext.startswith(".") else f".{ext.lower()}" 
+            ext.lower() if ext.startswith(".") else f".{ext.lower()}"
             for ext in args.include_extensions
         }
         logger.debug(f"Including only files with extensions: {args.include_extensions}")
-    
+
     if hasattr(args, "exclude_extensions") and args.exclude_extensions:
         # Normalize extensions to lowercase and ensure they start with a dot
         args.exclude_extensions = {
-            ext.lower() if ext.startswith(".") else f".{ext.lower()}" 
+            ext.lower() if ext.startswith(".") else f".{ext.lower()}"
             for ext in args.exclude_extensions
         }
         logger.debug(f"Excluding files with extensions: {args.exclude_extensions}")
 
     # Load exclude paths from file if specified
     if hasattr(args, "exclude_paths_file") and args.exclude_paths_file:
-        args.exclude_paths, args.gitignore_spec = _load_exclude_paths_from_file(args.exclude_paths_file)
+        args.exclude_paths, args.gitignore_spec = _load_exclude_paths_from_file(
+            args.exclude_paths_file
+        )
     else:
         args.exclude_paths = set()
         args.gitignore_spec = None
@@ -1560,14 +1665,16 @@ def main():
             output_file_path, args.force, chosen_linesep
         )
 
-    excluded_dir_names_lower, excluded_file_paths = _build_exclusion_set(
-        args.excludes, 
-        not args.no_default_excludes  # If --no-default-excludes is set, pass False here
+    excluded_dir_names_lower, excluded_file_paths, gitignore_spec = (
+        _build_exclusion_set(
+            args.excludes,
+            not args.no_default_excludes,  # If --no-default-excludes is set, pass False here
+        )
     )
-    
+
     if args.no_default_excludes:
         logger.info("Default directory exclusions are disabled.")
-    
+
     files_to_process = _gather_files_to_process(
         source_dir,
         args,
@@ -1575,29 +1682,40 @@ def main():
         input_paths,
         ignore_symlinks=True,
         excluded_file_paths=excluded_file_paths,
+        gitignore_spec=gitignore_spec,
     )
 
     # ---- START: Modification for filename-mtime-hash ----
     if args.filename_mtime_hash and files_to_process:
-        logger.debug("Generating content hash for included files (count, names, mtimes)...")
+        logger.debug(
+            "Generating content hash for included files (count, names, mtimes)..."
+        )
         content_hash = _generate_filename_content_hash(files_to_process)
         if content_hash:
-            output_file_path_obj = Path(args.output_file) # Original output file arg
+            output_file_path_obj = Path(args.output_file)  # Original output file arg
             new_stem = f"{output_file_path_obj.stem}_{content_hash}"
-            
+
             # Update args.output_file so that _prepare_output_file_path and logging use the hashed name
-            args.output_file = str(output_file_path_obj.with_name(f"{new_stem}{output_file_path_obj.suffix}"))
-            logger.info(f"Output filename will include content hash: {Path(args.output_file).name}")
+            args.output_file = str(
+                output_file_path_obj.with_name(
+                    f"{new_stem}{output_file_path_obj.suffix}"
+                )
+            )
+            logger.info(
+                f"Output filename will include content hash: {Path(args.output_file).name}"
+            )
         else:
             # This case should ideally not be reached if files_to_process is not empty,
             # as _generate_filename_content_hash is designed to return a hash even if mtimes fail.
             # It would only return empty if files_to_process was empty, but that's checked before.
-            logger.warning("Could not generate content hash. Filename will not be modified by hash.")
-    
+            logger.warning(
+                "Could not generate content hash. Filename will not be modified by hash."
+            )
+
     # Re-prepare output file path if it was modified by mtime hash, and apply execution timestamp if requested.
     # This ensures logging and overwrite checks use the potentially fully modified name.
     output_file_path = _prepare_output_file_path(args.output_file, args.add_timestamp)
-    
+
     # Re-configure logging if the output_file_path has changed due to mtime_hash
     # This is crucial if the initial _configure_logging_settings was called with a non-hashed name.
     # We need to remove the old file handler if it exists and was based on a different name.
@@ -1605,17 +1723,16 @@ def main():
     if file_handler:
         logging.getLogger().removeHandler(file_handler)
         file_handler.close()
-        file_handler = None # Reset to allow reinitialization
-    
+        file_handler = None  # Reset to allow reinitialization
+
     _configure_logging_settings(
         args.verbose, chosen_linesep, output_file_path, args.minimal_output, args.quiet
     )
     # ---- END: Modification for filename-mtime-hash ----
-    
 
     if not files_to_process:
         logger.warning(f"No files found matching the criteria in '{source_dir}'.")
-        
+
         # Only create the empty output file if we're not skipping output
         if not args.skip_output_file:
             try:
@@ -1631,7 +1748,7 @@ def main():
                 sys.exit(1)
         else:
             logger.info("Skipping output file creation as requested.")
-            
+
         sys.exit(0)
 
     # Only create the output file if not skipping
@@ -1658,7 +1775,9 @@ def main():
         dir_list_path = _write_directory_paths_list(output_file_path, files_to_process)
 
     # --- Token Counting for Output File ---
-    if not args.skip_output_file and processed_count > 0 and not args.minimal_output:  # Only count tokens if files were processed, output wasn't skipped, and not in minimal output mode
+    if (
+        not args.skip_output_file and processed_count > 0 and not args.minimal_output
+    ):  # Only count tokens if files were processed, output wasn't skipped, and not in minimal output mode
         try:
             logger.info(f"Attempting to count tokens in '{output_file_path.name}'...")
             # Defaulting to "cl100k_base" as it's common for GPT models
@@ -1676,7 +1795,11 @@ def main():
             logger.warning(
                 "  To enable token counting, please ensure 'tiktoken' library is installed (e.g., 'pip install tiktoken')."
             )
-    elif output_file_path.exists() and not args.skip_output_file and not args.minimal_output:  # An empty note file might have been created
+    elif (
+        output_file_path.exists()
+        and not args.skip_output_file
+        and not args.minimal_output
+    ):  # An empty note file might have been created
         logger.info(
             f"Output file '{output_file_path.name}' was created but is empty or contains no processed files; skipping token count."
         )
