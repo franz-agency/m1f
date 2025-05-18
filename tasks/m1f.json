@@ -189,6 +189,43 @@
                 "clear": true
             },
             "detail": "Creates a combined AI context file containing both theme and plugin files for a complete WordPress project."
+        },
+        {
+            "label": "Project Review: Generate Lists",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/tools/m1f.py",
+                "--source-directory",
+                "${workspaceFolder}",
+                "--output-file",
+                "${workspaceFolder}/.m1f/project_review.m1f.txt",
+                "--skip-output-file",
+                "--verbose"
+            ],
+            "problemMatcher": [],
+            "group": "build",
+            "detail": "Generates full project file and directory listings in the .m1f directory."
+        },
+        {
+            "label": "Project Review: Watch for Changes",
+            "type": "shell",
+            "command": "watchmedo",
+            "args": [
+                "shell-command",
+                "--patterns=*.py;*.md;*",
+                "--recursive",
+                "--command",
+                "python ${workspaceFolder}/tools/m1f.py --source-directory ${workspaceFolder} --output-file ${workspaceFolder}/.m1f/project_review.m1f.txt --skip-output-file --quiet"
+            ],
+            "problemMatcher": [],
+            "isBackground": true,
+            "group": "build",
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            },
+            "detail": "Watches for file changes and regenerates the project review lists."
         }
     ]
-} 
+}

@@ -641,6 +641,12 @@ When `--create-archive` is used, the archive will contain all files selected for
 
 For extremely large directories with tens of thousands of files or very large individual files, the script might take some time to process.
 
+### Large Project Workflow Example
+
+When a project has many files, start by creating an inventory using `tools/m1f.py` with `--skip-output-file`. This generates file and directory lists without producing the combined file. Review these lists to decide which parts of the project you want to include in your AI context.
+
+Save selected bundles into a `.m1f` directory at the project root with numbered names such as `1_doc.txt`, `2_template.txt`, or `3_plugin.txt`. Example tasks for automating this process live in `tasks/m1f.json` and are documented in `tasks/README.md`.
+
 ### Project Website
 
 For more information and updates, visit the official project website: [https://m1f.dev](https://m1f.dev)
