@@ -194,3 +194,9 @@ tmp/
 # Exclude local Cloudflare Workers development files
 workers-site/
 .mf/
+
+# Exotic encodings test files
+tests/m1f/extracted/exotic_encodings*/
+tests/m1f/source/exotic_encodings/convert_encodings.py
+tests/m1f/source/exotic_encodings/check_encodings*.py
+tests/m1f/source/exotic_encodings/test_*.py
