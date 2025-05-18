@@ -197,6 +197,7 @@ import hashlib
 import json
 import logging
 import os
+import glob
 import sys
 import time  # Added for time measurement
 import uuid  # Added for UUID generation
@@ -1183,6 +1184,8 @@ def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
 def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
     """
     Process a file containing paths (one per line) and return a list of Path objects.
+    Supports glob patterns such as ``src/**/*.py`` which are expanded relative
+    to the directory of the list file.
 
     Args:
         input_file_path: Path to the input file containing paths to process
@@ -1191,6 +1194,7 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
         List of deduplicated paths with proper parent-child handling
     """
     paths = []
+    wildcard_chars = ["*", "?", "["]
     input_file_dir = input_file_path.parent
 
     try:
@@ -1201,8 +1205,22 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
                     continue  # Skip empty lines and comments
 
                 logger.info(f"Processing path from input file: {line}")
+
+                if any(ch in line for ch in wildcard_chars):
+                    pattern_path = Path(line)
+                    if not pattern_path.is_absolute():
+                        pattern_path = input_file_dir / pattern_path
+                    pattern_path = pattern_path.expanduser()
+                    matches = glob.glob(str(pattern_path), recursive=True)
+                    if not matches:
+                        logger.warning(f"Glob pattern '{line}' did not match any files")
+                    for match in matches:
+                        matched_path = Path(match).resolve()
+                        paths.append(matched_path)
+                        logger.info(f"Expanded '{line}' -> '{matched_path}'")
+                    continue
+
                 path_obj = Path(line)
-                # If the path is relative (doesn't have a root), make it relative to the input file's directory
                 if not path_obj.is_absolute():
                     path_obj = (input_file_dir / path_obj).resolve()
                 else:
