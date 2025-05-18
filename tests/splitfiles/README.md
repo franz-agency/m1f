@@ -19,10 +19,10 @@ the following commands from the project root to create the necessary test files:
 
 ```bash
 # Create combined files with different separator styles
-python tools/m1f.py --source-directory tests/makeonefile/source --output-file tests/splitfiles/output/standard.txt --separator-style Standard --force
-python tools/m1f.py --source-directory tests/makeonefile/source --output-file tests/splitfiles/output/detailed.txt --separator-style Detailed --force
-python tools/m1f.py --source-directory tests/makeonefile/source --output-file tests/splitfiles/output/markdown.txt --separator-style Markdown --force
-python tools/m1f.py --source-directory tests/makeonefile/source --output-file tests/splitfiles/output/machinereadable.txt --separator-style MachineReadable --force
+python tools/m1f.py --source-directory tests/m1f/source --output-file tests/splitfiles/output/standard.txt --separator-style Standard --force
+python tools/m1f.py --source-directory tests/m1f/source --output-file tests/splitfiles/output/detailed.txt --separator-style Detailed --force
+python tools/m1f.py --source-directory tests/m1f/source --output-file tests/splitfiles/output/markdown.txt --separator-style Markdown --force
+python tools/m1f.py --source-directory tests/m1f/source --output-file tests/splitfiles/output/machinereadable.txt --separator-style MachineReadable --force
 ```
 
 ## Running Tests
@@ -108,4 +108,4 @@ The tests verify that:
 
 - Python 3.7+
 - pytest
-- Access to the original source files in `tests/makeonefile/source/`
+- Access to the original source files in `tests/m1f/source/`

@@ -176,8 +176,8 @@ class TestSplitFiles:
         with open(OUTPUT_DIR / "standard_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
         
-        # Get the source directory from the makeonefile test folder
-        source_dir = Path(__file__).parent.parent / "makeonefile" / "source"
+        # Get the source directory from the m1f test folder
+        source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
         
         # Verify extracted files match original files
@@ -214,8 +214,8 @@ class TestSplitFiles:
         with open(OUTPUT_DIR / "detailed_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
         
-        # Get the source directory from the makeonefile test folder
-        source_dir = Path(__file__).parent.parent / "makeonefile" / "source"
+        # Get the source directory from the m1f test folder
+        source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
         
         # Verify extracted files match original files
@@ -252,8 +252,8 @@ class TestSplitFiles:
         with open(OUTPUT_DIR / "markdown_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
         
-        # Get the source directory from the makeonefile test folder
-        source_dir = Path(__file__).parent.parent / "makeonefile" / "source"
+        # Get the source directory from the m1f test folder
+        source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
         
         # Verify extracted files match original files
@@ -290,8 +290,8 @@ class TestSplitFiles:
         with open(OUTPUT_DIR / "machinereadable_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
         
-        # Get the source directory from the makeonefile test folder
-        source_dir = Path(__file__).parent.parent / "makeonefile" / "source"
+        # Get the source directory from the m1f test folder
+        source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
         
         # Verify extracted files match original files

@@ -169,7 +169,10 @@ node_modules/
 .idea
 .cursor
 
-# Output directory for makeonefile tests
+# Output directory for m1f tests
+tests/m1f/output/
+
+# Legacy output directory for makeonefile tests (keep until removed)
 tests/makeonefile/output/
 
 # Test output directories

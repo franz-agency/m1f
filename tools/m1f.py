@@ -175,7 +175,7 @@ import zipfile  # Added for archive creation
 import tarfile  # Added for archive creation
 
 # --- Logger Setup ---
-logger = logging.getLogger("makeonefile")
+logger = logging.getLogger("m1f")
 file_handler = None  # Will be set in configure_logging_settings
 
 # --- Global Definitions ---
@@ -562,8 +562,8 @@ def _configure_logging_settings(
     log_level = logging.DEBUG if verbose else logging.INFO
     # logging.getLogger().setLevel(log_level) # Don't set root logger level here for file logging part
 
-    # Configure file logging for the specific "makeonefile" logger
-    logger_instance = logging.getLogger("makeonefile")
+    # Configure file logging for the specific "m1f" logger
+    logger_instance = logging.getLogger("m1f")
     logger_instance.setLevel(log_level) # Set level on our specific logger
 
     # Remove any old instance of our specific file handler from our logger if we are reconfiguring

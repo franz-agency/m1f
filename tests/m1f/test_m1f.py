@@ -76,7 +76,7 @@ def run_m1f(arg_list):
         m1f.main()
     finally:
         # Aggressively find, close, and remove file handlers associated with the m1f logger
-        logger_instance = logging.getLogger("makeonefile")
+        logger_instance = logging.getLogger("m1f")
         for handler in logger_instance.handlers[:]:  # Iterate over a copy
             # isinstance check ensures we only try to close FileHandlers or subclasses
             if isinstance(handler, logging.FileHandler):
@@ -115,7 +115,7 @@ class TestMakeOneFile:
     def setup_method(self):
         """Setup test environment before each test."""
         # Close any open logging handlers that might keep files locked
-        logger = logging.getLogger("makeonefile")  # Note: Keep the logger name as "makeonefile" for compatibility
+        logger = logging.getLogger("m1f")  # Note: Keep the logger name as "m1f" for compatibility
         if logger.handlers:
             for handler in logger.handlers:
                 handler.close()
@@ -155,7 +155,7 @@ class TestMakeOneFile:
         """Clean up after each test."""
         # Close any open logging handlers that might keep files locked
         # This is necessary because the m1f script sets up file handlers for logging
-        logger = logging.getLogger("makeonefile")  # Note: Keep the logger name as "makeonefile" for compatibility
+        logger = logging.getLogger("m1f")  # Note: Keep the logger name as "m1f" for compatibility
         if logger.handlers:
             for handler in logger.handlers:
                 handler.close()
@@ -331,7 +331,7 @@ class TestMakeOneFile:
                 str(SOURCE_DIR),
                 "--output-file",
                 str(output_file),
-                "--additional-excludes",
+                "--excludes",
                 "docs",
                 "images",
                 "--force",
@@ -770,9 +770,9 @@ class TestMakeOneFile:
             assert "test.json" in content, ".json files should be included when specified without dot"
             assert "test.md" not in content, ".md files should not be included"
 
-    def test_no_default_excludes_with_additional_excludes(self):
-        """Test combining --no-default-excludes with --additional-excludes."""
-        output_file = OUTPUT_DIR / "no_default_with_additional.txt"
+    def test_no_default_excludes_with_excludes(self):
+        """Test combining --no-default-excludes with --excludes."""
+        output_file = OUTPUT_DIR / "no_default_with_excludes.txt"
 
         # Run with --no-default-excludes but add some specific excludes
         run_m1f(
@@ -782,7 +782,7 @@ class TestMakeOneFile:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
-                "--additional-excludes",
+                "--excludes",
                 "node_modules",
                 "--force",
             ]
@@ -791,7 +791,7 @@ class TestMakeOneFile:
         # Verify default excluded directories are included except those specified
         with open(output_file, "r", encoding="utf-8") as f:
             content = f.read()
-            assert "node_modules" not in content, "node_modules should be excluded by --additional-excludes"
+            assert "node_modules" not in content, "node_modules should be excluded by --excludes"
             assert ".git" in content, "Git directory should be included (no default excludes)"
             
             # Verify the dirlist and filelist don't contain node_modules

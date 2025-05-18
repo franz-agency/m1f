@@ -25,16 +25,16 @@ def main():
         print("Error: Test files are missing from the output directory.")
         print("Please run the following commands to generate test files:")
         print(
-            "python tools/makeonefile.py --source-directory tests/makeonefile/source --output-file tests/splitfiles/output/standard.txt --separator-style Standard --force"
+            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/splitfiles/output/standard.txt --separator-style Standard --force"
         )
         print(
-            "python tools/makeonefile.py --source-directory tests/makeonefile/source --output-file tests/splitfiles/output/detailed.txt --separator-style Detailed --force"
+            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/splitfiles/output/detailed.txt --separator-style Detailed --force"
         )
         print(
-            "python tools/makeonefile.py --source-directory tests/makeonefile/source --output-file tests/splitfiles/output/markdown.txt --separator-style Markdown --force"
+            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/splitfiles/output/markdown.txt --separator-style Markdown --force"
         )
         print(
-            "python tools/makeonefile.py --source-directory tests/makeonefile/source --output-file tests/splitfiles/output/machinereadable.txt --separator-style MachineReadable --force"
+            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/splitfiles/output/machinereadable.txt --separator-style MachineReadable --force"
         )
         return 1
 

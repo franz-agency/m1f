@@ -115,16 +115,16 @@ PYMK1F_END_MARKER_PATTERN = r"--- PYMK1F_END_FILE_CONTENT_BLOCK_([a-f0-9-]+) ---
 
 # Legacy format patterns (keeping for backward compatibility)
 RE_MACHINE_SEP = re.compile(
-    r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"  # Start marker line
+    r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"  # Start marker line
     r"# FILE: (.*?)\r?\n"  # File path line (Group 1: file path)
-    r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"  # Second boundary line
+    r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"  # Second boundary line
     r"# METADATA: (\{.*?\})\r?\n"  # JSON metadata line (Group 2: JSON string)
-    r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n",  # Bottom separator line
+    r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n",  # Bottom separator line
     re.MULTILINE,
 )
 # Legacy format end marker patterns
-MACHINE_END_MARKER_PATTERN = r"# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n# END FILE\r?\n# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E"
-MACHINE_END_MARKER = "# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\n# END FILE\n# PYMAKEONEFILE-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E"
+MACHINE_END_MARKER_PATTERN = r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n# END FILE\r?\n# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E"
+MACHINE_END_MARKER = "# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\n# END FILE\n# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E"
 
 RE_DETAILED_SEP = re.compile(
     r"^(========================================================================================$\r?\n"
@@ -475,7 +475,7 @@ def parse_combined_file(content: str) -> list[dict]:
                 else:
                     # No expected newline (LF or CRLF) found before the end marker.
                     # This implies the content runs flush to the marker, or the file is structured unexpectedly.
-                    # makeonefile.py is expected to always add a newline (os.linesep).
+                    # m1f.py is expected to always add a newline (os.linesep).
                     logger.warning(
                         f"MachineReadable file '{relative_path}' did not have an expected newline (LF or CRLF) "
                         f"before its end marker at offset {end_marker_pos}. "
@@ -550,7 +550,7 @@ def parse_combined_file(content: str) -> list[dict]:
                     )
             # ---- END PRAGMATIC FIX ----
         elif sep_id == "Markdown":
-            # makeonefile.py writes:
+            # m1f.py writes:
             #   NormalizedFileContent
             #   "```" (from get_closing_separator)
             #   chosen_linesep (after closing separator)
@@ -578,7 +578,7 @@ def parse_combined_file(content: str) -> list[dict]:
                 file_content = file_content_raw  # Fallback
 
         else:  # Standard or Detailed
-            # makeonefile.py writes:
+            # m1f.py writes:
             #   chosen_linesep (blank line after header)
             #   NormalizedFileContent
             #   chosen_linesep (inter-file, if applicable)
@@ -586,7 +586,7 @@ def parse_combined_file(content: str) -> list[dict]:
 
             _processed_content = file_content_raw
 
-            # Strip the leading blank line (the first linesep written by makeonefile after the header for these styles).
+            # Strip the leading blank line (the first linesep written by m1f after the header for these styles).
             if _processed_content.startswith(CRLF):
                 _processed_content = _processed_content[len(CRLF) :]
             elif _processed_content.startswith(LF):
@@ -707,7 +707,7 @@ def _write_extracted_files(
                     else:
                         # If no 'Z' and no explicit offset, it might be naive or already have an offset.
                         # We'll try parsing directly. If it's naive, timestamp() might use local timezone.
-                        # For pymakeonefile, 'Z' (UTC) is standard for MachineReadable.
+                        # For m1f, 'Z' (UTC) is standard for MachineReadable.
                         dt_obj = datetime.fromisoformat(original_modified)
 
                     # Convert to POSIX timestamp (seconds since epoch, UTC)
