@@ -1,4 +1,0 @@
-Hello world.
-This is a test file.
-It contains multiple lines and some punctuation!
-Let's see how many tokens it has. 
