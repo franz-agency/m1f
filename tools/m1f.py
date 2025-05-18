@@ -1234,9 +1234,11 @@ def _build_exclusion_set(
             # Normalize path (OS-appropriate path separators) but maintain case
             normalized_path = str(Path(exclude))
             excluded_file_paths.add(normalized_path)
+            logger.debug(f"Adding exact file path from --excludes: {normalized_path}")
         else:
-            # Otherwise treat as a directory name (case-insensitive)
-            excluded_dir_names_lower.add(exclude.lower())
+            # Treat as a gitignore pattern (matches file or directory with this name)
+            gitignore_patterns.append(exclude)
+            logger.debug(f"Treating simple name '{exclude}' as gitignore pattern from --excludes.")
 
     logger.debug(
         f"Effective excluded directory names (case-insensitive): {sorted(list(excluded_dir_names_lower))}"
