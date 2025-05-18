@@ -671,6 +671,27 @@ class TestM1F:
             assert "README.md" in content, "README.md should be included"
             assert "index.php" not in content, "index.php should not be included"
 
+    def test_input_paths_with_glob(self):
+        """Glob patterns in the input file should expand to matching files."""
+        output_file = OUTPUT_DIR / "input_glob.txt"
+        temp_input_file = OUTPUT_DIR / "temp_glob_input.txt"
+        with open(temp_input_file, "w", encoding="utf-8") as f:
+            f.write("../source/code/python/*.py\n")
+
+        run_m1f([
+            "--input-file",
+            str(temp_input_file),
+            "--output-file",
+            str(output_file),
+            "--force",
+        ])
+
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "hello.py" in content
+            assert "utils.py" in content
+            assert "index.php" not in content
+
     def test_unicode_handling(self):
         """Test handling of Unicode characters in files."""
         output_file = OUTPUT_DIR / "unicode_test.txt"

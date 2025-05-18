@@ -401,6 +401,10 @@ path per line. Empty lines and lines starting with `#` are ignored:
 /home/user/project/requirements.txt
 ```
 
+Lines can also contain glob patterns such as `src/**/*.py`. These patterns are
+expanded relative to the directory of the list file, allowing you to include
+sets of files without listing each one individually.
+
 ### Path Deduplication
 
 When processing the input file, the script automatically handles path

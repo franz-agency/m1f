@@ -1,0 +1,80 @@
+# WordPress Theme Files to Include
+
+# Core theme files
+wp-content/themes/mytheme/style.css
+wp-content/themes/mytheme/functions.php
+wp-content/themes/mytheme/index.php
+wp-content/themes/mytheme/header.php
+wp-content/themes/mytheme/footer.php
+wp-content/themes/mytheme/sidebar.php
+wp-content/themes/mytheme/page.php
+wp-content/themes/mytheme/single.php
+wp-content/themes/mytheme/archive.php
+wp-content/themes/mytheme/search.php
+wp-content/themes/mytheme/404.php
+wp-content/themes/mytheme/comments.php
+
+# Template parts
+wp-content/themes/mytheme/template-parts/*.php
+
+# Theme includes and functionality
+wp-content/themes/mytheme/inc/*.php
+wp-content/themes/mytheme/includes/*.php
+
+# Theme assets
+wp-content/themes/mytheme/assets/js/*.js
+wp-content/themes/mytheme/assets/css/*.css
+wp-content/themes/mytheme/assets/scss/*.scss
+
+# WooCommerce templates (if used)
+wp-content/themes/mytheme/woocommerce/*.php
+
+# Block patterns and templates
+wp-content/themes/mytheme/patterns/*.php
+wp-content/themes/mytheme/block-templates/*.html
+wp-content/themes/mytheme/block-template-parts/*.html
+
+# Configuration files
+wp-content/themes/mytheme/theme.json 
+# WordPress Plugin Files to Include
+
+# Main plugin file
+wp-content/plugins/myplugin/myplugin.php
+
+# Plugin structure
+wp-content/plugins/myplugin/includes/*.php
+wp-content/plugins/myplugin/admin/*.php
+wp-content/plugins/myplugin/public/*.php
+wp-content/plugins/myplugin/includes/class-*.php
+wp-content/plugins/myplugin/admin/class-*.php
+wp-content/plugins/myplugin/public/class-*.php
+
+# API and REST endpoints
+wp-content/plugins/myplugin/includes/api/*.php
+wp-content/plugins/myplugin/includes/rest-api/*.php
+
+# Templates and partials
+wp-content/plugins/myplugin/templates/*.php
+wp-content/plugins/myplugin/partials/*.php
+
+# Assets
+wp-content/plugins/myplugin/assets/js/*.js
+wp-content/plugins/myplugin/assets/css/*.css
+wp-content/plugins/myplugin/admin/js/*.js
+wp-content/plugins/myplugin/admin/css/*.css
+wp-content/plugins/myplugin/public/js/*.js
+wp-content/plugins/myplugin/public/css/*.css
+
+# Blocks (if using Gutenberg blocks)
+wp-content/plugins/myplugin/blocks/*.php
+wp-content/plugins/myplugin/blocks/*.js
+wp-content/plugins/myplugin/blocks/*.json
+
+# Languages and internationalization
+wp-content/plugins/myplugin/languages/*.pot
+wp-content/plugins/myplugin/languages/*.po
+wp-content/plugins/myplugin/languages/*.mo
+
+# Configuration
+wp-content/plugins/myplugin/config/*.php
+wp-content/plugins/myplugin/uninstall.php 

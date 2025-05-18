@@ -168,8 +168,7 @@
             "args": [
                 "${workspaceFolder}/tools/m1f.py",
                 "--input-file",
-                "${workspaceFolder}/tasks/wp_theme_includes.txt",
-                "${workspaceFolder}/tasks/wp_plugin_includes.txt",
+                "${workspaceFolder}/tasks/wp_theme_plugin_includes.txt",
                 "--exclude-paths-file",
                 "${workspaceFolder}/tasks/wp_excludes.txt",
                 "--output-file",
