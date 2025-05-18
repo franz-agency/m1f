@@ -56,10 +56,10 @@ KEY FEATURES
 - Creates a log file with the same name as the output file but with a `.log` extension, capturing all processing information.
 - Generates two additional output files: one with all included file paths (_filelist.txt) and another with all unique directories (_dirlist.txt).
 - Measures and reports the total execution time for performance monitoring.
-
+-
 REQUIREMENTS
 ============
-- Python 3.7+ (due to `pathlib` usage, f-strings, and json module usage)
+- Python 3.9+ (due to `pathlib` usage, f-strings, and json module usage)
 - Standard Python libraries only (argparse, datetime, json, logging, os, pathlib, shutil, sys, zipfile, tarfile).
 - tiktoken (for token counting of the output file)
 - chardet (optional, for character encoding detection)
@@ -1015,7 +1015,7 @@ def get_file_separator(
         return f"--- {relative_path} ---"
 
 
-def get_closing_separator(style: str, linesep: str) -> str | None:
+def get_closing_separator(style: str, linesep: str) -> Optional[str]:
     """
     Generates the closing separator string, if any.
 
@@ -1286,17 +1286,8 @@ def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
         for other_path in path_objects[i + 1 :]:
             # If this path is a parent of another path, exclude the child
             try:
-                # Use str path comparison for Python 3.7+ compatibility (instead of is_relative_to from 3.9+)
-                other_path_str = str(other_path.absolute())
-                path_str = str(path.absolute())
-
-                # Check if other_path is a subpath of path (e.g., path="/a/b", other_path="/a/b/c")
-                # Ensure it's not just a common prefix (e.g., path="/a/b", other_path="/a/b_ext")
-                if (
-                    len(other_path_str) > len(path_str)
-                    and other_path_str.startswith(path_str)
-                    and other_path_str[len(path_str)] == os.sep
-                ):
+                # Path.is_relative_to is available on Python 3.9+
+                if other_path.resolve().is_relative_to(path.resolve()):
                     include_paths.discard(other_path)
             except (ValueError, RuntimeError):
                 # Handle potential path resolution issues

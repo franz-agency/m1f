@@ -110,6 +110,6 @@ The tests verify that:
 
 ## Dependencies
 
-- Python 3.7+
+- Python 3.9+
 - pytest
 - Access to the original source files in `tests/m1f/source/`
