@@ -31,23 +31,59 @@ These tools help solve a core challenge when working with AI assistants:
 - **Versioning Support**: Generate unique filenames based on content hash for
   tracking changes
 
-### Common Use Cases
+## Setup
 
-#### Documentation Compilation
+1. **Create and activate a virtual environment:**
+
+   ```bash
+   python -m venv .venv
+   # On Windows
+   .venv\Scripts\activate
+   # On macOS/Linux
+   source .venv/bin/activate
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+````
+
+## Requirements
+
+- Python 3.9+
+- Standard Python libraries (includes `argparse`, `datetime`, `hashlib`, `json`,
+  `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
+- `tiktoken`: For the `tools/token_counter.py` script.
+- `black`: For code formatting.
+- `pymarkdownlint`: For linting Markdown files.
+- `chardet`: Optional, for character encoding detection.
+
+You can install all Python dependencies using:
+
+```bash
+pip install -r requirements.txt
+````
+
+## Common Use Cases
+
+### Documentation Compilation
 
 ```bash
 # Create a complete documentation bundle from all markdown files
 python tools/m1f.py -s ./docs -o ./doc_bundle.m1f.txt --include-extensions .md
 ```
 
-#### Code Review Preparation
+### Code Review Preparation
 
 ```bash
 # Bundle specific components for code review
 python tools/m1f.py -i code_review_files.txt -o ./review_bundle.m1f.txt
 ```
 
-#### WordPress Development
+### WordPress Development
 
 ```bash
 # Combine theme or plugin files for AI analysis
@@ -55,7 +91,7 @@ python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
   --include-extensions .php .js .css --exclude-paths-file ./exclude_build_files.txt
 ```
 
-#### Project Knowledge Base
+### Project Knowledge Base
 
 ```bash
 # Create a searchable knowledge base from project documentation
@@ -63,7 +99,7 @@ python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
   --include-extensions .md .txt .rst --minimal-output
 ```
 
-#### Automated Documentation Versioning
+### Automated Documentation Versioning
 
 ```bash
 # Create version-controlled documentation with content hash
@@ -71,7 +107,7 @@ python tools/m1f.py -s ./docs -o ./snapshots/docs.m1f.txt \
   --filename-mtime-hash --add-timestamp
 ```
 
-#### Bundling an Entire Project
+### Bundling an Entire Project
 
 ```bash
 # Combine all files in the current project into a single file,
@@ -711,42 +747,6 @@ for automating this process live in `tasks/m1f.json` and are documented in
 
 For more information and updates, visit the official project website:
 [https://m1f.dev](https://m1f.dev)
-
-## Setup
-
-1. **Create and activate a virtual environment:**
-
-   ```bash
-   python -m venv .venv
-   # On Windows
-   .venv\Scripts\activate
-   # On macOS/Linux
-   source .venv/bin/activate
-   ```
-
-2. **Install dependencies:**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-````
-
-## Requirements
-
-- Python 3.9+
-- Standard Python libraries (includes `argparse`, `datetime`, `hashlib`, `json`,
-  `logging`, `os`, `pathlib`, `re`, `sys` across the tools).
-- `tiktoken`: For the `tools/token_counter.py` script.
-- `black`: For code formatting.
-- `pymarkdownlint`: For linting Markdown files.
-- `chardet`: Optional, for character encoding detection.
-
-You can install all Python dependencies using:
-
-```bash
-pip install -r requirements.txt
-````
 
 ## License
 
