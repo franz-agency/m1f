@@ -73,7 +73,7 @@ Using MachineReadable style and creating a zip archive:
   python tools/m1f.py -s ./my_project -o ./output/bundle.m1f.txt --separator-style MachineReadable --create-archive --archive-type zip
 
 With more options including tar.gz archive:
-  python tools/m1f.py -s ./my_project -o ./output/bundle.md -t --separator-style Markdown --force --verbose --additional-excludes "temp" "docs_old" --create-archive --archive-type tar.gz
+  python tools/m1f.py -s ./my_project -o ./output/bundle.md -t --separator-style Markdown --force --verbose --excludes "temp" "docs_old" --create-archive --archive-type tar.gz
 
 With exclude paths file:
   python tools/m1f.py -s ./my_project -o ./output/bundle.txt --exclude-paths-file ./exclude_list.txt
