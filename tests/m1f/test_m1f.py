@@ -100,7 +100,8 @@ def run_m1f(arg_list):
         sys.exit = original_exit
 
 
-class TestM1F:    """Test cases for the m1f.py script."""
+class TestM1F:
+    """Test cases for the m1f.py script."""
 
     @classmethod
     def setup_class(cls):
@@ -259,6 +260,155 @@ class TestM1F:    """Test cases for the m1f.py script."""
             # Check the file names which should be excluded, not the full paths
             assert "FILE: index.php" not in content, "index.php should be excluded"
             assert "FILE: png.png" not in content, "png.png should be excluded"
+
+    def test_gitignore_pattern_support(self):
+        """Test support for gitignore pattern format in exclude-paths-file."""
+        output_file = OUTPUT_DIR / "gitignore_pattern_test.txt"
+        
+        # Create a temporary directory with test files
+        test_dir = SOURCE_DIR / "gitignore_test"
+        test_dir.mkdir(exist_ok=True)
+        
+        # Create various test files that would match gitignore patterns
+        _create_test_file(test_dir / "include.txt", "This file should be included")
+        _create_test_file(test_dir / "log1.log", "This log file should be excluded by *.log pattern")
+        _create_test_file(test_dir / "log2.log", "This log file should also be excluded")
+        
+        # Create a build directory with files
+        build_dir = test_dir / "build"
+        build_dir.mkdir(exist_ok=True)
+        _create_test_file(build_dir / "build_file.txt", "This should be excluded by build/ pattern")
+        
+        # Create a temp directory with files
+        temp_dir = test_dir / "temp"
+        temp_dir.mkdir(exist_ok=True)
+        _create_test_file(temp_dir / "temp_file.txt", "This should be excluded by temp/ pattern")
+        
+        # Create an important.txt file that should be included despite the *.txt pattern due to negation
+        _create_test_file(test_dir / "important.txt", "This important file should be included due to negation pattern")
+        
+        # Create a temporary gitignore file
+        gitignore_file = OUTPUT_DIR / "test.gitignore"
+        with open(gitignore_file, "w", encoding="utf-8") as f:
+            f.write("# Ignore all .log files\n")
+            f.write("*.log\n\n")
+            f.write("# Ignore build and temp directories\n")
+            f.write("build/\n")
+            f.write("temp/\n\n")
+            f.write("# Ignore .txt files but keep important.txt\n")
+            f.write("*.txt\n")
+            f.write("!important.txt\n")
+        
+        # Run m1f with gitignore patterns
+        run_m1f(
+            [
+                "--source-directory",
+                str(test_dir),
+                "--output-file",
+                str(output_file),
+                "--exclude-paths-file",
+                str(gitignore_file),
+                "--force",
+                "--verbose",
+            ]
+        )
+        
+        # Verify patterns worked correctly
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+            # These should be excluded
+            assert "log1.log" not in content, "log1.log should be excluded by *.log pattern"
+            assert "log2.log" not in content, "log2.log should be excluded by *.log pattern"
+            assert "build_file.txt" not in content, "build_file.txt should be excluded by build/ pattern"
+            assert "temp_file.txt" not in content, "temp_file.txt should be excluded by temp/ pattern"
+            assert "include.txt" not in content, "include.txt should be excluded by *.txt pattern"
+            
+            # This should be included despite *.txt due to negation pattern
+            assert "important.txt" in content, "important.txt should be included due to negation pattern"
+            
+        # Clean up
+        shutil.rmtree(test_dir)
+        gitignore_file.unlink()
+
+    def test_actual_gitignore_file(self):
+        """Test using an actual .gitignore file with exclude-paths-file."""
+        output_file = OUTPUT_DIR / "actual_gitignore_test.txt"
+        
+        # Create a temporary directory with test files
+        test_dir = SOURCE_DIR / "actual_gitignore_test"
+        test_dir.mkdir(exist_ok=True)
+        
+        # Create various test files
+        _create_test_file(test_dir / "main.py", "Main Python file")
+        _create_test_file(test_dir / "config.json", "Configuration file")
+        _create_test_file(test_dir / "README.md", "Project documentation")
+        
+        # Create files and directories that are typically excluded in real projects
+        _create_test_file(test_dir / ".env", "API_KEY=test_key")
+        
+        node_modules_dir = test_dir / "node_modules"
+        node_modules_dir.mkdir(exist_ok=True)
+        _create_test_file(node_modules_dir / "package.json", "Node module package file")
+        
+        coverage_dir = test_dir / "coverage"
+        coverage_dir.mkdir(exist_ok=True)
+        _create_test_file(coverage_dir / "coverage.xml", "Coverage report")
+        
+        # Create cache files
+        _create_test_file(test_dir / "cache.tmp", "Temporary cache")
+        _create_test_file(test_dir / "file.pyc", "Compiled Python file")
+        
+        # Create an actual .gitignore file in the test directory
+        gitignore_file = test_dir / ".gitignore"
+        with open(gitignore_file, "w", encoding="utf-8") as f:
+            f.write("# Typical project .gitignore contents\n")
+            f.write("\n")
+            f.write("# Environment variables\n")
+            f.write(".env\n")
+            f.write("\n")
+            f.write("# Dependencies\n")
+            f.write("node_modules/\n")
+            f.write("\n")
+            f.write("# Testing\n")
+            f.write("coverage/\n")
+            f.write("\n")
+            f.write("# Cache files\n")
+            f.write("*.tmp\n")
+            f.write("*.pyc\n")
+        
+        # Run m1f using the actual .gitignore file
+        run_m1f(
+            [
+                "--source-directory",
+                str(test_dir),
+                "--output-file",
+                str(output_file),
+                "--exclude-paths-file",
+                str(gitignore_file),
+                "--force",
+                "--verbose",
+            ]
+        )
+        
+        # Verify patterns from .gitignore worked correctly
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+            # These should be included (not in .gitignore)
+            assert "main.py" in content, "main.py should be included"
+            assert "config.json" in content, "config.json should be included"
+            assert "README.md" in content, "README.md should be included"
+            
+            # These should be excluded (in .gitignore)
+            assert ".env" not in content, ".env should be excluded by .gitignore"
+            assert "node_modules" not in content, "node_modules/ should be excluded by .gitignore"
+            assert "coverage" not in content, "coverage/ should be excluded by .gitignore"
+            assert "cache.tmp" not in content, "*.tmp should be excluded by .gitignore"
+            assert "file.pyc" not in content, "*.pyc should be excluded by .gitignore"
+            
+        # Clean up
+        shutil.rmtree(test_dir)
 
     def test_separator_styles(self):
         """Test different separator styles."""
