@@ -1704,7 +1704,7 @@ def _gather_files_to_process(
 
             # Skip directories that start with a dot if include_dot_paths is not set
             # AND --no-default-excludes wasn't specified
-            if not args.include_dot_paths and not hasattr(args, "no_default_excludes"):
+            if not args.include_dot_paths and not args.no_default_excludes:
                 dirs[:] = [d for d in dirs if not d.startswith(".")]
             # If --no-default-excludes was specified, still handle standard dot directories
             # but keep .git and other dot directories that might be of interest
