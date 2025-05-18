@@ -77,4 +77,4 @@ wp-content/plugins/myplugin/languages/*.mo
 
 # Configuration
 wp-content/plugins/myplugin/config/*.php
-wp-content/plugins/myplugin/uninstall.php 
+wp-content/plugins/myplugin/uninstall.php
