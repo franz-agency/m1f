@@ -1,7 +1,0 @@
-# Paths to exclude from processing
-# One path per line
-code/index.php
-docs/png.png
-# Empty line below should be ignored
-
-# This is a comment line

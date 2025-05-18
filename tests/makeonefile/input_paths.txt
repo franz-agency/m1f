@@ -1,4 +1,0 @@
-# Input paths for testing
-source/code/python/hello.py
-source/code/python/utils.py
-source/docs/README.md
