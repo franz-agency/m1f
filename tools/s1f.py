@@ -60,7 +60,7 @@ NOTES
 =====
 - Encoding: The script reads the input file as UTF-8 (matching `m1f.py`'s output).
   By default, it writes extracted files as UTF-8. There are two ways to control output encoding:
-  1. With `--respect-encoding`, it will attempt to use the original encoding of each file 
+  1. With `--respect-encoding`, it will attempt to use the original encoding of each file
      as recorded in the metadata.
   2. With `--target-encoding`, you can explicitly specify the encoding to use for all extracted files,
      which overrides any original encoding information (e.g., `--target-encoding utf-8`).
@@ -340,7 +340,7 @@ def parse_combined_file(content: str) -> list[dict]:
 
                     # Extract timestamp from metadata (new format uses timestamp_utc_iso)
                     modified_val = meta.get("timestamp_utc_iso")
-                    
+
                     # Extract encoding information if available
                     encoding_val = meta.get("encoding")
                     had_encoding_errors = meta.get("had_encoding_errors", False)
@@ -354,7 +354,7 @@ def parse_combined_file(content: str) -> list[dict]:
                             "type": meta.get("type"),
                             "size_bytes": meta.get("size_bytes"),
                             "checksum_sha256": meta.get("checksum_sha256"),
-                            "encoding": encoding_val  # Add encoding information
+                            "encoding": encoding_val,  # Add encoding information
                         }
                     )
                     matches.append(file_info_dict)
@@ -388,7 +388,7 @@ def parse_combined_file(content: str) -> list[dict]:
 
                     modified_val = meta.get("modified")  # Extract modified timestamp
                     encoding_val = meta.get("encoding")  # Extract encoding if available
-                    
+
                     file_info_dict.update(
                         {
                             "path": path_val,
@@ -396,7 +396,7 @@ def parse_combined_file(content: str) -> list[dict]:
                             "type": meta.get("type"),
                             "size_bytes": meta.get("size_bytes"),
                             "checksum_sha256": meta.get("checksum_sha256"),
-                            "encoding": encoding_val  # Add encoding information
+                            "encoding": encoding_val,  # Add encoding information
                         }
                     )
                     matches.append(file_info_dict)
@@ -414,7 +414,7 @@ def parse_combined_file(content: str) -> list[dict]:
             else:
                 path_val = match.group(pattern_info["path_group"]).strip()
                 path_val = convert_to_posix_path(path_val)
-                
+
                 # Extract encoding if available
                 if (
                     "encoding_group" in pattern_info
@@ -422,7 +422,7 @@ def parse_combined_file(content: str) -> list[dict]:
                     and match.group(pattern_info["encoding_group"]) is not None
                 ):
                     encoding_val = match.group(pattern_info["encoding_group"])
-                
+
                 # Extract checksum if available
                 if (
                     "checksum_group" in pattern_info
@@ -672,7 +672,7 @@ def _write_extracted_files(
     timestamp_mode: str,
     ignore_checksum: bool = False,
     respect_encoding: bool = False,
-    target_encoding: str = None
+    target_encoding: str = None,
 ) -> tuple[int, int, int]:
     """
     Writes the extracted file data to the destination directory.
@@ -692,7 +692,7 @@ def _write_extracted_files(
 
     Returns:
         A tuple containing (files_created_count, files_overwritten_count, files_failed_count).
-        
+
     Encoding Priority Rules:
     1. If target_encoding is specified, it is used for all files.
     2. If respect_encoding is True and file has encoding metadata, that encoding is used.
@@ -711,7 +711,9 @@ def _write_extracted_files(
         file_content_to_write = file_data["content"]
         original_checksum = file_data.get("checksum_sha256")
         original_size_bytes = file_data.get("size_bytes")
-        original_modified = file_data.get("modified")  # Get original modification timestamp
+        original_modified = file_data.get(
+            "modified"
+        )  # Get original modification timestamp
         original_encoding = file_data.get("encoding")  # Get original file encoding
 
         # Security check: ensure relative paths do not try to escape the destination directory.
@@ -745,20 +747,24 @@ def _write_extracted_files(
                     sys.exit(0)  # Graceful exit as user initiated stop before action
 
             is_overwrite = current_output_path.exists()
-            
+
             # Determine encoding to use
             output_encoding = "utf-8"  # Default encoding
             encoding_msg = ""
-            
+
             # If target_encoding is specified, it takes precedence over all other options
             if target_encoding:
                 output_encoding = target_encoding
-                encoding_msg = f" using explicitly specified encoding: {target_encoding}"
+                encoding_msg = (
+                    f" using explicitly specified encoding: {target_encoding}"
+                )
             # Otherwise, use respect_encoding logic if enabled
             elif respect_encoding and original_encoding:
                 # Clean up the encoding string to remove error information
-                clean_encoding = original_encoding.split(" (with conversion errors)")[0].strip()
-                
+                clean_encoding = original_encoding.split(" (with conversion errors)")[
+                    0
+                ].strip()
+
                 # Only use valid encodings supported by Python
                 try:
                     # Test if this is a valid encoding by trying to encode a simple string
@@ -770,11 +776,13 @@ def _write_extracted_files(
                         f"Original encoding '{clean_encoding}' for file '{relative_path_str}' is not recognized. "
                         f"Falling back to UTF-8."
                     )
-            
+
             # Write the file with the appropriate encoding
             try:
                 # First try to encode the content with the target encoding
-                encoded_content = file_content_to_write.encode(output_encoding, errors="strict")
+                encoded_content = file_content_to_write.encode(
+                    output_encoding, errors="strict"
+                )
                 current_output_path.write_bytes(encoded_content)
                 logger.debug(f"Wrote file: {current_output_path}{encoding_msg}")
             except UnicodeEncodeError:
@@ -783,8 +791,12 @@ def _write_extracted_files(
                     f"Cannot strictly encode file '{relative_path_str}' with {output_encoding}. "
                     f"Falling back to replacement mode which may lose some characters."
                 )
-                current_output_path.write_text(file_content_to_write, encoding=output_encoding, errors="replace")
-                logger.debug(f"Wrote file (with character replacements): {current_output_path}")
+                current_output_path.write_text(
+                    file_content_to_write, encoding=output_encoding, errors="replace"
+                )
+                logger.debug(
+                    f"Wrote file (with character replacements): {current_output_path}"
+                )
 
             if is_overwrite:
                 files_overwritten_count += 1
@@ -880,12 +892,12 @@ def main():
     Parses command-line arguments and orchestrates the file splitting process.
     It reads the combined input file, parses it to extract individual file data,
     and then writes these files to the specified destination directory.
-    
+
     Character encoding control is provided in two ways:
     1. Using --respect-encoding to try to use the original encoding if available in metadata
     2. Using --target-encoding to explicitly specify an encoding for all output files
        (this overrides --respect-encoding if both are provided)
-    
+
     By default, all files are written using UTF-8 encoding.
     """
     parser = argparse.ArgumentParser(
@@ -976,7 +988,7 @@ def main():
             args.timestamp_mode,
             args.ignore_checksum,
             args.respect_encoding,
-            args.target_encoding
+            args.target_encoding,
         )
     )
 

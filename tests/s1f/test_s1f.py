@@ -173,14 +173,16 @@ class TestS1F:
         # Get list of original files from the filelist.txt
         with open(OUTPUT_DIR / "standard_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
-        
+
         # Get the source directory from the m1f test folder
         source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
-        
+
         # Verify extracted files match original files
-        matching, missing, different = verify_extracted_files(original_files, EXTRACTED_DIR)
-        
+        matching, missing, different = verify_extracted_files(
+            original_files, EXTRACTED_DIR
+        )
+
         assert missing == 0, f"Found {missing} missing files"
         assert different == 0, f"Found {different} files with different content"
         assert matching > 0, "No matching files found"
@@ -208,14 +210,16 @@ class TestS1F:
         # Get list of original files from the filelist.txt
         with open(OUTPUT_DIR / "detailed_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
-        
+
         # Get the source directory from the m1f test folder
         source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
-        
+
         # Verify extracted files match original files
-        matching, missing, different = verify_extracted_files(original_files, EXTRACTED_DIR)
-        
+        matching, missing, different = verify_extracted_files(
+            original_files, EXTRACTED_DIR
+        )
+
         assert missing == 0, f"Found {missing} missing files"
         assert different == 0, f"Found {different} files with different content"
         assert matching > 0, "No matching files found"
@@ -243,14 +247,16 @@ class TestS1F:
         # Get list of original files from the filelist.txt
         with open(OUTPUT_DIR / "markdown_filelist.txt", "r", encoding="utf-8") as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
-        
+
         # Get the source directory from the m1f test folder
         source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
-        
+
         # Verify extracted files match original files
-        matching, missing, different = verify_extracted_files(original_files, EXTRACTED_DIR)
-        
+        matching, missing, different = verify_extracted_files(
+            original_files, EXTRACTED_DIR
+        )
+
         assert missing == 0, f"Found {missing} missing files"
         assert different == 0, f"Found {different} files with different content"
         assert matching > 0, "No matching files found"
@@ -276,16 +282,20 @@ class TestS1F:
 
         # Verify that the extracted files match the originals
         # Get list of original files from the filelist.txt
-        with open(OUTPUT_DIR / "machinereadable_filelist.txt", "r", encoding="utf-8") as f:
+        with open(
+            OUTPUT_DIR / "machinereadable_filelist.txt", "r", encoding="utf-8"
+        ) as f:
             original_file_paths = [line.strip() for line in f if line.strip()]
-        
+
         # Get the source directory from the m1f test folder
         source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
-        
+
         # Verify extracted files match original files
-        matching, missing, different = verify_extracted_files(original_files, EXTRACTED_DIR)
-        
+        matching, missing, different = verify_extracted_files(
+            original_files, EXTRACTED_DIR
+        )
+
         assert missing == 0, f"Found {missing} missing files"
         assert different == 0, f"Found {different} files with different content"
         assert matching > 0, "No matching files found"
@@ -377,12 +387,12 @@ class TestS1F:
         # Build the list of expected relative paths from the filelist
         with open(OUTPUT_DIR / "standard_filelist.txt", "r", encoding="utf-8") as f:
             expected_rel_paths = [
-                PureWindowsPath(line.strip()).as_posix()
-                for line in f
-                if line.strip()
+                PureWindowsPath(line.strip()).as_posix() for line in f if line.strip()
             ]
 
-        actual_rel_paths = [p.relative_to(EXTRACTED_DIR).as_posix() for p in extracted_files]
+        actual_rel_paths = [
+            p.relative_to(EXTRACTED_DIR).as_posix() for p in extracted_files
+        ]
 
         assert set(actual_rel_paths) == set(
             expected_rel_paths
@@ -393,52 +403,68 @@ class TestS1F:
         # Create temporary directory for encoding test files
         encoding_test_dir = EXTRACTED_DIR / "encoding_test"
         encoding_test_dir.mkdir(exist_ok=True)
-        
+
         # First, create a combined file with different encodings using m1f
         # We'll create this manually for the test
-        
+
         # Create test files with different encodings
         # UTF-8 file with non-ASCII characters
         m1f_output = OUTPUT_DIR / "encoding_test.txt"
-        
+
         # Create a MachineReadable format file with encoding metadata
         with open(m1f_output, "w", encoding="utf-8") as f:
             # UTF-8 file
-            f.write("--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-111111111111 ---\n")
+            f.write(
+                "--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-111111111111 ---\n"
+            )
             f.write("METADATA_JSON:\n")
-            f.write('{\n')
+            f.write("{\n")
             f.write('    "original_filepath": "encoding_test/utf8_file.txt",\n')
             f.write('    "original_filename": "utf8_file.txt",\n')
             f.write('    "timestamp_utc_iso": "2023-01-01T12:00:00Z",\n')
             f.write('    "type": ".txt",\n')
             f.write('    "size_bytes": 50,\n')
             f.write('    "encoding": "utf-8"\n')
-            f.write('}\n')
-            f.write("--- PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-111111111111 ---\n")
-            f.write("--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-111111111111 ---\n")
+            f.write("}\n")
+            f.write(
+                "--- PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-111111111111 ---\n"
+            )
+            f.write(
+                "--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-111111111111 ---\n"
+            )
             f.write("UTF-8 file with special characters: áéíóú ñçß\n")
-            f.write("--- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-111111111111 ---\n\n")
-            
+            f.write(
+                "--- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-111111111111 ---\n\n"
+            )
+
             # Latin-1 file
-            f.write("--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-222222222222 ---\n")
+            f.write(
+                "--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-222222222222 ---\n"
+            )
             f.write("METADATA_JSON:\n")
-            f.write('{\n')
+            f.write("{\n")
             f.write('    "original_filepath": "encoding_test/latin1_file.txt",\n')
             f.write('    "original_filename": "latin1_file.txt",\n')
             f.write('    "timestamp_utc_iso": "2023-01-01T12:00:00Z",\n')
             f.write('    "type": ".txt",\n')
             f.write('    "size_bytes": 52,\n')
             f.write('    "encoding": "latin-1"\n')
-            f.write('}\n')
-            f.write("--- PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-222222222222 ---\n")
-            f.write("--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-222222222222 ---\n")
+            f.write("}\n")
+            f.write(
+                "--- PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-222222222222 ---\n"
+            )
+            f.write(
+                "--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-222222222222 ---\n"
+            )
             f.write("Latin-1 file with special characters: áéíóú ñçß\n")
-            f.write("--- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-222222222222 ---\n")
-        
+            f.write(
+                "--- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-222222222222 ---\n"
+            )
+
         # Test 1: Extract without respecting encoding (should all be UTF-8)
         default_extract_dir = EXTRACTED_DIR / "default_encoding"
         default_extract_dir.mkdir(exist_ok=True)
-        
+
         run_s1f(
             [
                 "--input-file",
@@ -449,27 +475,27 @@ class TestS1F:
                 "--verbose",
             ]
         )
-        
+
         # Verify both files are extracted
         utf8_file = default_extract_dir / "encoding_test" / "utf8_file.txt"
         latin1_file = default_extract_dir / "encoding_test" / "latin1_file.txt"
-        
+
         assert utf8_file.exists(), "UTF-8 file not extracted"
         assert latin1_file.exists(), "Latin-1 file not extracted"
-        
+
         # By default, all files should be UTF-8 encoded
         with open(utf8_file, "r", encoding="utf-8") as f:
             utf8_content = f.read()
             assert "UTF-8 file with special characters: áéíóú ñçß" in utf8_content
-        
+
         with open(latin1_file, "r", encoding="utf-8") as f:
             latin1_content = f.read()
             assert "Latin-1 file with special characters: áéíóú ñçß" in latin1_content
-        
+
         # Test 2: Extract with --respect-encoding
         respected_extract_dir = EXTRACTED_DIR / "respected_encoding"
         respected_extract_dir.mkdir(exist_ok=True)
-        
+
         run_s1f(
             [
                 "--input-file",
@@ -481,32 +507,40 @@ class TestS1F:
                 "--verbose",
             ]
         )
-        
+
         # Verify files are extracted
         utf8_file_respected = respected_extract_dir / "encoding_test" / "utf8_file.txt"
-        latin1_file_respected = respected_extract_dir / "encoding_test" / "latin1_file.txt"
-        
-        assert utf8_file_respected.exists(), "UTF-8 file not extracted with respect-encoding"
-        assert latin1_file_respected.exists(), "Latin-1 file not extracted with respect-encoding"
-        
+        latin1_file_respected = (
+            respected_extract_dir / "encoding_test" / "latin1_file.txt"
+        )
+
+        assert (
+            utf8_file_respected.exists()
+        ), "UTF-8 file not extracted with respect-encoding"
+        assert (
+            latin1_file_respected.exists()
+        ), "Latin-1 file not extracted with respect-encoding"
+
         # The UTF-8 file should be readable with UTF-8 encoding
         with open(utf8_file_respected, "r", encoding="utf-8") as f:
             utf8_content = f.read()
             assert "UTF-8 file with special characters: áéíóú ñçß" in utf8_content
-        
+
         # The Latin-1 file should be readable with Latin-1 encoding
         with open(latin1_file_respected, "r", encoding="latin-1") as f:
             latin1_content = f.read()
             assert "Latin-1 file with special characters: áéíóú ñçß" in latin1_content
-        
+
         # The Latin-1 file should NOT be directly readable as UTF-8
         try:
             with open(latin1_file_respected, "r", encoding="utf-8") as f:
                 latin1_as_utf8 = f.read()
-                # If we get here without an exception, the file is either valid UTF-8 
+                # If we get here without an exception, the file is either valid UTF-8
                 # or has had invalid characters replaced, which means it wasn't properly saved as Latin-1
                 if "Latin-1 file with special characters: áéíóú ñçß" in latin1_as_utf8:
-                    assert False, "Latin-1 file was saved as UTF-8 even with --respect-encoding"
+                    assert (
+                        False
+                    ), "Latin-1 file was saved as UTF-8 even with --respect-encoding"
         except UnicodeDecodeError:
             # This is actually what we want - the Latin-1 file should not be valid UTF-8
             pass

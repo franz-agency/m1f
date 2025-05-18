@@ -238,7 +238,9 @@ class TestM1F:
             # Use platform-agnostic path checking for .hidden directory
             # Check for .hidden directory using platform-specific path separators
             hidden_path = ".hidden"
-            assert hidden_path in content, "Dot files and directories should be included"
+            assert (
+                hidden_path in content
+            ), "Dot files and directories should be included"
             # Check for the contents of the hidden file
             assert (
                 "SECRET_KEY=test_secret_key_12345" in content
@@ -678,13 +680,15 @@ class TestM1F:
         with open(temp_input_file, "w", encoding="utf-8") as f:
             f.write("../source/code/python/*.py\n")
 
-        run_m1f([
-            "--input-file",
-            str(temp_input_file),
-            "--output-file",
-            str(output_file),
-            "--force",
-        ])
+        run_m1f(
+            [
+                "--input-file",
+                str(temp_input_file),
+                "--output-file",
+                str(output_file),
+                "--force",
+            ]
+        )
 
         with open(output_file, "r", encoding="utf-8") as f:
             content = f.read()
@@ -1661,24 +1665,24 @@ class TestM1F:
         # Create temporary files with different encodings
         encoding_test_dir = SOURCE_DIR / "encoding_test"
         encoding_test_dir.mkdir(exist_ok=True)
-        
+
         # Create files with different encodings
-        
+
         # UTF-8 file with non-ASCII characters
         utf8_file = encoding_test_dir / "utf8_file.txt"
         with open(utf8_file, "w", encoding="utf-8") as f:
             f.write("UTF-8 file with special characters: áéíóú ñçß")
-        
+
         # UTF-16 file
         utf16_file = encoding_test_dir / "utf16_file.txt"
         with open(utf16_file, "w", encoding="utf-16") as f:
             f.write("UTF-16 file with special characters: áéíóú ñçß")
-        
+
         # Latin-1 file
         latin1_file = encoding_test_dir / "latin1_file.txt"
         with open(latin1_file, "w", encoding="latin-1") as f:
             f.write("Latin-1 file with special characters: áéíóú ñçß")
-        
+
         # Test the conversion to UTF-8
         output_file = OUTPUT_DIR / "encoding_test_utf8.txt"
         run_m1f(
@@ -1695,24 +1699,37 @@ class TestM1F:
                 "--verbose",
             ]
         )
-        
+
         # Verify the output file exists and contains the expected content
         assert output_file.exists(), "Output file for encoding conversion not created"
-        
+
         # Read the output file and check for encoding information in metadata
         with open(output_file, "r", encoding="utf-8") as f:
             content = f.read()
-            
+
             # Check that the content of all files is preserved
-            assert "UTF-8 file with special characters: áéíóú ñçß" in content, "UTF-8 content not preserved"
-            assert "UTF-16 file with special characters: áéíóú ñçß" in content, "UTF-16 content not properly converted"
-            assert "Latin-1 file with special characters: áéíóú ñçß" in content, "Latin-1 content not properly converted"
-            
+            assert (
+                "UTF-8 file with special characters: áéíóú ñçß" in content
+            ), "UTF-8 content not preserved"
+            assert (
+                "UTF-16 file with special characters: áéíóú ñçß" in content
+            ), "UTF-16 content not properly converted"
+            assert (
+                "Latin-1 file with special characters: áéíóú ñçß" in content
+            ), "Latin-1 content not properly converted"
+
             # Check that encoding information is included in the metadata
-            assert "\"encoding\": \"utf-8\"" in content, "UTF-8 encoding not detected in metadata"
-            assert "\"encoding\": \"utf-16" in content, "UTF-16 encoding not detected in metadata"
-            assert "\"encoding\": \"iso-8859-1\"" in content or "\"encoding\": \"latin-1\"" in content, "Latin-1 encoding not detected in metadata"
-        
+            assert (
+                '"encoding": "utf-8"' in content
+            ), "UTF-8 encoding not detected in metadata"
+            assert (
+                '"encoding": "utf-16' in content
+            ), "UTF-16 encoding not detected in metadata"
+            assert (
+                '"encoding": "iso-8859-1"' in content
+                or '"encoding": "latin-1"' in content
+            ), "Latin-1 encoding not detected in metadata"
+
         # Test conversion to latin-1
         output_file_latin1 = OUTPUT_DIR / "encoding_test_latin1.txt"
         run_m1f(
@@ -1729,30 +1746,45 @@ class TestM1F:
                 "--verbose",
             ]
         )
-        
+
         # Verify the output file exists and contains the expected content
-        assert output_file_latin1.exists(), "Output file for latin-1 encoding conversion not created"
-        
+        assert (
+            output_file_latin1.exists()
+        ), "Output file for latin-1 encoding conversion not created"
+
         # Read the output file and check that all content is properly converted
         with open(output_file_latin1, "r", encoding="latin-1") as f:
             content = f.read()
-            
+
             # Check that the content of all files is preserved in latin-1
-            assert "UTF-8 file with special characters: áéíóú ñçß" in content, "UTF-8 content not properly converted to latin-1"
-            assert "UTF-16 file with special characters: áéíóú ñçß" in content, "UTF-16 content not properly converted to latin-1"
-            assert "Latin-1 file with special characters: áéíóú ñçß" in content, "Latin-1 content not preserved"
-            
+            assert (
+                "UTF-8 file with special characters: áéíóú ñçß" in content
+            ), "UTF-8 content not properly converted to latin-1"
+            assert (
+                "UTF-16 file with special characters: áéíóú ñçß" in content
+            ), "UTF-16 content not properly converted to latin-1"
+            assert (
+                "Latin-1 file with special characters: áéíóú ñçß" in content
+            ), "Latin-1 content not preserved"
+
             # Check that target encoding is mentioned in the metadata
-            assert "\"encoding\": \"utf-8\"" in content, "Original UTF-8 encoding not recorded in metadata"
-            assert "\"encoding\": \"utf-16" in content, "Original UTF-16 encoding not recorded in metadata"
-            assert "\"encoding\": \"iso-8859-1\"" in content or "\"encoding\": \"latin-1\"" in content, "Original Latin-1 encoding not recorded in metadata"
-        
+            assert (
+                '"encoding": "utf-8"' in content
+            ), "Original UTF-8 encoding not recorded in metadata"
+            assert (
+                '"encoding": "utf-16' in content
+            ), "Original UTF-16 encoding not recorded in metadata"
+            assert (
+                '"encoding": "iso-8859-1"' in content
+                or '"encoding": "latin-1"' in content
+            ), "Original Latin-1 encoding not recorded in metadata"
+
         # Test the error handling with --abort-on-encoding-error
         # Create a test file with characters not representable in ASCII
         nonascii_file = encoding_test_dir / "nonascii_file.txt"
         with open(nonascii_file, "w", encoding="utf-8") as f:
             f.write("File with non-ASCII characters: áéíóú ñçß")
-        
+
         # Run with --abort-on-encoding-error (should be caught by run_m1f wrapper)
         output_file_ascii = OUTPUT_DIR / "encoding_test_ascii.txt"
         run_m1f(
@@ -1768,10 +1800,10 @@ class TestM1F:
                 "--verbose",
             ]
         )
-        
+
         # The test should continue since we're mocking sys.exit
         # But the mock exit should have been called with a non-zero exit code due to encoding errors
-        
+
         # Clean up
         shutil.rmtree(encoding_test_dir)
 
