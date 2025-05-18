@@ -20,6 +20,7 @@ These tools help solve a core challenge when working with AI assistants: **provi
 - **Flexible Formatting**: Choose from multiple separator styles optimized for machine readability
 - **Smart Filtering**: Include/exclude files by extension, path, or pattern
 - **Structure Preservation**: Maintain file relationships and metadata
+- **Versioning Support**: Generate unique filenames based on content hash for tracking changes
 
 ### Common Use Cases
 
@@ -49,6 +50,13 @@ python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
   --include-extensions .md .txt .rst --minimal-output
 ```
 
+#### Automated Documentation Versioning
+```bash
+# Create version-controlled documentation with content hash
+python tools/m1f.py -s ./docs -o ./snapshots/docs.m1f.txt \
+  --filename-mtime-hash --add-timestamp
+```
+
 ## The m1f Toolset
 
 ### m1f (Make One File) - `tools/m1f.py`
@@ -61,6 +69,7 @@ Combines multiple files into a single file with rich metadata and customizable f
 - Customizable separator styles for different use cases
 - Token counting for LLM context planning
 - Comprehensive metadata for each file
+- Versioning support through content hashing
 
 #### Command Line Options
 
@@ -180,6 +189,20 @@ python tools/m1f.py -s ./my_project -o ./combined.txt \
   --exclude-paths-file ./exclude_list.txt
 ```
 
+Versioning with content hash based on included files:
+
+```bash
+python tools/m1f.py -s ./project -o ./snapshots/project.txt \
+  --filename-mtime-hash
+```
+
+Skipping file generation while only creating metadata files:
+
+```bash
+python tools/m1f.py -s ./huge_project -o ./analysis.txt \
+  --skip-output-file
+```
+
 ### s1f (Split One File) - `tools/s1f.py`
 
 Extracts individual files from a combined file, recreating the original directory structure.
@@ -221,6 +244,13 @@ Using current system time for timestamps:
 ```bash
 python tools/s1f.py -i ./combined_file.txt -d ./extracted_files \
   --timestamp-mode current
+```
+
+Ignoring checksum verification (when files were intentionally modified):
+
+```bash
+python tools/s1f.py -i ./modified_bundle.m1f.txt -d ./extracted_files \
+  --ignore-checksum
 ```
 
 ### token_counter.py - Token Estimation Tool
