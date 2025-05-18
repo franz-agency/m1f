@@ -102,7 +102,7 @@ formatting.
 | `--exclude-paths-file`   | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                              |
 | `--no-default-excludes`  | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, **pycache**                                                                          |
 | `--excludes`             | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                     |
-| `--include-dot-files`    | Include files that start with a dot (e.g., .gitignore)                                                                                                                                                                                    |
+| `--include-dot-paths`    | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                 |
 | `--include-binary-files` | Attempt to include files with binary extensions                                                                                                                                                                                           |
 | `--separator-style`      | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                         |
 | `--line-ending`          | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                              |
@@ -145,7 +145,8 @@ python tools/m1f.py -s ./source_code -o ./dist/combined.txt \
 Concatenating files without any separators:
 
 ```bash
-python tools/m1f.py -s ./source_code -o ./dist/seamless.txt \
+python tools/m1f.py \
+  --input-file ./file_list.txt -o ./dist/seamless.txt \
   --separator-style None
 ```
 
@@ -182,6 +183,13 @@ Including content from typically excluded directories:
 ```bash
 python tools/m1f.py -s ./project -o ./all_files.txt \
   --no-default-excludes
+```
+
+Including dot files and directories:
+
+```bash
+python tools/m1f.py -s ./project -o ./with_dotfiles.txt \
+  --include-dot-paths
 ```
 
 Generating only the combined file with no auxiliary files:

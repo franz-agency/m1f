@@ -131,8 +131,10 @@ You can customize the tasks by editing `m1f.json` for your specific needs:
 
 Consider these advanced options from `m1f.py` for specific needs:
 
-- `--include-dot-files`: Useful for including WordPress-specific configuration
-  files like `.htaccess` or other dotfiles if they are relevant to your context.
+- `--include-dot-paths`: Useful for including WordPress-specific configuration
+  files like `.htaccess` or other dot files and directories (e.g., `.config/`, `.github/`) 
+  if they are relevant to your context. By default, all files and directories 
+  starting with a dot are excluded.
 - `--separator-style`: While `MachineReadable` is generally recommended for AI
   context files, you can explore other styles if needed.
 - `--skip-output-file`: Executes all operations (logs, additional files, etc.)

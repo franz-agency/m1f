@@ -33,8 +33,9 @@ KEY FEATURES
 - Smart file filtering:
   - Exclusion of common project directories (e.g., 'node_modules', '.git', 'build').
   - Exclusion of binary files by default (based on extension).
+  - Exclusion of files and directories starting with a dot (e.g., '.gitignore', '.hidden/') by default.
   - Inclusion/exclusion by file extension with `--include-extensions` and `--exclude-extensions`.
-  - Option to include dot-files (e.g., '.gitignore') and binary files.
+  - Option to include dot files and directories with `--include-dot-paths`.
   - Case-insensitive exclusion of additional specified directory names.
   - Exclusion of specific paths from a file, with exact path matching.
 - Control over line endings (LF or CRLF) for script-generated separators.
@@ -835,6 +836,7 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
                 if not line or line.startswith("#"):
                     continue  # Skip empty lines and comments
 
+                logger.info(f"Processing path from input file: {line}")
                 path_obj = Path(line)
                 # If the path is relative (doesn't have a root), make it relative to the input file's directory
                 if not path_obj.is_absolute():
@@ -842,10 +844,15 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
                 else:
                     path_obj = path_obj.expanduser().resolve()
 
+                logger.info(f"Resolved path: {path_obj}, exists: {path_obj.exists()}")
                 paths.append(path_obj)
 
         # Deduplicate paths (keep parents, remove children)
-        return _deduplicate_paths(paths)
+        deduped_paths = _deduplicate_paths(paths)
+        logger.info(f"After deduplication: {len(deduped_paths)} paths")
+        for path in deduped_paths:
+            logger.info(f"Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}")
+        return deduped_paths
     except Exception as e:
         logger.error(f"Error processing input file: {e}")
         return []
@@ -935,6 +942,7 @@ def _is_file_excluded(
     excluded_dir_names_lower: Set[str],
     excluded_file_paths: Set[str] = None,
     gitignore_spec: Optional[pathspec.PathSpec] = None,
+    explicitly_included: bool = False,
 ) -> bool:
     """Checks if a file should be excluded based on various criteria."""
     # Check if the path is in the exclude paths list
@@ -988,10 +996,13 @@ def _is_file_excluded(
                 )
             return True
 
-    if not args.include_dot_files and file_path.name.startswith("."):
-        if args.verbose:
-            logger.debug(f"Excluding dot file: {file_path}")
-        return True
+    # If the file is explicitly included (e.g., from an input file list), 
+    # don't exclude it based on dot path exclusion
+    if not explicitly_included:
+        if not args.include_dot_paths and file_path.name.startswith("."):
+            if args.verbose:
+                logger.debug(f"Excluding dot file: {file_path}")
+            return True
 
     if (
         not args.include_binary_files
@@ -1092,6 +1103,7 @@ def _gather_files_to_process(
                     excluded_dir_names_lower,
                     excluded_file_paths,
                     gitignore_spec,
+                    explicitly_included=True  # File paths from input file are explicitly included
                 ):
                     files_to_process.append((item_path, item_path.name))
                     added_file_absolute_paths.add(abs_path_str)
@@ -1105,10 +1117,39 @@ def _gather_files_to_process(
                             f"Skipping directory '{item_path}' from input list as its name is excluded."
                         )
                     continue
+                
+                # Always include directories that were explicitly specified in the input file,
+                # even if they start with a dot
+                explicitly_included = True
+                
+                # Skip if it's a dot directory and include_dot_paths is not set
+                # BUT, if this directory was explicitly specified in the input file, include it anyways
+                if not args.include_dot_paths and item_path.name.startswith("."):
+                    # Check if this directory was explicitly passed in the input file
+                    explicit_dir = any(str(p.resolve()) == str(item_path.resolve()) for p in input_paths)
+                    if not explicit_dir:
+                        if args.verbose:
+                            logger.debug(
+                                f"Skipping dot directory '{item_path}' from input list (use --include-dot-paths to include)."
+                            )
+                        continue
+                    elif args.verbose:
+                        logger.debug(f"Including explicitly specified dot directory: {item_path}")
 
                 if args.verbose:
                     logger.debug(f"Scanning directory from input file: {item_path}")
                 for file_path_in_dir in item_path.rglob("*"):
+                    # Skip processing files in dot directories if include_dot_paths is not set
+                    if not args.include_dot_paths:
+                        # Check if any parent directory starts with a dot
+                        parts = file_path_in_dir.relative_to(item_path).parts
+                        if any(part.startswith(".") for part in parts):
+                            if args.verbose and file_path_in_dir.is_file():
+                                logger.debug(
+                                    f"Skipping file in dot directory: {file_path_in_dir}"
+                                )
+                            continue
+                    
                     if file_path_in_dir.is_file():
                         abs_path_str = str(file_path_in_dir.resolve())
                         if abs_path_str in added_file_absolute_paths:
@@ -1135,7 +1176,7 @@ def _gather_files_to_process(
         logger.info(f"Scanning files in '{source_dir}'...")
         if args.verbose:
             logger.debug(
-                f"  Exclusion settings: include_dot_files={args.include_dot_files}, "
+                f"  Exclusion settings: include_dot_paths={args.include_dot_paths}, "
                 f"include_binary_files={args.include_binary_files}"
             )
             logger.debug(
@@ -1147,6 +1188,10 @@ def _gather_files_to_process(
 
             # Skip excluded directories
             dirs[:] = [d for d in dirs if d.lower() not in excluded_dir_names_lower]
+            
+            # Skip directories that start with a dot if include_dot_paths is not set
+            if not args.include_dot_paths:
+                dirs[:] = [d for d in dirs if not d.startswith(".")]
 
             # Skip symlink directories if ignore_symlinks is True
             if ignore_symlinks:
@@ -1453,8 +1498,8 @@ def main():
         epilog="""Examples:
   %(prog)s --source-directory "./src" --output-file "combined_files.txt"
   %(prog)s -s "/home/user/projects/my_app" -o "/tmp/app_bundle.md" -t --separator-style Markdown --force
-  %(prog)s -s . -o archive.txt --additional-excludes "docs_archive" "test_data" --include-dot-files --line-ending crlf
-  %(prog)s -s ./config_files --include-dot-files --include-binary-files -o all_configs.txt --verbose
+  %(prog)s -s . -o archive.txt --additional-excludes "docs_archive" "test_data" --include-dot-paths --line-ending crlf
+  %(prog)s -s ./config_files --include-dot-paths --include-binary-files -o all_configs.txt --verbose
   %(prog)s -i ./file_list.txt -o bundle.all --create-archive --archive-type tar.gz
   %(prog)s -s ./src -o bundle.txt --include-extensions .txt .json .md --exclude-extensions .tmp
   %(prog)s -s ./project -o all_files.txt --no-default-excludes
@@ -1524,9 +1569,9 @@ def main():
         help="Path to a file containing paths to exclude. Supports both exact paths (one per line) and gitignore-style pattern formats. If a .gitignore file is provided or gitignore patterns are detected (using wildcards like * or !), the file will be processed using gitignore pattern matching rules.",
     )
     parser.add_argument(
-        "--include-dot-files",
+        "--include-dot-paths",
         action="store_true",
-        help="Include files that start with a dot (e.g., .gitignore). Dot directories (e.g. .git) are generally excluded by default_excluded_dir_names.",
+        help="Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, both files and directories starting with a dot are excluded, except for specific directories in DEFAULT_EXCLUDED_DIR_NAMES.",
     )
     parser.add_argument(
         "--include-binary-files",
@@ -1625,6 +1670,10 @@ def main():
     else:
         args.exclude_paths = set()
         args.gitignore_spec = None
+        
+    # Set default value for include_dot_paths if not provided
+    if not hasattr(args, "include_dot_paths"):
+        args.include_dot_paths = False
 
     chosen_linesep = LF if args.line_ending == "lf" else CRLF
 

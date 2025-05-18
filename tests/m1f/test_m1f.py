@@ -216,9 +216,9 @@ class TestM1F:
             assert "node_modules" not in content, "node_modules should be excluded"
             assert ".git" not in content, "Git directory should be excluded"
 
-    def test_include_dot_files(self):
-        """Test inclusion of dot files."""
-        output_file = OUTPUT_DIR / "dot_files_included.txt"
+    def test_include_dot_paths(self):
+        """Test inclusion of dot files and directories."""
+        output_file = OUTPUT_DIR / "dot_paths_included.txt"
 
         # Run with dot files included
         run_m1f(
@@ -227,7 +227,7 @@ class TestM1F:
                 str(SOURCE_DIR),
                 "--output-file",
                 str(output_file),
-                "--include-dot-files",
+                "--include-dot-paths",
                 "--force",
             ]
         )
@@ -238,7 +238,7 @@ class TestM1F:
             # Use platform-agnostic path checking for .hidden directory
             # Check for .hidden directory using platform-specific path separators
             hidden_path = ".hidden"
-            assert hidden_path in content, "Dot files should be included"
+            assert hidden_path in content, "Dot files and directories should be included"
             # Check for the contents of the hidden file
             assert (
                 "SECRET_KEY=test_secret_key_12345" in content
