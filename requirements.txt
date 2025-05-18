@@ -1,5 +1,6 @@
 tiktoken
 black
-pymarkdownlint 
+pymarkdownlnt
 pytest
 chardet  # optional - for encoding detection
+detect-secrets  # optional - for secret scanning

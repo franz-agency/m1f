@@ -201,6 +201,7 @@ import glob
 import sys
 import time  # Added for time measurement
 import uuid  # Added for UUID generation
+import re
 from pathlib import Path, PureWindowsPath
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
@@ -214,6 +215,14 @@ try:
     CHARDET_AVAILABLE = True
 except ImportError:
     CHARDET_AVAILABLE = False
+
+# Try to import detect_secrets for optional security scanning
+try:
+    from detect_secrets.core.scan import scan_file
+    from detect_secrets.settings import get_settings
+    DETECT_SECRETS_AVAILABLE = True
+except Exception:  # pragma: no cover - library might not be installed
+    DETECT_SECRETS_AVAILABLE = False
 
 # --- Logger Setup ---
 logger = logging.getLogger("m1f")
@@ -382,6 +391,48 @@ def _count_tokens_in_file_content(
 
 
 # --- Helper Functions ---
+
+SENSITIVE_PATTERNS = [
+    re.compile(r"password\s*[=:]\s*\S+", re.IGNORECASE),
+    re.compile(r"secret[_-]?key\s*[=:]\s*\S+", re.IGNORECASE),
+    re.compile(r"api[_-]?key\s*[=:]\s*\S+", re.IGNORECASE),
+    re.compile(r"token\s*[=:]\s*\S+", re.IGNORECASE),
+]
+
+
+def _contains_sensitive_info(text: str) -> bool:
+    """Return True if the text contains potentially sensitive information."""
+    for pattern in SENSITIVE_PATTERNS:
+        if pattern.search(text):
+            return True
+    return False
+
+
+def _scan_files_for_sensitive_info(
+    files_to_process: list[tuple[Path, str]],
+) -> list[str]:
+    """Scan files for sensitive information and return list of relative paths."""
+    flagged: list[str] = []
+    if DETECT_SECRETS_AVAILABLE:
+        for abs_path, rel_path in files_to_process:
+            try:
+                findings = scan_file(str(abs_path), get_settings())
+            except Exception as e:  # pragma: no cover - scanning error
+                logger.warning(f"detect-secrets failed on {abs_path}: {e}")
+                continue
+            if findings:
+                flagged.append(rel_path)
+    else:
+        for abs_path, rel_path in files_to_process:
+            try:
+                content = abs_path.read_text(encoding="utf-8", errors="ignore")
+            except Exception as e:  # pragma: no cover - unlikely read error
+                logger.warning(f"Could not read {abs_path} for security check: {e}")
+                continue
+            if _contains_sensitive_info(content):
+                flagged.append(rel_path)
+    return flagged
+
 
 def _detect_file_encoding(file_path: Path, verbose: bool = False) -> str:
     """
@@ -2138,6 +2189,15 @@ def main():
         default="zip",
         help="Type of archive to create if --create-archive is specified. Default: zip.",
     )
+    parser.add_argument(
+        "--security-check",
+        choices=["abort", "skip", "warn"],
+        help=(
+            "Check files for common secrets before merging. "
+            "'abort': stop processing if secrets are found; no files are written. "
+            "'skip': exclude affected files. 'warn': include files but report at the end."
+        ),
+    )
 
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument(
@@ -2243,6 +2303,29 @@ def main():
         excluded_file_paths=excluded_file_paths,
         gitignore_spec=gitignore_spec,
     )
+
+    # --- Security Check ---
+    if getattr(args, "security_check", None):
+        flagged = _scan_files_for_sensitive_info(files_to_process)
+        if flagged:
+            if args.security_check == "abort":
+                message = (
+                    "Security check failed. Sensitive information detected in: "
+                    + ", ".join(flagged)
+                )
+                logger.error(message)
+                if not args.quiet:
+                    print(message)
+                sys.exit(1)
+            elif args.security_check == "skip":
+                logger.warning(
+                    f"Skipping {len(flagged)} file(s) due to security check."
+                )
+                files_to_process = [
+                    item for item in files_to_process if item[1] not in flagged
+                ]
+            else:  # warn
+                args.flagged_files = flagged
 
     # ---- START: Modification for filename-mtime-hash ----
     if args.filename_mtime_hash and files_to_process:
@@ -2376,6 +2459,15 @@ def main():
         logger.info(
             "Archive creation requested, but no files were processed. Skipping archive creation."
         )
+
+    if getattr(args, "security_check", None) == "warn" and getattr(args, "flagged_files", []):
+        warning_msg = (
+            f"SECURITY WARNING: Sensitive information detected in {len(args.flagged_files)} file(s):\n"
+            + "\n".join(args.flagged_files)
+        )
+        logger.warning(warning_msg)
+        if not args.quiet:
+            print(warning_msg)
 
     # Calculate and log the execution time
     end_time = time.time()
