@@ -241,6 +241,30 @@ python tools/m1f.py -s ./huge_project -o ./analysis.txt \
   --skip-output-file
 ```
 
+### Output Files
+
+By default, `m1f.py` creates several output files to provide comprehensive information about the processed files:
+
+1. **Primary output file** - The combined file specified by `--output-file` containing all processed files with separators
+2. **Log file** - A `.log` file with the same base name as the output file, containing detailed processing information
+3. **File list** - A `_filelist.txt` file containing the paths of all included files
+4. **Directory list** - A `_dirlist.txt` file containing all unique directories from the included files
+5. **Archive file** - An optional backup archive (zip or tar.gz) if `--create-archive` is specified
+
+To create only the primary output file and skip the auxiliary files, use the `--minimal-output` option:
+
+```bash
+# Create only the combined output file without any auxiliary files
+python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
+```
+
+For situations where you want the auxiliary files (logs, lists) but not the primary output file, use `--skip-output-file`:
+
+```bash
+# Generate logs and file lists but skip writing the actual combined file
+python tools/m1f.py -s ./huge_project -o ./analysis.txt --skip-output-file
+```
+
 ### s1f (Split One File) - `tools/s1f.py`
 
 Extracts individual files from a combined file, recreating the original
@@ -548,7 +572,7 @@ The best separator style depends on your specific use case:
    .venv\Scripts\activate
    # On macOS/Linux
    source .venv/bin/activate
-````
+```
 
 2. **Install dependencies:**
 
