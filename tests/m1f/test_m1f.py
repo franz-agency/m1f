@@ -1148,13 +1148,20 @@ class TestM1F:
         base_output_name = "hash_basic"
         output_file_stem = OUTPUT_DIR / base_output_name
 
-        _create_test_file(SOURCE_DIR / "f1.txt", "file1")
-        _create_test_file(SOURCE_DIR / "f2.txt", "file2")
+        # Set up test-specific source directory
+        test_src_dir = SOURCE_DIR / "hash_basic_src"
+        if test_src_dir.exists():
+            shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True)
+
+        # Create test files in test_src_dir
+        _create_test_file(test_src_dir / "f1.txt", "file1")
+        _create_test_file(test_src_dir / "f2.txt", "file2")
 
         run_m1f(
             [
                 "--source-directory",
-                str(SOURCE_DIR),
+                str(test_src_dir),
                 "--output-file",
                 str(output_file_stem.with_suffix(".txt")),
                 "--filename-mtime-hash",
@@ -1174,12 +1181,8 @@ class TestM1F:
             file_hash is not None
         ), f"Could not extract hash from filename: {filename}"
         assert len(file_hash) == 12, f"Expected 12-char hash, got: {file_hash}"
-
-        # Check auxiliary files (if not minimal-output, but we used minimal for simplicity here)
-        # If we didn't use minimal-output, we would check:
-        # assert (OUTPUT_DIR / f"{base_output_name}_{file_hash}.log").exists()
-        # assert (OUTPUT_DIR / f"{base_output_name}_{file_hash}_filelist.txt").exists()
-        # assert (OUTPUT_DIR / f"{base_output_name}_{file_hash}_dirlist.txt").exists()
+        # Clean up test-specific source directory
+        shutil.rmtree(test_src_dir)
 
     def test_filename_mtime_hash_consistency(self):
         """Test that the same file set and mtimes produce the same hash."""
@@ -1460,12 +1463,19 @@ class TestM1F:
         base_output_name = "hash_and_timestamp"
         output_file_stem = OUTPUT_DIR / base_output_name
 
-        _create_test_file(SOURCE_DIR / "f_ts1.txt", "file ts1")
+        # Set up test-specific source directory
+        test_src_dir = SOURCE_DIR / "hash_and_timestamp_src"
+        if test_src_dir.exists():
+            shutil.rmtree(test_src_dir)
+        test_src_dir.mkdir(parents=True)
+
+        # Create test file for timestamp in test_src_dir
+        _create_test_file(test_src_dir / "f_ts1.txt", "file ts1")
 
         run_m1f(
             [
                 "--source-directory",
-                str(SOURCE_DIR),
+                str(test_src_dir),
                 "--output-file",
                 str(output_file_stem.with_suffix(".txt")),
                 "--filename-mtime-hash",
@@ -1515,6 +1525,8 @@ class TestM1F:
         assert timestamp_part_with_suffix.endswith(
             ".txt"
         ), f"Filename suffix incorrect: {filename}"
+        # Clean up test-specific source directory
+        shutil.rmtree(test_src_dir)
 
     def test_filename_mtime_hash_no_files_processed(self):
         """Test that no hash is added if no files are processed."""
