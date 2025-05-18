@@ -40,7 +40,7 @@ KEY FEATURES
   - Exclusion of specific paths from a file, with exact path matching.
 - Control over line endings (LF or CRLF) for script-generated separators.
 - Character encoding handling:
-  - Detection of file encoding with `--detect-encoding` to show original encoding in metadata.
+  - Automatic detection of file encoding when using `--convert-to-charset`, with encoding information included in file metadata.
   - Conversion of files to a specific character set with `--convert-to-charset`.
   - Strict conversion error handling with the option to abort on conversion errors.
 - Multiple output modes:
@@ -160,10 +160,10 @@ NOTES
   very large individual files, the script might take some time to process.
 - Encoding: The script attempts to read files as UTF-8 and writes the output file
   as UTF-8. 
-  With `--detect-encoding`, it will attempt to detect the original encoding of each file and include
-  this information in the metadata. With `--convert-to-charset`, it will convert files from their
-  detected encoding to the specified charset, reporting errors if the conversion fails.
-  Without these options, files with non-UTF-8 encodings might not be handled perfectly,
+  When using `--convert-to-charset`, it will automatically detect the original encoding of each file and include
+  this information in the metadata. Files will be converted from their detected encoding to the 
+  specified charset, reporting errors if the conversion fails.
+  Without conversion, files with non-UTF-8 encodings might not be handled perfectly,
   especially if they contain characters not representable in UTF-8 or if `errors='ignore'`
   has to discard characters.
 - Line Endings of Source Files: The script preserves the original line endings of
@@ -1479,12 +1479,11 @@ def _write_combined_data(
     
     # Set up target encoding if requested
     target_encoding = args.convert_to_charset if hasattr(args, "convert_to_charset") else None
-    detect_encoding = hasattr(args, "detect_encoding") and args.detect_encoding
     abort_on_encoding_error = hasattr(args, "abort_on_encoding_error") and args.abort_on_encoding_error
     
     if target_encoding:
         logger.info(f"Character encoding conversion enabled. Target encoding: {target_encoding}")
-        if not CHARDET_AVAILABLE and not detect_encoding:
+        if not CHARDET_AVAILABLE:
             logger.warning("chardet library not available. Encoding detection will be limited.")
             
     try:
@@ -1500,8 +1499,8 @@ def _write_combined_data(
                 had_encoding_errors = False
                 content = ""
                 
-                if detect_encoding or target_encoding:
-                    # Detect encoding or use target encoding directly
+                if target_encoding:
+                    # Always detect encoding when target encoding is specified
                     try:
                         # Read with encoding detection/conversion
                         content, file_encoding, had_encoding_errors = _read_file_with_encoding(
@@ -1550,7 +1549,7 @@ def _write_combined_data(
                     outfile.write(chosen_linesep)
 
                 # Write the file content
-                if detect_encoding or target_encoding:
+                if target_encoding:
                     # Use the already processed content
                     outfile.write(content)
                 else:
@@ -1797,15 +1796,10 @@ def main():
     
     # Character encoding options
     parser.add_argument(
-        "--detect-encoding",
-        action="store_true",
-        help="Detect and record the original character encoding of each file in metadata.",
-    )
-    parser.add_argument(
         "--convert-to-charset",
         type=str,
         choices=["utf-8", "utf-16", "utf-16-le", "utf-16-be", "ascii", "latin-1", "cp1252"],
-        help="Convert all files to the specified character encoding in the output."
+        help="Convert all files to the specified character encoding. The original encoding is automatically detected and included in metadata when using compatible separator styles."
     )
     parser.add_argument(
         "--abort-on-encoding-error",
