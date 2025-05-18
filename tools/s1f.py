@@ -93,7 +93,7 @@ import logging
 import os
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from datetime import datetime, timezone
 
 # --- Logger Setup ---
@@ -327,6 +327,7 @@ def parse_combined_file(content: str) -> list[dict]:
 
                     # Extract path from metadata
                     path_val = meta.get("original_filepath", "").strip()
+                    path_val = PureWindowsPath(path_val).as_posix()
 
                     # Check if we have a valid path
                     if not path_val:
@@ -370,6 +371,7 @@ def parse_combined_file(content: str) -> list[dict]:
                 try:
                     # Get the path directly from the regex match
                     path_val = match.group(pattern_info["path_group"]).strip()
+                    path_val = PureWindowsPath(path_val).as_posix()
 
                     # Get metadata from JSON
                     json_str = match.group(pattern_info["json_group"])
@@ -409,6 +411,7 @@ def parse_combined_file(content: str) -> list[dict]:
                     continue
             else:
                 path_val = match.group(pattern_info["path_group"]).strip()
+                path_val = PureWindowsPath(path_val).as_posix()
                 
                 # Extract encoding if available
                 if (
@@ -702,6 +705,7 @@ def _write_extracted_files(
     )
     for file_data in extracted_files_data:
         relative_path_str = file_data["path"]
+        normalized = PureWindowsPath(relative_path_str).as_posix()
         file_content_to_write = file_data["content"]
         original_checksum = file_data.get("checksum_sha256")
         original_size_bytes = file_data.get("size_bytes")
@@ -709,14 +713,14 @@ def _write_extracted_files(
         original_encoding = file_data.get("encoding")  # Get original file encoding
 
         # Security check: ensure relative paths do not try to escape the destination directory.
-        if ".." in Path(relative_path_str).parts:
+        if ".." in Path(normalized).parts:
             logger.error(
                 f"Skipping file '{relative_path_str}' due to invalid path components ('..')."
             )
             files_failed_count += 1
             continue
 
-        current_output_path = dest_dir_path / relative_path_str
+        current_output_path = dest_dir_path / normalized
 
         logger.debug(f"Preparing to write: {current_output_path}")
 
