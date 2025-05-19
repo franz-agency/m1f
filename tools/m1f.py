@@ -2341,6 +2341,97 @@ def main():
                     arg_help += "\n"
             
             self.exit(2, f"{self.prog}: error: {message}\n\n{arg_help}\nFor full parameter details, use --help\n")
+            
+        def format_help(self):
+            """Override the default help formatter to create a more readable output."""
+            # Start with usage
+            help_text = self.format_usage() + "\n"
+            
+            # Add description
+            if self.description:
+                help_text += self.description + "\n\n"
+            
+            # Add arguments with better formatting
+            help_text += "Arguments:\n\n"
+            
+            # Format each argument
+            for action in self._actions:
+                if action.option_strings:
+                    # Format option names
+                    names = ", ".join(action.option_strings)
+                    
+                    # Add the parameter names
+                    help_text += f"  {names}\n"
+                    
+                    # Add help text with proper indentation
+                    if action.help:
+                        # Format the description with wrapping
+                        words = action.help.split()
+                        line = "    "  # Initial indentation
+                        
+                        for word in words:
+                            if len(line) + len(word) + 1 > 80:
+                                help_text += f"{line}\n"
+                                line = "    " + word
+                            else:
+                                if line != "    ":
+                                    line += " "
+                                line += word
+                        
+                        # Add the last line
+                        if line.strip():
+                            help_text += f"{line}\n"
+                    
+                    # Add space between parameters
+                    help_text += "\n"
+            
+            # Add epilog with examples
+            if self.epilog:
+                help_text += "\nExamples:\n"
+                lines = self.epilog.strip().split('\n')
+                
+                for line in lines:
+                    if line.startswith('Examples:'):
+                        # Skip the duplicate "Examples:" header from the epilog
+                        continue
+                        
+                    if line.startswith('  %(prog)s'):
+                        # This is an example command
+                        # Replace %(prog)s with actual program name
+                        line = line.replace('%(prog)s', 'python -m tools.m1f')
+                        
+                        # Word-wrap long examples with proper indentation
+                        if len(line) > 80:
+                            # Break the line at 80 chars and add proper indentation
+                            words = line.split()
+                            wrapped_line = ""
+                            current_line = "  "
+                            
+                            for word in words:
+                                if len(current_line) + len(word) + 1 > 80:
+                                    wrapped_line += current_line + "\n    "  # Add indentation for continuation
+                                    current_line = word
+                                else:
+                                    if current_line != "  ":  # Not at the start of the line
+                                        current_line += " "
+                                    current_line += word
+                            
+                            # Add the last line
+                            if current_line:
+                                wrapped_line += current_line
+                            
+                            help_text += wrapped_line + "\n\n"
+                        else:
+                            # Line is short enough, no need to wrap
+                            help_text += f"  {line}\n\n"
+                    elif not line.strip():
+                        # Skip extra blank lines
+                        continue
+                    else:
+                        # Other text, no special formatting
+                        help_text += f"{line}\n"
+            
+            return help_text
     
     parser = CustomArgumentParser(
         description="Combines the content of multiple text files into a single output file, with metadata. "
