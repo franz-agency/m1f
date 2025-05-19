@@ -176,11 +176,8 @@ tests/m1f/output/
 tests/makeonefile/output/
 
 # Test output directories
-tests/splitfiles/extracted/
 tests/splitfiles/output/
-tests/s1f/extracted/
 tests/s1f/output/
-tests/m1f/extracted/
 tests/**/extracted/
 
 # Temporary test files
