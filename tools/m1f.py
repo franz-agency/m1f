@@ -204,6 +204,15 @@ import uuid  # Added for UUID generation
 import re
 from pathlib import Path, PureWindowsPath
 
+# Import colorama for colored output
+try:
+    from colorama import init, Fore, Style
+    COLORAMA_AVAILABLE = True
+    # Initialize colorama
+    init(autoreset=True)
+except ImportError:
+    COLORAMA_AVAILABLE = False
+
 from .path_utils import normalize_path  # Changed to relative import
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
@@ -2310,8 +2319,23 @@ def main():
                     # Format the option names
                     names = ", ".join(action.option_strings)
                     
+                    # Colorize the parameter names if colorama is available
+                    if COLORAMA_AVAILABLE:
+                        # Color the parameter names in cyan
+                        colored_names = ""
+                        for part in names.split(", "):
+                            colored_names += f"{Fore.CYAN}{part}{Style.RESET_ALL}, "
+                        names = colored_names[:-2]  # Remove the trailing comma and space
+                    
                     # Get the full help text
                     help_text = action.help if action.help else ""
+                    
+                    # Colorize any choice values in the help text
+                    if COLORAMA_AVAILABLE and hasattr(action, 'choices') and action.choices:
+                        choices_str = "{" + ",".join(action.choices) + "}"
+                        if help_text and choices_str in help_text:
+                            colored_choices = "{" + f"{Fore.YELLOW}" + ",".join(action.choices) + f"{Style.RESET_ALL}" + "}"
+                            help_text = help_text.replace(choices_str, colored_choices)
                     
                     # Format with proper indentation for multi-line display
                     # First line has the parameter names
@@ -2340,7 +2364,12 @@ def main():
                     # Add a blank line between parameters for readability
                     arg_help += "\n"
             
-            self.exit(2, f"{self.prog}: error: {message}\n\n{arg_help}\nFor full parameter details, use --help\n")
+            # Colorize the error message
+            error_msg = message
+            if COLORAMA_AVAILABLE:
+                error_msg = f"{Fore.RED}{message}{Style.RESET_ALL}"
+            
+            self.exit(2, f"{self.prog}: error: {error_msg}\n\n{arg_help}\nFor full parameter details, use --help\n")
             
         def format_help(self):
             """Override the default help formatter to create a more readable output."""
@@ -2357,8 +2386,24 @@ def main():
             # Format each argument
             for action in self._actions:
                 if action.option_strings:
-                    # Format option names
+                    # Format option names with color if available
                     names = ", ".join(action.option_strings)
+                    
+                    # Colorize the parameter names if colorama is available
+                    if COLORAMA_AVAILABLE:
+                        # Color the parameter names in cyan
+                        colored_names = ""
+                        for part in names.split(", "):
+                            colored_names += f"{Fore.CYAN}{part}{Style.RESET_ALL}, "
+                        names = colored_names[:-2]  # Remove the trailing comma and space
+                        
+                        # If this parameter has choices, colorize them as well
+                        if hasattr(action, 'choices') and action.choices:
+                            choices_str = "{" + ",".join(action.choices) + "}"
+                            # Replace in help text with colored version
+                            if action.help and choices_str in action.help:
+                                colored_choices = "{" + f"{Fore.YELLOW}" + ",".join(action.choices) + f"{Style.RESET_ALL}" + "}"
+                                action.help = action.help.replace(choices_str, colored_choices)
                     
                     # Add the parameter names
                     help_text += f"  {names}\n"
@@ -2399,6 +2444,10 @@ def main():
                         # This is an example command
                         # Replace %(prog)s with actual program name
                         line = line.replace('%(prog)s', 'python -m tools.m1f')
+                        
+                        # Colorize the command if colorama is available
+                        if COLORAMA_AVAILABLE:
+                            line = f"{Fore.GREEN}{line}{Style.RESET_ALL}"
                         
                         # Word-wrap long examples with proper indentation
                         if len(line) > 80:
