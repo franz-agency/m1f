@@ -1,6 +1,7 @@
 code
-code\javascript
-code\python
+code/javascript
+code/python
 config
 docs
+exotic_encodings
 file_extensions_test
