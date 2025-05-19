@@ -2443,36 +2443,23 @@ def main():
                     if line.startswith('  %(prog)s'):
                         # This is an example command
                         # Replace %(prog)s with actual program name
-                        line = line.replace('%(prog)s', 'python -m tools.m1f')
+                        example_line = line.replace('%(prog)s', 'python -m tools.m1f')
                         
-                        # Colorize the command if colorama is available
-                        if COLORAMA_AVAILABLE:
-                            line = f"{Fore.GREEN}{line}{Style.RESET_ALL}"
+                        # Colorize parts: command in green, parameters in blue
+                        parts = example_line.split()
                         
-                        # Word-wrap long examples with proper indentation
-                        if len(line) > 80:
-                            # Break the line at 80 chars and add proper indentation
-                            words = line.split()
-                            wrapped_line = ""
-                            current_line = "  "
-                            
-                            for word in words:
-                                if len(current_line) + len(word) + 1 > 80:
-                                    wrapped_line += current_line + "\n    "  # Add indentation for continuation
-                                    current_line = word
-                                else:
-                                    if current_line != "  ":  # Not at the start of the line
-                                        current_line += " "
-                                    current_line += word
-                            
-                            # Add the last line
-                            if current_line:
-                                wrapped_line += current_line
-                            
-                            help_text += wrapped_line + "\n\n"
-                        else:
-                            # Line is short enough, no need to wrap
-                            help_text += f"  {line}\n\n"
+                        # Colorize first part (command) in green
+                        if COLORAMA_AVAILABLE and parts:
+                            parts[0] = f"{Fore.GREEN}{parts[0]}{Style.RESET_ALL}"
+                        
+                        # Colorize parameters in blue
+                        for i in range(1, len(parts)):
+                            if parts[i].startswith('-') and COLORAMA_AVAILABLE:
+                                parts[i] = f"{Fore.CYAN}{parts[i]}{Style.RESET_ALL}"
+                        
+                        # Combine parts back into a single line
+                        example_line = "  " + " ".join(parts)
+                        help_text += example_line + "\n\n"
                     elif not line.strip():
                         # Skip extra blank lines
                         continue
@@ -2489,7 +2476,7 @@ def main():
         epilog="""Examples:
   %(prog)s --source-directory "./src" --output-file "combined_files.txt"
   %(prog)s -s "/home/user/projects/my_app" -o "/tmp/app_bundle.md" -t --separator-style Markdown --force
-  %(prog)s -s . -o archive.txt --additional-excludes "docs_archive" "test_data" --include-dot-paths --line-ending crlf
+  %(prog)s -s . -o archive.txt --excludes "docs_archive" "test_data" --include-dot-paths --line-ending crlf
   %(prog)s -s ./config_files --include-dot-paths --include-binary-files -o all_configs.txt --verbose
   %(prog)s -i ./file_list.txt -o bundle.all --create-archive --archive-type tar.gz
   %(prog)s -s ./src -o bundle.txt --include-extensions .txt .json .md --exclude-extensions .tmp
