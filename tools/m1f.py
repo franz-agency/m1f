@@ -1413,7 +1413,7 @@ def _process_paths_from_input_file(input_file_path: Path, source_dir: Optional[P
                 if not line or line.startswith("#"):
                     continue  # Skip empty lines and comments
 
-                logger.info(f"Processing path from input file: {line}")
+                logger.debug(f"Processing path from input file: {line}")
 
                 if any(ch in line for ch in GLOB_WILDCARD_CHARS):
                     pattern_path = Path(line)
@@ -1426,7 +1426,7 @@ def _process_paths_from_input_file(input_file_path: Path, source_dir: Optional[P
                     for match in matches:
                         matched_path = Path(match).resolve()
                         paths.append(matched_path)
-                        logger.info(f"Expanded '{line}' -> '{matched_path}'")
+                        logger.debug(f"Expanded '{line}' -> '{matched_path}'")
                     continue
 
                 path_obj = Path(line)
@@ -1435,16 +1435,14 @@ def _process_paths_from_input_file(input_file_path: Path, source_dir: Optional[P
                 else:
                     path_obj = path_obj.expanduser().resolve()
 
-                logger.info(f"Resolved path: {path_obj}, exists: {path_obj.exists()}")
+                logger.debug(f"Resolved path: {path_obj}, exists: {path_obj.exists()}")
                 paths.append(path_obj)
 
         # Deduplicate paths (keep parents, remove children)
         deduped_paths = _deduplicate_paths(paths)
         logger.info(f"After deduplication: {len(deduped_paths)} paths")
         for path in deduped_paths:
-            logger.info(
-                f"Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}"
-            )
+            logger.debug(f"Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}")
         return deduped_paths
     except Exception as e:
         logger.error(f"Error processing input file: {e}")
@@ -1553,7 +1551,6 @@ def _is_file_excluded(
         if args.verbose:
             logger.debug(f"Excluding file (exact match from --excludes): {file_path}")
         return True
-
     if hasattr(args, "exclude_paths") and args.exclude_paths:
         rel_path_str = str(
             file_path.relative_to(args.source_base_dir)
@@ -1651,7 +1648,6 @@ def _is_file_excluded(
         p = p.parent
     return False
 
-
 def _gather_files_to_process(
     source_dir: Path,
     args: argparse.Namespace,
@@ -1697,8 +1693,7 @@ def _gather_files_to_process(
             if item_path.is_file():
                 abs_path_str = str(item_path.resolve())
                 if abs_path_str in added_file_absolute_paths:
-                    if args.verbose:
-                        logger.debug(f"Skipping already added file: {item_path}")
+                    logger.debug(f"Skipping already added file: {item_path}")
                     continue
                 if not _is_file_excluded(
                     item_path,
@@ -1708,17 +1703,23 @@ def _gather_files_to_process(
                     gitignore_spec,
                     explicitly_included=True,  # File paths from input file are explicitly included
                 ):
-                    files_to_process.append((item_path, normalize_path(item_path)))
+                    # Calculate the path relative to source_dir if possible, otherwise use the whole path
+                    try:
+                        rel_path = str(item_path.relative_to(source_dir))
+                    except ValueError:
+                        # If item_path is not relative to source_dir, use normalize_path
+                        rel_path = normalize_path(item_path)
+                    
+                    files_to_process.append((item_path, rel_path))
                     added_file_absolute_paths.add(abs_path_str)
                 # else: _is_file_excluded logs if verbose
 
             elif item_path.is_dir():
                 # Check if the directory itself is in the excluded names list
                 if item_path.name.lower() in excluded_dir_names_lower:
-                    if args.verbose:
-                        logger.debug(
-                            f"Skipping directory '{item_path}' from input list as its name is excluded."
-                        )
+                    logger.debug(
+                        f"Skipping directory '{item_path}' from input list as its name is excluded."
+                    )
                     continue
 
                 # Always include directories that were explicitly specified in the input file,
@@ -1734,25 +1735,23 @@ def _gather_files_to_process(
                         for p in input_paths
                     )
                     if not explicit_dir:
-                        if args.verbose:
-                            logger.debug(
-                                f"Skipping dot directory '{item_path}' from input list (use --include-dot-paths to include)."
-                            )
+                        logger.debug(
+                            f"Skipping dot directory '{item_path}' from input list (use --include-dot-paths to include)."
+                        )
                         continue
-                    elif args.verbose:
+                    else:
                         logger.debug(
                             f"Including explicitly specified dot directory: {item_path}"
                         )
 
-                if args.verbose:
-                    logger.debug(f"Scanning directory from input file: {item_path}")
+                logger.debug(f"Scanning directory from input file: {item_path}")
                 for file_path_in_dir in item_path.rglob("*"):
                     # Skip processing files in dot directories if include_dot_paths is not set
                     if not args.include_dot_paths:
                         # Check if any parent directory starts with a dot
                         parts = file_path_in_dir.relative_to(item_path).parts
                         if any(part.startswith(".") for part in parts):
-                            if args.verbose and file_path_in_dir.is_file():
+                            if file_path_in_dir.is_file():
                                 logger.debug(
                                     f"Skipping file in dot directory: {file_path_in_dir}"
                                 )
@@ -1761,10 +1760,9 @@ def _gather_files_to_process(
                     if file_path_in_dir.is_file():
                         abs_path_str = str(file_path_in_dir.resolve())
                         if abs_path_str in added_file_absolute_paths:
-                            if args.verbose:
-                                logger.debug(
-                                    f"Skipping already added file: {file_path_in_dir}"
-                                )
+                            logger.debug(
+                                f"Skipping already added file: {file_path_in_dir}"
+                            )
                             continue
                         if not _is_file_excluded(
                             file_path_in_dir,
@@ -1773,10 +1771,16 @@ def _gather_files_to_process(
                             excluded_file_paths,
                             gitignore_spec,
                         ):
-                            relative_path = file_path_in_dir.relative_to(item_path)
-                            files_to_process.append(
-                                (file_path_in_dir, relative_path.as_posix())
-                            )
+                            # Try to make the path relative to source_dir first, if possible
+                            try:
+                                rel_path = file_path_in_dir.relative_to(source_dir)
+                                rel_path_str = rel_path.as_posix()
+                            except ValueError:
+                                # Fall back to making it relative to the directory from the input file
+                                rel_path = file_path_in_dir.relative_to(item_path)
+                                rel_path_str = rel_path.as_posix()
+                            
+                            files_to_process.append((file_path_in_dir, rel_path_str))
                             added_file_absolute_paths.add(abs_path_str)
                         # else: _is_file_excluded logs if verbose
     else:
@@ -2825,3 +2829,5 @@ if __name__ == "__main__":
         # Fallback for any unexpected errors not caught in main()
         logger.critical(f"An unexpected critical error occurred: {e}", exc_info=True)
         sys.exit(1)
+
+
