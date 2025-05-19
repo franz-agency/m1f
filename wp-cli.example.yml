@@ -1,0 +1,5 @@
+# Example configuration for WP-CLI
+# Copy to `wp-cli.yml` and adjust the settings for your environment.
+path: /var/www/html
+url: https://example.com
+user: admin
