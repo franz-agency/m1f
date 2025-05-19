@@ -24,9 +24,16 @@ def test_exotic_encoding_conversion():
     output_dir = Path(__file__).parent / "output"
     output_file = output_dir / "test_encoding_utf16le.txt"
 
+    # Ensure the directory path exists and is properly resolved
+    test_dir = test_dir.resolve()
+    
+    # Print path for debugging
+    print(f"Looking for exotic encoding test files in: {test_dir}")
+    print(f"Files found: {[f.name for f in test_dir.glob('*.txt') if f.is_file()]}")
+
     # Skip test if the exotic encoding test files don't exist
     if not test_dir.exists() or not any(test_dir.glob("*.txt")):
-        pytest.skip("Exotic encoding test files not found in source/exotic_encodings")
+        pytest.skip(f"Exotic encoding test files not found in {test_dir}")
 
     # Create output dir if it doesn't exist
     output_dir.mkdir(exist_ok=True)
