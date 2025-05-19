@@ -95,12 +95,22 @@ import re
 import sys
 from pathlib import Path, PureWindowsPath
 
+# Import colorama for colored output
+try:
+    from colorama import init, Fore, Style
+    COLORAMA_AVAILABLE = True
+    # Initialize colorama
+    init(autoreset=True)
+except ImportError:
+    COLORAMA_AVAILABLE = False
+
 from path_utils import convert_to_posix_path
 from datetime import datetime, timezone
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(levelname)-8s: %(message)s")
+# We'll configure this later in _configure_logging
+# Remove the initial basicConfig call since we're handling it in _configure_logging
 
 # --- Global Definitions ---
 LF = "\n"
@@ -172,9 +182,53 @@ RE_MARKDOWN_SEP = re.compile(
 
 def _configure_logging(verbose: bool):
     """Configures logging level based on verbosity."""
+    logger_instance = logging.getLogger(__name__)
+    
+    # Create a custom formatter that adds color
+    class ColoredFormatter(logging.Formatter):
+        def format(self, record):
+            if COLORAMA_AVAILABLE:
+                # Add colors based on log level
+                if record.levelno >= logging.ERROR:
+                    level_color = f"{Fore.RED}{record.levelname}{Style.RESET_ALL}"
+                elif record.levelno >= logging.WARNING:
+                    level_color = f"{Fore.YELLOW}{record.levelname}{Style.RESET_ALL}"
+                elif record.levelno >= logging.INFO:
+                    level_color = f"{Fore.GREEN}{record.levelname}{Style.RESET_ALL}"
+                else:  # DEBUG
+                    level_color = f"{Fore.BLUE}{record.levelname}{Style.RESET_ALL}"
+                
+                # Create a copy of the record to avoid modifying the original
+                colored_record = logging.makeLogRecord(record.__dict__)
+                colored_record.levelname = level_color
+                return super().format(colored_record)
+            else:
+                return super().format(record)
+    
+    # Set the log level
+    log_level = logging.DEBUG if verbose else logging.INFO
+    logger_instance.setLevel(log_level)
+    
+    # Remove any existing handlers
+    for handler in logger_instance.handlers[:]:
+        logger_instance.removeHandler(handler)
+    
+    # Create and add console handler with colored formatter
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(log_level)
+    
+    if COLORAMA_AVAILABLE:
+        # Use colored formatter if colorama is available
+        formatter = ColoredFormatter("%(levelname)-8s: %(message)s")
+    else:
+        # Use standard formatter otherwise
+        formatter = logging.Formatter("%(levelname)-8s: %(message)s")
+        
+    console_handler.setFormatter(formatter)
+    logger_instance.addHandler(console_handler)
+    
     if verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-        logger.debug("Verbose mode enabled.")
+        logger_instance.debug("Verbose mode enabled.")
 
 
 def _resolve_input_file(input_file_str: str) -> Path:
@@ -887,6 +941,171 @@ def _write_extracted_files(
     return files_created_count, files_overwritten_count, files_failed_count
 
 
+# Create a custom ArgumentParser that shows full help on error
+class CustomArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        # Print the error message
+        self.print_usage()
+        # Print a list of all available arguments with short and long form
+        arg_help = "Available arguments:\n"
+        
+        # Format each argument with its options and full description
+        for action in self._actions:
+            if action.option_strings:
+                # Format the option names
+                names = ", ".join(action.option_strings)
+                
+                # Colorize the parameter names if colorama is available
+                if COLORAMA_AVAILABLE:
+                    # Color the parameter names in cyan
+                    colored_names = ""
+                    for part in names.split(", "):
+                        colored_names += f"{Fore.CYAN}{part}{Style.RESET_ALL}, "
+                    names = colored_names[:-2]  # Remove the trailing comma and space
+                
+                # Get the full help text
+                help_text = action.help if action.help else ""
+                
+                # Colorize any choice values in the help text
+                if COLORAMA_AVAILABLE and hasattr(action, 'choices') and action.choices:
+                    choices_str = "{" + ",".join(action.choices) + "}"
+                    if help_text and choices_str in help_text:
+                        colored_choices = "{" + f"{Fore.YELLOW}" + ",".join(action.choices) + f"{Style.RESET_ALL}" + "}"
+                        help_text = help_text.replace(choices_str, colored_choices)
+                
+                # Format with proper indentation for multi-line display
+                # First line has the parameter names
+                arg_help += f"  {names}\n"
+                
+                # Wrap the help text to 80 characters and indent
+                if help_text:
+                    # Split the help text into words
+                    words = help_text.split()
+                    line = "    "  # Initial indentation
+                    
+                    # Build lines with proper wrapping
+                    for word in words:
+                        if len(line) + len(word) + 1 > 80:  # +1 for the space
+                            arg_help += f"{line}\n"
+                            line = "    " + word  # Start new line with indentation
+                        else:
+                            if line != "    ":  # Not at the start of a line
+                                line += " "
+                            line += word
+                    
+                    # Add the last line if there's content
+                    if line.strip():
+                        arg_help += f"{line}\n"
+                
+                # Add a blank line between parameters for readability
+                arg_help += "\n"
+        
+        # Colorize the error message
+        error_msg = message
+        if COLORAMA_AVAILABLE:
+            error_msg = f"{Fore.RED}{message}{Style.RESET_ALL}"
+        
+        self.exit(2, f"{self.prog}: error: {error_msg}\n\n{arg_help}\nFor full parameter details, use --help\n")
+        
+    def format_help(self):
+        """Override the default help formatter to create a more readable output."""
+        # Start with usage
+        help_text = self.format_usage() + "\n"
+        
+        # Add description
+        if self.description:
+            help_text += self.description + "\n\n"
+        
+        # Add arguments with better formatting
+        help_text += "Arguments:\n\n"
+        
+        # Format each argument
+        for action in self._actions:
+            if action.option_strings:
+                # Format option names with color if available
+                names = ", ".join(action.option_strings)
+                
+                # Colorize the parameter names if colorama is available
+                if COLORAMA_AVAILABLE:
+                    # Color the parameter names in cyan
+                    colored_names = ""
+                    for part in names.split(", "):
+                        colored_names += f"{Fore.CYAN}{part}{Style.RESET_ALL}, "
+                    names = colored_names[:-2]  # Remove the trailing comma and space
+                    
+                    # If this parameter has choices, colorize them as well
+                    if hasattr(action, 'choices') and action.choices:
+                        choices_str = "{" + ",".join(action.choices) + "}"
+                        # Replace in help text with colored version
+                        if action.help and choices_str in action.help:
+                            colored_choices = "{" + f"{Fore.YELLOW}" + ",".join(action.choices) + f"{Style.RESET_ALL}" + "}"
+                            action.help = action.help.replace(choices_str, colored_choices)
+                
+                # Add the parameter names
+                help_text += f"  {names}\n"
+                
+                # Add help text with proper indentation
+                if action.help:
+                    # Format the description with wrapping
+                    words = action.help.split()
+                    line = "    "  # Initial indentation
+                    
+                    for word in words:
+                        if len(line) + len(word) + 1 > 80:
+                            help_text += f"{line}\n"
+                            line = "    " + word
+                        else:
+                            if line != "    ":
+                                line += " "
+                            line += word
+                    
+                    # Add the last line
+                    if line.strip():
+                        help_text += f"{line}\n"
+                
+                # Add space between parameters
+                help_text += "\n"
+        
+        # Add epilog with examples
+        if self.epilog:
+            help_text += "\nExamples:\n"
+            lines = self.epilog.strip().split('\n')
+            
+            for line in lines:
+                if line.startswith('Examples:'):
+                    # Skip the duplicate "Examples:" header from the epilog
+                    continue
+                    
+                if line.startswith('  %(prog)s'):
+                    # This is an example command
+                    # Replace %(prog)s with actual program name
+                    example_line = line.replace('%(prog)s', 'python -m tools.s1f')
+                    
+                    # Colorize parts: command in green, parameters in blue
+                    parts = example_line.split()
+                    
+                    # Colorize first part (command) in green
+                    if COLORAMA_AVAILABLE and parts:
+                        parts[0] = f"{Fore.GREEN}{parts[0]}{Style.RESET_ALL}"
+                    
+                    # Colorize parameters in blue
+                    for i in range(1, len(parts)):
+                        if parts[i].startswith('-') and COLORAMA_AVAILABLE:
+                            parts[i] = f"{Fore.CYAN}{parts[i]}{Style.RESET_ALL}"
+                    
+                    # Combine parts back into a single line
+                    example_line = "  " + " ".join(parts)
+                    help_text += example_line + "\n\n"
+                elif not line.strip():
+                    # Skip extra blank lines
+                    continue
+                else:
+                    # Other text, no special formatting
+                    help_text += f"{line}\n"
+        
+        return help_text
+
+
 def main():
     """
     Parses command-line arguments and orchestrates the file splitting process.
@@ -900,9 +1119,16 @@ def main():
 
     By default, all files are written using UTF-8 encoding.
     """
-    parser = argparse.ArgumentParser(
+    parser = CustomArgumentParser(
         description="Splits a combined file (from m1f.py) back into individual files.",
-        epilog="Example: %(prog)s -i combined.txt -d ./output_src --force",
+        epilog="""Examples:
+  %(prog)s --input-file combined.txt --destination-directory ./extracted_files
+  %(prog)s -i combined.txt -d ./extracted_files -f --verbose
+  %(prog)s -i combined.txt -d ./extracted_files --respect-encoding
+  %(prog)s -i combined.txt -d ./extracted_files --target-encoding utf-8
+  %(prog)s -i combined.txt -d ./extracted_files --timestamp-mode current
+  %(prog)s -i combined.txt -d ./extracted_files --ignore-checksum
+  %(prog)s -i combined.txt -d ./extracted_files --force""",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
@@ -961,6 +1187,8 @@ def main():
     )
 
     args = parser.parse_args()
+    
+    # Configure logging early with the verbose flag
     _configure_logging(args.verbose)
 
     input_file_path = _resolve_input_file(args.input_file)
