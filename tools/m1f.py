@@ -1942,22 +1942,24 @@ def _write_directory_paths_list(
     unique_dirs = set()
 
     for _, rel_path in files_to_process:
-        # Get the parent directory of each file
-        normalized = normalize_path(rel_path)
-        path_obj = Path(normalized)
-        
-        # Add the parent directory and all its parent directories
-        # but skip the file itself
-        current_path = path_obj.parent
-        
-        # Skip if we somehow end up with an empty parent path
-        if not current_path or str(current_path) == "":
+        # Get just the directory part of the relative path
+        dir_path = os.path.dirname(rel_path)
+        if not dir_path:
             continue
             
-        # Add all parent directories
-        while str(current_path) != ".":
-            unique_dirs.add(current_path.as_posix())
-            current_path = current_path.parent
+        # Split the path into parts
+        parts = dir_path.split('/')
+        
+        # Build up parent paths
+        current = ""
+        for part in parts:
+            if not part:
+                continue
+            if current:
+                current = f"{current}/{part}"
+            else:
+                current = part
+            unique_dirs.add(current)
 
     # Sort the directories alphabetically
     sorted_dirs = sorted(unique_dirs)
