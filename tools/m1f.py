@@ -2295,7 +2295,54 @@ def main():
     """
     # Start timing the execution
     start_time = time.time()
-    parser = argparse.ArgumentParser(
+    
+    # Create a custom ArgumentParser that shows full help on error
+    class CustomArgumentParser(argparse.ArgumentParser):
+        def error(self, message):
+            # Print the error message
+            self.print_usage()
+            # Print a list of all available arguments with short and long form
+            arg_help = "Available arguments:\n"
+            
+            # Format each argument with its options and full description
+            for action in self._actions:
+                if action.option_strings:
+                    # Format the option names
+                    names = ", ".join(action.option_strings)
+                    
+                    # Get the full help text
+                    help_text = action.help if action.help else ""
+                    
+                    # Format with proper indentation for multi-line display
+                    # First line has the parameter names
+                    arg_help += f"  {names}\n"
+                    
+                    # Wrap the help text to 80 characters and indent
+                    if help_text:
+                        # Split the help text into words
+                        words = help_text.split()
+                        line = "    "  # Initial indentation
+                        
+                        # Build lines with proper wrapping
+                        for word in words:
+                            if len(line) + len(word) + 1 > 80:  # +1 for the space
+                                arg_help += f"{line}\n"
+                                line = "    " + word  # Start new line with indentation
+                            else:
+                                if line != "    ":  # Not at the start of a line
+                                    line += " "
+                                line += word
+                        
+                        # Add the last line if there's content
+                        if line.strip():
+                            arg_help += f"{line}\n"
+                    
+                    # Add a blank line between parameters for readability
+                    arg_help += "\n"
+            
+            self.exit(2, f"{self.prog}: error: {message}\n\n{arg_help}\nFor full parameter details, use --help\n")
+    
+    parser = CustomArgumentParser(
         description="Combines the content of multiple text files into a single output file, with metadata. "
         "Optionally, creates a backup archive (zip or tar.gz) of the processed files. "
         "Useful for code reviews, documentation bundling, or sharing multiple files as one.",
