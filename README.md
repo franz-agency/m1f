@@ -91,6 +91,22 @@ python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
   --include-extensions .php .js .css --exclude-paths-file ./exclude_build_files.txt
 ```
 
+### WordPress Content Export
+
+```bash
+# Install the HTML-to-Markdown dependency
+pip install markdownify
+
+# Export all posts and pages to Markdown using WP-CLI
+python tools/wp_export_md.py --output-dir ./wp-md --wp-path /var/www/html
+
+# Combine the exported Markdown files
+python tools/m1f.py -s ./wp-md -o ./wp_content.m1f.txt
+```
+
+The repository includes a sample configuration file `wp-cli.example.yml` that
+you can copy to `wp-cli.yml` and adjust for your WordPress installation.
+
 ### Project Knowledge Base
 
 ```bash
