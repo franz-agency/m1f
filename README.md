@@ -49,8 +49,6 @@ These tools help solve a core challenge when working with AI assistants:
    pip install -r requirements.txt
    ```
 
-````
-
 ## Requirements
 
 - Python 3.9+
@@ -65,7 +63,7 @@ You can install all Python dependencies using:
 
 ```bash
 pip install -r requirements.txt
-````
+```
 
 ## Common Use Cases
 
@@ -131,6 +129,25 @@ python tools/m1f.py -s ./docs -o ./snapshots/docs.m1f.txt \
 python -m tools.m1f --source-directory "./" --output-file ".m1f/m1f_project.txt" --excludes LICENSE.md package*.json -f --exclude-paths-file .gitignore --separator-style MachineReadable
 ```
 
+### Code Review with Selected Files
+
+```bash
+# Create a file list with the files you want to review
+# Then combine them using the source directory for resolving paths
+python tools/m1f.py -s ./project -i ./code_review_files.txt -o ./review_bundle.m1f.txt \
+  --separator-style Markdown
+```
+
+The file list (code_review_files.txt) can contain relative paths like:
+
+```
+# Core components to review
+src/components/Button.js
+src/utils/helpers.js
+# Tests for these components
+tests/components/Button.test.js
+```
+
 ## The m1f Toolset
 
 ### m1f (Make One File) - `tools/m1f.py`
@@ -152,7 +169,7 @@ formatting.
 | Option                      | Description                                                                                                                                                                                                                                                      |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `-s, --source-directory`    | Path to the directory containing files to process                                                                                                                                                                                                                |
-| `-i, --input-file`          | Path to a file containing a list of files/directories to process                                                                                                                                                                                                 |
+| `-i, --input-file`          | Path to a file containing a list of files/directories to process. Can be used together with --source-directory to resolve relative paths in the input file against the source directory                                                                          |
 | `-o, --output-file`         | Path for the combined output file                                                                                                                                                                                                                                |
 | `-f, --force`               | Force overwrite of existing output file without prompting                                                                                                                                                                                                        |
 | `-t, --add-timestamp`       | Add a timestamp (\_YYYYMMDD_HHMMSS) to the output filename. Useful for versioning and preventing accidental overwrite of previous output files                                                                                                                   |
@@ -168,7 +185,7 @@ formatting.
 | `--line-ending`             | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                                                     |
 | `--convert-to-charset`      | Convert all files to the specified character encoding (`utf-8` [default], `utf-16`, `utf-16-le`, `utf-16-be`, `ascii`, `latin-1`, `cp1252`). The original encoding is automatically detected and included in the metadata when using compatible separator styles |
 | `--abort-on-encoding-error` | Abort processing if encoding conversion errors occur. Without this flag, characters that cannot be represented will be replaced                                                                                                                                  |
-| `-v, --verbose`             | Enable verbose logging                                                                                                                                                                                                                                           |
+| `-v, --verbose`             | Enable verbose logging. Without this flag, only summary information is shown, and detailed file-by-file logs are written to the log file instead of the console                                                                                                  |
 | `--minimal-output`          | Generate only the combined output file (no auxiliary files)                                                                                                                                                                                                      |
 | `--skip-output-file`        | Execute operations but skip writing the final output file                                                                                                                                                                                                        |
 | `-q, --quiet`               | Suppress all console output                                                                                                                                                                                                                                      |
@@ -190,6 +207,16 @@ Using an input file containing paths to process (one per line):
 ```bash
 python tools/m1f.py -i filelist.txt -o combined_output.txt
 ```
+
+Using both source directory and input file together:
+
+```bash
+python tools/m1f.py -s ./source_code -i ./file_list.txt -o ./combined.txt
+```
+
+This resolves relative paths in the input file against the source directory,
+which is useful when your input file contains paths relative to your project
+root.
 
 Using MachineReadable style with verbose logging:
 
@@ -635,16 +662,17 @@ def example():
 ```
 ````
 
-````
-
 **Best for:**
+
 - Creating documentation that will be rendered in Markdown viewers
 - Sharing code snippets that benefit from syntax highlighting
-- Generating readable reports that might be included in wikis or other Markdown-based systems
+- Generating readable reports that might be included in wikis or other
+  Markdown-based systems
 
 ### MachineReadable Style
 
-A robust format designed for reliable automated parsing and processing. It uses unique boundary markers with UUIDs and structured JSON metadata:
+A robust format designed for reliable automated parsing and processing. It uses
+unique boundary markers with UUIDs and structured JSON metadata:
 
 ```text
 --- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-123456789abc ---
@@ -663,7 +691,7 @@ METADATA_JSON:
 # File content here
 
 --- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-123456789abc ---
-````
+```
 
 **Best for:**
 
