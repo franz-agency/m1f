@@ -9,15 +9,16 @@ pytest.importorskip("detect_secrets")
 # Reuse helper from main test suite
 from test_m1f import run_m1f, SOURCE_DIR, OUTPUT_DIR
 
+
 # Skip the abort test since it's difficult to mock the SystemExit behavior properly
 @pytest.mark.skip(reason="Security abort test is difficult to mock correctly")
 def test_security_check_abort():
     output_file = OUTPUT_DIR / "security_abort.txt"
-    
+
     # Make sure the file doesn't exist before starting the test
     if output_file.exists():
         output_file.unlink()
-    
+
     # The run_m1f function catches SystemExit internally, so we can't test for it directly
     # Instead, we'll check if the security check output file was created
     result = run_m1f(
