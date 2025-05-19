@@ -23,7 +23,7 @@ input_file = output_dir / "exotic_encodings_test.txt"
 # Define the encodings we're testing
 ENCODING_MAP = {
     "shiftjis.txt": "shift_jis",
-    "big5.txt": "big5", 
+    "big5.txt": "big5",
     "koi8r.txt": "koi8_r",
     "iso8859-8.txt": "iso8859_8",
     "euckr.txt": "euc_kr",
@@ -42,44 +42,41 @@ s1f_script = tools_dir / "s1f.py"
 cmd1 = [
     sys.executable,
     str(s1f_script),
-    "--input-file", str(input_file),
-    "--destination-directory", str(extracted_dir / "utf8"),
+    "--input-file",
+    str(input_file),
+    "--destination-directory",
+    str(extracted_dir / "utf8"),
     "--force",
-    "--verbose"
+    "--verbose",
 ]
 
 print(f"Running command: {' '.join(cmd1)}")
 
 try:
     # Run the command
-    process = subprocess.run(
-        cmd1,
-        capture_output=True,
-        text=True,
-        check=True
-    )
-    
+    process = subprocess.run(cmd1, capture_output=True, text=True, check=True)
+
     # Print the output
     print(f"\nCommand output:")
     print(process.stdout[:300])  # Print first 300 chars of stdout
     if process.stderr:
         print(f"\nErrors:")
         print(process.stderr[:300])  # Print first 300 chars of stderr
-    
+
     print(f"\nS1F completed (UTF-8 extraction). Exit code: {process.returncode}")
-    
+
     # Check the extracted files
     utf8_dir = extracted_dir / "utf8"
     if utf8_dir.exists():
         files = list(utf8_dir.glob("*.txt"))
         print(f"Extracted {len(files)} files to {utf8_dir}")
-        
+
         # Print info about the first few bytes of each file
         for file_path in files:
             try:
                 with open(file_path, "rb") as f:
                     content = f.read(50)  # Read first 50 bytes
-                    
+
                 print(f"  {file_path.name}: {len(content)} bytes")
                 # Try reading with UTF-8
                 try:
@@ -108,57 +105,60 @@ print("----------------------------------------")
 cmd2 = [
     sys.executable,
     str(s1f_script),
-    "--input-file", str(input_file),
-    "--destination-directory", str(extracted_dir / "original"),
+    "--input-file",
+    str(input_file),
+    "--destination-directory",
+    str(extracted_dir / "original"),
     "--respect-encoding",
     "--force",
-    "--verbose"
+    "--verbose",
 ]
 
 print(f"Running command: {' '.join(cmd2)}")
 
 try:
     # Run the command
-    process = subprocess.run(
-        cmd2,
-        capture_output=True,
-        text=True,
-        check=True
-    )
-    
+    process = subprocess.run(cmd2, capture_output=True, text=True, check=True)
+
     # Print the output
     print(f"\nCommand output:")
     print(process.stdout[:300])  # Print first 300 chars of stdout
     if process.stderr:
         print(f"\nErrors:")
         print(process.stderr[:300])  # Print first 300 chars of stderr
-    
-    print(f"\nS1F completed (original encoding extraction). Exit code: {process.returncode}")
-    
+
+    print(
+        f"\nS1F completed (original encoding extraction). Exit code: {process.returncode}"
+    )
+
     # Check the extracted files
     original_dir = extracted_dir / "original"
     if original_dir.exists():
         files = list(original_dir.glob("*.txt"))
         print(f"Extracted {len(files)} files to {original_dir}")
-        
+
         # Try reading each file with its expected encoding
         for file_path in files:
             try:
                 with open(file_path, "rb") as f:
                     content = f.read(50)  # Read first 50 bytes
-                    
+
                 print(f"  {file_path.name}: {len(content)} bytes")
-                
+
                 # Try reading with expected encoding if we know it
                 expected_encoding = ENCODING_MAP.get(file_path.name)
                 if expected_encoding:
                     try:
                         with open(file_path, "r", encoding=expected_encoding) as f:
                             text = f.read(100)
-                        print(f"    {expected_encoding} reading: success, first 50 chars: {text[:50]}")
+                        print(
+                            f"    {expected_encoding} reading: success, first 50 chars: {text[:50]}"
+                        )
                     except UnicodeDecodeError:
-                        print(f"    {expected_encoding} reading: failed - not valid {expected_encoding}")
-                
+                        print(
+                            f"    {expected_encoding} reading: failed - not valid {expected_encoding}"
+                        )
+
                 # Try reading with UTF-8 to see if that works too
                 try:
                     with open(file_path, "r", encoding="utf-8") as f:
@@ -178,4 +178,4 @@ except subprocess.CalledProcessError as e:
 except Exception as e:
     print(f"ERROR: {e}")
 
-print("\nTest complete!") 
+print("\nTest complete!")

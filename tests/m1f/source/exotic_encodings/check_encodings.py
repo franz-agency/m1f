@@ -14,8 +14,10 @@ files_to_check = [f for f in script_dir.glob("*.txt") if not f.name.endswith(".u
 
 # Check each file
 for filepath in files_to_check:
-    with open(filepath, 'rb') as f:
+    with open(filepath, "rb") as f:
         raw_data = f.read()
         result = chardet.detect(raw_data)
-        
-    print(f"{filepath.name}: {result['encoding']} (confidence: {result['confidence']:.2f})") 
+
+    print(
+        f"{filepath.name}: {result['encoding']} (confidence: {result['confidence']:.2f})"
+    )

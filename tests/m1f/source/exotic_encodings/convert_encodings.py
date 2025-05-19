@@ -23,19 +23,19 @@ script_dir = Path(__file__).parent
 # Process each file
 for filename, encoding in ENCODING_MAP.items():
     filepath = script_dir / filename
-    
+
     # Read the content (currently in UTF-8)
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()
-    
+
     # Create a backup with .utf8 extension
-    with open(f"{filepath}.utf8", 'w', encoding='utf-8') as f:
+    with open(f"{filepath}.utf8", "w", encoding="utf-8") as f:
         f.write(content)
-    
+
     # Save with the target encoding
-    with open(filepath, 'w', encoding=encoding) as f:
+    with open(filepath, "w", encoding=encoding) as f:
         f.write(content)
-    
+
     print(f"Converted {filename} to {encoding}")
 
-print("All files converted successfully.") 
+print("All files converted successfully.")
