@@ -213,8 +213,14 @@ try:
 except ImportError:
     COLORAMA_AVAILABLE = False
 
-# Use relative import for local modules
-from .path_utils import normalize_path
+# Import local modules
+try:
+    from path_utils import normalize_path
+except ImportError:
+    # Fallback to a simple normalize_path implementation if path_utils is not available
+    def normalize_path(path_str):
+        """Simple normalize path implementation."""
+        return str(Path(path_str).resolve())
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation

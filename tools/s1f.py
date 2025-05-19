@@ -104,8 +104,16 @@ try:
 except ImportError:
     COLORAMA_AVAILABLE = False
 
-# Use relative import for local modules
-from .path_utils import convert_to_posix_path
+# Import local modules
+try:
+    from path_utils import convert_to_posix_path
+except ImportError:
+    # Fallback implementation if path_utils is not available
+    def convert_to_posix_path(path_str):
+        """Convert a path string to use forward slashes."""
+        if path_str is None:
+            return ""
+        return str(path_str).replace('\\', '/')
 from datetime import datetime, timezone
 
 # --- Logger Setup ---
