@@ -1388,20 +1388,23 @@ def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
     return sorted(include_paths)
 
 
-def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
+def _process_paths_from_input_file(input_file_path: Path, source_dir: Optional[Path] = None) -> List[Path]:
     """
     Process a file containing paths (one per line) and return a list of Path objects.
     Supports glob patterns such as ``src/**/*.py`` which are expanded relative
-    to the directory of the list file.
+    to the directory of the list file or the source_directory if provided.
 
     Args:
         input_file_path: Path to the input file containing paths to process
+        source_dir: Optional source directory to resolve relative paths against
 
     Returns:
         List of deduplicated paths with proper parent-child handling
     """
     paths = []
-    input_file_dir = input_file_path.parent
+    # If source_dir is provided, use it as the base directory for relative paths
+    # Otherwise, use the directory of the input file
+    base_dir = source_dir if source_dir else input_file_path.parent
 
     try:
         with open(input_file_path, "r", encoding="utf-8") as f:
@@ -1415,7 +1418,7 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
                 if any(ch in line for ch in GLOB_WILDCARD_CHARS):
                     pattern_path = Path(line)
                     if not pattern_path.is_absolute():
-                        pattern_path = input_file_dir / pattern_path
+                        pattern_path = base_dir / pattern_path
                     pattern_path = pattern_path.expanduser()
                     matches = glob.glob(str(pattern_path), recursive=True)
                     if not matches:
@@ -1428,7 +1431,7 @@ def _process_paths_from_input_file(input_file_path: Path) -> List[Path]:
 
                 path_obj = Path(line)
                 if not path_obj.is_absolute():
-                    path_obj = (input_file_dir / path_obj).resolve()
+                    path_obj = (base_dir / path_obj).resolve()
                 else:
                     path_obj = path_obj.expanduser().resolve()
 
@@ -1942,8 +1945,16 @@ def _write_directory_paths_list(
         # Get the parent directory of each file
         normalized = normalize_path(rel_path)
         path_obj = Path(normalized)
-        # Add all parent directories
+        
+        # Add the parent directory and all its parent directories
+        # but skip the file itself
         current_path = path_obj.parent
+        
+        # Skip if we somehow end up with an empty parent path
+        if not current_path or str(current_path) == "":
+            continue
+            
+        # Add all parent directories
         while str(current_path) != ".":
             unique_dirs.add(current_path.as_posix())
             current_path = current_path.parent
@@ -2304,6 +2315,40 @@ def main():
         required=True,
         help="Path where the combined output file will be created.",
     )
+
+    # --- REMOVE MUTUALLY EXCLUSIVE GROUP ---
+    # input_group = parser.add_mutually_exclusive_group(required=True)
+    # input_group.add_argument(
+    parser.add_argument(
+        "-s",
+        "--source-directory",
+        type=str,
+        help="Path to the directory containing the files to be combined.",
+    )
+    # input_group.add_argument(
+    parser.add_argument(
+        "-i",
+        "--input-file",
+        type=str,
+        help="Path to a text file containing a list of files and directories to process (one per line). "
+        "If --source-directory is also specified, relative paths in this file are resolved against the source directory.",
+    )
+
+    # At least one of source-directory or input-file is required
+    parser.add_argument(
+        "_at_least_one_input",
+        nargs="?",
+        help=argparse.SUPPRESS,
+        default=None,
+    )
+
+    # MOVE args = parser.parse_args() to after all argument definitions
+    # args = parser.parse_args()
+
+    # Check if at least one of source-directory or input-file is provided
+    # if not args.source_directory and not args.input_file:
+    #     parser.error("At least one of -s/--source-directory or -i/--input-file is required")
+
     parser.add_argument(
         "-f",
         "--force",
@@ -2446,22 +2491,13 @@ def main():
             "'skip': exclude affected files. 'warn': include files but report at the end."
         ),
     )
-
-    input_group = parser.add_mutually_exclusive_group(required=True)
-    input_group.add_argument(
-        "-s",
-        "--source-directory",
-        type=str,
-        help="Path to the directory containing the files to be combined.",
-    )
-    input_group.add_argument(
-        "-i",
-        "--input-file",
-        type=str,
-        help="Path to a text file containing a list of files and directories to process (one per line).",
-    )
-
+    
+    # Add the proper args = parser.parse_args() call here
     args = parser.parse_args()
+    
+    # Now check if at least one of source-directory or input-file is provided
+    if not args.source_directory and not args.input_file:
+        parser.error("At least one of -s/--source-directory or -i/--input-file is required")
 
     # Process and normalize include/exclude extensions if provided
     if hasattr(args, "include_extensions") and args.include_extensions:
@@ -2512,18 +2548,34 @@ def main():
 
     # Process input file if provided, otherwise use source directory
     input_paths = None
-    if hasattr(args, "input_file") and args.input_file:
+    source_dir = None
+    
+    # First resolve source_directory if provided
+    if args.source_directory:
+        source_dir = _resolve_and_validate_source_path(args.source_directory)
+        
+    if args.input_file:
         input_file_path = Path(args.input_file).resolve()
         if not input_file_path.exists() or not input_file_path.is_file():
             logger.error(f"Input file not found: {input_file_path}")
             sys.exit(1)
-        input_paths = _process_paths_from_input_file(input_file_path)
+        
+        # Pass source_dir to _process_paths_from_input_file if it's available
+        input_paths = _process_paths_from_input_file(input_file_path, source_dir)
         logger.info(f"Found {len(input_paths)} paths to process from input file")
 
-        # Use the first path's parent as the base directory for relative paths
-        source_dir = input_paths[0].parent if input_paths else Path.cwd()
+        # If source_dir wasn't provided, use the first path's parent as the base directory for relative paths
+        if not source_dir and input_paths:
+            source_dir = input_paths[0].parent
+        elif not source_dir:
+            source_dir = Path.cwd()
+    elif source_dir:
+        # We've already resolved source_dir above
+        pass
     else:
-        source_dir = _resolve_and_validate_source_path(args.source_directory)
+        # Should not happen due to our required argument check, but just in case
+        logger.error("No source directory or input file provided")
+        sys.exit(1)
 
     # Set source base directory for path exclusion matching
     args.source_base_dir = source_dir
