@@ -202,6 +202,7 @@ import sys
 import time  # Added for time measurement
 import uuid  # Added for UUID generation
 import re
+import atexit  # Added for cleanup on exit
 from pathlib import Path, PureWindowsPath
 
 # Import colorama for colored output
@@ -254,6 +255,48 @@ except Exception:  # pragma: no cover - library might not be installed
 logger = logging.getLogger("m1f")
 file_handler = None  # Will be set in configure_logging_settings
 m1f_console_handler = None  # Will be set in configure_logging_settings
+
+# --- Global cleanup function ---
+def _cleanup_global_handlers():
+    """Clean up all file handlers on program exit."""
+    global file_handler, m1f_console_handler
+    logger_instance = logging.getLogger("m1f")
+    
+    # Clean up logger handlers
+    for handler in logger_instance.handlers[:]:
+        try:
+            logger_instance.removeHandler(handler)
+            if isinstance(handler, logging.FileHandler):
+                handler.close()
+                if hasattr(handler, 'stream') and handler.stream:
+                    handler.stream.close()
+                    handler.stream = None
+        except Exception:
+            pass  # Ignore errors during cleanup
+    
+    # Clean up global handlers
+    if file_handler is not None:
+        try:
+            file_handler.close()
+            if hasattr(file_handler, 'stream') and file_handler.stream:
+                file_handler.stream.close()
+                file_handler.stream = None
+        except Exception:
+            pass
+        file_handler = None
+    
+    if m1f_console_handler is not None:
+        try:
+            m1f_console_handler.close()
+        except Exception:
+            pass
+        m1f_console_handler = None
+    
+    # Force finalization
+    logging.shutdown()
+
+# Register cleanup function to be called on program exit
+atexit.register(_cleanup_global_handlers)
 
 # --- Global Definitions ---
 
@@ -1139,16 +1182,51 @@ def _configure_logging_settings(
     global file_handler, m1f_console_handler  # Use module-level handlers
     logger_instance = logging.getLogger("m1f")
 
-    # --- Clear previously managed handlers from logger_instance ---
-    if file_handler and file_handler in logger_instance.handlers:
-        logger_instance.removeHandler(file_handler)
-        file_handler.close()
-    file_handler = None  # Reset
+    # --- Reset all loggers first ---
+    # This ensures a fresh start without any lingering handlers
+    root_logger = logging.getLogger()
+    logging.shutdown()  # Force cleanup of all handlers
+    for handler in root_logger.handlers[:]:
+        if isinstance(handler, logging.FileHandler):
+            try:
+                handler.close()
+                if hasattr(handler, 'stream') and handler.stream:
+                    handler.stream.close()
+                    handler.stream = None
+            except Exception:
+                pass  # Ignore errors during cleanup
+        root_logger.removeHandler(handler)
 
-    if m1f_console_handler and m1f_console_handler in logger_instance.handlers:
-        logger_instance.removeHandler(m1f_console_handler)
-        # m1f_console_handler.close() # StreamHandler.close() is a no-op but can be called
-    m1f_console_handler = None  # Reset
+    # --- Clear previously managed handlers from logger_instance ---
+    for handler in logger_instance.handlers[:]:
+        try:
+            logger_instance.removeHandler(handler)
+            if isinstance(handler, logging.FileHandler):
+                handler.close()
+                if hasattr(handler, 'stream') and handler.stream:
+                    handler.stream.close()
+                    handler.stream = None
+        except Exception as e:
+            # Best effort closure - at least log the issue
+            print(f"Warning: Error closing log handler: {e}")
+    
+    # Reset our module-level handlers
+    if file_handler is not None:
+        try:
+            file_handler.close()
+            if hasattr(file_handler, 'stream') and file_handler.stream:
+                file_handler.stream.close()
+                file_handler.stream = None
+        except Exception:
+            pass  # Best effort cleanup
+        file_handler = None
+
+    if m1f_console_handler is not None:
+        try:
+            m1f_console_handler.close()
+        except Exception:
+            pass  # Best effort cleanup
+        m1f_console_handler = None
 
     # --- Configure based on quiet flag ---
     if quiet:
@@ -1171,14 +1249,14 @@ def _configure_logging_settings(
                 logging.getLogger().removeHandler(handler)
         return  # Exit configuration if quiet
 
-    # --- Configuration for non-quiet mode ---
-    log_level = logging.DEBUG if verbose else logging.INFO
-    logger_instance.setLevel(log_level)
+    # Reset logger_instance configuration
+    logger_instance.handlers = []
+    logger_instance.setLevel(logging.DEBUG if verbose else logging.INFO)
     logger_instance.propagate = False  # Explicitly manage m1f logger's output
 
     # Configure console handler for logger_instance
     new_console_handler = logging.StreamHandler(sys.stdout)  # Output to stdout
-    new_console_handler.setLevel(log_level)
+    new_console_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
     console_formatter = logging.Formatter(
         "%(levelname)-8s: %(message)s"
     )  # Simple console format
@@ -1189,20 +1267,64 @@ def _configure_logging_settings(
     # Configure file logging for logger_instance (if an output path is provided and not minimal_output)
     if output_file_path and not minimal_output:
         log_file_path = output_file_path.with_suffix(".log")
+        
+        # One more check - ensure the log file path doesn't match the output path
+        if log_file_path.resolve() == output_file_path.resolve():
+            print(f"Warning: Log file path would overwrite output file. Skipping log file creation.")
+            return
+        
+        # Double check that no existing handlers are targeting this path
+        for handler in logger_instance.handlers[:]:
+            if (
+                isinstance(handler, logging.FileHandler) 
+                and hasattr(handler, 'baseFilename')
+                and Path(handler.baseFilename) == log_file_path
+            ):
+                logger_instance.removeHandler(handler)
+                try:
+                    handler.close()
+                    if hasattr(handler, 'stream') and handler.stream:
+                        handler.stream.close()
+                        handler.stream = None
+                except Exception:
+                    pass  # Already tried our best
+        
         try:
-            new_file_handler = logging.FileHandler(
-                log_file_path, mode="w", encoding="utf-8"
-            )
-            new_file_handler.setLevel(log_level)
-            file_formatter = logging.Formatter(
-                "%(asctime)s - %(levelname)-8s: %(message)s"
-            )
-            new_file_handler.setFormatter(file_formatter)
-            logger_instance.addHandler(new_file_handler)
-            file_handler = new_file_handler
+            # Ensure the log file doesn't exist or can be overwritten
+            if log_file_path.exists():
+                try:
+                    log_file_path.unlink()
+                except PermissionError:
+                    # If can't delete, try a different name
+                    log_file_path = output_file_path.with_name(f"{output_file_path.stem}_alt.log")
+                except Exception:
+                    # Any other error, try a different name
+                    log_file_path = output_file_path.with_name(f"{output_file_path.stem}_alt.log")
+            
+            # Create a new file handler with explicit error handling
+            try:
+                new_file_handler = logging.FileHandler(
+                    log_file_path, mode="w", encoding="utf-8", delay=False
+                )
+                new_file_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
+                file_formatter = logging.Formatter(
+                    "%(asctime)s - %(levelname)-8s: %(message)s"
+                )
+                new_file_handler.setFormatter(file_formatter)
+                logger_instance.addHandler(new_file_handler)
+                file_handler = new_file_handler
+            except Exception as e:
+                # Don't set file_handler if creation failed
+                print(f"Failed to create log file at {log_file_path}: {e}")
+                # Try to remove any dangling handler if it was partially created
+                try:
+                    if new_file_handler in logger_instance.handlers:
+                        logger_instance.removeHandler(new_file_handler)
+                except Exception:
+                    pass
         except Exception as e:
-            # Log error to the console handler we just set up
-            logger_instance.error(f"Failed to create log file at {log_file_path}: {e}")
+            # Any error in file handler creation is logged to console handler only
+            print(f"Failed to set up log file at {log_file_path}: {e}")
 
     if verbose:
         logger_instance.debug("Verbose mode enabled.")
@@ -1905,25 +2027,26 @@ def _write_file_paths_list(
     Returns:
         Path to the created file list or None if minimal_output is True.
     """
-    if minimal_output:
-        logger.debug("Skipping file paths list creation (minimal output mode)")
-        return None
-
+    # Even if minimal_output is True, we still create the file as it might be needed for inclusion
     file_list_path = output_file_path.with_name(f"{output_file_path.stem}_filelist.txt")
+    
+    # If the target file is the same as the output file, skip creation to avoid recursion
+    if file_list_path.resolve() == output_file_path.resolve():
+        logger.warning(f"Skipping file list creation: would overwrite output file {output_file_path}")
+        return None
+    
+    try:
+        # Get the sorted unique relative paths
+        sorted_paths = sorted(list(set(rel_path for _, rel_path in files_to_process)))
+        with open(file_list_path, "w", encoding="utf-8") as f:
+            for path in sorted_paths:
+                f.write(f"{path}\n")
 
-    logger.info(f"Writing file paths list to {file_list_path}")
-
-    # Extract unique relative paths and sort them
-    unique_paths = sorted(
-        set(normalize_path(rel_path) for _, rel_path in files_to_process)
-    )
-
-    with open(file_list_path, "w", encoding="utf-8") as f:
-        for rel_path in unique_paths:
-            f.write(f"{rel_path}\n")
-
-    logger.info(f"Wrote {len(unique_paths)} file paths to {file_list_path}")
-    return file_list_path
+        logger.info(f"Wrote {len(sorted_paths)} file paths to {file_list_path}")
+        return file_list_path
+    except Exception as e:
+        logger.error(f"Error writing file list to {file_list_path}: {e}")
+        return None
 
 
 def _write_directory_paths_list(
@@ -1934,62 +2057,46 @@ def _write_directory_paths_list(
     """
     Writes a list of unique directory paths to a text file.
 
-    This function extracts all unique directories from the list of processed files,
-    including all parent directories in the path hierarchy. For example, if a file is
-    located at 'src/components/Button.js', both 'src' and 'src/components' will be
-    included in the directory list. The directories are sorted alphabetically in the
-    output file.
-
     Args:
         output_file_path: The path to use as the base for the directory list output file.
-            The output will be named '{output_file_stem}_dirlist.txt'.
         files_to_process: List of (file_path, relative_path) tuples to extract directories from.
-            Only the relative_path part is used to determine directories.
         minimal_output: If True, no directory list will be created
 
     Returns:
-        Path to the created directory list file or None if minimal_output is True.
+        Path to the created directory list or None if minimal_output is True.
     """
-    if minimal_output:
-        logger.debug("Skipping directory paths list creation (minimal output mode)")
-        return None
-
+    # Even if minimal_output is True, we still create the file as it might be needed for inclusion
     dir_list_path = output_file_path.with_name(f"{output_file_path.stem}_dirlist.txt")
+    
+    # If the target file is the same as the output file, skip creation to avoid recursion
+    if dir_list_path.resolve() == output_file_path.resolve():
+        logger.warning(f"Skipping directory list creation: would overwrite output file {output_file_path}")
+        return None
+    
+    try:
+        # Extract all unique directories from the file paths
+        unique_dirs = set()
+        for _, rel_path in files_to_process:
+            # Convert to Path for proper directory extraction and normalization
+            path_obj = Path(rel_path)
+            # Add all parent directories of the file
+            current = path_obj.parent
+            while str(current) != ".":  # Stop at root of relative path
+                unique_dirs.add(str(current))
+                current = current.parent
 
-    logger.info(f"Writing directory paths list to {dir_list_path}")
-
-    # Extract unique directory paths and sort them
-    unique_dirs = set()
-
-    for _, rel_path in files_to_process:
-        # Get just the directory part of the relative path
-        dir_path = os.path.dirname(rel_path)
-        if not dir_path:
-            continue
-            
-        # Split the path into parts
-        parts = dir_path.split('/')
+        # Sort the directories for consistent output
+        sorted_dirs = sorted(list(unique_dirs))
         
-        # Build up parent paths
-        current = ""
-        for part in parts:
-            if not part:
-                continue
-            if current:
-                current = f"{current}/{part}"
-            else:
-                current = part
-            unique_dirs.add(current)
+        with open(dir_list_path, "w", encoding="utf-8") as f:
+            for dir_path in sorted_dirs:
+                f.write(f"{dir_path}\n")
 
-    # Sort the directories alphabetically
-    sorted_dirs = sorted(unique_dirs)
-
-    with open(dir_list_path, "w", encoding="utf-8") as f:
-        for dir_path in sorted_dirs:
-            f.write(f"{dir_path}\n")
-
-    logger.info(f"Wrote {len(sorted_dirs)} unique directory paths to {dir_list_path}")
-    return dir_list_path
+        logger.info(f"Wrote {len(sorted_dirs)} unique directory paths to {dir_list_path}")
+        return dir_list_path
+    except Exception as e:
+        logger.error(f"Error writing directory list to {dir_list_path}: {e}")
+        return None
 
 
 def _write_combined_data(
@@ -2056,11 +2163,85 @@ def _write_combined_data(
         output_encoding = target_encoding or "utf-8"
         logger.debug(f"Using encoding {output_encoding} for output file")
 
+        # Prepare intro and include files if provided
+        intro_file = None
+        include_files = []
+        
+        # Process input_include_files if provided
+        if hasattr(args, "input_include_files") and args.input_include_files:
+            include_files_paths = args.input_include_files.copy()  # Make a copy to avoid modifying original
+            
+            # Check if first file is an intro file
+            if include_files_paths and Path(include_files_paths[0]).exists():
+                intro_file_path = Path(include_files_paths[0])
+                # Check if this is not the same file we're writing to (prevent recursion)
+                if output_file_path.resolve() != intro_file_path.resolve():
+                    intro_file = intro_file_path
+                    include_files_paths.pop(0)
+                    logger.info(f"Using intro file: {intro_file}")
+                else:
+                    logger.warning("Cannot use output file as intro file - skipping")
+                    include_files_paths.pop(0)
+            
+            # Process remaining include files
+            for include_path in include_files_paths:
+                include_path_obj = Path(include_path)
+                # Skip the file if it's the output file (prevent recursion)
+                if output_file_path.resolve() == include_path_obj.resolve():
+                    logger.warning(f"Skipping include file that is same as output file: {include_path_obj}")
+                    continue
+                
+                if include_path_obj.exists():
+                    include_files.append(include_path_obj)
+                    logger.info(f"Adding include file: {include_path_obj}")
+                else:
+                    logger.warning(f"Include file not found: {include_path_obj}")
+        
+        # First write the special files (intro, filelist, dirlist)
+        # This ensures they're processed before the main content files
+        special_files = []
+        
+        # 1. Add intro file if provided
+        if intro_file and intro_file.exists():
+            try:
+                # Make sure file can be read before adding
+                intro_file.read_text(encoding="utf-8", errors="ignore")
+                special_files.append((intro_file, f"intro:{intro_file.name}"))
+            except Exception as e:
+                logger.warning(f"Could not read intro file {intro_file}: {e}")
+        
+        # 2. Add any other include files in the exact order they were specified
+        for include_file in include_files:
+            if include_file.exists():
+                try:
+                    # Make sure file can be read before adding
+                    include_file.read_text(encoding="utf-8", errors="ignore")
+                    special_files.append((include_file, f"include:{include_file.name}"))
+                except Exception as e:
+                    logger.warning(f"Could not read include file {include_file}: {e}")
+        
+        # Now process the final combined list (special files first, then regular files)
+        final_files_to_process = special_files + files_to_process
+
         with open(output_file_path, "w", encoding=output_encoding) as outfile:
-            for file_info, rel_path_str in files_to_process:
+            processed_files = set()  # Keep track of files we've processed to avoid duplicates/recursion
+            
+            for file_info, rel_path_str in final_files_to_process:
+                # Skip if we've already processed this file (avoid duplicates/recursion)
+                file_path_str = str(file_info.resolve())
+                if file_path_str in processed_files:
+                    logger.debug(f"Skipping already processed file: {file_info}")
+                    continue
+                
+                # Skip if this is the output file itself (avoid recursion)
+                if file_info.resolve() == output_file_path.resolve():
+                    logger.warning(f"Skipping attempt to include the output file in itself: {file_info}")
+                    continue
+                
+                processed_files.add(file_path_str)
                 file_counter += 1
                 logger.debug(
-                    f"Processing file ({file_counter}/{total_files}): {file_info.name} (Rel: {rel_path_str})"
+                    f"Processing file ({file_counter}/{len(final_files_to_process)}): {file_info.name} (Rel: {rel_path_str})"
                 )
 
                 # Process file encoding if needed
@@ -2212,7 +2393,7 @@ def _write_combined_data(
 
                 # Add a separating newline IF this is not the last file.
                 # This serves as the blank line between file entries for all styles except "None".
-                if file_counter < total_files and args.separator_style != "None":
+                if file_counter < len(processed_files) and args.separator_style != "None":
                     outfile.write(chosen_linesep)
         return file_counter
     except IOError as e:
@@ -2519,6 +2700,16 @@ def main():
         type=str,
         help="Path to a text file containing a list of files and directories to process (one per line). "
         "If --source-directory is also specified, relative paths in this file are resolved against the source directory.",
+    )
+
+    parser.add_argument(
+        "--input-include-files",
+        type=str,
+        nargs="*",
+        metavar="FILE",
+        help="Space-separated list of files to include at the beginning of the output. "
+        "The first file is treated as an intro file and the rest are included in the specified order. "
+        "The file list and directory list can be specified here to include them in the output.",
     )
 
     # At least one of source-directory or input-file is required
@@ -2903,6 +3094,31 @@ def main():
 
         sys.exit(0)
 
+    # Generate auxiliary files first to allow them to be included in the output
+    file_list_path = None
+    dir_list_path = None
+    
+    # Write the list of file paths to a separate file, regardless of minimal_output setting
+    # We'll respect minimal_output for regular output, but need to create these files
+    # in case they're specified in input_include_files
+    file_list_path = _write_file_paths_list(output_file_path, files_to_process, False)
+    
+    # Write the list of directories to a separate file
+    dir_list_path = _write_directory_paths_list(output_file_path, files_to_process, False)
+
+    # Check for circular references in input_include_files
+    if hasattr(args, "input_include_files") and args.input_include_files:
+        output_path_resolved = output_file_path.resolve()
+        # Remove any references to the output file to prevent recursion
+        safe_include_files = []
+        for include_path in args.input_include_files:
+            include_path_obj = Path(include_path)
+            if include_path_obj.resolve() == output_path_resolved:
+                logger.warning(f"Removing circular reference to output file in input-include-files: {include_path}")
+            else:
+                safe_include_files.append(include_path)
+        args.input_include_files = safe_include_files
+    
     # Only create the output file if not skipping
     processed_count = 0
     if not args.skip_output_file:
@@ -2919,12 +3135,28 @@ def main():
             f"Found {processed_count} file(s) that would be processed, but skipped writing output file as requested."
         )
 
-    # Write the list of file paths to a separate file, unless in minimal output mode
-    if not args.minimal_output:
-        file_list_path = _write_file_paths_list(output_file_path, files_to_process)
-
-        # Write the list of directories to a separate file, unless in minimal output mode
-        dir_list_path = _write_directory_paths_list(output_file_path, files_to_process)
+    # If minimal_output is set and the auxiliary files aren't included in input_include_files,
+    # delete them to respect the minimal_output setting
+    if args.minimal_output:
+        auxiliary_files_to_keep = set()
+        if hasattr(args, "input_include_files") and args.input_include_files:
+            auxiliary_files_to_keep = {str(Path(f).resolve()) for f in args.input_include_files}
+        
+        # Delete file list if not in keep list
+        if file_list_path and str(file_list_path.resolve()) not in auxiliary_files_to_keep:
+            try:
+                file_list_path.unlink()
+                logger.debug(f"Deleted {file_list_path} (minimal output mode)")
+            except Exception as e:
+                logger.warning(f"Could not delete auxiliary file {file_list_path}: {e}")
+        
+        # Delete dir list if not in keep list
+        if dir_list_path and str(dir_list_path.resolve()) not in auxiliary_files_to_keep:
+            try:
+                dir_list_path.unlink()
+                logger.debug(f"Deleted {dir_list_path} (minimal output mode)")
+            except Exception as e:
+                logger.warning(f"Could not delete auxiliary file {dir_list_path}: {e}")
 
     # --- Token Counting for Output File ---
     if (
@@ -2992,6 +3224,34 @@ def main():
     else:
         time_str = f"{execution_time:.2f}s"
     logger.info(f"Total execution time: {time_str}")
+    
+    # Close any file handlers before exiting
+    try:
+        # Use our global cleanup function to ensure thorough cleanup
+        _cleanup_global_handlers()
+        
+        # Double-check root logger
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers[:]:
+            if isinstance(handler, logging.FileHandler):
+                try:
+                    handler.close()
+                    if hasattr(handler, 'stream') and handler.stream:
+                        handler.stream.close()
+                        handler.stream = None
+                except Exception:
+                    pass
+            root_logger.removeHandler(handler)
+        
+        # Force final shutdown
+        logging.shutdown()
+        
+        # Force garbage collection to release any lingering file references
+        import gc
+        gc.collect()
+    except Exception:
+        # Don't let cleanup errors affect the exit code
+        pass
 
     sys.exit(0)
 
