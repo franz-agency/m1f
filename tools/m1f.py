@@ -213,7 +213,8 @@ try:
 except ImportError:
     COLORAMA_AVAILABLE = False
 
-from path_utils import normalize_path  # Direct import from local dir
+# Use relative import for local modules
+from .path_utils import normalize_path
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation

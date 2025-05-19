@@ -104,7 +104,8 @@ try:
 except ImportError:
     COLORAMA_AVAILABLE = False
 
-from path_utils import convert_to_posix_path
+# Use relative import for local modules
+from .path_utils import convert_to_posix_path
 from datetime import datetime, timezone
 
 # --- Logger Setup ---
