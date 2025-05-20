@@ -543,6 +543,28 @@ class TestM1F:
 
         # Clean up
         shutil.rmtree(test_dir)
+
+    def test_max_depth(self):
+        """Test limiting directory traversal depth."""
+        output_file = OUTPUT_DIR / "max_depth.txt"
+
+        run_m1f(
+            [
+                "--source-directory",
+                str(SOURCE_DIR / "advanced_glob_test"),
+                "--output-file",
+                str(output_file),
+                "--max-depth",
+                "2",
+                "--force",
+            ]
+        )
+
+        with open(output_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "file.with.dots.txt" in content, "Depth 2 files should be included"
+            assert "nested.js" not in content, "Files deeper than max depth should be excluded"
+            assert "deep_file.txt" not in content, "Deep files should be excluded"
         gitignore_file.unlink()
 
     def test_actual_gitignore_file(self):

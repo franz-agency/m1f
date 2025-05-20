@@ -1887,6 +1887,7 @@ def _gather_files_to_process(
         ignore_symlinks: Whether to ignore symlinks
         excluded_file_paths: Set of file paths to exclude
         gitignore_spec: PathSpec object for gitignore pattern matching
+        max_depth: Optional maximum directory depth
 
     Returns:
         List of tuples containing (file_path, relative_path)
@@ -1971,20 +1972,29 @@ def _gather_files_to_process(
                         )
 
                 logger.debug(f"Scanning directory from input file: {item_path}")
-                for file_path_in_dir in item_path.rglob("*"):
-                    logger.debug(f"_gather_files_to_process: rglob found file_path_in_dir: {file_path_in_dir}")
-                    # Skip processing files in dot directories if include_dot_paths is not set
+                for root, dirs, files in os.walk(item_path):
+                    root_path = Path(root)
+                    rel_depth = len(root_path.relative_to(item_path).parts)
+
+                    if args.max_depth is not None and rel_depth >= args.max_depth:
+                        dirs[:] = []
+
                     if not args.include_dot_paths:
-                        # Check if any parent directory starts with a dot
-                        parts = file_path_in_dir.relative_to(item_path).parts
-                        if any(part.startswith(".") for part in parts):
-                            if file_path_in_dir.is_file():
-                                logger.debug(
-                                    f"Skipping file in dot directory: {file_path_in_dir}"
-                                )
+                        dirs[:] = [d for d in dirs if not d.startswith(".")]
+
+                    for file in files:
+                        file_path_in_dir = root_path / file
+
+                        if not args.include_dot_paths:
+                            parts = file_path_in_dir.relative_to(item_path).parts
+                            if any(part.startswith(".") for part in parts):
+                                continue
+
+                        if args.max_depth is not None and len(
+                            file_path_in_dir.relative_to(item_path).parts
+                        ) > args.max_depth:
                             continue
 
-                    if file_path_in_dir.is_file():
                         abs_path_str = str(file_path_in_dir.resolve())
                         if abs_path_str in added_file_absolute_paths:
                             logger.debug(
@@ -1998,12 +2008,10 @@ def _gather_files_to_process(
                             excluded_file_paths,
                             gitignore_spec,
                         ):
-                            # Try to make the path relative to source_dir first, if possible
                             try:
                                 rel_path = file_path_in_dir.relative_to(source_dir)
                                 rel_path_str = rel_path.as_posix()
                             except ValueError:
-                                # Fall back to making it relative to the directory from the input file
                                 rel_path = file_path_in_dir.relative_to(item_path)
                                 rel_path_str = rel_path.as_posix()
 
@@ -2024,6 +2032,10 @@ def _gather_files_to_process(
 
         for root, dirs, files in os.walk(source_dir):
             root_path = Path(root)
+            rel_depth = len(root_path.relative_to(source_dir).parts)
+
+            if args.max_depth is not None and rel_depth >= args.max_depth:
+                dirs[:] = []
 
             # Skip excluded directories
             dirs[:] = [d for d in dirs if d.lower() not in excluded_dir_names_lower]
@@ -2937,6 +2949,12 @@ def main():
         "--include-dot-paths",
         action="store_true",
         help="Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, both files and directories starting with a dot are excluded, except for specific directories in DEFAULT_EXCLUDED_DIR_NAMES.",
+    )
+    parser.add_argument(
+        "--max-depth",
+        type=int,
+        metavar="N",
+        help="Maximum directory depth to scan. Paths deeper than this level are skipped. No limit by default.",
     )
     parser.add_argument(
         "--include-binary-files",
