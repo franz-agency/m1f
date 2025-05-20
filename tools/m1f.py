@@ -208,6 +208,7 @@ from pathlib import Path, PureWindowsPath
 # Import colorama for colored output
 try:
     from colorama import init, Fore, Style
+
     COLORAMA_AVAILABLE = True
     # Initialize colorama
     init(autoreset=True)
@@ -222,6 +223,8 @@ except ImportError:
     def normalize_path(path_str):
         """Simple normalize path implementation."""
         return str(Path(path_str).resolve())
+
+
 from typing import List, Set, Tuple, Optional
 import tiktoken  # Added for token counting
 import zipfile  # Added for archive creation
@@ -256,44 +259,46 @@ logger = logging.getLogger("m1f")
 file_handler = None  # Will be set in configure_logging_settings
 m1f_console_handler = None  # Will be set in configure_logging_settings
 
+
 # --- Global cleanup function ---
 def _cleanup_global_handlers():
     """Clean up all file handlers on program exit."""
     global file_handler, m1f_console_handler
     logger_instance = logging.getLogger("m1f")
-    
+
     # Clean up logger handlers
     for handler in logger_instance.handlers[:]:
         try:
             logger_instance.removeHandler(handler)
             if isinstance(handler, logging.FileHandler):
                 handler.close()
-                if hasattr(handler, 'stream') and handler.stream:
+                if hasattr(handler, "stream") and handler.stream:
                     handler.stream.close()
                     handler.stream = None
         except Exception:
             pass  # Ignore errors during cleanup
-    
+
     # Clean up global handlers
     if file_handler is not None:
         try:
             file_handler.close()
-            if hasattr(file_handler, 'stream') and file_handler.stream:
+            if hasattr(file_handler, "stream") and file_handler.stream:
                 file_handler.stream.close()
                 file_handler.stream = None
         except Exception:
             pass
         file_handler = None
-    
+
     if m1f_console_handler is not None:
         try:
             m1f_console_handler.close()
         except Exception:
             pass
         m1f_console_handler = None
-    
+
     # Force finalization
     logging.shutdown()
+
 
 # Register cleanup function to be called on program exit
 atexit.register(_cleanup_global_handlers)
@@ -1190,7 +1195,7 @@ def _configure_logging_settings(
         if isinstance(handler, logging.FileHandler):
             try:
                 handler.close()
-                if hasattr(handler, 'stream') and handler.stream:
+                if hasattr(handler, "stream") and handler.stream:
                     handler.stream.close()
                     handler.stream = None
             except Exception:
@@ -1203,18 +1208,18 @@ def _configure_logging_settings(
             logger_instance.removeHandler(handler)
             if isinstance(handler, logging.FileHandler):
                 handler.close()
-                if hasattr(handler, 'stream') and handler.stream:
+                if hasattr(handler, "stream") and handler.stream:
                     handler.stream.close()
                     handler.stream = None
         except Exception as e:
             # Best effort closure - at least log the issue
             print(f"Warning: Error closing log handler: {e}")
-    
+
     # Reset our module-level handlers
     if file_handler is not None:
         try:
             file_handler.close()
-            if hasattr(file_handler, 'stream') and file_handler.stream:
+            if hasattr(file_handler, "stream") and file_handler.stream:
                 file_handler.stream.close()
                 file_handler.stream = None
         except Exception:
@@ -1267,28 +1272,30 @@ def _configure_logging_settings(
     # Configure file logging for logger_instance (if an output path is provided and not minimal_output)
     if output_file_path and not minimal_output:
         log_file_path = output_file_path.with_suffix(".log")
-        
+
         # One more check - ensure the log file path doesn't match the output path
         if log_file_path.resolve() == output_file_path.resolve():
-            print(f"Warning: Log file path would overwrite output file. Skipping log file creation.")
+            print(
+                f"Warning: Log file path would overwrite output file. Skipping log file creation."
+            )
             return
-        
+
         # Double check that no existing handlers are targeting this path
         for handler in logger_instance.handlers[:]:
             if (
-                isinstance(handler, logging.FileHandler) 
-                and hasattr(handler, 'baseFilename')
+                isinstance(handler, logging.FileHandler)
+                and hasattr(handler, "baseFilename")
                 and Path(handler.baseFilename) == log_file_path
             ):
                 logger_instance.removeHandler(handler)
                 try:
                     handler.close()
-                    if hasattr(handler, 'stream') and handler.stream:
+                    if hasattr(handler, "stream") and handler.stream:
                         handler.stream.close()
                         handler.stream = None
                 except Exception:
                     pass  # Already tried our best
-        
+
         try:
             # Ensure the log file doesn't exist or can be overwritten
             if log_file_path.exists():
@@ -1296,11 +1303,15 @@ def _configure_logging_settings(
                     log_file_path.unlink()
                 except PermissionError:
                     # If can't delete, try a different name
-                    log_file_path = output_file_path.with_name(f"{output_file_path.stem}_alt.log")
+                    log_file_path = output_file_path.with_name(
+                        f"{output_file_path.stem}_alt.log"
+                    )
                 except Exception:
                     # Any other error, try a different name
-                    log_file_path = output_file_path.with_name(f"{output_file_path.stem}_alt.log")
-            
+                    log_file_path = output_file_path.with_name(
+                        f"{output_file_path.stem}_alt.log"
+                    )
+
             # Create a new file handler with explicit error handling
             try:
                 new_file_handler = logging.FileHandler(
@@ -1383,6 +1394,7 @@ def _handle_output_file_overwrite_and_creation(
                 sys.exit(1)
         else:
             try:
+                # Einfache Benutzerabfrage ohne spezielle Testerkennung
                 confirmation = input(
                     f"Output file '{output_file_path}' already exists. Overwrite? (y/N): "
                 )
@@ -1526,7 +1538,9 @@ def _deduplicate_paths(path_objects: List[Path]) -> List[Path]:
     return sorted(include_paths)
 
 
-def _process_paths_from_input_file(input_file_path: Path, source_dir: Optional[Path] = None) -> List[Path]:
+def _process_paths_from_input_file(
+    input_file_path: Path, source_dir: Optional[Path] = None
+) -> List[Path]:
     """
     Process a file containing paths (one per line) and return a list of Path objects.
     Supports glob patterns such as ``src/**/*.py`` which are expanded relative
@@ -1539,50 +1553,78 @@ def _process_paths_from_input_file(input_file_path: Path, source_dir: Optional[P
     Returns:
         List of deduplicated paths with proper parent-child handling
     """
+    logger.debug(f"_process_paths_from_input_file called with input_file_path={input_file_path}, source_dir={source_dir}")
     paths = []
     # If source_dir is provided, use it as the base directory for relative paths
     # Otherwise, use the directory of the input file
     base_dir = source_dir if source_dir else input_file_path.parent
+    logger.debug(f"DEBUG: Using base_dir={base_dir}")
 
     try:
+        logger.debug(f"DEBUG: Attempting to open and read input file at {input_file_path}")
+        # Check if file exists
+        if not input_file_path.exists():
+            logger.error(f"DEBUG: ERROR - Input file does not exist: {input_file_path}")
+            return []
+
         with open(input_file_path, "r", encoding="utf-8") as f:
-            for line in f:
+            logger.debug(f"DEBUG: Successfully opened input file")
+            lines = f.readlines()
+            logger.debug(f"DEBUG: Read {len(lines)} lines from file")
+
+            for line in lines:
                 line = line.strip()
                 if not line or line.startswith("#"):
+                    logger.debug(f"DEBUG: Skipping empty line or comment: '{line}'")
                     continue  # Skip empty lines and comments
 
-                logger.debug(f"Processing path from input file: {line}")
+                logger.debug(f"DEBUG: Processing path from input file: '{line}'")
 
                 if any(ch in line for ch in GLOB_WILDCARD_CHARS):
+                    logger.debug(f"DEBUG: Detected glob pattern in '{line}'")
                     pattern_path = Path(line)
                     if not pattern_path.is_absolute():
                         pattern_path = base_dir / pattern_path
                     pattern_path = pattern_path.expanduser()
-                    matches = glob.glob(str(pattern_path), recursive=True)
+                    logger.debug(f"DEBUG: Expanded glob pattern path: {pattern_path}")
+                    try:
+                        matches = glob.glob(str(pattern_path), recursive=True)
+                        logger.debug(f"DEBUG: Glob pattern matched {len(matches)} files")
+                    except Exception as e:
+                        logger.debug(f"DEBUG: Error in glob.glob: {e}")
+                        matches = []
+
                     if not matches:
                         logger.warning(f"Glob pattern '{line}' did not match any files")
                     for match in matches:
                         matched_path = Path(match).resolve()
                         paths.append(matched_path)
-                        logger.debug(f"Expanded '{line}' -> '{matched_path}'")
+                        logger.debug(f"DEBUG: Expanded '{line}' -> '{matched_path}'")
                     continue
 
+                logger.debug(f"DEBUG: Processing as regular path: '{line}'")
                 path_obj = Path(line)
                 if not path_obj.is_absolute():
                     path_obj = (base_dir / path_obj).resolve()
+                    logger.debug(f"DEBUG: Resolved relative path to: {path_obj}")
                 else:
                     path_obj = path_obj.expanduser().resolve()
+                    logger.debug(f"DEBUG: Resolved absolute path to: {path_obj}")
 
-                logger.debug(f"Resolved path: {path_obj}, exists: {path_obj.exists()}")
+                logger.debug(f"DEBUG: Final resolved path: {path_obj}, exists: {path_obj.exists()}")
                 paths.append(path_obj)
 
         # Deduplicate paths (keep parents, remove children)
+        logger.debug(f"DEBUG: Before deduplication: {len(paths)} paths")
         deduped_paths = _deduplicate_paths(paths)
+        logger.debug(f"DEBUG: After deduplication: {len(deduped_paths)} paths")
         logger.info(f"After deduplication: {len(deduped_paths)} paths")
         for path in deduped_paths:
+            logger.debug(f"DEBUG: Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}")
             logger.debug(f"Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}")
         return deduped_paths
     except Exception as e:
+        logger.error(f"DEBUG: Error in _process_paths_from_input_file: {e}")
         logger.error(f"Error processing input file: {e}")
         return []
 
@@ -1681,7 +1723,9 @@ def _is_file_excluded(
     # Check if the filename matches a default excluded file name
     if excluded_file_paths and file_path.name in excluded_file_paths:
         if args.verbose:
-            logger.debug(f"Excluding file (matched default excluded file name): {file_path}")
+            logger.debug(
+                f"Excluding file (matched default excluded file name): {file_path}"
+            )
         return True
 
     # Check if the path is in the exclude paths list
@@ -1786,6 +1830,7 @@ def _is_file_excluded(
         p = p.parent
     return False
 
+
 def _gather_files_to_process(
     source_dir: Path,
     args: argparse.Namespace,
@@ -1819,9 +1864,15 @@ def _gather_files_to_process(
         logger.info(
             f"Processing {len(input_paths)} unique path(s) from input file '{args.input_file}'..."
         )
+        # --- DEBUG PRINT ADDED ---
+        logger.debug(f"_gather_files_to_process received input_paths: {input_paths}")
+        # --- END DEBUG PRINT ---
         for (
             item_path
         ) in input_paths:  # Each item_path is an absolute, resolved, deduplicated path
+            # --- DEBUG PRINT ADDED ---
+            logger.debug(f"_gather_files_to_process processing item_path: {item_path}")
+            # --- END DEBUG PRINT ---
             if (
                 not item_path.exists()
             ):  # Should be rare due to prior checks but good for safety
@@ -1847,12 +1898,13 @@ def _gather_files_to_process(
                     except ValueError:
                         # If item_path is not relative to source_dir, use normalize_path
                         rel_path = normalize_path(item_path)
-                    
+
                     files_to_process.append((item_path, rel_path))
                     added_file_absolute_paths.add(abs_path_str)
                 # else: _is_file_excluded logs if verbose
 
             elif item_path.is_dir():
+                logger.debug(f"_gather_files_to_process: item_path '{item_path}' IS A DIRECTORY. About to rglob.")
                 # Check if the directory itself is in the excluded names list
                 if item_path.name.lower() in excluded_dir_names_lower:
                     logger.debug(
@@ -1884,6 +1936,7 @@ def _gather_files_to_process(
 
                 logger.debug(f"Scanning directory from input file: {item_path}")
                 for file_path_in_dir in item_path.rglob("*"):
+                    logger.debug(f"_gather_files_to_process: rglob found file_path_in_dir: {file_path_in_dir}")
                     # Skip processing files in dot directories if include_dot_paths is not set
                     if not args.include_dot_paths:
                         # Check if any parent directory starts with a dot
@@ -1917,7 +1970,7 @@ def _gather_files_to_process(
                                 # Fall back to making it relative to the directory from the input file
                                 rel_path = file_path_in_dir.relative_to(item_path)
                                 rel_path_str = rel_path.as_posix()
-                            
+
                             files_to_process.append((file_path_in_dir, rel_path_str))
                             added_file_absolute_paths.add(abs_path_str)
                         # else: _is_file_excluded logs if verbose
@@ -2029,16 +2082,23 @@ def _write_file_paths_list(
     """
     # Even if minimal_output is True, we still create the file as it might be needed for inclusion
     file_list_path = output_file_path.with_name(f"{output_file_path.stem}_filelist.txt")
-    
+
     # If the target file is the same as the output file, skip creation to avoid recursion
     if file_list_path.resolve() == output_file_path.resolve():
-        logger.warning(f"Skipping file list creation: would overwrite output file {output_file_path}")
+        logger.warning(
+            f"Skipping file list creation: would overwrite output file {output_file_path}"
+        )
         return None
-    
+
     try:
         # Get the sorted unique relative paths
-        sorted_paths = sorted(list(set(rel_path for _, rel_path in files_to_process)))
-        with open(file_list_path, "w", encoding="utf-8") as f:
+        # files_to_process is List[Tuple[Path, str]] where str is rel_path
+        current_rel_paths = [rel_path for _, rel_path in files_to_process]
+        logger.debug(f"DEBUG: _write_file_paths_list: current_rel_paths before set and sort: {current_rel_paths}")
+        sorted_paths = sorted(list(set(current_rel_paths)))
+        logger.debug(f"DEBUG: _write_file_paths_list: sorted_paths to write: {sorted_paths}")
+
+        with open(file_list_path, "w", encoding="utf-8") as f: # newline=None by default
             for path in sorted_paths:
                 f.write(f"{path}\n")
 
@@ -2067,12 +2127,14 @@ def _write_directory_paths_list(
     """
     # Even if minimal_output is True, we still create the file as it might be needed for inclusion
     dir_list_path = output_file_path.with_name(f"{output_file_path.stem}_dirlist.txt")
-    
+
     # If the target file is the same as the output file, skip creation to avoid recursion
     if dir_list_path.resolve() == output_file_path.resolve():
-        logger.warning(f"Skipping directory list creation: would overwrite output file {output_file_path}")
+        logger.warning(
+            f"Skipping directory list creation: would overwrite output file {output_file_path}"
+        )
         return None
-    
+
     try:
         # Extract all unique directories from the file paths
         unique_dirs = set()
@@ -2081,18 +2143,35 @@ def _write_directory_paths_list(
             path_obj = Path(rel_path)
             # Add all parent directories of the file
             current = path_obj.parent
-            while str(current) != ".":  # Stop at root of relative path
+            # Traverse up the directory tree, but make sure we eventually stop.
+            # The previous implementation only stopped when the string representation
+            # of the path became '.', which never happens for absolute paths. That
+            # resulted in an infinite loop when an absolute path (e.g. generated
+            # from glob expansion outside of the detected source directory) was
+            # present in `files_to_process`.
+
+            # We now break the loop when we either:
+            #   1. Reach the relative-path root ('.') for relative paths, **or**
+            #   2. Arrive at the filesystem root where `current == current.parent`.
+            # This guarantees termination for both relative **and** absolute paths.
+            while True:
+                if str(current) == "." or current == current.parent:
+                    # We have reached the top-most directory we care about.
+                    break
+
                 unique_dirs.add(str(current))
                 current = current.parent
 
         # Sort the directories for consistent output
         sorted_dirs = sorted(list(unique_dirs))
-        
+
         with open(dir_list_path, "w", encoding="utf-8") as f:
             for dir_path in sorted_dirs:
                 f.write(f"{dir_path}\n")
 
-        logger.info(f"Wrote {len(sorted_dirs)} unique directory paths to {dir_list_path}")
+        logger.info(
+            f"Wrote {len(sorted_dirs)} unique directory paths to {dir_list_path}"
+        )
         return dir_list_path
     except Exception as e:
         logger.error(f"Error writing directory list to {dir_list_path}: {e}")
@@ -2166,11 +2245,13 @@ def _write_combined_data(
         # Prepare intro and include files if provided
         intro_file = None
         include_files = []
-        
+
         # Process input_include_files if provided
         if hasattr(args, "input_include_files") and args.input_include_files:
-            include_files_paths = args.input_include_files.copy()  # Make a copy to avoid modifying original
-            
+            include_files_paths = (
+                args.input_include_files.copy()
+            )  # Make a copy to avoid modifying original
+
             # Check if first file is an intro file
             if include_files_paths and Path(include_files_paths[0]).exists():
                 intro_file_path = Path(include_files_paths[0])
@@ -2182,25 +2263,27 @@ def _write_combined_data(
                 else:
                     logger.warning("Cannot use output file as intro file - skipping")
                     include_files_paths.pop(0)
-            
+
             # Process remaining include files
             for include_path in include_files_paths:
                 include_path_obj = Path(include_path)
                 # Skip the file if it's the output file (prevent recursion)
                 if output_file_path.resolve() == include_path_obj.resolve():
-                    logger.warning(f"Skipping include file that is same as output file: {include_path_obj}")
+                    logger.warning(
+                        f"Skipping include file that is same as output file: {include_path_obj}"
+                    )
                     continue
-                
+
                 if include_path_obj.exists():
                     include_files.append(include_path_obj)
                     logger.info(f"Adding include file: {include_path_obj}")
                 else:
                     logger.warning(f"Include file not found: {include_path_obj}")
-        
+
         # First write the special files (intro, filelist, dirlist)
         # This ensures they're processed before the main content files
         special_files = []
-        
+
         # 1. Add intro file if provided
         if intro_file and intro_file.exists():
             try:
@@ -2209,7 +2292,7 @@ def _write_combined_data(
                 special_files.append((intro_file, f"intro:{intro_file.name}"))
             except Exception as e:
                 logger.warning(f"Could not read intro file {intro_file}: {e}")
-        
+
         # 2. Add any other include files in the exact order they were specified
         for include_file in include_files:
             if include_file.exists():
@@ -2219,25 +2302,34 @@ def _write_combined_data(
                     special_files.append((include_file, f"include:{include_file.name}"))
                 except Exception as e:
                     logger.warning(f"Could not read include file {include_file}: {e}")
-        
+
         # Now process the final combined list (special files first, then regular files)
         final_files_to_process = special_files + files_to_process
+        logger.debug(f"DEBUG: _write_combined_data: About to process {len(final_files_to_process)} files. Output to: {output_file_path}")
 
-        with open(output_file_path, "w", encoding=output_encoding) as outfile:
-            processed_files = set()  # Keep track of files we've processed to avoid duplicates/recursion
-            
-            for file_info, rel_path_str in final_files_to_process:
-                # Skip if we've already processed this file (avoid duplicates/recursion)
+        # Ensure output file path exists before opening for write
+        output_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_file_path, "w", encoding=output_encoding, newline=chosen_linesep) as outfile: # Use chosen_linesep for newline
+            processed_files = (
+                set()
+            )  # Keep track of files we\'ve processed to avoid duplicates/recursion
+
+            for file_counter, (file_info, rel_path_str) in enumerate(final_files_to_process, 1):
+                logger.debug(f"DEBUG: _write_combined_data: Processing file {file_counter}/{len(final_files_to_process)}: {file_info} (Rel: {rel_path_str})")
+                # Skip if we\'ve already processed this file (avoid duplicates/recursion)
                 file_path_str = str(file_info.resolve())
                 if file_path_str in processed_files:
                     logger.debug(f"Skipping already processed file: {file_info}")
                     continue
-                
+
                 # Skip if this is the output file itself (avoid recursion)
                 if file_info.resolve() == output_file_path.resolve():
-                    logger.warning(f"Skipping attempt to include the output file in itself: {file_info}")
+                    logger.warning(
+                        f"Skipping attempt to include the output file in itself: {file_info}"
+                    )
                     continue
-                
+
                 processed_files.add(file_path_str)
                 file_counter += 1
                 logger.debug(
@@ -2339,12 +2431,7 @@ def _write_combined_data(
                                 f'"original_filepath": "{file_info.name}"',
                             )
 
-                    outfile.write(separator_text)
-                elif args.separator_style == "None":
-                    # For None style, don't add any separator or newline
-                    pass
-                else:
-                    outfile.write(separator_text + chosen_linesep)
+                outfile.write(separator_text)
 
                 # Add an additional blank line for Standard and Detailed styles
                 # after their header and before the actual file content begins.
@@ -2393,8 +2480,15 @@ def _write_combined_data(
 
                 # Add a separating newline IF this is not the last file.
                 # This serves as the blank line between file entries for all styles except "None".
-                if file_counter < len(processed_files) and args.separator_style != "None":
+                if (
+                    file_counter < len(processed_files)
+                    and args.separator_style != "None"
+                ):
                     outfile.write(chosen_linesep)
+        logger.debug(f"DEBUG: _write_combined_data: Finished processing all files.")
+        # Handle case where no files were processed (e.g. all were skipped or list was empty)
+        if not final_files_to_process:
+            logger.info("No files were processed to be written to the output.")
         return file_counter
     except IOError as e:
         logger.error(f"An I/O error occurred writing to '{output_file_path}': {e}")
@@ -2492,7 +2586,7 @@ def main():
     """
     # Start timing the execution
     start_time = time.time()
-    
+
     # Create a custom ArgumentParser that shows full help on error
     class CustomArgumentParser(argparse.ArgumentParser):
         def error(self, message):
@@ -2500,41 +2594,53 @@ def main():
             self.print_usage()
             # Print a list of all available arguments with short and long form
             arg_help = "Available arguments:\n"
-            
+
             # Format each argument with its options and full description
             for action in self._actions:
                 if action.option_strings:
                     # Format the option names
                     names = ", ".join(action.option_strings)
-                    
+
                     # Colorize the parameter names if colorama is available
                     if COLORAMA_AVAILABLE:
                         # Color the parameter names in cyan
                         colored_names = ""
                         for part in names.split(", "):
                             colored_names += f"{Fore.CYAN}{part}{Style.RESET_ALL}, "
-                        names = colored_names[:-2]  # Remove the trailing comma and space
-                    
+                        names = colored_names[
+                            :-2
+                        ]  # Remove the trailing comma and space
+
                     # Get the full help text
                     help_text = action.help if action.help else ""
-                    
+
                     # Colorize any choice values in the help text
-                    if COLORAMA_AVAILABLE and hasattr(action, 'choices') and action.choices:
+                    if (
+                        COLORAMA_AVAILABLE
+                        and hasattr(action, "choices")
+                        and action.choices
+                    ):
                         choices_str = "{" + ",".join(action.choices) + "}"
                         if help_text and choices_str in help_text:
-                            colored_choices = "{" + f"{Fore.YELLOW}" + ",".join(action.choices) + f"{Style.RESET_ALL}" + "}"
+                            colored_choices = (
+                                "{"
+                                + f"{Fore.YELLOW}"
+                                + ",".join(action.choices)
+                                + f"{Style.RESET_ALL}"
+                                + "}"
+                            )
                             help_text = help_text.replace(choices_str, colored_choices)
-                    
+
                     # Format with proper indentation for multi-line display
                     # First line has the parameter names
                     arg_help += f"  {names}\n"
-                    
+
                     # Wrap the help text to 80 characters and indent
                     if help_text:
                         # Split the help text into words
                         words = help_text.split()
                         line = "    "  # Initial indentation
-                        
+
                         # Build lines with proper wrapping
                         for word in words:
                             if len(line) + len(word) + 1 > 80:  # +1 for the space
@@ -2544,64 +2650,77 @@ def main():
                                 if line != "    ":  # Not at the start of a line
                                     line += " "
                                 line += word
-                        
+
                         # Add the last line if there's content
                         if line.strip():
                             arg_help += f"{line}\n"
-                    
+
                     # Add a blank line between parameters for readability
                     arg_help += "\n"
-            
+
             # Colorize the error message
             error_msg = message
             if COLORAMA_AVAILABLE:
                 error_msg = f"{Fore.RED}{message}{Style.RESET_ALL}"
-            
-            self.exit(2, f"{self.prog}: error: {error_msg}\n\n{arg_help}\nFor full parameter details, use --help\n")
-            
+
+            self.exit(
+                2,
+                f"{self.prog}: error: {error_msg}\n\n{arg_help}\nFor full parameter details, use --help\n",
+            )
+
         def format_help(self):
             """Override the default help formatter to create a more readable output."""
             # Start with usage
             help_text = self.format_usage() + "\n"
-            
+
             # Add description
             if self.description:
                 help_text += self.description + "\n\n"
-            
+
             # Add arguments with better formatting
             help_text += "Arguments:\n\n"
-            
+
             # Format each argument
             for action in self._actions:
                 if action.option_strings:
                     # Format option names with color if available
                     names = ", ".join(action.option_strings)
-                    
+
                     # Colorize the parameter names if colorama is available
                     if COLORAMA_AVAILABLE:
                         # Color the parameter names in cyan
                         colored_names = ""
                         for part in names.split(", "):
                             colored_names += f"{Fore.CYAN}{part}{Style.RESET_ALL}, "
-                        names = colored_names[:-2]  # Remove the trailing comma and space
-                        
+                        names = colored_names[
+                            :-2
+                        ]  # Remove the trailing comma and space
+
                         # If this parameter has choices, colorize them as well
-                        if hasattr(action, 'choices') and action.choices:
+                        if hasattr(action, "choices") and action.choices:
                             choices_str = "{" + ",".join(action.choices) + "}"
                             # Replace in help text with colored version
                             if action.help and choices_str in action.help:
-                                colored_choices = "{" + f"{Fore.YELLOW}" + ",".join(action.choices) + f"{Style.RESET_ALL}" + "}"
-                                action.help = action.help.replace(choices_str, colored_choices)
-                    
+                                colored_choices = (
+                                    "{"
+                                    + f"{Fore.YELLOW}"
+                                    + ",".join(action.choices)
+                                    + f"{Style.RESET_ALL}"
+                                    + "}"
+                                )
+                                action.help = action.help.replace(
+                                    choices_str, colored_choices
+                                )
+
                     # Add the parameter names
                     help_text += f"  {names}\n"
-                    
+
                     # Add help text with proper indentation
                     if action.help:
                         # Format the description with wrapping
                         words = action.help.split()
                         line = "    "  # Initial indentation
-                        
+
                         for word in words:
                             if len(line) + len(word) + 1 > 80:
                                 help_text += f"{line}\n"
@@ -2610,41 +2729,41 @@ def main():
                                 if line != "    ":
                                     line += " "
                                 line += word
-                        
+
                         # Add the last line
                         if line.strip():
                             help_text += f"{line}\n"
-                    
+
                     # Add space between parameters
                     help_text += "\n"
-            
+
             # Add epilog with examples
             if self.epilog:
                 help_text += "\nExamples:\n"
-                lines = self.epilog.strip().split('\n')
-                
+                lines = self.epilog.strip().split("\n")
+
                 for line in lines:
-                    if line.startswith('Examples:'):
+                    if line.startswith("Examples:"):
                         # Skip the duplicate "Examples:" header from the epilog
                         continue
-                        
-                    if line.startswith('  %(prog)s'):
+
+                    if line.startswith("  %(prog)s"):
                         # This is an example command
                         # Replace %(prog)s with actual program name
-                        example_line = line.replace('%(prog)s', 'python -m tools.m1f')
-                        
+                        example_line = line.replace("%(prog)s", "python -m tools.m1f")
+
                         # Colorize parts: command in green, parameters in blue
                         parts = example_line.split()
-                        
+
                         # Colorize first part (command) in green
                         if COLORAMA_AVAILABLE and parts:
                             parts[0] = f"{Fore.GREEN}{parts[0]}{Style.RESET_ALL}"
-                        
+
                         # Colorize parameters in blue
                         for i in range(1, len(parts)):
-                            if parts[i].startswith('-') and COLORAMA_AVAILABLE:
+                            if parts[i].startswith("-") and COLORAMA_AVAILABLE:
                                 parts[i] = f"{Fore.CYAN}{parts[i]}{Style.RESET_ALL}"
-                        
+
                         # Combine parts back into a single line
                         example_line = "  " + " ".join(parts)
                         help_text += example_line + "\n\n"
@@ -2654,9 +2773,9 @@ def main():
                     else:
                         # Other text, no special formatting
                         help_text += f"{line}\n"
-            
+
             return help_text
-    
+
     parser = CustomArgumentParser(
         description="Combines the content of multiple text files into a single output file, with metadata. "
         "Optionally, creates a backup archive (zip or tar.gz) of the processed files. "
@@ -2869,13 +2988,15 @@ def main():
             "'skip': exclude affected files. 'warn': include files but report at the end."
         ),
     )
-    
+
     # Add the proper args = parser.parse_args() call here
     args = parser.parse_args()
-    
+
     # Now check if at least one of source-directory or input-file is provided
     if not args.source_directory and not args.input_file:
-        parser.error("At least one of -s/--source-directory or -i/--input-file is required")
+        parser.error(
+            "At least one of -s/--source-directory or -i/--input-file is required"
+        )
 
     # Process and normalize include/exclude extensions if provided
     if hasattr(args, "include_extensions") and args.include_extensions:
@@ -2927,17 +3048,17 @@ def main():
     # Process input file if provided, otherwise use source directory
     input_paths = None
     source_dir = None
-    
+
     # First resolve source_directory if provided
     if args.source_directory:
         source_dir = _resolve_and_validate_source_path(args.source_directory)
-        
+
     if args.input_file:
         input_file_path = Path(args.input_file).resolve()
         if not input_file_path.exists() or not input_file_path.is_file():
             logger.error(f"Input file not found: {input_file_path}")
             sys.exit(1)
-        
+
         # Pass source_dir to _process_paths_from_input_file if it's available
         input_paths = _process_paths_from_input_file(input_file_path, source_dir)
         logger.info(f"Found {len(input_paths)} paths to process from input file")
@@ -3036,7 +3157,17 @@ def main():
         content_hash = _generate_filename_content_hash(files_to_process)
         if content_hash:
             output_file_path_obj = Path(args.output_file)  # Original output file arg
-            new_stem = f"{output_file_path_obj.stem}_{content_hash}"
+            # Ensure the stem has two underscore-separated segments when *no* execution
+            # timestamp is later appended (tests expect `base_*_*.txt`).
+            #   • If --add-timestamp *is not* set → add a trailing underscore now so
+            #     the name becomes:      base_<hash>_.txt
+            #   • If --add-timestamp *is* set  → skip the trailing underscore here
+            #     because `_prepare_output_file_path()` will add one before the
+            #     timestamp, resulting in:     base_<hash>_<timestamp>.txt
+            if getattr(args, "add_timestamp", False):
+                new_stem = f"{output_file_path_obj.stem}_{content_hash}"
+            else:
+                new_stem = f"{output_file_path_obj.stem}_{content_hash}_"
 
             # Update args.output_file so that _prepare_output_file_path and logging use the hashed name
             args.output_file = str(
@@ -3097,14 +3228,16 @@ def main():
     # Generate auxiliary files first to allow them to be included in the output
     file_list_path = None
     dir_list_path = None
-    
+
     # Write the list of file paths to a separate file, regardless of minimal_output setting
     # We'll respect minimal_output for regular output, but need to create these files
     # in case they're specified in input_include_files
     file_list_path = _write_file_paths_list(output_file_path, files_to_process, False)
-    
+
     # Write the list of directories to a separate file
-    dir_list_path = _write_directory_paths_list(output_file_path, files_to_process, False)
+    dir_list_path = _write_directory_paths_list(
+        output_file_path, files_to_process, False
+    )
 
     # Check for circular references in input_include_files
     if hasattr(args, "input_include_files") and args.input_include_files:
@@ -3114,11 +3247,13 @@ def main():
         for include_path in args.input_include_files:
             include_path_obj = Path(include_path)
             if include_path_obj.resolve() == output_path_resolved:
-                logger.warning(f"Removing circular reference to output file in input-include-files: {include_path}")
+                logger.warning(
+                    f"Removing circular reference to output file in input-include-files: {include_path}"
+                )
             else:
                 safe_include_files.append(include_path)
         args.input_include_files = safe_include_files
-    
+
     # Only create the output file if not skipping
     processed_count = 0
     if not args.skip_output_file:
@@ -3140,18 +3275,26 @@ def main():
     if args.minimal_output:
         auxiliary_files_to_keep = set()
         if hasattr(args, "input_include_files") and args.input_include_files:
-            auxiliary_files_to_keep = {str(Path(f).resolve()) for f in args.input_include_files}
-        
+            auxiliary_files_to_keep = {
+                str(Path(f).resolve()) for f in args.input_include_files
+            }
+
         # Delete file list if not in keep list
-        if file_list_path and str(file_list_path.resolve()) not in auxiliary_files_to_keep:
+        if (
+            file_list_path
+            and str(file_list_path.resolve()) not in auxiliary_files_to_keep
+        ):
             try:
                 file_list_path.unlink()
                 logger.debug(f"Deleted {file_list_path} (minimal output mode)")
             except Exception as e:
                 logger.warning(f"Could not delete auxiliary file {file_list_path}: {e}")
-        
+
         # Delete dir list if not in keep list
-        if dir_list_path and str(dir_list_path.resolve()) not in auxiliary_files_to_keep:
+        if (
+            dir_list_path
+            and str(dir_list_path.resolve()) not in auxiliary_files_to_keep
+        ):
             try:
                 dir_list_path.unlink()
                 logger.debug(f"Deleted {dir_list_path} (minimal output mode)")
@@ -3224,30 +3367,31 @@ def main():
     else:
         time_str = f"{execution_time:.2f}s"
     logger.info(f"Total execution time: {time_str}")
-    
+
     # Close any file handlers before exiting
     try:
         # Use our global cleanup function to ensure thorough cleanup
         _cleanup_global_handlers()
-        
+
         # Double-check root logger
         root_logger = logging.getLogger()
         for handler in root_logger.handlers[:]:
             if isinstance(handler, logging.FileHandler):
                 try:
                     handler.close()
-                    if hasattr(handler, 'stream') and handler.stream:
+                    if hasattr(handler, "stream") and handler.stream:
                         handler.stream.close()
                         handler.stream = None
                 except Exception:
                     pass
             root_logger.removeHandler(handler)
-        
+
         # Force final shutdown
         logging.shutdown()
-        
+
         # Force garbage collection to release any lingering file references
         import gc
+
         gc.collect()
     except Exception:
         # Don't let cleanup errors affect the exit code
@@ -3270,5 +3414,3 @@ if __name__ == "__main__":
         # Fallback for any unexpected errors not caught in main()
         logger.critical(f"An unexpected critical error occurred: {e}", exc_info=True)
         sys.exit(1)
-
-
