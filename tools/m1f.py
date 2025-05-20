@@ -1867,6 +1867,21 @@ def _is_file_excluded(
     return False
 
 
+def _prune_dirs_for_depth(root_path: Path, base_dir: Path, dirs: list[str], max_depth: Optional[int]) -> None:
+    """Prune directory names in-place if walking beyond max_depth."""
+    if max_depth is None:
+        return
+    if len(root_path.relative_to(base_dir).parts) >= max_depth:
+        dirs[:] = []
+
+
+def _within_max_depth(path: Path, base_dir: Path, max_depth: Optional[int]) -> bool:
+    """Return True if path is within the allowed depth from base_dir."""
+    if max_depth is None:
+        return True
+    return len(path.relative_to(base_dir).parts) <= max_depth
+
+
 def _gather_files_to_process(
     source_dir: Path,
     args: argparse.Namespace,
@@ -1875,6 +1890,7 @@ def _gather_files_to_process(
     ignore_symlinks: bool = True,
     excluded_file_paths: Set[str] = None,
     gitignore_spec: Optional[pathspec.PathSpec] = None,
+    max_depth: Optional[int] = None,
 ) -> List[Tuple[Path, str]]:
     """
     Gather files to process, either from a source directory or from a list of input paths.
@@ -1887,6 +1903,7 @@ def _gather_files_to_process(
         ignore_symlinks: Whether to ignore symlinks
         excluded_file_paths: Set of file paths to exclude
         gitignore_spec: PathSpec object for gitignore pattern matching
+        max_depth: Optional maximum directory depth to limit traversal
 
     Returns:
         List of tuples containing (file_path, relative_path)
@@ -1971,20 +1988,26 @@ def _gather_files_to_process(
                         )
 
                 logger.debug(f"Scanning directory from input file: {item_path}")
-                for file_path_in_dir in item_path.rglob("*"):
-                    logger.debug(f"_gather_files_to_process: rglob found file_path_in_dir: {file_path_in_dir}")
-                    # Skip processing files in dot directories if include_dot_paths is not set
+                for root, dirs, files in os.walk(item_path):
+                    root_path = Path(root)
+                    _prune_dirs_for_depth(root_path, item_path, dirs, max_depth)
+
                     if not args.include_dot_paths:
-                        # Check if any parent directory starts with a dot
-                        parts = file_path_in_dir.relative_to(item_path).parts
-                        if any(part.startswith(".") for part in parts):
-                            if file_path_in_dir.is_file():
-                                logger.debug(
-                                    f"Skipping file in dot directory: {file_path_in_dir}"
-                                )
+                        dirs[:] = [d for d in dirs if not d.startswith(".")]
+
+                    for file in files:
+                        file_path_in_dir = root_path / file
+
+                        if not args.include_dot_paths:
+                            parts = file_path_in_dir.relative_to(item_path).parts
+                            if any(part.startswith(".") for part in parts):
+                                continue
+
+                        if not _within_max_depth(
+                            file_path_in_dir, item_path, max_depth
+                        ):
                             continue
 
-                    if file_path_in_dir.is_file():
                         abs_path_str = str(file_path_in_dir.resolve())
                         if abs_path_str in added_file_absolute_paths:
                             logger.debug(
@@ -1998,12 +2021,10 @@ def _gather_files_to_process(
                             excluded_file_paths,
                             gitignore_spec,
                         ):
-                            # Try to make the path relative to source_dir first, if possible
                             try:
                                 rel_path = file_path_in_dir.relative_to(source_dir)
                                 rel_path_str = rel_path.as_posix()
                             except ValueError:
-                                # Fall back to making it relative to the directory from the input file
                                 rel_path = file_path_in_dir.relative_to(item_path)
                                 rel_path_str = rel_path.as_posix()
 
@@ -2024,6 +2045,7 @@ def _gather_files_to_process(
 
         for root, dirs, files in os.walk(source_dir):
             root_path = Path(root)
+            _prune_dirs_for_depth(root_path, source_dir, dirs, max_depth)
 
             # Skip excluded directories
             dirs[:] = [d for d in dirs if d.lower() not in excluded_dir_names_lower]
@@ -2061,6 +2083,9 @@ def _gather_files_to_process(
 
             for file in files:
                 file_path = root_path / file
+
+                if not _within_max_depth(file_path, source_dir, max_depth):
+                    continue
 
                 # Special handling for dot files when --no-default-excludes is used
                 explicitly_included = False
@@ -2616,6 +2641,17 @@ def _create_archive(
 # --- Main Script Logic ---
 
 
+def _non_negative_int(value: str) -> int:
+    """Argument parser helper to ensure a non-negative integer."""
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value} is not a valid integer")
+    if ivalue < 0:
+        raise argparse.ArgumentTypeError("value must be >= 0")
+    return ivalue
+
+
 def main():
     """
     Main function to parse arguments and orchestrate the file combination process.
@@ -2939,6 +2975,12 @@ def main():
         help="Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, both files and directories starting with a dot are excluded, except for specific directories in DEFAULT_EXCLUDED_DIR_NAMES.",
     )
     parser.add_argument(
+        "--max-depth",
+        type=_non_negative_int,
+        metavar="N",
+        help="Maximum directory depth to scan. Paths deeper than this level are skipped. Must be non-negative. No limit by default.",
+    )
+    parser.add_argument(
         "--include-binary-files",
         action="store_true",
         help="Attempt to include files with binary extensions. Content may be unreadable. Use with caution.",
@@ -3145,6 +3187,7 @@ def main():
         ignore_symlinks=True,
         excluded_file_paths=excluded_file_paths,
         gitignore_spec=gitignore_spec,
+        max_depth=args.max_depth,
     )
 
     # --- Security Check ---

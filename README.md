@@ -180,6 +180,7 @@ formatting.
 | `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\***                                                                                         |
 | `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
 | `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
+| `--max-depth`               | Limit directory traversal to this depth. Must be non-negative. Paths deeper than this level are skipped. No limit by default. |
 | `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
 | `--separator-style`         | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                                                |
 | `--line-ending`             | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                                                     |
@@ -280,6 +281,13 @@ Including dot files and directories:
 ```bash
 python tools/m1f.py -s ./project -o ./with_dotfiles.txt \
   --include-dot-paths
+```
+
+Limiting directory traversal depth:
+
+```bash
+python tools/m1f.py -s ./project -o ./top_two_levels.txt \
+  --max-depth 2
 ```
 
 Generating only the combined file with no auxiliary files:
