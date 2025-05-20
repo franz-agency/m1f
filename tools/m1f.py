@@ -1152,6 +1152,15 @@ def get_file_separator(
                 meta["encoding"] = "euc_kr"
             elif enc_lower in ("windows_1256", "windows1256", "windows-1256", "cp1256"):
                 meta["encoding"] = "cp1256"
+            # Ensure UTF-8 is consistently represented as "utf-8" for tests
+            elif enc_lower in ("utf_8", "utf8", "utf-8"):
+                meta["encoding"] = "utf-8"
+            # Ensure UTF-16 is consistently represented as "utf-16" (not utf_16) for tests
+            elif enc_lower in ("utf_16", "utf16", "utf-16"):
+                meta["encoding"] = "utf-16"
+            # Ensure Latin-1 is consistently represented for tests - use form expected by tests
+            elif enc_lower in ("latin_1", "latin1", "latin-1"):
+                meta["encoding"] = "latin-1"
 
         json_meta = json.dumps(meta, indent=4)
 
