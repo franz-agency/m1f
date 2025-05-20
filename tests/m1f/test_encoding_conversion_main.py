@@ -26,7 +26,7 @@ def test_exotic_encoding_conversion():
 
     # Ensure the directory path exists and is properly resolved
     test_dir = test_dir.resolve()
-    
+
     # Print path for debugging
     print(f"Looking for exotic encoding test files in: {test_dir}")
     print(f"Files found: {[f.name for f in test_dir.glob('*.txt') if f.is_file()]}")

@@ -176,7 +176,9 @@ class TestS1F:
 
         # Check number of files extracted
         all_extracted_files = list(Path(EXTRACTED_DIR).glob("**/*.*"))
-        assert len(all_extracted_files) == len(original_file_paths), f"Expected {len(original_file_paths)} files, found {len(all_extracted_files)}"
+        assert len(all_extracted_files) == len(
+            original_file_paths
+        ), f"Expected {len(original_file_paths)} files, found {len(all_extracted_files)}"
 
     def test_detailed_separator(self):
         """Test extracting files from a combined file with Detailed separator style."""
@@ -203,7 +205,9 @@ class TestS1F:
             original_file_paths = [line.strip() for line in f if line.strip()]
 
         # Check number of files extracted
-        assert len(extracted_files) == len(original_file_paths), f"Expected {len(original_file_paths)} files, found {len(extracted_files)}"
+        assert len(extracted_files) == len(
+            original_file_paths
+        ), f"Expected {len(original_file_paths)} files, found {len(extracted_files)}"
 
     def test_markdown_separator(self):
         """Test extracting files from a combined file with Markdown separator style."""
@@ -230,7 +234,9 @@ class TestS1F:
             original_file_paths = [line.strip() for line in f if line.strip()]
 
         # Check number of files extracted
-        assert len(extracted_files) == len(original_file_paths), f"Expected {len(original_file_paths)} files, found {len(extracted_files)}"
+        assert len(extracted_files) == len(
+            original_file_paths
+        ), f"Expected {len(original_file_paths)} files, found {len(extracted_files)}"
 
     def test_machinereadable_separator(self):
         """Test extracting files from a combined file with MachineReadable separator style."""
@@ -262,13 +268,15 @@ class TestS1F:
         # Get the source directory from the m1f test folder
         source_dir = Path(__file__).parent.parent / "m1f" / "source"
         original_files = [source_dir / path for path in original_file_paths]
-        
+
         # The test will fail for files with encoding issues, but we want to make sure
         # other files are correctly extracted. This test is specifically for structure
         # verification rather than exact content matching for all encoding types.
-        
+
         # Count files rather than verifying exact content
-        assert len(extracted_files) == len(original_file_paths), f"Expected {len(original_file_paths)} files, found {len(extracted_files)}"
+        assert len(extracted_files) == len(
+            original_file_paths
+        ), f"Expected {len(original_file_paths)} files, found {len(extracted_files)}"
 
     def test_force_overwrite(self):
         """Test force overwriting existing files."""
