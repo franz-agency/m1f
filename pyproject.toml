@@ -1,0 +1,35 @@
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+# Exclude test files that are intentionally invalid Python
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | tests/m1f/source/glob_basic/script\.py
+  | tests/m1f/source/glob_test/src/main\.py
+  | tests/m1f/source/glob_test/src/util\.py
+  | tests/m1f/source/glob_dir_specific/code/script\.py
+  | tests/m1f/source/glob_test/src/comp2/test\.py
+  | tests/m1f/source/glob_edge_cases/standard\.py
+  | tests/m1f/source/glob_multiple/script\.py
+  | tests/m1f/source/glob_recursive/level1/level1\.py
+  | tests/m1f/source/glob_recursive/level1/level2/level2\.py
+  | tests/m1f/source/glob_recursive/root\.py
+  | tests/m1f/source/glob_test/root\.py
+  | tests/m1f/source/glob_test/src/comp1/component1\.py
+  | tests/m1f/source/glob_test/src/comp1/test\.py
+  | tests/m1f/source/glob_test/src/comp2/component2\.py
+)
+''' 
