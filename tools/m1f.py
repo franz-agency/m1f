@@ -1987,6 +1987,11 @@ def _gather_files_to_process(
                             continue
 
                     if file_path_in_dir.is_file():
+                        # Skip symlinks if ignore_symlinks is True
+                        if ignore_symlinks and file_path_in_dir.is_symlink():
+                            logger.debug(f"Skipping symlink: {file_path_in_dir}")
+                            continue
+                            
                         abs_path_str = str(file_path_in_dir.resolve())
                         if abs_path_str in added_file_absolute_paths:
                             logger.debug(
