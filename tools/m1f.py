@@ -561,6 +561,54 @@ def _scan_files_for_sensitive_info(
     return detailed_flagged_findings
 
 
+def _detect_symlink_cycles(
+    path: Path, 
+    visited_paths: set[str] = None,
+    max_depth: int = 40
+) -> tuple[bool, set[str]]:
+    """
+    Detects if a symlink would create a cycle when followed.
+    
+    Args:
+        path: Path object to check
+        visited_paths: Set of already visited canonicalized paths
+        max_depth: Maximum symlink follow depth
+        
+    Returns:
+        Tuple containing:
+        - Boolean: True if following the symlink would cause a cycle
+        - Set of visited paths (updated with this path)
+    """
+    if visited_paths is None:
+        visited_paths = set()
+        
+    # Automatically prevent exceeding maximum symlink depth
+    if len(visited_paths) >= max_depth:
+        logger.debug(f"Maximum symlink follow depth ({max_depth}) reached at {path}")
+        return True, visited_paths
+        
+    try:
+        # Get the canonicalized absolute path (follows all symlinks)
+        # This gives us the real physical path that the symlink points to
+        canonical_path = str(path.resolve(strict=False))
+        
+        # If we've seen this physical path before, it's a cycle
+        if canonical_path in visited_paths:
+            logger.debug(f"Symlink cycle detected: {path} -> {canonical_path} (already visited)")
+            return True, visited_paths
+            
+        # Add to visited paths
+        visited_paths.add(canonical_path)
+        
+        # Not a cycle
+        return False, visited_paths
+        
+    except (OSError, RuntimeError) as e:
+        # Handle errors (broken symlinks, permission issues)
+        logger.warning(f"Error checking symlink {path}: {e}")
+        return True, visited_paths  # Treat as cycle for safety
+
+
 def _detect_file_encoding(file_path: Path, verbose: bool = False) -> str:
     """
     Detects the character encoding of a file using chardet.
@@ -1897,6 +1945,9 @@ def _gather_files_to_process(
     # Use a set to track absolute paths of files already added to avoid duplicates
     # especially when using --input-file which might list overlapping paths or individual files within listed dirs.
     added_file_absolute_paths: Set[str] = set()
+    
+    # Track canonical paths for symlink cycle detection
+    symlink_visited_paths: Set[str] = set()
 
     if input_paths is not None:
         logger.info(
@@ -1918,6 +1969,21 @@ def _gather_files_to_process(
                 continue
 
             if item_path.is_file():
+                # Handle symlinks for files that are directly listed
+                if item_path.is_symlink():
+                    if ignore_symlinks:
+                        logger.debug(f"Skipping symlink file: {item_path}")
+                        continue
+                    
+                    # Check for cycles when following this symlink
+                    is_cycle, updated_visited = _detect_symlink_cycles(item_path, symlink_visited_paths.copy())
+                    if is_cycle:
+                        logger.debug(f"Skipping symlink file that would cause cycle: {item_path}")
+                        continue
+                    
+                    # Update visited paths with symlinks seen while checking this file
+                    symlink_visited_paths = updated_visited
+                
                 abs_path_str = str(item_path.resolve())
                 if abs_path_str in added_file_absolute_paths:
                     logger.debug(f"Skipping already added file: {item_path}")
@@ -1949,6 +2015,20 @@ def _gather_files_to_process(
                         f"Skipping directory '{item_path}' from input list as its name is excluded."
                     )
                     continue
+                    
+                # Handle symlink directories if ignoring symlinks
+                if ignore_symlinks and item_path.is_symlink():
+                    logger.debug(f"Skipping symlink directory: {item_path}")
+                    continue
+                
+                # For explicitly included symlink directories that we're following, check for cycles
+                if not ignore_symlinks and item_path.is_symlink():
+                    is_cycle, updated_visited = _detect_symlink_cycles(item_path, symlink_visited_paths.copy())
+                    if is_cycle:
+                        logger.debug(f"Skipping symlink directory that would cause cycle: {item_path}")
+                        continue
+                    # Update visited paths with symlinks seen while checking this directory
+                    symlink_visited_paths = updated_visited
 
                 # Always include directories that were explicitly specified in the input file,
                 # even if they start with a dot
@@ -1975,22 +2055,37 @@ def _gather_files_to_process(
                 logger.debug(f"Scanning directory from input file: {item_path}")
                 for file_path_in_dir in item_path.rglob("*"):
                     logger.debug(f"_gather_files_to_process: rglob found file_path_in_dir: {file_path_in_dir}")
-                    # Skip processing files in dot directories if include_dot_paths is not set
-                    if not args.include_dot_paths:
-                        # Check if any parent directory starts with a dot
-                        parts = file_path_in_dir.relative_to(item_path).parts
-                        if any(part.startswith(".") for part in parts):
-                            if file_path_in_dir.is_file():
-                                logger.debug(
-                                    f"Skipping file in dot directory: {file_path_in_dir}"
-                                )
-                            continue
+                                    # Skip processing files in dot directories if include_dot_paths is not set
+                if not args.include_dot_paths:
+                    # Check if any parent directory starts with a dot
+                    parts = file_path_in_dir.relative_to(item_path).parts
+                    if any(part.startswith(".") for part in parts):
+                        if file_path_in_dir.is_file():
+                            logger.debug(
+                                f"Skipping file in dot directory: {file_path_in_dir}"
+                            )
+                        continue
+                        
+                # Handle symlink directory (this applies for both file_path_in_dir.is_file() and is_dir())
+                if ignore_symlinks and file_path_in_dir.is_symlink() and file_path_in_dir.is_dir():
+                    logger.debug(f"Skipping symlink directory: {file_path_in_dir}")
+                    continue
 
                     if file_path_in_dir.is_file():
-                        # Skip symlinks if ignore_symlinks is True
-                        if ignore_symlinks and file_path_in_dir.is_symlink():
-                            logger.debug(f"Skipping symlink: {file_path_in_dir}")
-                            continue
+                        # Handle symlinks with cycle detection
+                        if file_path_in_dir.is_symlink():
+                            if ignore_symlinks:
+                                logger.debug(f"Skipping symlink: {file_path_in_dir}")
+                                continue
+                            
+                            # Check for cycles when following this symlink
+                            is_cycle, updated_visited = _detect_symlink_cycles(file_path_in_dir, symlink_visited_paths.copy())
+                            if is_cycle:
+                                logger.debug(f"Skipping symlink file that would cause cycle: {file_path_in_dir}")
+                                continue
+                            
+                            # Update visited paths with symlinks seen while checking this file
+                            symlink_visited_paths = updated_visited
                             
                         abs_path_str = str(file_path_in_dir.resolve())
                         if abs_path_str in added_file_absolute_paths:
@@ -2063,8 +2158,25 @@ def _gather_files_to_process(
                 ]
 
             # Skip symlink directories if ignore_symlinks is True
+            # For include-symlinks, check for cycles before traversing
             if ignore_symlinks:
+                # Standard behavior: skip all symlink directories
                 dirs[:] = [d for d in dirs if not (root_path / d).is_symlink()]
+            else:
+                # If we're including symlinks, detect cycles to prevent infinite recursion
+                dirs_to_keep = []
+                for d in dirs:
+                    dir_path = root_path / d
+                    if dir_path.is_symlink():
+                        # Check if following this symlink would create a cycle
+                        is_cycle, updated_visited = _detect_symlink_cycles(dir_path, symlink_visited_paths.copy())
+                        if is_cycle:
+                            logger.debug(f"Skipping symlink directory that would cause cycle: {dir_path}")
+                            continue
+                        # Update visited paths with symlinks seen while checking this directory
+                        symlink_visited_paths = updated_visited
+                    dirs_to_keep.append(d)
+                dirs[:] = dirs_to_keep
 
             for file in files:
                 file_path = root_path / file
@@ -2096,10 +2208,20 @@ def _gather_files_to_process(
                 ):
                     continue
 
-                # Skip symlinks if ignore_symlinks is True
-                if ignore_symlinks and file_path.is_symlink():
-                    logger.debug(f"Skipping symlink: {file_path}")
-                    continue
+                # Handle symlinks with cycle detection if needed
+                if file_path.is_symlink():
+                    if ignore_symlinks:
+                        logger.debug(f"Skipping symlink: {file_path}")
+                        continue
+                    
+                    # Check for cycles when following this symlink
+                    is_cycle, updated_visited = _detect_symlink_cycles(file_path, symlink_visited_paths.copy())
+                    if is_cycle:
+                        logger.debug(f"Skipping symlink file that would cause cycle: {file_path}")
+                        continue
+                    
+                    # Update visited paths with symlinks seen while checking this file
+                    symlink_visited_paths = updated_visited
 
                 relative_path = file_path.relative_to(source_dir)
                 files_to_process.append((file_path, relative_path.as_posix()))
@@ -2951,6 +3073,11 @@ def main():
         help="Attempt to include files with binary extensions. Content may be unreadable. Use with caution.",
     )
     parser.add_argument(
+        "--include-symlinks",
+        action="store_true",
+        help="Include symbolic links to files and directories. Default behavior is to skip symlinks. CAUTION: This might cause infinite recursion if symlinks form cycles!",
+    )
+    parser.add_argument(
         "--separator-style",
         choices=["Standard", "Detailed", "Markdown", "MachineReadable", "None"],
         default="Detailed",
@@ -3149,7 +3276,7 @@ def main():
         args,
         excluded_dir_names_lower,
         input_paths,
-        ignore_symlinks=True,
+        ignore_symlinks=not args.include_symlinks,  # Verwende den neuen Parameter
         excluded_file_paths=excluded_file_paths,
         gitignore_spec=gitignore_spec,
     )
