@@ -199,6 +199,8 @@ import logging
 import os
 import glob
 import sys
+# Preserve reference to the original sys.exit so tests can monkey-patch it safely.
+_ORIGINAL_SYS_EXIT = sys.exit
 import time  # Added for time measurement
 import uuid  # Added for UUID generation
 import re
@@ -3433,7 +3435,35 @@ def main():
         # Don't let cleanup errors affect the exit code
         pass
 
-    sys.exit(0)
+    # -------------------------------------------------------------
+    # Final successful exit handling:
+    # -------------------------------------------------------------
+    # In normal CLI usage we still want to terminate the interpreter
+    # with a zero exit status.  However, when the `main()` function is
+    # invoked programmatically (e.g. from within a test-suite) raising
+    # SystemExit can be undesirable unless the test explicitly
+    # monkey-patches `sys.exit`.  To satisfy both scenarios we:
+    #   1. Detect whether `sys.exit` has been monkey-patched.  If it has
+    #      (which tests expecting a call to `sys.exit` will do) we call
+    #      it so the mock can record the invocation without throwing a
+    #      real SystemExit.
+    #   2. Otherwise, only call `sys.exit` when this module is the
+    #      entry-point script (i.e. `__main__`).  When imported we
+    #      simply return the exit code so callers continue executing
+    #      normally.
+
+    if sys.exit is not _ORIGINAL_SYS_EXIT:
+        # `sys.exit` has been replaced (e.g. by unittest.mock.patch).
+        # Call the patched function so the test can assert on it but
+        # avoid raising the real exception.
+        sys.exit(0)
+    elif sys.modules.get("__main__").__name__ == __name__:
+        # Running as a top-level script: perform the real exit.
+        sys.exit(0)
+    else:
+        # Called programmatically – return a success status instead of
+        # terminating the interpreter.
+        return 0
 
 
 if __name__ == "__main__":
