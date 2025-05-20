@@ -2978,7 +2978,7 @@ def main():
         "--max-depth",
         type=_non_negative_int,
         metavar="N",
-        help="Maximum directory depth to scan. Paths deeper than this level are skipped. Must be non-negative. No limit by default.",
+        help="Maximum directory depth to scan. Depth is counted from the source root at 0. Setting '--max-depth 0' results in no files being included, as depth 0 prunes immediately. Must be non-negative. No limit by default.",
     )
     parser.add_argument(
         "--include-binary-files",
