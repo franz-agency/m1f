@@ -2008,6 +2008,16 @@ def _gather_files_to_process(
     # especially when using --input-file which might list overlapping paths or individual files within listed dirs.
     added_file_absolute_paths: Set[str] = set()
     
+    # Track raw paths for deduplication when --include-symlinks is used
+    # Use a different strategy for symlink deduplication
+    if getattr(args, "include_symlinks", False):
+        # When --include-symlinks is active, allow the same file to appear twice if accessed through
+        # different paths (symlinks), but still avoid true duplicates by tracking resolved paths
+        deduplication_key = lambda p: str(p)  # Use unresolved string representation
+    else:
+        # In normal mode, deduplicate by the canonical path to avoid any file appearing twice
+        deduplication_key = lambda p: str(p.resolve())
+    
     # Track canonical paths for symlink cycle detection
     symlink_visited_paths: Set[str] = set()
     
@@ -2054,8 +2064,8 @@ def _gather_files_to_process(
                     symlink_visited_paths = updated_visited
                     logger.debug(f"Including symlink file: {item_path}")
                 
-                abs_path_str = str(item_path.resolve())
-                if abs_path_str in added_file_absolute_paths:
+                dedup_key = deduplication_key(item_path)
+                if dedup_key in added_file_absolute_paths:
                     logger.debug(f"Skipping already added file: {item_path}")
                     continue
                 if not _is_file_excluded(
@@ -2074,7 +2084,7 @@ def _gather_files_to_process(
                         rel_path = normalize_path(item_path)
 
                     files_to_process.append((item_path, rel_path))
-                    added_file_absolute_paths.add(abs_path_str)
+                    added_file_absolute_paths.add(dedup_key)
                 # else: _is_file_excluded logs if verbose
 
             elif item_path.is_dir():
@@ -2133,21 +2143,21 @@ def _gather_files_to_process(
                 logger.debug(f"Scanning directory from input file: {item_path}")
                 for file_path_in_dir in item_path.rglob("*"):
                     logger.debug(f"_gather_files_to_process: rglob found file_path_in_dir: {file_path_in_dir}")
-                                    # Skip processing files in dot directories if include_dot_paths is not set
-                if not args.include_dot_paths:
-                    # Check if any parent directory starts with a dot
-                    parts = file_path_in_dir.relative_to(item_path).parts
-                    if any(part.startswith(".") for part in parts):
-                        if file_path_in_dir.is_file():
-                            logger.debug(
-                                f"Skipping file in dot directory: {file_path_in_dir}"
-                            )
+                    # Skip processing files in dot directories if include_dot_paths is not set
+                    if not args.include_dot_paths:
+                        # Check if any parent directory starts with a dot
+                        parts = file_path_in_dir.relative_to(item_path).parts
+                        if any(part.startswith(".") for part in parts):
+                            if file_path_in_dir.is_file():
+                                logger.debug(
+                                    f"Skipping file in dot directory: {file_path_in_dir}"
+                                )
+                            continue
+                            
+                    # Handle symlink directory (this applies for both file_path_in_dir.is_file() and is_dir())
+                    if ignore_symlinks and file_path_in_dir.is_symlink() and file_path_in_dir.is_dir():
+                        logger.debug(f"Skipping symlink directory: {file_path_in_dir}")
                         continue
-                        
-                # Handle symlink directory (this applies for both file_path_in_dir.is_file() and is_dir())
-                if ignore_symlinks and file_path_in_dir.is_symlink() and file_path_in_dir.is_dir():
-                    logger.debug(f"Skipping symlink directory: {file_path_in_dir}")
-                    continue
 
                     if file_path_in_dir.is_file():
                         # Handle symlinks with cycle detection
@@ -2165,8 +2175,8 @@ def _gather_files_to_process(
                             # Update visited paths with symlinks seen while checking this file
                             symlink_visited_paths = updated_visited
                             
-                        abs_path_str = str(file_path_in_dir.resolve())
-                        if abs_path_str in added_file_absolute_paths:
+                        dedup_key = deduplication_key(file_path_in_dir)
+                        if dedup_key in added_file_absolute_paths:
                             logger.debug(
                                 f"Skipping already added file: {file_path_in_dir}"
                             )
@@ -2188,7 +2198,7 @@ def _gather_files_to_process(
                                 rel_path_str = rel_path.as_posix()
 
                             files_to_process.append((file_path_in_dir, rel_path_str))
-                            added_file_absolute_paths.add(abs_path_str)
+                            added_file_absolute_paths.add(dedup_key)
                         # else: _is_file_excluded logs if verbose
     else:
         # Original directory walking logic
@@ -2351,8 +2361,15 @@ def _gather_files_to_process(
                     except (OSError, RuntimeError):
                         logger.debug(f"Including symlink file with unknown target: {file_path}")
 
+                # Use the deduplication strategy based on whether include_symlinks is specified
+                dedup_key = deduplication_key(file_path)
+                if dedup_key in added_file_absolute_paths:
+                    logger.debug(f"Skipping already added file: {file_path}")
+                    continue
+                    
                 relative_path = file_path.relative_to(source_dir)
                 files_to_process.append((file_path, relative_path.as_posix()))
+                added_file_absolute_paths.add(dedup_key)
 
     return sorted(files_to_process, key=lambda x: str(x[1]).lower())
 

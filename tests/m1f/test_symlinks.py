@@ -149,7 +149,8 @@ class TestSymlinkHandling(unittest.TestCase):
                 "--source-directory", str(self.source_dir),
                 "--output-file", str(output_file2),
                 "--force",
-                "--include-symlinks"
+                "--include-symlinks",
+                "--verbose"  # Added for debugging
             ],
             check=True,
             capture_output=True,
@@ -166,9 +167,21 @@ class TestSymlinkHandling(unittest.TestCase):
         self.assertIn("file3.txt", content)  # Normal file should be included
         self.assertIn("symlink_to_file1.txt", content)  # Symlink file should be included
         
+        # Print lines containing file3.txt for debugging
+        print("\nLines containing file3.txt:")
+        file3_paths = []
+        for i, line in enumerate(content.splitlines()):
+            if "file3.txt" in line:
+                print(f"Line {i+1}: {line[:100]}...")
+                # If the line contains "FILE: " it's a file path in the header
+                if "FILE: " in line:
+                    file_path = line.split("FILE: ")[1].split()[0]
+                    if file_path not in file3_paths:
+                        file3_paths.append(file_path)
+        
         # File from dir3 should appear twice (once directly, once through symlink)
-        count_file3 = content.count("file3.txt")
-        self.assertEqual(count_file3, 2)  # Should appear twice now (once directly, once via symlink)
+        print(f"Unique file3.txt paths: {file3_paths}")
+        self.assertEqual(len(file3_paths), 2)  # Should have 2 unique paths to file3.txt
 
 
 if __name__ == "__main__":
