@@ -1,13 +1,134 @@
-import os
-import sys
-from pathlib import Path
+"""M1F-specific test configuration and fixtures."""
 
-# Add the tools directory to path to import the m1f module
-tools_dir = Path(__file__).parent.parent.parent / "tools"
-if tools_dir.exists():
-    sys.path.insert(0, str(tools_dir))
-else:
-    # Try alternative path if running from a different location
-    alt_tools_dir = Path(__file__).resolve().parent.parent.parent.parent / "tools"
-    if alt_tools_dir.exists():
-        sys.path.insert(0, str(alt_tools_dir))
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+
+@pytest.fixture
+def m1f_source_dir() -> Path:
+    """Path to the m1f test source directory."""
+    return Path(__file__).parent / "source"
+
+
+@pytest.fixture
+def m1f_output_dir() -> Path:
+    """Path to the m1f test output directory."""
+    path = Path(__file__).parent / "output"
+    path.mkdir(exist_ok=True)
+    return path
+
+
+@pytest.fixture
+def m1f_extracted_dir() -> Path:
+    """Path to the m1f extracted directory."""
+    path = Path(__file__).parent / "extracted"
+    path.mkdir(exist_ok=True)
+    return path
+
+
+@pytest.fixture
+def exclude_paths_file() -> Path:
+    """Path to the exclude paths file."""
+    return Path(__file__).parent / "exclude_paths.txt"
+
+
+@pytest.fixture
+def create_m1f_test_structure(create_test_directory_structure) -> Callable[[dict[str, str | dict]], Path]:
+    """
+    Create a test directory structure specifically for m1f testing.
+    
+    This wraps the generic fixture to add m1f-specific defaults.
+    """
+    def _create_structure(structure: dict[str, str | dict] | None = None) -> Path:
+        # Default test structure if none provided
+        if structure is None:
+            structure = {
+                "src": {
+                    "main.py": "#!/usr/bin/env python3\nprint('Hello, World!')",
+                    "utils.py": "def helper():\n    return 42",
+                },
+                "tests": {
+                    "test_main.py": "import pytest\n\ndef test_main():\n    assert True",
+                },
+                "docs": {
+                    "README.md": "# Test Project\n\nThis is a test.",
+                },
+                ".gitignore": "*.pyc\n__pycache__/\n.pytest_cache/",
+                "requirements.txt": "pytest>=7.0.0\nblack>=22.0.0",
+            }
+        
+        return create_test_directory_structure(structure)
+    
+    return _create_structure
+
+
+@pytest.fixture
+def run_m1f(monkeypatch, capture_logs):
+    """
+    Run m1f.main() with the specified command line arguments.
+    
+    This fixture properly handles sys.argv manipulation and cleanup.
+    """
+    from m1f.cli import main
+    
+    def _run_m1f(args: list[str], auto_confirm: bool = True) -> tuple[int, str]:
+        """
+        Run m1f with given arguments.
+        
+        Args:
+            args: Command line arguments
+            auto_confirm: Whether to auto-confirm prompts
+            
+        Returns:
+            Tuple of (exit_code, log_output)
+        """
+        # Capture logs
+        log_capture = capture_logs.capture("m1f")
+        
+        # Mock user input if needed
+        if auto_confirm:
+            monkeypatch.setattr("builtins.input", lambda _: "y")
+        
+        # Set up argv
+        monkeypatch.setattr("sys.argv", ["m1f"] + args)
+        
+        # Capture exit code
+        exit_code = 0
+        try:
+            main()
+        except SystemExit as e:
+            exit_code = e.code if e.code is not None else 0
+        
+        return exit_code, log_capture.get_output()
+    
+    return _run_m1f
+
+
+@pytest.fixture
+def m1f_cli_runner():
+    """
+    Create a CLI runner for m1f that captures output.
+    
+    This is useful for testing the command-line interface.
+    """
+    import subprocess
+    import sys
+    
+    def _run_cli(args: list[str]) -> subprocess.CompletedProcess:
+        """Run m1f as a subprocess."""
+        return subprocess.run(
+            [sys.executable, "-m", "m1f"] + args,
+            capture_output=True,
+            text=True,
+            cwd=os.getcwd(),
+        )
+    
+    return _run_cli

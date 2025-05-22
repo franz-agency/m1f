@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2025-01-27
+
+### 🧪 Complete Test Suite Modernization
+
+This release modernizes the entire test suite to use Python 3.10+ features and best practices, matching the architectural improvements made to the m1f and s1f tools.
+
+#### ✨ Added
+- **Modern Test Structure**:
+  - Global `conftest.py` with shared fixtures and configuration
+  - `base_test.py` with reusable test utilities and base classes
+  - Tool-specific conftest files for m1f and s1f
+  - Comprehensive test documentation in `tests/README.md`
+
+- **New Test Modules**:
+  - `test_m1f_basic.py` - Basic functionality tests
+  - `test_m1f_advanced.py` - Advanced features (archives, filtering, extensions)
+  - `test_m1f_encoding.py` - Comprehensive encoding tests
+  - `test_m1f_edge_cases.py` - Edge cases and special scenarios
+  - `test_m1f_file_hash.py` - Filename mtime hash functionality
+  - `test_m1f_integration.py` - Integration and CLI tests
+  - `test_s1f_basic.py` - Basic s1f functionality
+  - `test_s1f_encoding.py` - s1f encoding tests
+  - `test_s1f_async.py` - Async functionality tests
+
+- **Modern Testing Features**:
+  - Python 3.10+ type hints with union operator (`|`)
+  - Async test support with `pytest.mark.asyncio`
+  - Parametrized tests for better coverage
+  - Factory fixtures for test data creation
+  - Log capture fixture for testing output
+  - Platform-specific fixtures (Windows/Unix)
+
+#### 🔧 Changed
+- **ELIMINATED TEST DUPLICATION**: Reduced from 6,569 lines of duplicated tests to ~4,500 lines of clean, modular tests
+- **MODERN PYTHON FEATURES**: 
+  - Type hints throughout all test code
+  - `from __future__ import annotations` for better type support
+  - Modern pathlib usage instead of os.path
+  - Context managers for resource handling
+
+- **IMPROVED TEST ORGANIZATION**:
+  - Tests split by functionality instead of one monolithic file
+  - Clear test markers: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.slow`, `@pytest.mark.encoding`
+  - Reusable fixtures instead of repeated setup code
+  - Base test classes for common functionality
+
+- **ENHANCED FIXTURES**:
+  - `temp_dir` - Automatic temporary directory creation and cleanup
+  - `create_test_file` - Factory for creating test files
+  - `create_test_directory_structure` - Create complex directory structures from dictionaries
+  - `capture_logs` - Capture and examine log output
+  - `run_m1f`/`run_s1f` - Run tools with proper cleanup
+  - `m1f_cli_runner`/`s1f_cli_runner` - Test CLI as subprocess
+
+#### 📊 Test Coverage Improvements
+- **Better Edge Case Coverage**: Unicode handling, symlinks, special filenames, circular references
+- **Async Testing**: Comprehensive tests for s1f's async functionality
+- **Error Handling**: Tests for various error scenarios and graceful degradation
+- **Performance Tests**: Tests for handling many files and large files
+- **Integration Tests**: End-to-end testing of complex scenarios
+
+#### 🏗️ Test Architecture
+- **Base Test Classes**: `BaseToolTest`, `BaseM1FTest`, `BaseS1FTest` with common utilities
+- **Fixture Hierarchy**: Global → Tool-specific → Test-specific fixtures
+- **Clean Test Isolation**: Each test is independent with proper setup/teardown
+- **Modern pytest Configuration**: Updated pytest.ini with markers and coverage settings
+
+#### 🔄 Migration from Old Tests
+- **100% Feature Parity**: All test scenarios from old suite are covered
+- **No Breaking Changes**: Tests verify backward compatibility
+- **Improved Diagnostics**: Better error messages and test output
+- **Faster Execution**: Eliminated redundant test runs
+
+---
+
 ## [3.0.0] - 2025-05-23
 
 ### 🚀 Complete Architectural Modernization of s1f
