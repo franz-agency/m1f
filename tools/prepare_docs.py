@@ -24,7 +24,7 @@ from pathlib import Path
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)-8s: %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger("prepare_docs")
 
@@ -44,57 +44,74 @@ def ensure_dir(directory: Path) -> None:
 
 def convert_html_to_markdown() -> bool:
     """Convert HTML documentation to Markdown using html_to_md.py.
-    
+
     Returns:
         bool: True if conversion was successful, False otherwise
     """
     logger.info("Starting HTML to Markdown conversion...")
     ensure_dir(HTML_DOCS_DIR)
     ensure_dir(MD_DOCS_DIR)
-    
+
     # Check if there are any HTML files to convert
-    html_files = list(HTML_DOCS_DIR.glob("**/*.html")) + list(HTML_DOCS_DIR.glob("**/*.htm"))
-    
+    html_files = list(HTML_DOCS_DIR.glob("**/*.html")) + list(
+        HTML_DOCS_DIR.glob("**/*.htm")
+    )
+
     if not html_files:
         logger.warning(f"No HTML files found in {HTML_DOCS_DIR}")
-        logger.info(f"You can add HTML files to the {HTML_DOCS_DIR} directory for conversion")
+        logger.info(
+            f"You can add HTML files to the {HTML_DOCS_DIR} directory for conversion"
+        )
         return False
-    
+
     # Build command for html_to_md.py
     html_to_md_script = BASE_DIR / "tools" / "html_to_md.py"
-    
+
     if not html_to_md_script.exists():
-        logger.error(f"HTML to Markdown conversion script not found: {html_to_md_script}")
+        logger.error(
+            f"HTML to Markdown conversion script not found: {html_to_md_script}"
+        )
         return False
-    
+
     try:
         # Run the HTML to Markdown conversion with optimal settings
         cmd = [
             sys.executable,
             str(html_to_md_script),
-            "--source-dir", str(HTML_DOCS_DIR),
-            "--destination-dir", str(MD_DOCS_DIR),
+            "--source-dir",
+            str(HTML_DOCS_DIR),
+            "--destination-dir",
+            str(MD_DOCS_DIR),
             "--add-frontmatter",
             "--convert-code-blocks",
             "--force",  # Overwrite existing files
-            "--remove-elements", "script", "style", "iframe", "noscript", "nav", "footer", ".advertisement"
+            "--remove-elements",
+            "script",
+            "style",
+            "iframe",
+            "noscript",
+            "nav",
+            "footer",
+            ".advertisement",
         ]
-        
+
         logger.info(f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        
+
         logger.info(f"HTML to Markdown conversion completed successfully")
         logger.info(f"Converted files are available in: {MD_DOCS_DIR}")
-        
+
         # Print any output from the command
         if result.stdout:
             for line in result.stdout.splitlines():
                 logger.info(f"html_to_md: {line}")
-        
+
         return True
-    
+
     except subprocess.CalledProcessError as e:
-        logger.error(f"HTML to Markdown conversion failed with exit code {e.returncode}")
+        logger.error(
+            f"HTML to Markdown conversion failed with exit code {e.returncode}"
+        )
         if e.stdout:
             logger.info("Output:")
             for line in e.stdout.splitlines():
@@ -104,7 +121,7 @@ def convert_html_to_markdown() -> bool:
             for line in e.stderr.splitlines():
                 logger.error(f"  {line}")
         return False
-    
+
     except Exception as e:
         logger.error(f"Error during HTML to Markdown conversion: {e}")
         return False
@@ -112,57 +129,61 @@ def convert_html_to_markdown() -> bool:
 
 def build_documentation_bundle() -> bool:
     """Create a bundled documentation file using m1f.py.
-    
+
     Returns:
         bool: True if bundling was successful, False otherwise
     """
     logger.info("Creating documentation bundle...")
-    
+
     # Check if Markdown directory exists and has files
     if not MD_DOCS_DIR.exists():
         logger.warning(f"Markdown directory not found: {MD_DOCS_DIR}")
         logger.info("Run with --convert-html first to create Markdown files")
         return False
-    
+
     md_files = list(MD_DOCS_DIR.glob("**/*.md"))
     if not md_files:
         logger.warning(f"No Markdown files found in {MD_DOCS_DIR}")
         return False
-    
+
     # Build command for m1f.py
     m1f_script = BASE_DIR / "tools" / "m1f.py"
-    
+
     if not m1f_script.exists():
         logger.error(f"m1f script not found: {m1f_script}")
         return False
-    
+
     try:
         # Create docs directory if it doesn't exist
         ensure_dir(BUNDLE_OUTPUT.parent)
-        
+
         # Run m1f to bundle the documentation
         cmd = [
             sys.executable,
             str(m1f_script),
-            "--source-directory", str(MD_DOCS_DIR),
-            "--output-file", str(BUNDLE_OUTPUT),
-            "--separator-style", "Markdown",
+            "--source-directory",
+            str(MD_DOCS_DIR),
+            "--output-file",
+            str(BUNDLE_OUTPUT),
+            "--separator-style",
+            "Markdown",
             "--force",  # Overwrite existing bundle
-            "--include-extensions", ".md",
+            "--include-extensions",
+            ".md",
         ]
-        
+
         logger.info(f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        
+
         logger.info(f"Documentation bundle created successfully: {BUNDLE_OUTPUT}")
-        
+
         # Print any output from the command
         if result.stdout:
             for line in result.stdout.splitlines():
                 logger.info(f"m1f: {line}")
-        
+
         return True
-    
+
     except subprocess.CalledProcessError as e:
         logger.error(f"Documentation bundling failed with exit code {e.returncode}")
         if e.stdout:
@@ -174,7 +195,7 @@ def build_documentation_bundle() -> bool:
             for line in e.stderr.splitlines():
                 logger.error(f"  {line}")
         return False
-    
+
     except Exception as e:
         logger.error(f"Error during documentation bundling: {e}")
         return False
@@ -184,51 +205,43 @@ def main() -> None:
     """Main entry point for the script."""
     parser = argparse.ArgumentParser(
         description="Documentation preparation tool",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    
+
     parser.add_argument(
-        "--convert-html",
-        action="store_true",
-        help="Convert HTML docs to Markdown"
+        "--convert-html", action="store_true", help="Convert HTML docs to Markdown"
     )
-    
+
     parser.add_argument(
         "--build-bundle",
         action="store_true",
-        help="Create a bundled documentation file"
+        help="Create a bundled documentation file",
     )
-    
+
     parser.add_argument(
-        "--all",
-        action="store_true",
-        help="Perform all documentation preparation steps"
+        "--all", action="store_true", help="Perform all documentation preparation steps"
     )
-    
+
     parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose output"
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
-    
+
     # Add the ability to override source and destination directories
     parser.add_argument(
-        "--html-dir",
-        help=f"Source HTML directory (default: {HTML_DOCS_DIR})"
+        "--html-dir", help=f"Source HTML directory (default: {HTML_DOCS_DIR})"
     )
-    
+
     parser.add_argument(
         "--markdown-dir",
-        help=f"Destination Markdown directory (default: {MD_DOCS_DIR})"
+        help=f"Destination Markdown directory (default: {MD_DOCS_DIR})",
     )
-    
+
     parser.add_argument(
-        "--output-bundle",
-        help=f"Output bundle file path (default: {BUNDLE_OUTPUT})"
+        "--output-bundle", help=f"Output bundle file path (default: {BUNDLE_OUTPUT})"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Override directories if specified
     global HTML_DOCS_DIR, MD_DOCS_DIR, BUNDLE_OUTPUT
     if args.html_dir:
@@ -237,12 +250,12 @@ def main() -> None:
         MD_DOCS_DIR = Path(args.markdown_dir)
     if args.output_bundle:
         BUNDLE_OUTPUT = Path(args.output_bundle)
-    
+
     # If no arguments provided, show help
     if not (args.convert_html or args.build_bundle or args.all):
         parser.print_help()
         sys.exit(0)
-    
+
     # Set logging level based on verbosity
     if args.verbose:
         logger.setLevel(logging.DEBUG)
@@ -250,21 +263,21 @@ def main() -> None:
         logger.debug(f"HTML source directory: {HTML_DOCS_DIR}")
         logger.debug(f"Markdown output directory: {MD_DOCS_DIR}")
         logger.debug(f"Bundle output file: {BUNDLE_OUTPUT}")
-    
+
     # Track execution time
     start_time = time.time()
-    
+
     success = True
-    
+
     # Perform requested operations
     if args.convert_html or args.all:
         if not convert_html_to_markdown():
             success = False
-    
+
     if (args.build_bundle or args.all) and success:
         if not build_documentation_bundle():
             success = False
-    
+
     # Calculate execution time
     execution_time = time.time() - start_time
     if execution_time >= 60:
@@ -272,7 +285,7 @@ def main() -> None:
         time_str = f"{int(minutes)}m {seconds:.2f}s"
     else:
         time_str = f"{execution_time:.2f}s"
-    
+
     if success:
         logger.info(f"Documentation preparation completed successfully in {time_str}")
     else:
@@ -288,4 +301,4 @@ if __name__ == "__main__":
         sys.exit(130)  # Standard exit code for Ctrl+C
     except Exception as e:
         logger.critical(f"An unexpected error occurred: {e}", exc_info=True)
-        sys.exit(1) 
+        sys.exit(1)

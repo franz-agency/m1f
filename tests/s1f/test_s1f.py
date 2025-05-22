@@ -330,13 +330,13 @@ class TestS1F:
         # Increase tolerance for timestamp comparison (5 seconds instead of 0.1)
         # This accounts for possible delays in test execution and filesystem timestamp resolution
         timestamp_tolerance = 5.0
-        
+
         # Get the time after the files were extracted
         after_extraction = time.time()
-        
+
         for file_path in extracted_files:
             mtime = file_path.stat().st_mtime
-            
+
             # File timestamps should be between before_extraction and after_extraction (with tolerance)
             # or at least not older than before_extraction by more than the tolerance
             assert mtime >= (before_extraction - timestamp_tolerance), (

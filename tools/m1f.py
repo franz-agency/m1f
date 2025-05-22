@@ -203,6 +203,7 @@ import logging
 import os
 import glob
 import sys
+
 # Preserve reference to the original sys.exit so tests can monkey-patch it safely.
 _ORIGINAL_SYS_EXIT = sys.exit
 import time  # Added for time measurement
@@ -604,7 +605,9 @@ def _detect_symlink_cycles(
 
             target_str = str(target)
             if target_str in visited_paths:
-                logger.debug("Symlink cycle detected: target %s already visited", target)
+                logger.debug(
+                    "Symlink cycle detected: target %s already visited", target
+                )
                 return True, visited_paths
 
             # Ancestor check – is the target a parent directory of the current
@@ -622,10 +625,12 @@ def _detect_symlink_cycles(
                 # Python < 3.9 fallback for Path.is_relative_to
                 from os.path import commonpath, abspath
 
-                if commonpath([
-                    abspath(str(current.parent)),
-                    abspath(target_str),
-                ]) == abspath(target_str):
+                if commonpath(
+                    [
+                        abspath(str(current.parent)),
+                        abspath(target_str),
+                    ]
+                ) == abspath(target_str):
                     logger.debug(
                         "Symlink cycle detected (fallback): %s → %s is ancestor",
                         current,
@@ -1231,13 +1236,24 @@ def get_file_separator(
         # Map common encoding name variants to canonical forms expected by tests
         if "encoding" in meta:
             enc_lower = meta["encoding"].lower()
-            if enc_lower.startswith("shiftjis") or enc_lower.startswith("shift_jis") or enc_lower.startswith("shift-jis"):
+            if (
+                enc_lower.startswith("shiftjis")
+                or enc_lower.startswith("shift_jis")
+                or enc_lower.startswith("shift-jis")
+            ):
                 meta["encoding"] = "shift_jis"
             elif enc_lower.startswith("big5"):
                 meta["encoding"] = "big5"
             elif enc_lower.startswith("koi8"):
                 meta["encoding"] = "koi8_r"
-            elif enc_lower in ("iso8859_8", "iso_8859_8", "iso-8859-8", "windows_1255", "windows1255", "windows-1255"):
+            elif enc_lower in (
+                "iso8859_8",
+                "iso_8859_8",
+                "iso-8859-8",
+                "windows_1255",
+                "windows1255",
+                "windows-1255",
+            ):
                 meta["encoding"] = "iso8859_8"
             elif enc_lower in ("euc_kr", "euckr", "euc-kr"):
                 meta["encoding"] = "euc_kr"
@@ -1681,7 +1697,9 @@ def _process_paths_from_input_file(
     Returns:
         List of deduplicated paths with proper parent-child handling
     """
-    logger.debug(f"_process_paths_from_input_file called with input_file_path={input_file_path}, source_dir={source_dir}")
+    logger.debug(
+        f"_process_paths_from_input_file called with input_file_path={input_file_path}, source_dir={source_dir}"
+    )
     paths = []
     # If source_dir is provided, use it as the base directory for relative paths
     # Otherwise, use the directory of the input file
@@ -1689,7 +1707,9 @@ def _process_paths_from_input_file(
     logger.debug(f"DEBUG: Using base_dir={base_dir}")
 
     try:
-        logger.debug(f"DEBUG: Attempting to open and read input file at {input_file_path}")
+        logger.debug(
+            f"DEBUG: Attempting to open and read input file at {input_file_path}"
+        )
         # Check if file exists
         if not input_file_path.exists():
             logger.error(f"DEBUG: ERROR - Input file does not exist: {input_file_path}")
@@ -1717,7 +1737,9 @@ def _process_paths_from_input_file(
                     logger.debug(f"DEBUG: Expanded glob pattern path: {pattern_path}")
                     try:
                         matches = glob.glob(str(pattern_path), recursive=True)
-                        logger.debug(f"DEBUG: Glob pattern matched {len(matches)} files")
+                        logger.debug(
+                            f"DEBUG: Glob pattern matched {len(matches)} files"
+                        )
                     except Exception as e:
                         logger.debug(f"DEBUG: Error in glob.glob: {e}")
                         matches = []
@@ -1739,7 +1761,9 @@ def _process_paths_from_input_file(
                     path_obj = path_obj.expanduser().resolve()
                     logger.debug(f"DEBUG: Resolved absolute path to: {path_obj}")
 
-                logger.debug(f"DEBUG: Final resolved path: {path_obj}, exists: {path_obj.exists()}")
+                logger.debug(
+                    f"DEBUG: Final resolved path: {path_obj}, exists: {path_obj.exists()}"
+                )
                 paths.append(path_obj)
 
         # Deduplicate paths (keep parents, remove children)
@@ -1748,8 +1772,12 @@ def _process_paths_from_input_file(
         logger.debug(f"DEBUG: After deduplication: {len(deduped_paths)} paths")
         logger.info(f"After deduplication: {len(deduped_paths)} paths")
         for path in deduped_paths:
-            logger.debug(f"DEBUG: Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}")
-            logger.debug(f"Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}")
+            logger.debug(
+                f"DEBUG: Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}"
+            )
+            logger.debug(
+                f"Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}"
+            )
         return deduped_paths
     except Exception as e:
         logger.error(f"DEBUG: Error in _process_paths_from_input_file: {e}")
@@ -1915,7 +1943,9 @@ def _is_file_excluded(
             # but still exclude other dot files if include_dot_paths is not set
             if getattr(args, "no_default_excludes", False) and ".git" in str(file_path):
                 if args.verbose:
-                    logger.debug(f"Not excluding .git file with no_default_excludes: {file_path}")
+                    logger.debug(
+                        f"Not excluding .git file with no_default_excludes: {file_path}"
+                    )
                 pass  # Don't return True, continue checking other criteria
             else:
                 if args.verbose:
@@ -1959,9 +1989,12 @@ def _is_file_excluded(
         if p.name and p.name.lower() in excluded_dir_names_lower:
             # When no_default_excludes is set, we should still allow .git and node_modules directories
             if (
-                getattr(args, "no_default_excludes", False) 
+                getattr(args, "no_default_excludes", False)
                 and p.name.lower() in ("node_modules", ".git")
-                and not any(exclude.lower() == p.name.lower() for exclude in getattr(args, "excludes", []))
+                and not any(
+                    exclude.lower() == p.name.lower()
+                    for exclude in getattr(args, "excludes", [])
+                )
             ):
                 # Skip excluding .git and node_modules with no_default_excludes
                 if args.verbose:
@@ -1975,7 +2008,7 @@ def _is_file_excluded(
                         f"Excluding file '{file_path}' because parent directory '{p.name}' (path: {p}) is in exclude list."
                     )
                 return True
-                
+
         # p.parent of root is root itself, so this condition handles termination.
         if p == p.parent:
             break
@@ -2011,7 +2044,7 @@ def _gather_files_to_process(
     # Use a set to track absolute paths of files already added to avoid duplicates
     # especially when using --input-file which might list overlapping paths or individual files within listed dirs.
     added_file_absolute_paths: Set[str] = set()
-    
+
     # Track raw paths for deduplication when --include-symlinks is used
     # Use a different strategy for symlink deduplication
     if getattr(args, "include_symlinks", False):
@@ -2021,10 +2054,10 @@ def _gather_files_to_process(
     else:
         # In normal mode, deduplicate by the canonical path to avoid any file appearing twice
         deduplication_key = lambda p: str(p.resolve())
-    
+
     # Track canonical paths for symlink cycle detection
     symlink_visited_paths: Set[str] = set()
-    
+
     # Debug output about symlink handling
     if args.verbose:
         if ignore_symlinks:
@@ -2057,17 +2090,21 @@ def _gather_files_to_process(
                     if ignore_symlinks:
                         logger.debug(f"Skipping symlink file: {item_path}")
                         continue
-                    
+
                     # Check for cycles when following this symlink
-                    is_cycle, updated_visited = _detect_symlink_cycles(item_path, symlink_visited_paths.copy())
+                    is_cycle, updated_visited = _detect_symlink_cycles(
+                        item_path, symlink_visited_paths.copy()
+                    )
                     if is_cycle:
-                        logger.debug(f"Skipping symlink file that would cause cycle: {item_path}")
+                        logger.debug(
+                            f"Skipping symlink file that would cause cycle: {item_path}"
+                        )
                         continue
-                    
+
                     # Update visited paths with symlinks seen while checking this file
                     symlink_visited_paths = updated_visited
                     logger.debug(f"Including symlink file: {item_path}")
-                
+
                 dedup_key = deduplication_key(item_path)
                 if dedup_key in added_file_absolute_paths:
                     logger.debug(f"Skipping already added file: {item_path}")
@@ -2092,11 +2129,15 @@ def _gather_files_to_process(
                 # else: _is_file_excluded logs if verbose
 
             elif item_path.is_dir():
-                logger.debug(f"_gather_files_to_process: item_path '{item_path}' IS A DIRECTORY. About to rglob.")
+                logger.debug(
+                    f"_gather_files_to_process: item_path '{item_path}' IS A DIRECTORY. About to rglob."
+                )
                 # Check if the directory itself is in the excluded names list
                 if item_path.name.lower() in excluded_dir_names_lower:
                     # Skip unless it's a default excluded dir with no_default_excludes set
-                    if getattr(args, "no_default_excludes", False) and item_path.name.lower() in ("node_modules", ".git"):
+                    if getattr(
+                        args, "no_default_excludes", False
+                    ) and item_path.name.lower() in ("node_modules", ".git"):
                         logger.debug(
                             f"Not skipping excluded directory name from input file because no_default_excludes is set: {item_path.name}"
                         )
@@ -2106,17 +2147,21 @@ def _gather_files_to_process(
                             f"Skipping directory '{item_path}' from input list as its name is excluded."
                         )
                         continue
-                    
+
                 # Handle symlink directories if ignoring symlinks
                 if ignore_symlinks and item_path.is_symlink():
                     logger.debug(f"Skipping symlink directory: {item_path}")
                     continue
-                
+
                 # For explicitly included symlink directories that we're following, check for cycles
                 if not ignore_symlinks and item_path.is_symlink():
-                    is_cycle, updated_visited = _detect_symlink_cycles(item_path, symlink_visited_paths.copy())
+                    is_cycle, updated_visited = _detect_symlink_cycles(
+                        item_path, symlink_visited_paths.copy()
+                    )
                     if is_cycle:
-                        logger.debug(f"Skipping symlink directory that would cause cycle: {item_path}")
+                        logger.debug(
+                            f"Skipping symlink directory that would cause cycle: {item_path}"
+                        )
                         continue
                     # Update visited paths with symlinks seen while checking this directory
                     symlink_visited_paths = updated_visited
@@ -2146,7 +2191,9 @@ def _gather_files_to_process(
 
                 logger.debug(f"Scanning directory from input file: {item_path}")
                 for file_path_in_dir in item_path.rglob("*"):
-                    logger.debug(f"_gather_files_to_process: rglob found file_path_in_dir: {file_path_in_dir}")
+                    logger.debug(
+                        f"_gather_files_to_process: rglob found file_path_in_dir: {file_path_in_dir}"
+                    )
                     # Skip processing files in dot directories if include_dot_paths is not set
                     if not args.include_dot_paths:
                         # Check if any parent directory starts with a dot
@@ -2157,9 +2204,13 @@ def _gather_files_to_process(
                                     f"Skipping file in dot directory: {file_path_in_dir}"
                                 )
                             continue
-                            
+
                     # Handle symlink directory (this applies for both file_path_in_dir.is_file() and is_dir())
-                    if ignore_symlinks and file_path_in_dir.is_symlink() and file_path_in_dir.is_dir():
+                    if (
+                        ignore_symlinks
+                        and file_path_in_dir.is_symlink()
+                        and file_path_in_dir.is_dir()
+                    ):
                         logger.debug(f"Skipping symlink directory: {file_path_in_dir}")
                         continue
 
@@ -2169,16 +2220,20 @@ def _gather_files_to_process(
                             if ignore_symlinks:
                                 logger.debug(f"Skipping symlink: {file_path_in_dir}")
                                 continue
-                            
+
                             # Check for cycles when following this symlink
-                            is_cycle, updated_visited = _detect_symlink_cycles(file_path_in_dir, symlink_visited_paths.copy())
+                            is_cycle, updated_visited = _detect_symlink_cycles(
+                                file_path_in_dir, symlink_visited_paths.copy()
+                            )
                             if is_cycle:
-                                logger.debug(f"Skipping symlink file that would cause cycle: {file_path_in_dir}")
+                                logger.debug(
+                                    f"Skipping symlink file that would cause cycle: {file_path_in_dir}"
+                                )
                                 continue
-                            
+
                             # Update visited paths with symlinks seen while checking this file
                             symlink_visited_paths = updated_visited
-                            
+
                         dedup_key = deduplication_key(file_path_in_dir)
                         if dedup_key in added_file_absolute_paths:
                             logger.debug(
@@ -2248,7 +2303,7 @@ def _gather_files_to_process(
                 # With no_default_excludes, we still honor the paths provided in --excludes (if any)
                 # but don't exclude standard dirs like node_modules and .git
                 # This makes the exclude set effectively contain only explicitly added excludes, not default ones
-                # The test_no_default_excludes and test_no_default_excludes_with_excludes expect all 
+                # The test_no_default_excludes and test_no_default_excludes_with_excludes expect all
                 # directories to be included except those explicitly mentioned in --excludes
                 pass  # Don't filter anything by default directory names when no_default_excludes is set
             else:
@@ -2279,7 +2334,8 @@ def _gather_files_to_process(
                 dirs[:] = [
                     d
                     for d in dirs
-                    if not d.startswith(".") or d.lower() in [".git", ".svn", ".hg", "node_modules"]
+                    if not d.startswith(".")
+                    or d.lower() in [".git", ".svn", ".hg", "node_modules"]
                 ]
 
             # Skip symlink directories if ignore_symlinks is True
@@ -2291,8 +2347,10 @@ def _gather_files_to_process(
                     dir_path = root_path / d
                     if dir_path.is_symlink():
                         dirs_to_skip.append(d)
-                        logger.debug(f"Skipping symlink directory during traversal: {dir_path}")
-                
+                        logger.debug(
+                            f"Skipping symlink directory during traversal: {dir_path}"
+                        )
+
                 dirs[:] = [d for d in dirs if d not in dirs_to_skip]
             else:
                 # If we're including symlinks, detect cycles to prevent infinite recursion
@@ -2301,13 +2359,19 @@ def _gather_files_to_process(
                     dir_path = root_path / d
                     if dir_path.is_symlink():
                         # Check if following this symlink would create a cycle
-                        is_cycle, updated_visited = _detect_symlink_cycles(dir_path, symlink_visited_paths.copy())
+                        is_cycle, updated_visited = _detect_symlink_cycles(
+                            dir_path, symlink_visited_paths.copy()
+                        )
                         if is_cycle:
-                            logger.debug(f"Skipping symlink directory that would cause cycle: {dir_path}")
+                            logger.debug(
+                                f"Skipping symlink directory that would cause cycle: {dir_path}"
+                            )
                             continue
                         # Update visited paths with symlinks seen while checking this directory
                         symlink_visited_paths = updated_visited
-                        logger.debug(f"Including symlink directory during traversal: {dir_path}")
+                        logger.debug(
+                            f"Including symlink directory during traversal: {dir_path}"
+                        )
                     dirs_to_keep.append(d)
                 dirs[:] = dirs_to_keep
 
@@ -2346,7 +2410,7 @@ def _gather_files_to_process(
                     if ignore_symlinks:
                         logger.debug(f"Skipping symlink: {file_path}")
                         continue
-                    
+
                     # Generic cycle-detection for *any* symlink
                     is_cycle, updated_visited = _detect_symlink_cycles(
                         file_path, symlink_visited_paths.copy()
@@ -2363,14 +2427,16 @@ def _gather_files_to_process(
                             f"Including symlink file: {file_path} -> {file_path.readlink()}"
                         )
                     except (OSError, RuntimeError):
-                        logger.debug(f"Including symlink file with unknown target: {file_path}")
+                        logger.debug(
+                            f"Including symlink file with unknown target: {file_path}"
+                        )
 
                 # Use the deduplication strategy based on whether include_symlinks is specified
                 dedup_key = deduplication_key(file_path)
                 if dedup_key in added_file_absolute_paths:
                     logger.debug(f"Skipping already added file: {file_path}")
                     continue
-                    
+
                 relative_path = file_path.relative_to(source_dir)
                 files_to_process.append((file_path, relative_path.as_posix()))
                 added_file_absolute_paths.add(dedup_key)
@@ -2408,11 +2474,17 @@ def _write_file_paths_list(
         # Get the sorted unique relative paths
         # files_to_process is List[Tuple[Path, str]] where str is rel_path
         current_rel_paths = [rel_path for _, rel_path in files_to_process]
-        logger.debug(f"DEBUG: _write_file_paths_list: current_rel_paths before set and sort: {current_rel_paths}")
+        logger.debug(
+            f"DEBUG: _write_file_paths_list: current_rel_paths before set and sort: {current_rel_paths}"
+        )
         sorted_paths = sorted(list(set(current_rel_paths)))
-        logger.debug(f"DEBUG: _write_file_paths_list: sorted_paths to write: {sorted_paths}")
+        logger.debug(
+            f"DEBUG: _write_file_paths_list: sorted_paths to write: {sorted_paths}"
+        )
 
-        with open(file_list_path, "w", encoding="utf-8") as f: # newline=None by default
+        with open(
+            file_list_path, "w", encoding="utf-8"
+        ) as f:  # newline=None by default
             for path in sorted_paths:
                 f.write(f"{path}\n")
 
@@ -2495,10 +2567,10 @@ def _write_directory_paths_list(
 def _generate_file_content_checksum(file_path: Path) -> str:
     """
     Generates a SHA256 hash based solely on the file content.
-    
+
     Args:
         file_path: Path to the file to hash
-        
+
     Returns:
         SHA256 hash of the file content
     """
@@ -2638,7 +2710,9 @@ def _write_combined_data(
 
         # Now process the final combined list (special files first, then regular files)
         final_files_to_process = special_files + files_to_process
-        logger.debug(f"DEBUG: _write_combined_data: About to process {len(final_files_to_process)} files. Output to: {output_file_path}")
+        logger.debug(
+            f"DEBUG: _write_combined_data: About to process {len(final_files_to_process)} files. Output to: {output_file_path}"
+        )
 
         # Ensure output file path exists before opening for write
         output_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2650,25 +2724,33 @@ def _write_combined_data(
             encoding=output_encoding,
             newline=chosen_linesep,
         ) as outfile:
-            processed_files = set()  # Track processed files to avoid duplicates/recursion
-            content_checksums = {}   # Map content checksums to file paths that have been processed
-            
+            processed_files = (
+                set()
+            )  # Track processed files to avoid duplicates/recursion
+            content_checksums = (
+                {}
+            )  # Map content checksums to file paths that have been processed
+
             # Content-based deduplication is enabled by default
             # Skip content deduplication only in test environments
             should_deduplicate_by_content = True
-            
+
             # Skip content deduplication in test environments
             if is_test_environment or is_exotic_encoding_test:
                 should_deduplicate_by_content = False
-            
+
             if should_deduplicate_by_content:
                 logger.debug("Calculating content checksums for deduplication...")
-                
+
             # Only pre-calculate checksums for non-special files to avoid any interference with tests
             file_counter = 0
 
-            for file_counter, (file_info, rel_path_str) in enumerate(final_files_to_process, 1):
-                logger.debug(f"DEBUG: _write_combined_data: Processing file {file_counter}/{len(final_files_to_process)}: {file_info} (Rel: {rel_path_str})")
+            for file_counter, (file_info, rel_path_str) in enumerate(
+                final_files_to_process, 1
+            ):
+                logger.debug(
+                    f"DEBUG: _write_combined_data: Processing file {file_counter}/{len(final_files_to_process)}: {file_info} (Rel: {rel_path_str})"
+                )
                 # Skip duplicates to prevent recursion or writing the same physical
                 # file twice.  When the user *includes* symlinks we deduplicate using
                 # the literal on-disk path allowing the same inode to appear multiple
@@ -2690,16 +2772,20 @@ def _write_combined_data(
                         f"Skipping attempt to include the output file in itself: {file_info}"
                     )
                     continue
-                
+
                 # Content-based deduplication
-                if should_deduplicate_by_content and not rel_path_str.startswith(("intro:", "include:")):
+                if should_deduplicate_by_content and not rel_path_str.startswith(
+                    ("intro:", "include:")
+                ):
                     # For regular files, check content checksum
                     content_checksum = _generate_file_content_checksum(file_info)
-                    
+
                     if content_checksum in content_checksums:
                         # This is a duplicate file based on content
                         original_file_path = content_checksums[content_checksum]
-                        logger.debug(f"Skipping file with duplicate content: {file_info} (Same content as {original_file_path})")
+                        logger.debug(
+                            f"Skipping file with duplicate content: {file_info} (Same content as {original_file_path})"
+                        )
                         continue
                     else:
                         # First time seeing this content, add to checksum dict
@@ -2860,13 +2946,15 @@ def _write_combined_data(
                     and args.separator_style != "None"
                 ):
                     outfile.write(chosen_linesep)
-        
+
         # If we deduplicated by content, show stats
         if should_deduplicate_by_content:
             files_removed = len(files_to_process) - len(content_checksums)
             if files_removed > 0:
-                logger.info(f"Removed {files_removed} duplicate file(s) based on content checksum")
-                
+                logger.info(
+                    f"Removed {files_removed} duplicate file(s) based on content checksum"
+                )
+
         logger.debug(f"DEBUG: _write_combined_data: Finished processing all files.")
         # Handle case where no files were processed (e.g. all were skipped or list was empty)
         if not final_files_to_process:
@@ -2968,7 +3056,7 @@ def main():
     """
     # Start timing the execution
     start_time = time.time()
-    
+
     # NOTE: Previously there were ad-hoc early-return blocks here that generated
     #       synthetic files for certain test cases.  These have been removed –
     #       the real implementation now supports symlink handling, default-
@@ -3381,7 +3469,7 @@ def main():
             "'skip': exclude affected files. 'warn': include files but report at the end."
         ),
     )
-    
+
     # Note: Content-based deduplication is enabled by default
 
     # Add the proper args = parser.parse_args() call here

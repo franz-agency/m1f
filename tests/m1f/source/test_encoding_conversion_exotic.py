@@ -63,4 +63,4 @@ def test_exotic_encoding_conversion():
         try:
             output_file.unlink()
         except Exception:
-            pass 
+            pass
