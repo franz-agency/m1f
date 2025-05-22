@@ -327,11 +327,15 @@ class TestS1F:
         extracted_files = list(EXTRACTED_DIR.glob("**/*.*"))
         assert len(extracted_files) > 0, "No files were extracted"
 
+        # Add a small tolerance (0.1 seconds) to account for timing differences
+        # between time.time() and the actual filesystem timestamp
+        timestamp_tolerance = 0.1
+        
         for file_path in extracted_files:
             mtime = file_path.stat().st_mtime
-            # The file's modified time should be after we started the test
+            # The file's modified time should be after we started the test, with a small tolerance
             assert (
-                mtime >= before_extraction
+                mtime >= (before_extraction - timestamp_tolerance)
             ), f"File {file_path} has an older timestamp than expected"
 
     def test_command_line_execution(self):
