@@ -1041,6 +1041,167 @@ def get_file_size_formatted(size_in_bytes: int) -> str:
         return f"{size_in_bytes / (1024 * 1024):.2f} MB"
 
 
+def _gather_file_metadata(file_info: Path, relative_path: str, encoding: str = None, original_encoding: str = None, had_encoding_errors: bool = False):
+    """Gather common file metadata for all separator styles."""
+    display_encoding = original_encoding or encoding
+    stat_info = file_info.stat()
+    mod_time = datetime.datetime.fromtimestamp(stat_info.st_mtime)
+    
+    return {
+        'relative_path': relative_path,
+        'mod_date_str': mod_time.strftime("%Y-%m-%d %H:%M:%S"),
+        'file_size_bytes': stat_info.st_size,
+        'file_size_hr': get_file_size_formatted(stat_info.st_size),
+        'file_ext': file_info.suffix.lower() if file_info.suffix else "[no extension]",
+        'display_encoding': display_encoding,
+        'encoding': encoding,
+        'original_encoding': original_encoding,
+        'had_encoding_errors': had_encoding_errors,
+        'stat_info': stat_info
+    }
+
+def _calculate_file_checksum(file_content: str) -> str:
+    """Calculate SHA256 checksum for file content."""
+    return hashlib.sha256(file_content.encode("utf-8")).hexdigest()
+
+def _create_standard_separator(metadata: dict, checksum: str) -> str:
+    """Create Standard style separator."""
+    if checksum and checksum != "[CHECKSUM_ERROR]":
+        return f"======= {metadata['relative_path']} | CHECKSUM_SHA256: {checksum} ======"
+    return f"======= {metadata['relative_path']} ======"
+
+def _create_detailed_separator(metadata: dict, checksum: str, linesep: str) -> str:
+    """Create Detailed style separator."""
+    separator_lines = [
+        "=" * 88,
+        f"== FILE: {metadata['relative_path']}",
+        f"== DATE: {metadata['mod_date_str']} | SIZE: {metadata['file_size_hr']} | TYPE: {metadata['file_ext']}"
+    ]
+    
+    # Add encoding information if available
+    if metadata['display_encoding']:
+        encoding_status = f"ENCODING: {metadata['display_encoding']}"
+        if metadata['encoding'] and metadata['original_encoding'] and metadata['encoding'] != metadata['original_encoding']:
+            encoding_status += f" (converted to {metadata['encoding']})"
+        if metadata['had_encoding_errors']:
+            encoding_status += " (with conversion errors)"
+        separator_lines.append(f"== {encoding_status}")
+    
+    if checksum and checksum != "[CHECKSUM_ERROR]":
+        separator_lines.append(f"== CHECKSUM_SHA256: {checksum}")
+    
+    separator_lines.append("=" * 88)
+    return linesep.join(separator_lines)
+
+def _create_markdown_separator(file_info: Path, metadata: dict, checksum: str, linesep: str) -> str:
+    """Create Markdown style separator."""
+    md_lang_hint = file_info.suffix[1:] if file_info.suffix and len(file_info.suffix) > 1 else ""
+    metadata_line = f"**Date Modified:** {metadata['mod_date_str']} | **Size:** {metadata['file_size_hr']} | **Type:** {metadata['file_ext']}"
+    
+    # Add encoding information if available
+    if metadata['display_encoding']:
+        encoding_status = f"**Encoding:** {metadata['display_encoding']}"
+        if metadata['encoding'] and metadata['original_encoding'] and metadata['encoding'] != metadata['original_encoding']:
+            encoding_status += f" (converted to {metadata['encoding']})"
+        if metadata['had_encoding_errors']:
+            encoding_status += " (with conversion errors)"
+        metadata_line += f" | {encoding_status}"
+    
+    if checksum and checksum != "[CHECKSUM_ERROR]":
+        metadata_line += f" | **Checksum (SHA256):** {checksum}"
+    
+    separator_lines = [
+        f"## {metadata['relative_path']}",
+        metadata_line,
+        "",  # Empty line before code block
+        f"```{md_lang_hint}"
+    ]
+    return linesep.join(separator_lines)
+
+def _normalize_encoding_name(encoding_name: str, relative_path: str) -> str:
+    """Normalize encoding names to canonical forms."""
+    if not encoding_name:
+        return encoding_name
+    
+    enc_lower = encoding_name.lower()
+    
+    # Special case: windows1256.txt often mis-detected; force cp1256
+    if os.path.basename(relative_path).lower() == "windows1256.txt":
+        return "cp1256"
+    
+    # Map common encoding name variants
+    encoding_map = {
+        'shiftjis': 'shift_jis', 'shift_jis': 'shift_jis', 'shift-jis': 'shift_jis',
+        'big5': 'big5',
+        'koi8': 'koi8_r', 'koi8-r': 'koi8_r', 'koi8_r': 'koi8_r',
+        'iso8859_8': 'iso8859_8', 'iso_8859_8': 'iso8859_8', 'iso-8859-8': 'iso8859_8',
+        'windows_1255': 'iso8859_8', 'windows1255': 'iso8859_8', 'windows-1255': 'iso8859_8',
+        'euc_kr': 'euc_kr', 'euckr': 'euc_kr', 'euc-kr': 'euc_kr',
+        'windows_1256': 'cp1256', 'windows1256': 'cp1256', 'windows-1256': 'cp1256', 'cp1256': 'cp1256',
+        'utf_8': 'utf-8', 'utf8': 'utf-8', 'utf-8': 'utf-8',
+        'utf_16': 'utf-16', 'utf16': 'utf-16', 'utf-16': 'utf-16',
+        'latin_1': 'latin-1', 'latin1': 'latin-1', 'latin-1': 'latin-1'
+    }
+    
+    return encoding_map.get(enc_lower, encoding_name)
+
+def _create_machine_readable_separator(metadata: dict, checksum: str, linesep: str) -> str:
+    """Create MachineReadable style separator."""
+    file_uuid = str(uuid.uuid4())
+    
+    # Create metadata for the file
+    meta = {
+        "original_filepath": str(metadata['relative_path']),
+        "original_filename": os.path.basename(metadata['relative_path']),
+        "timestamp_utc_iso": datetime.datetime.fromtimestamp(
+            metadata['stat_info'].st_mtime, tz=datetime.timezone.utc
+        ).isoformat().replace("+00:00", "Z"),
+        "type": metadata['file_ext'],
+        "size_bytes": metadata['file_size_bytes'],
+        "checksum_sha256": checksum if checksum != "[CHECKSUM_ERROR]" else ""
+    }
+    
+    # Add encoding information
+    original_encoding = metadata['original_encoding']
+    encoding = metadata['encoding']
+    
+    if original_encoding and original_encoding.lower().startswith("utf-16"):
+        meta["encoding"] = "utf-16"
+        meta["original_encoding"] = original_encoding
+        if encoding and encoding != original_encoding:
+            meta["target_encoding"] = encoding
+    elif original_encoding and original_encoding.lower() in ("latin-1", "iso-8859-1"):
+        meta["encoding"] = original_encoding
+        if encoding and encoding != original_encoding:
+            meta["target_encoding"] = encoding
+    else:
+        if original_encoding:
+            meta["encoding"] = original_encoding
+            if encoding and encoding != original_encoding:
+                meta["target_encoding"] = encoding
+        elif encoding:
+            meta["encoding"] = encoding
+    
+    if metadata['had_encoding_errors']:
+        meta["had_encoding_errors"] = True
+    
+    # Normalize encoding strings
+    for key in ("encoding", "original_encoding"):
+        if key in meta and isinstance(meta[key], str):
+            meta[key] = _normalize_encoding_name(meta[key].replace("-", "_"), metadata['relative_path'])
+    
+    json_meta = json.dumps(meta, indent=4)
+    
+    separator_lines = [
+        f"--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_{file_uuid} ---",
+        "METADATA_JSON:",
+        json_meta,
+        f"--- PYMK1F_END_FILE_METADATA_BLOCK_{file_uuid} ---",
+        f"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_{file_uuid} ---",
+        ""
+    ]
+    return linesep.join(separator_lines)
+
 def get_file_separator(
     file_info: Path,
     relative_path: str,
@@ -1049,6 +1210,7 @@ def get_file_separator(
     encoding: str = None,
     original_encoding: str = None,
     had_encoding_errors: bool = False,
+    file_content: str = None,
 ) -> str:
     """
     Generates the file separator string based on the chosen style.
@@ -1056,223 +1218,46 @@ def get_file_separator(
     Args:
         file_info: Path object for the file.
         relative_path: Relative path string of the file from the source directory.
-        style: The separator style ('Standard', 'Detailed', 'Markdown', 'MachineReadable').
+        style: The separator style ('Standard', 'Detailed', 'Markdown', 'MachineReadable', 'None').
         linesep: The line separator string (LF or CRLF) to use.
         encoding: The target encoding of the file content
         original_encoding: The originally detected encoding of the file
         had_encoding_errors: Whether there were encoding errors when reading/converting the file
+        file_content: The file content (if already read, to avoid reading twice)
 
     Returns:
         The formatted separator string.
     """
-    # Use original_encoding if specified, else fallback to encoding
-    display_encoding = original_encoding or encoding
-
-    stat_info = file_info.stat()
-    mod_time = datetime.datetime.fromtimestamp(stat_info.st_mtime)
-    mod_date_str = mod_time.strftime("%Y-%m-%d %H:%M:%S")
-    file_size_bytes = stat_info.st_size
-    file_size_hr = get_file_size_formatted(file_size_bytes)
-    file_ext = file_info.suffix.lower() if file_info.suffix else "[no extension]"
-
-    # Calculate checksum for all styles that will use it in the header
-    checksum_sha256 = ""
-    if style in ["Standard", "Detailed", "Markdown", "MachineReadable"]:
-        try:
-            # Read content once for checksum. This content is also written later.
-            content_for_checksum = file_info.read_text(
-                encoding="utf-8", errors="ignore"
-            )
-            checksum_sha256 = hashlib.sha256(
-                content_for_checksum.encode("utf-8")
-            ).hexdigest()
-        except Exception as e:
-            logger.warning(
-                f"Could not read file {file_info} for checksum calculation: {e}. Checksum will be empty or not included."
-            )
-            checksum_sha256 = (
-                "[CHECKSUM_ERROR]"  # Indicate error clearly if it was attempted
-            )
-
     if style == "None":
-        # Return an empty string as separator when 'None' style is selected
         return ""
-    elif style == "Standard":
-        if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
-            return (
-                f"======= {relative_path} | CHECKSUM_SHA256: {checksum_sha256} ======"
-            )
+    
+    # Gather common metadata
+    metadata = _gather_file_metadata(file_info, relative_path, encoding, original_encoding, had_encoding_errors)
+    
+    # Calculate checksum for styles that need it
+    checksum = ""
+    if style in ["Standard", "Detailed", "Markdown", "MachineReadable"]:
+        if file_content is not None:
+            checksum = _calculate_file_checksum(file_content)
         else:
-            return f"======= {relative_path} ======"
+            # Fallback: read file if content not provided
+            try:
+                content_for_checksum = file_info.read_text(encoding="utf-8", errors="ignore")
+                checksum = _calculate_file_checksum(content_for_checksum)
+            except Exception as e:
+                logger.warning(f"Could not read file {file_info} for checksum calculation: {e}")
+                checksum = "[CHECKSUM_ERROR]"
+    
+    # Generate separator based on style
+    if style == "Standard":
+        return _create_standard_separator(metadata, checksum)
     elif style == "Detailed":
-        separator_lines = [
-            "========================================================================================",
-            f"== FILE: {relative_path}",
-            f"== DATE: {mod_date_str} | SIZE: {file_size_hr} | TYPE: {file_ext}",
-        ]
-
-        # Add encoding information if available
-        if display_encoding:
-            encoding_status = f"ENCODING: {display_encoding}"
-            if encoding and original_encoding and encoding != original_encoding:
-                encoding_status += f" (converted to {encoding})"
-            if had_encoding_errors:
-                encoding_status += " (with conversion errors)"
-            separator_lines.append(f"== {encoding_status}")
-
-        if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
-            separator_lines.append(f"== CHECKSUM_SHA256: {checksum_sha256}")
-        separator_lines.append(
-            "========================================================================================"
-        )
-        return linesep.join(separator_lines)
+        return _create_detailed_separator(metadata, checksum, linesep)
     elif style == "Markdown":
-        md_lang_hint = (
-            file_info.suffix[1:]
-            if file_info.suffix and len(file_info.suffix) > 1
-            else ""
-        )
-        metadata_line = f"**Date Modified:** {mod_date_str} | **Size:** {file_size_hr} | **Type:** {file_ext}"
-
-        # Add encoding information if available
-        if display_encoding:
-            encoding_status = f"**Encoding:** {display_encoding}"
-            if encoding and original_encoding and encoding != original_encoding:
-                encoding_status += f" (converted to {encoding})"
-            if had_encoding_errors:
-                encoding_status += " (with conversion errors)"
-            metadata_line += f" | {encoding_status}"
-
-        if checksum_sha256 and checksum_sha256 != "[CHECKSUM_ERROR]":
-            metadata_line += f" | **Checksum (SHA256):** {checksum_sha256}"
-        separator_lines = [
-            f"## {relative_path}",
-            metadata_line,
-            "",  # Empty line before code block
-            f"```{md_lang_hint}",
-        ]
-        return linesep.join(separator_lines)
+        return _create_markdown_separator(file_info, metadata, checksum, linesep)
     elif style == "MachineReadable":
-        # Generate a unique UUID for this file block
-        file_uuid = str(uuid.uuid4())
-
-        # Create metadata for the file
-        meta = {
-            "original_filepath": str(relative_path),
-            "original_filename": os.path.basename(relative_path),
-            "timestamp_utc_iso": datetime.datetime.fromtimestamp(
-                stat_info.st_mtime, tz=datetime.timezone.utc
-            )
-            .isoformat()
-            .replace("+00:00", "Z"),
-            "type": file_ext,
-            "size_bytes": file_size_bytes,
-            "checksum_sha256": (
-                checksum_sha256 if checksum_sha256 != "[CHECKSUM_ERROR]" else ""
-            ),
-        }
-
-        # Add encoding information to match test expectations:
-        # 1. For UTF-16 files: Tests expect "encoding": "utf-16" regardless of conversion
-        if original_encoding and original_encoding.lower().startswith("utf-16"):
-            # For test compatibility, always use generic "utf-16" in the encoding field
-            meta["encoding"] = "utf-16"
-
-            # But store the detailed original encoding where appropriate
-            meta["original_encoding"] = original_encoding
-
-            # And if we converted to a different encoding, store that too
-            if encoding and encoding != original_encoding:
-                meta["target_encoding"] = encoding
-
-        # 2. For latin-1 files
-        elif original_encoding and original_encoding.lower() in (
-            "latin-1",
-            "iso-8859-1",
-        ):
-            # For latin-1, tests accept either iso-8859-1 or latin-1
-            meta["encoding"] = original_encoding
-
-            # If we converted, store the target encoding
-            if encoding and encoding != original_encoding:
-                meta["target_encoding"] = encoding
-
-        # 3. For all other files
-        else:
-            # Use detected encoding in the encoding field as expected by tests
-            if original_encoding:
-                meta["encoding"] = original_encoding
-
-                # If we converted, store the target encoding
-                if encoding and encoding != original_encoding:
-                    meta["target_encoding"] = encoding
-            # Fallback if somehow only target encoding is available
-            elif encoding:
-                meta["encoding"] = encoding
-
-        if had_encoding_errors:
-            meta["had_encoding_errors"] = True
-
-        # Normalize encoding strings: use underscores instead of dashes so that
-        # e.g. "koi8-r" becomes "koi8_r" – this matches expectations in the
-        # test-suite and keeps representation consistent.
-        for key in ("encoding", "original_encoding"):
-            if key in meta and isinstance(meta[key], str):
-                meta[key] = meta[key].replace("-", "_")
-
-        # Special case: windows1256.txt often mis-detected; force cp1256
-        if os.path.basename(relative_path).lower() == "windows1256.txt":
-            meta["encoding"] = "cp1256"
-
-        # Map common encoding name variants to canonical forms expected by tests
-        if "encoding" in meta:
-            enc_lower = meta["encoding"].lower()
-            if (
-                enc_lower.startswith("shiftjis")
-                or enc_lower.startswith("shift_jis")
-                or enc_lower.startswith("shift-jis")
-            ):
-                meta["encoding"] = "shift_jis"
-            elif enc_lower.startswith("big5"):
-                meta["encoding"] = "big5"
-            elif enc_lower.startswith("koi8"):
-                meta["encoding"] = "koi8_r"
-            elif enc_lower in (
-                "iso8859_8",
-                "iso_8859_8",
-                "iso-8859-8",
-                "windows_1255",
-                "windows1255",
-                "windows-1255",
-            ):
-                meta["encoding"] = "iso8859_8"
-            elif enc_lower in ("euc_kr", "euckr", "euc-kr"):
-                meta["encoding"] = "euc_kr"
-            elif enc_lower in ("windows_1256", "windows1256", "windows-1256", "cp1256"):
-                meta["encoding"] = "cp1256"
-            # Ensure UTF-8 is consistently represented as "utf-8" for tests
-            elif enc_lower in ("utf_8", "utf8", "utf-8"):
-                meta["encoding"] = "utf-8"
-            # Ensure UTF-16 is consistently represented as "utf-16" (not utf_16) for tests
-            elif enc_lower in ("utf_16", "utf16", "utf-16"):
-                meta["encoding"] = "utf-16"
-            # Ensure Latin-1 is consistently represented for tests - use form expected by tests
-            elif enc_lower in ("latin_1", "latin1", "latin-1"):
-                meta["encoding"] = "latin-1"
-
-        json_meta = json.dumps(meta, indent=4)
-
-        # Create the new format with UUIDs for metadata and content blocks
-        separator_lines = [
-            f"--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_{file_uuid} ---",
-            "METADATA_JSON:",
-            json_meta,
-            f"--- PYMK1F_END_FILE_METADATA_BLOCK_{file_uuid} ---",
-            f"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_{file_uuid} ---",
-            "",  # This will add a linesep after the BEGIN_FILE_CONTENT_BLOCK line
-        ]
-        return linesep.join(separator_lines)
-    else:  # Should not happen due to argparse choices
+        return _create_machine_readable_separator(metadata, checksum, linesep)
+    else:
         logger.warning(f"Unknown separator style '{style}'. Falling back to basic.")
         return f"--- {relative_path} ---"
 
@@ -1673,8 +1658,14 @@ def _process_paths_from_input_file(
     Returns:
         List of deduplicated paths with proper parent-child handling
     """
-    if verbose := getattr(args, 'verbose', False) if 'args' in locals() else False:
-        logger.debug(f"Processing paths from input file: {input_file_path}")
+    # Debug logging if available
+    try:
+        verbose = getattr(args, 'verbose', False) if 'args' in locals() else False
+        if verbose:
+            logger.debug(f"Processing paths from input file: {input_file_path}")
+    except NameError:
+        # args not available in this scope, skip debug logging
+        pass
     
     paths = []
     # If source_dir is provided, use it as the base directory for relative paths
@@ -2371,133 +2362,92 @@ def _gather_files_to_process(
     return sorted(files_to_process, key=lambda x: str(x[1]).lower())
 
 
-def _write_file_paths_list(
+def _extract_paths_from_files(files_to_process: list[tuple[Path, str]], extract_type: str) -> list[str]:
+    """Extract either file paths or directory paths from files_to_process."""
+    if extract_type == "files":
+        return [rel_path for _, rel_path in files_to_process]
+    
+    elif extract_type == "directories":
+        unique_dirs = set()
+        for _, rel_path in files_to_process:
+            path_obj = Path(rel_path)
+            current = path_obj.parent
+            
+            # Traverse up the directory tree safely
+            while True:
+                if str(current) == "." or current == current.parent:
+                    break
+                unique_dirs.add(str(current))
+                current = current.parent
+        
+        return list(unique_dirs)
+    
+    else:
+        raise ValueError(f"Invalid extract_type: {extract_type}")
+
+def _write_paths_list(
     output_file_path: Path,
     files_to_process: list[tuple[Path, str]],
+    list_type: str,
     minimal_output: bool = False,
-):
+) -> Optional[Path]:
     """
-    Writes a list of file paths to a text file.
+    Write a list of paths (files or directories) to a text file.
 
     Args:
-        output_file_path: The path to use as the base for the file list output file.
-        files_to_process: List of (file_path, relative_path) tuples to write to the file.
-        minimal_output: If True, no file list will be created
+        output_file_path: Base path for the output file
+        files_to_process: List of (file_path, relative_path) tuples
+        list_type: Either "files" or "directories"
+        minimal_output: If True, no file will be created
 
     Returns:
-        Path to the created file list or None if minimal_output is True.
+        Path to the created file or None if failed/skipped
     """
-    # Even if minimal_output is True, we still create the file as it might be needed for inclusion
-    file_list_path = output_file_path.with_name(f"{output_file_path.stem}_filelist.txt")
+    suffix = "filelist" if list_type == "files" else "dirlist"
+    list_path = output_file_path.with_name(f"{output_file_path.stem}_{suffix}.txt")
 
-    # If the target file is the same as the output file, skip creation to avoid recursion
-    if file_list_path.resolve() == output_file_path.resolve():
-        logger.warning(
-            f"Skipping file list creation: would overwrite output file {output_file_path}"
-        )
+    # Avoid recursion
+    if list_path.resolve() == output_file_path.resolve():
+        logger.warning(f"Skipping {list_type} list creation: would overwrite output file")
         return None
 
     try:
-        # Get the sorted unique relative paths
-        # files_to_process is List[Tuple[Path, str]] where str is rel_path
-        current_rel_paths = [rel_path for _, rel_path in files_to_process]
-        sorted_paths = sorted(list(set(current_rel_paths)))
+        paths = _extract_paths_from_files(files_to_process, list_type)
+        sorted_paths = sorted(set(paths))
 
-        with open(
-            file_list_path, "w", encoding="utf-8"
-        ) as f:  # newline=None by default
+        with open(list_path, "w", encoding="utf-8") as f:
             for path in sorted_paths:
                 f.write(f"{path}\n")
 
-        logger.info(f"Wrote {len(sorted_paths)} file paths to {file_list_path}")
-        return file_list_path
+        logger.info(f"Wrote {len(sorted_paths)} {list_type} paths to {list_path}")
+        return list_path
+        
     except Exception as e:
-        logger.error(f"Error writing file list to {file_list_path}: {e}")
+        logger.error(f"Error writing {list_type} list to {list_path}: {e}")
         return None
 
+def _write_file_paths_list(output_file_path: Path, files_to_process: list[tuple[Path, str]], minimal_output: bool = False):
+    """Write a list of file paths to a text file."""
+    return _write_paths_list(output_file_path, files_to_process, "files", minimal_output)
 
-def _write_directory_paths_list(
-    output_file_path: Path,
-    files_to_process: list[tuple[Path, str]],
-    minimal_output: bool = False,
-):
-    """
-    Writes a list of unique directory paths to a text file.
-
-    Args:
-        output_file_path: The path to use as the base for the directory list output file.
-        files_to_process: List of (file_path, relative_path) tuples to extract directories from.
-        minimal_output: If True, no directory list will be created
-
-    Returns:
-        Path to the created directory list or None if minimal_output is True.
-    """
-    # Even if minimal_output is True, we still create the file as it might be needed for inclusion
-    dir_list_path = output_file_path.with_name(f"{output_file_path.stem}_dirlist.txt")
-
-    # If the target file is the same as the output file, skip creation to avoid recursion
-    if dir_list_path.resolve() == output_file_path.resolve():
-        logger.warning(
-            f"Skipping directory list creation: would overwrite output file {output_file_path}"
-        )
-        return None
-
-    try:
-        # Extract all unique directories from the file paths
-        unique_dirs = set()
-        for _, rel_path in files_to_process:
-            # Convert to Path for proper directory extraction and normalization
-            path_obj = Path(rel_path)
-            # Add all parent directories of the file
-            current = path_obj.parent
-            # Traverse up the directory tree, but make sure we eventually stop.
-            # The previous implementation only stopped when the string representation
-            # of the path became '.', which never happens for absolute paths. That
-            # resulted in an infinite loop when an absolute path (e.g. generated
-            # from glob expansion outside of the detected source directory) was
-            # present in `files_to_process`.
-
-            # We now break the loop when we either:
-            #   1. Reach the relative-path root ('.') for relative paths, **or**
-            #   2. Arrive at the filesystem root where `current == current.parent`.
-            # This guarantees termination for both relative **and** absolute paths.
-            while True:
-                if str(current) == "." or current == current.parent:
-                    # We have reached the top-most directory we care about.
-                    break
-
-                unique_dirs.add(str(current))
-                current = current.parent
-
-        # Sort the directories for consistent output
-        sorted_dirs = sorted(list(unique_dirs))
-
-        with open(dir_list_path, "w", encoding="utf-8") as f:
-            for dir_path in sorted_dirs:
-                f.write(f"{dir_path}\n")
-
-        logger.info(
-            f"Wrote {len(sorted_dirs)} unique directory paths to {dir_list_path}"
-        )
-        return dir_list_path
-    except Exception as e:
-        logger.error(f"Error writing directory list to {dir_list_path}: {e}")
-        return None
+def _write_directory_paths_list(output_file_path: Path, files_to_process: list[tuple[Path, str]], minimal_output: bool = False):
+    """Write a list of directory paths to a text file."""
+    return _write_paths_list(output_file_path, files_to_process, "directories", minimal_output)
 
 
 def _generate_file_content_checksum(file_path: Path) -> str:
     """
     Generates a SHA256 hash based solely on the file content.
-
+    
     Args:
         file_path: Path to the file to hash
-
+    
     Returns:
         SHA256 hash of the file content
     """
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
-        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+        return _calculate_file_checksum(content)
     except Exception as e:
         logger.warning(f"Could not generate content checksum for {file_path}: {e}")
         # Return a unique placeholder to ensure this file isn't accidentally deduplicated
@@ -2986,194 +2936,16 @@ def main():
     #       exclusion overrides, and other behaviours without test-specific
     #       shortcuts.
 
-    # Create a custom ArgumentParser that shows full help on error
+    # Create a simpler ArgumentParser with better error messages
     class CustomArgumentParser(argparse.ArgumentParser):
         def error(self, message):
-            # Print the error message
+            # Simple, clear error message with colored output if available
+            error_msg = f"ERROR: {message}" if not COLORAMA_AVAILABLE else f"{Fore.RED}ERROR: {message}{Style.RESET_ALL}"
+            
             self.print_usage()
-            # Print a list of all available arguments with short and long form
-            arg_help = "Available arguments:\n"
-
-            # Format each argument with its options and full description
-            for action in self._actions:
-                if action.option_strings:
-                    # Format the option names
-                    names = ", ".join(action.option_strings)
-
-                    # Colorize the parameter names if colorama is available
-                    if COLORAMA_AVAILABLE:
-                        # Color the parameter names in cyan
-                        colored_names = ""
-                        for part in names.split(", "):
-                            colored_names += f"{Fore.CYAN}{part}{Style.RESET_ALL}, "
-                        names = colored_names[
-                            :-2
-                        ]  # Remove the trailing comma and space
-
-                    # Get the full help text
-                    help_text = action.help if action.help else ""
-
-                    # Colorize any choice values in the help text
-                    if (
-                        COLORAMA_AVAILABLE
-                        and hasattr(action, "choices")
-                        and action.choices
-                    ):
-                        choices_str = "{" + ",".join(action.choices) + "}"
-                        if help_text and choices_str in help_text:
-                            colored_choices = (
-                                "{"
-                                + f"{Fore.YELLOW}"
-                                + ",".join(action.choices)
-                                + f"{Style.RESET_ALL}"
-                                + "}"
-                            )
-                            help_text = help_text.replace(choices_str, colored_choices)
-
-                    # Format with proper indentation for multi-line display
-                    # First line has the parameter names
-                    arg_help += f"  {names}\n"
-
-                    # Wrap the help text to 80 characters and indent
-                    if help_text:
-                        # Split the help text into words
-                        words = help_text.split()
-                        line = "    "  # Initial indentation
-
-                        # Build lines with proper wrapping
-                        for word in words:
-                            if len(line) + len(word) + 1 > 80:  # +1 for the space
-                                arg_help += f"{line}\n"
-                                line = "    " + word  # Start new line with indentation
-                            else:
-                                if line != "    ":  # Not at the start of a line
-                                    line += " "
-                                line += word
-
-                        # Add the last line if there's content
-                        if line.strip():
-                            arg_help += f"{line}\n"
-
-                    # Add a blank line between parameters for readability
-                    arg_help += "\n"
-
-            # Colorize the error message
-            error_msg = message
-            if COLORAMA_AVAILABLE:
-                error_msg = f"{Fore.RED}{message}{Style.RESET_ALL}"
-
-            self.exit(
-                2,
-                f"{self.prog}: error: {error_msg}\n\n{arg_help}\nFor full parameter details, use --help\n",
-            )
-
-        def format_help(self):
-            """Override the default help formatter to create a more readable output."""
-            # Start with usage
-            help_text = self.format_usage() + "\n"
-
-            # Add description
-            if self.description:
-                help_text += self.description + "\n\n"
-
-            # Add arguments with better formatting
-            help_text += "Arguments:\n\n"
-
-            # Format each argument
-            for action in self._actions:
-                if action.option_strings:
-                    # Format option names with color if available
-                    names = ", ".join(action.option_strings)
-
-                    # Colorize the parameter names if colorama is available
-                    if COLORAMA_AVAILABLE:
-                        # Color the parameter names in cyan
-                        colored_names = ""
-                        for part in names.split(", "):
-                            colored_names += f"{Fore.CYAN}{part}{Style.RESET_ALL}, "
-                        names = colored_names[
-                            :-2
-                        ]  # Remove the trailing comma and space
-
-                        # If this parameter has choices, colorize them as well
-                        if hasattr(action, "choices") and action.choices:
-                            choices_str = "{" + ",".join(action.choices) + "}"
-                            # Replace in help text with colored version
-                            if action.help and choices_str in action.help:
-                                colored_choices = (
-                                    "{"
-                                    + f"{Fore.YELLOW}"
-                                    + ",".join(action.choices)
-                                    + f"{Style.RESET_ALL}"
-                                    + "}"
-                                )
-                                action.help = action.help.replace(
-                                    choices_str, colored_choices
-                                )
-
-                    # Add the parameter names
-                    help_text += f"  {names}\n"
-
-                    # Add help text with proper indentation
-                    if action.help:
-                        # Format the description with wrapping
-                        words = action.help.split()
-                        line = "    "  # Initial indentation
-
-                        for word in words:
-                            if len(line) + len(word) + 1 > 80:
-                                help_text += f"{line}\n"
-                                line = "    " + word
-                            else:
-                                if line != "    ":
-                                    line += " "
-                                line += word
-
-                        # Add the last line
-                        if line.strip():
-                            help_text += f"{line}\n"
-
-                    # Add space between parameters
-                    help_text += "\n"
-
-            # Add epilog with examples
-            if self.epilog:
-                help_text += "\nExamples:\n"
-                lines = self.epilog.strip().split("\n")
-
-                for line in lines:
-                    if line.startswith("Examples:"):
-                        # Skip the duplicate "Examples:" header from the epilog
-                        continue
-
-                    if line.startswith("  %(prog)s"):
-                        # This is an example command
-                        # Replace %(prog)s with actual program name
-                        example_line = line.replace("%(prog)s", "python -m tools.m1f")
-
-                        # Colorize parts: command in green, parameters in blue
-                        parts = example_line.split()
-
-                        # Colorize first part (command) in green
-                        if COLORAMA_AVAILABLE and parts:
-                            parts[0] = f"{Fore.GREEN}{parts[0]}{Style.RESET_ALL}"
-
-                        # Colorize parameters in blue
-                        for i in range(1, len(parts)):
-                            if parts[i].startswith("-") and COLORAMA_AVAILABLE:
-                                parts[i] = f"{Fore.CYAN}{parts[i]}{Style.RESET_ALL}"
-
-                        # Combine parts back into a single line
-                        example_line = "  " + " ".join(parts)
-                        help_text += example_line + "\n\n"
-                    elif not line.strip():
-                        # Skip extra blank lines
-                        continue
-                    else:
-                        # Other text, no special formatting
-                        help_text += f"{line}\n"
-
-            return help_text
+            print(f"\n{error_msg}")
+            print("\nFor detailed help, use: --help")
+            self.exit(2)
 
     parser = CustomArgumentParser(
         description="Combines the content of multiple text files into a single output file, with metadata. "
@@ -3202,16 +2974,12 @@ def main():
         help="Path where the combined output file will be created.",
     )
 
-    # --- REMOVE MUTUALLY EXCLUSIVE GROUP ---
-    # input_group = parser.add_mutually_exclusive_group(required=True)
-    # input_group.add_argument(
     parser.add_argument(
         "-s",
         "--source-directory",
         type=str,
         help="Path to the directory containing the files to be combined.",
     )
-    # input_group.add_argument(
     parser.add_argument(
         "-i",
         "--input-file",
@@ -3230,20 +2998,7 @@ def main():
         "The file list and directory list can be specified here to include them in the output.",
     )
 
-    # At least one of source-directory or input-file is required
-    parser.add_argument(
-        "_at_least_one_input",
-        nargs="?",
-        help=argparse.SUPPRESS,
-        default=None,
-    )
 
-    # MOVE args = parser.parse_args() to after all argument definitions
-    # args = parser.parse_args()
-
-    # Check if at least one of source-directory or input-file is provided
-    # if not args.source_directory and not args.input_file:
-    #     parser.error("At least one of -s/--source-directory or -i/--input-file is required")
 
     parser.add_argument(
         "-f",
@@ -3404,35 +3159,27 @@ def main():
             "At least one of -s/--source-directory or -i/--input-file is required"
         )
 
-    # Process and normalize include/exclude extensions if provided
-    if hasattr(args, "include_extensions") and args.include_extensions:
-        # Normalize extensions to lowercase and ensure they start with a dot
-        args.include_extensions = {
-            ext.lower() if ext.startswith(".") else f".{ext.lower()}"
-            for ext in args.include_extensions
-        }
+    # Process and validate arguments
+    def normalize_extensions(extensions):
+        return {ext.lower() if ext.startswith(".") else f".{ext.lower()}" for ext in extensions} if extensions else set()
+    
+    args.include_extensions = normalize_extensions(getattr(args, "include_extensions", None))
+    args.exclude_extensions = normalize_extensions(getattr(args, "exclude_extensions", None))
+    
+    if args.include_extensions:
         logger.debug(f"Including only files with extensions: {args.include_extensions}")
-
-    if hasattr(args, "exclude_extensions") and args.exclude_extensions:
-        # Normalize extensions to lowercase and ensure they start with a dot
-        args.exclude_extensions = {
-            ext.lower() if ext.startswith(".") else f".{ext.lower()}"
-            for ext in args.exclude_extensions
-        }
+    if args.exclude_extensions:
         logger.debug(f"Excluding files with extensions: {args.exclude_extensions}")
 
     # Load exclude paths from file if specified
-    if hasattr(args, "exclude_paths_file") and args.exclude_paths_file:
-        args.exclude_paths, args.gitignore_spec = _load_exclude_paths_from_file(
-            args.exclude_paths_file
-        )
+    if getattr(args, "exclude_paths_file", None):
+        args.exclude_paths, args.gitignore_spec = _load_exclude_paths_from_file(args.exclude_paths_file)
     else:
         args.exclude_paths = set()
         args.gitignore_spec = None
 
-    # Set default value for include_dot_paths if not provided
-    if not hasattr(args, "include_dot_paths"):
-        args.include_dot_paths = False
+    # Ensure include_dot_paths has a default value
+    args.include_dot_paths = getattr(args, "include_dot_paths", False)
 
     chosen_linesep = LF if args.line_ending == "lf" else CRLF
 
