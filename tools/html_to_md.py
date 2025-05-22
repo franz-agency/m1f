@@ -470,13 +470,10 @@ def convert_html(
                         lang = cls.split("-", 1)[1]
                         break
                 
+                # Add a data attribute to the pre tag to indicate the language
+                # This will be used later when post-processing the markdown
                 if lang:
-                    # Add a language hint comment before the pre tag
-                    pre.insert_before(soup.new_string(f"```{lang}"))
-                    pre.insert_after(soup.new_string("```"))
-                    # Remove the original pre and code tags but keep content
-                    code.replace_with(code.get_text())
-                    pre.replace_with(pre.get_text())
+                    pre["data-code-language"] = lang
     
     # Extract content
     html_content = root.decode_contents()
@@ -487,6 +484,97 @@ def convert_html(
     }
     
     md_content = markdownify(html_content, **md_options)
+    
+    # Post-process markdown content to handle code blocks with language
+    if convert_code_blocks:
+        # In markdownify output, code blocks are converted to indented blocks
+        # We need to replace them with fenced code blocks with language info
+        lines = md_content.split('\n')
+        in_code_block = False
+        current_language = None
+        code_block_content = []
+        result_lines = []
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            
+            # Check for the beginning of a new code block
+            if not in_code_block and line.strip() == "```":
+                in_code_block = True
+                # Look ahead to check if this is a pre block with a language
+                j = i + 1
+                code_block_start = j
+                code_block_end = None
+                
+                # Find the end of this code block
+                while j < len(lines):
+                    if lines[j].strip() == "```":
+                        code_block_end = j
+                        break
+                    j += 1
+                
+                if code_block_end is not None:
+                    # Check if we can find language information in the original HTML
+                    # This is a simple approach and might not work for all cases
+                    code_content = "\n".join(lines[code_block_start:code_block_end])
+                    
+                    # Search for the same code content in the original HTML
+                    soup_temp = BeautifulSoup(html_content, "html.parser")
+                    for pre_elem in soup_temp.find_all("pre"):
+                        code_elem = pre_elem.find("code")
+                        if code_elem and code_elem.get_text().strip() == code_content.strip():
+                            if code_elem.has_attr("class"):
+                                for cls in code_elem["class"]:
+                                    if cls.startswith(("language-", "lang-")):
+                                        lang = cls.split("-", 1)[1]
+                                        # Add language information to the code fence
+                                        result_lines.append(f"```{lang}")
+                                        result_lines.extend(lines[code_block_start:code_block_end])
+                                        result_lines.append("```")
+                                        i = code_block_end + 1
+                                        break
+                                else:
+                                    # No language found, add without language
+                                    result_lines.append("```")
+                                    result_lines.extend(lines[code_block_start:code_block_end])
+                                    result_lines.append("```")
+                                    i = code_block_end + 1
+                            else:
+                                # No class attribute, add without language
+                                result_lines.append("```")
+                                result_lines.extend(lines[code_block_start:code_block_end])
+                                result_lines.append("```")
+                                i = code_block_end + 1
+                            break
+                    else:
+                        # If we can't match the code content, keep it as is
+                        result_lines.append(line)
+                        i += 1
+                else:
+                    # If we don't find the end, keep it as is
+                    result_lines.append(line)
+                    i += 1
+            else:
+                result_lines.append(line)
+                i += 1
+                
+        md_content = "\n".join(result_lines)
+        
+    # Add a more direct approach for code blocks
+    # Look for patterns in the markdown that indicate code blocks
+    soup_original = BeautifulSoup(html, "html.parser")
+    for pre in soup_original.find_all("pre"):
+        code = pre.find("code")
+        if code and code.has_attr("class"):
+            for cls in code["class"]:
+                if cls.startswith(("language-", "lang-")):
+                    lang = cls.split("-", 1)[1]
+                    code_text = code.get_text().strip()
+                    # Replace standard code blocks with fenced code blocks
+                    code_pattern = f"```\n{code_text}\n```"
+                    if code_pattern in md_content:
+                        md_content = md_content.replace(code_pattern, f"```{lang}\n{code_text}\n```")
     
     # Add line breaks between block elements if requested
     if add_line_breaks:
