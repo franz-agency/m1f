@@ -1,10 +1,14 @@
 # s1f (Split One File)
 
-Extracts individual files from a combined file, recreating the original directory structure.
+Extracts individual files from a combined file, recreating the original
+directory structure.
 
 ## Overview
 
-The s1f tool is the counterpart to m1f, designed to extract and reconstruct the original files from a combined file. This tool is essential for workflows where you need to retrieve individual files after analysis or when sharing combined files with collaborators.
+The s1f tool is the counterpart to m1f, designed to extract and reconstruct the
+original files from a combined file. This tool is essential for workflows where
+you need to retrieve individual files after analysis or when sharing combined
+files with collaborators.
 
 ## Key Features
 
@@ -74,21 +78,27 @@ python tools/s1f.py -i ./modified_bundle.m1f.txt -d ./extracted_files \
 
 ## Supported File Formats
 
-The s1f tool can extract files from combined files created with any of the m1f separator styles:
+The s1f tool can extract files from combined files created with any of the m1f
+separator styles:
 
 - **Standard Style** - Simple separators with file paths and checksums
 - **Detailed Style** - Comprehensive separators with full metadata
 - **Markdown Style** - Formatted with Markdown syntax for documentation
-- **MachineReadable Style** - Structured format with JSON metadata and UUID boundaries
-- **None Style** - Files combined without separators (limited extraction capability)
+- **MachineReadable Style** - Structured format with JSON metadata and UUID
+  boundaries
+- **None Style** - Files combined without separators (limited extraction
+  capability)
 
-For the most reliable extraction, use files created with the MachineReadable separator style, as these contain complete metadata and checksums for verification.
+For the most reliable extraction, use files created with the MachineReadable
+separator style, as these contain complete metadata and checksums for
+verification.
 
 ## Common Workflows
 
 ### Extract and Verify
 
-This workflow is useful when you want to ensure the integrity of extracted files:
+This workflow is useful when you want to ensure the integrity of extracted
+files:
 
 ```bash
 # Step 1: Extract the files with verification
@@ -108,4 +118,4 @@ python tools/s1f.py -i ./project.m1f.txt -d ./dev_workspace
 
 # Extract for backup with original timestamps
 python tools/s1f.py -i ./project.m1f.txt -d ./backup --timestamp-mode original
-``` 
+```

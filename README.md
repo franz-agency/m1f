@@ -5,19 +5,27 @@ A powerful suite of tools for working efficiently with Large Language Models
 
 ## Project Overview
 
-m1f provides utilities for efficiently working with LLMs by managing context. The core tools are:
+m1f provides utilities for efficiently working with LLMs by managing context.
+The core tools are:
 
-- **m1f (Make One File)**: Combines multiple project files into a single reference file for providing comprehensive context to LLMs
-- **s1f (Split One File)**: Extracts individual files from a combined file, preserving original structure
-- **token_counter**: Estimates token usage for LLM context planning and optimization
+- **m1f (Make One File)**: Combines multiple project files into a single
+  reference file for providing comprehensive context to LLMs
+- **s1f (Split One File)**: Extracts individual files from a combined file,
+  preserving original structure
+- **token_counter**: Estimates token usage for LLM context planning and
+  optimization
 
-These tools solve the challenge of providing comprehensive context to AI assistants while optimizing token usage.
+These tools solve the challenge of providing comprehensive context to AI
+assistants while optimizing token usage.
 
 ## Features
 
 ### Content Deduplication
 
-m1f automatically detects files with identical content and only includes them once in the output. If the same file content appears in multiple locations (different paths, filenames, or timestamps), only the first encountered version will be included. This:
+m1f automatically detects files with identical content and only includes them
+once in the output. If the same file content appears in multiple locations
+(different paths, filenames, or timestamps), only the first encountered version
+will be included. This:
 
 - Reduces redundancy in the combined output
 - Decreases the token count for LLM processing
@@ -25,11 +33,14 @@ m1f automatically detects files with identical content and only includes them on
 - Works automatically without requiring any special flags
 
 This feature is especially useful in projects with:
+
 - Code duplication across different directories
 - Backup copies with identical content
 - Files accessible through symbolic links or alternative paths
 
-The deduplication is based purely on file content (using SHA256 checksums), so even files with different names, paths, or modification times will be deduplicated if their content is identical.
+The deduplication is based purely on file content (using SHA256 checksums), so
+even files with different names, paths, or modification times will be
+deduplicated if their content is identical.
 
 ## Installation
 
@@ -52,7 +63,8 @@ For detailed documentation, please check the [docs directory](./docs/README.md).
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md)
+file for details.
 
 ## Contributing
 

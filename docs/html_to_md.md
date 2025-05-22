@@ -1,10 +1,15 @@
 # html_to_md (HTML to Markdown Converter)
 
-Converts HTML files to Markdown recursively with powerful content selection and formatting options.
+Converts HTML files to Markdown recursively with powerful content selection and
+formatting options.
 
 ## Overview
 
-The html_to_md tool provides a robust solution for converting HTML content to Markdown format, with fine-grained control over the conversion process. It is especially useful for transforming existing HTML documentation, extracting specific content from web pages, and preparing content for use with Large Language Models.
+The html_to_md tool provides a robust solution for converting HTML content to
+Markdown format, with fine-grained control over the conversion process. It is
+especially useful for transforming existing HTML documentation, extracting
+specific content from web pages, and preparing content for use with Large
+Language Models.
 
 ## Key Features
 
@@ -35,28 +40,28 @@ python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
 
 ## Command Line Options
 
-| Option                     | Description                                                                                                            |
-|----------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `--source-dir`             | Directory containing HTML files to process                                                                             |
-| `--destination-dir`        | Directory where converted Markdown files will be written                                                               |
-| `--outermost-selector`     | CSS selector to extract specific content (e.g., `main` or `article.content`)                                          |
-| `--ignore-selectors`       | CSS selectors for elements to remove (e.g., `nav` `.sidebar` `footer`)                                                |
-| `--remove-elements`        | HTML elements to remove (default: script, style, iframe, noscript)                                                     |
-| `--include-extensions`     | File extensions to include (default: .html, .htm, .xhtml)                                                              |
-| `--exclude-patterns`       | Patterns to exclude from processing                                                                                    |
-| `--exclude-dirs`           | Directory names to exclude from processing                                                                             |
-| `--heading-offset`         | Number to add to heading levels (e.g., h1 → h2 if offset=1)                                                           |
-| `--add-frontmatter`        | Add YAML frontmatter to the output Markdown                                                                            |
-| `--frontmatter-fields`     | Custom frontmatter fields (format: key=value)                                                                          |
-| `--strip-classes`          | Strip class attributes from HTML elements (default: true)                                                              |
-| `--add-line-breaks`        | Add line breaks between block elements (default: true)                                                                 |
-| `--convert-code-blocks`    | Convert code blocks with language hints (default: true)                                                                |
-| `--target-encoding`        | Convert all files to the specified character encoding                                                                  |
-| `--parallel`               | Enable parallel processing for faster conversion                                                                       |
-| `--max-workers`            | Maximum number of worker processes for parallel conversion                                                             |
-| `-f, --force`              | Force overwrite of existing Markdown files                                                                             |
-| `-v, --verbose`            | Enable verbose output                                                                                                  |
-| `-q, --quiet`              | Suppress all console output                                                                                            |
+| Option                  | Description                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `--source-dir`          | Directory containing HTML files to process                                   |
+| `--destination-dir`     | Directory where converted Markdown files will be written                     |
+| `--outermost-selector`  | CSS selector to extract specific content (e.g., `main` or `article.content`) |
+| `--ignore-selectors`    | CSS selectors for elements to remove (e.g., `nav` `.sidebar` `footer`)       |
+| `--remove-elements`     | HTML elements to remove (default: script, style, iframe, noscript)           |
+| `--include-extensions`  | File extensions to include (default: .html, .htm, .xhtml)                    |
+| `--exclude-patterns`    | Patterns to exclude from processing                                          |
+| `--exclude-dirs`        | Directory names to exclude from processing                                   |
+| `--heading-offset`      | Number to add to heading levels (e.g., h1 → h2 if offset=1)                  |
+| `--add-frontmatter`     | Add YAML frontmatter to the output Markdown                                  |
+| `--frontmatter-fields`  | Custom frontmatter fields (format: key=value)                                |
+| `--strip-classes`       | Strip class attributes from HTML elements (default: true)                    |
+| `--add-line-breaks`     | Add line breaks between block elements (default: true)                       |
+| `--convert-code-blocks` | Convert code blocks with language hints (default: true)                      |
+| `--target-encoding`     | Convert all files to the specified character encoding                        |
+| `--parallel`            | Enable parallel processing for faster conversion                             |
+| `--max-workers`         | Maximum number of worker processes for parallel conversion                   |
+| `-f, --force`           | Force overwrite of existing Markdown files                                   |
+| `-v, --verbose`         | Enable verbose output                                                        |
+| `-q, --quiet`           | Suppress all console output                                                  |
 
 ## Usage Examples
 
@@ -129,7 +134,8 @@ python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
 
 ### YAML Frontmatter
 
-When using the `--add-frontmatter` option, the converter will automatically generate YAML frontmatter for each Markdown file, including:
+When using the `--add-frontmatter` option, the converter will automatically
+generate YAML frontmatter for each Markdown file, including:
 
 - Title extracted from HTML title tag or first h1 element
 - Source filename
@@ -159,17 +165,21 @@ category: tutorial
 
 ### Heading Level Adjustment
 
-The `--heading-offset` option allows you to adjust the hierarchical structure of the document by incrementing or decrementing heading levels. This is useful when:
+The `--heading-offset` option allows you to adjust the hierarchical structure of
+the document by incrementing or decrementing heading levels. This is useful
+when:
 
 - Integrating content into an existing document with its own heading hierarchy
 - Making h1 headings become h2 headings for better document structure
 - Ensuring proper nesting of headings for better semantics
 
-Positive values increase heading levels (e.g., h1 → h2), while negative values decrease them (e.g., h2 → h1).
+Positive values increase heading levels (e.g., h1 → h2), while negative values
+decrease them (e.g., h2 → h1).
 
 ### Code Block Language Detection
 
-The converter can automatically detect language hints from HTML code blocks that use language classes, such as:
+The converter can automatically detect language hints from HTML code blocks that
+use language classes, such as:
 
 ```html
 <pre><code class="language-python">def example():
@@ -177,7 +187,8 @@ The converter can automatically detect language hints from HTML code blocks that
 </code></pre>
 ```
 
-This will be converted to a properly formatted Markdown code block with language hint:
+This will be converted to a properly formatted Markdown code block with language
+hint:
 
 ````markdown
 ```python
@@ -197,9 +208,11 @@ The converter provides robust character encoding detection and conversion:
 
 ## Integration with m1f
 
-The html_to_md tool works well with the m1f (Make One File) tool for comprehensive documentation handling:
+The html_to_md tool works well with the m1f (Make One File) tool for
+comprehensive documentation handling:
 
 1. First convert HTML files to Markdown:
+
    ```bash
    python tools/html_to_md.py --source-dir ./html-docs --destination-dir ./markdown-docs
    ```
@@ -211,6 +224,7 @@ The html_to_md tool works well with the m1f (Make One File) tool for comprehensi
    ```
 
 This workflow is ideal for:
+
 - Converting documentation from HTML to Markdown format
 - Consolidating documentation from multiple sources
 - Preparing content for LLM context windows
@@ -220,7 +234,8 @@ This workflow is ideal for:
 
 - For large websites with many HTML files, use the `--parallel` option
 - Conversion speed depends on file size, complexity, and number of files
-- The `--max-workers` option can be used to control the number of parallel processes
+- The `--max-workers` option can be used to control the number of parallel
+  processes
 - Memory usage scales with the number of worker processes and file sizes
 
 ## Requirements and Dependencies
@@ -234,6 +249,7 @@ This workflow is ideal for:
   - pyyaml: For frontmatter generation
 
 Install dependencies:
+
 ```bash
 pip install beautifulsoup4 markdownify chardet pyyaml
-``` 
+```

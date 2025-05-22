@@ -1,10 +1,16 @@
 # token_counter.py - Token Estimation Tool
 
-The token_counter tool estimates token usage for LLM context planning, helping you optimize your use of large language models by managing context window limits.
+The token_counter tool estimates token usage for LLM context planning, helping
+you optimize your use of large language models by managing context window
+limits.
 
 ## Overview
 
-When working with LLMs like ChatGPT, Claude, or GPT-4, understanding token consumption is essential for effective prompt engineering and context management. The token_counter tool allows you to precisely measure how many tokens your combined files will use, helping you stay within the context window limits of your chosen LLM.
+When working with LLMs like ChatGPT, Claude, or GPT-4, understanding token
+consumption is essential for effective prompt engineering and context
+management. The token_counter tool allows you to precisely measure how many
+tokens your combined files will use, helping you stay within the context window
+limits of your chosen LLM.
 
 ## Key Features
 
@@ -56,20 +62,22 @@ The tool supports different encoding models depending on which LLM you're using:
 
 Understanding token limits is crucial for effective usage:
 
-| Model               | Token Limit | Recommended Encoding |
-|---------------------|-------------|----------------------|
-| GPT-4 Turbo         | 128,000     | cl100k_base          |
-| GPT-4               | 8,192       | cl100k_base          |
-| GPT-3.5-Turbo       | 4,096       | p50k_base            |
-| Claude 3 Opus       | 200,000     | -                    |
-| Claude 3 Sonnet     | 100,000     | -                    |
-| Claude 3 Haiku      | 200,000     | -                    |
+| Model           | Token Limit | Recommended Encoding |
+| --------------- | ----------- | -------------------- |
+| GPT-4 Turbo     | 128,000     | cl100k_base          |
+| GPT-4           | 8,192       | cl100k_base          |
+| GPT-3.5-Turbo   | 4,096       | p50k_base            |
+| Claude 3 Opus   | 200,000     | -                    |
+| Claude 3 Sonnet | 100,000     | -                    |
+| Claude 3 Haiku  | 200,000     | -                    |
 
 ## Integration with m1f
 
-The token_counter.py tool is particularly useful when used with m1f to check if your combined files will fit within the token limit of your chosen LLM:
+The token_counter.py tool is particularly useful when used with m1f to check if
+your combined files will fit within the token limit of your chosen LLM:
 
 1. First, combine files with m1f:
+
    ```bash
    python tools/m1f.py -s ./project -o ./combined.txt --include-extensions .py .js
    ```
@@ -79,17 +87,20 @@ The token_counter.py tool is particularly useful when used with m1f to check if 
    python tools/token_counter.py ./combined.txt
    ```
 
-This workflow helps you adjust your file selection to stay within token limits for your AI assistant.
+This workflow helps you adjust your file selection to stay within token limits
+for your AI assistant.
 
 ## Optimizing Token Usage
 
 To reduce token consumption while maintaining context quality:
 
-1. **Be selective with files**: Include only the most relevant files for your prompt
+1. **Be selective with files**: Include only the most relevant files for your
+   prompt
 2. **Use minimal separator style**: The `None` separator style uses fewer tokens
 3. **Trim unnecessary content**: Remove comments, unused code, or redundant text
 4. **Focus on key files**: Prioritize files that directly address your question
-5. **Use file filtering**: Utilize m1f's filtering options to target specific files
+5. **Use file filtering**: Utilize m1f's filtering options to target specific
+   files
 
 ## Requirements
 
@@ -99,4 +110,4 @@ The token_counter.py tool requires the `tiktoken` Python package:
 pip install tiktoken
 ```
 
-This dependency is included in the project's requirements.txt file. 
+This dependency is included in the project's requirements.txt file.

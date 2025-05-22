@@ -5,21 +5,23 @@ source_file: sample.html
 
 # HTML to Markdown Conversion Example
 
-This is a sample HTML document that demonstrates various HTML elements and how they are converted to Markdown.
+This is a sample HTML document that demonstrates various HTML elements and how
+they are converted to Markdown.
 
 ## Text Formatting
 
-Here are some examples of **bold text**, *italic text*, and `inline code`.
+Here are some examples of **bold text**, _italic text_, and `inline code`.
 
-You can also use [links to external websites](https://example.com) or [links to other pages](another-page.md).
+You can also use [links to external websites](https://example.com) or
+[links to other pages](another-page.md).
 
 ## Lists
 
 ### Unordered List
 
-* First item
-* Second item
-* Third item with *formatted text*
+- First item
+- Second item
+- Third item with _formatted text_
 
 ### Ordered List
 
@@ -44,7 +46,7 @@ And here's a code block with another language:
 
 ```javascript
 function calculateSum(a, b) {
-    return a + b;
+  return a + b;
 }
 
 // Calculate 5 + 10
@@ -60,15 +62,15 @@ console.log(`The sum is: ${result}`);
 >
 > Here's the second paragraph within the same blockquote.
 >
-> *You can use formatting* inside blockquotes too.
+> _You can use formatting_ inside blockquotes too.
 
 ## Tables
 
-| Name | Description | Value |
-| ---- | ----------- | ----- |
-| Item 1 | Description of item 1 | 100 |
-| Item 2 | Description of item 2 | 200 |
-| Item 3 | Description of item 3 | 300 |
+| Name   | Description           | Value |
+| ------ | --------------------- | ----- |
+| Item 1 | Description of item 1 | 100   |
+| Item 2 | Description of item 2 | 200   |
+| Item 3 | Description of item 3 | 300   |
 
 ## Images
 
@@ -78,4 +80,4 @@ Here's an example of an image:
 
 And an image with a link:
 
-[![Example thumbnail](example-image-thumbnail.jpg)](image-page.md) 
+[![Example thumbnail](example-image-thumbnail.jpg)](image-page.md)

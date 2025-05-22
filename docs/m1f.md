@@ -1,10 +1,14 @@
 # m1f (Make One File)
 
-Combines multiple files into a single file with rich metadata and customizable formatting.
+Combines multiple files into a single file with rich metadata and customizable
+formatting.
 
 ## Overview
 
-The m1f tool solves a common challenge when working with LLMs: providing sufficient context without exceeding token limits. It creates a single reference file from multiple source files, making it easier to provide comprehensive context to AI assistants.
+The m1f tool solves a common challenge when working with LLMs: providing
+sufficient context without exceeding token limits. It creates a single reference
+file from multiple source files, making it easier to provide comprehensive
+context to AI assistants.
 
 ## Key Features
 
@@ -87,25 +91,35 @@ python tools/m1f.py -s ./source_code -o ./dist/combined.txt \
 
 ## Security Check
 
-The `--security-check` option scans files for potential secrets using `detect-secrets` if the library is installed. When secrets are detected you can decide how the script proceeds:
+The `--security-check` option scans files for potential secrets using
+`detect-secrets` if the library is installed. When secrets are detected you can
+decide how the script proceeds:
 
 - `abort` – stop processing immediately and do not create the output file.
 - `skip` – omit files that contain secrets from the final output.
 - `warn` – include all files but print a summary warning at the end.
 
-If `detect-secrets` is not available, a simplified pattern-based scan is used as a fallback.
+If `detect-secrets` is not available, a simplified pattern-based scan is used as
+a fallback.
 
 ## Output Files
 
-By default, `m1f.py` creates several output files to provide comprehensive information about the processed files:
+By default, `m1f.py` creates several output files to provide comprehensive
+information about the processed files:
 
-1. **Primary output file** - The combined file specified by `--output-file` containing all processed files with separators
-2. **Log file** - A `.log` file with the same base name as the output file, containing detailed processing information
-3. **File list** - A `_filelist.txt` file containing the paths of all included files
-4. **Directory list** - A `_dirlist.txt` file containing all unique directories from the included files
-5. **Archive file** - An optional backup archive (zip or tar.gz) if `--create-archive` is specified
+1. **Primary output file** - The combined file specified by `--output-file`
+   containing all processed files with separators
+2. **Log file** - A `.log` file with the same base name as the output file,
+   containing detailed processing information
+3. **File list** - A `_filelist.txt` file containing the paths of all included
+   files
+4. **Directory list** - A `_dirlist.txt` file containing all unique directories
+   from the included files
+5. **Archive file** - An optional backup archive (zip or tar.gz) if
+   `--create-archive` is specified
 
-To create only the primary output file and skip the auxiliary files, use the `--minimal-output` option:
+To create only the primary output file and skip the auxiliary files, use the
+`--minimal-output` option:
 
 ```bash
 # Create only the combined output file without any auxiliary files
@@ -146,7 +160,9 @@ python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
 
 ## Separator Styles
 
-The `--separator-style` option allows you to choose how files are separated in the combined output file. Each style is designed for specific use cases, from human readability to automated parsing.
+The `--separator-style` option allows you to choose how files are separated in
+the combined output file. Each style is designed for specific use cases, from
+human readability to automated parsing.
 
 ### Standard Style
 
@@ -170,7 +186,8 @@ A more comprehensive separator that includes file metadata:
 
 ### Markdown Style
 
-Formats the metadata as Markdown with proper code blocks, using the file extension to set syntax highlighting:
+Formats the metadata as Markdown with proper code blocks, using the file
+extension to set syntax highlighting:
 
 ````markdown
 ## path/to/file.py
@@ -216,20 +233,29 @@ Files are concatenated directly without any separators between them.
 
 ### Binary File Handling
 
-While the script can include binary files using the `--include-binary-files` option, these are read as text (UTF-8 with error ignoring). This can result in garbled/unreadable content in the output and significantly increase file size.
+While the script can include binary files using the `--include-binary-files`
+option, these are read as text (UTF-8 with error ignoring). This can result in
+garbled/unreadable content in the output and significantly increase file size.
 
 ### Encoding Behavior
 
-The script uses UTF-8 as the default encoding for reading and writing files. When using `--convert-to-charset`, the original encoding of each file is automatically detected and recorded in the file metadata.
+The script uses UTF-8 as the default encoding for reading and writing files.
+When using `--convert-to-charset`, the original encoding of each file is
+automatically detected and recorded in the file metadata.
 
 ### Line Ending Behavior
 
-The `--line-ending` option only affects the line endings generated by the script (in separators and blank lines), not those in the original files. The line endings of original files remain unchanged.
+The `--line-ending` option only affects the line endings generated by the script
+(in separators and blank lines), not those in the original files. The line
+endings of original files remain unchanged.
 
 ### Archive Creation
 
-When `--create-archive` is used, the archive will contain all files selected for inclusion in the main output file, using their relative paths within the archive.
+When `--create-archive` is used, the archive will contain all files selected for
+inclusion in the main output file, using their relative paths within the
+archive.
 
 ### Performance Considerations
 
-For extremely large directories with tens of thousands of files or very large individual files, the script might take some time to process. 
+For extremely large directories with tens of thousands of files or very large
+individual files, the script might take some time to process.
