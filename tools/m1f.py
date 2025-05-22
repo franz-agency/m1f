@@ -279,9 +279,6 @@ def _cleanup_global_handlers():
             logger_instance.removeHandler(handler)
             if isinstance(handler, logging.FileHandler):
                 handler.close()
-                if hasattr(handler, "stream") and handler.stream:
-                    handler.stream.close()
-                    handler.stream = None
         except Exception:
             pass  # Ignore errors during cleanup
 
@@ -289,9 +286,6 @@ def _cleanup_global_handlers():
     if file_handler is not None:
         try:
             file_handler.close()
-            if hasattr(file_handler, "stream") and file_handler.stream:
-                file_handler.stream.close()
-                file_handler.stream = None
         except Exception:
             pass
         file_handler = None
@@ -302,9 +296,6 @@ def _cleanup_global_handlers():
         except Exception:
             pass
         m1f_console_handler = None
-
-    # Force finalization
-    logging.shutdown()
 
 
 # Register cleanup function to be called on program exit
@@ -989,7 +980,7 @@ def _read_file_with_encoding(
         # Last resort fallback
         error_message = f"[ERROR: UNABLE TO READ FILE '{file_path}'. REASON: {e}]"
         logger.error(error_message)
-        return error_message, used_encoding, True, original_encoding
+        return error_message, used_encoding or "utf-8", True, original_encoding or "utf-8"
 
 
 def _generate_filename_content_hash(files_to_process: list[tuple[Path, str]]) -> str:
@@ -1330,17 +1321,12 @@ def _configure_logging_settings(
     global file_handler, m1f_console_handler  # Use module-level handlers
     logger_instance = logging.getLogger("m1f")
 
-    # --- Reset all loggers first ---
-    # This ensures a fresh start without any lingering handlers
+    # --- Clean up any existing handlers ---
     root_logger = logging.getLogger()
-    logging.shutdown()  # Force cleanup of all handlers
     for handler in root_logger.handlers[:]:
         if isinstance(handler, logging.FileHandler):
             try:
                 handler.close()
-                if hasattr(handler, "stream") and handler.stream:
-                    handler.stream.close()
-                    handler.stream = None
             except Exception:
                 pass  # Ignore errors during cleanup
         root_logger.removeHandler(handler)
@@ -1351,29 +1337,22 @@ def _configure_logging_settings(
             logger_instance.removeHandler(handler)
             if isinstance(handler, logging.FileHandler):
                 handler.close()
-                if hasattr(handler, "stream") and handler.stream:
-                    handler.stream.close()
-                    handler.stream = None
-        except Exception as e:
-            # Best effort closure - at least log the issue
-            print(f"Warning: Error closing log handler: {e}")
+        except Exception:
+            pass  # Best effort cleanup
 
     # Reset our module-level handlers
     if file_handler is not None:
         try:
             file_handler.close()
-            if hasattr(file_handler, "stream") and file_handler.stream:
-                file_handler.stream.close()
-                file_handler.stream = None
         except Exception:
-            pass  # Best effort cleanup
+            pass
         file_handler = None
 
     if m1f_console_handler is not None:
         try:
             m1f_console_handler.close()
         except Exception:
-            pass  # Best effort cleanup
+            pass
         m1f_console_handler = None
 
     # --- Configure based on quiet flag ---
@@ -1433,9 +1412,6 @@ def _configure_logging_settings(
                 logger_instance.removeHandler(handler)
                 try:
                     handler.close()
-                    if hasattr(handler, "stream") and handler.stream:
-                        handler.stream.close()
-                        handler.stream = None
                 except Exception:
                     pass  # Already tried our best
 
@@ -1697,51 +1673,37 @@ def _process_paths_from_input_file(
     Returns:
         List of deduplicated paths with proper parent-child handling
     """
-    logger.debug(
-        f"_process_paths_from_input_file called with input_file_path={input_file_path}, source_dir={source_dir}"
-    )
+    if verbose := getattr(args, 'verbose', False) if 'args' in locals() else False:
+        logger.debug(f"Processing paths from input file: {input_file_path}")
+    
     paths = []
     # If source_dir is provided, use it as the base directory for relative paths
     # Otherwise, use the directory of the input file
     base_dir = source_dir if source_dir else input_file_path.parent
-    logger.debug(f"DEBUG: Using base_dir={base_dir}")
 
     try:
-        logger.debug(
-            f"DEBUG: Attempting to open and read input file at {input_file_path}"
-        )
         # Check if file exists
         if not input_file_path.exists():
-            logger.error(f"DEBUG: ERROR - Input file does not exist: {input_file_path}")
+            logger.error(f"Input file does not exist: {input_file_path}")
             return []
 
         with open(input_file_path, "r", encoding="utf-8") as f:
-            logger.debug(f"DEBUG: Successfully opened input file")
             lines = f.readlines()
-            logger.debug(f"DEBUG: Read {len(lines)} lines from file")
 
             for line in lines:
                 line = line.strip()
                 if not line or line.startswith("#"):
-                    logger.debug(f"DEBUG: Skipping empty line or comment: '{line}'")
                     continue  # Skip empty lines and comments
 
-                logger.debug(f"DEBUG: Processing path from input file: '{line}'")
-
                 if any(ch in line for ch in GLOB_WILDCARD_CHARS):
-                    logger.debug(f"DEBUG: Detected glob pattern in '{line}'")
                     pattern_path = Path(line)
                     if not pattern_path.is_absolute():
                         pattern_path = base_dir / pattern_path
                     pattern_path = pattern_path.expanduser()
-                    logger.debug(f"DEBUG: Expanded glob pattern path: {pattern_path}")
                     try:
                         matches = glob.glob(str(pattern_path), recursive=True)
-                        logger.debug(
-                            f"DEBUG: Glob pattern matched {len(matches)} files"
-                        )
                     except Exception as e:
-                        logger.debug(f"DEBUG: Error in glob.glob: {e}")
+                        logger.warning(f"Error in glob pattern '{line}': {e}")
                         matches = []
 
                     if not matches:
@@ -1749,38 +1711,21 @@ def _process_paths_from_input_file(
                     for match in matches:
                         matched_path = Path(match).resolve()
                         paths.append(matched_path)
-                        logger.debug(f"DEBUG: Expanded '{line}' -> '{matched_path}'")
                     continue
 
-                logger.debug(f"DEBUG: Processing as regular path: '{line}'")
                 path_obj = Path(line)
                 if not path_obj.is_absolute():
                     path_obj = (base_dir / path_obj).resolve()
-                    logger.debug(f"DEBUG: Resolved relative path to: {path_obj}")
                 else:
                     path_obj = path_obj.expanduser().resolve()
-                    logger.debug(f"DEBUG: Resolved absolute path to: {path_obj}")
 
-                logger.debug(
-                    f"DEBUG: Final resolved path: {path_obj}, exists: {path_obj.exists()}"
-                )
                 paths.append(path_obj)
 
         # Deduplicate paths (keep parents, remove children)
-        logger.debug(f"DEBUG: Before deduplication: {len(paths)} paths")
         deduped_paths = _deduplicate_paths(paths)
-        logger.debug(f"DEBUG: After deduplication: {len(deduped_paths)} paths")
         logger.info(f"After deduplication: {len(deduped_paths)} paths")
-        for path in deduped_paths:
-            logger.debug(
-                f"DEBUG: Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}"
-            )
-            logger.debug(
-                f"Path: {path}, is_dir: {path.is_dir()}, is_file: {path.is_file()}"
-            )
         return deduped_paths
     except Exception as e:
-        logger.error(f"DEBUG: Error in _process_paths_from_input_file: {e}")
         logger.error(f"Error processing input file: {e}")
         return []
 
@@ -2271,26 +2216,8 @@ def _gather_files_to_process(
                 f"  Excluded directory names (case-insensitive): {sorted(list(excluded_dir_names_lower))}"
             )
 
-        # Inject placeholder directories for tests when default excludes are disabled
-        if getattr(args, "no_default_excludes", False):
-            _placeholder_dirs = ["node_modules", ".git"]
-            excludes_lower = {e.lower() for e in getattr(args, "excludes", [])}
-            for _pd in _placeholder_dirs:
-                if _pd.lower() in excludes_lower:
-                    continue  # Respect explicit user excludes
-                _pd_path = source_dir / _pd
-                try:
-                    if not _pd_path.exists():
-                        _pd_path.mkdir(parents=True, exist_ok=True)
-                    _ph_file = _pd_path / "placeholder.txt"
-                    if not _ph_file.exists():
-                        _ph_file.write_text(
-                            f"Placeholder created by m1f in {_pd} for testing purposes.\n",
-                            encoding="utf-8",
-                        )
-                except Exception:
-                    # Non-critical – continue without placeholders if we cannot create them
-                    pass
+        # NOTE: Removed placeholder directory injection code as it was inappropriate
+        # for a production tool to modify the user's filesystem by creating directories
 
         for root, dirs, files in os.walk(
             source_dir,
@@ -2474,13 +2401,7 @@ def _write_file_paths_list(
         # Get the sorted unique relative paths
         # files_to_process is List[Tuple[Path, str]] where str is rel_path
         current_rel_paths = [rel_path for _, rel_path in files_to_process]
-        logger.debug(
-            f"DEBUG: _write_file_paths_list: current_rel_paths before set and sort: {current_rel_paths}"
-        )
         sorted_paths = sorted(list(set(current_rel_paths)))
-        logger.debug(
-            f"DEBUG: _write_file_paths_list: sorted_paths to write: {sorted_paths}"
-        )
 
         with open(
             file_list_path, "w", encoding="utf-8"
@@ -2603,6 +2524,13 @@ def _write_combined_data(
     )
 
     if target_encoding:
+        # Validate target encoding
+        try:
+            "test".encode(target_encoding)
+        except (LookupError, ValueError) as e:
+            logger.error(f"Invalid target encoding '{target_encoding}': {e}")
+            sys.exit(1)
+            
         logger.info(
             f"Character encoding conversion enabled. Target encoding: {target_encoding}"
         )
@@ -2710,9 +2638,6 @@ def _write_combined_data(
 
         # Now process the final combined list (special files first, then regular files)
         final_files_to_process = special_files + files_to_process
-        logger.debug(
-            f"DEBUG: _write_combined_data: About to process {len(final_files_to_process)} files. Output to: {output_file_path}"
-        )
 
         # Ensure output file path exists before opening for write
         output_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2748,9 +2673,6 @@ def _write_combined_data(
             for file_counter, (file_info, rel_path_str) in enumerate(
                 final_files_to_process, 1
             ):
-                logger.debug(
-                    f"DEBUG: _write_combined_data: Processing file {file_counter}/{len(final_files_to_process)}: {file_info} (Rel: {rel_path_str})"
-                )
                 # Skip duplicates to prevent recursion or writing the same physical
                 # file twice.  When the user *includes* symlinks we deduplicate using
                 # the literal on-disk path allowing the same inode to appear multiple
@@ -2793,9 +2715,10 @@ def _write_combined_data(
 
                 processed_files.add(duplicate_key)
                 file_counter += 1
-                logger.debug(
-                    f"Processing file ({file_counter}/{len(final_files_to_process)}): {file_info.name} (Rel: {rel_path_str})"
-                )
+                if args.verbose:
+                    logger.debug(
+                        f"Processing file ({file_counter}/{len(final_files_to_process)}): {file_info.name}"
+                    )
 
                 # Process file encoding if needed
                 file_encoding = None
@@ -2955,7 +2878,7 @@ def _write_combined_data(
                     f"Removed {files_removed} duplicate file(s) based on content checksum"
                 )
 
-        logger.debug(f"DEBUG: _write_combined_data: Finished processing all files.")
+        # Processing completed successfully
         # Handle case where no files were processed (e.g. all were skipped or list was empty)
         if not final_files_to_process:
             logger.info("No files were processed to be written to the output.")
@@ -3475,8 +3398,8 @@ def main():
     # Add the proper args = parser.parse_args() call here
     args = parser.parse_args()
 
-    # Now check if at least one of source-directory or input-file is provided
-    if not args.source_directory and not args.input_file:
+    # Validate that at least one input source is provided
+    if not getattr(args, 'source_directory', None) and not getattr(args, 'input_file', None):
         parser.error(
             "At least one of -s/--source-directory or -i/--input-file is required"
         )
@@ -3853,29 +3776,8 @@ def main():
 
     # Close any file handlers before exiting
     try:
-        # Use our global cleanup function to ensure thorough cleanup
         _cleanup_global_handlers()
-
-        # Double-check root logger
-        root_logger = logging.getLogger()
-        for handler in root_logger.handlers[:]:
-            if isinstance(handler, logging.FileHandler):
-                try:
-                    handler.close()
-                    if hasattr(handler, "stream") and handler.stream:
-                        handler.stream.close()
-                        handler.stream = None
-                except Exception:
-                    pass
-            root_logger.removeHandler(handler)
-
-        # Force final shutdown
         logging.shutdown()
-
-        # Force garbage collection to release any lingering file references
-        import gc
-
-        gc.collect()
     except Exception:
         # Don't let cleanup errors affect the exit code
         pass
