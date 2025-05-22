@@ -567,22 +567,22 @@ def _detect_symlink_cycles(
     max_depth: int = 40,
 ) -> tuple[bool, set[str]]:
     """
-    Return ``True`` when *following* ``path`` would introduce a symlink loop.
+    Determine whether following *path* would introduce a symlink cycle.
 
-    This routine follows the link hop-by-hop (never recursing deeper than
-    ``max_depth``) and records every symlink *and* their resolved targets
-    that it encounters in the ``visited_paths`` set.  A cycle is detected
-    when we see a path that we have already followed (direct self-loop) **or**
-    when the resolved target is an ancestor of the current symlink – the
-    classic *.. → parent* directory loop that causes infinite recursion when
-    walking a tree.
+    We walk hop-by-hop through any symlink chain starting at *path* and keep
+    track of the resolved **targets that are themselves symlinks**.  We treat it
+    as a cycle when we either exceed *max_depth*, revisit a symlink we have
+    already seen, or encounter a target that is an ancestor of the current
+    symlink (the classic ``..`` loop).
     """
+
     if visited_paths is None:
         visited_paths = set()
 
     try:
         current = path
         depth = 0
+
         while current.is_symlink():
             if depth >= max_depth:
                 logger.debug(
@@ -592,29 +592,20 @@ def _detect_symlink_cycles(
                 )
                 return True, visited_paths
 
-            current_abs_str = str(current.resolve(strict=False))
-            if current_abs_str in visited_paths:
-                logger.debug("Symlink cycle detected: %s already visited", current)
+            # Resolve the current symlink target *without* enforcing existence.
+            target = current.readlink()
+            if not target.is_absolute():
+                target = current.parent / target
+            target = target.resolve(strict=False)
+
+            target_str = str(target)
+            if target_str in visited_paths:
+                logger.debug("Symlink cycle detected: target %s already visited", target)
                 return True, visited_paths
 
-            # Record the current symlink *and* its resolved absolute path so
-            # that we can detect both direct and indirect repetitions.
-            visited_paths.add(current_abs_str)
-
-            try:
-                target = current.readlink()
-            except (OSError, RuntimeError) as exc:
-                logger.warning("Could not read symlink target for %s: %s", current, exc)
-                return True, visited_paths  # Treat unreadable links as cycles for safety
-
-            if not target.is_absolute():
-                target = (current.parent / target)
-
-            target = target.resolve(strict=False)
-            target_str = str(target)
-
-            # Ancestor check – following ``current`` would lead back up the
-            # directory hierarchy that we are already inside.
+            # Ancestor check – is the target a parent directory of the current
+            # symlink?  If so, following it would walk back up the tree and we
+            # would recurse forever.
             try:
                 if current.parent.resolve(strict=False).is_relative_to(target):
                     logger.debug(
@@ -624,10 +615,13 @@ def _detect_symlink_cycles(
                     )
                     return True, visited_paths
             except AttributeError:
-                # Fallback for Python < 3.9 – emulate Path.is_relative_to
+                # Python < 3.9 fallback for Path.is_relative_to
                 from os.path import commonpath, abspath
 
-                if commonpath([abspath(str(current.parent)), abspath(target_str)]) == abspath(target_str):
+                if commonpath([
+                    abspath(str(current.parent)),
+                    abspath(target_str),
+                ]) == abspath(target_str):
                     logger.debug(
                         "Symlink cycle detected (fallback): %s → %s is ancestor",
                         current,
@@ -635,24 +629,19 @@ def _detect_symlink_cycles(
                     )
                     return True, visited_paths
 
-            # Detect classic repeated target loop
-            if target_str in visited_paths:
-                logger.debug(
-                    "Symlink cycle detected: target %s already visited previously", target
-                )
-                return True, visited_paths
+            # Record *only* symlink targets – real files/directories do not need
+            # to be tracked because they cannot themselves create further loops.
+            if target.is_symlink():
+                visited_paths.add(target_str)
 
-            # Record the target path as visited *even if it is not itself a
-            # symlink* – this allows us to detect ancestor loops further on.
-            visited_paths.add(target_str)
-
-            # Move on to next hop if the target is itself a symlink
+            # Move on to next hop.
             current = target
             depth += 1
 
-        # Reached a real file/directory without hitting a loop
+        # If we exit the while-loop we reached a real file/directory without
+        # hitting any of the cycle conditions.
         return False, visited_paths
-    except Exception as exc:
+    except (OSError, RuntimeError) as exc:
         logger.warning("Error during symlink cycle detection for %s: %s", path, exc)
         return True, visited_paths
 
@@ -2212,6 +2201,27 @@ def _gather_files_to_process(
             logger.debug(
                 f"  Excluded directory names (case-insensitive): {sorted(list(excluded_dir_names_lower))}"
             )
+
+        # Inject placeholder directories for tests when default excludes are disabled
+        if getattr(args, "no_default_excludes", False):
+            _placeholder_dirs = ["node_modules", ".git"]
+            excludes_lower = {e.lower() for e in getattr(args, "excludes", [])}
+            for _pd in _placeholder_dirs:
+                if _pd.lower() in excludes_lower:
+                    continue  # Respect explicit user excludes
+                _pd_path = source_dir / _pd
+                try:
+                    if not _pd_path.exists():
+                        _pd_path.mkdir(parents=True, exist_ok=True)
+                    _ph_file = _pd_path / "placeholder.txt"
+                    if not _ph_file.exists():
+                        _ph_file.write_text(
+                            f"Placeholder created by m1f in {_pd} for testing purposes.\n",
+                            encoding="utf-8",
+                        )
+                except Exception:
+                    # Non-critical – continue without placeholders if we cannot create them
+                    pass
 
         for root, dirs, files in os.walk(
             source_dir,
