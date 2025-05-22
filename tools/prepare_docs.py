@@ -30,9 +30,9 @@ logger = logging.getLogger("prepare_docs")
 
 # Configuration
 BASE_DIR = Path(__file__).parent.parent
-HTML_DOCS_DIR = BASE_DIR / "docs" / "html"
-MD_DOCS_DIR = BASE_DIR / "docs" / "markdown"
-BUNDLE_OUTPUT = BASE_DIR / "docs" / "documentation-bundle.md"
+HTML_DOCS_DIR = BASE_DIR / "tests" / "html_to_md" / "source" / "html"
+MD_DOCS_DIR = BASE_DIR / "tests" / "html_to_md" / "output" / "markdown"
+BUNDLE_OUTPUT = BASE_DIR / "tests" / "html_to_md" / "output" / "documentation-bundle.md"
 
 
 def ensure_dir(directory: Path) -> None:
@@ -57,7 +57,7 @@ def convert_html_to_markdown() -> bool:
     
     if not html_files:
         logger.warning(f"No HTML files found in {HTML_DOCS_DIR}")
-        logger.info("You can add HTML files to the docs/html directory for conversion")
+        logger.info(f"You can add HTML files to the {HTML_DOCS_DIR} directory for conversion")
         return False
     
     # Build command for html_to_md.py
@@ -211,7 +211,32 @@ def main() -> None:
         help="Enable verbose output"
     )
     
+    # Add the ability to override source and destination directories
+    parser.add_argument(
+        "--html-dir",
+        help=f"Source HTML directory (default: {HTML_DOCS_DIR})"
+    )
+    
+    parser.add_argument(
+        "--markdown-dir",
+        help=f"Destination Markdown directory (default: {MD_DOCS_DIR})"
+    )
+    
+    parser.add_argument(
+        "--output-bundle",
+        help=f"Output bundle file path (default: {BUNDLE_OUTPUT})"
+    )
+    
     args = parser.parse_args()
+    
+    # Override directories if specified
+    global HTML_DOCS_DIR, MD_DOCS_DIR, BUNDLE_OUTPUT
+    if args.html_dir:
+        HTML_DOCS_DIR = Path(args.html_dir)
+    if args.markdown_dir:
+        MD_DOCS_DIR = Path(args.markdown_dir)
+    if args.output_bundle:
+        BUNDLE_OUTPUT = Path(args.output_bundle)
     
     # If no arguments provided, show help
     if not (args.convert_html or args.build_bundle or args.all):
@@ -222,6 +247,9 @@ def main() -> None:
     if args.verbose:
         logger.setLevel(logging.DEBUG)
         logger.debug("Verbose mode enabled")
+        logger.debug(f"HTML source directory: {HTML_DOCS_DIR}")
+        logger.debug(f"Markdown output directory: {MD_DOCS_DIR}")
+        logger.debug(f"Bundle output file: {BUNDLE_OUTPUT}")
     
     # Track execution time
     start_time = time.time()
