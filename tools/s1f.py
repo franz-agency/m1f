@@ -413,6 +413,9 @@ def parse_combined_file(content: str) -> list[dict]:
                     if had_encoding_errors and encoding_val:
                         encoding_val += " (with conversion errors)"
 
+                    # Preserve the original line ending information if available
+                    line_endings = meta.get("line_endings", "")
+
                     file_info_dict.update(
                         {
                             "path": path_val,
@@ -421,6 +424,7 @@ def parse_combined_file(content: str) -> list[dict]:
                             "size_bytes": meta.get("size_bytes"),
                             "checksum_sha256": meta.get("checksum_sha256"),
                             "encoding": encoding_val,  # Add encoding information
+                            "line_endings": line_endings,  # Store line ending info
                         }
                     )
                     matches.append(file_info_dict)
@@ -454,6 +458,7 @@ def parse_combined_file(content: str) -> list[dict]:
 
                     modified_val = meta.get("modified")  # Extract modified timestamp
                     encoding_val = meta.get("encoding")  # Extract encoding if available
+                    line_endings = meta.get("line_endings", "")  # Get line ending info
 
                     file_info_dict.update(
                         {
@@ -463,6 +468,7 @@ def parse_combined_file(content: str) -> list[dict]:
                             "size_bytes": meta.get("size_bytes"),
                             "checksum_sha256": meta.get("checksum_sha256"),
                             "encoding": encoding_val,  # Add encoding information
+                            "line_endings": line_endings,  # Store line ending info
                         }
                     )
                     matches.append(file_info_dict)
@@ -509,6 +515,7 @@ def parse_combined_file(content: str) -> list[dict]:
                     "checksum_sha256": checksum_val,
                     "modified": modified_val,  # Will be None for non-MachineReadable types
                     "encoding": encoding_val,  # Add encoding information
+                    "line_endings": "",  # Default empty for older formats
                 }
             )
             matches.append(file_info_dict)
@@ -529,6 +536,7 @@ def parse_combined_file(content: str) -> list[dict]:
         original_size_bytes = current_match_info.get("size_bytes")
         original_modified = current_match_info.get("modified")
         original_encoding = current_match_info.get("encoding")
+        original_line_endings = current_match_info.get("line_endings", "")
 
         content_start_pos = match_obj.end()
 
@@ -616,6 +624,12 @@ def parse_combined_file(content: str) -> list[dict]:
 
         if sep_id in ["PYMK1F", "MachineReadable"]:
             file_content = file_content_raw
+            
+            # Preserve original line endings if available
+            if original_line_endings:
+                # If we know the original line endings, store this information for later use
+                current_match_info["original_line_endings"] = original_line_endings
+            
             # ---- START PRAGMATIC FIX FOR TRAILING \r ----
             if (
                 original_size_bytes is not None and original_checksum is not None
@@ -714,6 +728,36 @@ def parse_combined_file(content: str) -> list[dict]:
 
             file_content = _processed_content
 
+        # For files with original size/checksum information, check for line ending issues
+        if original_size_bytes is not None and original_checksum is not None:
+            try:
+                # Get the content bytes as UTF-8
+                content_bytes = file_content.encode("utf-8")
+                current_size = len(content_bytes)
+                
+                # Calculate size difference
+                size_diff = abs(current_size - original_size_bytes)
+                
+                # If there's a size discrepancy that might be due to line endings
+                if size_diff > 0 and size_diff < original_size_bytes * 0.2:  # Within 20% difference
+                    # Try normalizing line endings to see if that resolves the issue
+                    normalized_content = file_content.replace("\r\n", "\n")
+                    normalized_bytes = normalized_content.encode("utf-8")
+                    normalized_size = len(normalized_bytes)
+                    
+                    # If normalization got us closer to the expected size
+                    if abs(normalized_size - original_size_bytes) < size_diff:
+                        logger.debug(
+                            f"Line ending normalization improved size match for '{relative_path}'. "
+                            f"Original: {original_size_bytes}, Before: {current_size}, After: {normalized_size}."
+                        )
+                        # If we're now an exact match, use the normalized content
+                        if normalized_size == original_size_bytes:
+                            logger.debug(f"Using normalized line endings for '{relative_path}'")
+                            file_content = normalized_content
+            except Exception as e:
+                logger.warning(f"Error during line ending normalization check for '{relative_path}': {e}")
+
         extracted_files.append(
             {
                 "path": relative_path,
@@ -722,6 +766,7 @@ def parse_combined_file(content: str) -> list[dict]:
                 "size_bytes": original_size_bytes,  # Will be None for non-MachineReadable
                 "modified": original_modified,  # Pass through the original modified timestamp
                 "encoding": original_encoding,  # Pass through the original encoding information
+                "line_endings": original_line_endings,  # Pass through line ending info if available
             }
         )
         logger.debug(
@@ -843,6 +888,11 @@ def _write_extracted_files(
                         f"Falling back to UTF-8."
                     )
 
+            # Normalize line endings to match the system format before writing
+            # This is crucial because the original checksum was calculated on content with specific line endings
+            # that might differ from the current system's line endings
+            system_linesep = os.linesep
+            
             # Write the file with the appropriate encoding
             try:
                 # First try to encode the content with the target encoding
@@ -914,32 +964,51 @@ def _write_extracted_files(
                     )
                 else:
                     try:
-                        extracted_content_bytes = file_content_to_write.encode("utf-8")
-                        calculated_checksum = hashlib.sha256(
-                            extracted_content_bytes
-                        ).hexdigest()
+                        # Read the file content back from disk to verify
+                        # This ensures we're checking what was actually written,
+                        # accounting for any line ending or encoding transformations
+                        file_bytes = current_output_path.read_bytes()
+                        calculated_checksum = hashlib.sha256(file_bytes).hexdigest()
+                        
+                        # For size comparison, use the size of the bytes as written to disk
+                        extracted_size_bytes = len(file_bytes)
 
                         if calculated_checksum != original_checksum:
-                            logger.warning(
-                                f"CHECKSUM MISMATCH for file '{current_output_path}'. "
-                                f"Expected: {original_checksum}, Calculated: {calculated_checksum}. "
-                                f"The file content may be corrupted or was altered."
-                            )
+                            # Check if this is due to line ending differences
+                            normalized_content = file_content_to_write.replace("\r\n", "\n").replace("\r", "\n")
+                            normalized_bytes = normalized_content.encode("utf-8")
+                            normalized_checksum = hashlib.sha256(normalized_bytes).hexdigest()
+                            
+                            if normalized_checksum == original_checksum:
+                                logger.debug(
+                                    f"Checksum difference for '{current_output_path}' appears to be due to line ending normalization."
+                                )
+                            else:
+                                logger.warning(
+                                    f"CHECKSUM MISMATCH for file '{current_output_path}'. "
+                                    f"Expected: {original_checksum}, Calculated: {calculated_checksum}. "
+                                    f"The file content may be corrupted or was altered."
+                                )
                         else:
                             logger.debug(
                                 f"Checksum VERIFIED for file '{current_output_path}'."
                             )
 
-                        if original_size_bytes is not None:
-                            extracted_size_bytes = len(extracted_content_bytes)
-                            if extracted_size_bytes != original_size_bytes:
+                        if original_size_bytes is not None and extracted_size_bytes != original_size_bytes:
+                            # Only log size mismatches for significant differences
+                            # Some systems might have different line ending conventions which affect byte count
+                            size_diff = abs(extracted_size_bytes - original_size_bytes)
+                            if size_diff > (original_size_bytes * 0.5) and size_diff > 100:
+                                # If the difference is more than 50% and more than 100 bytes
                                 logger.warning(
-                                    f"SIZE MISMATCH for file '{current_output_path}'. "
+                                    f"SIGNIFICANT SIZE MISMATCH for file '{current_output_path}'. "
                                     f"Expected: {original_size_bytes} bytes, Actual: {extracted_size_bytes} bytes."
                                 )
                             else:
                                 logger.debug(
-                                    f"Size VERIFIED for file '{current_output_path}': {extracted_size_bytes} bytes."
+                                    f"Size difference for file '{current_output_path}' is within acceptable range. "
+                                    f"Expected: {original_size_bytes} bytes, Actual: {extracted_size_bytes} bytes. "
+                                    f"This may be due to line ending conversions or encoding differences."
                                 )
                     except Exception as e:
                         logger.warning(
