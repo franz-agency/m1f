@@ -38,39 +38,39 @@ async def async_main() -> int:
         # Parse command line arguments
         parser = create_parser()
         args = parse_args(parser)
-        
+
         # Create configuration from arguments
         config = Config.from_args(args)
-        
+
         # Setup logging
         logger_manager = setup_logging(config)
         logger = get_logger(__name__)
-        
+
         try:
             # Create and run the file combiner
             combiner = FileCombiner(config, logger_manager)
             result = await combiner.run()
-            
+
             # Log execution summary
             logger.info(f"Total execution time: {result.execution_time}")
             logger.info(f"Processed {result.files_processed} files")
-            
+
             return 0
-            
+
         finally:
             # Ensure proper cleanup
             await logger_manager.cleanup()
-            
+
     except KeyboardInterrupt:
         print("\nOperation cancelled by user.", file=sys.stderr)
         return 130  # Standard exit code for Ctrl+C
-        
+
     except M1FError as e:
         # Our custom exceptions
         logger = get_logger(__name__)
         logger.error(f"{e.__class__.__name__}: {e}")
         return e.exit_code
-        
+
     except Exception as e:
         # Unexpected errors
         logger = get_logger(__name__)
@@ -85,4 +85,4 @@ def main() -> NoReturn:
 
 
 if __name__ == "__main__":
-    main() 
+    main()

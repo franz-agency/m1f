@@ -12,4 +12,4 @@ __project__ = "https://m1f.dev"
 from .exceptions import S1FError
 from .cli import main
 
-__all__ = ["S1FError", "main", "__version__", "__author__", "__project__"] 
+__all__ = ["S1FError", "main", "__version__", "__author__", "__project__"]

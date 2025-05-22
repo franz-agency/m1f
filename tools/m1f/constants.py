@@ -45,4 +45,4 @@ READ_BUFFER_SIZE: int = 8192
 MACHINE_READABLE_BOUNDARY_PREFIX: str = "PYMK1F"
 
 # Token encoding name for tiktoken
-TOKEN_ENCODING_NAME: str = "cl100k_base" 
+TOKEN_ENCODING_NAME: str = "cl100k_base"

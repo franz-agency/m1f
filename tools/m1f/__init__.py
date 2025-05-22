@@ -8,4 +8,4 @@ __version__ = "3.0.0"
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
 
-__all__ = ["__version__", "__author__", "__project__"] 
+__all__ = ["__version__", "__author__", "__project__"]

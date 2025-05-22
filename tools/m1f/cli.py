@@ -9,6 +9,7 @@ from typing import Optional, NoReturn
 # Try to import colorama for colored help
 try:
     from colorama import Fore, Style, init
+
     init(autoreset=True)
     COLORAMA_AVAILABLE = True
 except ImportError:
@@ -17,41 +18,41 @@ except ImportError:
 
 class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom help formatter with colors if available."""
-    
+
     def _format_action_invocation(self, action: argparse.Action) -> str:
         """Format action with colors."""
         parts = super()._format_action_invocation(action)
-        
+
         if COLORAMA_AVAILABLE:
             # Color the option names
-            parts = parts.replace('-', f'{Fore.CYAN}-')
+            parts = parts.replace("-", f"{Fore.CYAN}-")
             parts = f"{parts}{Style.RESET_ALL}"
-        
+
         return parts
-    
+
     def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
         """Format usage line with colors."""
         result = super()._format_usage(usage, actions, groups, prefix)
-        
+
         if COLORAMA_AVAILABLE and result:
             # Highlight the program name
             prog_name = self._prog
             colored_prog = f"{Fore.GREEN}{prog_name}{Style.RESET_ALL}"
             result = result.replace(prog_name, colored_prog, 1)
-        
+
         return result
 
 
 class CustomArgumentParser(argparse.ArgumentParser):
     """Custom argument parser with better error messages."""
-    
+
     def error(self, message: str) -> NoReturn:
         """Display error message with colors if available."""
         error_msg = f"ERROR: {message}"
-        
+
         if COLORAMA_AVAILABLE:
             error_msg = f"{Fore.RED}ERROR: {message}{Style.RESET_ALL}"
-        
+
         self.print_usage(sys.stderr)
         print(f"\n{error_msg}", file=sys.stderr)
         print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
@@ -60,7 +61,7 @@ class CustomArgumentParser(argparse.ArgumentParser):
 
 def create_parser() -> CustomArgumentParser:
     """Create and configure the argument parser."""
-    
+
     description = """m1f - Make One File
 ====================
 
@@ -82,229 +83,242 @@ Perfect for:
   %(prog)s -s ./src -o code.txt --security-check warn --quiet"""
 
     parser = CustomArgumentParser(
-        prog='m1f',
+        prog="m1f",
         description=description,
         epilog=epilog,
         formatter_class=ColoredHelpFormatter,
-        add_help=True
+        add_help=True,
     )
-    
+
     # Add version argument
     parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s 3.0.0',
-        help='Show program version and exit'
+        "--version",
+        action="version",
+        version="%(prog)s 3.0.0",
+        help="Show program version and exit",
     )
-    
+
     # Input/Output group
-    io_group = parser.add_argument_group('Input/Output Options')
-    
+    io_group = parser.add_argument_group("Input/Output Options")
+
     io_group.add_argument(
-        '-s', '--source-directory',
+        "-s",
+        "--source-directory",
         type=str,
-        metavar='DIR',
-        help='Path to the directory containing files to combine'
+        metavar="DIR",
+        help="Path to the directory containing files to combine",
     )
-    
+
     io_group.add_argument(
-        '-i', '--input-file',
+        "-i",
+        "--input-file",
         type=str,
-        metavar='FILE',
-        help='Path to a text file containing a list of files/directories to process'
+        metavar="FILE",
+        help="Path to a text file containing a list of files/directories to process",
     )
-    
+
     io_group.add_argument(
-        '-o', '--output-file',
+        "-o",
+        "--output-file",
         type=str,
         required=True,
-        metavar='FILE',
-        help='Path where the combined output file will be created'
+        metavar="FILE",
+        help="Path where the combined output file will be created",
     )
-    
+
     io_group.add_argument(
-        '--input-include-files',
+        "--input-include-files",
         type=str,
-        nargs='*',
-        metavar='FILE',
-        help='Files to include at the beginning of the output (first file is treated as intro)'
+        nargs="*",
+        metavar="FILE",
+        help="Files to include at the beginning of the output (first file is treated as intro)",
     )
-    
+
     # Output formatting group
-    format_group = parser.add_argument_group('Output Formatting')
-    
+    format_group = parser.add_argument_group("Output Formatting")
+
     format_group.add_argument(
-        '--separator-style',
-        choices=['Standard', 'Detailed', 'Markdown', 'MachineReadable', 'None'],
-        default='Detailed',
-        help='Format of the separator between files (default: Detailed)'
+        "--separator-style",
+        choices=["Standard", "Detailed", "Markdown", "MachineReadable", "None"],
+        default="Detailed",
+        help="Format of the separator between files (default: Detailed)",
     )
-    
+
     format_group.add_argument(
-        '--line-ending',
-        choices=['lf', 'crlf'],
-        default='lf',
-        help='Line ending style for generated content (default: lf)'
+        "--line-ending",
+        choices=["lf", "crlf"],
+        default="lf",
+        help="Line ending style for generated content (default: lf)",
     )
-    
+
     format_group.add_argument(
-        '-t', '--add-timestamp',
-        action='store_true',
-        help='Add timestamp to output filename'
+        "-t",
+        "--add-timestamp",
+        action="store_true",
+        help="Add timestamp to output filename",
     )
-    
+
     format_group.add_argument(
-        '--filename-mtime-hash',
-        action='store_true',
-        help='Add hash of file modification times to output filename'
+        "--filename-mtime-hash",
+        action="store_true",
+        help="Add hash of file modification times to output filename",
     )
-    
+
     # File filtering group
-    filter_group = parser.add_argument_group('File Filtering')
-    
+    filter_group = parser.add_argument_group("File Filtering")
+
     filter_group.add_argument(
-        '--excludes',
+        "--excludes",
         type=str,
-        nargs='*',
+        nargs="*",
         default=[],
-        metavar='PATTERN',
-        help='Paths, directories, or patterns to exclude'
+        metavar="PATTERN",
+        help="Paths, directories, or patterns to exclude",
     )
-    
+
     filter_group.add_argument(
-        '--exclude-paths-file',
+        "--exclude-paths-file",
         type=str,
-        metavar='FILE',
-        help='File containing paths to exclude (supports gitignore format)'
+        metavar="FILE",
+        help="File containing paths to exclude (supports gitignore format)",
     )
-    
+
     filter_group.add_argument(
-        '--include-extensions',
+        "--include-extensions",
         type=str,
-        nargs='*',
-        metavar='EXT',
-        help='Only include files with these extensions'
+        nargs="*",
+        metavar="EXT",
+        help="Only include files with these extensions",
     )
-    
+
     filter_group.add_argument(
-        '--exclude-extensions',
+        "--exclude-extensions",
         type=str,
-        nargs='*',
-        metavar='EXT',
-        help='Exclude files with these extensions'
+        nargs="*",
+        metavar="EXT",
+        help="Exclude files with these extensions",
     )
-    
+
     filter_group.add_argument(
-        '--include-dot-paths',
-        action='store_true',
-        help='Include files and directories starting with a dot'
+        "--include-dot-paths",
+        action="store_true",
+        help="Include files and directories starting with a dot",
     )
-    
+
     filter_group.add_argument(
-        '--include-binary-files',
-        action='store_true',
-        help='Attempt to include binary files (use with caution)'
+        "--include-binary-files",
+        action="store_true",
+        help="Attempt to include binary files (use with caution)",
     )
-    
+
     filter_group.add_argument(
-        '--include-symlinks',
-        action='store_true',
-        help='Follow symbolic links (careful of cycles!)'
+        "--include-symlinks",
+        action="store_true",
+        help="Follow symbolic links (careful of cycles!)",
     )
-    
+
     filter_group.add_argument(
-        '--no-default-excludes',
-        action='store_true',
-        help='Disable default exclusions (node_modules, .git, etc.)'
+        "--no-default-excludes",
+        action="store_true",
+        help="Disable default exclusions (node_modules, .git, etc.)",
     )
-    
+
     # Encoding group
-    encoding_group = parser.add_argument_group('Character Encoding')
-    
+    encoding_group = parser.add_argument_group("Character Encoding")
+
     encoding_group.add_argument(
-        '--convert-to-charset',
+        "--convert-to-charset",
         type=str,
-        choices=['utf-8', 'utf-16', 'utf-16-le', 'utf-16-be', 'ascii', 'latin-1', 'cp1252'],
-        help='Convert all files to specified encoding'
+        choices=[
+            "utf-8",
+            "utf-16",
+            "utf-16-le",
+            "utf-16-be",
+            "ascii",
+            "latin-1",
+            "cp1252",
+        ],
+        help="Convert all files to specified encoding",
     )
-    
+
     encoding_group.add_argument(
-        '--abort-on-encoding-error',
-        action='store_true',
-        help='Abort if encoding conversion fails'
+        "--abort-on-encoding-error",
+        action="store_true",
+        help="Abort if encoding conversion fails",
     )
-    
+
     # Security group
-    security_group = parser.add_argument_group('Security Options')
-    
+    security_group = parser.add_argument_group("Security Options")
+
     security_group.add_argument(
-        '--security-check',
-        choices=['abort', 'skip', 'warn'],
-        help='Check for sensitive information in files'
+        "--security-check",
+        choices=["abort", "skip", "warn"],
+        help="Check for sensitive information in files",
     )
-    
+
     # Archive group
-    archive_group = parser.add_argument_group('Archive Options')
-    
+    archive_group = parser.add_argument_group("Archive Options")
+
     archive_group.add_argument(
-        '--create-archive',
-        action='store_true',
-        help='Create backup archive of processed files'
+        "--create-archive",
+        action="store_true",
+        help="Create backup archive of processed files",
     )
-    
+
     archive_group.add_argument(
-        '--archive-type',
-        choices=['zip', 'tar.gz'],
-        default='zip',
-        help='Type of archive to create (default: zip)'
+        "--archive-type",
+        choices=["zip", "tar.gz"],
+        default="zip",
+        help="Type of archive to create (default: zip)",
     )
-    
+
     # Output control group
-    control_group = parser.add_argument_group('Output Control')
-    
+    control_group = parser.add_argument_group("Output Control")
+
     control_group.add_argument(
-        '-f', '--force',
-        action='store_true',
-        help='Force overwrite of existing output file'
+        "-f",
+        "--force",
+        action="store_true",
+        help="Force overwrite of existing output file",
     )
-    
+
     control_group.add_argument(
-        '--minimal-output',
-        action='store_true',
-        help='Only create the combined file (no auxiliary files)'
+        "--minimal-output",
+        action="store_true",
+        help="Only create the combined file (no auxiliary files)",
     )
-    
+
     control_group.add_argument(
-        '--skip-output-file',
-        action='store_true',
-        help='Skip creating the main output file'
+        "--skip-output-file",
+        action="store_true",
+        help="Skip creating the main output file",
     )
-    
+
     control_group.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='Enable verbose output'
+        "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
-    
+
     control_group.add_argument(
-        '-q', '--quiet',
-        action='store_true',
-        help='Suppress all console output'
+        "-q", "--quiet", action="store_true", help="Suppress all console output"
     )
-    
+
     return parser
 
 
-def parse_args(parser: argparse.ArgumentParser, args: Optional[list[str]] = None) -> argparse.Namespace:
+def parse_args(
+    parser: argparse.ArgumentParser, args: Optional[list[str]] = None
+) -> argparse.Namespace:
     """Parse command-line arguments."""
     parsed_args = parser.parse_args(args)
-    
+
     # Validate that at least one input source is provided
     if not parsed_args.source_directory and not parsed_args.input_file:
-        parser.error("At least one of -s/--source-directory or -i/--input-file is required")
-    
+        parser.error(
+            "At least one of -s/--source-directory or -i/--input-file is required"
+        )
+
     # Validate conflicting options
     if parsed_args.quiet and parsed_args.verbose:
         parser.error("Cannot use --quiet and --verbose together")
-    
-    return parsed_args 
+
+    return parsed_args
