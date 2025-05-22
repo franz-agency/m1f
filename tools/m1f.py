@@ -2614,9 +2614,23 @@ def _write_combined_data(
 
             for file_counter, (file_info, rel_path_str) in enumerate(final_files_to_process, 1):
                 logger.debug(f"DEBUG: _write_combined_data: Processing file {file_counter}/{len(final_files_to_process)}: {file_info} (Rel: {rel_path_str})")
-                # Skip if we\'ve already processed this file (avoid duplicates/recursion)
-                file_path_str = str(file_info.resolve())
-                if file_path_str in processed_files:
+                # Skip duplicates to prevent infinite recursion. When symlinks are *not* being
+                # followed we deduplicate using the *resolved* (canonical) path – this avoids
+                # writing the same physical file twice when, for example, a directory tree is
+                # scanned multiple times.
+                #
+                # When the user has explicitly requested that symlinks are included (via
+                # `--include-symlinks`) we purposely treat **each symlinked path as a unique
+                # entry** so that the output mirrors the on-disk structure.  In this mode we
+                # therefore deduplicate only on the literal path string, allowing the same
+                # underlying file to appear more than once if it is referenced through
+                # different symlinked locations (this behaviour is required by the test-suite).
+                if getattr(args, "include_symlinks", False) and file_info.is_symlink():
+                    duplicate_key = str(file_info)
+                else:
+                    duplicate_key = str(file_info.resolve())
+
+                if duplicate_key in processed_files:
                     logger.debug(f"Skipping already processed file: {file_info}")
                     continue
 
@@ -2627,7 +2641,7 @@ def _write_combined_data(
                     )
                     continue
 
-                processed_files.add(file_path_str)
+                processed_files.add(duplicate_key)
                 file_counter += 1
                 logger.debug(
                     f"Processing file ({file_counter}/{len(final_files_to_process)}): {file_info.name} (Rel: {rel_path_str})"
