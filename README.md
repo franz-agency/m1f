@@ -13,6 +13,24 @@ m1f provides utilities for efficiently working with LLMs by managing context. Th
 
 These tools solve the challenge of providing comprehensive context to AI assistants while optimizing token usage.
 
+## Features
+
+### Content Deduplication
+
+m1f automatically detects files with identical content and only includes them once in the output. If the same file content appears in multiple locations (different paths, filenames, or timestamps), only the first encountered version will be included. This:
+
+- Reduces redundancy in the combined output
+- Decreases the token count for LLM processing
+- Improves readability by eliminating duplicate sections
+- Works automatically without requiring any special flags
+
+This feature is especially useful in projects with:
+- Code duplication across different directories
+- Backup copies with identical content
+- Files accessible through symbolic links or alternative paths
+
+The deduplication is based purely on file content (using SHA256 checksums), so even files with different names, paths, or modification times will be deduplicated if their content is identical.
+
 ## Installation
 
 ```bash
