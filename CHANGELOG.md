@@ -5,114 +5,116 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.2.0] - 2025-01-28
+## [3.2.0] - 2025-01-27
 
-### 🚀 New HTML to Markdown Converter Tool
+### Added - HTML to Markdown Converter Tool (html2md)
+Complete overhaul of the HTML to Markdown conversion tool with modern architecture:
 
-This release introduces a completely new, modern HTML to Markdown converter tool designed for processing entire websites and seamless integration with m1f.
+#### 🆕 New Modular Architecture
+- Replaced monolithic `html_to_md.py` with modular package structure
+- Renamed from `html_to_md` to `html2md` to match project naming convention
+- Created separate modules for core functionality, configuration, and utilities
+- Added comprehensive type hints throughout the codebase
 
-#### ✨ Added
-- **New `html_to_md` Package**: Modern, modular tool for HTML to Markdown conversion:
-  - `html_to_md/__init__.py` - Package initialization and version info
-  - `html_to_md/api.py` - High-level Python API for programmatic use
-  - `html_to_md/cli.py` - Modern command-line interface with subcommands
-  - `html_to_md/config/` - Pydantic-based configuration system with YAML/TOML support
-  - `html_to_md/core/` - Core parsing and conversion functionality
-  - `html_to_md/crawlers/` - HTTrack integration for website mirroring
-  - `html_to_md/utils/` - Encoding detection and logging utilities
-  - `html_to_md/__main__.py` - Module execution support
+#### 🚀 HTTrack Integration for Professional Website Mirroring
+- Integrated HTTrack for reliable website crawling and mirroring
+- Configurable crawl depth, page limits, and domain restrictions
+- Bandwidth control with request delays and concurrent connections
+- Robots.txt compliance and professional user-agent handling
+- Fallback to simple crawler for single-page conversions
 
-- **HTTrack Integration**: Professional website mirroring capabilities:
-  - Complete website crawling with HTTrack
-  - Configurable crawl depth and page limits
-  - Domain restrictions and URL filtering
-  - robots.txt compliance
-  - Bandwidth and connection management
+#### 🎯 Advanced Content Extraction
+- CSS selector-based content targeting for precise extraction
+- Configurable element removal and preservation rules
+- Metadata extraction (OpenGraph, Schema.org, meta tags)
+- Support for complex content structures and nested selectors
 
-- **Advanced Content Extraction**:
-  - CSS selectors for precise content targeting
-  - Metadata extraction (OpenGraph, Schema.org, meta tags)
-  - Smart heading hierarchy detection
-  - Configurable element filtering (nav, sidebar, ads)
+#### ⚙️ Modern Configuration System
+- Pydantic-based configuration models with validation
+- Support for YAML, TOML, and JSON configuration files
+- Environment variable integration and config file discovery
+- Type-safe configuration with comprehensive validation
 
-- **Modern Python Features**:
-  - Python 3.10+ with type hints throughout
-  - Pydantic models for configuration validation
-  - Async support for web operations
-  - Rich CLI with progress bars
-  - Structured logging with color support
+#### 🎨 Enhanced CLI Interface
+- Rich console interface with progress bars and status indicators
+- Subcommand structure: `convert`, `crawl`, `config`
+- Comprehensive help and examples
+- Configuration file generation utilities
 
-- **Processing Capabilities**:
-  - Parallel file processing for large directories
-  - Automatic encoding detection and conversion
-  - Link conversion (HTML → Markdown)
-  - Code block language detection
-  - Heading level adjustment
-  - Whitespace normalization
+#### 🔧 Advanced Processing Options
+- Parallel processing for large directories and websites
+- Configurable Markdown formatting (heading styles, list styles)
+- Smart link handling with extension mapping
+- Encoding detection and normalization
+- Content filtering and post-processing pipeline
 
-#### 🔧 Changed
-- **REMOVED OLD TOOL**: Replaced monolithic `html_to_md.py` (992 lines) with modular package structure
-- **IMPROVED ARCHITECTURE**: 
-  - Clean separation of concerns with dedicated modules
-  - Plugin-ready architecture for extensibility
-  - Dependency injection pattern
-  - Configuration-driven design
+#### 📦 m1f Integration
+- Direct m1f bundle creation from converted content
+- Metadata preservation in YAML frontmatter
+- Asset handling and link rewriting for bundles
+- Optimized output for m1f consumption
 
-#### 🎯 Key Features
-- **Multiple Input Sources**: Files, directories, URLs, entire websites
-- **Flexible Configuration**: YAML/TOML config files or programmatic API
-- **m1f Integration**: Direct creation of m1f bundles from converted content
-- **Performance**: Parallel processing with configurable workers
-- **Reliability**: Comprehensive error handling and logging
+#### 🏗️ Developer-Friendly API
+- High-level Python API with `Html2mdConverter` class
+- Convenience functions for common operations
+- Comprehensive error handling and logging
+- Plugin architecture ready for extensions
 
-#### 📦 Dependencies
-- **Required**: beautifulsoup4, markdownify, pydantic, rich, requests, chardet, pyyaml
-- **Optional**: toml (for TOML configs), aiohttp (for async operations)
-- **External**: HTTrack for website mirroring (system package)
+#### 📊 Performance & Reliability
+- Async processing capabilities for web operations
+- Configurable timeouts and retry mechanisms
+- Memory-efficient processing of large websites
+- Detailed logging and debugging support
 
-#### 🚀 Usage Examples
-
-**Command Line:**
-```bash
-# Convert single file
-python -m tools.html_to_md convert index.html -o index.md
-
-# Convert directory
-python -m tools.html_to_md convert ./html/ -o ./markdown/
-
-# Crawl website
-python -m tools.html_to_md crawl https://example.com -o ./docs/
-
-# With config file
-python -m tools.html_to_md convert ./html/ -c config.yaml
+#### 📁 Package Structure
+```
+tools/html2md/
+├── __init__.py          # Package initialization and exports
+├── api.py               # High-level Python API
+├── cli.py               # Command-line interface
+├── config/              # Configuration system
+│   ├── __init__.py
+│   ├── loader.py        # Config file loading
+│   └── models.py        # Pydantic configuration models
+├── core/                # Core conversion logic
+│   ├── __init__.py
+│   ├── extractor.py     # HTML content extraction
+│   ├── parser.py        # HTML parsing
+│   └── processor.py     # Markdown generation
+├── crawlers/            # Web crawling implementations
+│   ├── __init__.py
+│   ├── httrack.py       # HTTrack integration
+│   └── simple.py        # Fallback crawler
+├── utils/               # Utilities and helpers
+│   ├── __init__.py
+│   ├── encoding.py      # Encoding detection
+│   └── logging_utils.py # Logging configuration
+└── examples/            # Usage examples and configs
+    ├── config.yaml      # Example configuration
+    └── convert_website.py # Website conversion example
 ```
 
-**Python API:**
-```python
-from tools.html_to_md import HtmlToMarkdownConverter
+#### 🔄 Migration Guide
+- Old `html_to_md.py` has been completely replaced
+- New tool name: `html2md` (consistent with `m1f`/`s1f` naming)
+- Updated imports: `from tools.html2md import Html2mdConverter`
+- Enhanced configuration options require review of existing configs
+- CLI command structure changed to subcommand format
 
-# Simple conversion
-converter = HtmlToMarkdownConverter({
-    "source": "./html",
-    "destination": "./markdown",
-    "extractor": {
-        "content_selector": "article.content",
-        "ignore_selectors": ["nav", "footer"]
-    }
-})
+### Technical Details
+- **Dependencies**: Added Pydantic, Rich for modern Python features
+- **Type Safety**: Complete type hint coverage for better IDE support
+- **Error Handling**: Comprehensive error handling with rich error messages
+- **Documentation**: Complete rewrite of documentation with examples
+- **Testing**: Foundation laid for comprehensive test suite
 
-# Convert website
-results = converter.convert_website("https://example.com")
-```
+### Breaking Changes
+- `html_to_md.py` script removed (replaced by modular package)
+- CLI interface changed from direct script to module execution
+- Configuration file format updated (backward compatibility may be limited)
+- Python API completely rewritten (old API no longer available)
 
-#### 🏗️ Architecture Overview
-- **Config Layer**: Pydantic models for type-safe configuration
-- **Core Layer**: HTML parsing and Markdown conversion engines
-- **Crawler Layer**: HTTrack wrapper for website mirroring
-- **API Layer**: High-level interface for users
-- **CLI Layer**: Rich command-line interface
-
----
+## [Previous versions...]
 
 ## [3.1.1] - 2025-01-27
 

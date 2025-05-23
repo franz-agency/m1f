@@ -1,6 +1,6 @@
 # HTML to Markdown Converter Guide
 
-The `html_to_md` tool is a modern, modular converter designed to transform HTML content into clean Markdown format. It's particularly powerful for converting entire websites and integrates seamlessly with m1f for creating documentation bundles.
+The `html2md` tool is a modern, modular converter designed to transform HTML content into clean Markdown format. It's particularly powerful for converting entire websites and integrates seamlessly with m1f for creating documentation bundles.
 
 ## Table of Contents
 - [Installation](#installation)
@@ -42,17 +42,17 @@ brew install httrack
 
 ### Convert a Single File
 ```bash
-python -m tools.html_to_md convert index.html -o index.md
+python -m tools.html2md convert index.html -o index.md
 ```
 
 ### Convert a Directory
 ```bash
-python -m tools.html_to_md convert ./html_docs/ -o ./markdown_docs/
+python -m tools.html2md convert ./html_docs/ -o ./markdown_docs/
 ```
 
 ### Convert a Website
 ```bash
-python -m tools.html_to_md crawl https://docs.example.com -o ./docs/
+python -m tools.html2md crawl https://docs.example.com -o ./docs/
 ```
 
 ## Command Line Usage
@@ -61,7 +61,7 @@ The tool provides three main commands:
 
 ### `convert` - Convert Files or Directories
 ```bash
-python -m tools.html_to_md convert [source] -o [output] [options]
+python -m tools.html2md convert [source] -o [output] [options]
 
 Options:
   -c, --config FILE         Configuration file (YAML/TOML)
@@ -74,7 +74,7 @@ Options:
 
 ### `crawl` - Convert Entire Websites
 ```bash
-python -m tools.html_to_md crawl [URL] -o [output] [options]
+python -m tools.html2md crawl [URL] -o [output] [options]
 
 Options:
   --max-depth N            Maximum crawl depth
@@ -83,7 +83,7 @@ Options:
 
 ### `config` - Generate Configuration File
 ```bash
-python -m tools.html_to_md config -o config.yaml [options]
+python -m tools.html2md config -o config.yaml [options]
 
 Options:
   --format FORMAT          Config format (yaml, toml, json)
@@ -182,10 +182,10 @@ log_file: ./conversion.log
 ### Basic Usage
 
 ```python
-from tools.html_to_md import HtmlToMarkdownConverter
+from tools.html2md import Html2mdConverter
 
 # Create converter with configuration
-converter = HtmlToMarkdownConverter({
+converter = Html2mdConverter({
     "source": "./html",
     "destination": "./markdown"
 })
@@ -227,13 +227,13 @@ config = {
     }
 }
 
-converter = HtmlToMarkdownConverter(config)
+converter = Html2mdConverter(config)
 ```
 
 ### Convenience Functions
 
 ```python
-from tools.html_to_md import convert_file, convert_directory, convert_url
+from tools.html2md import convert_file, convert_directory, convert_url
 
 # Simple file conversion
 output = convert_file("page.html", destination="./output")
@@ -351,15 +351,15 @@ crawler:
 EOF
 
 # Run conversion
-python -m tools.html_to_md crawl https://docs.python.org/3/ -c docs-config.yaml
+python -m tools.html2md crawl https://docs.python.org/3/ -c docs-config.yaml
 ```
 
 ### Example 2: Convert Blog with Specific Content
 
 ```python
-from tools.html_to_md import HtmlToMarkdownConverter
+from tools.html2md import Html2mdConverter
 
-converter = HtmlToMarkdownConverter({
+converter = Html2mdConverter({
     "destination": "./blog-markdown",
     "extractor": {
         "content_selector": "article.post",
@@ -383,7 +383,7 @@ results = converter.convert_directory(Path("./blog-html"))
 ### Example 3: Create m1f Bundle from Website
 
 ```bash
-python -m tools.html_to_md crawl https://docs.example.com \
+python -m tools.html2md crawl https://docs.example.com \
   -o ./output \
   --format m1f_bundle \
   --content-selector "main.content" \
@@ -430,7 +430,7 @@ python -m tools.html_to_md crawl https://docs.example.com \
 Enable verbose logging for debugging:
 
 ```bash
-python -m tools.html_to_md convert ./html -o ./md -v --log-file debug.log
+python -m tools.html2md convert ./html -o ./md -v --log-file debug.log
 ```
 
 Or in configuration:
@@ -474,7 +474,7 @@ To create an m1f bundle after conversion:
 
 ```bash
 # Convert website
-python -m tools.html_to_md crawl https://docs.example.com -o ./docs/
+python -m tools.html2md crawl https://docs.example.com -o ./docs/
 
 # Create m1f bundle
 python -m m1f ./docs/ -o documentation.m1f.md
@@ -483,7 +483,7 @@ python -m m1f ./docs/ -o documentation.m1f.md
 Or do it in one step:
 
 ```bash
-python -m tools.html_to_md crawl https://docs.example.com \
+python -m tools.html2md crawl https://docs.example.com \
   -o ./docs/ \
   --format m1f_bundle
 ``` 

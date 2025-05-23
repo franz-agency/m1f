@@ -14,7 +14,7 @@ The core tools are:
   preserving original structure
 - **token_counter**: Estimates token usage for LLM context planning and
   optimization
-- **html_to_md**: Modern HTML to Markdown converter with website crawling
+- **html2md**: Modern HTML to Markdown converter with website crawling
   capabilities using HTTrack
 
 These tools solve the challenge of providing comprehensive context to AI

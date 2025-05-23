@@ -15,7 +15,7 @@ from .utils import configure_logging, get_logger
 logger = get_logger(__name__)
 
 
-class HtmlToMarkdownConverter:
+class Html2mdConverter:
     """Main API class for HTML to Markdown conversion."""
     
     def __init__(self, config: Union[Config, Dict, Path, str, None] = None):
@@ -348,7 +348,7 @@ def convert_file(file_path: Union[str, Path], **kwargs) -> Path:
         destination=kwargs.pop("destination", Path(".")),
         **kwargs
     )
-    converter = HtmlToMarkdownConverter(config)
+    converter = Html2mdConverter(config)
     return converter.convert_file(Path(file_path))
 
 
@@ -372,7 +372,7 @@ def convert_directory(
         destination=Path(destination_dir),
         **kwargs
     )
-    converter = HtmlToMarkdownConverter(config)
+    converter = Html2mdConverter(config)
     return converter.convert_directory()
 
 
@@ -392,5 +392,5 @@ def convert_url(url: str, destination_dir: Union[str, Path] = ".", **kwargs) -> 
         destination=Path(destination_dir),
         **kwargs
     )
-    converter = HtmlToMarkdownConverter(config)
+    converter = Html2mdConverter(config)
     return converter.convert_url(url) 

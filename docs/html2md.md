@@ -1,11 +1,11 @@
-# html_to_md (HTML to Markdown Converter)
+# html2md (HTML to Markdown Converter)
 
 Converts HTML files to Markdown recursively with powerful content selection and
 formatting options.
 
 ## Overview
 
-The html_to_md tool provides a robust solution for converting HTML content to
+The html2md tool provides a robust solution for converting HTML content to
 Markdown format, with fine-grained control over the conversion process. It is
 especially useful for transforming existing HTML documentation, extracting
 specific content from web pages, and preparing content for use with Large
@@ -27,14 +27,14 @@ Language Models.
 
 ```bash
 # Basic conversion of all HTML files in a directory
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs
+python tools/html2md.py --source-dir ./website --destination-dir ./docs
 
 # Extract only main content from HTML files
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --outermost-selector "main.content" --ignore-selectors "nav" ".sidebar" "footer"
 
 # Add YAML frontmatter and adjust heading levels
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --add-frontmatter --heading-offset 1
 ```
 
@@ -69,21 +69,21 @@ python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
 
 ```bash
 # Simple conversion of all HTML files in a directory
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs
+python tools/html2md.py --source-dir ./website --destination-dir ./docs
 
 # Convert files with verbose logging
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs --verbose
+python tools/html2md.py --source-dir ./website --destination-dir ./docs --verbose
 ```
 
 ### Content Selection
 
 ```bash
 # Extract only the main content and ignore navigation elements
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --outermost-selector "main" --ignore-selectors "nav" ".sidebar" "footer"
 
 # Extract article content and remove additional elements
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --outermost-selector "article.content" \
   --ignore-selectors ".author-bio" ".share-buttons" ".related-articles" \
   --remove-elements "script" "style" "iframe" "noscript" "div.comments"
@@ -93,11 +93,11 @@ python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
 
 ```bash
 # Process only specific file types
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --include-extensions .html .xhtml
 
 # Exclude specific directories and patterns
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --exclude-dirs "drafts" "archived" "temp" \
   --exclude-patterns "draft-" "temp-" "_private"
 ```
@@ -106,15 +106,15 @@ python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
 
 ```bash
 # Adjust heading levels (e.g., h1 → h2, h2 → h3)
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --heading-offset 1
 
 # Add YAML frontmatter with custom fields
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --add-frontmatter --frontmatter-fields "layout=post" "category=documentation"
 
 # Preserve class attributes and disable line breaks adjustment
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --strip-classes=False --add-line-breaks=False
 ```
 
@@ -122,11 +122,11 @@ python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
 
 ```bash
 # Use parallel processing for faster conversion of large sites
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --parallel --max-workers 4
 
 # Force overwrite of existing files
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --force
 ```
 
@@ -145,7 +145,7 @@ generate YAML frontmatter for each Markdown file, including:
 Custom frontmatter fields can be added using the `--frontmatter-fields` option:
 
 ```bash
-python tools/html_to_md.py --source-dir ./website --destination-dir ./docs \
+python tools/html2md.py --source-dir ./website --destination-dir ./docs \
   --add-frontmatter --frontmatter-fields "layout=post" "author=John Doe" "category=tutorial"
 ```
 
@@ -208,13 +208,13 @@ The converter provides robust character encoding detection and conversion:
 
 ## Integration with m1f
 
-The html_to_md tool works well with the m1f (Make One File) tool for
+The html2md tool works well with the m1f (Make One File) tool for
 comprehensive documentation handling:
 
 1. First convert HTML files to Markdown:
 
    ```bash
-   python tools/html_to_md.py --source-dir ./html-docs --destination-dir ./markdown-docs
+   python tools/html2md.py --source-dir ./html-docs --destination-dir ./markdown-docs
    ```
 
 2. Then use m1f to combine the Markdown files:

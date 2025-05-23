@@ -36,11 +36,11 @@ class TestIntegration(unittest.TestCase):
 
         # Find the tools directory
         self.tools_dir = Path(__file__).parents[2] / "tools"
-        self.html_to_md_script = self.tools_dir / "html_to_md.py"
+        self.html2md_script = self.tools_dir / "html2md.py"
         self.prepare_docs_script = self.tools_dir / "prepare_docs.py"
 
-        if not self.html_to_md_script.exists():
-            self.skipTest(f"html_to_md.py script not found: {self.html_to_md_script}")
+        if not self.html2md_script.exists():
+            self.skipTest(f"html2md.py script not found: {self.html2md_script}")
 
         if not self.prepare_docs_script.exists():
             self.skipTest(
@@ -52,10 +52,10 @@ class TestIntegration(unittest.TestCase):
         shutil.rmtree(self.test_dir)
 
     def test_direct_conversion(self):
-        """Test direct conversion with html_to_md.py."""
+        """Test direct conversion with html2md.py."""
         cmd = [
             sys.executable,
-            str(self.html_to_md_script),
+            str(self.html2md_script),
             "--source-dir",
             str(self.html_dir),
             "--destination-dir",
@@ -95,7 +95,7 @@ class TestIntegration(unittest.TestCase):
         # Convert the HTML
         cmd = [
             sys.executable,
-            str(self.html_to_md_script),
+            str(self.html2md_script),
             "--source-dir",
             str(self.html_dir),
             "--destination-dir",
@@ -132,7 +132,7 @@ class TestIntegration(unittest.TestCase):
         # Convert the HTML
         cmd = [
             sys.executable,
-            str(self.html_to_md_script),
+            str(self.html2md_script),
             "--source-dir",
             str(self.html_dir),
             "--destination-dir",
