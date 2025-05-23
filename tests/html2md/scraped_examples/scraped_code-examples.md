@@ -1,11 +1,3 @@
-# Scraped from http://localhost:8080/page/code-examples
-
-*Scraped at: 2025-05-23 11:21:49*
-
-*Source URL: http://localhost:8080/page/code-examples*
-
----
-
 
 # Code Examples Test
 
@@ -958,3 +950,12 @@ def print_unicode():
 ```
 
 
+
+
+---
+
+*Scraped from: http://localhost:8080/page/code-examples*
+
+*Scraped at: 2025-05-23 11:55:26*
+
+*Source URL: http://localhost:8080/page/code-examples*

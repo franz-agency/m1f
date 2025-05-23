@@ -231,6 +231,12 @@ Perfect for:
         help="Disable default exclusions (node_modules, .git, etc.)",
     )
 
+    filter_group.add_argument(
+        "--remove-scraped-metadata",
+        action="store_true",
+        help="Remove scraped metadata (URL, timestamp) from HTML2MD files during processing",
+    )
+
     # Encoding group
     encoding_group = parser.add_argument_group("Character Encoding")
 

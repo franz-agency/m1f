@@ -44,6 +44,17 @@ The deduplication is based purely on file content (using SHA256 checksums), so
 even files with different names, paths, or modification times will be
 deduplicated if their content is identical.
 
+### HTML2MD Integration
+
+m1f now includes enhanced support for working with HTML-to-Markdown converted content:
+
+- **Metadata Cleaning**: Use `--remove-scraped-metadata` to automatically remove
+  URL, timestamp, and source information from scraped HTML2MD files
+- **Clean Documentation Bundles**: Combine multiple scraped websites into clean,
+  professional documentation without scraping artifacts
+- **LLM-Ready Content**: Prepare web content for AI analysis by removing
+  time-specific metadata that may confuse models
+
 ## Installation
 
 ```bash

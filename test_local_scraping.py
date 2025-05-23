@@ -2,6 +2,25 @@
 """
 Local Scraping Test
 Test HTML to Markdown conversion by scraping from the local test server.
+
+This script scrapes test pages from the local development server and converts
+them to Markdown format. It now places scraped metadata (URL, timestamp) at
+the end of each generated file, making them compatible with the m1f tool's
+--remove-scraped-metadata option.
+
+Usage:
+    python test_local_scraping.py
+
+Requirements:
+    - Local test server running at http://localhost:8080
+    - Start server with: cd tests/html2md_server && python server.py
+
+Features:
+    - Scrapes multiple test pages with different configurations
+    - Applies CSS selectors to extract specific content
+    - Removes unwanted elements (nav, footer, etc.)
+    - Places scraped metadata at the end of files (new format)
+    - Compatible with m1f --remove-scraped-metadata option
 """
 
 import requests
@@ -81,13 +100,16 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         print(f"   ✅ Converted to {len(markdown)} characters of Markdown")
         
         # Save to file
-        output_path = Path(f"scraped_{page_name}.md")
+        output_dir = Path("tests/html2md/scraped_examples")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"scraped_{page_name}.md"
+        
         with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(f"# Scraped from {url}\n\n")
-            f.write(f"*Scraped at: {time.strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
-            f.write(f"*Source URL: {url}*\n\n")
-            f.write("---\n\n")
             f.write(markdown)
+            f.write("\n\n---\n\n")
+            f.write(f"*Scraped from: {url}*\n\n")
+            f.write(f"*Scraped at: {time.strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
+            f.write(f"*Source URL: {url}*")
         
         print(f"   💾 Saved to: {output_path}")
         

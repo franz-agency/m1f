@@ -5,6 +5,87 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2025-05-23
+
+### 🧹 HTML2MD Metadata Management Enhancements
+
+This patch release improves HTML2MD metadata handling and adds new functionality for cleaning scraped content when using m1f.
+
+#### ✨ Added
+- **NEW m1f Option: `--remove-scraped-metadata`**:
+  - Automatically removes scraped metadata (URL, timestamp) from HTML2MD files during m1f processing
+  - Uses intelligent regex pattern matching to detect metadata blocks at file ends
+  - Preserves all other content while cleaning HTML scraping artifacts
+  - Enables clean documentation bundles from scraped web content
+
+#### 🔧 Changed
+- **IMPROVED Scraped Metadata Placement**:
+  - `test_local_scraping.py` now places metadata at the END of files instead of the beginning
+  - New metadata format is more compatible with m1f processing
+  - Better separation with horizontal rules for clear content boundaries
+  - Maintains backward compatibility while improving usability
+
+- **ENHANCED Documentation**:
+  - Updated `docs/m1f.md` with new `--remove-scraped-metadata` option documentation
+  - Added new usage examples for HTML2MD integration workflows
+  - Comprehensive docstring updates for `test_local_scraping.py`
+  - Clear migration notes for new metadata format
+
+#### 🎯 Use Cases
+- **Clean Documentation Bundles**: Remove scraping artifacts when combining multiple scraped sites
+- **LLM Context Preparation**: Clean metadata that may confuse AI models during analysis
+- **Archive Creation**: Create clean archives without time-specific metadata
+- **Content Migration**: Prepare scraped content for integration with existing documentation
+
+#### 📋 New Metadata Format
+**Before (at beginning of file)**:
+```markdown
+# Scraped from http://example.com
+*Scraped at: 2025-05-23 11:55:26*
+*Source URL: http://example.com*
+---
+
+# Actual Content...
+```
+
+**After (at end of file)**:
+```markdown
+# Actual Content...
+
+---
+
+*Scraped from: http://example.com*
+
+*Scraped at: 2025-05-23 11:55:26*
+
+*Source URL: http://example.com*
+```
+
+#### 🔧 Technical Implementation
+- **Regex Pattern Matching**: Robust detection of scraped metadata blocks
+- **Content Preservation**: Safe removal that doesn't affect other markdown content
+- **Debug Logging**: Optional logging when metadata removal occurs
+- **Configuration Integration**: Seamless integration with existing m1f filter configuration
+
+#### 📖 Usage Examples
+```bash
+# Combine scraped markdown files and remove metadata
+python tools/m1f.py -s ./scraped_content -o ./clean_content.m1f.txt \
+  --include-extensions .md --remove-scraped-metadata
+
+# Merge multiple scraped websites into a clean documentation bundle
+python tools/m1f.py -s ./web_content -o ./web_docs.m1f.txt \
+  --include-extensions .md --remove-scraped-metadata --separator-style Markdown
+```
+
+#### 🔄 Migration Notes
+- Existing scraped files with old metadata format will continue to work
+- New scraping sessions will use the improved end-of-file metadata placement
+- The `--remove-scraped-metadata` option works with both old and new formats
+- No breaking changes to existing workflows
+
+---
+
 ## [3.2.0] - 2025-01-27
 
 ### Added - HTML to Markdown Converter Tool (html2md)

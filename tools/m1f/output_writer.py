@@ -8,6 +8,7 @@ import asyncio
 import hashlib
 from pathlib import Path
 from typing import List, Tuple, Set, Optional
+import re
 
 from .config import Config, SeparatorStyle
 from .constants import READ_BUFFER_SIZE
@@ -28,6 +29,28 @@ class OutputWriter:
         self.separator_generator = SeparatorGenerator(config, logger_manager)
         self._processed_checksums: Set[str] = set()
         self._content_dedupe: bool = True  # Enable content deduplication by default
+
+    def _remove_scraped_metadata(self, content: str) -> str:
+        """Remove scraped metadata from the end of markdown content."""
+        if not self.config.filter.remove_scraped_metadata:
+            return content
+        
+        # Pattern to match scraped metadata at the end of the file
+        # Looks for a horizontal rule followed by scraped metadata
+        pattern = (
+            r'\n\n---\n\n'
+            r'\*Scraped from:.*?\*\n\n'
+            r'\*Scraped at:.*?\*\n\n'
+            r'\*Source URL:.*?\*\s*$'
+        )
+        
+        # Remove the metadata if found
+        cleaned_content = re.sub(pattern, '', content, flags=re.DOTALL)
+        
+        if cleaned_content != content:
+            self.logger.debug("Removed scraped metadata from file content")
+        
+        return cleaned_content
 
     async def write_combined_file(
         self, output_path: Path, files_to_process: List[Tuple[Path, str]]
@@ -107,6 +130,9 @@ class OutputWriter:
 
             # Read file with encoding handling
             content, encoding_info = await self.encoding_handler.read_file(file_path)
+
+            # Remove scraped metadata if requested
+            content = self._remove_scraped_metadata(content)
 
             # Check for content deduplication
             if self._content_dedupe and not rel_path.startswith(("intro:", "include:")):

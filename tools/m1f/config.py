@@ -91,6 +91,7 @@ class FilterConfig:
     include_symlinks: bool = False
     no_default_excludes: bool = False
     max_file_size: Optional[int] = None  # Size in bytes
+    remove_scraped_metadata: bool = False
 
 
 @dataclass(frozen=True)
@@ -186,6 +187,7 @@ class Config:
             include_symlinks=getattr(args, "include_symlinks", False),
             no_default_excludes=getattr(args, "no_default_excludes", False),
             max_file_size=max_file_size_bytes,
+            remove_scraped_metadata=getattr(args, "remove_scraped_metadata", False),
         )
 
         # Create encoding configuration

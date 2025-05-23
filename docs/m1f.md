@@ -50,6 +50,7 @@ python tools/m1f.py -s ./your_project -o ./combined.txt --excludes "node_modules
 | `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
 | `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
 | `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
+| `--remove-scraped-metadata` | Remove scraped metadata (URL, timestamp) from HTML2MD files during processing. Automatically detects and removes metadata blocks at the end of markdown files created by HTML scraping tools                                                                  |
 | `--separator-style`         | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                                                |
 | `--line-ending`             | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                                                     |
 | `--convert-to-charset`      | Convert all files to the specified character encoding (`utf-8` [default], `utf-16`, `utf-16-le`, `utf-16-be`, `ascii`, `latin-1`, `cp1252`). The original encoding is automatically detected and included in the metadata when using compatible separator styles |
@@ -161,6 +162,18 @@ python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
 # Create a searchable knowledge base from project documentation
 python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
   --include-extensions .md .txt .rst --minimal-output
+```
+
+### HTML2MD Integration
+
+```bash
+# Combine scraped markdown files and remove metadata
+python tools/m1f.py -s ./scraped_content -o ./clean_content.m1f.txt \
+  --include-extensions .md --remove-scraped-metadata
+
+# Merge multiple scraped websites into a clean documentation bundle
+python tools/m1f.py -s ./web_content -o ./web_docs.m1f.txt \
+  --include-extensions .md --remove-scraped-metadata --separator-style Markdown
 ```
 
 ## Separator Styles
