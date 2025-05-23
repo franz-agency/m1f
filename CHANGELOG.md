@@ -5,6 +5,115 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2025-01-28
+
+### 🚀 New HTML to Markdown Converter Tool
+
+This release introduces a completely new, modern HTML to Markdown converter tool designed for processing entire websites and seamless integration with m1f.
+
+#### ✨ Added
+- **New `html_to_md` Package**: Modern, modular tool for HTML to Markdown conversion:
+  - `html_to_md/__init__.py` - Package initialization and version info
+  - `html_to_md/api.py` - High-level Python API for programmatic use
+  - `html_to_md/cli.py` - Modern command-line interface with subcommands
+  - `html_to_md/config/` - Pydantic-based configuration system with YAML/TOML support
+  - `html_to_md/core/` - Core parsing and conversion functionality
+  - `html_to_md/crawlers/` - HTTrack integration for website mirroring
+  - `html_to_md/utils/` - Encoding detection and logging utilities
+  - `html_to_md/__main__.py` - Module execution support
+
+- **HTTrack Integration**: Professional website mirroring capabilities:
+  - Complete website crawling with HTTrack
+  - Configurable crawl depth and page limits
+  - Domain restrictions and URL filtering
+  - robots.txt compliance
+  - Bandwidth and connection management
+
+- **Advanced Content Extraction**:
+  - CSS selectors for precise content targeting
+  - Metadata extraction (OpenGraph, Schema.org, meta tags)
+  - Smart heading hierarchy detection
+  - Configurable element filtering (nav, sidebar, ads)
+
+- **Modern Python Features**:
+  - Python 3.10+ with type hints throughout
+  - Pydantic models for configuration validation
+  - Async support for web operations
+  - Rich CLI with progress bars
+  - Structured logging with color support
+
+- **Processing Capabilities**:
+  - Parallel file processing for large directories
+  - Automatic encoding detection and conversion
+  - Link conversion (HTML → Markdown)
+  - Code block language detection
+  - Heading level adjustment
+  - Whitespace normalization
+
+#### 🔧 Changed
+- **REMOVED OLD TOOL**: Replaced monolithic `html_to_md.py` (992 lines) with modular package structure
+- **IMPROVED ARCHITECTURE**: 
+  - Clean separation of concerns with dedicated modules
+  - Plugin-ready architecture for extensibility
+  - Dependency injection pattern
+  - Configuration-driven design
+
+#### 🎯 Key Features
+- **Multiple Input Sources**: Files, directories, URLs, entire websites
+- **Flexible Configuration**: YAML/TOML config files or programmatic API
+- **m1f Integration**: Direct creation of m1f bundles from converted content
+- **Performance**: Parallel processing with configurable workers
+- **Reliability**: Comprehensive error handling and logging
+
+#### 📦 Dependencies
+- **Required**: beautifulsoup4, markdownify, pydantic, rich, requests, chardet, pyyaml
+- **Optional**: toml (for TOML configs), aiohttp (for async operations)
+- **External**: HTTrack for website mirroring (system package)
+
+#### 🚀 Usage Examples
+
+**Command Line:**
+```bash
+# Convert single file
+python -m tools.html_to_md convert index.html -o index.md
+
+# Convert directory
+python -m tools.html_to_md convert ./html/ -o ./markdown/
+
+# Crawl website
+python -m tools.html_to_md crawl https://example.com -o ./docs/
+
+# With config file
+python -m tools.html_to_md convert ./html/ -c config.yaml
+```
+
+**Python API:**
+```python
+from tools.html_to_md import HtmlToMarkdownConverter
+
+# Simple conversion
+converter = HtmlToMarkdownConverter({
+    "source": "./html",
+    "destination": "./markdown",
+    "extractor": {
+        "content_selector": "article.content",
+        "ignore_selectors": ["nav", "footer"]
+    }
+})
+
+# Convert website
+results = converter.convert_website("https://example.com")
+```
+
+#### 🏗️ Architecture Overview
+- **Config Layer**: Pydantic models for type-safe configuration
+- **Core Layer**: HTML parsing and Markdown conversion engines
+- **Crawler Layer**: HTTrack wrapper for website mirroring
+- **API Layer**: High-level interface for users
+- **CLI Layer**: Rich command-line interface
+
+---
+
 ## [3.1.1] - 2025-01-27
 
 ### 🧪 Test Infrastructure Improvements
