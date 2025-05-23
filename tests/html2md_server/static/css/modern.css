@@ -130,20 +130,35 @@ p code, li code {
   font-size: 0.85rem;
 }
 
-/* Syntax Highlighting */
+/* Syntax Highlighting - Light Mode */
 .language-python .keyword { color: #8b5cf6; }
-.language-python .string { color: #10b981; }
+.language-python .string { color: #059669; }
 .language-python .function { color: #3b82f6; }
 .language-python .comment { color: #6b7280; font-style: italic; }
 
 .language-javascript .keyword { color: #8b5cf6; }
-.language-javascript .string { color: #10b981; }
+.language-javascript .string { color: #059669; }
 .language-javascript .function { color: #3b82f6; }
 .language-javascript .comment { color: #6b7280; font-style: italic; }
 
 .language-bash .command { color: #3b82f6; }
 .language-bash .flag { color: #8b5cf6; }
-.language-bash .string { color: #10b981; }
+.language-bash .string { color: #059669; }
+
+/* Syntax Highlighting - Dark Mode */
+[data-theme="dark"] .language-python .keyword { color: #a78bfa; }
+[data-theme="dark"] .language-python .string { color: #34d399; }
+[data-theme="dark"] .language-python .function { color: #60a5fa; }
+[data-theme="dark"] .language-python .comment { color: #9ca3af; font-style: italic; }
+
+[data-theme="dark"] .language-javascript .keyword { color: #a78bfa; }
+[data-theme="dark"] .language-javascript .string { color: #34d399; }
+[data-theme="dark"] .language-javascript .function { color: #60a5fa; }
+[data-theme="dark"] .language-javascript .comment { color: #9ca3af; font-style: italic; }
+
+[data-theme="dark"] .language-bash .command { color: #60a5fa; }
+[data-theme="dark"] .language-bash .flag { color: #a78bfa; }
+[data-theme="dark"] .language-bash .string { color: #34d399; }
 
 /* Tables */
 table {
