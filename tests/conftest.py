@@ -42,7 +42,7 @@ def temp_dir() -> Iterator[Path]:
 def isolated_filesystem() -> Iterator[Path]:
     """
     Create an isolated filesystem for testing.
-    
+
     This ensures tests don't interfere with each other by providing
     a clean temporary directory that's automatically cleaned up.
     """
@@ -52,6 +52,7 @@ def isolated_filesystem() -> Iterator[Path]:
         try:
             # Change to the temporary directory
             import os
+
             os.chdir(tmp_path)
             yield tmp_path
         finally:
@@ -63,33 +64,34 @@ def isolated_filesystem() -> Iterator[Path]:
 def create_test_file(temp_dir: Path) -> Callable[[str, str, str | None], Path]:
     """
     Factory fixture to create test files.
-    
+
     Args:
         relative_path: Path relative to temp_dir
         content: File content
         encoding: File encoding (defaults to utf-8)
-    
+
     Returns:
         Path to the created file
     """
+
     def _create_file(
-        relative_path: str, 
-        content: str = "test content", 
-        encoding: str | None = None
+        relative_path: str, content: str = "test content", encoding: str | None = None
     ) -> Path:
         file_path = temp_dir / relative_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content, encoding=encoding or "utf-8")
         return file_path
-    
+
     return _create_file
 
 
 @pytest.fixture
-def create_test_directory_structure(temp_dir: Path) -> Callable[[dict[str, str | dict]], Path]:
+def create_test_directory_structure(
+    temp_dir: Path,
+) -> Callable[[dict[str, str | dict]], Path]:
     """
     Create a directory structure with files from a dictionary.
-    
+
     Example:
         {
             "file1.txt": "content1",
@@ -101,10 +103,13 @@ def create_test_directory_structure(temp_dir: Path) -> Callable[[dict[str, str |
             }
         }
     """
-    def _create_structure(structure: dict[str, str | dict], base_path: Path | None = None) -> Path:
+
+    def _create_structure(
+        structure: dict[str, str | dict], base_path: Path | None = None
+    ) -> Path:
         if base_path is None:
             base_path = temp_dir
-            
+
         for name, content in structure.items():
             path = base_path / name
             if isinstance(content, dict):
@@ -113,9 +118,9 @@ def create_test_directory_structure(temp_dir: Path) -> Callable[[dict[str, str |
             else:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(content, encoding="utf-8")
-        
+
         return base_path
-    
+
     return _create_structure
 
 
@@ -123,23 +128,23 @@ def create_test_directory_structure(temp_dir: Path) -> Callable[[dict[str, str |
 def cleanup_logging():
     """Automatically clean up logging handlers after each test."""
     yield
-    
+
     # Clean up any logging handlers that might interfere with tests
     import logging
-    
+
     # Get all loggers that might have been created
     for logger_name in ["m1f", "s1f"]:
         logger = logging.getLogger(logger_name)
-        
+
         # Remove and close all handlers
         for handler in logger.handlers[:]:
             if hasattr(handler, "close"):
                 handler.close()
             logger.removeHandler(handler)
-        
+
         # Clear the logger's handler list
         logger.handlers.clear()
-        
+
         # Reset logger level
         logger.setLevel(logging.WARNING)
 
@@ -149,16 +154,16 @@ def capture_logs():
     """Capture log messages for testing."""
     import logging
     from io import StringIO
-    
+
     class LogCapture:
         def __init__(self):
             self.stream = StringIO()
             self.handler = logging.StreamHandler(self.stream)
             self.handler.setFormatter(
-                logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+                logging.Formatter("%(levelname)s:%(name)s:%(message)s")
             )
             self.loggers = []
-        
+
         def capture(self, logger_name: str, level: int = logging.DEBUG) -> LogCapture:
             """Start capturing logs for a specific logger."""
             logger = logging.getLogger(logger_name)
@@ -166,25 +171,25 @@ def capture_logs():
             logger.setLevel(level)
             self.loggers.append(logger)
             return self
-        
+
         def get_output(self) -> str:
             """Get captured log output."""
             return self.stream.getvalue()
-        
+
         def clear(self):
             """Clear captured output."""
             self.stream.truncate(0)
             self.stream.seek(0)
-        
+
         def __enter__(self):
             return self
-        
+
         def __exit__(self, *args):
             # Remove handler from all loggers
             for logger in self.loggers:
                 logger.removeHandler(self.handler)
             self.handler.close()
-    
+
     return LogCapture()
 
 
@@ -199,6 +204,7 @@ def is_windows() -> bool:
 def path_separator() -> str:
     """Get the platform-specific path separator."""
     import os
+
     return os.path.sep
 
 
@@ -216,4 +222,4 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "integration: Integration tests")
     config.addinivalue_line("markers", "slow: Slow running tests")
     config.addinivalue_line("markers", "requires_git: Tests that require git")
-    config.addinivalue_line("markers", "encoding: Encoding-related tests") 
+    config.addinivalue_line("markers", "encoding: Encoding-related tests")

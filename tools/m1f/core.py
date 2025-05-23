@@ -202,28 +202,32 @@ class FileCombiner:
                 # If quiet mode is enabled, fail immediately
                 if self.config.logging.quiet:
                     raise ValidationError(f"Output file exists: {output_path}")
-                
+
                 # Otherwise, ask the user
                 # Check if we're in a test environment or input is mocked
                 import sys
-                if hasattr(sys, '_called_from_test') or (
-                    hasattr(__builtins__, 'input') and 
-                    hasattr(getattr(__builtins__, 'input', None), '__name__') and
-                    'mock' in str(getattr(__builtins__, 'input', lambda: None).__name__).lower()
+
+                if hasattr(sys, "_called_from_test") or (
+                    hasattr(__builtins__, "input")
+                    and hasattr(getattr(__builtins__, "input", None), "__name__")
+                    and "mock"
+                    in str(
+                        getattr(__builtins__, "input", lambda: None).__name__
+                    ).lower()
                 ):
                     # In test environment, always proceed as if 'y' was entered
-                    response = 'y'
+                    response = "y"
                 else:
                     # Run input in thread pool to avoid blocking async event loop
                     try:
                         response = await asyncio.to_thread(
                             input,
-                            f"Output file '{output_path}' exists. Overwrite? (y/N): "
+                            f"Output file '{output_path}' exists. Overwrite? (y/N): ",
                         )
                     except (KeyboardInterrupt, EOFError):
                         # Handle Ctrl+C and EOF gracefully
                         raise ValidationError("Operation cancelled by user")
-                    
+
                 if response.lower() != "y":
                     raise ValidationError("Operation cancelled by user")
 
