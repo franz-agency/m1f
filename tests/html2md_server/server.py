@@ -7,7 +7,7 @@ A modern Flask server for testing html2md conversion with challenging HTML pages
 import os
 import sys
 from pathlib import Path
-from flask import Flask, render_template, send_from_directory, jsonify
+from flask import Flask, render_template, send_from_directory, jsonify, send_file
 from flask_cors import CORS
 import logging
 from datetime import datetime
@@ -16,7 +16,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 app = Flask(__name__, 
-            template_folder='test_pages',
+            template_folder='templates',  # Changed back to templates for error pages only
             static_folder='static')
 CORS(app)
 
@@ -71,19 +71,21 @@ TEST_PAGES = {
 @app.route('/')
 def index():
     """Serve the test suite index page."""
-    return render_template('index.html', pages=TEST_PAGES)
+    # Serve index.html as a static file to avoid template parsing
+    return send_from_directory('test_pages', 'index.html')
 
 @app.route('/page/<page_name>')
 def serve_page(page_name):
-    """Serve individual test pages."""
+    """Serve individual test pages as static files."""
     if page_name in TEST_PAGES:
         template_file = f'{page_name}.html'
-        if os.path.exists(os.path.join(app.template_folder, template_file)):
-            return render_template(template_file, 
-                                 page_info=TEST_PAGES[page_name],
-                                 current_time=datetime.now())
+        file_path = os.path.join('test_pages', template_file)
+        
+        if os.path.exists(file_path):
+            # Serve as static file to avoid Jinja2 template parsing
+            return send_from_directory('test_pages', template_file)
         else:
-            # Return a placeholder if template doesn't exist yet
+            # Return a placeholder if file doesn't exist yet
             return f"""
             <!DOCTYPE html>
             <html>
