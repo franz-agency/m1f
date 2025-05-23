@@ -108,13 +108,13 @@ class TestFrontmatterAndHeadings(unittest.TestCase):
 
         # Test increasing heading levels
         result = convert_html(html, heading_offset=1)
-        self.assertIn("<h2>Title</h2>", result)
-        self.assertIn("<h3>Subtitle</h3>", result)
+        self.assertIn("## Title", result)
+        self.assertIn("### Subtitle", result)
 
         # Test decreasing heading levels
         result = convert_html("<h2>Title</h2><h3>Subtitle</h3>", heading_offset=-1)
-        self.assertIn("<h1>Title</h1>", result)
-        self.assertIn("<h2>Subtitle</h2>", result)
+        self.assertIn("# Title", result)
+        self.assertIn("## Subtitle", result)
 
 
 if __name__ == "__main__":
