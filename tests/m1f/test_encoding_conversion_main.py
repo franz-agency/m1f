@@ -63,6 +63,7 @@ def test_exotic_encoding_conversion():
         ".txt",
         "--exclude-extensions",
         ".utf8",
+        "--include-binary-files",  # Include binary files to handle exotic encodings
         "--minimal-output",
     ]
 

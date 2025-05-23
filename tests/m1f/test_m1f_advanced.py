@@ -30,14 +30,15 @@ class TestM1FAdvanced(BaseM1FTest):
         exit_code, _ = run_m1f([
             "--source-directory", str(source_dir),
             "--output-file", str(output_file),
-            "--create-archive", "zip",
+            "--create-archive",
+            "--archive-type", "zip",
             "--force",
         ])
         
         assert exit_code == 0
         
-        # Check that archive was created
-        archive_file = output_file.parent / f"{output_file.stem}.zip"
+        # Check that archive was created (named with _backup suffix)
+        archive_file = output_file.parent / f"{output_file.stem}_backup.zip"
         assert archive_file.exists(), "ZIP archive not created"
         assert archive_file.stat().st_size > 0, "ZIP archive is empty"
         
@@ -65,14 +66,15 @@ class TestM1FAdvanced(BaseM1FTest):
         exit_code, _ = run_m1f([
             "--source-directory", str(source_dir),
             "--output-file", str(output_file),
-            "--create-archive", "tar",
+            "--create-archive",
+            "--archive-type", "tar.gz",
             "--force",
         ])
         
         assert exit_code == 0
         
-        # Check that archive was created
-        archive_file = output_file.parent / f"{output_file.stem}.tar.gz"
+        # Check that archive was created (named with _backup suffix)
+        archive_file = output_file.parent / f"{output_file.stem}_backup.tar.gz"
         assert archive_file.exists(), "TAR.GZ archive not created"
         assert archive_file.stat().st_size > 0, "TAR.GZ archive is empty"
         
@@ -294,7 +296,7 @@ class TestM1FAdvanced(BaseM1FTest):
         output_file = temp_dir / "input_paths_output.txt"
         
         exit_code, _ = run_m1f([
-            "--input-paths-file", str(input_paths),
+            "--input-file", str(input_paths),
             "--output-file", str(output_file),
             "--force",
         ])
@@ -336,9 +338,13 @@ class TestM1FAdvanced(BaseM1FTest):
         source_dir = create_test_directory_structure(test_structure)
         output_file = temp_dir / "glob_output.txt"
         
+        # Create input file with glob pattern
+        input_file = temp_dir / "glob_patterns.txt"
+        input_file.write_text(str(source_dir / "src" / "*.py"))
+        
         # Use glob to include only .py files in src
         exit_code, _ = run_m1f([
-            "--input-paths", str(source_dir / "src" / "*.py"),
+            "--input-file", str(input_file),
             "--output-file", str(output_file),
             "--force",
         ])
@@ -384,29 +390,33 @@ class TestM1FAdvanced(BaseM1FTest):
         exit_code, _ = run_m1f([
             "--source-directory", str(source_dir),
             "--output-file", str(temp_dir / f"{output_base}.txt"),
-            "--add-filename-mtime-hash",
+            "--filename-mtime-hash",
             "--force",
         ])
         
         assert exit_code == 0
         
-        # Find the created file with hash
-        output_files = list(temp_dir.glob(f"{output_base}_*.txt"))
+        # Find the created file with hash (excluding auxiliary files)
+        output_files = [f for f in temp_dir.glob(f"{output_base}_*.txt") 
+                       if not f.name.endswith(('_filelist.txt', '_dirlist.txt'))]
         assert len(output_files) == 1, "Expected one output file with hash"
         
-        first_hash = output_files[0].stem.split('_')[-1]
-        assert len(first_hash) == 8, "Hash should be 8 characters"
+        # Extract hash from filename (format: base_hash_.txt)
+        filename_parts = output_files[0].stem.split('_')
+        first_hash = filename_parts[-2]  # The hash is the second-to-last part
+        assert len(first_hash) == 12, "Hash should be 12 characters"
         
         # Run again without changes - hash should be the same
         exit_code, _ = run_m1f([
             "--source-directory", str(source_dir),
             "--output-file", str(temp_dir / f"{output_base}_second.txt"),
-            "--add-filename-mtime-hash",
+            "--filename-mtime-hash",
             "--force",
         ])
         
-        second_files = list(temp_dir.glob(f"{output_base}_second_*.txt"))
-        second_hash = second_files[0].stem.split('_')[-1]
+        second_files = [f for f in temp_dir.glob(f"{output_base}_second_*.txt") 
+                       if not f.name.endswith(('_filelist.txt', '_dirlist.txt'))]
+        second_hash = second_files[0].stem.split('_')[-2]
         
         assert first_hash == second_hash, "Hash should be same for unchanged files"
         
@@ -416,12 +426,13 @@ class TestM1FAdvanced(BaseM1FTest):
         exit_code, _ = run_m1f([
             "--source-directory", str(source_dir),
             "--output-file", str(temp_dir / f"{output_base}_third.txt"),
-            "--add-filename-mtime-hash",
+            "--filename-mtime-hash",
             "--force",
         ])
         
-        third_files = list(temp_dir.glob(f"{output_base}_third_*.txt"))
-        third_hash = third_files[0].stem.split('_')[-1]
+        third_files = [f for f in temp_dir.glob(f"{output_base}_third_*.txt") 
+                      if not f.name.endswith(('_filelist.txt', '_dirlist.txt'))]
+        third_hash = third_files[0].stem.split('_')[-2]
         
         assert first_hash != third_hash, "Hash should change when file is modified"
     

@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2025-01-27
+
+### 🧪 Test Infrastructure Improvements
+
+This patch release focuses on fixing critical test reliability issues and enhancing the test infrastructure for better maintainability.
+
+#### ✨ Added
+- **New Refactored Large File Tests**: 
+  - `test_large_file_refactored.py` - Complete rewrite of large file handling tests
+  - Better separation of concerns with focused test methods
+  - Platform-specific timeout handling (Unix signals vs Windows threading)
+  - Progress indicators for large file creation to prevent apparent hangs
+  - Comprehensive smoke test to verify m1f functionality before running complex tests
+
+- **Enhanced Test Configuration**:
+  - `pytest-timeout` plugin integration for test execution timeouts
+  - Default 300-second timeout for all tests in pytest.ini
+  - Custom timeout markers for different test categories
+  - Better test isolation and cleanup mechanisms
+
+- **Improved Test Utilities**:
+  - Safe file size calculation using proper byte handling
+  - Iteration limits to prevent infinite loops in test file generation
+  - Enhanced mock input handling for various prompt types
+  - Better error reporting and debugging output during test failures
+
+#### 🔧 Changed
+- **FIXED PATH RESOLUTION ISSUES**: 
+  - Tests now use absolute paths instead of relative paths to prevent file not found errors
+  - Proper working directory handling for m1f command execution
+  - Fixed argument name mapping (`--target-encoding` → `--convert-to-charset`)
+
+- **IMPROVED TEST RELIABILITY**:
+  - Added timeout protection to prevent indefinite test hangs
+  - Fixed infinite loop in `_create_large_test_file` method through proper byte counting
+  - Enhanced SystemExit handling for async m1f execution
+  - Better cleanup of temporary files and directories
+
+- **MODERNIZED TEST ARCHITECTURE**:
+  - Split large monolithic test into focused test methods
+  - Added factory methods for test file creation
+  - Improved error handling and debugging capabilities
+  - Better test data management with structured content patterns
+
+#### 🐛 Fixed
+- **Critical Bug**: Fixed infinite loop in large file test creation that was caused by incorrect byte vs character size calculations
+- **Path Resolution**: Fixed "Path not found" warnings by using absolute paths in test input files
+- **Argument Compatibility**: Fixed incompatible command line arguments for the new m1f version
+- **Timeout Issues**: Added proper timeout handling to prevent tests from hanging indefinitely
+- **Mock Input Handling**: Enhanced input mocking to handle various prompt scenarios
+
+#### ⚡ Performance Improvements
+- **Faster Test Execution**: Eliminated redundant file operations and improved test data generation
+- **Better Resource Management**: Proper cleanup of temporary files and directories
+- **Optimized File Creation**: More efficient algorithm for generating test files of specific sizes
+
+#### 🏗️ Test Infrastructure Enhancements
+- **Cross-Platform Compatibility**: Different timeout mechanisms for Unix vs Windows systems
+- **Better Test Isolation**: Each test method properly cleans up after itself
+- **Enhanced Debugging**: Comprehensive logging and progress reporting during test execution
+- **Modular Test Design**: Reusable components for test file creation and m1f execution
+
+#### 📦 Dependencies
+- **Added**: `pytest-timeout==2.4.0` for reliable test execution timeouts
+- **Updated**: pytest.ini configuration with timeout markers and settings
+
+#### 🔄 Migration Notes
+- All existing tests continue to work without modification
+- New refactored tests provide better coverage of large file scenarios
+- Enhanced test reliability reduces flaky test failures
+- Improved debugging output helps identify test issues faster
+
+---
+
 ## [3.1.0] - 2025-01-27
 
 ### 🧪 Complete Test Suite Modernization

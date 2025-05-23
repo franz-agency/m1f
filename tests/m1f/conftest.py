@@ -77,7 +77,21 @@ def run_m1f(monkeypatch, capture_logs):
     
     This fixture properly handles sys.argv manipulation and cleanup.
     """
-    from m1f.cli import main
+    import sys
+    from pathlib import Path
+    
+    # Add tools directory to path to import m1f script
+    tools_dir = str(Path(__file__).parent.parent.parent / "tools")
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    
+    # Import from the m1f.py script, not the package
+    import importlib.util
+    m1f_script_path = Path(__file__).parent.parent.parent / "tools" / "m1f.py"
+    spec = importlib.util.spec_from_file_location("m1f_script", m1f_script_path)
+    m1f_script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m1f_script)
+    main = m1f_script.main
     
     def _run_m1f(args: list[str], auto_confirm: bool = True) -> tuple[int, str]:
         """
@@ -124,8 +138,10 @@ def m1f_cli_runner():
     
     def _run_cli(args: list[str]) -> subprocess.CompletedProcess:
         """Run m1f as a subprocess."""
+        # Get the path to the m1f.py script
+        m1f_script = Path(__file__).parent.parent.parent / "tools" / "m1f.py"
         return subprocess.run(
-            [sys.executable, "-m", "m1f"] + args,
+            [sys.executable, str(m1f_script)] + args,
             capture_output=True,
             text=True,
             cwd=os.getcwd(),

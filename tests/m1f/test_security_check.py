@@ -8,7 +8,7 @@ import pytest
 pytest.importorskip("detect_secrets")
 
 # Reuse helper from main test suite
-from test_m1f import run_m1f, SOURCE_DIR, OUTPUT_DIR, _create_test_file
+from .test_m1f import run_m1f, SOURCE_DIR, OUTPUT_DIR, _create_test_file
 
 # Import the security scan function directly for isolated testing
 from tools.m1f import _scan_files_for_sensitive_info

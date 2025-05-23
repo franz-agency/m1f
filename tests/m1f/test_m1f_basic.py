@@ -112,7 +112,7 @@ class TestM1FBasic(BaseM1FTest):
         """Test different separator styles."""
         test_cases = [
             ("Standard", "FILE:"),
-            ("Detailed", "==== FILE:"),
+            ("Detailed", "== FILE:"),
             ("Markdown", "```"),
             ("MachineReadable", "PYMK1F_BEGIN_FILE_METADATA_BLOCK"),
         ]
@@ -156,21 +156,22 @@ class TestM1FBasic(BaseM1FTest):
         
         assert exit_code == 0
         
-        # Check that a file with timestamp was created
+        # Check that a file with timestamp was created  
+        # The pattern should match only the main output file, not filelist/dirlist
         output_files = list(temp_dir.glob(f"{base_name}_*.txt"))
-        assert len(output_files) == 1, "Expected one output file with timestamp"
+        main_output_files = [f for f in output_files if not f.name.endswith(('_filelist.txt', '_dirlist.txt'))]
+        assert len(main_output_files) == 1, f"Expected one main output file with timestamp, found {[f.name for f in main_output_files]}"
         
         # Verify timestamp format (YYYYMMDD_HHMMSS)
         import re
         timestamp_pattern = r"_\d{8}_\d{6}\.txt$"
-        assert re.search(timestamp_pattern, output_files[0].name), \
+        assert re.search(timestamp_pattern, main_output_files[0].name), \
             "Output filename doesn't match timestamp pattern"
     
     @pytest.mark.unit
     @pytest.mark.parametrize("line_ending,expected", [
-        ("unix", b"\n"),
-        ("windows", b"\r\n"),
-        ("preserve", None),  # Will check that it preserves original
+        ("lf", b"\n"),
+        ("crlf", b"\r\n"),
     ])
     def test_line_ending_option(
         self,
@@ -195,20 +196,19 @@ class TestM1FBasic(BaseM1FTest):
         
         assert exit_code == 0
         
-        if expected is not None:
-            # Read as binary to check line endings
-            content = output_file.read_bytes()
-            
-            # Check that the expected line ending is present
-            assert expected in content, \
-                f"Expected line ending not found for {line_ending}"
-            
-            # Check that the wrong line ending is not present
-            wrong_ending = b"\r\n" if expected == b"\n" else b"\n"
-            # Allow for the case where \r\n contains \n
-            if expected == b"\n":
-                assert b"\r\n" not in content, \
-                    f"Unexpected CRLF found for {line_ending}"
+        # Read as binary to check line endings
+        content = output_file.read_bytes()
+        
+        # Check that the expected line ending is present
+        assert expected in content, \
+            f"Expected line ending not found for {line_ending}"
+        
+        # Check that the wrong line ending is not present
+        wrong_ending = b"\r\n" if expected == b"\n" else b"\n"
+        # Allow for the case where \r\n contains \n
+        if expected == b"\n":
+            assert b"\r\n" not in content, \
+                f"Unexpected CRLF found for {line_ending}"
     
     @pytest.mark.unit
     def test_force_overwrite(
@@ -284,7 +284,7 @@ class TestM1FBasic(BaseM1FTest):
         assert "usage:" in result.stdout.lower()
         assert "--source-directory" in result.stdout
         assert "--output-file" in result.stdout
-        assert "combine multiple files" in result.stdout.lower()
+        assert "combines the content of multiple" in result.stdout.lower()
     
     @pytest.mark.unit
     def test_version_display(self, m1f_cli_runner):

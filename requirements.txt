@@ -19,6 +19,7 @@ platformdirs==4.3.8
 pluggy==1.6.0
 pymarkdownlnt==0.9.29
 pytest==8.3.5
+pytest-timeout==2.4.0
 PyYAML==6.0.2
 regex==2024.11.6
 requests==2.32.3

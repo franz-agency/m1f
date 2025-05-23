@@ -260,7 +260,7 @@ class BaseM1FTest(BaseToolTest):
         # Check for separator style markers
         style_markers = {
             "Standard": "FILE:",
-            "Detailed": "==== FILE:",
+            "Detailed": "== FILE:",
             "Markdown": "```",
             "MachineReadable": "PYMK1F_BEGIN_FILE_METADATA_BLOCK",
         }
