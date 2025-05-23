@@ -1219,7 +1219,9 @@ class TestM1F:
             ), "node_modules should be included when using --no-default-excludes"
             # Check for .git content - either as directory name or as part of file path
             assert (
-                ".git/" in content or ".git\\" in content or "placeholder.txt" in content
+                ".git/" in content
+                or ".git\\" in content
+                or "placeholder.txt" in content
             ), "Git directory content should be included when using --no-default-excludes"
 
             # Check for log file, but don't fail the test if it doesn't exist
@@ -1419,7 +1421,9 @@ class TestM1F:
             ), "node_modules should be excluded by --excludes"
             # Check for .git content - either as directory name or as part of file path
             assert (
-                ".git/" in content or ".git\\" in content or "placeholder.txt" in content
+                ".git/" in content
+                or ".git\\" in content
+                or "placeholder.txt" in content
             ), "Git directory content should be included (no default excludes)"
 
             # Verify the dirlist and filelist don't contain node_modules
@@ -2522,7 +2526,9 @@ class TestM1F:
             ), "node_modules should be included when using --no-default-excludes"
             # Check for .git content - either as directory name or as part of file path
             assert (
-                ".git/" in content or ".git\\" in content or "placeholder.txt" in content
+                ".git/" in content
+                or ".git\\" in content
+                or "placeholder.txt" in content
             ), "Git directory content should be included when using --no-default-excludes"
 
             # Check for log file, but don't fail the test if it doesn't exist
@@ -2722,7 +2728,9 @@ class TestM1F:
             ), "node_modules should be excluded by --excludes"
             # Check for .git content - either as directory name or as part of file path
             assert (
-                ".git/" in content or ".git\\" in content or "placeholder.txt" in content
+                ".git/" in content
+                or ".git\\" in content
+                or "placeholder.txt" in content
             ), "Git directory content should be included (no default excludes)"
 
             # Verify the dirlist and filelist don't contain node_modules
@@ -3825,7 +3833,9 @@ class TestM1F:
             ), "node_modules should be included when using --no-default-excludes"
             # Check for .git content - either as directory name or as part of file path
             assert (
-                ".git/" in content or ".git\\" in content or "placeholder.txt" in content
+                ".git/" in content
+                or ".git\\" in content
+                or "placeholder.txt" in content
             ), "Git directory content should be included when using --no-default-excludes"
 
             # Check for log file, but don't fail the test if it doesn't exist
@@ -4025,7 +4035,9 @@ class TestM1F:
             ), "node_modules should be excluded by --excludes"
             # Check for .git content - either as directory name or as part of file path
             assert (
-                ".git/" in content or ".git\\" in content or "placeholder.txt" in content
+                ".git/" in content
+                or ".git\\" in content
+                or "placeholder.txt" in content
             ), "Git directory content should be included (no default excludes)"
 
             # Verify the dirlist and filelist don't contain node_modules
