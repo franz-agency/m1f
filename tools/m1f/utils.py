@@ -179,54 +179,54 @@ def get_relative_path(file_path: Path, base_path: Path) -> str:
 
 def parse_file_size(size_str: str) -> int:
     """Parse a file size string and return size in bytes.
-    
+
     Supports formats like:
     - 1024 (bytes)
     - 10KB, 10K
-    - 1.5MB, 1.5M  
+    - 1.5MB, 1.5M
     - 2GB, 2G
     - 500TB, 500T
-    
+
     Args:
         size_str: String representation of file size
-        
+
     Returns:
         Size in bytes
-        
+
     Raises:
         ValueError: If the size string cannot be parsed
     """
     if not size_str:
         raise ValueError("Empty size string")
-    
+
     # Remove whitespace and convert to uppercase
     size_str = size_str.strip().upper()
-    
+
     # Match number followed by optional unit
-    pattern = r'^(\d+(?:\.\d+)?)\s*([KMGTB]?B?)?$'
+    pattern = r"^(\d+(?:\.\d+)?)\s*([KMGTB]?B?)?$"
     match = re.match(pattern, size_str)
-    
+
     if not match:
         raise ValueError(f"Invalid size format: {size_str}")
-    
+
     number = float(match.group(1))
     unit = match.group(2) or ""
-    
+
     # Handle unit suffixes
     multipliers = {
         "": 1,
         "B": 1,
         "K": 1024,
         "KB": 1024,
-        "M": 1024 ** 2,
-        "MB": 1024 ** 2,
-        "G": 1024 ** 3,
-        "GB": 1024 ** 3,
-        "T": 1024 ** 4,
-        "TB": 1024 ** 4,
+        "M": 1024**2,
+        "MB": 1024**2,
+        "G": 1024**3,
+        "GB": 1024**3,
+        "T": 1024**4,
+        "TB": 1024**4,
     }
-    
+
     if unit not in multipliers:
         raise ValueError(f"Unknown size unit: {unit}")
-    
+
     return int(number * multipliers[unit])

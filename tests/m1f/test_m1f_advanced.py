@@ -529,15 +529,15 @@ class TestM1FAdvanced(BaseM1FTest):
     @pytest.mark.unit
     def test_large_file_handling(self, run_m1f, create_test_file, temp_dir):
         """Test handling of files with size limit.
-        
+
         Tests that files larger than a specified limit are skipped.
         """
         # Create a small file (5KB - below limit)
         small_content = "x" * (5 * 1024)  # 5KB
         small_file = create_test_file("small_file.txt", small_content)
-        
+
         # Create a large file (15KB - above limit)
-        large_content = "y" * (15 * 1024)  # 15KB  
+        large_content = "y" * (15 * 1024)  # 15KB
         large_file = create_test_file("large_file.txt", large_content)
 
         output_file = temp_dir / "size_limit_output.txt"

@@ -34,22 +34,22 @@ class OutputWriter:
         """Remove scraped metadata from the end of markdown content."""
         if not self.config.filter.remove_scraped_metadata:
             return content
-        
+
         # Pattern to match scraped metadata at the end of the file
         # Looks for a horizontal rule followed by scraped metadata
         pattern = (
-            r'\n\n---\n\n'
-            r'\*Scraped from:.*?\*\n\n'
-            r'\*Scraped at:.*?\*\n\n'
-            r'\*Source URL:.*?\*\s*$'
+            r"\n\n---\n\n"
+            r"\*Scraped from:.*?\*\n\n"
+            r"\*Scraped at:.*?\*\n\n"
+            r"\*Source URL:.*?\*\s*$"
         )
-        
+
         # Remove the metadata if found
-        cleaned_content = re.sub(pattern, '', content, flags=re.DOTALL)
-        
+        cleaned_content = re.sub(pattern, "", content, flags=re.DOTALL)
+
         if cleaned_content != content:
             self.logger.debug("Removed scraped metadata from file content")
-        
+
         return cleaned_content
 
     async def write_combined_file(

@@ -14,8 +14,8 @@ from .core import HTMLParser, MarkdownConverter
 
 __all__ = [
     "Html2mdConverter",
-    "Config", 
+    "Config",
     "ConversionOptions",
     "HTMLParser",
     "MarkdownConverter",
-] 
+]

@@ -3,7 +3,7 @@
 from .loader import load_config, save_config
 from .models import (
     AssetConfig,
-    Config, 
+    Config,
     ConversionOptions,
     CrawlerConfig,
     ExtractorConfig,
@@ -15,7 +15,7 @@ from .models import (
 __all__ = [
     "AssetConfig",
     "Config",
-    "ConversionOptions", 
+    "ConversionOptions",
     "CrawlerConfig",
     "ExtractorConfig",
     "M1fConfig",
@@ -23,4 +23,4 @@ __all__ = [
     "ProcessorConfig",
     "load_config",
     "save_config",
-] 
+]

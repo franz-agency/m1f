@@ -68,9 +68,7 @@ def convert_html_to_markdown() -> bool:
     html2md_script = BASE_DIR / "tools" / "html2md.py"
 
     if not html2md_script.exists():
-        logger.error(
-            f"HTML to Markdown conversion script not found: {html2md_script}"
-        )
+        logger.error(f"HTML to Markdown conversion script not found: {html2md_script}")
         return False
 
     try:

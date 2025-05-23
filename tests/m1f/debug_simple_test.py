@@ -14,11 +14,15 @@ output_dir.mkdir(exist_ok=True)
 # Test 1: Run with --no-default-excludes only
 output1 = output_dir / "debug_no_default.txt"
 cmd1 = [
-    sys.executable, "-m", "m1f",
-    "--source-directory", str(source_dir),
-    "--output-file", str(output1),
+    sys.executable,
+    "-m",
+    "m1f",
+    "--source-directory",
+    str(source_dir),
+    "--output-file",
+    str(output1),
     "--no-default-excludes",
-    "--force"
+    "--force",
 ]
 print("Running Test 1:", " ".join(cmd1))
 result1 = subprocess.run(cmd1, capture_output=True, text=True)
@@ -32,17 +36,22 @@ if result1.returncode == 0 and output1.exists():
 else:
     print(f"Error: {result1.stderr}")
 
-print("\n" + "="*50 + "\n")
+print("\n" + "=" * 50 + "\n")
 
 # Test 2: Run with --no-default-excludes and --excludes node_modules
 output2 = output_dir / "debug_no_default_with_excludes.txt"
 cmd2 = [
-    sys.executable, "-m", "m1f",
-    "--source-directory", str(source_dir),
-    "--output-file", str(output2),
+    sys.executable,
+    "-m",
+    "m1f",
+    "--source-directory",
+    str(source_dir),
+    "--output-file",
+    str(output2),
     "--no-default-excludes",
-    "--excludes", "node_modules",
-    "--force"
+    "--excludes",
+    "node_modules",
+    "--force",
 ]
 print("Running Test 2:", " ".join(cmd2))
 result2 = subprocess.run(cmd2, capture_output=True, text=True)
@@ -54,4 +63,4 @@ if result2.returncode == 0 and output2.exists():
     print(f"Contains '.git': {'.git' in content2}")
     print(f"Contains 'node_modules': {'node_modules' in content2}")
 else:
-    print(f"Error: {result2.stderr}") 
+    print(f"Error: {result2.stderr}")
