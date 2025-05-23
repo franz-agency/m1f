@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML2MD Test Suite - Comprehensive Testing for HTML to Markdown Conversion</title>
+    <link rel="stylesheet" href="/static/css/modern.css">
+    <meta name="description" content="A comprehensive test suite for the html2md converter with challenging HTML structures and edge cases">
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="/">HTML2MD Test Suite</a></li>
+                <li><a href="#test-pages">Test Pages</a></li>
+                <li><a href="#about">About</a></li>
+                <li style="margin-left: auto;">
+                    <button id="theme-toggle" class="btn" style="padding: 0.5rem 1rem;">🌙</button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <article>
+            <h1>HTML2MD Test Suite</h1>
+            <p class="lead">A comprehensive collection of challenging HTML pages designed to test the robustness and accuracy of the html2md converter.</p>
+            
+            <div class="alert alert-info">
+                <strong>Purpose:</strong> These test pages contain complex HTML structures, edge cases, and modern web features to ensure html2md handles all scenarios correctly.
+            </div>
+
+            <h2 id="test-pages">Available Test Pages</h2>
+            <div class="grid">
+                {% for page_id, page_info in pages.items() if page_id != 'index' %}
+                <div class="card">
+                    <h3>{{ page_info.title }}</h3>
+                    <p>{{ page_info.description }}</p>
+                    <a href="/page/{{ page_id }}" class="btn">View Test Page</a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <h2 id="about">About This Test Suite</h2>
+            <p>This test suite is designed to validate the html2md converter against various challenging scenarios:</p>
+            
+            <ul>
+                <li><strong>Complex Layouts:</strong> Multi-column layouts, flexbox, grid, and nested structures</li>
+                <li><strong>Code Examples:</strong> Syntax highlighting, multiple programming languages, and inline code</li>
+                <li><strong>Edge Cases:</strong> Malformed HTML, special characters, and unusual nesting</li>
+                <li><strong>Modern Features:</strong> HTML5 elements, web components, and semantic markup</li>
+                <li><strong>Rich Content:</strong> Tables, lists, multimedia, and interactive elements</li>
+            </ul>
+
+            <h2>Running the Tests</h2>
+            <p>To test the html2md converter with these pages:</p>
+            
+            <pre><code class="language-bash"># Start the test server
+$ python tests/html2md_server/server.py
+
+# In another terminal, run html2md on the test pages
+$ python tools/html2md.py \
+    --source-dir http://localhost:8080/page/ \
+    --destination-dir ./tests/html2md_output/ \
+    --verbose
+
+# Or test specific selectors
+$ python tools/html2md.py \
+    --source-dir http://localhost:8080/page/ \
+    --destination-dir ./tests/html2md_output/ \
+    --outermost-selector "article" \
+    --ignore-selectors "nav" ".sidebar" "footer"</code></pre>
+
+            <h2>Test Coverage</h2>
+            <p>Each test page focuses on specific aspects of HTML to Markdown conversion:</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test Page</th>
+                        <th>Focus Areas</th>
+                        <th>Key Challenges</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>M1F Documentation</td>
+                        <td>Real documentation content</td>
+                        <td>Code examples, command-line options, tables</td>
+                    </tr>
+                    <tr>
+                        <td>HTML2MD Documentation</td>
+                        <td>Tool documentation</td>
+                        <td>Complex formatting, nested lists, code blocks</td>
+                    </tr>
+                    <tr>
+                        <td>Complex Layout</td>
+                        <td>CSS layouts and positioning</td>
+                        <td>Multi-column, flexbox, grid, absolute positioning</td>
+                    </tr>
+                    <tr>
+                        <td>Code Examples</td>
+                        <td>Programming code</td>
+                        <td>Syntax highlighting, language detection, escaping</td>
+                    </tr>
+                    <tr>
+                        <td>Edge Cases</td>
+                        <td>Unusual HTML</td>
+                        <td>Malformed tags, special characters, deep nesting</td>
+                    </tr>
+                    <tr>
+                        <td>Modern Features</td>
+                        <td>HTML5 elements</td>
+                        <td>Semantic tags, web components, custom elements</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Contributing</h2>
+            <p>To add new test cases:</p>
+            
+            <ol>
+                <li>Create a new HTML file in <code>tests/html2md_server/test_pages/</code></li>
+                <li>Add an entry to <code>TEST_PAGES</code> in <code>server.py</code></li>
+                <li>Include challenging HTML structures that test specific conversion scenarios</li>
+                <li>Document what the test page is designed to validate</li>
+            </ol>
+
+            <div class="alert alert-success">
+                <strong>Tip:</strong> Use the browser's developer tools to inspect the HTML structure and CSS styles of each test page.
+            </div>
+        </article>
+
+        <aside class="sidebar">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="https://github.com/yourusername/m1f">M1F Repository</a></li>
+                <li><a href="/page/m1f-documentation">M1F Documentation</a></li>
+                <li><a href="/page/html2md-documentation">HTML2MD Documentation</a></li>
+            </ul>
+            
+            <h3>Test Statistics</h3>
+            <ul>
+                <li>Total Test Pages: {{ pages|length - 1 }}</li>
+                <li>HTML5 Features: ✓</li>
+                <li>Code Languages: 5+</li>
+                <li>Edge Cases: 20+</li>
+            </ul>
+        </aside>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 HTML2MD Test Suite. Built with modern web technologies.</p>
+            <p>Server Time: {{ current_time.strftime('%Y-%m-%d %H:%M:%S') if current_time else 'N/A' }}</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 

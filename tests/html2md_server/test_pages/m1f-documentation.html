@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M1F - Make One File Documentation</title>
+    <link rel="stylesheet" href="/static/css/modern.css">
+    <style>
+        /* Additional inline styles for testing */
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+        .feature-box { background: var(--code-bg); padding: 1.5rem; border-radius: 8px; }
+        .command-example { background: #000; color: #0f0; padding: 1rem; border-radius: 4px; font-family: monospace; }
+        .nested-example { margin-left: 2rem; border-left: 3px solid var(--primary-color); padding-left: 1rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="/">Test Suite</a></li>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#usage">Usage</a></li>
+                <li><a href="#examples">Examples</a></li>
+                <li style="margin-left: auto;">
+                    <button id="theme-toggle" class="btn" style="padding: 0.5rem 1rem;">🌙</button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <header style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 4rem 0; text-align: center;">
+        <div class="container">
+            <h1 style="color: white; font-size: 3rem; margin-bottom: 1rem;">M1F - Make One File</h1>
+            <p style="font-size: 1.25rem; opacity: 0.9;">A powerful tool for combining multiple files into a single, well-formatted document</p>
+            <div style="margin-top: 2rem;">
+                <a href="#quick-start" class="btn" style="background: white; color: #3b82f6;">Get Started</a>
+                <a href="#download" class="btn" style="background: transparent; border: 2px solid white;">Download</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <article>
+            <section id="overview">
+                <h2>Overview</h2>
+                <p class="lead">M1F (Make One File) is a sophisticated file aggregation tool designed to combine multiple source files into a single, well-formatted output file. It's particularly useful for creating comprehensive documentation, preparing code for Large Language Model (LLM) contexts, and archiving projects.</p>
+                
+                <div class="alert alert-info">
+                    <strong>Key Benefits:</strong>
+                    <ul>
+                        <li>Combine entire codebases into a single file for LLM analysis</li>
+                        <li>Create comprehensive documentation from multiple sources</li>
+                        <li>Archive projects with preserved structure and formatting</li>
+                        <li>Generate readable outputs with customizable separators</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="features">
+                <h2>Core Features</h2>
+                <div class="feature-grid">
+                    <div class="feature-box">
+                        <h3>🔍 Smart File Discovery</h3>
+                        <p>Recursively scans directories with powerful glob pattern support</p>
+                        <code>*.py, **/*.js, src/**/*.{ts,tsx}</code>
+                    </div>
+                    <div class="feature-box">
+                        <h3>🎨 Multiple Output Formats</h3>
+                        <p>XML, Markdown, and Plain text separators with syntax highlighting</p>
+                        <code>--separator-style XML|Markdown|Plain</code>
+                    </div>
+                    <div class="feature-box">
+                        <h3>🚀 Performance Optimized</h3>
+                        <p>Parallel processing and streaming for large codebases</p>
+                        <code>--parallel --max-workers 8</code>
+                    </div>
+                    <div class="feature-box">
+                        <h3>🔧 Highly Configurable</h3>
+                        <p>Extensive filtering options and customizable output</p>
+                        <code>--config config.yaml</code>
+                    </div>
+                </div>
+            </section>
+
+            <section id="quick-start">
+                <h2>Quick Start</h2>
+                <p>Get up and running with M1F in seconds:</p>
+                
+                <div class="command-example">
+                    <pre><code># Basic usage - combine all Python files
+$ python tools/m1f.py --source-directory ./src --output-file combined.txt --include-patterns "*.py"
+
+# Advanced usage with multiple patterns
+$ python tools/m1f.py \
+    --source-directory ./project \
+    --output-file project.m1f.md \
+    --include-patterns "*.py" "*.js" "*.md" \
+    --exclude-patterns "*test*" "*__pycache__*" \
+    --separator-style Markdown \
+    --parallel</code></pre>
+                </div>
+            </section>
+
+            <section id="usage">
+                <h2>Detailed Usage</h2>
+                
+                <h3>Command Line Options</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Description</th>
+                            <th>Default</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>--source-directory</code></td>
+                            <td>Directory to scan for files</td>
+                            <td>Current directory</td>
+                            <td><code>./src</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>--output-file</code></td>
+                            <td>Output file path</td>
+                            <td>combined_output.txt</td>
+                            <td><code>output.m1f.md</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>--include-patterns</code></td>
+                            <td>Glob patterns to include</td>
+                            <td>None</td>
+                            <td><code>"*.py" "*.js"</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>--exclude-patterns</code></td>
+                            <td>Glob patterns to exclude</td>
+                            <td>None</td>
+                            <td><code>"*test*" "*.log"</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>--separator-style</code></td>
+                            <td>Output format style</td>
+                            <td>XML</td>
+                            <td><code>Markdown</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>--parallel</code></td>
+                            <td>Enable parallel processing</td>
+                            <td>False</td>
+                            <td><code>--parallel</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>--max-file-size</code></td>
+                            <td>Maximum file size in MB</td>
+                            <td>10</td>
+                            <td><code>--max-file-size 50</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Configuration File</h3>
+                <p>For complex setups, use a YAML configuration file:</p>
+                
+                <pre><code class="language-yaml"># m1f-config.yaml
+source_directory: ./src
+output_file: ./output/combined.m1f.md
+separator_style: Markdown
+
+include_patterns:
+  - "**/*.py"
+  - "**/*.js"
+  - "**/*.ts"
+  - "**/*.md"
+  - "**/Dockerfile"
+
+exclude_patterns:
+  - "**/__pycache__/**"
+  - "**/node_modules/**"
+  - "**/.git/**"
+  - "**/*.test.js"
+  - "**/*.spec.ts"
+
+options:
+  parallel: true
+  max_workers: 4
+  max_file_size: 20
+  respect_gitignore: true
+  include_hidden: false
+  
+metadata:
+  include_timestamp: true
+  include_hash: true
+  hash_algorithm: sha256</code></pre>
+            </section>
+
+            <section id="examples">
+                <h2>Real-World Examples</h2>
+                
+                <div class="nested-example">
+                    <h3>Example 1: Preparing Code for LLM Analysis</h3>
+                    <p>Combine an entire Python project for ChatGPT or Claude analysis:</p>
+                    
+                    <pre><code class="language-bash">python tools/m1f.py \
+    --source-directory ./my-python-project \
+    --output-file project-for-llm.txt \
+    --include-patterns "*.py" "*.md" "requirements.txt" "pyproject.toml" \
+    --exclude-patterns "*__pycache__*" "*.pyc" ".git/*" \
+    --separator-style XML \
+    --metadata-include-timestamp \
+    --metadata-include-hash</code></pre>
+                    
+                    <details>
+                        <summary>View Output Sample</summary>
+                        <pre><code class="language-xml">&lt;file path="src/main.py" hash="a1b2c3..." timestamp="2024-01-15T10:30:00"&gt;
+#!/usr/bin/env python3
+"""Main application entry point."""
+
+import sys
+from app import Application
+
+def main():
+    app = Application()
+    return app.run(sys.argv[1:])
+
+if __name__ == "__main__":
+    sys.exit(main())
+&lt;/file&gt;
+
+&lt;file path="src/app.py" hash="d4e5f6..." timestamp="2024-01-15T10:25:00"&gt;
+"""Application core logic."""
+
+class Application:
+    def __init__(self):
+        self.config = self.load_config()
+    
+    def run(self, args):
+        # Implementation details...
+        pass
+&lt;/file&gt;</code></pre>
+                    </details>
+                </div>
+
+                <div class="nested-example">
+                    <h3>Example 2: Creating Documentation Archive</h3>
+                    <p>Combine all documentation files with preserved structure:</p>
+                    
+                    <pre><code class="language-bash">python tools/m1f.py \
+    --source-directory ./docs \
+    --output-file documentation.m1f.md \
+    --include-patterns "**/*.md" "**/*.rst" "**/*.txt" \
+    --separator-style Markdown \
+    --preserve-directory-structure \
+    --add-table-of-contents</code></pre>
+                </div>
+
+                <div class="nested-example">
+                    <h3>Example 3: Multi-Language Project</h3>
+                    <p>Combine a full-stack application with multiple languages:</p>
+                    
+                    <pre><code class="language-bash">python tools/m1f.py \
+    --config fullstack-config.yaml</code></pre>
+                    
+                    <p>Where <code>fullstack-config.yaml</code> contains:</p>
+                    
+                    <pre><code class="language-yaml">source_directory: ./fullstack-app
+output_file: ./fullstack-combined.m1f.md
+separator_style: Markdown
+
+include_patterns:
+  # Backend
+  - "backend/**/*.py"
+  - "backend/**/*.sql"
+  - "backend/**/Dockerfile"
+  
+  # Frontend
+  - "frontend/**/*.js"
+  - "frontend/**/*.jsx"
+  - "frontend/**/*.ts"
+  - "frontend/**/*.tsx"
+  - "frontend/**/*.css"
+  - "frontend/**/*.scss"
+  
+  # Configuration
+  - "**/*.json"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/.*rc"
+  
+  # Documentation
+  - "**/*.md"
+  - "**/README*"
+
+exclude_patterns:
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/.git/**"
+  - "**/*.min.js"
+  - "**/*.map"</code></pre>
+                </div>
+            </section>
+
+            <section id="advanced-features">
+                <h2>Advanced Features</h2>
+                
+                <h3>Parallel Processing</h3>
+                <p>For large codebases, enable parallel processing:</p>
+                
+                <pre><code class="language-python"># Parallel processing configuration
+from m1f import M1F
+
+m1f = M1F(
+    parallel=True,
+    max_workers=8,  # Number of CPU cores
+    chunk_size=100  # Files per chunk
+)
+
+# Process large directory
+m1f.process_directory(
+    source_dir="/path/to/large/project",
+    output_file="large_project.m1f.txt"
+)</code></pre>
+
+                <h3>Custom Separators</h3>
+                <p>Define your own separator format:</p>
+                
+                <pre><code class="language-python"># Custom separator function
+def custom_separator(file_path, file_info):
+    return f"""
+╔══════════════════════════════════════════════════════════════╗
+║ File: {file_path}
+║ Size: {file_info['size']} bytes
+║ Modified: {file_info['modified']}
+╚══════════════════════════════════════════════════════════════╝
+"""
+
+m1f = M1F(separator_function=custom_separator)</code></pre>
+
+                <h3>Streaming Mode</h3>
+                <p>For extremely large outputs, use streaming mode:</p>
+                
+                <pre><code class="language-bash"># Stream output to avoid memory issues
+python tools/m1f.py \
+    --source-directory ./massive-project \
+    --output-file output.m1f.txt \
+    --streaming-mode \
+    --buffer-size 8192</code></pre>
+            </section>
+
+            <section id="integration">
+                <h2>Integration with Other Tools</h2>
+                
+                <div class="grid">
+                    <div class="card">
+                        <h3>🔄 With html2md</h3>
+                        <p>Convert HTML documentation to Markdown, then combine:</p>
+                        <pre><code class="language-bash"># First convert HTML to MD
+python tools/html2md.py --source-dir ./html-docs --destination-dir ./md-docs
+
+# Then combine with m1f
+python tools/m1f.py --source-directory ./md-docs --output-file docs.m1f.md</code></pre>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🤖 With LLMs</h3>
+                        <p>Prepare code for AI analysis:</p>
+                        <pre><code class="language-python"># Create context for LLM
+import subprocess
+
+# Run m1f
+subprocess.run([
+    "python", "tools/m1f.py",
+    "--source-directory", "./src",
+    "--output-file", "context.txt",
+    "--max-file-size", "5"  # Keep under token limits
+])
+
+# Now use with your LLM API
+with open("context.txt", "r") as f:
+    context = f.read()
+    # Send to OpenAI, Anthropic, etc.</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+                
+                <details>
+                    <summary>Common Issues and Solutions</summary>
+                    
+                    <div class="alert alert-warning">
+                        <h4>Issue: Output file too large</h4>
+                        <p><strong>Solution:</strong> Use more restrictive patterns or increase max file size limit:</p>
+                        <code>--max-file-size 100 --exclude-patterns "*.log" "*.dat"</code>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h4>Issue: Memory errors with large projects</h4>
+                        <p><strong>Solution:</strong> Enable streaming mode:</p>
+                        <code>--streaming-mode --buffer-size 4096</code>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h4>Issue: Encoding errors</h4>
+                        <p><strong>Solution:</strong> Specify encoding or skip binary files:</p>
+                        <code>--encoding utf-8 --skip-binary-files</code>
+                    </div>
+                </details>
+            </section>
+        </article>
+
+        <aside class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#quick-start">Quick Start</a></li>
+                <li><a href="#usage">Usage</a></li>
+                <li><a href="#examples">Examples</a></li>
+                <li><a href="#advanced-features">Advanced</a></li>
+                <li><a href="#integration">Integration</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+            </ul>
+            
+            <h3>Version Info</h3>
+            <p>Current Version: <strong>2.0.0</strong></p>
+            <p>Python: <strong>3.9+</strong></p>
+            
+            <h3>Related Tools</h3>
+            <ul>
+                <li><a href="/page/html2md-documentation">html2md</a></li>
+                <li><a href="/page/s1f-documentation">s1f</a></li>
+            </ul>
+        </aside>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 M1F Documentation. Part of the HTML2MD Test Suite.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 

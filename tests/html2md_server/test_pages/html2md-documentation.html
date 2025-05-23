@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML2MD - HTML to Markdown Converter Documentation</title>
+    <link rel="stylesheet" href="/static/css/modern.css">
+    <style>
+        /* Test inline styles */
+        .option-grid { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 1rem; }
+        .option-card { background: linear-gradient(135deg, #f3f4f6, #e5e7eb); padding: 1rem; border-radius: 8px; }
+        .example-box { position: relative; margin: 2rem 0; }
+        .example-box::before { content: "Example"; position: absolute; top: -10px; left: 20px; background: var(--primary-color); color: white; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="/">Test Suite</a></li>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#usage">Usage</a></li>
+                <li><a href="#api">API</a></li>
+                <li style="margin-left: auto;">
+                    <button id="theme-toggle" class="btn" style="padding: 0.5rem 1rem;">🌙</button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <header style="background: linear-gradient(135deg, #10b981, #3b82f6); color: white; padding: 4rem 0;">
+        <div class="container" style="text-align: center;">
+            <h1 style="color: white; font-size: 3rem;">HTML2MD</h1>
+            <p style="font-size: 1.25rem; margin: 1rem 0;">Convert HTML files to clean, readable Markdown with powerful content selection</p>
+            <div style="margin-top: 2rem;">
+                <a href="#quick-start" class="btn" style="background: white; color: #10b981;">Quick Start</a>
+                <a href="https://github.com/yourusername/html2md" class="btn" style="background: transparent; border: 2px solid white;">View on GitHub</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <article>
+            <section id="overview">
+                <h2>Overview</h2>
+                <p class="lead">HTML2MD is a robust Python tool that converts HTML content to Markdown format with fine-grained control over the conversion process. It's designed for transforming web content, documentation, and preparing content for Large Language Models.</p>
+                
+                <div class="grid">
+                    <div class="card">
+                        <h3>🎯 Precise Selection</h3>
+                        <p>Use CSS selectors to extract exactly the content you need</p>
+                    </div>
+                    <div class="card">
+                        <h3>🚀 Fast Processing</h3>
+                        <p>Parallel processing for converting large websites quickly</p>
+                    </div>
+                    <div class="card">
+                        <h3>🔧 Highly Configurable</h3>
+                        <p>Extensive options for customizing the conversion process</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="features">
+                <h2>Key Features</h2>
+                
+                <details open>
+                    <summary>Content Selection & Filtering</summary>
+                    <ul>
+                        <li><strong>CSS Selectors:</strong> Extract specific content using <code>--outermost-selector</code></li>
+                        <li><strong>Element Removal:</strong> Remove unwanted elements with <code>--ignore-selectors</code></li>
+                        <li><strong>Smart Filtering:</strong> Automatically remove scripts, styles, and other non-content elements</li>
+                    </ul>
+                </details>
+
+                <details>
+                    <summary>Formatting Options</summary>
+                    <ul>
+                        <li><strong>Heading Adjustment:</strong> Modify heading levels with <code>--heading-offset</code></li>
+                        <li><strong>YAML Frontmatter:</strong> Add metadata to converted files</li>
+                        <li><strong>Code Block Detection:</strong> Preserve syntax highlighting information</li>
+                        <li><strong>Link Conversion:</strong> Smart handling of internal and external links</li>
+                    </ul>
+                </details>
+
+                <details>
+                    <summary>Performance & Scalability</summary>
+                    <ul>
+                        <li><strong>Parallel Processing:</strong> Convert multiple files simultaneously</li>
+                        <li><strong>Batch Operations:</strong> Process entire directories recursively</li>
+                        <li><strong>Memory Efficient:</strong> Stream processing for large files</li>
+                    </ul>
+                </details>
+            </section>
+
+            <section id="quick-start">
+                <h2>Quick Start</h2>
+                
+                <div class="example-box">
+                    <pre><code class="language-bash"># Install html2md
+pip install beautifulsoup4 markdownify chardet pyyaml
+
+# Basic conversion
+python tools/html2md.py --source-dir ./website --destination-dir ./markdown
+
+# Extract main content only
+python tools/html2md.py \
+    --source-dir ./website \
+    --destination-dir ./markdown \
+    --outermost-selector "main" \
+    --ignore-selectors "nav" "footer" ".ads"</code></pre>
+                </div>
+            </section>
+
+            <section id="installation">
+                <h2>Installation</h2>
+                
+                <h3>Requirements</h3>
+                <ul>
+                    <li>Python 3.9 or newer</li>
+                    <li>pip package manager</li>
+                </ul>
+
+                <h3>Dependencies</h3>
+                <pre><code class="language-bash"># Install all dependencies
+pip install -r requirements.txt
+
+# Or install individually
+pip install beautifulsoup4  # HTML parsing
+pip install markdownify     # HTML to Markdown conversion
+pip install chardet         # Encoding detection
+pip install pyyaml         # YAML frontmatter support</code></pre>
+
+                <h3>Verify Installation</h3>
+                <pre><code class="language-bash"># Check if html2md is working
+python tools/html2md.py --help
+
+# Test with a simple conversion
+echo '&lt;h1&gt;Test&lt;/h1&gt;&lt;p&gt;Hello World&lt;/p&gt;' &gt; test.html
+python tools/html2md.py --source-dir . --destination-dir output</code></pre>
+            </section>
+
+            <section id="usage">
+                <h2>Detailed Usage</h2>
+                
+                <h3>Command Line Options</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Description</th>
+                                <th>Default</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>--source-dir</code></td>
+                                <td>Directory containing HTML files</td>
+                                <td>Required</td>
+                            </tr>
+                            <tr>
+                                <td><code>--destination-dir</code></td>
+                                <td>Output directory for Markdown files</td>
+                                <td>Required</td>
+                            </tr>
+                            <tr>
+                                <td><code>--outermost-selector</code></td>
+                                <td>CSS selector for content extraction</td>
+                                <td>None (full page)</td>
+                            </tr>
+                            <tr>
+                                <td><code>--ignore-selectors</code></td>
+                                <td>CSS selectors to remove</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td><code>--remove-elements</code></td>
+                                <td>HTML elements to remove</td>
+                                <td>script, style, iframe, noscript</td>
+                            </tr>
+                            <tr>
+                                <td><code>--include-extensions</code></td>
+                                <td>File extensions to process</td>
+                                <td>.html, .htm, .xhtml</td>
+                            </tr>
+                            <tr>
+                                <td><code>--exclude-patterns</code></td>
+                                <td>Patterns to exclude</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td><code>--heading-offset</code></td>
+                                <td>Adjust heading levels</td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td><code>--add-frontmatter</code></td>
+                                <td>Add YAML frontmatter</td>
+                                <td>False</td>
+                            </tr>
+                            <tr>
+                                <td><code>--parallel</code></td>
+                                <td>Enable parallel processing</td>
+                                <td>False</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Usage Examples</h3>
+                
+                <div class="example-box">
+                    <h4>Example 1: Documentation Site Conversion</h4>
+                    <pre><code class="language-bash">python tools/html2md.py \
+    --source-dir ./docs-site \
+    --destination-dir ./markdown-docs \
+    --outermost-selector "article.documentation" \
+    --ignore-selectors "nav.sidebar" "div.comments" "footer" \
+    --add-frontmatter \
+    --frontmatter-fields "layout=docs" "category=api" \
+    --heading-offset 1</code></pre>
+                </div>
+
+                <div class="example-box">
+                    <h4>Example 2: Blog Migration</h4>
+                    <pre><code class="language-bash">python tools/html2md.py \
+    --source-dir ./wordpress-export \
+    --destination-dir ./blog-markdown \
+    --outermost-selector "div.post-content" \
+    --ignore-selectors ".social-share" ".author-bio" ".related-posts" \
+    --add-frontmatter \
+    --frontmatter-fields "layout=post" \
+    --preserve-images \
+    --parallel --max-workers 4</code></pre>
+                </div>
+
+                <div class="example-box">
+                    <h4>Example 3: Knowledge Base Extraction</h4>
+                    <pre><code class="language-bash">python tools/html2md.py \
+    --source-dir ./kb-site \
+    --destination-dir ./kb-markdown \
+    --outermost-selector "main#content" \
+    --ignore-selectors ".edit-link" ".breadcrumb" ".toc" \
+    --remove-elements "script" "style" "iframe" "form" \
+    --strip-classes=False \
+    --convert-code-blocks \
+    --target-encoding utf-8</code></pre>
+                </div>
+            </section>
+
+            <section id="advanced">
+                <h2>Advanced Features</h2>
+                
+                <h3>CSS Selector Examples</h3>
+                <div class="grid">
+                    <div class="option-card">
+                        <h4>Basic Selectors</h4>
+                        <ul>
+                            <li><code>main</code> - Select main element</li>
+                            <li><code>.content</code> - Select by class</li>
+                            <li><code>#article</code> - Select by ID</li>
+                            <li><code>article.post</code> - Element with class</li>
+                        </ul>
+                    </div>
+                    <div class="option-card">
+                        <h4>Complex Selectors</h4>
+                        <ul>
+                            <li><code>main > article</code> - Direct child</li>
+                            <li><code>div.content p</code> - Descendant</li>
+                            <li><code>h2 + p</code> - Adjacent sibling</li>
+                            <li><code>p:not(.ad)</code> - Negation</li>
+                        </ul>
+                    </div>
+                    <div class="option-card">
+                        <h4>Multiple Selectors</h4>
+                        <ul>
+                            <li><code>nav, .sidebar, footer</code> - Multiple elements</li>
+                            <li><code>.ad, .popup, .modal</code> - Remove all</li>
+                            <li><code>[data-noconvert]</code> - Attribute selector</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>YAML Frontmatter</h3>
+                <p>When <code>--add-frontmatter</code> is enabled, each file gets metadata:</p>
+                
+                <pre><code class="language-yaml">---
+title: Extracted Page Title
+source_file: original-page.html
+date_converted: 2024-01-15T14:30:00
+date_modified: 2024-01-10T09:15:00
+layout: post
+category: documentation
+custom_field: value
+---
+
+# Page Content Starts Here</code></pre>
+
+                <h3>Character Encoding</h3>
+                <p>HTML2MD handles various encodings intelligently:</p>
+                
+                <ol>
+                    <li><strong>Auto-detection:</strong> Automatically detects file encoding</li>
+                    <li><strong>BOM handling:</strong> Properly handles Byte Order Marks</li>
+                    <li><strong>Conversion:</strong> Convert to UTF-8 with <code>--target-encoding utf-8</code></li>
+                    <li><strong>Fallback:</strong> Graceful handling of encoding errors</li>
+                </ol>
+
+                <h3>Code Block Handling</h3>
+                <p>The converter preserves code formatting and language hints:</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div>
+                        <h4>HTML Input</h4>
+                        <pre><code class="language-html">&lt;pre&gt;&lt;code class="language-python"&gt;
+def hello():
+    print("Hello, World!")
+&lt;/code&gt;&lt;/pre&gt;</code></pre>
+                    </div>
+                    <div>
+                        <h4>Markdown Output</h4>
+                        <pre><code class="language-markdown">```python
+def hello():
+    print("Hello, World!")
+```</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="api">
+                <h2>Python API</h2>
+                <p>HTML2MD can also be used programmatically:</p>
+                
+                <pre><code class="language-python">from html2md import HTML2MDConverter
+
+# Initialize converter
+converter = HTML2MDConverter(
+    outermost_selector="article",
+    ignore_selectors=["nav", ".sidebar"],
+    add_frontmatter=True,
+    heading_offset=1
+)
+
+# Convert a single file
+markdown = converter.convert_file("input.html")
+with open("output.md", "w") as f:
+    f.write(markdown)
+
+# Convert directory
+converter.convert_directory(
+    source_dir="./html_files",
+    destination_dir="./markdown_files",
+    parallel=True,
+    max_workers=4
+)
+
+# Custom processing
+def custom_processor(html_content, file_path):
+    # Custom preprocessing
+    html_content = html_content.replace("old_domain", "new_domain")
+    
+    # Convert
+    markdown = converter.convert(html_content)
+    
+    # Custom postprocessing
+    markdown = markdown.replace("TODO", "**TODO**")
+    
+    return markdown
+
+converter.set_processor(custom_processor)</code></pre>
+
+                <h3>Event Hooks</h3>
+                <pre><code class="language-python"># Add event listeners
+converter.on("file_start", lambda path: print(f"Processing: {path}"))
+converter.on("file_complete", lambda path, size: print(f"Done: {path} ({size} bytes)"))
+converter.on("error", lambda path, error: print(f"Error in {path}: {error}"))
+
+# Progress tracking
+from tqdm import tqdm
+
+progress_bar = None
+
+def on_start(total_files):
+    global progress_bar
+    progress_bar = tqdm(total=total_files, desc="Converting")
+
+def on_file_complete(path, size):
+    progress_bar.update(1)
+
+def on_complete():
+    progress_bar.close()
+
+converter.on("conversion_start", on_start)
+converter.on("file_complete", on_file_complete)
+converter.on("conversion_complete", on_complete)</code></pre>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+                
+                <div class="alert alert-warning">
+                    <h4>Common Issues</h4>
+                    <dl>
+                        <dt>No content extracted</dt>
+                        <dd>Check your CSS selector with browser DevTools. The selector might be too specific.</dd>
+                        
+                        <dt>Broken formatting</dt>
+                        <dd>Some HTML might have inline styles. Use <code>--strip-styles</code> to remove them.</dd>
+                        
+                        <dt>Missing images</dt>
+                        <dd>Images are converted to Markdown syntax but not downloaded. Use <code>--download-images</code> if needed.</dd>
+                        
+                        <dt>Encoding errors</dt>
+                        <dd>Try specifying <code>--source-encoding</code> or use <code>--target-encoding utf-8</code></dd>
+                    </dl>
+                </div>
+
+                <h3>Debug Mode</h3>
+                <pre><code class="language-bash"># Enable debug output
+python tools/html2md.py \
+    --source-dir ./website \
+    --destination-dir ./output \
+    --verbose \
+    --debug \
+    --log-file conversion.log</code></pre>
+            </section>
+
+            <section id="performance">
+                <h2>Performance Tips</h2>
+                
+                <div class="grid">
+                    <div class="card">
+                        <h3>For Large Sites</h3>
+                        <ul>
+                            <li>Use <code>--parallel</code> with appropriate <code>--max-workers</code></li>
+                            <li>Process in batches with <code>--batch-size</code></li>
+                            <li>Enable <code>--skip-existing</code> for incremental updates</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Memory Usage</h3>
+                        <ul>
+                            <li>Use <code>--streaming</code> for very large files</li>
+                            <li>Set <code>--max-file-size</code> to skip huge files</li>
+                            <li>Process files individually with lower <code>--max-workers</code></li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Quality vs Speed</h3>
+                        <ul>
+                            <li>Disable <code>--convert-code-blocks</code> for faster processing</li>
+                            <li>Use simple selectors instead of complex ones</li>
+                            <li>Skip <code>--add-frontmatter</code> if not needed</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </article>
+
+        <aside class="sidebar">
+            <h3>Quick Navigation</h3>
+            <nav>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#quick-start">Quick Start</a></li>
+                    <li><a href="#installation">Installation</a></li>
+                    <li><a href="#usage">Usage</a></li>
+                    <li><a href="#advanced">Advanced</a></li>
+                    <li><a href="#api">API</a></li>
+                    <li><a href="#troubleshooting">Troubleshooting</a></li>
+                    <li><a href="#performance">Performance</a></li>
+                </ul>
+            </nav>
+            
+            <h3>Related Tools</h3>
+            <ul>
+                <li><a href="/page/m1f-documentation">M1F - Make One File</a></li>
+                <li><a href="/page/s1f-documentation">S1F - Search in Files</a></li>
+            </ul>
+            
+            <h3>Resources</h3>
+            <ul>
+                <li><a href="https://github.com/yourusername/html2md">GitHub Repository</a></li>
+                <li><a href="#api">API Documentation</a></li>
+                <li><a href="https://www.markdownguide.org/">Markdown Guide</a></li>
+            </ul>
+        </aside>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 HTML2MD Documentation. Part of the HTML2MD Test Suite.</p>
+            <p>Built with ❤️ for the open source community</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 

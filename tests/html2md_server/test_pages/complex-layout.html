@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complex Layout Test - HTML2MD Test Suite</title>
+    <link rel="stylesheet" href="/static/css/modern.css">
+    <style>
+        /* Complex layout styles for testing */
+        .hero-section {
+            position: relative;
+            min-height: 400px;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+        
+        .hero-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+        }
+        
+        .floating-element {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .flex-container {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        
+        .flex-item {
+            flex: 1 1 300px;
+            background: var(--code-bg);
+            padding: 2rem;
+            border-radius: 8px;
+        }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            grid-auto-rows: minmax(150px, auto);
+        }
+        
+        .grid-item-large {
+            grid-column: span 2;
+            grid-row: span 2;
+        }
+        
+        .nested-structure {
+            border: 2px solid var(--border-color);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+        
+        .nested-structure .nested-structure {
+            border-color: var(--primary-color);
+        }
+        
+        .nested-structure .nested-structure .nested-structure {
+            border-color: var(--secondary-color);
+        }
+        
+        .multi-column {
+            column-count: 3;
+            column-gap: 2rem;
+            column-rule: 1px solid var(--border-color);
+        }
+        
+        @media (max-width: 768px) {
+            .multi-column {
+                column-count: 1;
+            }
+        }
+        
+        .masonry {
+            columns: 3 200px;
+            column-gap: 1rem;
+        }
+        
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1rem;
+            background: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .sticky-sidebar {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+        
+        .overflow-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .shape-outside {
+            float: left;
+            width: 200px;
+            height: 200px;
+            margin: 0 2rem 1rem 0;
+            background: var(--primary-color);
+            clip-path: circle(50%);
+            shape-outside: circle(50%);
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="/">Test Suite</a></li>
+                <li><a href="#flexbox">Flexbox</a></li>
+                <li><a href="#grid">Grid</a></li>
+                <li><a href="#nested">Nested</a></li>
+                <li><a href="#positioning">Positioning</a></li>
+                <li style="margin-left: auto;">
+                    <button id="theme-toggle" class="btn" style="padding: 0.5rem 1rem;">🌙</button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1 style="color: white; font-size: 3rem;">Complex Layout Test</h1>
+            <p style="color: white; font-size: 1.25rem;">Testing various CSS layout techniques and nested HTML structures</p>
+        </div>
+        <div class="floating-element">
+            <p style="color: white; margin: 0;">Floating Element</p>
+            <small style="color: rgba(255,255,255,0.8);">Absolute positioned</small>
+        </div>
+    </div>
+
+    <main class="container">
+        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 2rem;">
+            <article>
+                <section id="flexbox">
+                    <h2>Flexbox Layouts</h2>
+                    <p>Testing various flexbox configurations and how they convert to Markdown.</p>
+                    
+                    <div class="flex-container">
+                        <div class="flex-item">
+                            <h3>Flex Item 1</h3>
+                            <p>This is a flexible item that can grow and shrink based on available space.</p>
+                            <ul>
+                                <li>Feature 1</li>
+                                <li>Feature 2</li>
+                                <li>Feature 3</li>
+                            </ul>
+                        </div>
+                        <div class="flex-item">
+                            <h3>Flex Item 2</h3>
+                            <p>Another flex item with different content length to test alignment.</p>
+                            <pre><code>const flexbox = {
+  display: 'flex',
+  gap: '2rem'
+};</code></pre>
+                        </div>
+                        <div class="flex-item">
+                            <h3>Flex Item 3</h3>
+                            <p>Short content.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="grid">
+                    <h2>CSS Grid Layouts</h2>
+                    <p>Complex grid layouts with spanning items and auto-placement.</p>
+                    
+                    <div class="grid-layout">
+                        <div class="grid-item-large" style="background: var(--primary-color); color: white; padding: 2rem; border-radius: 8px;">
+                            <h3>Large Grid Item</h3>
+                            <p>This item spans 2 columns and 2 rows in the grid layout.</p>
+                            <p>Grid areas can contain complex content including nested elements.</p>
+                        </div>
+                        <div style="background: var(--code-bg); padding: 1rem; border-radius: 8px;">
+                            <h4>Grid Item 2</h4>
+                            <p>Regular sized item.</p>
+                        </div>
+                        <div style="background: var(--code-bg); padding: 1rem; border-radius: 8px;">
+                            <h4>Grid Item 3</h4>
+                            <code>grid-template-columns</code>
+                        </div>
+                        <div style="background: var(--code-bg); padding: 1rem; border-radius: 8px;">
+                            <h4>Grid Item 4</h4>
+                            <p>Auto-placed in the grid.</p>
+                        </div>
+                        <div style="background: var(--code-bg); padding: 1rem; border-radius: 8px;">
+                            <h4>Grid Item 5</h4>
+                            <p>Another auto-placed item.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="nested">
+                    <h2>Deeply Nested Structures</h2>
+                    <p>Testing how deeply nested HTML elements are converted to Markdown.</p>
+                    
+                    <div class="nested-structure">
+                        <h3>Level 1 - Outer Container</h3>
+                        <p>This is the outermost level of nesting.</p>
+                        
+                        <div class="nested-structure">
+                            <h4>Level 2 - First Nested</h4>
+                            <p>Content at the second level of nesting.</p>
+                            <ul>
+                                <li>Item 1
+                                    <ul>
+                                        <li>Subitem 1.1</li>
+                                        <li>Subitem 1.2</li>
+                                    </ul>
+                                </li>
+                                <li>Item 2</li>
+                            </ul>
+                            
+                            <div class="nested-structure">
+                                <h5>Level 3 - Deeply Nested</h5>
+                                <p>Content at the third level of nesting.</p>
+                                <blockquote>
+                                    <p>A blockquote within nested content.</p>
+                                    <blockquote>
+                                        <p>A nested blockquote for extra complexity.</p>
+                                    </blockquote>
+                                </blockquote>
+                                
+                                <div class="nested-structure">
+                                    <h6>Level 4 - Maximum Nesting</h6>
+                                    <p>This is getting quite deep!</p>
+                                    <pre><code>// Code within deeply nested structure
+function deeplyNested() {
+    return {
+        level: 4,
+        message: "Still readable!"
+    };
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="nested-structure">
+                            <h4>Level 2 - Second Nested</h4>
+                            <p>Another branch at the second level.</p>
+                            <table>
+                                <tr>
+                                    <th>Nested</th>
+                                    <th>Table</th>
+                                </tr>
+                                <tr>
+                                    <td>Cell 1</td>
+                                    <td>Cell 2</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="positioning">
+                    <h2>Complex Positioning</h2>
+                    
+                    <div style="position: relative; height: 400px; background: var(--code-bg); border-radius: 8px; margin: 2rem 0;">
+                        <div style="position: absolute; top: 20px; left: 20px; background: var(--primary-color); color: white; padding: 1rem; border-radius: 4px;">
+                            <p>Absolute Top Left</p>
+                        </div>
+                        <div style="position: absolute; top: 20px; right: 20px; background: var(--secondary-color); color: white; padding: 1rem; border-radius: 4px;">
+                            <p>Absolute Top Right</p>
+                        </div>
+                        <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: white; padding: 1rem; border-radius: 4px;">
+                            <p>Absolute Bottom Center</p>
+                        </div>
+                        <div style="padding: 100px 2rem 2rem 2rem;">
+                            <h3>Relative Content</h3>
+                            <p>This content is within a relatively positioned container with absolutely positioned elements.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="columns">
+                    <h2>Multi-Column Layout</h2>
+                    <div class="multi-column">
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+                        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                        <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+                        <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.</p>
+                    </div>
+                </section>
+
+                <section id="shape-outside">
+                    <h2>Text Wrapping with Shapes</h2>
+                    <div class="shape-outside"></div>
+                    <p>This text wraps around a circular shape using CSS shape-outside property. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+                    <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                    <p style="clear: both;">After the float is cleared, text returns to normal flow.</p>
+                </section>
+
+                <section id="masonry">
+                    <h2>Masonry Layout</h2>
+                    <div class="masonry">
+                        <div class="masonry-item">
+                            <h3>Card 1</h3>
+                            <p>Short content</p>
+                        </div>
+                        <div class="masonry-item">
+                            <h3>Card 2</h3>
+                            <p>Medium length content that takes up more vertical space in the masonry layout.</p>
+                            <ul>
+                                <li>Point 1</li>
+                                <li>Point 2</li>
+                            </ul>
+                        </div>
+                        <div class="masonry-item">
+                            <h3>Card 3</h3>
+                            <p>Very long content that demonstrates how masonry layout handles different content heights. This card has multiple paragraphs.</p>
+                            <p>Second paragraph with more details about the masonry layout behavior.</p>
+                            <p>Third paragraph to make this card even taller.</p>
+                        </div>
+                        <div class="masonry-item">
+                            <h3>Card 4</h3>
+                            <code>masonry-auto-flow</code>
+                        </div>
+                        <div class="masonry-item">
+                            <h3>Card 5</h3>
+                            <p>Another card with medium content.</p>
+                            <blockquote>A quote within a masonry item.</blockquote>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="overflow">
+                    <h2>Overflow Containers</h2>
+                    <p>Testing scrollable containers with overflow content.</p>
+                    
+                    <div class="overflow-container">
+                        <h3>Scrollable Content Area</h3>
+                        <p>This container has a fixed height and scrollable overflow.</p>
+                        <ol>
+                            <li>First item in scrollable list</li>
+                            <li>Second item in scrollable list</li>
+                            <li>Third item in scrollable list</li>
+                            <li>Fourth item in scrollable list</li>
+                            <li>Fifth item in scrollable list</li>
+                            <li>Sixth item in scrollable list</li>
+                            <li>Seventh item in scrollable list</li>
+                            <li>Eighth item in scrollable list</li>
+                            <li>Ninth item in scrollable list</li>
+                            <li>Tenth item in scrollable list</li>
+                        </ol>
+                        <p>More content after the list to ensure scrolling is needed.</p>
+                    </div>
+                </section>
+            </article>
+
+            <aside class="sticky-sidebar">
+                <div class="sidebar">
+                    <h3>Layout Types</h3>
+                    <ul>
+                        <li><a href="#flexbox">Flexbox</a></li>
+                        <li><a href="#grid">CSS Grid</a></li>
+                        <li><a href="#nested">Nested Structures</a></li>
+                        <li><a href="#positioning">Positioning</a></li>
+                        <li><a href="#columns">Multi-Column</a></li>
+                        <li><a href="#shape-outside">Shape Outside</a></li>
+                        <li><a href="#masonry">Masonry</a></li>
+                        <li><a href="#overflow">Overflow</a></li>
+                    </ul>
+                    
+                    <h3>Test Notes</h3>
+                    <p>This page tests various CSS layout techniques that might be challenging for HTML to Markdown conversion.</p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Note:</strong> Visual layouts don't translate directly to Markdown but content structure should be preserved.
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Complex Layout Test. Part of the HTML2MD Test Suite.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 

@@ -4,12 +4,20 @@ This directory contains detailed documentation for the m1f project.
 
 ## Contents
 
+### Core Tools
+
 - [m1f (Make One File)](./m1f.md) - Documentation for the main tool that
   combines multiple files into a single file
 - [s1f (Split One File)](./s1f.md) - Documentation for the tool that extracts
   individual files from a combined file
 - [token_counter](./token_counter.md) - Documentation for the token estimation
   tool
+
+### HTML to Markdown Converter
+
+- [html2md Overview](./html_to_md.md) - Comprehensive guide to the HTML to Markdown converter
+- [html2md Guide](./html2md_guide.md) - Detailed usage guide with examples
+- [html2md Test Suite](./html2md_test_suite.md) - Documentation for the comprehensive test suite
 
 ## Quick Navigation
 
@@ -22,6 +30,8 @@ This directory contains detailed documentation for the m1f project.
 - **File extraction**: Use
   `python tools/s1f.py -i ./combined.txt -d ./extracted_files`
 - **Check token count**: Use `python tools/token_counter.py ./combined.txt`
+- **Convert HTML to Markdown**: Use
+  `python tools/html2md.py --source-dir ./html --destination-dir ./markdown`
 
 ### Key Concepts
 
@@ -31,13 +41,15 @@ This directory contains detailed documentation for the m1f project.
   ([details](./m1f.md#command-line-options))
 - **Security**: Scan for secrets before combining files
   ([details](./m1f.md#security-check))
+- **Content Selection**: Extract specific content using CSS selectors
+  ([details](./html_to_md.md#content-selection))
 
 ## Project Overview
 
-m1f and s1f are specialized utilities designed to help you work more efficiently
-with Large Language Models (LLMs) by managing context. These tools solve a core
-challenge when working with AI assistants: providing comprehensive context
-efficiently.
+m1f is a comprehensive toolkit designed to help you work more efficiently
+with Large Language Models (LLMs) by managing context. These tools solve core
+challenges when working with AI assistants: providing comprehensive context
+efficiently and converting web content to LLM-friendly formats.
 
 The toolset allows you to:
 
@@ -45,6 +57,7 @@ The toolset allows you to:
   providing context to LLMs)
 - Extract individual files from a combined file (restore original files with
   their structure intact)
+- Convert HTML documentation to clean Markdown format
 - Estimate token usage for LLM context planning
 - Optimize your use of AI context windows by selecting only the most relevant
   files
