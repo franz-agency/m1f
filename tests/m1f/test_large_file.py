@@ -260,6 +260,9 @@ class TestLargeFileHandlingRefactored:
         original_argv = sys.argv.copy()
         original_input = getattr(__builtins__, 'input', input)
         
+        # Set test flag
+        sys._called_from_test = True
+        
         # Enhanced mock input to handle various prompts
         def mock_input(prompt=None):
             if prompt:
@@ -301,6 +304,10 @@ class TestLargeFileHandlingRefactored:
                 __builtins__["input"] = original_input
             else:
                 __builtins__.input = original_input
+            
+            # Clean up test flag
+            if hasattr(sys, '_called_from_test'):
+                delattr(sys, '_called_from_test')
             
     def _verify_file_content(self, file_path: Path, expected_patterns: Dict[str, str]) -> None:
         """
@@ -539,6 +546,9 @@ if __name__ == "__main__":
         "test_large_file_content_integrity",
     ]
     
+    # Get the absolute path to this file
+    test_file_path = str(Path(__file__).resolve())
+    
     for test_method in test_methods:
         print(f"\n{'='*60}")
         print(f"Running: {test_method}")
@@ -546,11 +556,14 @@ if __name__ == "__main__":
         
         try:
             # Run each test with a subprocess timeout
+            # Use the full test path with class::method syntax
+            test_spec = f"{test_file_path}::{TestLargeFileHandlingRefactored.__name__}::{test_method}"
             result = subprocess.run(
-                [sys.executable, "-m", "pytest", __file__, f"::{TestLargeFileHandlingRefactored.__name__}::{test_method}", "-v", "-s"],
+                [sys.executable, "-m", "pytest", test_spec, "-v", "-s"],
                 timeout=120,  # 2 minute timeout per test
                 capture_output=True,
-                text=True
+                text=True,
+                cwd=str(Path(__file__).parent.parent.parent)  # Run from project root
             )
             
             print(f"Exit code: {result.returncode}")
