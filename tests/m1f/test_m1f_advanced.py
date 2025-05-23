@@ -526,21 +526,31 @@ class TestM1FAdvanced(BaseM1FTest):
         assert "Git config" in no_default_content  # .git included
         assert "module.exports" in no_default_content  # node_modules included
 
-    @pytest.mark.slow
+    @pytest.mark.unit
     def test_large_file_handling(self, run_m1f, create_test_file, temp_dir):
-        """Test handling of large files."""
-        # Create a large file (10MB)
-        large_content = "x" * (10 * 1024 * 1024)
+        """Test handling of files with size limit.
+        
+        Tests that files larger than a specified limit are skipped.
+        """
+        # Create a small file (5KB - below limit)
+        small_content = "x" * (5 * 1024)  # 5KB
+        small_file = create_test_file("small_file.txt", small_content)
+        
+        # Create a large file (15KB - above limit)
+        large_content = "y" * (15 * 1024)  # 15KB  
         large_file = create_test_file("large_file.txt", large_content)
 
-        output_file = temp_dir / "large_file_output.txt"
+        output_file = temp_dir / "size_limit_output.txt"
 
-        exit_code, _ = run_m1f(
+        # Run with 10KB size limit
+        exit_code, output = run_m1f(
             [
                 "--source-directory",
-                str(large_file.parent),
+                str(small_file.parent),
                 "--output-file",
                 str(output_file),
+                "--max-file-size",
+                "10KB",
                 "--force",
             ]
         )
@@ -548,10 +558,16 @@ class TestM1FAdvanced(BaseM1FTest):
         assert exit_code == 0
         assert output_file.exists()
 
-        # Verify the large file content is in the output
+        # Read the output content
         output_content = output_file.read_text()
-        assert "large_file.txt" in output_content
-        assert large_content in output_content
+
+        # Small file should be included
+        assert "small_file.txt" in output_content
+        assert small_content in output_content
+
+        # Large file should be mentioned in file list but content not included
+        assert "large_file.txt" in output_content  # Should be in file list
+        assert large_content not in output_content  # Content should not be included
 
     @pytest.mark.unit
     def test_include_binary_files(

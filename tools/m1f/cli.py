@@ -80,7 +80,8 @@ Perfect for:
   %(prog)s -i file_list.txt -o output.txt --create-archive --archive-type tar.gz
   %(prog)s -s ./docs -o docs.txt --include-extensions .md .rst .txt
   %(prog)s -s ./project -o all.txt --no-default-excludes --include-dot-paths
-  %(prog)s -s ./src -o code.txt --security-check warn --quiet"""
+  %(prog)s -s ./src -o code.txt --security-check warn --quiet
+  %(prog)s -s ./files -o small-files.txt --max-file-size 50KB"""
 
     parser = CustomArgumentParser(
         prog="m1f",
@@ -215,6 +216,13 @@ Perfect for:
         "--include-symlinks",
         action="store_true",
         help="Follow symbolic links (careful of cycles!)",
+    )
+
+    filter_group.add_argument(
+        "--max-file-size",
+        type=str,
+        metavar="SIZE",
+        help="Skip files larger than specified size (e.g. 10KB, 1MB, 5.5GB)",
     )
 
     filter_group.add_argument(

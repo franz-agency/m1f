@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Optional, Set, List
 import argparse
 
+from .utils import parse_file_size
+
 
 class SeparatorStyle(Enum):
     """Enumeration for separator styles."""
@@ -88,6 +90,7 @@ class FilterConfig:
     include_binary_files: bool = False
     include_symlinks: bool = False
     no_default_excludes: bool = False
+    max_file_size: Optional[int] = None  # Size in bytes
 
 
 @dataclass(frozen=True)
@@ -155,6 +158,14 @@ class Config:
             line_ending=LineEnding.from_str(args.line_ending),
         )
 
+        # Parse max file size if provided
+        max_file_size_bytes = None
+        if hasattr(args, "max_file_size") and args.max_file_size:
+            try:
+                max_file_size_bytes = parse_file_size(args.max_file_size)
+            except ValueError as e:
+                raise ValueError(f"Invalid --max-file-size value: {e}")
+
         # Create filter configuration
         filter_config = FilterConfig(
             exclude_paths=set(getattr(args, "exclude_paths", [])),
@@ -174,6 +185,7 @@ class Config:
             include_binary_files=getattr(args, "include_binary_files", False),
             include_symlinks=getattr(args, "include_symlinks", False),
             no_default_excludes=getattr(args, "no_default_excludes", False),
+            max_file_size=max_file_size_bytes,
         )
 
         # Create encoding configuration

@@ -16,7 +16,7 @@ from .config import Config
 from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, MAX_SYMLINK_DEPTH
 from .exceptions import FileNotFoundError, ValidationError
 from .logging import LoggerManager
-from .utils import is_binary_file, is_hidden_path, get_relative_path
+from .utils import is_binary_file, is_hidden_path, get_relative_path, format_file_size
 
 
 class FileProcessor:
@@ -329,6 +329,20 @@ class FileProcessor:
                 return False
 
             if self._detect_symlink_cycle(file_path):
+                return False
+
+        # Check file size limit
+        if self.config.filter.max_file_size is not None:
+            try:
+                file_size = file_path.stat().st_size
+                if file_size > self.config.filter.max_file_size:
+                    self.logger.info(
+                        f"Skipping {file_path.name} due to size limit: "
+                        f"{format_file_size(file_size)} > {format_file_size(self.config.filter.max_file_size)}"
+                    )
+                    return False
+            except OSError as e:
+                self.logger.warning(f"Could not check size of {file_path}: {e}")
                 return False
 
         return True

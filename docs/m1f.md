@@ -44,6 +44,7 @@ python tools/m1f.py -s ./your_project -o ./combined.txt --excludes "node_modules
 | `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
 | `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
+| `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
 | `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\***                                                                                         |
 | `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
@@ -87,6 +88,10 @@ python tools/m1f.py -s ./my_project -o ./output/bundle.m1f.txt \
 # Creating a combined file and a backup zip archive
 python tools/m1f.py -s ./source_code -o ./dist/combined.txt \
   --create-archive --archive-type zip
+
+# Only include text files under 50KB to avoid large generated files
+python tools/m1f.py -s ./project -o ./text_only.txt \
+  --max-file-size 50KB --include-extensions .py .js .md .txt .json
 ```
 
 ## Security Check
