@@ -15,7 +15,7 @@ This directory contains detailed documentation for the m1f project.
 
 ### HTML to Markdown Converter
 
-- [html2md Overview](./html_to_md.md) - Comprehensive guide to the HTML to Markdown converter
+- [html2md Overview](./html2md.md) - Comprehensive guide to the HTML to Markdown converter
 - [html2md Guide](./html2md_guide.md) - Detailed usage guide with examples
 - [html2md Test Suite](./html2md_test_suite.md) - Documentation for the comprehensive test suite
 
@@ -42,7 +42,7 @@ This directory contains detailed documentation for the m1f project.
 - **Security**: Scan for secrets before combining files
   ([details](./m1f.md#security-check))
 - **Content Selection**: Extract specific content using CSS selectors
-  ([details](./html_to_md.md#content-selection))
+  ([details](./html2md.md#content-selection))
 
 ## Project Overview
 
