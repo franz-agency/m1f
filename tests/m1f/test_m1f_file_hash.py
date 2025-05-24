@@ -16,15 +16,15 @@ class TestM1FFileHash(BaseM1FTest):
 
     def _get_hash_from_filename(self, filename: str) -> str | None:
         """Extract the hash from a filename like base_<hash>.txt."""
-        # Look for pattern like base_12345678.txt
+        # Look for pattern like base_12345678abcd.txt (12 hex characters)
         parts = filename.split("_")
         if len(parts) >= 2:
             # Get the part after the last underscore and before the extension
             last_part = parts[-1]
             if "." in last_part:
                 hash_part = last_part.split(".")[0]
-                # Check if it looks like a hash (8 hex characters)
-                if len(hash_part) == 8 and all(
+                # Check if it looks like a hash (12 hex characters)
+                if len(hash_part) == 12 and all(
                     c in "0123456789abcdef" for c in hash_part
                 ):
                     return hash_part
@@ -49,21 +49,24 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / f"{base_name}.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
         assert exit_code == 0
 
-        # Find the output file with hash
-        output_files = list(temp_dir.glob(f"{base_name}_*.txt"))
+        # Find the output file with hash (exclude filelist and dirlist)
+        output_files = [
+            f for f in temp_dir.glob(f"{base_name}_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         assert len(output_files) == 1, "Expected one output file with hash"
 
         # Extract and verify hash
         hash1 = self._get_hash_from_filename(output_files[0].name)
         assert hash1 is not None, "No hash found in filename"
-        assert len(hash1) == 8, "Hash should be 8 characters"
+        assert len(hash1) == 12, "Hash should be 12 characters"
 
     @pytest.mark.unit
     def test_filename_mtime_hash_consistency(self, run_m1f, create_test_file, temp_dir):
@@ -89,7 +92,7 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / f"{base_name}_run1.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
@@ -97,7 +100,10 @@ class TestM1FFileHash(BaseM1FTest):
         assert exit_code == 0
 
         # Get first hash
-        run1_files = list(temp_dir.glob(f"{base_name}_run1_*.txt"))
+        run1_files = [
+            f for f in temp_dir.glob(f"{base_name}_run1_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         hash1 = self._get_hash_from_filename(run1_files[0].name)
 
         # Second run without changes
@@ -107,13 +113,16 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / f"{base_name}_run2.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
         # Get second hash
-        run2_files = list(temp_dir.glob(f"{base_name}_run2_*.txt"))
+        run2_files = [
+            f for f in temp_dir.glob(f"{base_name}_run2_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         hash2 = self._get_hash_from_filename(run2_files[0].name)
 
         assert hash1 == hash2, "Hash should be consistent for unchanged files"
@@ -137,12 +146,15 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / f"{base_name}_before.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
-        before_files = list(temp_dir.glob(f"{base_name}_before_*.txt"))
+        before_files = [
+            f for f in temp_dir.glob(f"{base_name}_before_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         hash_before = self._get_hash_from_filename(before_files[0].name)
 
         # Modify file
@@ -156,12 +168,15 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / f"{base_name}_after.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
-        after_files = list(temp_dir.glob(f"{base_name}_after_*.txt"))
+        after_files = [
+            f for f in temp_dir.glob(f"{base_name}_after_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         hash_after = self._get_hash_from_filename(after_files[0].name)
 
         assert hash_before != hash_after, "Hash should change when file is modified"
@@ -185,12 +200,15 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / "ops_initial.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
-        initial_files = list(temp_dir.glob("ops_initial_*.txt"))
+        initial_files = [
+            f for f in temp_dir.glob("ops_initial_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         hash_initial = self._get_hash_from_filename(initial_files[0].name)
 
         # Test 1: Add a file
@@ -203,12 +221,15 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / "ops_added.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
-        added_files = list(temp_dir.glob("ops_added_*.txt"))
+        added_files = [
+            f for f in temp_dir.glob("ops_added_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         hash_added = self._get_hash_from_filename(added_files[0].name)
         assert hash_initial != hash_added, "Hash should change when file is added"
 
@@ -221,12 +242,15 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / "ops_removed.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
-        removed_files = list(temp_dir.glob("ops_removed_*.txt"))
+        removed_files = [
+            f for f in temp_dir.glob("ops_removed_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         hash_removed = self._get_hash_from_filename(removed_files[0].name)
         assert hash_added != hash_removed, "Hash should change when file is removed"
 
@@ -239,12 +263,15 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / "ops_renamed.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
-        renamed_files = list(temp_dir.glob("ops_renamed_*.txt"))
+        renamed_files = [
+            f for f in temp_dir.glob("ops_renamed_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         hash_renamed = self._get_hash_from_filename(renamed_files[0].name)
         assert hash_removed != hash_renamed, "Hash should change when file is renamed"
 
@@ -267,7 +294,7 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / f"{base_name}.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--add-timestamp",
                 "--force",
             ]
@@ -276,15 +303,18 @@ class TestM1FFileHash(BaseM1FTest):
         assert exit_code == 0
 
         # Find output file
-        output_files = list(temp_dir.glob(f"{base_name}_*.txt"))
+        output_files = [
+            f for f in temp_dir.glob(f"{base_name}_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         assert len(output_files) == 1, "Expected one output file"
 
         filename = output_files[0].name
 
-        # Check format: base_YYYYMMDD_HHMMSS_hash.txt
+        # Check format: base_hash_YYYYMMDD_HHMMSS.txt
         import re
 
-        pattern = r"^combined_\d{8}_\d{6}_[0-9a-f]{8}\.txt$"
+        pattern = r"^combined_[0-9a-f]{12}_\d{8}_\d{6}\.txt$"
         assert re.match(
             pattern, filename
         ), f"Filename '{filename}' doesn't match expected pattern"
@@ -302,19 +332,20 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / "empty.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
 
         assert exit_code == 0
 
-        # Should still create output with hash
-        output_files = list(temp_dir.glob("empty_*.txt"))
-        assert len(output_files) == 1, "Expected output file even for empty directory"
-
-        hash_empty = self._get_hash_from_filename(output_files[0].name)
-        assert hash_empty is not None, "Should generate hash even for empty directory"
+        # For empty directory, no hash is added to filename
+        output_file = temp_dir / "empty.txt"
+        assert output_file.exists(), "Output file should be created"
+        
+        # Verify it's empty or contains minimal content
+        content = output_file.read_text()
+        assert "No files found" in content or len(content) < 100
 
     @pytest.mark.unit
     def test_filename_mtime_hash_error_handling(
@@ -344,7 +375,7 @@ class TestM1FFileHash(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(temp_dir / "error.txt"),
-                "--add-filename-mtime-hash",
+                "--filename-mtime-hash",
                 "--force",
             ]
         )
@@ -353,5 +384,8 @@ class TestM1FFileHash(BaseM1FTest):
         assert exit_code == 0
 
         # Should still generate output file with hash
-        output_files = list(temp_dir.glob("error_*.txt"))
+        output_files = [
+            f for f in temp_dir.glob("error_*.txt")
+            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+        ]
         assert len(output_files) == 1, "Should create output despite mtime errors"

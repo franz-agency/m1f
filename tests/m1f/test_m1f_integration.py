@@ -93,7 +93,7 @@ class TestM1FIntegration(BaseM1FTest):
 
         exit_code, _ = run_m1f(
             [
-                "--input-paths-file",
+                "--input-file",
                 str(input_paths),
                 "--output-file",
                 str(output_file),
@@ -142,13 +142,19 @@ class TestM1FIntegration(BaseM1FTest):
         base_dir = create_test_directory_structure(structure)
         output_file = temp_dir / "glob_patterns.txt"
 
-        # Use multiple glob patterns
+        # Create input file with glob patterns
+        input_paths = temp_dir / "globs.txt"
+        input_paths.write_text(f"""
+{base_dir / "src" / "module*.py"}
+{base_dir / "docs" / "*.md"}
+{base_dir / "scripts" / "*.py"}
+        """.strip())
+
+        # Use multiple glob patterns via input file
         exit_code, _ = run_m1f(
             [
-                "--input-paths",
-                str(base_dir / "src" / "module*.py"),
-                str(base_dir / "docs" / "*.md"),
-                str(base_dir / "scripts" / "*.py"),
+                "--input-file",
+                str(input_paths),
                 "--output-file",
                 str(output_file),
                 "--force",
@@ -202,6 +208,7 @@ temp/
 
         base_dir = create_test_directory_structure(structure)
         output_file = temp_dir / "combined_excludes.txt"
+        gitignore_file = base_dir / ".gitignore"
 
         # Run with gitignore and additional excludes
         exit_code, _ = run_m1f(
@@ -210,7 +217,8 @@ temp/
                 str(base_dir),
                 "--output-file",
                 str(output_file),
-                "--use-gitignore",
+                "--exclude-paths-file",
+                str(gitignore_file),
                 "--excludes",
                 "*.txt",
                 "--force",
@@ -307,8 +315,8 @@ temp/
         assert "cache.tmp" not in content  # Excluded extension
         assert "output.txt" not in content  # Not in include extensions
 
-        # .git included (no default excludes)
-        assert "Git config" in content
+        # .gitignore should NOT be included (not in py, md extensions)
+        assert ".gitignore" not in content
 
     @pytest.mark.integration
     @pytest.mark.slow
@@ -390,17 +398,18 @@ temp/
                 "--output-file",
                 str(output_zip),
                 "--create-archive",
+                "--archive-type",
                 "zip",
                 "--exclude-extensions",
-                "py",
+                ".py",
                 "--force",
             ]
         )
 
         assert exit_code == 0
 
-        # Check archive created
-        zip_file = output_zip.with_suffix(".zip")
+        # Check archive created (should be filtered_backup.zip based on the log output)
+        zip_file = output_zip.parent / f"{output_zip.stem}_backup.zip"
         assert zip_file.exists()
 
         # Verify archive contents

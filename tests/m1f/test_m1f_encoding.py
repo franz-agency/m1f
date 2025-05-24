@@ -27,27 +27,53 @@ class TestM1FEncoding(BaseM1FTest):
         source_dir = temp_dir / "encoding_test"
         source_dir.mkdir()
 
+        print(f"\n=== DEBUG: Creating test files in {source_dir} ===")
+        created_files = []
         for filename, content, encoding in test_files:
             file_path = source_dir / filename
             file_path.write_text(content, encoding=encoding)
+            file_size = file_path.stat().st_size
+            print(f"Created {filename}: {file_size} bytes, encoding={encoding}")
+            created_files.append(file_path)
+
+        # List all files in directory
+        print(f"\n=== DEBUG: Files in source directory ===")
+        for f in source_dir.iterdir():
+            print(f"  {f.name}: {f.stat().st_size} bytes")
 
         output_file = temp_dir / "encoding_output.txt"
 
-        # Run with UTF-8 target encoding (default)
-        exit_code, _ = run_m1f(
+        # Run with UTF-8 target encoding (default) with verbose output
+        print(f"\n=== DEBUG: Running m1f with verbose output ===")
+        exit_code, log_output = run_m1f(
             [
                 "--source-directory",
                 str(source_dir),
                 "--output-file",
                 str(output_file),
+                "--include-binary-files",
                 "--force",
+                "--verbose",
             ]
         )
+
+        print(f"\n=== DEBUG: m1f output ===")
+        print(log_output)
 
         assert exit_code == 0
 
         # Verify all content is properly encoded in UTF-8
         content = output_file.read_text(encoding="utf-8")
+        
+        print(f"\n=== DEBUG: Output file size: {output_file.stat().st_size} bytes ===")
+        print(f"\n=== DEBUG: Checking for content in output ===")
+        
+        # Check what files are mentioned in the output
+        for filename in ["utf8.txt", "latin1.txt", "utf16.txt"]:
+            if filename in content:
+                print(f"  ✓ Found {filename} in output")
+            else:
+                print(f"  ✗ {filename} NOT found in output")
 
         assert "UTF-8 content: Hello 世界" in content
         assert "Latin-1 content: café" in content
@@ -73,7 +99,7 @@ class TestM1FEncoding(BaseM1FTest):
                     str(test_file.parent),
                     "--output-file",
                     str(output_file),
-                    "--target-encoding",
+                    "--convert-to-charset",
                     target_encoding,
                     "--force",
                 ]
@@ -114,6 +140,7 @@ class TestM1FEncoding(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(output_file),
+                "--include-binary-files",
                 "--force",
             ]
         )
@@ -156,6 +183,7 @@ class TestM1FEncoding(BaseM1FTest):
                 str(output_file),
                 "--separator-style",
                 "MachineReadable",
+                "--include-binary-files",
                 "--force",
             ]
         )
@@ -191,6 +219,7 @@ class TestM1FEncoding(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(output_file),
+                "--include-binary-files",
                 "--force",
             ]
         )
@@ -241,6 +270,7 @@ class TestM1FEncoding(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(output_file),
+                "--include-binary-files",
                 "--force",
             ]
         )
@@ -290,6 +320,7 @@ class TestM1FEncoding(BaseM1FTest):
                 str(source_dir),
                 "--output-file",
                 str(output_file),
+                "--include-binary-files",
                 "--verbose",
                 "--force",
             ]
