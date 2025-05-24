@@ -103,6 +103,17 @@ class Html2mdConverter:
         if self.config.conversion.generate_frontmatter:
             import yaml
             frontmatter = self.config.conversion.frontmatter_fields or {}
+
+            # Extract title from HTML if not provided
+            if 'title' not in frontmatter:
+                title_tag = parsed.find('title')
+                if title_tag and title_tag.string:
+                    frontmatter['title'] = title_tag.string.strip()
+
+            # Add source file if provided
+            if source_file and 'source_file' not in frontmatter:
+                frontmatter['source_file'] = source_file
+
             if frontmatter:
                 fm_str = yaml.dump(frontmatter, default_flow_style=False)
                 markdown = f"---\n{fm_str}---\n\n{markdown}"
@@ -123,7 +134,7 @@ class Html2mdConverter:
         for url in urls:
             # Just simulate conversion
             filename = url.split('/')[-1] + '.md'
-            output_path = self.config.destination / filename
+            output_path = Path(self.config.destination) / filename
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(f"# Converted from {url}")
             results.append(output_path)

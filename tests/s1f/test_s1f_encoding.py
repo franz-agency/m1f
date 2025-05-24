@@ -187,20 +187,27 @@ class TestS1FEncoding(BaseS1FTest):
 
         with open(output_file, "w", encoding="utf-8") as f:
             # Standard format with various special characters
-            f.write("FILE: unicode_test.txt\n")
-            f.write("=" * 40 + "\n")
-            f.write("Unicode test: 你好 мир 🌍\n")
-            f.write("=" * 40 + "\n\n")
+            import hashlib
+            
+            # Unicode test file
+            content1 = "Unicode test: 你好 мир 🌍\n"
+            checksum1 = hashlib.sha256(content1.encode("utf-8")).hexdigest()
+            f.write(f"======= unicode_test.txt | CHECKSUM_SHA256: {checksum1} ======\n")
+            f.write(content1)
+            f.write("\n")
 
-            f.write("FILE: latin_test.txt\n")
-            f.write("=" * 40 + "\n")
-            f.write("Latin characters: àèìòù ÀÈÌÒÙ\n")
-            f.write("=" * 40 + "\n\n")
+            # Latin test file
+            content2 = "Latin characters: àèìòù ÀÈÌÒÙ\n"
+            checksum2 = hashlib.sha256(content2.encode("utf-8")).hexdigest()
+            f.write(f"======= latin_test.txt | CHECKSUM_SHA256: {checksum2} ======\n")
+            f.write(content2)
+            f.write("\n")
 
-            f.write("FILE: symbols.txt\n")
-            f.write("=" * 40 + "\n")
-            f.write("Symbols: €£¥ ©®™ ½¼¾\n")
-            f.write("=" * 40 + "\n\n")
+            # Symbols test file
+            content3 = "Symbols: €£¥ ©®™ ½¼¾\n"
+            checksum3 = hashlib.sha256(content3.encode("utf-8")).hexdigest()
+            f.write(f"======= symbols.txt | CHECKSUM_SHA256: {checksum3} ======\n")
+            f.write(content3)
 
         # Extract files
         exit_code, _ = run_s1f(
@@ -232,16 +239,20 @@ class TestS1FEncoding(BaseS1FTest):
         output_file = temp_dir / "bom_test.txt"
 
         with open(output_file, "w", encoding="utf-8") as f:
-            f.write("FILE: with_bom.txt\n")
-            f.write("=" * 40 + "\n")
-            # Write UTF-8 BOM followed by content
-            f.write("\ufeffBOM test content\n")
-            f.write("=" * 40 + "\n\n")
+            import hashlib
+            
+            # File with BOM
+            content1 = "\ufeffBOM test content\n"
+            checksum1 = hashlib.sha256(content1.encode("utf-8")).hexdigest()
+            f.write(f"======= with_bom.txt | CHECKSUM_SHA256: {checksum1} ======\n")
+            f.write(content1)
+            f.write("\n")
 
-            f.write("FILE: without_bom.txt\n")
-            f.write("=" * 40 + "\n")
-            f.write("No BOM content\n")
-            f.write("=" * 40 + "\n")
+            # File without BOM
+            content2 = "No BOM content\n"
+            checksum2 = hashlib.sha256(content2.encode("utf-8")).hexdigest()
+            f.write(f"======= without_bom.txt | CHECKSUM_SHA256: {checksum2} ======\n")
+            f.write(content2)
 
         # Extract
         exit_code, _ = run_s1f(
@@ -297,9 +308,34 @@ class TestS1FEncoding(BaseS1FTest):
         if not test_files:
             pytest.skip("No suitable encodings available")
 
-        # Create m1f output with MachineReadable format
-        files_dict = {name: content for name, content in test_files}
-        m1f_output = create_m1f_output(files_dict, "MachineReadable")
+        # Create m1f output directly from the source directory
+        # to preserve the original encodings
+        import subprocess
+        import sys
+        from pathlib import Path
+        
+        m1f_script = Path(__file__).parent.parent.parent / "tools" / "m1f.py"
+        m1f_output = temp_dir / "m1f_output_machinereadable.txt"
+        
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(m1f_script),
+                "--source-directory",
+                str(source_dir),
+                "--output-file",
+                str(m1f_output),
+                "--separator-style",
+                "MachineReadable",
+                "--include-binary-files",
+                "--force",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        
+        if result.returncode != 0:
+            pytest.fail(f"m1f failed: {result.stderr}")
 
         # Extract with s1f
         exit_code, _ = run_s1f(

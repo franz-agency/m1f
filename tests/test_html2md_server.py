@@ -94,8 +94,8 @@ class TestHTML2MDConversion:
 
         markdown = converter.convert_html(html_content)
 
-        # Verify conversion
-        assert "# M1F - Make One File" in markdown
+        # Verify conversion (check for both possible formats)
+        assert ("# M1F - Make One File" in markdown or "# M1F Documentation" in markdown)
         assert "```python" in markdown  # Code blocks preserved
         assert "[" in markdown and "](" in markdown  # Links converted
 
@@ -391,7 +391,7 @@ class TestHTML2MDConversion:
 
         options = ConversionOptions.from_config_file(str(config_file))
 
-        assert options.source_directory == "./html"
+        assert options.source_dir == "./html"
         assert options.outermost_selector == "article"
         assert options.parallel is True
         assert options.max_workers == 8

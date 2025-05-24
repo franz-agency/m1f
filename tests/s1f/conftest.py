@@ -114,7 +114,7 @@ def create_combined_file(temp_dir: Path) -> Callable[[dict[str, str], str, str],
                         "."
                     )  # Remove leading dot
 
-                    f.write(f"## {Path(filepath).name}\n")
+                    f.write(f"## {filepath}\n")
                     f.write(
                         f"**Date Modified:** 2024-01-01 00:00:00 | **Size:** {len(content_bytes)} B | "
                     )
@@ -122,7 +122,11 @@ def create_combined_file(temp_dir: Path) -> Callable[[dict[str, str], str, str],
                         f"**Type:** {Path(filepath).suffix} | **Encoding:** utf-8 | "
                     )
                     f.write(f"**Checksum (SHA256):** {checksum}\n\n")
-                    f.write(f"```{file_extension}{file_content}```\n\n")
+                    # Add double newline only if not the last file
+                    if filepath != list(files.keys())[-1]:
+                        f.write(f"```{file_extension}\n{file_content}```\n\n")
+                    else:
+                        f.write(f"```{file_extension}\n{file_content}```")
 
                 elif separator_style == "MachineReadable":
                     import json
@@ -277,6 +281,7 @@ def create_m1f_output(temp_dir) -> Callable[[dict[str, str], str], Path]:
                 str(output_file),
                 "--separator-style",
                 separator_style,
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
             ],
             capture_output=True,

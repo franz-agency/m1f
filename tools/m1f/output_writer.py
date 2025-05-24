@@ -160,6 +160,7 @@ class OutputWriter:
                 if self.config.output.separator_style in [
                     SeparatorStyle.STANDARD,
                     SeparatorStyle.DETAILED,
+                    SeparatorStyle.MARKDOWN,
                 ]:
                     outfile.write(self.config.output.line_ending.value)
 

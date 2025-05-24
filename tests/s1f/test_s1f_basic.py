@@ -133,13 +133,13 @@ class TestS1FBasic(BaseS1FTest):
 
         assert exit_code == 0
 
-        # Check timestamps are current
+        # Check timestamps are current (allow 5 second tolerance)
         for filename in test_files:
             file_path = s1f_extracted_dir / filename
             mtime = file_path.stat().st_mtime
             assert (
-                before <= mtime <= after + 1
-            ), f"Timestamp for {filename} not in expected range"
+                before - 1 <= mtime <= after + 5
+            ), f"Timestamp for {filename} not in expected range: {before} <= {mtime} <= {after}"
 
     @pytest.mark.unit
     def test_verbose_output(

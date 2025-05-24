@@ -396,6 +396,8 @@ class MarkdownParser(SeparatorParser):
             return raw_content[:-5]
         elif raw_content.endswith("```\n"):
             return raw_content[:-4]
+        elif raw_content.endswith("```"):
+            return raw_content[:-3]
         else:
             self.logger.warning(
                 f"Markdown file '{current_match.metadata['path']}' missing closing marker"

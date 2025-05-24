@@ -2041,6 +2041,7 @@ class TestM1F:
                 "utf-8",
                 "--separator-style",
                 "MachineReadable",  # Use MachineReadable to check JSON metadata
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
                 "--verbose",
             ]
@@ -2088,6 +2089,7 @@ class TestM1F:
                 "latin-1",
                 "--separator-style",
                 "MachineReadable",
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
                 "--verbose",
             ]
@@ -3344,6 +3346,7 @@ class TestM1F:
                 "utf-8",
                 "--separator-style",
                 "MachineReadable",  # Use MachineReadable to check JSON metadata
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
                 "--verbose",
             ]
@@ -3391,6 +3394,7 @@ class TestM1F:
                 "latin-1",
                 "--separator-style",
                 "MachineReadable",
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
                 "--verbose",
             ]
@@ -4647,6 +4651,7 @@ class TestM1F:
                 "utf-8",
                 "--separator-style",
                 "MachineReadable",  # Use MachineReadable to check JSON metadata
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
                 "--verbose",
             ]
@@ -4694,6 +4699,7 @@ class TestM1F:
                 "latin-1",
                 "--separator-style",
                 "MachineReadable",
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
                 "--verbose",
             ]
@@ -5950,6 +5956,7 @@ class TestM1F:
                 "utf-8",
                 "--separator-style",
                 "MachineReadable",  # Use MachineReadable to check JSON metadata
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
                 "--verbose",
             ]
@@ -5997,6 +6004,7 @@ class TestM1F:
                 "latin-1",
                 "--separator-style",
                 "MachineReadable",
+                "--include-binary-files",  # Include non-UTF8 files
                 "--force",
                 "--verbose",
             ]
