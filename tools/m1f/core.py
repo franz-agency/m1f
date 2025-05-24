@@ -297,7 +297,8 @@ class FileCombiner:
         for file_path, rel_path in files:
             hash_input.append(str(rel_path))
             try:
-                mtime = file_path.stat().st_mtime
+                import os
+                mtime = os.path.getmtime(file_path)
                 hash_input.append(str(mtime))
             except Exception:
                 hash_input.append(f"ERROR_{rel_path}")
@@ -311,11 +312,21 @@ class FileCombiner:
         content_hash = hash_obj.hexdigest()[:12]
 
         # Create new filename
-        if self.config.output.add_timestamp:
-            new_stem = f"{output_path.stem}_{content_hash}"
+        # If timestamp was already added, we need to extract it and reorder
+        if self.config.output.add_timestamp and "_" in output_path.stem:
+            # Check if stem ends with timestamp pattern _YYYYMMDD_HHMMSS
+            parts = output_path.stem.rsplit("_", 2)
+            if len(parts) == 3 and len(parts[1]) == 8 and len(parts[2]) == 6:
+                # Reorder to: base_hash_timestamp
+                base_name = parts[0]
+                timestamp = f"_{parts[1]}_{parts[2]}"
+                new_stem = f"{base_name}_{content_hash}{timestamp}"
+            else:
+                # Fallback if pattern doesn't match
+                new_stem = f"{output_path.stem}_{content_hash}"
         else:
-            new_stem = f"{output_path.stem}_{content_hash}_"
-
+            new_stem = f"{output_path.stem}_{content_hash}"
+        
         new_path = output_path.with_name(f"{new_stem}{output_path.suffix}")
 
         self.logger.info(f"Added content hash to filename: {new_path.name}")

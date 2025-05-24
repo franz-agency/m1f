@@ -22,11 +22,22 @@ def _scan_files_for_sensitive_info(files_to_process):
     from pathlib import Path
 
     # Create basic config for scanning
-    config = Config()
-    config.security.security_check = True
+    from .config import FilterConfig, OutputConfig, EncodingConfig, SecurityConfig, ArchiveConfig, LoggingConfig, SecurityCheckMode
+    
+    config = Config(
+        source_directory=Path("."),
+        input_file=None,
+        input_include_files=[],
+        output=OutputConfig(output_file=Path("test.txt")),
+        filter=FilterConfig(),
+        encoding=EncodingConfig(),
+        security=SecurityConfig(security_check=SecurityCheckMode.WARN),
+        archive=ArchiveConfig(),
+        logging=LoggingConfig()
+    )
 
     # Create logger manager
-    logger_manager = LoggerManager(config)
+    logger_manager = LoggerManager(config.logging, Path("test_output.txt"))
 
     # Create security scanner
     scanner = SecurityScanner(config, logger_manager)
@@ -46,10 +57,21 @@ def _scan_files_for_sensitive_info(files_to_process):
 def _detect_symlink_cycles(path):
     """Legacy function for backward compatibility with tests."""
     from pathlib import Path
+    from .config import FilterConfig, OutputConfig, EncodingConfig, SecurityConfig, ArchiveConfig, LoggingConfig
 
     # Create basic config
-    config = Config()
-    logger_manager = LoggerManager(config)
+    config = Config(
+        source_directory=Path("."),
+        input_file=None,
+        input_include_files=[],
+        output=OutputConfig(output_file=Path("test.txt")),
+        filter=FilterConfig(),
+        encoding=EncodingConfig(),
+        security=SecurityConfig(),
+        archive=ArchiveConfig(),
+        logging=LoggingConfig()
+    )
+    logger_manager = LoggerManager(config.logging, Path("test_output.txt"))
 
     # Create file processor
     processor = FileProcessor(config, logger_manager)

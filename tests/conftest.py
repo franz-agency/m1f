@@ -117,7 +117,10 @@ def create_test_directory_structure(
                 _create_structure(content, path)
             else:
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(content, encoding="utf-8")
+                if isinstance(content, bytes):
+                    path.write_bytes(content)
+                else:
+                    path.write_text(content, encoding="utf-8")
 
         return base_path
 

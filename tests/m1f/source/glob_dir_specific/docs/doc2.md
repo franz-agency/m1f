@@ -1,1 +1,1 @@
-Markdown doc 2
+Markdown doc 2 in glob_dir_specific

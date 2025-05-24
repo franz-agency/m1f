@@ -1,1 +1,1 @@
-Text notes
+Text notes in glob_dir_specific/docs

@@ -262,7 +262,7 @@ class TestHTML2MDConversion:
         markdown = converter.convert_html(html)
 
         assert "| Header 1 | Header 2 |" in markdown
-        assert "|----------|----------|" in markdown or "|---|---|" in markdown
+        assert "| --- | --- |" in markdown  # markdownify uses short separators
         assert "| Cell 1 | Cell 2 |" in markdown
         assert "| Cell 3 | Cell 4 |" in markdown
 
@@ -403,7 +403,7 @@ class TestCLI:
     def test_cli_help(self):
         """Test CLI help output."""
         result = subprocess.run(
-            [sys.executable, "tools/html2md.py", "--help"],
+            [sys.executable, "-m", "tools.html2md", "--help"],
             capture_output=True,
             text=True,
         )
@@ -418,7 +418,7 @@ class TestCLI:
         result = subprocess.run(
             [
                 sys.executable,
-                "tools/html2md.py",
+                "-m", "tools.html2md",
                 "--source-dir",
                 f"{test_server.base_url}/page",
                 "--destination-dir",
@@ -443,7 +443,7 @@ class TestCLI:
         result = subprocess.run(
             [
                 sys.executable,
-                "tools/html2md.py",
+                "-m", "tools.html2md",
                 "--source-dir",
                 f"{test_server.base_url}/page",
                 "--destination-dir",

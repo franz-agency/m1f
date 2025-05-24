@@ -156,3 +156,7 @@ class FileSplitter:
                 f"✗ Extraction completed with {result.files_failed} error(s). "
                 f"Check the logs above for details."
             )
+
+
+# Alias for backward compatibility with tests
+S1FExtractor = FileSplitter

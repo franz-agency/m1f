@@ -414,9 +414,9 @@ class TestM1FAdvanced(BaseM1FTest):
         ]
         assert len(output_files) == 1, "Expected one output file with hash"
 
-        # Extract hash from filename (format: base_hash_.txt)
+        # Extract hash from filename (format: base_hash.txt)
         filename_parts = output_files[0].stem.split("_")
-        first_hash = filename_parts[-2]  # The hash is the second-to-last part
+        first_hash = filename_parts[-1]  # The hash is the last part
         assert len(first_hash) == 12, "Hash should be 12 characters"
 
         # Run again without changes - hash should be the same
@@ -436,7 +436,7 @@ class TestM1FAdvanced(BaseM1FTest):
             for f in temp_dir.glob(f"{output_base}_second_*.txt")
             if not f.name.endswith(("_filelist.txt", "_dirlist.txt"))
         ]
-        second_hash = second_files[0].stem.split("_")[-2]
+        second_hash = second_files[0].stem.split("_")[-1]
 
         assert first_hash == second_hash, "Hash should be same for unchanged files"
 
@@ -459,7 +459,7 @@ class TestM1FAdvanced(BaseM1FTest):
             for f in temp_dir.glob(f"{output_base}_third_*.txt")
             if not f.name.endswith(("_filelist.txt", "_dirlist.txt"))
         ]
-        third_hash = third_files[0].stem.split("_")[-2]
+        third_hash = third_files[0].stem.split("_")[-1]
 
         assert first_hash != third_hash, "Hash should change when file is modified"
 
@@ -515,6 +515,8 @@ class TestM1FAdvanced(BaseM1FTest):
                 "--output-file",
                 str(output_no_default),
                 "--no-default-excludes",
+                "--include-binary-files",  # Include .pyc files
+                "--include-dot-paths",  # Include .git directory
                 "--force",
             ]
         )
@@ -600,9 +602,9 @@ class TestM1FAdvanced(BaseM1FTest):
         content_no_binary = output_no_binary.read_text()
         assert "text.txt" in content_no_binary
         assert "Text content" in content_no_binary
-        # Binary files should be noted but content excluded
-        assert "image.png" in content_no_binary
-        assert "PNG" not in content_no_binary  # Binary content not included
+        # Binary files are completely excluded by default
+        assert "image.png" not in content_no_binary
+        assert "data.bin" not in content_no_binary
 
         # Test with binary files included
         output_with_binary = temp_dir / "with_binary.txt"

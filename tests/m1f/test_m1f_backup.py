@@ -1206,6 +1206,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--force",
             ]
         )
@@ -1404,6 +1405,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--excludes",
                 "node_modules",
                 "--force",
@@ -1502,7 +1504,7 @@ class TestM1F:
             ]
         )
 
-        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*_*.txt"))
+        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
         assert (
             len(created_files) == 1
         ), f"Expected 1 output file with hash, found {len(created_files)}"
@@ -2507,6 +2509,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--force",
             ]
         )
@@ -2705,6 +2708,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--excludes",
                 "node_modules",
                 "--force",
@@ -2803,7 +2807,7 @@ class TestM1F:
             ]
         )
 
-        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*_*.txt"))
+        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
         assert (
             len(created_files) == 1
         ), f"Expected 1 output file with hash, found {len(created_files)}"
@@ -3808,6 +3812,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--force",
             ]
         )
@@ -4006,6 +4011,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--excludes",
                 "node_modules",
                 "--force",
@@ -4104,7 +4110,7 @@ class TestM1F:
             ]
         )
 
-        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*_*.txt"))
+        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
         assert (
             len(created_files) == 1
         ), f"Expected 1 output file with hash, found {len(created_files)}"
@@ -5109,6 +5115,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--force",
             ]
         )
@@ -5307,6 +5314,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--excludes",
                 "node_modules",
                 "--force",
@@ -5405,7 +5413,7 @@ class TestM1F:
             ]
         )
 
-        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*_*.txt"))
+        created_files = list(OUTPUT_DIR.glob(f"{base_output_name}_*.txt"))
         assert (
             len(created_files) == 1
         ), f"Expected 1 output file with hash, found {len(created_files)}"
@@ -6410,6 +6418,7 @@ class TestM1F:
                 "--output-file",
                 str(output_file),
                 "--no-default-excludes",
+                "--include-dot-paths",  # Include .git directory
                 "--force",
             ]
         )

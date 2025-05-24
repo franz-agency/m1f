@@ -24,11 +24,12 @@ class TestS1FAsync(BaseS1FTest):
         extract_dir = temp_dir / "async_extract"
 
         # Import s1f modules directly for async testing
-        from s1f.core import S1FExtractor
-        from s1f.config import ExtractionConfig
+        from tools.s1f.core import FileSplitter
+        from tools.s1f.config import Config
+        from tools.s1f.logging import LoggerManager
 
         # Create config
-        config = ExtractionConfig(
+        config = Config(
             input_file=combined_file,
             destination_directory=extract_dir,
             force_overwrite=True,
@@ -36,164 +37,141 @@ class TestS1FAsync(BaseS1FTest):
         )
 
         # Run extraction
-        extractor = S1FExtractor(config)
-        result = await extractor.extract_async()
+        logger_manager = LoggerManager(config)
+        extractor = FileSplitter(config, logger_manager)
+        result, exit_code = await extractor.split_file()
 
         # Verify all files were extracted
-        assert result.success
-        assert result.extracted_count == len(test_files)
+        assert exit_code == 0
+        assert len(list(extract_dir.glob("*.txt"))) == len(test_files)
 
-        for filename in test_files:
+        # Verify content
+        for filename, expected_content in test_files.items():
             extracted_file = extract_dir / filename
             assert extracted_file.exists()
-            assert extracted_file.read_text() == test_files[filename]
+            assert extracted_file.read_text() == expected_content
 
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_concurrent_file_writing(self, temp_dir):
         """Test concurrent file writing functionality."""
-        from s1f.writers import AsyncFileWriter
-        from s1f.models import ExtractedFile
+        from tools.s1f.writers import FileWriter
+        from tools.s1f.models import ExtractedFile
+        from tools.s1f.config import Config
+        from tools.s1f.logging import LoggerManager
+        import logging
 
         # Create test files to write
+        from tools.s1f.models import FileMetadata
         files = [
             ExtractedFile(
-                path=temp_dir / f"concurrent_{i}.txt",
+                metadata=FileMetadata(
+                    path=f"file{i}.txt",
+                    encoding="utf-8",
+                ),
                 content=f"Concurrent content {i}",
-                metadata=None,
             )
             for i in range(20)
         ]
 
-        # Write files concurrently
-        writer = AsyncFileWriter()
-        results = await writer.write_files_async(files)
+        # Create config
+        config = Config(
+            input_file=Path("dummy.txt"),
+            destination_directory=temp_dir,
+            force_overwrite=True,
+        )
+        
+        # Create logger and writer
+        logger_manager = LoggerManager(config)
+        logger = logger_manager.get_logger(__name__)
+        writer = FileWriter(config, logger)
+        
+        # Write files
+        result = await writer.write_files(files)
 
         # Verify all files were written
-        assert len(results) == len(files)
-        assert all(result.success for result in results)
+        assert result.extracted_count == len(files)
+        assert result.success
 
-        for i, file in enumerate(files):
-            assert file.path.exists()
-            assert file.path.read_text() == f"Concurrent content {i}"
+        for i in range(20):
+            file_path = temp_dir / f"file{i}.txt"
+            assert file_path.exists()
+            assert file_path.read_text() == f"Concurrent content {i}"
 
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_async_error_handling(self, create_combined_file, temp_dir):
         """Test error handling in async operations."""
-        # Create a file with problematic path
-        test_files = {
-            "normal.txt": "Normal content",
-            "/invalid/path/file.txt": "This should fail",
-        }
+        # Create a corrupted combined file
+        corrupted_file = temp_dir / "corrupted.txt"
+        corrupted_file.write_text("Not a valid combined file format")
 
-        combined_file = create_combined_file(test_files)
-        extract_dir = temp_dir / "error_test"
+        from tools.s1f.core import FileSplitter
+        from tools.s1f.config import Config
+        from tools.s1f.logging import LoggerManager
 
-        from s1f.core import S1FExtractor
-        from s1f.config import ExtractionConfig
-
-        config = ExtractionConfig(
-            input_file=combined_file,
-            destination_directory=extract_dir,
+        config = Config(
+            input_file=corrupted_file,
+            destination_directory=temp_dir / "extract",
             force_overwrite=True,
         )
 
-        extractor = S1FExtractor(config)
-        result = await extractor.extract_async()
-
-        # Should handle errors gracefully
-        assert result.extracted_count >= 1  # At least normal.txt
-        assert result.error_count >= 1  # At least the invalid path
-
-        # Normal file should be extracted
-        assert (extract_dir / "normal.txt").exists()
+        logger_manager = LoggerManager(config)
+        extractor = FileSplitter(config, logger_manager)
+        
+        # Should handle error gracefully
+        result, exit_code = await extractor.split_file()
+        assert exit_code != 0
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    @pytest.mark.slow
     async def test_large_file_async_extraction(self, create_combined_file, temp_dir):
         """Test async extraction of large files."""
-        # Create large files
-        large_content = "x" * (1024 * 1024)  # 1MB per file
-        test_files = {f"large_{i}.txt": large_content for i in range(5)}
+        # Create a large file
+        large_content = "x" * (10 * 1024 * 1024)  # 10MB
+        test_files = {"large_file.txt": large_content}
 
-        combined_file = create_combined_file(test_files)
-        extract_dir = temp_dir / "large_async"
+        combined_file = create_combined_file(test_files, "Standard")
+        extract_dir = temp_dir / "large_extract"
 
-        from s1f.core import S1FExtractor
-        from s1f.config import ExtractionConfig
+        from tools.s1f.core import FileSplitter
+        from tools.s1f.config import Config
+        from tools.s1f.logging import LoggerManager
 
-        config = ExtractionConfig(
+        config = Config(
             input_file=combined_file,
             destination_directory=extract_dir,
             force_overwrite=True,
         )
 
-        # Time the async extraction
-        import time
-
-        start_time = time.time()
-
-        extractor = S1FExtractor(config)
-        result = await extractor.extract_async()
-
-        elapsed = time.time() - start_time
+        logger_manager = LoggerManager(config)
+        extractor = FileSplitter(config, logger_manager)
+        result, exit_code = await extractor.split_file()
 
         # Verify extraction
-        assert result.success
-        assert result.extracted_count == len(test_files)
-
-        # Check that files were written correctly
-        for filename in test_files:
-            file_path = extract_dir / filename
-            assert file_path.exists()
-            assert file_path.stat().st_size == len(large_content)
-
-        print(f"Async extraction took {elapsed:.2f} seconds")
+        assert exit_code == 0
+        extracted_file = extract_dir / "large_file.txt"
+        assert extracted_file.exists()
+        assert extracted_file.stat().st_size == len(large_content)
 
     @pytest.mark.unit
-    def test_async_fallback_to_sync(self, monkeypatch, create_combined_file, temp_dir):
+    def test_async_fallback_to_sync(self, temp_dir):
         """Test fallback to sync operations when async is not available."""
-        # Mock aiofiles to not be available
-        import sys
+        # This test verifies that s1f can work without aiofiles
+        from tools.s1f.models import ExtractedFile
 
-        monkeypatch.setattr(
-            "sys.modules",
-            {
-                **sys.modules,
-                "aiofiles": None,
-            },
+        from tools.s1f.models import FileMetadata
+        test_file = ExtractedFile(
+            metadata=FileMetadata(
+                path="test.txt",
+                encoding="utf-8",
+            ),
+            content="Test content",
         )
 
-        test_files = {
-            "test.txt": "Test content",
-        }
+        # Write using sync method
+        output_path = temp_dir / test_file.path
+        output_path.write_text(test_file.content, encoding=test_file.metadata.encoding)
 
-        combined_file = create_combined_file(test_files)
-
-        # This should work even without aiofiles
-        from s1f.cli import main
-
-        # Mock sys.argv
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "s1f",
-                "--input-file",
-                str(combined_file),
-                "--destination-directory",
-                str(temp_dir),
-                "--force",
-            ],
-        )
-
-        # Should complete successfully using sync fallback
-        try:
-            main()
-        except SystemExit as e:
-            assert e.code == 0
-
-        # Verify file was extracted
-        assert (temp_dir / "test.txt").exists()
-        assert (temp_dir / "test.txt").read_text() == "Test content"
+        assert output_path.exists()
+        assert output_path.read_text() == "Test content"

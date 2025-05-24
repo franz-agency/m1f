@@ -11,11 +11,19 @@ __author__ = "Franz und Franz (https://franz.agency)"
 from .api import Html2mdConverter
 from .config import Config, ConversionOptions
 from .core import HTMLParser, MarkdownConverter
+from .utils import convert_html, adjust_internal_links, extract_title_from_html
+
+# Alias for backward compatibility
+HTML2MDConverter = Html2mdConverter
 
 __all__ = [
     "Html2mdConverter",
+    "HTML2MDConverter",  # Alias
     "Config",
     "ConversionOptions",
     "HTMLParser",
     "MarkdownConverter",
+    "convert_html",
+    "adjust_internal_links",
+    "extract_title_from_html",
 ]
