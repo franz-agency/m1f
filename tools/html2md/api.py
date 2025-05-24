@@ -132,11 +132,8 @@ class Html2mdConverter:
         # Simple implementation for tests
         results = []
         for url in urls:
-            # Just simulate conversion
-            filename = url.split('/')[-1] + '.md'
-            output_path = Path(self.config.destination) / filename
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(f"# Converted from {url}")
+            # Actually convert the URL
+            output_path = self.convert_url(url)
             results.append(output_path)
         return results
 
@@ -231,27 +228,24 @@ class Html2mdConverter:
         logger.info(f"Fetching {url}")
 
         # Fetch HTML
-        response = requests.get(
-            url,
-            headers={"User-Agent": self.config.crawler.user_agent},
-            timeout=self.config.crawler.timeout,
-        )
+        response = requests.get(url)
         response.raise_for_status()
 
-        # Parse HTML
-        parsed = self._parser.parse(response.text)
-
-        # Add URL as base for link resolution
-        markdown = self._converter.convert(parsed, base_url=url)
+        # Convert HTML to Markdown
+        markdown = self.convert_html(response.text, base_url=url)
 
         # Determine output filename
         parsed_url = urlparse(url)
-        filename = Path(parsed_url.path).name or "index.html"
-        output_path = self.config.destination / filename.replace(".html", ".md")
+        path_parts = parsed_url.path.strip('/').split('/')
+        filename = path_parts[-1] if path_parts and path_parts[-1] else "index"
+        if not filename.endswith('.md'):
+            filename = filename.replace('.html', '') + '.md'
+        output_path = Path(self.config.destination) / filename
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write file
-        output_path.write_text(markdown, encoding=self.config.target_encoding)
+        encoding = getattr(self.config, 'target_encoding', 'utf-8')
+        output_path.write_text(markdown, encoding=encoding)
 
         logger.info(f"Saved to {output_path}")
         return output_path

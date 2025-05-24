@@ -311,9 +311,22 @@ def main() -> None:
             )
             converter = Html2mdConverter(options)
             
-            # For URL sources, just print success
+            # For URL sources, convert them
             if args.source_dir.startswith("http"):
                 console.print(f"Converting {args.source_dir}")
+                
+                # Handle include patterns if specified
+                if args.include_patterns:
+                    # Convert specific pages
+                    import asyncio
+                    urls = [f"{args.source_dir}/{pattern}" for pattern in args.include_patterns]
+                    results = asyncio.run(converter.convert_directory_from_urls(urls))
+                    console.print(f"Converted {len(results)} pages")
+                else:
+                    # Convert single URL
+                    output_path = converter.convert_url(args.source_dir)
+                    console.print(f"Converted to {output_path}")
+                
                 console.print("Conversion completed successfully")
             sys.exit(0)
         sys.exit(0)

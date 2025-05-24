@@ -346,7 +346,7 @@ class TestHTML2MDConversion:
 
         # Verify all conversions completed
         assert len(results) == len(pages)
-        assert all(r.success for r in results)
+        assert all(isinstance(r, Path) and r.exists() for r in results)
 
         # Check output files exist
         output_files = list(Path(temp_output_dir).glob("*.md"))
