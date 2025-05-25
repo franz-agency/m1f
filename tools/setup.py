@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="m1f",
-    version="3.0.0",
+    version="2.0.1",
     description="Make One File - Combine multiple text files into a single output file",
     author="Franz und Franz",
     author_email="info@franz.agency",

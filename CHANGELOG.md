@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-05-25
+
+### Fixed
+
+- All test suite failures now pass (100% success rate)
+  - S1F: Fixed content normalization and timestamp tolerance issues
+  - M1F: Fixed encoding test with proper binary file handling
+  - HTML2MD: Fixed server tests and API implementation
+  - Security: Fixed warning log format detection with ANSI codes
+- Documentation formatting and consistency issues
+
+### Changed
+
+- Applied Black formatting to all Python code
+- Applied Prettier formatting to all Markdown files
+- Updated all documentation to consistently use module execution syntax
+
+### Documentation
+
+- Updated all docs to reflect v2.0.0 architecture changes
+- Added architecture sections to all tool documentation
+- Modernized API examples with async/await patterns
+- Updated token limits for latest LLM models
+
 ## [2.0.0] - 2025-05-25
 
 ### 🚀 Major Architectural Overhaul
