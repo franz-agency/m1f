@@ -95,7 +95,7 @@ class TestHTML2MDConversion:
         markdown = converter.convert_html(html_content)
 
         # Verify conversion (check for both possible formats)
-        assert ("# M1F - Make One File" in markdown or "# M1F Documentation" in markdown)
+        assert "# M1F - Make One File" in markdown or "# M1F Documentation" in markdown
         assert "```python" in markdown  # Code blocks preserved
         assert "[" in markdown and "](" in markdown  # Links converted
 
@@ -418,7 +418,8 @@ class TestCLI:
         result = subprocess.run(
             [
                 sys.executable,
-                "-m", "tools.html2md",
+                "-m",
+                "tools.html2md",
                 "--source-dir",
                 f"{test_server.base_url}/page",
                 "--destination-dir",
@@ -443,7 +444,8 @@ class TestCLI:
         result = subprocess.run(
             [
                 sys.executable,
-                "-m", "tools.html2md",
+                "-m",
+                "tools.html2md",
                 "--source-dir",
                 f"{test_server.base_url}/page",
                 "--destination-dir",

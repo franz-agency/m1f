@@ -342,7 +342,7 @@ test_*.py
         assert "important.log" in content
         assert "test_keep.py" in content
         assert "Main source" in content
-        
+
         # Note: keep.tmp negation may not work due to pathspec library limitations
         # The pattern *.tmp followed by !keep.tmp doesn't always work as expected
 
@@ -394,7 +394,9 @@ test_*.py
         assert "Initial content 1" in content
 
     @pytest.mark.unit
-    def test_circular_directory_references(self, run_m1f, create_test_file, temp_dir, is_windows):
+    def test_circular_directory_references(
+        self, run_m1f, create_test_file, temp_dir, is_windows
+    ):
         """Test handling of circular directory references (symlinks)."""
         if is_windows:
             pytest.skip("Circular symlink test requires Unix-like system")

@@ -1,7 +1,7 @@
-
 # Code Examples Test
 
-Testing various code blocks, syntax highlighting, and language detection for HTML to Markdown conversion.
+Testing various code blocks, syntax highlighting, and language detection for
+HTML to Markdown conversion.
 
 ## Programming Languages
 
@@ -35,29 +35,29 @@ class HTML2MDConverter:
     def __init__(self, options: ConversionOptions):
         self.options = options
         self._setup_logging()
-    
+
     async def convert_file(self, file_path: Path) -> str:
         """Convert a single HTML file to Markdown."""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 html_content = f.read()
-            
+
             # Parse and convert
             soup = BeautifulSoup(html_content, 'html.parser')
-            
+
             if self.options.outermost_selector:
                 content = soup.select_one(self.options.outermost_selector)
             else:
                 content = soup.body or soup
-            
+
             # Remove ignored elements
             if self.options.ignore_selectors:
                 for selector in self.options.ignore_selectors:
                     for element in content.select(selector):
                         element.decompose()
-            
+
             return markdownify(str(content))
-        
+
         except Exception as e:
             logger.error(f"Error converting {file_path}: {e}")
             raise
@@ -73,6 +73,7 @@ if __name__ == "__main__":
     )
     asyncio.run(converter.convert_all())
 ```
+
 ### JavaScript / TypeScript
 
 ```
@@ -102,24 +103,24 @@ class HTML2MDConverter {
   async convertFile(filePath: string): Promise {
     const html = await fs.readFile(filePath, 'utf-8');
     const $ = cheerio.load(html);
-    
+
     // Apply selectors
-    let content = this.options.outermostSelector 
-      ? $(this.options.outermostSelector) 
+    let content = this.options.outermostSelector
+      ? $(this.options.outermostSelector)
       : $('body');
-    
+
     // Remove ignored elements
     this.options.ignoreSelectors?.forEach(selector => {
       content.find(selector).remove();
     });
-    
+
     // Convert to markdown
     return turndownService.turndown(content.html() || '');
   }
 
   async *convertDirectory(): AsyncGenerator {
     const files = await this.findHTMLFiles();
-    
+
     for (const file of files) {
       try {
         const markdown = await this.convertFile(file);
@@ -149,6 +150,7 @@ for await (const result of converter.convertDirectory()) {
   }
 }
 ```
+
 ### Bash / Shell Script
 
 ```
@@ -185,7 +187,7 @@ log_warning() {
 # Check dependencies
 check_dependencies() {
     local deps=("python3" "pip" "parallel")
-    
+
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" &> /dev/null; then
             log_error "Missing dependency: $dep"
@@ -199,10 +201,10 @@ convert_file() {
     local input_file="$1"
     local output_file="${input_file%.html}.md"
     output_file="${DEST_DIR}/${output_file#${SOURCE_DIR}/}"
-    
+
     # Create output directory
     mkdir -p "$(dirname "$output_file")"
-    
+
     # Run conversion
     if python3 tools/html2md.py \
         --input "$input_file" \
@@ -220,27 +222,27 @@ main() {
     log_info "Starting HTML to Markdown conversion"
     log_info "Source: $SOURCE_DIR"
     log_info "Destination: $DEST_DIR"
-    
+
     check_dependencies
-    
+
     # Find all HTML files
     mapfile -t html_files < <(find "$SOURCE_DIR" -name "*.html" -type f)
-    
+
     if [[ ${#html_files[@]} -eq 0 ]]; then
         log_warning "No HTML files found in $SOURCE_DIR"
         exit 0
     fi
-    
+
     log_info "Found ${#html_files[@]} HTML files"
-    
+
     # Export function for parallel
     export -f convert_file log_info log_error
     export SOURCE_DIR DEST_DIR
-    
+
     # Run conversions in parallel
     printf '%s\n' "${html_files[@]}" | \
         parallel -j "$PARALLEL_JOBS" convert_file
-    
+
     log_info "Conversion complete!"
 }
 
@@ -249,6 +251,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
 ```
+
 ### SQL
 
 ```
@@ -293,7 +296,7 @@ CREATE TABLE file_conversions (
 
 -- Conversion statistics view
 CREATE VIEW conversion_statistics AS
-SELECT 
+SELECT
     DATE(started_at) as conversion_date,
     COUNT(DISTINCT j.id) as total_jobs,
     SUM(j.converted_files) as total_converted,
@@ -307,7 +310,7 @@ GROUP BY DATE(started_at);
 
 -- Example queries
 -- Get recent conversion jobs
-SELECT 
+SELECT
     job_id,
     source_directory,
     status,
@@ -317,6 +320,7 @@ FROM conversion_jobs
 ORDER BY started_at DESC
 LIMIT 10;
 ```
+
 ### Go
 
 ```
@@ -331,7 +335,7 @@ import (
     "path/filepath"
     "sync"
     "time"
-    
+
     "github.com/PuerkitoBio/goquery"
     "golang.org/x/sync/errgroup"
 )
@@ -357,7 +361,7 @@ func NewConverter(opts *ConversionOptions) *HTML2MDConverter {
     if opts.MaxWorkers <= 0 {
         opts.MaxWorkers = 4
     }
-    
+
     return &HTML2MDConverter{
         options: opts,
         logger:  log.New(os.Stdout, "[HTML2MD] ", log.LstdFlags),
@@ -371,13 +375,13 @@ func (c *HTML2MDConverter) ConvertFile(ctx context.Context, filePath string) err
     if err != nil {
         return fmt.Errorf("reading file: %w", err)
     }
-    
+
     // Parse HTML
     doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(htmlContent)))
     if err != nil {
         return fmt.Errorf("parsing HTML: %w", err)
     }
-    
+
     // Apply selectors
     var selection *goquery.Selection
     if c.options.OutermostSelector != "" {
@@ -385,21 +389,21 @@ func (c *HTML2MDConverter) ConvertFile(ctx context.Context, filePath string) err
     } else {
         selection = doc.Find("body")
     }
-    
+
     // Remove ignored elements
     for _, selector := range c.options.IgnoreSelectors {
         selection.Find(selector).Remove()
     }
-    
+
     // Convert to Markdown
     markdown := c.htmlToMarkdown(selection)
-    
+
     // Write output file
     outputPath := c.getOutputPath(filePath)
     if err := c.writeOutput(outputPath, markdown); err != nil {
         return fmt.Errorf("writing output: %w", err)
     }
-    
+
     c.logger.Printf("Converted: %s → %s", filePath, outputPath)
     return nil
 }
@@ -407,50 +411,50 @@ func (c *HTML2MDConverter) ConvertFile(ctx context.Context, filePath string) err
 // ConvertDirectory converts all HTML files in a directory
 func (c *HTML2MDConverter) ConvertDirectory(ctx context.Context) error {
     start := time.Now()
-    
+
     // Find all HTML files
     var files []string
     err := filepath.WalkDir(c.options.SourceDir, func(path string, d fs.DirEntry, err error) error {
         if err != nil {
             return err
         }
-        
+
         if !d.IsDir() && filepath.Ext(path) == ".html" {
             files = append(files, path)
         }
         return nil
     })
-    
+
     if err != nil {
         return fmt.Errorf("walking directory: %w", err)
     }
-    
+
     c.logger.Printf("Found %d HTML files", len(files))
-    
+
     // Convert files
     if c.options.Parallel {
         err = c.convertParallel(ctx, files)
     } else {
         err = c.convertSequential(ctx, files)
     }
-    
+
     if err != nil {
         return err
     }
-    
+
     c.logger.Printf("Conversion completed in %v", time.Since(start))
     return nil
 }
 
 func (c *HTML2MDConverter) convertParallel(ctx context.Context, files []string) error {
     g, ctx := errgroup.WithContext(ctx)
-    
+
     // Create a semaphore to limit concurrent workers
     sem := make(chan struct{}, c.options.MaxWorkers)
-    
+
     for _, file := range files {
         file := file // capture loop variable
-        
+
         g.Go(func() error {
             select {
             case <-ctx.Done():
@@ -461,7 +465,7 @@ func (c *HTML2MDConverter) convertParallel(ctx context.Context, files []string) 
             }
         })
     }
-    
+
     return g.Wait()
 }
 
@@ -474,13 +478,14 @@ func main() {
         Parallel:         true,
         MaxWorkers:       8,
     })
-    
+
     ctx := context.Background()
     if err := converter.ConvertDirectory(ctx); err != nil {
         log.Fatal(err)
     }
 }
 ```
+
 ### Rust
 
 ```
@@ -514,22 +519,22 @@ impl Html2MdConverter {
     pub fn new(options: ConversionOptions) -> Self {
         Self { options }
     }
-    
+
     /// Convert a single HTML file to Markdown
     pub async fn convert_file(&self, file_path: &Path) -> Result {
         // Read HTML content
         let html_content = async_fs::read_to_string(file_path)
             .await
             .context("Failed to read HTML file")?;
-        
+
         // Parse HTML
         let document = Html::parse_document(&html_content);
-        
+
         // Apply outermost selector
         let content = if let Some(ref selector_str) = self.options.outermost_selector {
             let selector = Selector::parse(selector_str)
                 .map_err(|e| anyhow::anyhow!("Invalid selector: {:?}", e))?;
-            
+
             document
                 .select(&selector)
                 .next()
@@ -538,7 +543,7 @@ impl Html2MdConverter {
         } else {
             document.html()
         };
-        
+
         // Remove ignored elements
         let mut processed_html = Html::parse_document(&content);
         for ignore_selector in &self.options.ignore_selectors {
@@ -547,39 +552,39 @@ impl Html2MdConverter {
                 // This is simplified for the example
             }
         }
-        
+
         // Convert to Markdown (simplified)
         Ok(self.html_to_markdown(&processed_html))
     }
-    
+
     /// Convert all HTML files in the source directory
     pub async fn convert_directory(&self) -> Result<()> {
         let html_files = self.find_html_files()?;
         println!("Found {} HTML files", html_files.len());
-        
+
         if self.options.parallel {
             self.convert_parallel(html_files).await
         } else {
             self.convert_sequential(html_files).await
         }
     }
-    
+
     /// Convert files in parallel with limited concurrency
     async fn convert_parallel(&self, files: Vec) -> Result<()> {
         let semaphore = Arc::new(Semaphore::new(self.options.max_workers));
-        
+
         let tasks = stream::iter(files)
             .map(|file| {
                 let sem = semaphore.clone();
                 let converter = self.clone();
-                
+
                 async move {
                     let _permit = sem.acquire().await?;
                     converter.convert_file(&file).await
                 }
             })
             .buffer_unordered(self.options.max_workers);
-        
+
         tasks
             .for_each(|result| async {
                 match result {
@@ -588,14 +593,14 @@ impl Html2MdConverter {
                 }
             })
             .await;
-        
+
         Ok(())
     }
-    
+
     /// Find all HTML files in the source directory
     fn find_html_files(&self) -> Result> {
         let mut files = Vec::new();
-        
+
         for entry in walkdir::WalkDir::new(&self.options.source_dir)
             .into_iter()
             .filter_map(|e| e.ok())
@@ -608,7 +613,7 @@ impl Html2MdConverter {
                 }
             }
         }
-        
+
         Ok(files)
     }
 }
@@ -627,10 +632,10 @@ async fn main() -> Result<()> {
         parallel: true,
         max_workers: 8,
     };
-    
+
     let converter = Html2MdConverter::new(options);
     converter.convert_directory().await?;
-    
+
     Ok(())
 }
 ```
@@ -639,9 +644,14 @@ async fn main() -> Result<()> {
 
 ### Mixed Content with Inline Code
 
-When working with HTML to Markdown conversion, you might encounter various inline code snippets like `document.querySelector('.content')` or shell commands like `python tools/html2md.py --help`. The converter should preserve these inline code blocks.
+When working with HTML to Markdown conversion, you might encounter various
+inline code snippets like `document.querySelector('.content')` or shell commands
+like `python tools/html2md.py --help`. The converter should preserve these
+inline code blocks.
 
-Here's a paragraph with multiple inline code elements: The `HTML2MDConverter` class uses `BeautifulSoup` for parsing and `markdownify` for conversion. You can configure it with options like `--outermost-selector` and `--ignore-selectors`.
+Here's a paragraph with multiple inline code elements: The `HTML2MDConverter`
+class uses `BeautifulSoup` for parsing and `markdownify` for conversion. You can
+configure it with options like `--outermost-selector` and `--ignore-selectors`.
 
 #### File Paths and Commands
 
@@ -652,9 +662,9 @@ Here's a paragraph with multiple inline code elements: The `HTML2MDConverter` cl
 
 #### Variable Names and Functions
 
-The function `convertFile()` takes a parameter `filePath` and returns a `Promise<string>`. Inside, it calls `fs.readFile()` and processes the content with `cheerio.load()`.
-
-
+The function `convertFile()` takes a parameter `filePath` and returns a
+`Promise<string>`. Inside, it calls `fs.readFile()` and processes the content
+with `cheerio.load()`.
 
 ## Special Cases
 
@@ -686,9 +696,10 @@ The function `convertFile()` takes a parameter `filePath` and returns a `Promise
 </body>
 </html>
 ```
+
 ### Nested Code Blocks
 
-```
+````
 # Markdown with Code Examples
 
 Here's how to include code in Markdown:
@@ -697,7 +708,7 @@ Here's how to include code in Markdown:
 def example():
     """This is a Python function."""
     return "Hello, World!"
-```
+````
 
 And here's inline code: `variable = value`
 
@@ -709,211 +720,150 @@ And here's inline code: `variable = value`
 const x = 42;
 </code></pre>
 ```
+
 ```
 ### Code Without Language Specification
 
 ```
-This is a code block without any language specification.
-It should still be converted to a code block in Markdown.
-The converter should handle this gracefully.
+
+This is a code block without any language specification. It should still be
+converted to a code block in Markdown. The converter should handle this
+gracefully.
 
     Indented lines should be preserved.
     Special characters: < > & " ' should be handled correctly.
+
 ```
 ### Mixed Language Examples
 
 #### Frontend (React)
 
 ```
-import React, { useState, useEffect } from 'react';
-import { convertHtmlToMarkdown } from './converter';
 
-const ConverterComponent = () => {
-  const [html, setHtml] = useState('');
-  const [markdown, setMarkdown] = useState('');
-  const [loading, setLoading] = useState(false);
-  
-  const handleConvert = async () => {
-    setLoading(true);
-    try {
-      const result = await convertHtmlToMarkdown(html, {
-        outermostSelector: 'article',
-        ignoreSelectors: ['nav', '.ads']
-      });
-      setMarkdown(result);
-    } catch (error) {
-      console.error('Conversion failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  return (
-    <div className="converter">
-      <textarea 
-        value={html}
-        onChange={(e) => setHtml(e.target.value)}
-        placeholder="Paste HTML here..."
-      />
-      <button onClick={handleConvert} disabled={loading}>
-        {loading ? 'Converting...' : 'Convert to Markdown'}
-      </button>
-      <pre>{markdown}</pre>
-    </div>
-  );
-};
+import React, { useState, useEffect } from 'react'; import {
+convertHtmlToMarkdown } from './converter';
+
+const ConverterComponent = () => { const [html, setHtml] = useState(''); const
+[markdown, setMarkdown] = useState(''); const [loading, setLoading] =
+useState(false);
+
+const handleConvert = async () => { setLoading(true); try { const result = await
+convertHtmlToMarkdown(html, { outermostSelector: 'article', ignoreSelectors:
+['nav', '.ads'] }); setMarkdown(result); } catch (error) {
+console.error('Conversion failed:', error); } finally { setLoading(false); } };
+
+return ( <div className="converter"> <textarea value={html} onChange={(e) =>
+setHtml(e.target.value)} placeholder="Paste HTML here..." />
+<button onClick={handleConvert} disabled={loading}> {loading ? 'Converting...' :
+'Convert to Markdown'} </button> <pre>{markdown}</pre> </div> ); };
+
 ```
 
 #### Backend (Node.js)
 
 ```
-const express = require('express');
-const { JSDOM } = require('jsdom');
-const TurndownService = require('turndown');
 
-const app = express();
-app.use(express.json());
+const express = require('express'); const { JSDOM } = require('jsdom'); const
+TurndownService = require('turndown');
 
-// Initialize Turndown service
-const turndownService = new TurndownService({
-  headingStyle: 'atx',
-  codeBlockStyle: 'fenced'
-});
+const app = express(); app.use(express.json());
 
-// API endpoint for HTML to Markdown conversion
-app.post('/api/convert', async (req, res) => {
-  try {
-    const { html, options = {} } = req.body;
-    
+// Initialize Turndown service const turndownService = new TurndownService({
+headingStyle: 'atx', codeBlockStyle: 'fenced' });
+
+// API endpoint for HTML to Markdown conversion app.post('/api/convert', async
+(req, res) => { try { const { html, options = {} } = req.body;
+
     // Parse HTML with JSDOM
     const dom = new JSDOM(html);
     const document = dom.window.document;
-    
+
     // Apply selectors if provided
     let content = document.body;
     if (options.outermostSelector) {
       content = document.querySelector(options.outermostSelector) || content;
     }
-    
+
     // Remove ignored elements
     if (options.ignoreSelectors) {
       options.ignoreSelectors.forEach(selector => {
         content.querySelectorAll(selector).forEach(el => el.remove());
       });
     }
-    
+
     // Convert to Markdown
     const markdown = turndownService.turndown(content.innerHTML);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       markdown,
       stats: {
         inputLength: html.length,
         outputLength: markdown.length
       }
     });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`HTML2MD API running on port ${PORT}`);
-});
+} catch (error) { res.status(500).json({ success: false, error: error.message
+}); } });
+
+const PORT = process.env.PORT || 3000; app.listen(PORT, () => {
+console.log(`HTML2MD API running on port ${PORT}`); });
+
 ```
 
 ### Configuration Files
 
 ```
+
 # html2md.config.yaml
+
 # Configuration for HTML to Markdown converter
 
 conversion:
-  # Source and destination directories
-  source_dir: ./html-docs
-  destination_dir: ./markdown-docs
-  
-  # Selector options
-  selectors:
-    outermost: "main.content, article.post, div.documentation"
-    ignore:
-      - "nav"
-      - "header.site-header"
-      - "footer.site-footer"
-      - ".advertisement"
-      - ".social-share"
-      - "#comments"
-  
-  # File handling
-  files:
-    include_extensions: [".html", ".htm", ".xhtml"]
-    exclude_patterns:
-      - "**/node_modules/**"
-      - "**/dist/**"
-      - "**/*.min.html"
-    max_file_size_mb: 10
-  
-  # Processing options
-  processing:
-    parallel: true
-    max_workers: 4
-    encoding: utf-8
-    preserve_whitespace: false
-    
-  # Output options
-  output:
-    add_frontmatter: true
-    frontmatter_fields:
-      layout: "post"
-      generator: "html2md"
-    heading_offset: 0
-    code_block_style: "fenced"
-    
+
+# Source and destination directories
+
+source_dir: ./html-docs destination_dir: ./markdown-docs
+
+# Selector options
+
+selectors: outermost: "main.content, article.post, div.documentation" ignore: -
+"nav" - "header.site-header" - "footer.site-footer" - ".advertisement" -
+".social-share" - "#comments"
+
+# File handling
+
+files: include_extensions: [".html", ".htm", ".xhtml"] exclude_patterns: -
+"**/node_modules/**" - "**/dist/**" - "\*_/_.min.html" max_file_size_mb: 10
+
+# Processing options
+
+processing: parallel: true max_workers: 4 encoding: utf-8 preserve_whitespace:
+false
+
+# Output options
+
+output: add_frontmatter: true frontmatter_fields: layout: "post" generator:
+"html2md" heading_offset: 0 code_block_style: "fenced"
+
 # Logging configuration
-logging:
-  level: "info"
-  file: "./logs/html2md.log"
-  format: "json"
+
+logging: level: "info" file: "./logs/html2md.log" format: "json"
+
 ```
 ### JSON Configuration
 
 ```
-{
-  "name": "html2md-converter",
-  "version": "2.0.0",
-  "description": "Convert HTML files to Markdown with advanced options",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "convert": "node cli.js --config html2md.config.json",
-    "test": "jest --coverage",
-    "lint": "eslint src/**/*.js"
-  },
-  "dependencies": {
-    "cheerio": "^1.0.0-rc.12",
-    "turndown": "^7.1.2",
-    "glob": "^8.0.3",
-    "yargs": "^17.6.2",
-    "p-limit": "^4.0.0"
-  },
-  "devDependencies": {
-    "jest": "^29.3.1",
-    "eslint": "^8.30.0",
-    "@types/node": "^18.11.18"
-  },
-  "config": {
-    "defaultOptions": {
-      "parallel": true,
-      "maxWorkers": 4,
-      "encoding": "utf-8"
-    }
-  }
-}
+
+{ "name": "html2md-converter", "version": "2.0.0", "description": "Convert HTML
+files to Markdown with advanced options", "main": "index.js", "scripts": {
+"start": "node index.js", "convert": "node cli.js --config html2md.config.json",
+"test": "jest --coverage", "lint": "eslint src/\*_/_.js" }, "dependencies": {
+"cheerio": "^1.0.0-rc.12", "turndown": "^7.1.2", "glob": "^8.0.3", "yargs":
+"^17.6.2", "p-limit": "^4.0.0" }, "devDependencies": { "jest": "^29.3.1",
+"eslint": "^8.30.0", "@types/node": "^18.11.18" }, "config": { "defaultOptions":
+{ "parallel": true, "maxWorkers": 4, "encoding": "utf-8" } } }
+
 ```
 
 ## Edge Case Code Blocks
@@ -923,30 +873,31 @@ logging:
 ### Code with Only Whitespace
 
 ```
-    
-    
-    
+
 ```
 ### Very Long Single Line
 
 ```
-const veryLongLine = "This is a very long line of code that should not wrap in the code block but might cause horizontal scrolling in the rendered output. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+const veryLongLine = "This is a very long line of code that should not wrap in
+the code block but might cause horizontal scrolling in the rendered output.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+incididunt ut labore et dolore magna aliqua.";
+
 ```
 ### Unicode in Code
 
 ```
-# Unicode test
-emoji = "🚀 🎨 🔧 ✨"
-chinese = "你好世界"
-arabic = "مرحبا بالعالم"
-math = "∑(i=1 to n) = n(n+1)/2"
 
-def print_unicode():
-    print(f"Emoji: {emoji}")
-    print(f"Chinese: {chinese}")
-    print(f"Arabic: {arabic}")
-    print(f"Math: {math}")
-    print("Special: α β γ δ ε ζ η θ")
+# Unicode test
+
+emoji = "🚀 🎨 🔧 ✨" chinese = "你好世界" arabic = "مرحبا بالعالم" math =
+"∑(i=1 to n) = n(n+1)/2"
+
+def print_unicode(): print(f"Emoji: {emoji}") print(f"Chinese: {chinese}")
+print(f"Arabic: {arabic}") print(f"Math: {math}") print("Special: α β γ δ ε ζ η
+θ")
+
 ```
 
 
@@ -959,3 +910,4 @@ def print_unicode():
 *Scraped at: 2025-05-23 11:55:26*
 
 *Source URL: http://localhost:8080/page/code-examples*
+```

@@ -1,14 +1,15 @@
 # html2md (HTML to Markdown Converter)
 
-A modern HTML to Markdown converter with async I/O, HTTrack integration, and parallel processing capabilities.
+A modern HTML to Markdown converter with async I/O, HTTrack integration, and
+parallel processing capabilities.
 
 ## Overview
 
-The html2md tool (v2.0.0) provides a robust solution for converting HTML content to
-Markdown format, with fine-grained control over the conversion process. Built with
-Python 3.10+ and modern async architecture, it is especially useful for transforming 
-existing HTML documentation, extracting specific content from web pages, and preparing 
-content for use with Large Language Models.
+The html2md tool (v2.0.0) provides a robust solution for converting HTML content
+to Markdown format, with fine-grained control over the conversion process. Built
+with Python 3.10+ and modern async architecture, it is especially useful for
+transforming existing HTML documentation, extracting specific content from web
+pages, and preparing content for use with Large Language Models.
 
 ## Key Features
 
@@ -253,8 +254,8 @@ tools/html2md/
 
 ## Integration with m1f
 
-The html2md tool works well with the m1f (Make One File) tool for
-comprehensive documentation handling:
+The html2md tool works well with the m1f (Make One File) tool for comprehensive
+documentation handling:
 
 1. First convert HTML files to Markdown:
 
@@ -327,6 +328,7 @@ pip install beautifulsoup4 markdownify chardet pyyaml aiofiles httpx
 ```
 
 For HTTrack support:
+
 ```bash
 # Ubuntu/Debian
 sudo apt-get install httrack

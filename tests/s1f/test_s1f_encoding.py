@@ -188,7 +188,7 @@ class TestS1FEncoding(BaseS1FTest):
         with open(output_file, "w", encoding="utf-8") as f:
             # Standard format with various special characters
             import hashlib
-            
+
             # Unicode test file
             content1 = "Unicode test: 你好 мир 🌍\n"
             checksum1 = hashlib.sha256(content1.encode("utf-8")).hexdigest()
@@ -240,7 +240,7 @@ class TestS1FEncoding(BaseS1FTest):
 
         with open(output_file, "w", encoding="utf-8") as f:
             import hashlib
-            
+
             # File with BOM
             content1 = "\ufeffBOM test content\n"
             checksum1 = hashlib.sha256(content1.encode("utf-8")).hexdigest()
@@ -313,10 +313,10 @@ class TestS1FEncoding(BaseS1FTest):
         import subprocess
         import sys
         from pathlib import Path
-        
+
         m1f_script = Path(__file__).parent.parent.parent / "tools" / "m1f.py"
         m1f_output = temp_dir / "m1f_output_machinereadable.txt"
-        
+
         result = subprocess.run(
             [
                 sys.executable,
@@ -333,7 +333,7 @@ class TestS1FEncoding(BaseS1FTest):
             capture_output=True,
             text=True,
         )
-        
+
         if result.returncode != 0:
             pytest.fail(f"m1f failed: {result.stderr}")
 

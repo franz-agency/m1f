@@ -64,10 +64,10 @@ class TestM1FEncoding(BaseM1FTest):
 
         # Verify all content is properly encoded in UTF-8
         content = output_file.read_text(encoding="utf-8")
-        
+
         print(f"\n=== DEBUG: Output file size: {output_file.stat().st_size} bytes ===")
         print(f"\n=== DEBUG: Checking for content in output ===")
-        
+
         # Check what files are mentioned in the output
         for filename in ["utf8.txt", "latin1.txt", "utf16.txt"]:
             if filename in content:

@@ -1,24 +1,21 @@
-
 ## Overview
 
-HTML2MD is a robust Python tool that converts HTML content to Markdown format with fine-grained control over the conversion process. It's designed for transforming web content, documentation, and preparing content for Large Language Models.
+HTML2MD is a robust Python tool that converts HTML content to Markdown format
+with fine-grained control over the conversion process. It's designed for
+transforming web content, documentation, and preparing content for Large
+Language Models.
 
 ### 🎯 Precise Selection
 
 Use CSS selectors to extract exactly the content you need
 
-
 ### 🚀 Fast Processing
 
 Parallel processing for converting large websites quickly
 
-
 ### 🔧 Highly Configurable
 
 Extensive options for customizing the conversion process
-
-
-
 
 ## Key Features
 
@@ -26,7 +23,8 @@ Content Selection & Filtering
 
 - **CSS Selectors:** Extract specific content using `--outermost-selector`
 - **Element Removal:** Remove unwanted elements with `--ignore-selectors`
-- **Smart Filtering:** Automatically remove scripts, styles, and other non-content elements
+- **Smart Filtering:** Automatically remove scripts, styles, and other
+  non-content elements
 
 Formatting Options
 
@@ -40,7 +38,6 @@ Performance & Scalability
 - **Parallel Processing:** Convert multiple files simultaneously
 - **Batch Operations:** Process entire directories recursively
 - **Memory Efficient:** Stream processing for large files
-
 
 ## Quick Start
 
@@ -58,7 +55,6 @@ python tools/html2md.py \
     --outermost-selector "main" \
     --ignore-selectors "nav" "footer" ".ads"
 ```
-
 
 ## Installation
 
@@ -79,6 +75,7 @@ pip install markdownify     # HTML to Markdown conversion
 pip install chardet         # Encoding detection
 pip install pyyaml         # YAML frontmatter support
 ```
+
 ### Verify Installation
 
 ```
@@ -94,18 +91,18 @@ python tools/html2md.py --source-dir . --destination-dir output
 
 ### Command Line Options
 
-| Option | Description | Default |
-| --- | --- | --- |
-| `--source-dir` | Directory containing HTML files | Required |
-| `--destination-dir` | Output directory for Markdown files | Required |
-| `--outermost-selector` | CSS selector for content extraction | None (full page) |
-| `--ignore-selectors` | CSS selectors to remove | None |
-| `--remove-elements` | HTML elements to remove | script, style, iframe, noscript |
-| `--include-extensions` | File extensions to process | .html, .htm, .xhtml |
-| `--exclude-patterns` | Patterns to exclude | None |
-| `--heading-offset` | Adjust heading levels | 0 |
-| `--add-frontmatter` | Add YAML frontmatter | False |
-| `--parallel` | Enable parallel processing | False |
+| Option                 | Description                         | Default                         |
+| ---------------------- | ----------------------------------- | ------------------------------- |
+| `--source-dir`         | Directory containing HTML files     | Required                        |
+| `--destination-dir`    | Output directory for Markdown files | Required                        |
+| `--outermost-selector` | CSS selector for content extraction | None (full page)                |
+| `--ignore-selectors`   | CSS selectors to remove             | None                            |
+| `--remove-elements`    | HTML elements to remove             | script, style, iframe, noscript |
+| `--include-extensions` | File extensions to process          | .html, .htm, .xhtml             |
+| `--exclude-patterns`   | Patterns to exclude                 | None                            |
+| `--heading-offset`     | Adjust heading levels               | 0                               |
+| `--add-frontmatter`    | Add YAML frontmatter                | False                           |
+| `--parallel`           | Enable parallel processing          | False                           |
 
 ### Usage Examples
 
@@ -150,7 +147,6 @@ python tools/html2md.py \
     --target-encoding utf-8
 ```
 
-
 ## Advanced Features
 
 ### CSS Selector Examples
@@ -192,6 +188,7 @@ custom_field: value
 
 # Page Content Starts Here
 ```
+
 ### Character Encoding
 
 HTML2MD handles various encodings intelligently:
@@ -216,11 +213,12 @@ def hello():
 
 #### Markdown Output
 
-```
+````
 ```python
 def hello():
     print("Hello, World!")
-```
+````
+
 ```
 
 
@@ -230,70 +228,67 @@ def hello():
 HTML2MD can also be used programmatically:
 
 ```
+
 from html2md import HTML2MDConverter
 
 # Initialize converter
-converter = HTML2MDConverter(
-    outermost_selector="article",
-    ignore_selectors=["nav", ".sidebar"],
-    add_frontmatter=True,
-    heading_offset=1
-)
+
+converter = HTML2MDConverter( outermost_selector="article",
+ignore_selectors=["nav", ".sidebar"], add_frontmatter=True, heading_offset=1 )
 
 # Convert a single file
-markdown = converter.convert_file("input.html")
-with open("output.md", "w") as f:
-    f.write(markdown)
+
+markdown = converter.convert_file("input.html") with open("output.md", "w") as
+f: f.write(markdown)
 
 # Convert directory
-converter.convert_directory(
-    source_dir="./html_files",
-    destination_dir="./markdown_files",
-    parallel=True,
-    max_workers=4
-)
+
+converter.convert_directory( source_dir="./html_files",
+destination_dir="./markdown_files", parallel=True, max_workers=4 )
 
 # Custom processing
-def custom_processor(html_content, file_path):
-    # Custom preprocessing
-    html_content = html_content.replace("old_domain", "new_domain")
-    
+
+def custom_processor(html_content, file_path): # Custom preprocessing
+html_content = html_content.replace("old_domain", "new_domain")
+
     # Convert
     markdown = converter.convert(html_content)
-    
+
     # Custom postprocessing
     markdown = markdown.replace("TODO", "**TODO**")
-    
+
     return markdown
 
 converter.set_processor(custom_processor)
+
 ```
 ### Event Hooks
 
 ```
+
 # Add event listeners
+
 converter.on("file_start", lambda path: print(f"Processing: {path}"))
-converter.on("file_complete", lambda path, size: print(f"Done: {path} ({size} bytes)"))
-converter.on("error", lambda path, error: print(f"Error in {path}: {error}"))
+converter.on("file_complete", lambda path, size: print(f"Done: {path} ({size}
+bytes)")) converter.on("error", lambda path, error: print(f"Error in {path}:
+{error}"))
 
 # Progress tracking
+
 from tqdm import tqdm
 
 progress_bar = None
 
-def on_start(total_files):
-    global progress_bar
-    progress_bar = tqdm(total=total_files, desc="Converting")
+def on_start(total_files): global progress_bar progress_bar =
+tqdm(total=total_files, desc="Converting")
 
-def on_file_complete(path, size):
-    progress_bar.update(1)
+def on_file_complete(path, size): progress_bar.update(1)
 
-def on_complete():
-    progress_bar.close()
+def on_complete(): progress_bar.close()
 
-converter.on("conversion_start", on_start)
-converter.on("file_complete", on_file_complete)
-converter.on("conversion_complete", on_complete)
+converter.on("conversion_start", on_start) converter.on("file_complete",
+on_file_complete) converter.on("conversion_complete", on_complete)
+
 ```
 
 ## Troubleshooting
@@ -312,13 +307,16 @@ Try specifying `--source-encoding` or use `--target-encoding utf-8`
 ### Debug Mode
 
 ```
+
 # Enable debug output
+
 python tools/html2md.py \
-    --source-dir ./website \
-    --destination-dir ./output \
-    --verbose \
-    --debug \
-    --log-file conversion.log
+ --source-dir ./website \
+ --destination-dir ./output \
+ --verbose \
+ --debug \
+ --log-file conversion.log
+
 ```
 
 ## Performance Tips
@@ -353,3 +351,4 @@ python tools/html2md.py \
 *Scraped at: 2025-05-23 11:55:26*
 
 *Source URL: http://localhost:8080/page/html2md-documentation*
+```

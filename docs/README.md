@@ -7,7 +7,8 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 ### Core Tools
 
 - [m1f (Make One File)](./m1f.md) - Documentation for the main tool that
-  combines multiple files into a single file with content deduplication and async I/O
+  combines multiple files into a single file with content deduplication and
+  async I/O
 - [s1f (Split One File)](./s1f.md) - Documentation for the tool that extracts
   individual files from a combined file with modern Python architecture
 - [token_counter](./token_counter.md) - Documentation for the token estimation
@@ -15,9 +16,11 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 
 ### HTML to Markdown Converter
 
-- [html2md Overview](./html2md.md) - Comprehensive guide to the HTML to Markdown converter
+- [html2md Overview](./html2md.md) - Comprehensive guide to the HTML to Markdown
+  converter
 - [html2md Guide](./html2md_guide.md) - Detailed usage guide with examples
-- [html2md Test Suite](./html2md_test_suite.md) - Documentation for the comprehensive test suite
+- [html2md Test Suite](./html2md_test_suite.md) - Documentation for the
+  comprehensive test suite
 
 ## Quick Navigation
 
@@ -51,21 +54,28 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 ## Project Overview
 
 m1f v2.0.0 is a comprehensive toolkit designed to help you work more efficiently
-with Large Language Models (LLMs) by managing context. Built with modern Python 3.10+
-architecture, these tools solve core challenges when working with AI assistants.
+with Large Language Models (LLMs) by managing context. Built with modern Python
+3.10+ architecture, these tools solve core challenges when working with AI
+assistants.
 
 ### Key Features
 
-- **Modern Architecture**: Complete modular rewrite with async I/O, type hints, and clean architecture
-- **Content Deduplication**: Automatically detect and skip duplicate files based on SHA256 checksums
+- **Modern Architecture**: Complete modular rewrite with async I/O, type hints,
+  and clean architecture
+- **Content Deduplication**: Automatically detect and skip duplicate files based
+  on SHA256 checksums
 - **Performance**: Async operations and parallel processing for large projects
-- **Type Safety**: Full type annotations for better IDE support and fewer runtime errors
-- **Professional Tools**: HTTrack integration for website scraping, CSS selectors for content extraction
+- **Type Safety**: Full type annotations for better IDE support and fewer
+  runtime errors
+- **Professional Tools**: HTTrack integration for website scraping, CSS
+  selectors for content extraction
 
 ### What You Can Do
 
-- Combine multiple project files into a single reference file with automatic deduplication
-- Extract individual files from a combined file with preserved structure and metadata
+- Combine multiple project files into a single reference file with automatic
+  deduplication
+- Extract individual files from a combined file with preserved structure and
+  metadata
 - Convert entire websites to clean Markdown format with HTTrack integration
 - Filter files by size, type, or custom patterns
 - Detect and handle symlinks with cycle prevention

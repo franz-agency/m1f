@@ -46,7 +46,8 @@ deduplicated if their content is identical.
 
 ### HTML2MD Integration
 
-m1f now includes enhanced support for working with HTML-to-Markdown converted content:
+m1f now includes enhanced support for working with HTML-to-Markdown converted
+content:
 
 - **Metadata Cleaning**: Use `--remove-scraped-metadata` to automatically remove
   URL, timestamp, and source information from scraped HTML2MD files

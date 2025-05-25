@@ -55,6 +55,7 @@ def test_large_file_handling(self):
 ```
 
 ### Issues with Original:
+
 - Single monolithic test mixing multiple concerns
 - Hard-coded test data path
 - Performance measurement mixed with functional testing
@@ -67,7 +68,7 @@ def test_large_file_handling(self):
 ```python
 class TestLargeFileHandlingRefactored:
     """Refactored test cases for large file handling in m1f.py."""
-    
+
     # Test constants
     LARGE_FILE_SIZE_THRESHOLD = 1024 * 1024  # 1MB threshold for "large" files
     EXPECTED_PATTERNS = {
@@ -76,47 +77,47 @@ class TestLargeFileHandlingRefactored:
         "content_generation": "Generate a large amount of text content",
         "long_string": "a" * 100,  # Check for at least 100 consecutive 'a's
     }
-    
+
     def test_large_file_basic_processing(self):
         """Test basic processing of a large file."""
         large_file_path = SOURCE_DIR / "code" / "large_sample.txt"
         output_file = OUTPUT_DIR / "test_large_basic.txt"
-        
+
         execution_time = self._run_m1f_with_input_file(large_file_path, output_file)
         self._verify_file_content(output_file, self.EXPECTED_PATTERNS)
-        
+
         print(f"\nLarge file processing time: {execution_time:.2f} seconds")
-        
+
     def test_large_file_size_handling(self):
         """Test handling of files of various sizes."""
         test_sizes = [0.5, 1.0, 2.0]  # MB
-        
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            
+
             for size_mb in test_sizes:
                 test_file = temp_path / f"test_{size_mb}mb.txt"
                 self._create_large_test_file(test_file, size_mb)
-                
+
                 output_file = OUTPUT_DIR / f"test_large_{size_mb}mb.txt"
                 execution_time = self._run_m1f_with_input_file(test_file, output_file)
-                
+
                 assert output_file.exists(), f"Output file for {size_mb}MB not created"
                 assert output_file.stat().st_size > 0, f"Output file for {size_mb}MB is empty"
-                
+
                 output_size_mb = output_file.stat().st_size / (1024 * 1024)
                 assert output_size_mb >= size_mb * 0.9, f"Output file seems too small"
-                
+
     def test_large_file_performance_baseline(self):
         """Establish a performance baseline for large file processing."""
         # Separate test dedicated to performance measurement
         # ... (implementation shown in full refactored file)
-        
+
     def test_large_file_memory_efficiency(self):
         """Test that large files are processed efficiently."""
         # Tests memory-efficient processing with very large files
         # ... (implementation shown in full refactored file)
-        
+
     def test_large_file_content_integrity(self):
         """Test that large file content is preserved correctly."""
         # Verifies content integrity with known patterns
@@ -126,20 +127,24 @@ class TestLargeFileHandlingRefactored:
 ### Improvements in Refactored Version:
 
 1. **Separation of Concerns**
+
    - Each test method has a single, clear purpose
    - Performance testing separated from functional testing
 
 2. **Better Test Coverage**
+
    - Multiple test scenarios (different file sizes, encodings, etc.)
    - Memory efficiency testing
    - Content integrity verification
 
 3. **Improved Infrastructure**
+
    - Helper methods reduce code duplication
    - Proper test data management with temporary files
    - Configurable test parameters
 
 4. **Enhanced Assertions**
+
    - More specific and meaningful assertions
    - Better error messages for debugging
    - Verification of multiple aspects of file processing
@@ -162,4 +167,4 @@ class TestLargeFileHandlingRefactored:
 1. First fix the duplication issue in the original test file
 2. Replace the single test with the refactored test class
 3. Run both old and new tests to ensure compatibility
-4. Gradually migrate other tests using similar patterns 
+4. Gradually migrate other tests using similar patterns

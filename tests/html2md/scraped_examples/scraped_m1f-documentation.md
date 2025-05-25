@@ -1,22 +1,18 @@
-
-
-
 M1F - Make One File Documentation
-
-
 
 # M1F - Make One File
 
-A powerful tool for combining multiple files into a single, well-formatted document
+A powerful tool for combining multiple files into a single, well-formatted
+document
 
-[Get Started](#quick-start)
-[Download](#download)
-
-
+[Get Started](#quick-start) [Download](#download)
 
 ## Overview
 
-M1F (Make One File) is a sophisticated file aggregation tool designed to combine multiple source files into a single, well-formatted output file. It's particularly useful for creating comprehensive documentation, preparing code for Large Language Model (LLM) contexts, and archiving projects.
+M1F (Make One File) is a sophisticated file aggregation tool designed to combine
+multiple source files into a single, well-formatted output file. It's
+particularly useful for creating comprehensive documentation, preparing code for
+Large Language Model (LLM) contexts, and archiving projects.
 
 **Key Benefits:**
 
@@ -24,7 +20,6 @@ M1F (Make One File) is a sophisticated file aggregation tool designed to combine
 - Create comprehensive documentation from multiple sources
 - Archive projects with preserved structure and formatting
 - Generate readable outputs with customizable separators
-
 
 ## Core Features
 
@@ -52,8 +47,6 @@ Extensive filtering options and customizable output
 
 `--config config.yaml`
 
-
-
 ## Quick Start
 
 Get up and running with M1F in seconds:
@@ -72,20 +65,19 @@ $ python tools/m1f.py \
     --parallel
 ```
 
-
 ## Detailed Usage
 
 ### Command Line Options
 
-| Option | Description | Default | Example |
-| --- | --- | --- | --- |
-| `--source-directory` | Directory to scan for files | Current directory | `./src` |
-| `--output-file` | Output file path | combined\_output.txt | `output.m1f.md` |
-| `--include-patterns` | Glob patterns to include | None | `"*.py" "*.js"` |
-| `--exclude-patterns` | Glob patterns to exclude | None | `"*test*" "*.log"` |
-| `--separator-style` | Output format style | XML | `Markdown` |
-| `--parallel` | Enable parallel processing | False | `--parallel` |
-| `--max-file-size` | Maximum file size in MB | 10 | `--max-file-size 50` |
+| Option               | Description                 | Default             | Example              |
+| -------------------- | --------------------------- | ------------------- | -------------------- |
+| `--source-directory` | Directory to scan for files | Current directory   | `./src`              |
+| `--output-file`      | Output file path            | combined_output.txt | `output.m1f.md`      |
+| `--include-patterns` | Glob patterns to include    | None                | `"*.py" "*.js"`      |
+| `--exclude-patterns` | Glob patterns to exclude    | None                | `"*test*" "*.log"`   |
+| `--separator-style`  | Output format style         | XML                 | `Markdown`           |
+| `--parallel`         | Enable parallel processing  | False               | `--parallel`         |
+| `--max-file-size`    | Maximum file size in MB     | 10                  | `--max-file-size 50` |
 
 ### Configuration File
 
@@ -117,7 +109,7 @@ options:
   max_file_size: 20
   respect_gitignore: true
   include_hidden: false
-  
+
 metadata:
   include_timestamp: true
   include_hash: true
@@ -140,7 +132,9 @@ python tools/m1f.py \
     --metadata-include-timestamp \
     --metadata-include-hash
 ```
+
 View Output Sample
+
 ```
 <file path="src/main.py" hash="a1b2c3..." timestamp="2024-01-15T10:30:00">
 #!/usr/bin/env python3
@@ -163,13 +157,12 @@ if __name__ == "__main__":
 class Application:
     def __init__(self):
         self.config = self.load_config()
-    
+
     def run(self, args):
         # Implementation details...
         pass
 </file>
 ```
-
 
 ### Example 2: Creating Documentation Archive
 
@@ -206,7 +199,7 @@ include_patterns:
   - "backend/**/*.py"
   - "backend/**/*.sql"
   - "backend/**/Dockerfile"
-  
+
   # Frontend
   - "frontend/**/*.js"
   - "frontend/**/*.jsx"
@@ -214,13 +207,13 @@ include_patterns:
   - "frontend/**/*.tsx"
   - "frontend/**/*.css"
   - "frontend/**/*.scss"
-  
+
   # Configuration
   - "**/*.json"
   - "**/*.yaml"
   - "**/*.yml"
   - "**/.*rc"
-  
+
   # Documentation
   - "**/*.md"
   - "**/README*"
@@ -234,7 +227,6 @@ exclude_patterns:
   - "**/*.min.js"
   - "**/*.map"
 ```
-
 
 ## Advanced Features
 
@@ -258,6 +250,7 @@ m1f.process_directory(
     output_file="large_project.m1f.txt"
 )
 ```
+
 ### Custom Separators
 
 Define your own separator format:
@@ -275,6 +268,7 @@ def custom_separator(file_path, file_info):
 
 m1f = M1F(separator_function=custom_separator)
 ```
+
 ### Streaming Mode
 
 For extremely large outputs, use streaming mode:
@@ -324,11 +318,10 @@ with open("context.txt", "r") as f:
     # Send to OpenAI, Anthropic, etc.
 ```
 
-
-
 ## Troubleshooting
 
 Common Issues and Solutions
+
 #### Issue: Output file too large
 
 **Solution:** Use more restrictive patterns or increase max file size limit:
@@ -346,9 +339,6 @@ Common Issues and Solutions
 **Solution:** Specify encoding or skip binary files:
 
 `--encoding utf-8 --skip-binary-files`
-
-
-
 
 ### Navigation
 
@@ -372,15 +362,10 @@ Python: **3.9+**
 - [html2md](/page/html2md-documentation)
 - [s1f](/page/s1f-documentation)
 
-
-
-
- 
-
 ---
 
-*Scraped from: http://localhost:8080/page/m1f-documentation*
+_Scraped from: http://localhost:8080/page/m1f-documentation_
 
-*Scraped at: 2025-05-23 11:55:26*
+_Scraped at: 2025-05-23 11:55:26_
 
-*Source URL: http://localhost:8080/page/m1f-documentation*
+_Source URL: http://localhost:8080/page/m1f-documentation_

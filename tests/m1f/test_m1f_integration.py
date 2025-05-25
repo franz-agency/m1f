@@ -144,11 +144,13 @@ class TestM1FIntegration(BaseM1FTest):
 
         # Create input file with glob patterns
         input_paths = temp_dir / "globs.txt"
-        input_paths.write_text(f"""
+        input_paths.write_text(
+            f"""
 {base_dir / "src" / "module*.py"}
 {base_dir / "docs" / "*.md"}
 {base_dir / "scripts" / "*.py"}
-        """.strip())
+        """.strip()
+        )
 
         # Use multiple glob patterns via input file
         exit_code, _ = run_m1f(

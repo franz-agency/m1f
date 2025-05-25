@@ -298,6 +298,7 @@ class FileCombiner:
             hash_input.append(str(rel_path))
             try:
                 import os
+
                 mtime = os.path.getmtime(file_path)
                 hash_input.append(str(mtime))
             except Exception:
@@ -326,7 +327,7 @@ class FileCombiner:
                 new_stem = f"{output_path.stem}_{content_hash}"
         else:
             new_stem = f"{output_path.stem}_{content_hash}"
-        
+
         new_path = output_path.with_name(f"{new_stem}{output_path.suffix}")
 
         self.logger.info(f"Added content hash to filename: {new_path.name}")

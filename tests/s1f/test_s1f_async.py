@@ -65,6 +65,7 @@ class TestS1FAsync(BaseS1FTest):
 
         # Create test files to write
         from tools.s1f.models import FileMetadata
+
         files = [
             ExtractedFile(
                 metadata=FileMetadata(
@@ -82,12 +83,12 @@ class TestS1FAsync(BaseS1FTest):
             destination_directory=temp_dir,
             force_overwrite=True,
         )
-        
+
         # Create logger and writer
         logger_manager = LoggerManager(config)
         logger = logger_manager.get_logger(__name__)
         writer = FileWriter(config, logger)
-        
+
         # Write files
         result = await writer.write_files(files)
 
@@ -120,7 +121,7 @@ class TestS1FAsync(BaseS1FTest):
 
         logger_manager = LoggerManager(config)
         extractor = FileSplitter(config, logger_manager)
-        
+
         # Should handle error gracefully
         result, exit_code = await extractor.split_file()
         assert exit_code != 0
@@ -159,7 +160,9 @@ class TestS1FAsync(BaseS1FTest):
         actual_size = extracted_file.stat().st_size
         expected_size = len(large_content)
         size_diff = abs(actual_size - expected_size)
-        assert size_diff <= 10, f"Size mismatch: expected {expected_size}, got {actual_size}, diff: {size_diff}"
+        assert (
+            size_diff <= 10
+        ), f"Size mismatch: expected {expected_size}, got {actual_size}, diff: {size_diff}"
 
     @pytest.mark.unit
     def test_async_fallback_to_sync(self, temp_dir):
@@ -168,6 +171,7 @@ class TestS1FAsync(BaseS1FTest):
         from tools.s1f.models import ExtractedFile
 
         from tools.s1f.models import FileMetadata
+
         test_file = ExtractedFile(
             metadata=FileMetadata(
                 path="test.txt",

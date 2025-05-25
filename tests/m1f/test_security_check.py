@@ -138,4 +138,7 @@ def test_security_check_warn():
         with open(log_file, "r", encoding="utf-8") as log:
             log_content = log.read()
             # Check for security warning in log (may contain ANSI codes)
-            assert "Security scan found" in log_content or "SECURITY WARNING" in log_content
+            assert (
+                "Security scan found" in log_content
+                or "SECURITY WARNING" in log_content
+            )

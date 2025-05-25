@@ -1,8 +1,12 @@
 # HTML to Markdown Converter Guide
 
-The `html2md` tool (v2.0.0) is a modern, async converter designed to transform HTML content into clean Markdown format. Built with Python 3.10+ and modern async architecture, it's particularly powerful for converting entire websites and integrates seamlessly with m1f for creating documentation bundles.
+The `html2md` tool (v2.0.0) is a modern, async converter designed to transform
+HTML content into clean Markdown format. Built with Python 3.10+ and modern
+async architecture, it's particularly powerful for converting entire websites
+and integrates seamlessly with m1f for creating documentation bundles.
 
 ## Table of Contents
+
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Command Line Usage](#command-line-usage)
@@ -16,6 +20,7 @@ The `html2md` tool (v2.0.0) is a modern, async converter designed to transform H
 ## Installation
 
 ### Python Dependencies
+
 ```bash
 pip install beautifulsoup4 markdownify pydantic rich httpx chardet pyyaml aiofiles
 
@@ -24,6 +29,7 @@ pip install toml      # For TOML configuration files
 ```
 
 ### HTTrack Installation
+
 HTTrack is optional but recommended for website mirroring functionality:
 
 ```bash
@@ -37,21 +43,25 @@ brew install httrack
 # Download installer from https://www.httrack.com/
 ```
 
-**Note**: HTTrack integration is optional in v2.0.0. The tool can also download websites using its built-in async HTTP client.
+**Note**: HTTrack integration is optional in v2.0.0. The tool can also download
+websites using its built-in async HTTP client.
 
 ## Quick Start
 
 ### Convert a Single File
+
 ```bash
 python -m tools.html2md convert index.html -o index.md
 ```
 
 ### Convert a Directory
+
 ```bash
 python -m tools.html2md convert ./html_docs/ -o ./markdown_docs/
 ```
 
 ### Convert a Website
+
 ```bash
 python -m tools.html2md crawl https://docs.example.com -o ./docs/
 ```
@@ -61,6 +71,7 @@ python -m tools.html2md crawl https://docs.example.com -o ./docs/
 The tool provides three main commands:
 
 ### `convert` - Convert Files or Directories
+
 ```bash
 python -m tools.html2md convert [source] -o [output] [options]
 
@@ -74,6 +85,7 @@ Options:
 ```
 
 ### `crawl` - Convert Entire Websites
+
 ```bash
 python -m tools.html2md crawl [URL] -o [output] [options]
 
@@ -83,6 +95,7 @@ Options:
 ```
 
 ### `config` - Generate Configuration File
+
 ```bash
 python -m tools.html2md config -o config.yaml [options]
 
@@ -158,6 +171,7 @@ log_file: ./conversion.log
 ### Configuration Options Explained
 
 #### Extractor Configuration
+
 - `content_selector`: CSS selector(s) to find main content
 - `ignore_selectors`: Elements to remove before conversion
 - `remove_elements`: HTML tags to completely remove
@@ -166,12 +180,14 @@ log_file: ./conversion.log
 - `extract_opengraph`: Extract OpenGraph metadata
 
 #### Processor Configuration
+
 - `heading_offset`: Adjust heading levels (e.g., h1→h2)
 - `link_handling`: How to process links (convert/preserve/absolute/relative)
 - `normalize_whitespace`: Clean up extra whitespace
 - `fix_encoding`: Fix common encoding issues
 
 #### Crawler Configuration
+
 - `max_depth`: How deep to crawl from start page
 - `max_pages`: Maximum number of pages to download
 - `allowed_domains`: Restrict crawling to specific domains
@@ -255,13 +271,13 @@ The tool uses HTTrack for reliable website mirroring. HTTrack provides:
 
 ### HTTrack Options Mapping
 
-| Config Option | HTTrack Flag | Description |
-|--------------|--------------|-------------|
-| max_depth | -r | Maximum mirror depth |
-| max_pages | -m | Maximum file size (kb) |
-| concurrent_requests | -c | Number of connections |
-| request_delay | -E | Delay between requests (ms) |
-| respect_robots_txt | -s0/-s2 | robots.txt handling |
+| Config Option       | HTTrack Flag | Description                 |
+| ------------------- | ------------ | --------------------------- |
+| max_depth           | -r           | Maximum mirror depth        |
+| max_pages           | -m           | Maximum file size (kb)      |
+| concurrent_requests | -c           | Number of connections       |
+| request_delay       | -E           | Delay between requests (ms) |
+| respect_robots_txt  | -s0/-s2      | robots.txt handling         |
 
 ## Advanced Features
 
@@ -281,6 +297,7 @@ extractor:
 ### Link Handling Strategies
 
 1. **Convert**: Change `.html` to `.md`
+
    ```yaml
    processor:
      link_handling: convert
@@ -290,6 +307,7 @@ extractor:
    ```
 
 2. **Preserve**: Keep original links
+
    ```yaml
    processor:
      link_handling: preserve
@@ -304,6 +322,7 @@ extractor:
 ### Metadata Extraction
 
 The tool can extract and preserve:
+
 - Page title
 - Meta description
 - OpenGraph data
@@ -336,7 +355,7 @@ cat > docs-config.yaml << EOF
 destination: ./python-docs-md
 extractor:
   content_selector: "div.document"
-  ignore_selectors: 
+  ignore_selectors:
     - ".sphinxsidebar"
     - ".related"
 processor:
@@ -390,29 +409,35 @@ python -m tools.html2md crawl https://docs.example.com \
 ### Common Issues
 
 1. **HTTrack not found**
+
    ```
    RuntimeError: HTTrack is not installed
    ```
+
    Solution: Install HTTrack using your package manager
 
 2. **Content selector not matching**
+
    ```
    WARNING: Content selector 'article' not found
    ```
+
    Solution: Inspect the HTML and adjust your selector
 
 3. **Encoding issues**
+
    ```
    UnicodeDecodeError: 'utf-8' codec can't decode
    ```
+
    Solution: The tool auto-detects encoding, but you can force it:
+
    ```yaml
    source_encoding: iso-8859-1
    target_encoding: utf-8
    ```
 
-4. **Large websites timing out**
-   Solution: Adjust crawler settings:
+4. **Large websites timing out** Solution: Adjust crawler settings:
    ```yaml
    crawler:
      timeout: 60.0
@@ -429,6 +454,7 @@ python -m tools.html2md convert ./html -o ./md -v --log-file debug.log
 ```
 
 Or in configuration:
+
 ```yaml
 verbose: true
 log_file: ./conversion-debug.log
@@ -437,12 +463,14 @@ log_file: ./conversion-debug.log
 ### Performance Tips
 
 1. **Use parallel processing** for large directories:
+
    ```yaml
    parallel: true
    max_workers: 8
    ```
 
 2. **Limit crawl scope** for large websites:
+
    ```yaml
    crawler:
      max_depth: 3
@@ -481,4 +509,4 @@ Or do it in one step:
 python -m tools.html2md crawl https://docs.example.com \
   -o ./docs/ \
   --format m1f_bundle
-``` 
+```

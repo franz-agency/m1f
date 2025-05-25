@@ -1,23 +1,29 @@
 # m1f (Make One File)
 
-A modern, high-performance tool that combines multiple files into a single file with rich metadata, content deduplication, and async I/O support.
+A modern, high-performance tool that combines multiple files into a single file
+with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool (v2.0.0) solves a common challenge when working with LLMs: providing
-sufficient context without exceeding token limits. Built with Python 3.10+ and modern
-architecture patterns, it creates optimized reference files from multiple sources
-while automatically handling duplicates and providing comprehensive metadata.
+The m1f tool (v2.0.0) solves a common challenge when working with LLMs:
+providing sufficient context without exceeding token limits. Built with Python
+3.10+ and modern architecture patterns, it creates optimized reference files
+from multiple sources while automatically handling duplicates and providing
+comprehensive metadata.
 
 ## Key Features
 
-- **Content Deduplication**: Automatically detects and skips duplicate files based on SHA256 checksums
+- **Content Deduplication**: Automatically detects and skips duplicate files
+  based on SHA256 checksums
 - **Async I/O**: High-performance file operations with concurrent processing
 - **Type Safety**: Full type annotations throughout the codebase
-- **Modern Architecture**: Modular package structure with clean separation of concerns
-- **Smart Filtering**: Advanced file filtering with size limits, extensions, and patterns
+- **Modern Architecture**: Modular package structure with clean separation of
+  concerns
+- **Smart Filtering**: Advanced file filtering with size limits, extensions, and
+  patterns
 - **Symlink Support**: Intelligent symlink handling with cycle detection
-- **Professional Security**: Integration with detect-secrets for sensitive data detection
+- **Professional Security**: Integration with detect-secrets for sensitive data
+  detection
 - **Colorized Output**: Beautiful console output with progress indicators
 
 ## Quick Start
@@ -48,13 +54,13 @@ python -m tools.m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
 | `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
-| `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context |
+| `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
 | `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\***                                                                                         |
 | `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
 | `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
 | `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
-| `--remove-scraped-metadata` | Remove scraped metadata (URL, timestamp) from HTML2MD files during processing. Automatically detects and removes metadata blocks at the end of markdown files created by HTML scraping tools                                                                  |
+| `--remove-scraped-metadata` | Remove scraped metadata (URL, timestamp) from HTML2MD files during processing. Automatically detects and removes metadata blocks at the end of markdown files created by HTML scraping tools                                                                     |
 | `--separator-style`         | Style of separators between files (`Standard`, `Detailed`, `Markdown`, `MachineReadable`, `None`)                                                                                                                                                                |
 | `--line-ending`             | Line ending for script-generated separators (`lf` or `crlf`)                                                                                                                                                                                                     |
 | `--convert-to-charset`      | Convert all files to the specified character encoding (`utf-8` [default], `utf-16`, `utf-16-le`, `utf-16-be`, `ascii`, `latin-1`, `cp1252`). The original encoding is automatically detected and included in the metadata when using compatible separator styles |
@@ -309,7 +315,9 @@ tools/m1f/
 
 ### Performance Considerations
 
-With the new async I/O architecture, m1f can handle large projects more efficiently:
+With the new async I/O architecture, m1f can handle large projects more
+efficiently:
+
 - Concurrent file reading and processing
 - Memory-efficient streaming for large files
 - Smart caching to avoid redundant operations

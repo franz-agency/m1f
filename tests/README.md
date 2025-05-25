@@ -1,6 +1,7 @@
 # Test Suite Documentation
 
-This directory contains the modernized test suite for the m1f and s1f tools, using Python 3.10+ features and modern testing practices.
+This directory contains the modernized test suite for the m1f and s1f tools,
+using Python 3.10+ features and modern testing practices.
 
 ## Test Structure
 
@@ -30,7 +31,8 @@ tests/
 
 ### Modern Python 3.10+ Features
 
-- **Type Hints**: All functions and fixtures use modern type hints with the union operator (`|`)
+- **Type Hints**: All functions and fixtures use modern type hints with the
+  union operator (`|`)
 - **Structural Pattern Matching**: Where applicable (Python 3.10+)
 - **Better Type Annotations**: Using `from __future__ import annotations`
 - **Modern pathlib Usage**: Consistent use of `Path` objects
@@ -40,7 +42,8 @@ tests/
 - **Modular Test Files**: Tests are split into focused modules by functionality
 - **Base Test Classes**: Common functionality is abstracted into base classes
 - **Fixture Hierarchy**: Global, tool-specific, and test-specific fixtures
-- **Clear Test Markers**: Tests are marked with categories (unit, integration, slow, encoding)
+- **Clear Test Markers**: Tests are marked with categories (unit, integration,
+  slow, encoding)
 
 ### Key Fixtures
 
@@ -69,11 +72,13 @@ tests/
 ## Running Tests
 
 ### Run All Tests
+
 ```bash
 pytest
 ```
 
 ### Run Specific Test Categories
+
 ```bash
 # Run only unit tests
 pytest -m unit
@@ -89,6 +94,7 @@ pytest -m "not slow"
 ```
 
 ### Run Tests for Specific Tools
+
 ```bash
 # Run only m1f tests
 pytest tests/m1f/
@@ -98,6 +104,7 @@ pytest tests/s1f/
 ```
 
 ### Run Specific Test Files
+
 ```bash
 # Run basic m1f tests
 pytest tests/m1f/test_m1f_basic.py
@@ -107,6 +114,7 @@ pytest tests/m1f/test_m1f_encoding.py tests/s1f/test_s1f_encoding.py
 ```
 
 ### Run with Coverage
+
 ```bash
 # Install pytest-cov if not already installed
 pip install pytest-cov
@@ -121,26 +129,31 @@ open htmlcov/index.html
 ## Test Categories
 
 ### Unit Tests (`@pytest.mark.unit`)
+
 - Fast, isolated tests of individual components
 - No external dependencies
 - Mock external interactions
 
 ### Integration Tests (`@pytest.mark.integration`)
+
 - Test interaction between multiple components
 - May create real files and directories
 - Test end-to-end workflows
 
 ### Slow Tests (`@pytest.mark.slow`)
+
 - Tests that take significant time (e.g., large file handling)
 - Skipped in quick test runs
 
 ### Encoding Tests (`@pytest.mark.encoding`)
+
 - Tests related to character encoding
 - May require specific system encodings
 
 ## Writing New Tests
 
 ### Test Class Structure
+
 ```python
 from __future__ import annotations
 
@@ -149,32 +162,34 @@ from ..base_test import BaseM1FTest  # or BaseS1FTest
 
 class TestFeatureName(BaseM1FTest):
     """Description of what these tests cover."""
-    
+
     @pytest.mark.unit
     def test_specific_behavior(self, fixture1, fixture2):
         """Test description."""
         # Arrange
         ...
-        
+
         # Act
         ...
-        
+
         # Assert
         ...
 ```
 
 ### Using Fixtures
+
 ```python
 def test_with_temp_files(self, create_test_file, temp_dir):
     """Example using fixture to create test files."""
     # Create a test file
     test_file = create_test_file("test.txt", "content")
-    
+
     # Use temp_dir for output
     output_file = temp_dir / "output.txt"
 ```
 
 ### Parametrized Tests
+
 ```python
 @pytest.mark.parametrize("input,expected", [
     ("value1", "result1"),
@@ -201,10 +216,12 @@ def test_multiple_cases(self, input, expected):
 
 1. **Import Errors**: Ensure the tools directory is in the Python path
 2. **Fixture Not Found**: Check that conftest.py files are properly placed
-3. **Encoding Errors**: Some encoding tests may fail on systems without specific encodings
+3. **Encoding Errors**: Some encoding tests may fail on systems without specific
+   encodings
 4. **Permission Errors**: Ensure proper cleanup of temporary files
 
 ### Debug Options
+
 ```bash
 # Run with verbose output
 pytest -vv
@@ -217,4 +234,4 @@ pytest -x
 
 # Drop into debugger on failure
 pytest --pdb
-``` 
+```

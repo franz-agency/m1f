@@ -22,8 +22,16 @@ def _scan_files_for_sensitive_info(files_to_process):
     from pathlib import Path
 
     # Create basic config for scanning
-    from .config import FilterConfig, OutputConfig, EncodingConfig, SecurityConfig, ArchiveConfig, LoggingConfig, SecurityCheckMode
-    
+    from .config import (
+        FilterConfig,
+        OutputConfig,
+        EncodingConfig,
+        SecurityConfig,
+        ArchiveConfig,
+        LoggingConfig,
+        SecurityCheckMode,
+    )
+
     config = Config(
         source_directory=Path("."),
         input_file=None,
@@ -33,7 +41,7 @@ def _scan_files_for_sensitive_info(files_to_process):
         encoding=EncodingConfig(),
         security=SecurityConfig(security_check=SecurityCheckMode.WARN),
         archive=ArchiveConfig(),
-        logging=LoggingConfig()
+        logging=LoggingConfig(),
     )
 
     # Create logger manager
@@ -57,7 +65,14 @@ def _scan_files_for_sensitive_info(files_to_process):
 def _detect_symlink_cycles(path):
     """Legacy function for backward compatibility with tests."""
     from pathlib import Path
-    from .config import FilterConfig, OutputConfig, EncodingConfig, SecurityConfig, ArchiveConfig, LoggingConfig
+    from .config import (
+        FilterConfig,
+        OutputConfig,
+        EncodingConfig,
+        SecurityConfig,
+        ArchiveConfig,
+        LoggingConfig,
+    )
 
     # Create basic config
     config = Config(
@@ -69,7 +84,7 @@ def _detect_symlink_cycles(path):
         encoding=EncodingConfig(),
         security=SecurityConfig(),
         archive=ArchiveConfig(),
-        logging=LoggingConfig()
+        logging=LoggingConfig(),
     )
     logger_manager = LoggerManager(config.logging, Path("test_output.txt"))
 

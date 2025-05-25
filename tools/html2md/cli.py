@@ -278,18 +278,21 @@ def handle_config(args: argparse.Namespace) -> None:
 def create_simple_parser() -> argparse.ArgumentParser:
     """Create a simple parser for test compatibility."""
     parser = argparse.ArgumentParser(
-        prog="html2md",
-        description="Convert HTML to Markdown"
+        prog="html2md", description="Convert HTML to Markdown"
     )
-    
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
     parser.add_argument("--source-dir", type=str, help="Source directory or URL")
     parser.add_argument("--destination-dir", type=Path, help="Destination directory")
-    parser.add_argument("--outermost-selector", type=str, help="CSS selector for content")
+    parser.add_argument(
+        "--outermost-selector", type=str, help="CSS selector for content"
+    )
     parser.add_argument("--ignore-selectors", nargs="+", help="CSS selectors to ignore")
     parser.add_argument("--include-patterns", nargs="+", help="Patterns to include")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
-    
+
     return parser
 
 
@@ -299,38 +302,43 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] in ["--help", "--version", "--source-dir"]:
         parser = create_simple_parser()
         args = parser.parse_args()
-        
+
         if args.source_dir and args.destination_dir:
             # Simple conversion mode
             from .config import ConversionOptions
+
             options = ConversionOptions(
                 source_dir=args.source_dir,
                 destination_dir=args.destination_dir,
                 outermost_selector=args.outermost_selector,
-                ignore_selectors=args.ignore_selectors
+                ignore_selectors=args.ignore_selectors,
             )
             converter = Html2mdConverter(options)
-            
+
             # For URL sources, convert them
             if args.source_dir.startswith("http"):
                 console.print(f"Converting {args.source_dir}")
-                
+
                 # Handle include patterns if specified
                 if args.include_patterns:
                     # Convert specific pages
                     import asyncio
-                    urls = [f"{args.source_dir}/{pattern}" for pattern in args.include_patterns]
+
+                    urls = [
+                        f"{args.source_dir}/{pattern}"
+                        for pattern in args.include_patterns
+                    ]
                     results = asyncio.run(converter.convert_directory_from_urls(urls))
                     console.print(f"Converted {len(results)} pages")
                 else:
                     # Convert single URL
                     output_path = converter.convert_url(args.source_dir)
                     console.print(f"Converted to {output_path}")
-                
+
                 console.print("Conversion completed successfully")
             sys.exit(0)
         sys.exit(0)
-    
+
     # Regular mode with subcommands
     parser = create_parser()
     args = parser.parse_args()

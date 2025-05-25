@@ -58,8 +58,10 @@ class TestM1FFileHash(BaseM1FTest):
 
         # Find the output file with hash (exclude filelist and dirlist)
         output_files = [
-            f for f in temp_dir.glob(f"{base_name}_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob(f"{base_name}_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         assert len(output_files) == 1, "Expected one output file with hash"
 
@@ -101,8 +103,10 @@ class TestM1FFileHash(BaseM1FTest):
 
         # Get first hash
         run1_files = [
-            f for f in temp_dir.glob(f"{base_name}_run1_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob(f"{base_name}_run1_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         hash1 = self._get_hash_from_filename(run1_files[0].name)
 
@@ -120,8 +124,10 @@ class TestM1FFileHash(BaseM1FTest):
 
         # Get second hash
         run2_files = [
-            f for f in temp_dir.glob(f"{base_name}_run2_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob(f"{base_name}_run2_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         hash2 = self._get_hash_from_filename(run2_files[0].name)
 
@@ -152,8 +158,10 @@ class TestM1FFileHash(BaseM1FTest):
         )
 
         before_files = [
-            f for f in temp_dir.glob(f"{base_name}_before_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob(f"{base_name}_before_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         hash_before = self._get_hash_from_filename(before_files[0].name)
 
@@ -174,8 +182,10 @@ class TestM1FFileHash(BaseM1FTest):
         )
 
         after_files = [
-            f for f in temp_dir.glob(f"{base_name}_after_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob(f"{base_name}_after_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         hash_after = self._get_hash_from_filename(after_files[0].name)
 
@@ -206,8 +216,10 @@ class TestM1FFileHash(BaseM1FTest):
         )
 
         initial_files = [
-            f for f in temp_dir.glob("ops_initial_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob("ops_initial_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         hash_initial = self._get_hash_from_filename(initial_files[0].name)
 
@@ -227,8 +239,10 @@ class TestM1FFileHash(BaseM1FTest):
         )
 
         added_files = [
-            f for f in temp_dir.glob("ops_added_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob("ops_added_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         hash_added = self._get_hash_from_filename(added_files[0].name)
         assert hash_initial != hash_added, "Hash should change when file is added"
@@ -248,8 +262,10 @@ class TestM1FFileHash(BaseM1FTest):
         )
 
         removed_files = [
-            f for f in temp_dir.glob("ops_removed_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob("ops_removed_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         hash_removed = self._get_hash_from_filename(removed_files[0].name)
         assert hash_added != hash_removed, "Hash should change when file is removed"
@@ -269,8 +285,10 @@ class TestM1FFileHash(BaseM1FTest):
         )
 
         renamed_files = [
-            f for f in temp_dir.glob("ops_renamed_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob("ops_renamed_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         hash_renamed = self._get_hash_from_filename(renamed_files[0].name)
         assert hash_removed != hash_renamed, "Hash should change when file is renamed"
@@ -304,8 +322,10 @@ class TestM1FFileHash(BaseM1FTest):
 
         # Find output file
         output_files = [
-            f for f in temp_dir.glob(f"{base_name}_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob(f"{base_name}_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         assert len(output_files) == 1, "Expected one output file"
 
@@ -342,7 +362,7 @@ class TestM1FFileHash(BaseM1FTest):
         # For empty directory, no hash is added to filename
         output_file = temp_dir / "empty.txt"
         assert output_file.exists(), "Output file should be created"
-        
+
         # Verify it's empty or contains minimal content
         content = output_file.read_text()
         assert "No files found" in content or len(content) < 100
@@ -385,7 +405,9 @@ class TestM1FFileHash(BaseM1FTest):
 
         # Should still generate output file with hash
         output_files = [
-            f for f in temp_dir.glob("error_*.txt")
-            if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")
+            f
+            for f in temp_dir.glob("error_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
         ]
         assert len(output_files) == 1, "Should create output despite mtime errors"

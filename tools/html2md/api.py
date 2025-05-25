@@ -8,7 +8,13 @@ from typing import Dict, List, Optional, Union
 from rich.console import Console
 from rich.progress import Progress
 
-from .config import Config, ConversionOptions, OutputFormat, ExtractorConfig, ProcessorConfig
+from .config import (
+    Config,
+    ConversionOptions,
+    OutputFormat,
+    ExtractorConfig,
+    ProcessorConfig,
+)
 from .core import HTMLParser, MarkdownConverter
 from .utils import configure_logging, get_logger
 
@@ -18,7 +24,9 @@ logger = get_logger(__name__)
 class Html2mdConverter:
     """Main API class for HTML to Markdown conversion."""
 
-    def __init__(self, config: Union[Config, ConversionOptions, Dict, Path, str, None] = None):
+    def __init__(
+        self, config: Union[Config, ConversionOptions, Dict, Path, str, None] = None
+    ):
         """Initialize converter with configuration.
 
         Args:
@@ -32,8 +40,10 @@ class Html2mdConverter:
             # Create Config from ConversionOptions
             self.config = Config(
                 source=Path(config.source_dir) if config.source_dir else Path("."),
-                destination=config.destination_dir if config.destination_dir else Path("."),
-                conversion=config
+                destination=(
+                    config.destination_dir if config.destination_dir else Path(".")
+                ),
+                conversion=config,
             )
         elif isinstance(config, dict):
             self.config = Config(**config)
@@ -46,31 +56,39 @@ class Html2mdConverter:
 
         # Configure logging
         configure_logging(
-            verbose=getattr(self.config, 'verbose', False),
-            quiet=getattr(self.config, 'quiet', False),
-            log_file=getattr(self.config, 'log_file', None),
+            verbose=getattr(self.config, "verbose", False),
+            quiet=getattr(self.config, "quiet", False),
+            log_file=getattr(self.config, "log_file", None),
         )
 
         # Initialize components
-        self._parser = HTMLParser(getattr(self.config, 'extractor', ExtractorConfig()))
-        self._converter = MarkdownConverter(getattr(self.config, 'processor', ProcessorConfig()))
+        self._parser = HTMLParser(getattr(self.config, "extractor", ExtractorConfig()))
+        self._converter = MarkdownConverter(
+            getattr(self.config, "processor", ProcessorConfig())
+        )
         self._console = Console()
-        
-    def convert_html(self, html_content: str, base_url: Optional[str] = None, source_file: Optional[str] = None) -> str:
+
+    def convert_html(
+        self,
+        html_content: str,
+        base_url: Optional[str] = None,
+        source_file: Optional[str] = None,
+    ) -> str:
         """Convert HTML content to Markdown.
-        
+
         Args:
             html_content: HTML content to convert
             base_url: Optional base URL for resolving relative links
             source_file: Optional source file name
-            
+
         Returns:
             Markdown content
         """
         # Handle CSS selectors if specified
         if self.config.conversion.outermost_selector:
             from bs4 import BeautifulSoup
-            soup = BeautifulSoup(html_content, 'html.parser')
+
+            soup = BeautifulSoup(html_content, "html.parser")
             selected = soup.select_one(self.config.conversion.outermost_selector)
             if selected:
                 # Remove ignored elements
@@ -79,53 +97,56 @@ class Html2mdConverter:
                         for elem in selected.select(selector):
                             elem.decompose()
                 html_content = str(selected)
-        
+
         # Parse HTML
         parsed = self._parser.parse(html_content, base_url)
-        
+
         # Apply heading offset if specified
         if self.config.conversion.heading_offset:
             for i in range(1, 7):
-                for tag in parsed.find_all(f'h{i}'):
-                    new_level = max(1, min(6, i + self.config.conversion.heading_offset))
-                    tag.name = f'h{new_level}'
-        
+                for tag in parsed.find_all(f"h{i}"):
+                    new_level = max(
+                        1, min(6, i + self.config.conversion.heading_offset)
+                    )
+                    tag.name = f"h{new_level}"
+
         # Convert to markdown
         options = {}
         if self.config.conversion.code_language:
-            options['code_language'] = self.config.conversion.code_language
+            options["code_language"] = self.config.conversion.code_language
         if self.config.conversion.heading_style:
-            options['heading_style'] = self.config.conversion.heading_style
-                
+            options["heading_style"] = self.config.conversion.heading_style
+
         markdown = self._converter.convert(parsed, options)
-        
+
         # Add frontmatter if requested
         if self.config.conversion.generate_frontmatter:
             import yaml
+
             frontmatter = self.config.conversion.frontmatter_fields or {}
 
             # Extract title from HTML if not provided
-            if 'title' not in frontmatter:
-                title_tag = parsed.find('title')
+            if "title" not in frontmatter:
+                title_tag = parsed.find("title")
                 if title_tag and title_tag.string:
-                    frontmatter['title'] = title_tag.string.strip()
+                    frontmatter["title"] = title_tag.string.strip()
 
             # Add source file if provided
-            if source_file and 'source_file' not in frontmatter:
-                frontmatter['source_file'] = source_file
+            if source_file and "source_file" not in frontmatter:
+                frontmatter["source_file"] = source_file
 
             if frontmatter:
                 fm_str = yaml.dump(frontmatter, default_flow_style=False)
                 markdown = f"---\n{fm_str}---\n\n{markdown}"
-        
+
         return markdown
-    
+
     async def convert_directory_from_urls(self, urls: List[str]) -> List[Path]:
         """Convert multiple URLs in parallel.
-        
+
         Args:
             urls: List of URLs to convert
-            
+
         Returns:
             List of output file paths
         """
@@ -236,15 +257,15 @@ class Html2mdConverter:
 
         # Determine output filename
         parsed_url = urlparse(url)
-        path_parts = parsed_url.path.strip('/').split('/')
+        path_parts = parsed_url.path.strip("/").split("/")
         filename = path_parts[-1] if path_parts and path_parts[-1] else "index"
-        if not filename.endswith('.md'):
-            filename = filename.replace('.html', '') + '.md'
+        if not filename.endswith(".md"):
+            filename = filename.replace(".html", "") + ".md"
         output_path = Path(self.config.destination) / filename
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write file
-        encoding = getattr(self.config, 'target_encoding', 'utf-8')
+        encoding = getattr(self.config, "target_encoding", "utf-8")
         output_path.write_text(markdown, encoding=encoding)
 
         logger.info(f"Saved to {output_path}")

@@ -1,16 +1,16 @@
 # token_counter - Token Estimation Tool
 
-The token_counter tool (v2.0.0) estimates token usage for LLM context planning, helping
-you optimize your use of large language models by managing context window
-limits.
+The token_counter tool (v2.0.0) estimates token usage for LLM context planning,
+helping you optimize your use of large language models by managing context
+window limits.
 
 ## Overview
 
 When working with LLMs like ChatGPT, Claude, or GPT-4, understanding token
 consumption is essential for effective prompt engineering and context
-management. Built with Python 3.10+, the token_counter tool allows you to precisely 
-measure how many tokens your combined files will use, helping you stay within the 
-context window limits of your chosen LLM.
+management. Built with Python 3.10+, the token_counter tool allows you to
+precisely measure how many tokens your combined files will use, helping you stay
+within the context window limits of your chosen LLM.
 
 ## Key Features
 
@@ -125,7 +125,9 @@ This dependency is included in the project's requirements.txt file.
 
 ## Tips for Accurate Token Counting
 
-1. **Model-Specific Encoding**: Always use the encoding that matches your target LLM
-2. **Include Prompts**: Remember to count tokens in your prompts as well as the context
+1. **Model-Specific Encoding**: Always use the encoding that matches your target
+   LLM
+2. **Include Prompts**: Remember to count tokens in your prompts as well as the
+   context
 3. **Buffer Space**: Leave 10-20% buffer for model responses
 4. **Regular Checks**: Re-check token counts after file modifications

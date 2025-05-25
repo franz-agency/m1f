@@ -53,12 +53,12 @@ class ExtractionResult:
         if self.total_files == 0:
             return 0.0
         return (self.files_created + self.files_overwritten) / self.total_files * 100
-    
+
     @property
     def extracted_count(self) -> int:
         """Total number of successfully extracted files."""
         return self.files_created + self.files_overwritten
-    
+
     @property
     def success(self) -> bool:
         """Whether the extraction was successful."""

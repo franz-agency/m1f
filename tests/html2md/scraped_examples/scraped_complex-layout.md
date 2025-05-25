@@ -1,4 +1,3 @@
-
 ## Flexbox Layouts
 
 Testing various flexbox configurations and how they convert to Markdown.
@@ -26,9 +25,6 @@ const flexbox = {
 
 Short content.
 
-
-
-
 ## CSS Grid Layouts
 
 Complex grid layouts with spanning items and auto-placement.
@@ -39,11 +35,9 @@ This item spans 2 columns and 2 rows in the grid layout.
 
 Grid areas can contain complex content including nested elements.
 
-
 #### Grid Item 2
 
 Regular sized item.
-
 
 #### Grid Item 3
 
@@ -53,13 +47,9 @@ Regular sized item.
 
 Auto-placed in the grid.
 
-
 #### Grid Item 5
 
 Another auto-placed item.
-
-
-
 
 ## Deeply Nested Structures
 
@@ -83,7 +73,7 @@ Content at the second level of nesting.
 Content at the third level of nesting.
 
 > A blockquote within nested content.
-> 
+>
 > > A nested blockquote for extra complexity.
 
 ###### Level 4 - Maximum Nesting
@@ -100,64 +90,62 @@ function deeplyNested() {
 }
 ```
 
-
-
 #### Level 2 - Second Nested
 
 Another branch at the second level.
 
-| Nested | Table |
-| --- | --- |
+| Nested | Table  |
+| ------ | ------ |
 | Cell 1 | Cell 2 |
-
-
-
 
 ## Complex Positioning
 
 Absolute Top Left
 
-
 Absolute Top Right
-
 
 Absolute Bottom Center
 
-
 ### Relative Content
 
-This content is within a relatively positioned container with absolutely positioned elements.
-
-
-
+This content is within a relatively positioned container with absolutely
+positioned elements.
 
 ## Multi-Column Layout
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
+incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
+nostrud exercitation ullamco laboris.
 
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
+culpa qui officia deserunt mollit anim id est laborum.
 
-Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
+doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore
+veritatis et quasi architecto beatae vitae dicta sunt explicabo.
 
-Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.
-
-
+Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed
+quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.
 
 ## Text Wrapping with Shapes
 
-This text wraps around a circular shape using CSS shape-outside property. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+This text wraps around a circular shape using CSS shape-outside property. Lorem
+ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
+incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
+nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
+culpa qui officia deserunt mollit anim id est laborum.
 
 After the float is cleared, text returns to normal flow.
-
 
 ## Masonry Layout
 
 ### Card 1
 
 Short content
-
 
 ### Card 2
 
@@ -168,12 +156,12 @@ Medium length content that takes up more vertical space in the masonry layout.
 
 ### Card 3
 
-Very long content that demonstrates how masonry layout handles different content heights. This card has multiple paragraphs.
+Very long content that demonstrates how masonry layout handles different content
+heights. This card has multiple paragraphs.
 
 Second paragraph with more details about the masonry layout behavior.
 
 Third paragraph to make this card even taller.
-
 
 ### Card 4
 
@@ -184,9 +172,6 @@ Third paragraph to make this card even taller.
 Another card with medium content.
 
 > A quote within a masonry item.
-
-
-
 
 ## Overflow Containers
 
@@ -209,17 +194,10 @@ This container has a fixed height and scrollable overflow.
 
 More content after the list to ensure scrolling is needed.
 
-
-
-
-
-
-
-
 ---
 
-*Scraped from: http://localhost:8080/page/complex-layout*
+_Scraped from: http://localhost:8080/page/complex-layout_
 
-*Scraped at: 2025-05-23 11:55:26*
+_Scraped at: 2025-05-23 11:55:26_
 
-*Source URL: http://localhost:8080/page/complex-layout*
+_Source URL: http://localhost:8080/page/complex-layout_

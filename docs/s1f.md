@@ -1,12 +1,14 @@
 # s1f (Split One File)
 
-A modern file extraction tool with async I/O that reconstructs original files from combined archives with full metadata preservation.
+A modern file extraction tool with async I/O that reconstructs original files
+from combined archives with full metadata preservation.
 
 ## Overview
 
-The s1f tool (v2.0.0) is the counterpart to m1f, designed to extract and reconstruct
-original files from a combined file. Built with Python 3.10+ and modern async architecture,
-it ensures reliable extraction with checksum verification and proper encoding handling.
+The s1f tool (v2.0.0) is the counterpart to m1f, designed to extract and
+reconstruct original files from a combined file. Built with Python 3.10+ and
+modern async architecture, it ensures reliable extraction with checksum
+verification and proper encoding handling.
 
 ## Key Features
 
@@ -14,7 +16,8 @@ it ensures reliable extraction with checksum verification and proper encoding ha
 - **Smart Parser Framework**: Automatic format detection with dedicated parsers
 - **Type Safety**: Full type annotations throughout the codebase
 - **Modern Architecture**: Clean modular design with dependency injection
-- **Checksum Verification**: SHA256 integrity checking with line ending normalization
+- **Checksum Verification**: SHA256 integrity checking with line ending
+  normalization
 - **Encoding Support**: Intelligent encoding detection and conversion
 - **Error Recovery**: Graceful fallbacks and detailed error reporting
 - **Progress Tracking**: Real-time extraction statistics
@@ -156,14 +159,17 @@ python -m tools.s1f -i ./project.m1f.txt -d ./backup --timestamp-mode original
 S1F v2.0.0 includes significant performance improvements:
 
 - **Async I/O**: Concurrent file writing for 3-5x faster extraction on SSDs
-- **Optimized Parsing**: Efficient line-by-line processing with minimal memory usage
+- **Optimized Parsing**: Efficient line-by-line processing with minimal memory
+  usage
 - **Smart Buffering**: Adaptive buffer sizes based on file characteristics
 
 ## Error Handling
 
 The tool provides comprehensive error handling:
 
-- **Checksum Verification**: Automatic integrity checking with clear error messages
-- **Encoding Fallbacks**: Graceful handling of encoding issues with multiple fallback strategies
+- **Checksum Verification**: Automatic integrity checking with clear error
+  messages
+- **Encoding Fallbacks**: Graceful handling of encoding issues with multiple
+  fallback strategies
 - **Permission Errors**: Clear reporting of file system permission issues
 - **Partial Recovery**: Continue extraction even if individual files fail
