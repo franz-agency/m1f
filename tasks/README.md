@@ -13,6 +13,24 @@ context for AI interactions. The system includes:
 Using the `m1f.py` tool and auto-bundling scripts, you can create optimized
 context files for AI assistants.
 
+## VS Code Setup
+
+To use these tasks in VS Code:
+
+1. Create a `.vscode` directory in your project root (if it doesn't exist)
+2. Copy the example tasks configuration:
+   ```bash
+   cp tasks/example.tasks.json .vscode/tasks.json
+   ```
+3. Now you can access all tasks via the Command Palette (`Ctrl+Shift+P` → "Tasks: Run Task")
+
+The `example.tasks.json` file references all available task definitions:
+- `m1f.json` - Manual file selection tasks
+- `auto_bundle.json` - Automated bundling tasks with preset support
+- `linting.json` - Code quality and linting tasks
+
+**Note**: The `.vscode` directory is typically gitignored, so each developer can customize their tasks.json as needed.
+
 ## When to Use This Tool
 
 **Do NOT use this tool if:**
@@ -41,6 +59,20 @@ essential. This tool helps you to:
 4. Efficiently manage context limitations by focusing on what matters
 
 ## Available Task Files
+
+This directory contains several task definition files:
+
+### Task Definition Files
+
+1. **m1f.json** - Core context generation tasks for manual file selection
+2. **auto_bundle.json** - Automated bundling tasks with 11 different bundle types
+3. **linting.json** - Code quality and linting tasks
+4. **example.tasks.json** - Example VS Code tasks.json that integrates all task files
+
+### Supporting Files
+
+- **ai_context_files.txt** - Example list of files for manual context creation
+- **wp_*.txt** - WordPress-specific include/exclude patterns
 
 ### m1f.json - Core Context Generation Tasks
 
