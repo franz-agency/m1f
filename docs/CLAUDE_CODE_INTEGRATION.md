@@ -82,7 +82,7 @@ Create `.claude/settings.json` in the project root:
 1. **Complete documentation conversion workflow**:
 
    ```bash
-   claude -p "I have scraped HTML documentation in ~/ezdoc. Please:
+   claude -p "I have scraped HTML documentation in ~/docs/html. Please:
    1. Analyze a few sample files to understand the structure
    2. Create a preprocessing configuration
    3. Convert all HTML to Markdown

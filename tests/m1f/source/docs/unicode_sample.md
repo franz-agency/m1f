@@ -25,7 +25,7 @@ This file contains various Unicode characters to test encoding handling:
 ## Test cases for file system path handling
 
 - Windows paths: C:\Users\User\Documents\Résumé.pdf
-- Unix paths: /home/user/documents/résumé.pdf
+- Unix paths: /path/to/documents/résumé.pdf
 - URLs: https://example.com/üñïçødé/test?q=値&lang=日本語
 
 ## Test cases for escaping

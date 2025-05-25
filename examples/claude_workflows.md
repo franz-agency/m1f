@@ -63,11 +63,11 @@ python tools/claude_orchestrator.py -i
 
 ### 5. Complex Documentation Processing
 
-**ezPublish documentation example:**
+**Technical documentation example:**
 
 ```bash
-python tools/claude_orchestrator.py "Process ezPublish documentation:
-1. Analyze HTML structure in ~/ezdoc/ezpublishdoc.mugo.ca/eZ-Publish/Technical-manual/4.7/
+python tools/claude_orchestrator.py "Process technical documentation:
+1. Analyze HTML structure in ~/docs/technical-manual/
 2. Create preprocessing to remove navigation, scripts, and metadata
 3. Convert to clean Markdown preserving structure
 4. Create these m1f bundles: concepts, templates, features, reference, installation

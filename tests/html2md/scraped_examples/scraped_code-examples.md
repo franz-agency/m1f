@@ -655,7 +655,7 @@ configure it with options like `--outermost-selector` and `--ignore-selectors`.
 
 #### File Paths and Commands
 
-- Source file: `/home/user/documents/index.html`
+- Source file: `/path/to/documents/index.html`
 - Output file: `./output/index.md`
 - Config file: `~/.config/html2md/settings.yaml`
 - Command: `npm install -g html-to-markdown`
