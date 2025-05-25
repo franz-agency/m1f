@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Auto-bundling System**: Automatic project organization for AI/LLM consumption
+  - `scripts/auto_bundle.sh` - Basic bundling with predefined categories
+  - `scripts/auto_bundle_v2.sh` - Advanced bundling with YAML configuration
+  - `.m1f.config.yml` - Customizable bundle definitions and priorities
+  - `scripts/watch_and_bundle.sh` - File watcher for automatic updates
+  - Bundle types: docs, src, tests, complete, and custom focus areas
+  
+- **Claude Code Integration** (optional): AI-powered tool automation
+  - `tools/claude_orchestrator.py` - Natural language command processing
+  - Integration with Claude Code CLI for workflow automation
+  - Project-specific `.claude/settings.json` configuration
+  - Example workflows and documentation
+
+- **HTML2MD Preprocessing System**: Configurable HTML cleaning
+  - `tools/html2md/analyze_html.py` - Analyze HTML for preprocessing patterns
+  - `tools/html2md/preprocessors.py` - Generic preprocessing framework
+  - Removed hardcoded project-specific logic
+  - Support for custom preprocessing configurations per project
+
+### Changed
+
+- HTML2MD now uses configurable preprocessing instead of hardcoded rules
+- Updated documentation structure to include new features
+
+### Documentation
+
+- Added Auto Bundle Guide (`docs/AUTO_BUNDLE_GUIDE.md`)
+- Added Claude Code Integration Guide (`docs/CLAUDE_CODE_INTEGRATION.md`)
+- Added example workflows (`examples/claude_workflows.md`)
+- Updated main documentation index with new features
+
 ## [2.0.1] - 2025-05-25
 
 ### Fixed
