@@ -1,0 +1,160 @@
+# m1f Auto-Bundle Configuration
+# Customize how your project is bundled for AI/LLM consumption
+
+# Bundle definitions
+bundles:
+  # Documentation bundle - for understanding project structure and usage
+  docs:
+    description: "Project documentation and guides"
+    output: ".m1f/docs/manual.m1f.txt"
+    sources:
+      - path: "."
+        include_extensions: [".md", ".rst", ".txt"]
+        excludes:
+          - "**/test_*.md"
+          - "**/node_modules/**"
+          - "**/.venv/**"
+    separator_style: "Markdown"
+    priority: "high"  # High priority for AI context
+    
+  # API documentation - separate for detailed reference
+  api_docs:
+    description: "API documentation and references"
+    output: ".m1f/docs/api_docs.m1f.txt"
+    sources:
+      - path: "docs/"
+        include_extensions: [".md", ".rst"]
+    separator_style: "Markdown"
+    priority: "medium"
+    enabled_if_exists: "docs/"  # Only create if docs/ directory exists
+
+  # Source code bundle - core implementation
+  src:
+    description: "Source code without tests"
+    output: ".m1f/src/source.m1f.txt"
+    sources:
+      - path: "."
+        include_extensions: [".py"]
+        excludes:
+          - "**/test_*.py"
+          - "**/*_test.py"
+          - "**/tests/**"
+          - "**/__pycache__/**"
+    separator_style: "Detailed"
+    priority: "high"
+    focus_areas:  # Specific areas to highlight
+      - "tools/*.py"
+      - "core/*.py"
+
+  # Tools bundle - separate bundle for tools directory
+  tools:
+    description: "Tools and utilities"
+    output: ".m1f/src/tools.m1f.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
+        excludes:
+          - "**/test_*.py"
+    separator_style: "Detailed"
+    priority: "high"
+    enabled_if_exists: "tools/"
+
+  # Test structure bundle - tests without data
+  tests:
+    description: "Test structure and organization"
+    output: ".m1f/tests/tests.m1f.txt"
+    sources:
+      - path: "."
+        include_patterns:  # Only include test files
+          - "**/test_*.py"
+          - "**/*_test.py"
+          - "**/conftest.py"
+          - "**/pytest.ini"
+        excludes:
+          - "**/test_data/**"
+          - "**/fixtures/**"
+          - "**/*.pyc"
+    separator_style: "Standard"
+    priority: "low"  # Lower priority for AI context
+    metadata:
+      include_file_stats: false  # Don't include file sizes for tests
+
+  # Complete project bundle
+  complete:
+    description: "Complete project snapshot"
+    output: ".m1f/complete/project.m1f.txt"
+    sources:
+      - path: "."
+        include_extensions: [".py", ".md", ".yml", ".yaml", ".json", ".txt", ".sh"]
+        excludes:
+          - "**/test_data/**"
+          - "**/fixtures/**"
+          - "**/*.pyc"
+          - "**/htmlcov/**"
+          - "**/.m1f/**"  # Don't include m1f bundles in themselves
+    separator_style: "Detailed"
+    filename_mtime_hash: true
+    priority: "medium"
+
+  # Custom focus bundles - define your own
+  core_logic:
+    description: "Core business logic only"
+    output: ".m1f/focus/core_logic.m1f.txt"
+    sources:
+      - path: "src/"
+        include_patterns:
+          - "**/core/**/*.py"
+          - "**/models/**/*.py"
+          - "**/services/**/*.py"
+    separator_style: "Detailed"
+    priority: "high"
+    enabled: false  # Enable when needed
+
+# Global settings
+global:
+  # Exclusions that apply to all bundles
+  global_excludes:
+    - "**/.git/**"
+    - "**/.venv/**"
+    - "**/node_modules/**"
+    - "**/__pycache__/**"
+    - "**/*.pyc"
+    - "**/.*"  # Hidden files
+    
+  # Default settings for all bundles
+  defaults:
+    minimal_output: true
+    force_overwrite: true
+    max_file_size: "10MB"
+    
+  # File watcher settings
+  watcher:
+    enabled: true
+    debounce_seconds: 2
+    ignored_paths:
+      - ".m1f/"
+      - ".git/"
+      - ".venv/"
+    
+# AI/LLM optimization settings
+ai_optimization:
+  # Token limits for different models
+  token_limits:
+    claude: 200000
+    gpt4: 128000
+    default: 100000
+    
+  # Bundle prioritization for context windows
+  context_priority:
+    - "docs"      # First priority: understand the project
+    - "src"       # Second: core implementation
+    - "tools"     # Third: specific tools
+    - "complete"  # Last resort: everything
+    
+  # Recommendations for AI usage
+  usage_hints:
+    docs: "Start here to understand project structure and usage"
+    src: "Core implementation details"
+    tools: "Specific tool implementations"
+    tests: "Test structure (reference only when debugging)"
+    complete: "Full project context (use sparingly due to size)"

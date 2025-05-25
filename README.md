@@ -71,6 +71,21 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+### Optional: Claude Code Integration
+
+For AI-powered automation of m1f tools, you can install Claude Code:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+This enables natural language control of all tools. For example:
+- "Bundle all Python files into a single m1f"
+- "Convert HTML documentation to Markdown with preprocessing"
+- "Create topic-based bundles from documentation"
+
+See [Claude Code Integration Guide](docs/CLAUDE_CODE_INTEGRATION.md) for setup and usage.
+
 ## Documentation
 
 For detailed documentation, please check the [docs directory](./docs/README.md).

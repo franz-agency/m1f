@@ -154,6 +154,14 @@ class Config:
     overwrite: bool = False
 
     # Processing options
-    parallel: bool = True
+    parallel: bool = False
     max_workers: int = 4
     chunk_size: int = 10
+    
+    # File handling options
+    file_extensions: List[str] = field(default_factory=lambda: [".html", ".htm"])
+    exclude_patterns: List[str] = field(default_factory=lambda: [".*", "_*", "node_modules", "__pycache__"])
+    target_encoding: str = "utf-8"
+    
+    # Preprocessing configuration
+    preprocessing: Optional[Any] = None  # PreprocessingConfig instance
