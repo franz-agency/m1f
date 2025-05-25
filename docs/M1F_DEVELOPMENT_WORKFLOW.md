@@ -4,60 +4,14 @@ This document describes the recommended workflow for developing with m1f and usi
 
 ## Overview
 
-The m1f project now provides a self-contained development environment with:
+The m1f project provides a self-contained development environment with:
 - Pre-generated m1f bundles of its own source code
 - Shell aliases for convenient access from anywhere
 - Symlink system for using m1f documentation in other projects
 
-## Initial Setup
+## Prerequisites
 
-### 1. Clone and Setup m1f
-
-```bash
-git clone https://github.com/yourusername/m1f.git
-cd m1f
-
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Install m1f Aliases
-
-Run the setup script to create convenient aliases:
-
-```bash
-./scripts/setup_m1f_aliases.sh
-```
-
-This creates the following commands available from anywhere:
-- `m1f` - Main m1f tool
-- `s1f` - Split files tool
-- `html2md` - HTML to Markdown converter
-- `token-counter` - Token counting utility
-- `m1f-update` - Update m1f bundle files
-- `m1f-link` - Create symlink in current project
-- `m1f-help` - Show available commands
-
-After running the setup script, reload your shell:
-```bash
-source ~/.bashrc  # or ~/.zshrc for zsh
-```
-
-### 3. Generate Initial m1f Bundles
-
-```bash
-m1f-update
-```
-
-This creates the following files in `.m1f/`:
-- `m1f-documentation.txt` - All documentation
-- `m1f-programs.txt` - All Python source code
-- `m1f-tests.txt` - All test files (excluding test data)
-- `m1f-allinone.txt` - Complete project bundle
+For initial setup instructions, see the [SETUP.md](../SETUP.md) guide.
 
 ## Using m1f in Other Projects
 
