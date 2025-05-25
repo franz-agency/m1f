@@ -203,29 +203,6 @@ class PresetGroup:
             merged.max_lines = global_preset.max_lines
         
         return merged
-    
-    def get_file_specific_settings(self, file_path: Path) -> Optional[Dict[str, Any]]:
-        """Get file-specific settings (security_check, max_file_size, etc.) for a file."""
-        # First check if we have a preset for this file
-        preset = self.get_preset_for_file(file_path)
-        if not preset:
-            return None
-            
-        # Collect file-specific settings
-        settings = {}
-        
-        if preset.security_check is not None:
-            settings['security_check'] = preset.security_check
-        if preset.max_file_size is not None:
-            settings['max_file_size'] = preset.max_file_size
-        if preset.include_dot_paths is not None:
-            settings['include_dot_paths'] = preset.include_dot_paths
-        if preset.include_binary_files is not None:
-            settings['include_binary_files'] = preset.include_binary_files
-        if preset.remove_scraped_metadata is not None:
-            settings['remove_scraped_metadata'] = preset.remove_scraped_metadata
-            
-        return settings if settings else None
 
 
 class PresetManager:
@@ -465,6 +442,29 @@ class PresetManager:
         
         return content
     
+    def get_file_specific_settings(self, file_path: Path) -> Optional[Dict[str, Any]]:
+        """Get file-specific settings (security_check, max_file_size, etc.) for a file."""
+        # Get the preset for this file
+        preset = self.get_preset_for_file(file_path)
+        if not preset:
+            return None
+            
+        # Collect file-specific settings
+        settings = {}
+        
+        if preset.security_check is not None:
+            settings['security_check'] = preset.security_check
+        if preset.max_file_size is not None:
+            settings['max_file_size'] = preset.max_file_size
+        if preset.include_dot_paths is not None:
+            settings['include_dot_paths'] = preset.include_dot_paths
+        if preset.include_binary_files is not None:
+            settings['include_binary_files'] = preset.include_binary_files
+        if preset.remove_scraped_metadata is not None:
+            settings['remove_scraped_metadata'] = preset.remove_scraped_metadata
+            
+        return settings if settings else None
+    
     def _minify_content(self, content: str, file_path: Path) -> str:
         """Minify content based on file type."""
         ext = file_path.suffix.lower()
@@ -497,8 +497,11 @@ class PresetManager:
     
     def _strip_tags(self, content: str, tags_to_strip: List[str], preserve_tags: List[str]) -> str:
         """Strip HTML tags from content."""
+        # If no specific tags provided, strip all tags
         if not tags_to_strip:
-            return content
+            # Use a simple regex to strip all HTML tags
+            import re
+            return re.sub(r'<[^>]+>', '', content)
         
         try:
             from bs4 import BeautifulSoup
