@@ -1,14 +1,17 @@
 # Claude Code Integration Guide
 
-This guide explains how to integrate Claude Code as an optional AI assistant for the m1f tools project.
+This guide explains how to integrate Claude Code as an optional AI assistant for
+the m1f tools project.
 
 ## Overview
 
-Claude Code can help automate complex workflows by understanding natural language prompts and executing the appropriate tools with correct parameters.
+Claude Code can help automate complex workflows by understanding natural
+language prompts and executing the appropriate tools with correct parameters.
 
 ## Installation
 
 ### Prerequisites
+
 - Node.js installed on your system
 - An Anthropic API key (get one at https://console.anthropic.com)
 
@@ -21,11 +24,13 @@ npm install -g @anthropic-ai/claude-code
 ### Initial Setup
 
 1. Start Claude Code:
+
    ```bash
    claude
    ```
 
 2. Login with your API key:
+
    ```
    /login
    ```
@@ -56,11 +61,13 @@ Create `.claude/settings.json` in the project root:
 ### Basic Commands
 
 1. **Bundle files into m1f**:
+
    ```bash
    claude -p "Bundle all Python files in the tools directory into a single m1f file"
    ```
 
 2. **Convert HTML to Markdown**:
+
    ```bash
    claude -p "Convert all HTML files in ~/docs to Markdown with preprocessing"
    ```
@@ -73,6 +80,7 @@ Create `.claude/settings.json` in the project root:
 ### Advanced Workflows
 
 1. **Complete documentation conversion workflow**:
+
    ```bash
    claude -p "I have scraped HTML documentation in ~/ezdoc. Please:
    1. Analyze a few sample files to understand the structure
@@ -131,7 +139,7 @@ class ClaudeOrchestrator:
             'html2md': 'tools/html2md',
             'wp_export': 'tools/wp_export_md.py'
         }
-    
+
     def analyze_request(self, user_prompt):
         """Use Claude to analyze user request and determine actions."""
         analysis_prompt = f"""
@@ -139,21 +147,21 @@ class ClaudeOrchestrator:
         1. tool: which tool to use ({', '.join(self.tools.keys())})
         2. parameters: dict of parameters for the tool
         3. steps: list of steps to execute
-        
+
         Request: {user_prompt}
         """
-        
+
         result = subprocess.run(
             ['claude', '-p', analysis_prompt, '--output-format', 'json'],
             capture_output=True,
             text=True
         )
         return json.loads(result.stdout)
-    
+
     def execute_workflow(self, user_prompt):
         """Execute a complete workflow based on user prompt."""
         plan = self.analyze_request(user_prompt)
-        
+
         for step in plan['steps']:
             print(f"Executing: {step['description']}")
             # Execute the actual command

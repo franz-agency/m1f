@@ -27,13 +27,14 @@ class FileProcessor:
         self.logger = logger_manager.get_logger(__name__)
         self._symlink_visited: Set[str] = set()
         self._processed_files: Set[str] = set()
-        
+
         # Initialize preset manager for global settings
         self.preset_manager = None
         self.global_settings = None
         if not config.preset.disable_presets and config.preset.preset_files:
             try:
                 from .presets import load_presets
+
                 self.preset_manager = load_presets(config.preset.preset_files)
                 self.global_settings = self.preset_manager.get_global_settings()
                 self.logger.debug("Loaded global preset settings")
@@ -42,7 +43,7 @@ class FileProcessor:
 
         # Build exclusion sets
         self._build_exclusion_sets()
-        
+
         # Apply global filter settings if available
         self._apply_global_filter_settings()
 
@@ -57,7 +58,7 @@ class FileProcessor:
         for pattern in self.config.filter.exclude_patterns:
             if "/" not in pattern and "*" not in pattern and "?" not in pattern:
                 self.excluded_dirs.add(pattern.lower())
-                
+
         # Add global preset exclude patterns
         if self.global_settings and self.global_settings.exclude_patterns:
             for pattern in self.global_settings.exclude_patterns:
@@ -120,11 +121,13 @@ class FileProcessor:
         for pattern in self.config.filter.exclude_patterns:
             if any(ch in pattern for ch in ["*", "?", "!"]) or pattern.endswith("/"):
                 patterns.append(pattern)
-                
+
         # Add global preset exclude patterns
         if self.global_settings and self.global_settings.exclude_patterns:
             for pattern in self.global_settings.exclude_patterns:
-                if any(ch in pattern for ch in ["*", "?", "!"]) or pattern.endswith("/"):
+                if any(ch in pattern for ch in ["*", "?", "!"]) or pattern.endswith(
+                    "/"
+                ):
                     patterns.append(pattern)
 
         if patterns:
@@ -314,11 +317,13 @@ class FileProcessor:
         # Check if file exists
         if not file_path.exists():
             return False
-            
+
         # Get file-specific settings from presets
         file_settings = {}
         if self.preset_manager:
-            file_settings = self.preset_manager.get_file_specific_settings(file_path) or {}
+            file_settings = (
+                self.preset_manager.get_file_specific_settings(file_path) or {}
+            )
 
         # Check exact excludes
         if str(file_path) in self.exact_excludes:
@@ -338,24 +343,30 @@ class FileProcessor:
 
         # Check dot files
         include_dots = self.config.filter.include_dot_paths
-        if hasattr(self, '_global_include_dot_paths') and self._global_include_dot_paths is not None:
+        if (
+            hasattr(self, "_global_include_dot_paths")
+            and self._global_include_dot_paths is not None
+        ):
             include_dots = include_dots or self._global_include_dot_paths
         # File-specific override
-        if 'include_dot_paths' in file_settings:
-            include_dots = file_settings['include_dot_paths']
-            
+        if "include_dot_paths" in file_settings:
+            include_dots = file_settings["include_dot_paths"]
+
         if not explicitly_included and not include_dots:
             if is_hidden_path(file_path):
                 return False
 
         # Check binary files
         include_binary = self.config.filter.include_binary_files
-        if hasattr(self, '_global_include_binary_files') and self._global_include_binary_files is not None:
+        if (
+            hasattr(self, "_global_include_binary_files")
+            and self._global_include_binary_files is not None
+        ):
             include_binary = include_binary or self._global_include_binary_files
         # File-specific override
-        if 'include_binary_files' in file_settings:
-            include_binary = file_settings['include_binary_files']
-            
+        if "include_binary_files" in file_settings:
+            include_binary = file_settings["include_binary_files"]
+
         if not include_binary:
             if is_binary_file(file_path):
                 return False
@@ -364,9 +375,11 @@ class FileProcessor:
         # Combine config and global preset include extensions
         include_exts = set(self.config.filter.include_extensions)
         if self.global_settings and self.global_settings.include_extensions:
-            include_exts.update(ext.lower() if ext.startswith('.') else f'.{ext.lower()}' 
-                               for ext in self.global_settings.include_extensions)
-        
+            include_exts.update(
+                ext.lower() if ext.startswith(".") else f".{ext.lower()}"
+                for ext in self.global_settings.include_extensions
+            )
+
         if include_exts:
             if file_path.suffix.lower() not in include_exts:
                 return False
@@ -374,9 +387,11 @@ class FileProcessor:
         # Combine config and global preset exclude extensions
         exclude_exts = set(self.config.filter.exclude_extensions)
         if self.global_settings and self.global_settings.exclude_extensions:
-            exclude_exts.update(ext.lower() if ext.startswith('.') else f'.{ext.lower()}' 
-                               for ext in self.global_settings.exclude_extensions)
-        
+            exclude_exts.update(
+                ext.lower() if ext.startswith(".") else f".{ext.lower()}"
+                for ext in self.global_settings.exclude_extensions
+            )
+
         if exclude_exts:
             if file_path.suffix.lower() in exclude_exts:
                 return False
@@ -384,9 +399,12 @@ class FileProcessor:
         # Check symlinks
         if file_path.is_symlink():
             include_symlinks = self.config.filter.include_symlinks
-            if hasattr(self, '_global_include_symlinks') and self._global_include_symlinks is not None:
+            if (
+                hasattr(self, "_global_include_symlinks")
+                and self._global_include_symlinks is not None
+            ):
                 include_symlinks = include_symlinks or self._global_include_symlinks
-                
+
             if not include_symlinks:
                 return False
 
@@ -395,23 +413,29 @@ class FileProcessor:
 
         # Check file size limit
         max_size = self.config.filter.max_file_size
-        if hasattr(self, '_global_max_file_size') and self._global_max_file_size is not None:
+        if (
+            hasattr(self, "_global_max_file_size")
+            and self._global_max_file_size is not None
+        ):
             # Use the smaller of the two limits if both are set
             if max_size is not None:
                 max_size = min(max_size, self._global_max_file_size)
             else:
                 max_size = self._global_max_file_size
-        
+
         # File-specific override
-        if 'max_file_size' in file_settings:
+        if "max_file_size" in file_settings:
             from .utils import parse_file_size
+
             try:
-                file_max_size = parse_file_size(file_settings['max_file_size'])
+                file_max_size = parse_file_size(file_settings["max_file_size"])
                 # If file-specific limit is set, use it (not the minimum)
                 max_size = file_max_size
             except ValueError as e:
-                self.logger.warning(f"Invalid file-specific max_file_size for {file_path}: {e}")
-                
+                self.logger.warning(
+                    f"Invalid file-specific max_file_size for {file_path}: {e}"
+                )
+
         if max_size is not None:
             try:
                 file_size = file_path.stat().st_size
@@ -467,53 +491,63 @@ class FileProcessor:
 
         except (OSError, RuntimeError):
             return True
-    
+
     def _apply_global_filter_settings(self) -> None:
         """Apply global filter settings from presets."""
         if not self.global_settings:
             return
-            
+
         # Apply global filter settings to config-like attributes
         if self.global_settings.include_dot_paths is not None:
             self._global_include_dot_paths = self.global_settings.include_dot_paths
         else:
             self._global_include_dot_paths = None
-            
+
         if self.global_settings.include_binary_files is not None:
-            self._global_include_binary_files = self.global_settings.include_binary_files
+            self._global_include_binary_files = (
+                self.global_settings.include_binary_files
+            )
         else:
             self._global_include_binary_files = None
-            
+
         if self.global_settings.include_symlinks is not None:
             self._global_include_symlinks = self.global_settings.include_symlinks
         else:
             self._global_include_symlinks = None
-            
+
         if self.global_settings.no_default_excludes is not None:
             self._global_no_default_excludes = self.global_settings.no_default_excludes
             # Rebuild exclusion sets if needed
-            if self._global_no_default_excludes and not self.config.filter.no_default_excludes:
+            if (
+                self._global_no_default_excludes
+                and not self.config.filter.no_default_excludes
+            ):
                 self.excluded_dirs.clear()
                 self.excluded_files.clear()
-                
+
         if self.global_settings.max_file_size:
             from .utils import parse_file_size
+
             try:
-                self._global_max_file_size = parse_file_size(self.global_settings.max_file_size)
+                self._global_max_file_size = parse_file_size(
+                    self.global_settings.max_file_size
+                )
             except ValueError as e:
                 self.logger.warning(f"Invalid global max_file_size: {e}")
                 self._global_max_file_size = None
         else:
             self._global_max_file_size = None
-            
+
         if self.global_settings.exclude_paths_file:
             # Load additional exclude patterns from global preset
             exclude_path = Path(self.global_settings.exclude_paths_file)
             if exclude_path.exists():
                 self._load_exclude_patterns_from_file(exclude_path)
             else:
-                self.logger.warning(f"Global exclude_paths_file not found: {exclude_path}")
-    
+                self.logger.warning(
+                    f"Global exclude_paths_file not found: {exclude_path}"
+                )
+
     def _load_exclude_patterns_from_file(self, exclude_file: Path) -> None:
         """Load exclusion patterns from a file (helper method)."""
         try:
@@ -525,15 +559,23 @@ class FileProcessor:
                 ]
 
             # Add to gitignore spec if patterns found
-            patterns = [line for line in lines if any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")]
+            patterns = [
+                line
+                for line in lines
+                if any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")
+            ]
             if patterns:
                 spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
                 if self.gitignore_spec:
                     # Combine with existing spec
-                    all_patterns = list(self.gitignore_spec.patterns) + list(spec.patterns)
+                    all_patterns = list(self.gitignore_spec.patterns) + list(
+                        spec.patterns
+                    )
                     self.gitignore_spec = pathspec.PathSpec(all_patterns)
                 else:
                     self.gitignore_spec = spec
-                    
+
         except Exception as e:
-            self.logger.error(f"Error loading exclude patterns from {exclude_file}: {e}")
+            self.logger.error(
+                f"Error loading exclude patterns from {exclude_file}: {e}"
+            )

@@ -27,7 +27,7 @@ from m1f.exceptions import M1FError
 from m1f.logging import setup_logging, get_logger
 
 
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
 

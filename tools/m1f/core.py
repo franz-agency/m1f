@@ -53,7 +53,7 @@ class FileCombiner:
         self.output_writer = OutputWriter(config, logger_manager)
         self.archive_creator = ArchiveCreator(config, logger_manager)
         self.security_scanner = SecurityScanner(config, logger_manager)
-        
+
         # Share preset manager between components
         if self.file_processor.preset_manager:
             self.security_scanner.preset_manager = self.file_processor.preset_manager

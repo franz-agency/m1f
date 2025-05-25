@@ -8,13 +8,18 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.1.0] - 2025-01-25
+
 ### Added
 
 - **Preset System**: Flexible file-specific processing rules
+
   - Hierarchical preset loading: global (~/.m1f/) → user → project
   - Global settings: encoding, separator style, line endings, includes/excludes
-  - Extension-specific processing: HTML minification, CSS compression, comment stripping
-  - Built-in actions: minify, strip_tags, strip_comments, compress_whitespace, remove_empty_lines
+  - Extension-specific processing: HTML minification, CSS compression, comment
+    stripping
+  - Built-in actions: minify, strip_tags, strip_comments, compress_whitespace,
+    remove_empty_lines
   - Custom processors: truncate, redact_secrets, extract_functions
   - CLI options: `--preset`, `--preset-group`, `--disable-presets`
   - Example presets: WordPress, web projects, documentation
@@ -33,14 +38,15 @@ and this project adheres to
     - File-specific action processing tests
     - Integration verification
 
-- **Auto-bundling System**: Automatic project organization for AI/LLM consumption
+- **Auto-bundling System**: Automatic project organization for AI/LLM
+  consumption
   - `scripts/auto_bundle.sh` - Basic bundling with predefined categories
   - `scripts/auto_bundle_v2.sh` - Advanced bundling with YAML configuration
   - `.m1f.config.yml` - Customizable bundle definitions and priorities
   - `scripts/watch_and_bundle.sh` - File watcher for automatic updates
   - Bundle types: docs, src, tests, complete, and custom focus areas
-  
 - **Claude Code Integration** (optional): AI-powered tool automation
+
   - `tools/claude_orchestrator.py` - Natural language command processing
   - Integration with Claude Code CLI for workflow automation
   - Project-specific `.claude/settings.json` configuration
@@ -59,7 +65,8 @@ and this project adheres to
 
 ### Fixed
 
-- Preset `strip_tags` action now properly strips all HTML tags when no specific tags are specified
+- Preset `strip_tags` action now properly strips all HTML tags when no specific
+  tags are specified
 - Added missing `get_file_specific_settings` method to PresetManager class
 
 ### Documentation

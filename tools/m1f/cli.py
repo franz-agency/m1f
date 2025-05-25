@@ -315,10 +315,10 @@ Perfect for:
     control_group.add_argument(
         "-q", "--quiet", action="store_true", help="Suppress all console output"
     )
-    
+
     # Preset configuration group
     preset_group = parser.add_argument_group("Preset Configuration")
-    
+
     preset_group.add_argument(
         "--preset",
         type=str,
@@ -327,14 +327,14 @@ Perfect for:
         metavar="FILE",
         help="Preset configuration file(s) for file-specific processing",
     )
-    
+
     preset_group.add_argument(
         "--preset-group",
         type=str,
         metavar="GROUP",
         help="Specific preset group to use from the configuration",
     )
-    
+
     preset_group.add_argument(
         "--disable-presets",
         action="store_true",

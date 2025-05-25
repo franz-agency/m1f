@@ -5,6 +5,7 @@ This document provides example workflows using Claude Code with the m1f tools.
 ## Setup
 
 First, ensure Claude Code is installed:
+
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
@@ -14,11 +15,13 @@ npm install -g @anthropic-ai/claude-code
 ### 1. Basic File Bundling
 
 **Natural language prompt:**
+
 ```bash
 python tools/claude_orchestrator.py "Bundle all Python files in the tools directory into a single m1f file with detailed separators"
 ```
 
 **What Claude will do:**
+
 - Identify all .py files in tools/
 - Create an m1f bundle with detailed separators
 - Include metadata for each file
@@ -26,11 +29,13 @@ python tools/claude_orchestrator.py "Bundle all Python files in the tools direct
 ### 2. HTML Documentation Conversion
 
 **Complete workflow:**
+
 ```bash
 python tools/claude_orchestrator.py "I have HTML documentation in ~/docs/html. Please analyze it, create a preprocessing config, convert to Markdown, and create topic-based m1f bundles"
 ```
 
 **What Claude will do:**
+
 1. Run analyze_html.py on sample files
 2. Create a preprocessing configuration
 3. Convert all HTML to Markdown
@@ -40,6 +45,7 @@ python tools/claude_orchestrator.py "I have HTML documentation in ~/docs/html. P
 ### 3. WordPress Site Export
 
 **Natural language prompt:**
+
 ```bash
 python tools/claude_orchestrator.py "Export my WordPress site at example.com to Markdown, organize by categories, and create m1f bundles for each category"
 ```
@@ -47,6 +53,7 @@ python tools/claude_orchestrator.py "Export my WordPress site at example.com to 
 ### 4. Project Analysis
 
 **Interactive mode:**
+
 ```bash
 python tools/claude_orchestrator.py -i
 > Analyze this Python project and suggest optimal bundling strategies
@@ -57,6 +64,7 @@ python tools/claude_orchestrator.py -i
 ### 5. Complex Documentation Processing
 
 **ezPublish documentation example:**
+
 ```bash
 python tools/claude_orchestrator.py "Process ezPublish documentation:
 1. Analyze HTML structure in ~/ezdoc/ezpublishdoc.mugo.ca/eZ-Publish/Technical-manual/4.7/
@@ -84,6 +92,7 @@ claude
 ## Combining Tools
 
 **Pipeline example:**
+
 ```bash
 # Using shell pipes with Claude
 find . -name "*.html" | \
@@ -104,6 +113,7 @@ python tools/claude_orchestrator.py "Convert HTML files using preprocessing.json
 ## Troubleshooting
 
 If Claude Code is not available:
+
 - The orchestrator will show an error message
 - You can still use all tools directly
 - See individual tool documentation for usage

@@ -58,7 +58,8 @@ content:
 
 ### Preset System
 
-m1f includes a powerful preset system for applying different processing rules to different file types:
+m1f includes a powerful preset system for applying different processing rules to
+different file types:
 
 - **Hierarchical Configuration**: Global (~/.m1f/) → User → Project settings
 - **File-Specific Processing**: Different rules for HTML, CSS, JS, Python, etc.
@@ -100,11 +101,13 @@ npm install -g @anthropic-ai/claude-code
 ```
 
 This enables natural language control of all tools. For example:
+
 - "Bundle all Python files into a single m1f"
 - "Convert HTML documentation to Markdown with preprocessing"
 - "Create topic-based bundles from documentation"
 
-See [Claude Code Integration Guide](docs/CLAUDE_CODE_INTEGRATION.md) for setup and usage.
+See [Claude Code Integration Guide](docs/CLAUDE_CODE_INTEGRATION.md) for setup
+and usage.
 
 ## Documentation
 

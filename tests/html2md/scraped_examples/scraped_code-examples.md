@@ -833,8 +833,8 @@ selectors: outermost: "main.content, article.post, div.documentation" ignore: -
 
 # File handling
 
-files: include*extensions: [".html", ".htm", ".xhtml"] exclude_patterns: -
-"**/node_modules/**" - "**/dist/**" - "\**/\_.min.html" max_file_size_mb: 10
+files: include\*extensions: [".html", ".htm", ".xhtml"] exclude_patterns: -
+"**/node_modules/**" - "**/dist/**" - "\*\*/\_.min.html" max_file_size_mb: 10
 
 # Processing options
 

@@ -36,39 +36,42 @@ class HTMLParser:
             return BeautifulSoup(soup.prettify(), self.config.parser)
 
         return soup
-    
+
     def parse_file(self, file_path) -> BeautifulSoup:
         """Parse HTML file.
-        
+
         Args:
             file_path: Path to HTML file
-            
+
         Returns:
             BeautifulSoup object
         """
         from pathlib import Path
+
         file_path = Path(file_path)
-        
+
         # Read file with proper encoding detection
-        encodings = [self.config.encoding, 'utf-8', 'latin-1', 'cp1252']
+        encodings = [self.config.encoding, "utf-8", "latin-1", "cp1252"]
         html_content = None
-        
+
         for encoding in encodings:
             try:
-                with open(file_path, 'r', encoding=encoding) as f:
+                with open(file_path, "r", encoding=encoding) as f:
                     html_content = f.read()
                 break
             except (UnicodeDecodeError, LookupError):
                 continue
-                
+
         if html_content is None:
             # Fallback: read as binary and decode with errors='ignore'
-            with open(file_path, 'rb') as f:
-                html_content = f.read().decode(self.config.encoding, errors=self.config.decode_errors)
-        
+            with open(file_path, "rb") as f:
+                html_content = f.read().decode(
+                    self.config.encoding, errors=self.config.decode_errors
+                )
+
         # Get base URL from file path for relative URL resolution
         base_url = file_path.as_uri()
-        
+
         return self.parse(html_content, base_url)
 
     def _resolve_urls(self, soup: BeautifulSoup, base_url: str) -> None:

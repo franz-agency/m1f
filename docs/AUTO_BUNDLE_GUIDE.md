@@ -1,10 +1,13 @@
 # Auto Bundle Guide
 
-This guide explains how to use the automatic m1f bundling system to organize your project for AI/LLM consumption.
+This guide explains how to use the automatic m1f bundling system to organize
+your project for AI/LLM consumption.
 
 ## Overview
 
-The auto-bundle system creates organized `.m1f` bundles of your project, allowing you to:
+The auto-bundle system creates organized `.m1f` bundles of your project,
+allowing you to:
+
 - Reference specific parts of your codebase in AI conversations
 - Maintain focused context windows
 - Exclude irrelevant files (like test data)
@@ -13,9 +16,11 @@ The auto-bundle system creates organized `.m1f` bundles of your project, allowin
 ## Quick Start
 
 1. **Run the basic auto-bundle script**:
+
    ```bash
    ./scripts/auto_bundle.sh
    ```
+
    This creates standard bundles in `.m1f/` directory.
 
 2. **Use advanced configuration** (recommended):
@@ -65,9 +70,9 @@ bundles:
 ```yaml
 ai_optimization:
   context_priority:
-    - "docs"      # First: understand project
-    - "my_focus"  # Second: core logic
-    - "complete"  # Last: everything
+    - "docs" # First: understand project
+    - "my_focus" # Second: core logic
+    - "complete" # Last: everything
 ```
 
 ### 3. Exclude Files
@@ -126,6 +131,7 @@ For automatic updates when files change:
 ```
 
 This will:
+
 - Monitor file changes
 - Update only affected bundles
 - Use debouncing to avoid excessive updates
@@ -157,11 +163,11 @@ ai_optimization:
   token_limits:
     claude: 200000
     gpt4: 128000
-  
+
   # Auto-split large bundles
   auto_split:
     enabled: true
-    max_size: 150000  # tokens
+    max_size: 150000 # tokens
 ```
 
 ### Excluding Test Data
@@ -176,7 +182,7 @@ bundles:
         excludes:
           - "**/fixtures/**"
           - "**/test_data/**"
-          - "**/*.json"  # test data files
+          - "**/*.json" # test data files
 ```
 
 ## Best Practices
@@ -184,7 +190,8 @@ bundles:
 1. **Start with documentation**: Always include docs bundle first in AI contexts
 2. **Use focused bundles**: Create specific bundles for different features
 3. **Exclude generated files**: Don't include build artifacts, caches, etc.
-4. **Update regularly**: Use file watcher or run manually after significant changes
+4. **Update regularly**: Use file watcher or run manually after significant
+   changes
 5. **Prioritize wisely**: Put most important bundles first for token limits
 
 ## Integration with CI/CD
@@ -202,16 +209,19 @@ Add to your CI pipeline:
 ## Troubleshooting
 
 ### Bundle too large
+
 - Split into smaller, focused bundles
 - Increase exclusions
 - Use token limits in config
 
 ### Missing files
+
 - Check exclusion patterns
 - Verify source paths
 - Run with specific bundle: `./scripts/auto_bundle_v2.sh src`
 
 ### Performance
+
 - Use `--minimal-output` flag
 - Exclude binary files
 - Limit directory depth
@@ -219,30 +229,32 @@ Add to your CI pipeline:
 ## Examples
 
 ### Django Project
+
 ```yaml
 bundles:
   models:
     sources:
       - path: "."
         include_patterns: ["**/models.py"]
-  
+
   views:
     sources:
       - path: "."
         include_patterns: ["**/views.py"]
-  
+
   migrations:
-    enabled: false  # Usually not needed for AI
+    enabled: false # Usually not needed for AI
 ```
 
 ### Frontend Project
+
 ```yaml
 bundles:
   components:
     sources:
       - path: "src/components/"
         include_extensions: [".jsx", ".tsx"]
-  
+
   styles:
     sources:
       - path: "src/"
@@ -252,6 +264,7 @@ bundles:
 ## Summary
 
 The auto-bundle system helps you:
+
 - Organize code for AI consumption
 - Focus on relevant parts
 - Exclude noise (test data, generated files)

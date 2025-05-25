@@ -13,68 +13,70 @@ logger = logging.getLogger(__name__)
 
 class PresetConfigLoader:
     """Loads preset configurations from various locations."""
-    
+
     @staticmethod
     def get_user_preset_dir() -> Path:
         """Get the user's m1f preset directory."""
         # Support XDG_CONFIG_HOME on Linux/Unix
-        if os.name != 'nt' and 'XDG_CONFIG_HOME' in os.environ:
-            config_home = Path(os.environ['XDG_CONFIG_HOME'])
+        if os.name != "nt" and "XDG_CONFIG_HOME" in os.environ:
+            config_home = Path(os.environ["XDG_CONFIG_HOME"])
         else:
             config_home = Path.home()
-        
-        return config_home / '.m1f'
-    
+
+        return config_home / ".m1f"
+
     @staticmethod
     def get_global_preset_file() -> Path:
         """Get the global preset file path."""
-        return PresetConfigLoader.get_user_preset_dir() / 'global-presets.yml'
-    
+        return PresetConfigLoader.get_user_preset_dir() / "global-presets.yml"
+
     @staticmethod
     def get_user_presets_dir() -> Path:
         """Get the directory for user preset files."""
-        return PresetConfigLoader.get_user_preset_dir() / 'presets'
-    
+        return PresetConfigLoader.get_user_preset_dir() / "presets"
+
     @classmethod
-    def load_all_presets(cls, 
-                        project_presets: Optional[List[Path]] = None,
-                        include_global: bool = True,
-                        include_user: bool = True) -> List[Path]:
+    def load_all_presets(
+        cls,
+        project_presets: Optional[List[Path]] = None,
+        include_global: bool = True,
+        include_user: bool = True,
+    ) -> List[Path]:
         """
         Load all preset files in order of precedence.
-        
+
         Order (highest to lowest priority):
         1. Project-specific presets (from command line)
         2. User presets (~/.m1f/presets/)
         3. Global presets (~/.m1f/global-presets.yml)
-        
+
         Args:
             project_presets: List of project-specific preset files
             include_global: Whether to include global presets
             include_user: Whether to include user presets
-            
+
         Returns:
             List of preset file paths to load
         """
         preset_files = []
-        
+
         # 1. Global presets (lowest priority)
         if include_global:
             global_preset = cls.get_global_preset_file()
             if global_preset.exists():
                 preset_files.append(global_preset)
                 logger.debug(f"Found global preset file: {global_preset}")
-        
+
         # 2. User presets
         if include_user:
             user_dir = cls.get_user_presets_dir()
             if user_dir.exists() and user_dir.is_dir():
                 # Load all .yml and .yaml files
-                for pattern in ['*.yml', '*.yaml']:
+                for pattern in ["*.yml", "*.yaml"]:
                     for preset_file in sorted(user_dir.glob(pattern)):
                         preset_files.append(preset_file)
                         logger.debug(f"Found user preset file: {preset_file}")
-        
+
         # 3. Project presets (highest priority)
         if project_presets:
             for preset_file in project_presets:
@@ -83,19 +85,19 @@ class PresetConfigLoader:
                     logger.debug(f"Found project preset file: {preset_file}")
                 else:
                     logger.warning(f"Project preset file not found: {preset_file}")
-        
+
         return preset_files
-    
+
     @classmethod
     def init_user_config(cls) -> None:
         """Initialize user configuration directory with example files."""
         user_dir = cls.get_user_preset_dir()
         presets_dir = cls.get_user_presets_dir()
-        
+
         # Create directories
         user_dir.mkdir(exist_ok=True)
         presets_dir.mkdir(exist_ok=True)
-        
+
         # Create example global preset if it doesn't exist
         global_preset = cls.get_global_preset_file()
         if not global_preset.exists():
@@ -206,9 +208,9 @@ personal_projects:
 """
             global_preset.write_text(example_content)
             logger.info(f"Created example global preset: {global_preset}")
-        
+
         # Create README
-        readme = user_dir / 'README.md'
+        readme = user_dir / "README.md"
         if not readme.exists():
             readme_content = """# m1f User Configuration
 

@@ -6,7 +6,8 @@ This directory contains tasks for creating selective file bundles that serve as
 context for AI interactions. The system includes:
 
 1. **Manual Selection** - Create bundles from carefully selected files
-2. **Auto-Bundling** - Automatically organize project content into topic-based bundles
+2. **Auto-Bundling** - Automatically organize project content into topic-based
+   bundles
 3. **Preset System** - Apply file-specific processing rules
 4. **Watch Mode** - Automatically regenerate bundles when files change
 
@@ -22,14 +23,17 @@ To use these tasks in VS Code:
    ```bash
    cp tasks/example.tasks.json .vscode/tasks.json
    ```
-3. Now you can access all tasks via the Command Palette (`Ctrl+Shift+P` → "Tasks: Run Task")
+3. Now you can access all tasks via the Command Palette (`Ctrl+Shift+P` →
+   "Tasks: Run Task")
 
 The `example.tasks.json` file references all available task definitions:
+
 - `m1f.json` - Manual file selection tasks
 - `auto_bundle.json` - Automated bundling tasks with preset support
 - `linting.json` - Code quality and linting tasks
 
-**Note**: The `.vscode` directory is typically gitignored, so each developer can customize their tasks.json as needed.
+**Note**: The `.vscode` directory is typically gitignored, so each developer can
+customize their tasks.json as needed.
 
 ## When to Use This Tool
 
@@ -65,14 +69,16 @@ This directory contains several task definition files:
 ### Task Definition Files
 
 1. **m1f.json** - Core context generation tasks for manual file selection
-2. **auto_bundle.json** - Automated bundling tasks with 11 different bundle types
+2. **auto_bundle.json** - Automated bundling tasks with 11 different bundle
+   types
 3. **linting.json** - Code quality and linting tasks
-4. **example.tasks.json** - Example VS Code tasks.json that integrates all task files
+4. **example.tasks.json** - Example VS Code tasks.json that integrates all task
+   files
 
 ### Supporting Files
 
 - **ai_context_files.txt** - Example list of files for manual context creation
-- **wp_*.txt** - WordPress-specific include/exclude patterns
+- **wp\_\*.txt** - WordPress-specific include/exclude patterns
 
 ### m1f.json - Core Context Generation Tasks
 
@@ -156,11 +162,14 @@ The `auto_bundle.json` file provides tasks for automatic bundle generation:
 2. **Auto Bundle: Source Bundle** - All source code files
 3. **Auto Bundle: Tests Bundle** - All test files and fixtures
 4. **Auto Bundle: Complete Bundle** - Combined documentation, source, and tests
-5. **Auto Bundle: Custom Focus** - Topic-specific bundles (html2md, m1f, s1f, etc.)
+5. **Auto Bundle: Custom Focus** - Topic-specific bundles (html2md, m1f, s1f,
+   etc.)
 6. **Auto Bundle: Watch and Update** - Monitor changes and regenerate bundles
 7. **Auto Bundle: With Preset** - Apply processing rules during bundling
-8. **Auto Bundle: Generate All Bundles** - Creates all standard bundles in one go
-9. **Auto Bundle: Preset - All Standard** - Creates all standard preset-based bundles
+8. **Auto Bundle: Generate All Bundles** - Creates all standard bundles in one
+   go
+9. **Auto Bundle: Preset - All Standard** - Creates all standard preset-based
+   bundles
 10. **Auto Bundle: Preset - Focused** - Creates focused bundles using presets
 11. **Auto Bundle: List Presets** - Lists all available presets and their groups
 
@@ -173,19 +182,24 @@ The `auto_bundle.json` file provides tasks for automatic bundle generation:
 
 #### Configuration:
 
-Auto-bundling is configured via `.m1f.config.yml`. See the [Auto Bundle Guide](../docs/AUTO_BUNDLE_GUIDE.md) for details.
+Auto-bundling is configured via `.m1f.config.yml`. See the
+[Auto Bundle Guide](../docs/AUTO_BUNDLE_GUIDE.md) for details.
 
 #### Preset-Based Auto-Bundling:
 
-The preset-based tasks (9-11) use the `scripts/auto_bundle_preset.sh` script which leverages the m1f preset system:
+The preset-based tasks (9-11) use the `scripts/auto_bundle_preset.sh` script
+which leverages the m1f preset system:
 
-- **Intelligent file filtering** - Presets apply smart includes/excludes based on file type
-- **Per-file-type processing** - Different settings for different file extensions
+- **Intelligent file filtering** - Presets apply smart includes/excludes based
+  on file type
+- **Per-file-type processing** - Different settings for different file
+  extensions
 - **Security scanning control** - Enable/disable security checks per file type
 - **Size limit management** - Different size limits for CSS vs PHP files
 - **Processing actions** - Minify, strip tags, compress whitespace per file type
 
 Example preset usage:
+
 ```bash
 # Create all standard bundles using presets
 ./scripts/auto_bundle_preset.sh all
@@ -198,24 +212,34 @@ Example preset usage:
 ```
 
 Available presets:
+
 - `wordpress` - WordPress themes and plugins with appropriate excludes
 - `web-project` - Modern web projects with frontend/backend separation
 - `documentation` - Documentation-focused bundles
 - `example-globals` - Example with comprehensive global settings
 
-See [m1f Presets Documentation](../docs/m1f_presets.md) for detailed preset information.
+See [m1f Presets Documentation](../docs/m1f_presets.md) for detailed preset
+information.
 
 ## Best Practices for Effective AI Context
 
 ### For Manual Selection:
-1. **Be selective**: Choose only the most important 20-50 files for your current task
-2. **Include structure files**: Add README.md, configuration files, and key interfaces
-3. **Group related files**: When customizing your list, organize files by related functionality
-4. **Comment your file lists**: Add comments in `ai_context_files.txt` to explain why files are included
+
+1. **Be selective**: Choose only the most important 20-50 files for your current
+   task
+2. **Include structure files**: Add README.md, configuration files, and key
+   interfaces
+3. **Group related files**: When customizing your list, organize files by
+   related functionality
+4. **Comment your file lists**: Add comments in `ai_context_files.txt` to
+   explain why files are included
 
 ### For Auto-Bundling:
-1. **Use focused bundles**: Start with topic-specific bundles (docs, src) before using complete
-2. **Configure properly**: Customize `.m1f.config.yml` for your project structure
+
+1. **Use focused bundles**: Start with topic-specific bundles (docs, src) before
+   using complete
+2. **Configure properly**: Customize `.m1f.config.yml` for your project
+   structure
 3. **Apply presets**: Use the preset system to optimize file processing
 4. **Watch mode**: Use watch tasks during active development
 5. **Refresh regularly**: Regenerate bundles after significant changes

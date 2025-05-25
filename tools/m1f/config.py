@@ -120,7 +120,7 @@ class LoggingConfig:
 @dataclass(frozen=True)
 class PresetConfig:
     """Configuration for preset settings."""
-    
+
     preset_files: List[Path] = field(default_factory=list)
     preset_group: Optional[str] = None
     disable_presets: bool = False
@@ -223,12 +223,12 @@ class Config:
         logging_config = LoggingConfig(
             verbose=args.verbose, quiet=getattr(args, "quiet", False)
         )
-        
+
         # Create preset configuration
         preset_files = []
         if hasattr(args, "preset_files") and args.preset_files:
             preset_files = [Path(f).resolve() for f in args.preset_files]
-            
+
         preset_config = PresetConfig(
             preset_files=preset_files,
             preset_group=getattr(args, "preset_group", None),

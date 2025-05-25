@@ -92,15 +92,17 @@ class SecurityScanner:
     ) -> List[Dict[str, any]]:
         """Scan a single file for sensitive information."""
         findings = []
-        
+
         # Check if file has specific security_check override
         if self.preset_manager:
             file_settings = self.preset_manager.get_file_specific_settings(file_path)
-            if file_settings and 'security_check' in file_settings:
-                security_check = file_settings['security_check']
+            if file_settings and "security_check" in file_settings:
+                security_check = file_settings["security_check"]
                 if security_check is None or security_check == "null":
                     # Security check disabled for this file type
-                    self.logger.debug(f"Security check disabled for {file_path} by preset")
+                    self.logger.debug(
+                        f"Security check disabled for {file_path} by preset"
+                    )
                     return []
                 # Note: We could also handle file-specific abort/skip/warn here if needed
 
