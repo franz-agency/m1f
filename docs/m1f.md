@@ -1,35 +1,39 @@
 # m1f (Make One File)
 
-Combines multiple files into a single file with rich metadata and customizable
-formatting.
+A modern, high-performance tool that combines multiple files into a single file with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool solves a common challenge when working with LLMs: providing
-sufficient context without exceeding token limits. It creates a single reference
-file from multiple source files, making it easier to provide comprehensive
-context to AI assistants.
+The m1f tool (v2.0.0) solves a common challenge when working with LLMs: providing
+sufficient context without exceeding token limits. Built with Python 3.10+ and modern
+architecture patterns, it creates optimized reference files from multiple sources
+while automatically handling duplicates and providing comprehensive metadata.
 
 ## Key Features
 
-- Multiple input sources (directories or file lists)
-- Smart file filtering and deduplication
-- Customizable separator styles for different use cases
-- Token counting for LLM context planning
-- Comprehensive metadata for each file
-- Versioning support through content hashing
+- **Content Deduplication**: Automatically detects and skips duplicate files based on SHA256 checksums
+- **Async I/O**: High-performance file operations with concurrent processing
+- **Type Safety**: Full type annotations throughout the codebase
+- **Modern Architecture**: Modular package structure with clean separation of concerns
+- **Smart Filtering**: Advanced file filtering with size limits, extensions, and patterns
+- **Symlink Support**: Intelligent symlink handling with cycle detection
+- **Professional Security**: Integration with detect-secrets for sensitive data detection
+- **Colorized Output**: Beautiful console output with progress indicators
 
 ## Quick Start
 
 ```bash
 # Basic usage with a source directory
-python tools/m1f.py -s ./your_project -o ./combined.txt
+python -m tools.m1f -s ./your_project -o ./combined.txt
 
 # Include only specific file types
-python tools/m1f.py -s ./your_project -o ./combined.txt --include-extensions .py .js .md
+python -m tools.m1f -s ./your_project -o ./combined.txt --include-extensions .py .js .md
 
 # Exclude specific directories
-python tools/m1f.py -s ./your_project -o ./combined.txt --excludes "node_modules/" "build/" "dist/"
+python -m tools.m1f -s ./your_project -o ./combined.txt --excludes "node_modules/" "build/" "dist/"
+
+# Filter by file size (new in v2.0.0)
+python -m tools.m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 ```
 
 ## Command Line Options
@@ -69,30 +73,38 @@ python tools/m1f.py -s ./your_project -o ./combined.txt --excludes "node_modules
 
 ```bash
 # Basic command using a source directory
-python tools/m1f.py --source-directory /path/to/your/code \
+python -m tools.m1f --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
 
 # Using an input file containing paths to process (one per line)
-python tools/m1f.py -i filelist.txt -o combined_output.txt
+python -m tools.m1f -i filelist.txt -o combined_output.txt
 
 # Using both source directory and input file together
-python tools/m1f.py -s ./source_code -i ./file_list.txt -o ./combined.txt
+python -m tools.m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+
+# Remove scraped metadata from HTML2MD files (new in v2.0.0)
+python -m tools.m1f -s ./scraped_docs -o ./clean_docs.txt \
+  --include-extensions .md --remove-scraped-metadata
 ```
 
 ### Advanced Operations
 
 ```bash
 # Using MachineReadable style with verbose logging
-python tools/m1f.py -s ./my_project -o ./output/bundle.m1f.txt \
+python -m tools.m1f -s ./my_project -o ./output/bundle.m1f.txt \
   --separator-style MachineReadable --force --verbose
 
 # Creating a combined file and a backup zip archive
-python tools/m1f.py -s ./source_code -o ./dist/combined.txt \
+python -m tools.m1f -s ./source_code -o ./dist/combined.txt \
   --create-archive --archive-type zip
 
 # Only include text files under 50KB to avoid large generated files
-python tools/m1f.py -s ./project -o ./text_only.txt \
+python -m tools.m1f -s ./project -o ./text_only.txt \
   --max-file-size 50KB --include-extensions .py .js .md .txt .json
+
+# Handle symlinks with cycle detection (new in v2.0.0)
+python -m tools.m1f -s ./project -o ./output.txt \
+  --include-symlinks --verbose
 ```
 
 ## Security Check
@@ -273,7 +285,35 @@ When `--create-archive` is used, the archive will contain all files selected for
 inclusion in the main output file, using their relative paths within the
 archive.
 
+### Architecture (v2.0.0)
+
+The m1f tool has been completely rewritten as a modular Python package:
+
+```
+tools/m1f/
+├── __init__.py          # Package initialization
+├── cli.py               # Command-line interface
+├── core.py              # Main orchestration logic
+├── config.py            # Configuration management
+├── constants.py         # Constants and enums
+├── exceptions.py        # Custom exceptions
+├── file_processor.py    # File handling with async I/O
+├── encoding_handler.py  # Smart encoding detection
+├── security_scanner.py  # Secret detection integration
+├── output_writer.py     # Output generation
+├── archive_creator.py   # Archive functionality
+├── separator_generator.py # Separator formatting
+├── logging.py           # Structured logging
+└── utils.py             # Utility functions
+```
+
 ### Performance Considerations
+
+With the new async I/O architecture, m1f can handle large projects more efficiently:
+- Concurrent file reading and processing
+- Memory-efficient streaming for large files
+- Smart caching to avoid redundant operations
+- Content deduplication saves space and processing time
 
 For extremely large directories with tens of thousands of files or very large
 individual files, the script might take some time to process.

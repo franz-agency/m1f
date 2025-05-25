@@ -1,18 +1,22 @@
 # html2md (HTML to Markdown Converter)
 
-Converts HTML files to Markdown recursively with powerful content selection and
-formatting options.
+A modern HTML to Markdown converter with async I/O, HTTrack integration, and parallel processing capabilities.
 
 ## Overview
 
-The html2md tool provides a robust solution for converting HTML content to
-Markdown format, with fine-grained control over the conversion process. It is
-especially useful for transforming existing HTML documentation, extracting
-specific content from web pages, and preparing content for use with Large
-Language Models.
+The html2md tool (v2.0.0) provides a robust solution for converting HTML content to
+Markdown format, with fine-grained control over the conversion process. Built with
+Python 3.10+ and modern async architecture, it is especially useful for transforming 
+existing HTML documentation, extracting specific content from web pages, and preparing 
+content for use with Large Language Models.
 
 ## Key Features
 
+- **Async I/O**: High-performance concurrent file processing
+- **HTTrack Integration**: Download and convert entire websites
+- **API Mode**: Programmatic access for integration with other tools
+- **Type Safety**: Full type annotations throughout the codebase
+- **Modern Architecture**: Clean modular design with dependency injection
 - Recursive directory scanning for batch conversion
 - CSS selector support for extracting specific content
 - Smart internal link handling (HTML → Markdown)
@@ -27,15 +31,19 @@ Language Models.
 
 ```bash
 # Basic conversion of all HTML files in a directory
-python tools/html2md.py --source-dir ./website --destination-dir ./docs
+python -m tools.html2md --source-dir ./website --destination-dir ./docs
 
 # Extract only main content from HTML files
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --outermost-selector "main.content" --ignore-selectors "nav" ".sidebar" "footer"
 
 # Add YAML frontmatter and adjust heading levels
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --add-frontmatter --heading-offset 1
+
+# Download and convert a website with HTTrack (new in v2.0.0)
+python -m tools.html2md --source-dir https://example.com --destination-dir ./docs \
+  --httrack --include-patterns "*.html" "*/docs/*"
 ```
 
 ## Command Line Options
@@ -69,21 +77,21 @@ python tools/html2md.py --source-dir ./website --destination-dir ./docs \
 
 ```bash
 # Simple conversion of all HTML files in a directory
-python tools/html2md.py --source-dir ./website --destination-dir ./docs
+python -m tools.html2md --source-dir ./website --destination-dir ./docs
 
 # Convert files with verbose logging
-python tools/html2md.py --source-dir ./website --destination-dir ./docs --verbose
+python -m tools.html2md --source-dir ./website --destination-dir ./docs --verbose
 ```
 
 ### Content Selection
 
 ```bash
 # Extract only the main content and ignore navigation elements
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --outermost-selector "main" --ignore-selectors "nav" ".sidebar" "footer"
 
 # Extract article content and remove additional elements
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --outermost-selector "article.content" \
   --ignore-selectors ".author-bio" ".share-buttons" ".related-articles" \
   --remove-elements "script" "style" "iframe" "noscript" "div.comments"
@@ -93,11 +101,11 @@ python tools/html2md.py --source-dir ./website --destination-dir ./docs \
 
 ```bash
 # Process only specific file types
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --include-extensions .html .xhtml
 
 # Exclude specific directories and patterns
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --exclude-dirs "drafts" "archived" "temp" \
   --exclude-patterns "draft-" "temp-" "_private"
 ```
@@ -106,15 +114,15 @@ python tools/html2md.py --source-dir ./website --destination-dir ./docs \
 
 ```bash
 # Adjust heading levels (e.g., h1 → h2, h2 → h3)
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --heading-offset 1
 
 # Add YAML frontmatter with custom fields
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --add-frontmatter --frontmatter-fields "layout=post" "category=documentation"
 
 # Preserve class attributes and disable line breaks adjustment
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --strip-classes=False --add-line-breaks=False
 ```
 
@@ -122,12 +130,24 @@ python tools/html2md.py --source-dir ./website --destination-dir ./docs \
 
 ```bash
 # Use parallel processing for faster conversion of large sites
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --parallel --max-workers 4
 
 # Force overwrite of existing files
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --force
+```
+
+### HTTrack Integration (New in v2.0.0)
+
+```bash
+# Download and convert an entire website
+python -m tools.html2md --source-dir https://example.com --destination-dir ./docs \
+  --httrack --httrack-path /usr/local/bin/httrack
+
+# Download specific sections of a website
+python -m tools.html2md --source-dir https://docs.example.com --destination-dir ./docs \
+  --httrack --include-patterns "*/api/*" "*/guide/*" --exclude-patterns "*/old/*"
 ```
 
 ## Advanced Features
@@ -145,7 +165,7 @@ generate YAML frontmatter for each Markdown file, including:
 Custom frontmatter fields can be added using the `--frontmatter-fields` option:
 
 ```bash
-python tools/html2md.py --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md --source-dir ./website --destination-dir ./docs \
   --add-frontmatter --frontmatter-fields "layout=post" "author=John Doe" "category=tutorial"
 ```
 
@@ -206,6 +226,31 @@ The converter provides robust character encoding detection and conversion:
 3. Can convert all files to a specified encoding using `--target-encoding`
 4. Handles BOM (Byte Order Mark) detection for Unicode files
 
+## Architecture
+
+HTML2MD v2.0.0 features a modern, modular architecture:
+
+```
+tools/html2md/
+├── __init__.py       # Package initialization
+├── __main__.py       # Entry point for module execution
+├── api.py            # Programmatic API for other tools
+├── cli.py            # Command-line interface
+├── config/           # Configuration management
+│   ├── __init__.py
+│   ├── loader.py     # Config file loader
+│   └── models.py     # Config data models
+├── core.py           # Core conversion logic
+└── utils.py          # Utility functions
+```
+
+### Key Components
+
+- **API Mode**: Use as a library in other Python projects
+- **HTTrack Integration**: Download and convert websites in one step
+- **Type Safety**: Full type hints and dataclass models
+- **Clean Architecture**: Separation of concerns with dependency injection
+
 ## Integration with m1f
 
 The html2md tool works well with the m1f (Make One File) tool for
@@ -214,12 +259,12 @@ comprehensive documentation handling:
 1. First convert HTML files to Markdown:
 
    ```bash
-   python tools/html2md.py --source-dir ./html-docs --destination-dir ./markdown-docs
+   python -m tools.html2md --source-dir ./html-docs --destination-dir ./markdown-docs
    ```
 
 2. Then use m1f to combine the Markdown files:
    ```bash
-   python tools/m1f.py --source-directory ./markdown-docs \
+   python -m tools.m1f --source-directory ./markdown-docs \
      --output-file ./combined-docs.m1f.txt --separator-style Markdown
    ```
 
@@ -238,18 +283,54 @@ This workflow is ideal for:
   processes
 - Memory usage scales with the number of worker processes and file sizes
 
+## Programmatic API (New in v2.0.0)
+
+Use html2md in your Python projects:
+
+```python
+from tools.html2md.api import HTML2MDConverter
+import asyncio
+
+# Create converter instance
+converter = HTML2MDConverter(
+    outermost_selector="main",
+    ignore_selectors=["nav", "footer"],
+    add_frontmatter=True
+)
+
+# Convert a single file
+result = asyncio.run(converter.convert_file("page.html"))
+print(result.content)
+
+# Convert multiple URLs
+urls = ["https://example.com/page1", "https://example.com/page2"]
+results = asyncio.run(converter.convert_directory_from_urls(urls))
+```
+
 ## Requirements and Dependencies
 
-- Python 3.9 or newer
+- Python 3.10 or newer
 - Required packages:
   - beautifulsoup4: For HTML parsing
   - markdownify: For HTML to Markdown conversion
+  - aiofiles: For async file operations
+  - httpx: For async HTTP requests
 - Optional packages:
   - chardet: For encoding detection
   - pyyaml: For frontmatter generation
+  - httrack: For website downloading (system package)
 
 Install dependencies:
 
 ```bash
-pip install beautifulsoup4 markdownify chardet pyyaml
+pip install beautifulsoup4 markdownify chardet pyyaml aiofiles httpx
+```
+
+For HTTrack support:
+```bash
+# Ubuntu/Debian
+sudo apt-get install httrack
+
+# macOS
+brew install httrack
 ```

@@ -1,6 +1,6 @@
 # HTML to Markdown Converter Guide
 
-The `html2md` tool is a modern, modular converter designed to transform HTML content into clean Markdown format. It's particularly powerful for converting entire websites and integrates seamlessly with m1f for creating documentation bundles.
+The `html2md` tool (v2.0.0) is a modern, async converter designed to transform HTML content into clean Markdown format. Built with Python 3.10+ and modern async architecture, it's particularly powerful for converting entire websites and integrates seamlessly with m1f for creating documentation bundles.
 
 ## Table of Contents
 - [Installation](#installation)
@@ -17,15 +17,14 @@ The `html2md` tool is a modern, modular converter designed to transform HTML con
 
 ### Python Dependencies
 ```bash
-pip install beautifulsoup4 markdownify pydantic rich requests chardet pyyaml
+pip install beautifulsoup4 markdownify pydantic rich httpx chardet pyyaml aiofiles
 
 # Optional dependencies
 pip install toml      # For TOML configuration files
-pip install aiohttp   # For async web operations
 ```
 
 ### HTTrack Installation
-HTTrack is required for website mirroring functionality:
+HTTrack is optional but recommended for website mirroring functionality:
 
 ```bash
 # Ubuntu/Debian
@@ -37,6 +36,8 @@ brew install httrack
 # Windows
 # Download installer from https://www.httrack.com/
 ```
+
+**Note**: HTTrack integration is optional in v2.0.0. The tool can also download websites using its built-in async HTTP client.
 
 ## Quick Start
 
@@ -96,7 +97,7 @@ Options:
 Create a `config.yaml` file:
 
 ```yaml
-# Basic settings
+# Basic settings (v2.0.0 format)
 source: ./html_docs
 destination: ./markdown_docs
 output_format: markdown
@@ -182,68 +183,64 @@ log_file: ./conversion.log
 ### Basic Usage
 
 ```python
-from tools.html2md import Html2mdConverter
+from tools.html2md.api import HTML2MDConverter
+import asyncio
 
 # Create converter with configuration
-converter = Html2mdConverter({
-    "source": "./html",
-    "destination": "./markdown"
-})
+converter = HTML2MDConverter(
+    outermost_selector="main",
+    ignore_selectors=["nav", "footer"],
+    add_frontmatter=True
+)
 
-# Convert a directory
-results = converter.convert_directory()
+# Convert a directory (async)
+results = asyncio.run(converter.convert_directory("./html", "./markdown"))
 
-# Convert a single file
-output = converter.convert_file(Path("index.html"))
+# Convert a single file (async)
+result = asyncio.run(converter.convert_file("index.html"))
 
-# Convert a URL
-output = converter.convert_url("https://example.com/page.html")
-
-# Convert entire website
-results = converter.convert_website("https://docs.example.com")
+# Convert URLs (async)
+urls = ["https://example.com/page1", "https://example.com/page2"]
+results = asyncio.run(converter.convert_directory_from_urls(urls))
 ```
 
 ### Advanced Configuration
 
 ```python
-config = {
-    "destination": "./output",
-    "extractor": {
-        "content_selector": "div.documentation",
-        "ignore_selectors": [".nav-menu", ".footer"],
-        "strip_attributes": True,
-        "preserve_attributes": ["id", "href"]
-    },
-    "processor": {
-        "heading_offset": 1,
-        "link_handling": "convert",
-        "code_block_style": "fenced",
-        "detect_language": True
-    },
-    "crawler": {
-        "max_depth": 5,
-        "max_pages": 1000,
-        "allowed_domains": ["docs.example.com"]
-    }
-}
+from tools.html2md.config.models import HTML2MDConfig
 
-converter = Html2mdConverter(config)
+# Create configuration with v2.0.0 models
+config = HTML2MDConfig(
+    source_dir="./html",
+    destination_dir="./output",
+    outermost_selector="div.documentation",
+    ignore_selectors=[".nav-menu", ".footer"],
+    strip_attributes=True,
+    heading_offset=1,
+    add_frontmatter=True,
+    parallel=True,
+    max_workers=4
+)
+
+converter = HTML2MDConverter.from_config(config)
 ```
 
 ### Convenience Functions
 
 ```python
-from tools.html2md import convert_file, convert_directory, convert_url
+from tools.html2md.api import convert_file, convert_directory
+import asyncio
 
-# Simple file conversion
-output = convert_file("page.html", destination="./output")
+# Simple file conversion (async)
+result = asyncio.run(convert_file("page.html", destination="page.md"))
 
-# Directory conversion
-outputs = convert_directory("./html", "./markdown", 
-    extractor={"content_selector": "article"})
-
-# URL conversion
-output = convert_url("https://example.com", "./output")
+# Directory conversion with options (async)
+results = asyncio.run(convert_directory(
+    source="./html",
+    destination="./markdown",
+    outermost_selector="article",
+    parallel=True
+))
 ```
 
 ## HTTrack Integration
@@ -357,27 +354,25 @@ python -m tools.html2md crawl https://docs.python.org/3/ -c docs-config.yaml
 ### Example 2: Convert Blog with Specific Content
 
 ```python
-from tools.html2md import Html2mdConverter
+from tools.html2md.api import HTML2MDConverter
+import asyncio
 
-converter = Html2mdConverter({
-    "destination": "./blog-markdown",
-    "extractor": {
-        "content_selector": "article.post",
-        "ignore_selectors": [
-            ".post-navigation",
-            ".comments-section",
-            ".social-share"
-        ],
-        "extract_metadata": True
-    },
-    "processor": {
-        "link_handling": "convert",
-        "heading_offset": 0
-    }
-})
+converter = HTML2MDConverter(
+    outermost_selector="article.post",
+    ignore_selectors=[
+        ".post-navigation",
+        ".comments-section",
+        ".social-share"
+    ],
+    add_frontmatter=True,
+    heading_offset=0
+)
 
-# Convert all blog posts
-results = converter.convert_directory(Path("./blog-html"))
+# Convert all blog posts (async)
+results = asyncio.run(converter.convert_directory(
+    "./blog-html",
+    "./blog-markdown"
+))
 ```
 
 ### Example 3: Create m1f Bundle from Website
@@ -477,7 +472,7 @@ To create an m1f bundle after conversion:
 python -m tools.html2md crawl https://docs.example.com -o ./docs/
 
 # Create m1f bundle
-python -m m1f ./docs/ -o documentation.m1f.md
+python -m tools.m1f ./docs/ -o documentation.m1f.md
 ```
 
 Or do it in one step:

@@ -1,6 +1,6 @@
-# token_counter.py - Token Estimation Tool
+# token_counter - Token Estimation Tool
 
-The token_counter tool estimates token usage for LLM context planning, helping
+The token_counter tool (v2.0.0) estimates token usage for LLM context planning, helping
 you optimize your use of large language models by managing context window
 limits.
 
@@ -8,9 +8,9 @@ limits.
 
 When working with LLMs like ChatGPT, Claude, or GPT-4, understanding token
 consumption is essential for effective prompt engineering and context
-management. The token_counter tool allows you to precisely measure how many
-tokens your combined files will use, helping you stay within the context window
-limits of your chosen LLM.
+management. Built with Python 3.10+, the token_counter tool allows you to precisely 
+measure how many tokens your combined files will use, helping you stay within the 
+context window limits of your chosen LLM.
 
 ## Key Features
 
@@ -23,10 +23,10 @@ limits of your chosen LLM.
 
 ```bash
 # Check token count of a file
-python tools/token_counter.py ./combined.txt
+python -m tools.token_counter ./combined.txt
 
 # Use a specific encoding model
-python tools/token_counter.py ./combined.txt -e p50k_base
+python -m tools.token_counter ./combined.txt -e p50k_base
 ```
 
 ## Command Line Options
@@ -41,13 +41,13 @@ python tools/token_counter.py ./combined.txt -e p50k_base
 Basic usage with default encoding (cl100k_base, used by GPT-4 and ChatGPT):
 
 ```bash
-python tools/token_counter.py combined_output.txt
+python -m tools.token_counter combined_output.txt
 ```
 
 Using a specific encoding:
 
 ```bash
-python tools/token_counter.py myfile.txt -e p50k_base
+python -m tools.token_counter myfile.txt -e p50k_base
 ```
 
 ## Encoding Models
@@ -66,25 +66,26 @@ Understanding token limits is crucial for effective usage:
 | --------------- | ----------- | -------------------- |
 | GPT-4 Turbo     | 128,000     | cl100k_base          |
 | GPT-4           | 8,192       | cl100k_base          |
-| GPT-3.5-Turbo   | 4,096       | p50k_base            |
+| GPT-3.5-Turbo   | 16,385      | cl100k_base          |
+| Claude 3.5 Opus | 200,000     | -                    |
 | Claude 3 Opus   | 200,000     | -                    |
-| Claude 3 Sonnet | 100,000     | -                    |
+| Claude 3 Sonnet | 200,000     | -                    |
 | Claude 3 Haiku  | 200,000     | -                    |
 
 ## Integration with m1f
 
-The token_counter.py tool is particularly useful when used with m1f to check if
+The token_counter tool is particularly useful when used with m1f to check if
 your combined files will fit within the token limit of your chosen LLM:
 
 1. First, combine files with m1f:
 
    ```bash
-   python tools/m1f.py -s ./project -o ./combined.txt --include-extensions .py .js
+   python -m tools.m1f -s ./project -o ./combined.txt --include-extensions .py .js
    ```
 
 2. Then, check the token count:
    ```bash
-   python tools/token_counter.py ./combined.txt
+   python -m tools.token_counter ./combined.txt
    ```
 
 This workflow helps you adjust your file selection to stay within token limits
@@ -102,12 +103,29 @@ To reduce token consumption while maintaining context quality:
 5. **Use file filtering**: Utilize m1f's filtering options to target specific
    files
 
+## Architecture
+
+Token counter v2.0.0 features a simple but effective design:
+
+- **Module Structure**: Can be run as a module (`python -m tools.token_counter`)
+- **Type Safety**: Full type hints for better IDE support
+- **Error Handling**: Graceful handling of encoding errors and file issues
+- **Performance**: Efficient token counting for large files
+
 ## Requirements
 
-The token_counter.py tool requires the `tiktoken` Python package:
+- Python 3.10 or newer
+- The `tiktoken` Python package:
 
 ```bash
 pip install tiktoken
 ```
 
 This dependency is included in the project's requirements.txt file.
+
+## Tips for Accurate Token Counting
+
+1. **Model-Specific Encoding**: Always use the encoding that matches your target LLM
+2. **Include Prompts**: Remember to count tokens in your prompts as well as the context
+3. **Buffer Space**: Leave 10-20% buffer for model responses
+4. **Regular Checks**: Re-check token counts after file modifications

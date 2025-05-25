@@ -1,14 +1,15 @@
 # HTML2MD Test Suite Documentation
 
-A comprehensive test suite for validating the html2md converter with challenging real-world HTML structures.
+A comprehensive test suite for validating the html2md converter (v2.0.0) with challenging real-world HTML structures.
 
 ## Overview
 
 The HTML2MD test suite provides a robust testing framework consisting of:
 - A Flask-based web server serving complex HTML test pages
-- Comprehensive pytest test cases covering all conversion features
+- Comprehensive pytest test cases covering all conversion features including async operations
 - Real-world documentation examples with challenging HTML structures
 - Automated test runner with coverage reporting
+- Full support for testing async/await patterns and parallel processing
 
 ## Architecture
 
@@ -100,11 +101,17 @@ Programming language support:
 
 ### Content Selection Testing
 ```python
-# Test CSS selector-based extraction
-converter = HTML2MDConverter(ConversionOptions(
+# Test CSS selector-based extraction (v2.0.0 async API)
+from tools.html2md.api import HTML2MDConverter
+import asyncio
+
+converter = HTML2MDConverter(
     outermost_selector="article",
     ignore_selectors=["nav", ".sidebar", "footer"]
-))
+)
+
+# Async conversion
+result = asyncio.run(converter.convert_file("test.html"))
 ```
 
 ### Code Block Detection
@@ -171,6 +178,7 @@ pytest tests/test_html2md_server.py -m "not slow"
 
 ### Core Features Tested
 - ✅ Basic HTML to Markdown conversion
+- ✅ Async I/O operations with aiofiles
 - ✅ CSS selector content extraction
 - ✅ Element filtering with ignore selectors
 - ✅ Complex nested HTML structures
@@ -181,9 +189,12 @@ pytest tests/test_html2md_server.py -m "not slow"
 - ✅ Unicode support
 - ✅ YAML frontmatter generation
 - ✅ Heading level offset adjustment
-- ✅ Parallel processing
-- ✅ Configuration file loading
+- ✅ Parallel processing with asyncio
+- ✅ Configuration file loading (YAML/TOML)
 - ✅ CLI argument parsing
+- ✅ API mode for programmatic access
+- ✅ HTTrack integration (when available)
+- ✅ URL conversion from lists
 
 ### Performance Testing
 - Parallel conversion of multiple files
@@ -211,14 +222,22 @@ pytest tests/test_html2md_server.py -m "not slow"
 class TestYourFeature:
     async def test_your_feature(self, test_server, temp_output_dir):
         """Test description."""
-        converter = HTML2MDConverter(ConversionOptions(
-            source_dir=f"{test_server.base_url}/page",
-            destination_dir=temp_output_dir,
-            # Your options
-        ))
+        from tools.html2md.api import HTML2MDConverter
         
-        # Perform conversion
+        converter = HTML2MDConverter(
+            outermost_selector="main",
+            ignore_selectors=["nav", "footer"],
+            add_frontmatter=True
+        )
+        
+        # Perform async conversion
+        results = await converter.convert_directory(
+            f"{test_server.base_url}/page",
+            temp_output_dir
+        )
+        
         # Assert expected results
+        assert len(results) > 0
 ```
 
 ## Continuous Integration
@@ -258,6 +277,7 @@ pytest tests/test_html2md_server.py --pdb
 **Coverage report issues**
 - Install pytest-cov: `pip install pytest-cov`
 - Ensure tools.html2md module is in Python path
+- For async tests, use pytest-asyncio: `pip install pytest-asyncio`
 
 ## Future Enhancements
 
@@ -266,6 +286,8 @@ pytest tests/test_html2md_server.py --pdb
    - MathML equations
    - Microdata and structured data
    - Progressive web app features
+   - WebAssembly integration tests
+   - Shadow DOM content extraction
 
 2. **Test Automation**
    - Visual regression testing
