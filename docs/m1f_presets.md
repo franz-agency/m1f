@@ -9,6 +9,8 @@ Instead of applying the same settings to all files, presets let you:
 - Strip comments from production code but keep them in documentation
 - Apply different separator styles for different file types
 - Truncate large data files while keeping full source code
+- **NEW**: Override security checks and size limits per file type
+- **NEW**: Integrate with auto-bundling for intelligent project organization
 
 ## Quick Start
 
@@ -454,3 +456,41 @@ python -m tools.m1f -s . -o bundle.txt \
 - Some actions may not work on all file types
 - Binary files skip most processing
 - Use `--verbose` to see which presets are applied
+
+## Auto-Bundling Integration
+
+The preset system integrates seamlessly with the auto-bundling scripts:
+
+### Using Presets with Auto-Bundle
+
+1. **With VS Code Tasks**:
+   - Use the "Auto Bundle: With Preset" task
+   - Select your preset file and optional group
+   - The bundle will apply file-specific processing
+
+2. **With Scripts**:
+   ```bash
+   # Use preset-based bundling script
+   ./scripts/auto_bundle_preset.sh all
+   
+   # Focus on specific area with presets
+   ./scripts/auto_bundle_preset.sh focus wordpress
+   
+   # Use custom preset
+   ./scripts/auto_bundle_preset.sh preset my-preset.yml frontend
+   ```
+
+3. **Available Preset Bundles**:
+   - `wordpress` - Theme and plugin development
+   - `web-project` - Frontend/backend web projects
+   - `documentation` - Documentation-focused bundles
+   - Custom presets in `presets/` directory
+
+### Benefits
+
+- **Intelligent Filtering**: Each preset knows which files to include
+- **Optimized Processing**: Apply minification only where beneficial
+- **Security Control**: Different security levels for different file types
+- **Size Management**: Appropriate size limits per file type
+
+See the [Auto Bundle Guide](AUTO_BUNDLE_GUIDE.md) for more details on the bundling system.

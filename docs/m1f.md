@@ -366,3 +366,54 @@ efficiently:
 
 For extremely large directories with tens of thousands of files or very large
 individual files, the script might take some time to process.
+
+## Preset System
+
+The preset system provides powerful file-specific processing capabilities:
+
+### Key Features
+
+- **Hierarchical Configuration**: Settings cascade from global → project → CLI
+- **File-Type Processing**: Apply different rules to different file extensions
+- **Processing Actions**: 
+  - `minify` - Reduce file size by removing unnecessary characters
+  - `strip_tags` - Remove HTML tags
+  - `strip_comments` - Remove code comments
+  - `compress_whitespace` - Reduce multiple spaces/newlines
+  - `remove_empty_lines` - Clean up empty lines
+- **Per-File Settings**: Override security, size limits, and filters per file type
+- **Custom Processors**: Extend with your own processing functions
+
+### Quick Start
+
+1. Create a preset file in your project (`.m1f-presets.yml`):
+
+```yaml
+globals:
+  global_settings:
+    include_extensions: [.js, .css, .html, .php]
+    security_check: warn
+    max_file_size: 1MB
+  
+  presets:
+    frontend:
+      extensions: [.js, .css, .html]
+      actions: [minify]
+    
+    backend:
+      extensions: [.php]
+      security_check: fail
+      max_file_size: 500KB
+```
+
+2. Use the preset:
+
+```bash
+m1f -s ./src -o output.txt --preset .m1f-presets.yml
+```
+
+### Documentation
+
+- [Complete Preset Guide](m1f_presets.md) - Full preset system documentation
+- [Per-File Settings](m1f_preset_per_file_settings.md) - Advanced file-type overrides
+- [Example Presets](../presets/) - Ready-to-use preset templates

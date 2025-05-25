@@ -23,6 +23,15 @@ and this project adheres to
     - `max_file_size`: Different size limits for CSS, JS, PHP, etc.
     - `remove_scraped_metadata`: Clean HTML2MD files selectively
     - `include_dot_paths`, `include_binary_files`: File-type specific filtering
+  - **Auto-bundling with presets**: New scripts and VS Code tasks
+    - `scripts/auto_bundle_preset.sh` - Preset-based intelligent bundling
+    - `tasks/auto_bundle.json` - 11 VS Code tasks for automated bundling
+    - Focus areas: WordPress, web projects, documentation
+    - Integration with preset system for file-specific processing
+  - **Test suite**: Basic preset functionality tests
+    - Global settings and file filtering tests
+    - File-specific action processing tests
+    - Integration verification
 
 - **Auto-bundling System**: Automatic project organization for AI/LLM consumption
   - `scripts/auto_bundle.sh` - Basic bundling with predefined categories
@@ -47,6 +56,11 @@ and this project adheres to
 
 - HTML2MD now uses configurable preprocessing instead of hardcoded rules
 - Updated documentation structure to include new features
+
+### Fixed
+
+- Preset `strip_tags` action now properly strips all HTML tags when no specific tags are specified
+- Added missing `get_file_specific_settings` method to PresetManager class
 
 ### Documentation
 
