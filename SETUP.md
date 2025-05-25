@@ -11,7 +11,7 @@ This guide walks you through setting up m1f on your system.
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/m1f.git
+git clone https://github.com/franz-agency/m1f.git
 cd m1f
 ```
 
