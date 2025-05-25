@@ -76,6 +76,21 @@ class GlobalSettings:
     include_extensions: List[str] = field(default_factory=list)
     exclude_extensions: List[str] = field(default_factory=list)
     
+    # File filtering options
+    include_dot_paths: Optional[bool] = None
+    include_binary_files: Optional[bool] = None
+    include_symlinks: Optional[bool] = None
+    no_default_excludes: Optional[bool] = None
+    max_file_size: Optional[str] = None  # e.g., "50KB", "10MB"
+    exclude_paths_file: Optional[str] = None
+    
+    # Processing options
+    remove_scraped_metadata: Optional[bool] = None
+    abort_on_encoding_error: Optional[bool] = None
+    
+    # Security options
+    security_check: Optional[str] = None  # 'abort', 'skip', 'warn'
+    
     # Extension-specific defaults
     extension_settings: Dict[str, FilePreset] = field(default_factory=dict)
     
@@ -250,6 +265,30 @@ class PresetManager:
             if 'exclude_extensions' in global_data:
                 group.global_settings.exclude_extensions = global_data['exclude_extensions']
             
+            # Parse file filtering options
+            if 'include_dot_paths' in global_data:
+                group.global_settings.include_dot_paths = global_data['include_dot_paths']
+            if 'include_binary_files' in global_data:
+                group.global_settings.include_binary_files = global_data['include_binary_files']
+            if 'include_symlinks' in global_data:
+                group.global_settings.include_symlinks = global_data['include_symlinks']
+            if 'no_default_excludes' in global_data:
+                group.global_settings.no_default_excludes = global_data['no_default_excludes']
+            if 'max_file_size' in global_data:
+                group.global_settings.max_file_size = global_data['max_file_size']
+            if 'exclude_paths_file' in global_data:
+                group.global_settings.exclude_paths_file = global_data['exclude_paths_file']
+            
+            # Parse processing options
+            if 'remove_scraped_metadata' in global_data:
+                group.global_settings.remove_scraped_metadata = global_data['remove_scraped_metadata']
+            if 'abort_on_encoding_error' in global_data:
+                group.global_settings.abort_on_encoding_error = global_data['abort_on_encoding_error']
+            
+            # Parse security options
+            if 'security_check' in global_data:
+                group.global_settings.security_check = global_data['security_check']
+            
             # Parse extension-specific settings
             if 'extensions' in global_data:
                 for ext, preset_data in global_data['extensions'].items():
@@ -325,6 +364,30 @@ class PresetManager:
             merged.exclude_patterns.extend(gs.exclude_patterns)
             merged.include_extensions.extend(gs.include_extensions)
             merged.exclude_extensions.extend(gs.exclude_extensions)
+            
+            # Merge file filtering options (higher priority overrides)
+            if gs.include_dot_paths is not None and merged.include_dot_paths is None:
+                merged.include_dot_paths = gs.include_dot_paths
+            if gs.include_binary_files is not None and merged.include_binary_files is None:
+                merged.include_binary_files = gs.include_binary_files
+            if gs.include_symlinks is not None and merged.include_symlinks is None:
+                merged.include_symlinks = gs.include_symlinks
+            if gs.no_default_excludes is not None and merged.no_default_excludes is None:
+                merged.no_default_excludes = gs.no_default_excludes
+            if gs.max_file_size and not merged.max_file_size:
+                merged.max_file_size = gs.max_file_size
+            if gs.exclude_paths_file and not merged.exclude_paths_file:
+                merged.exclude_paths_file = gs.exclude_paths_file
+            
+            # Merge processing options
+            if gs.remove_scraped_metadata is not None and merged.remove_scraped_metadata is None:
+                merged.remove_scraped_metadata = gs.remove_scraped_metadata
+            if gs.abort_on_encoding_error is not None and merged.abort_on_encoding_error is None:
+                merged.abort_on_encoding_error = gs.abort_on_encoding_error
+            
+            # Merge security options
+            if gs.security_check and not merged.security_check:
+                merged.security_check = gs.security_check
             
             # Merge extension settings (higher priority overrides)
             for ext, preset in gs.extension_settings.items():

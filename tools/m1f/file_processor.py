@@ -42,6 +42,9 @@ class FileProcessor:
 
         # Build exclusion sets
         self._build_exclusion_sets()
+        
+        # Apply global filter settings if available
+        self._apply_global_filter_settings()
 
     def _build_exclusion_sets(self) -> None:
         """Build the exclusion sets from configuration."""
@@ -329,12 +332,20 @@ class FileProcessor:
                 return False
 
         # Check dot files
-        if not explicitly_included and not self.config.filter.include_dot_paths:
+        include_dots = self.config.filter.include_dot_paths
+        if hasattr(self, '_global_include_dot_paths') and self._global_include_dot_paths is not None:
+            include_dots = include_dots or self._global_include_dot_paths
+            
+        if not explicitly_included and not include_dots:
             if is_hidden_path(file_path):
                 return False
 
         # Check binary files
-        if not self.config.filter.include_binary_files:
+        include_binary = self.config.filter.include_binary_files
+        if hasattr(self, '_global_include_binary_files') and self._global_include_binary_files is not None:
+            include_binary = include_binary or self._global_include_binary_files
+            
+        if not include_binary:
             if is_binary_file(file_path):
                 return False
 
@@ -361,20 +372,32 @@ class FileProcessor:
 
         # Check symlinks
         if file_path.is_symlink():
-            if not self.config.filter.include_symlinks:
+            include_symlinks = self.config.filter.include_symlinks
+            if hasattr(self, '_global_include_symlinks') and self._global_include_symlinks is not None:
+                include_symlinks = include_symlinks or self._global_include_symlinks
+                
+            if not include_symlinks:
                 return False
 
             if self._detect_symlink_cycle(file_path):
                 return False
 
         # Check file size limit
-        if self.config.filter.max_file_size is not None:
+        max_size = self.config.filter.max_file_size
+        if hasattr(self, '_global_max_file_size') and self._global_max_file_size is not None:
+            # Use the smaller of the two limits if both are set
+            if max_size is not None:
+                max_size = min(max_size, self._global_max_file_size)
+            else:
+                max_size = self._global_max_file_size
+                
+        if max_size is not None:
             try:
                 file_size = file_path.stat().st_size
-                if file_size > self.config.filter.max_file_size:
+                if file_size > max_size:
                     self.logger.info(
                         f"Skipping {file_path.name} due to size limit: "
-                        f"{format_file_size(file_size)} > {format_file_size(self.config.filter.max_file_size)}"
+                        f"{format_file_size(file_size)} > {format_file_size(max_size)}"
                     )
                     return False
             except OSError as e:
@@ -423,3 +446,73 @@ class FileProcessor:
 
         except (OSError, RuntimeError):
             return True
+    
+    def _apply_global_filter_settings(self) -> None:
+        """Apply global filter settings from presets."""
+        if not self.global_settings:
+            return
+            
+        # Apply global filter settings to config-like attributes
+        if self.global_settings.include_dot_paths is not None:
+            self._global_include_dot_paths = self.global_settings.include_dot_paths
+        else:
+            self._global_include_dot_paths = None
+            
+        if self.global_settings.include_binary_files is not None:
+            self._global_include_binary_files = self.global_settings.include_binary_files
+        else:
+            self._global_include_binary_files = None
+            
+        if self.global_settings.include_symlinks is not None:
+            self._global_include_symlinks = self.global_settings.include_symlinks
+        else:
+            self._global_include_symlinks = None
+            
+        if self.global_settings.no_default_excludes is not None:
+            self._global_no_default_excludes = self.global_settings.no_default_excludes
+            # Rebuild exclusion sets if needed
+            if self._global_no_default_excludes and not self.config.filter.no_default_excludes:
+                self.excluded_dirs.clear()
+                self.excluded_files.clear()
+                
+        if self.global_settings.max_file_size:
+            from .utils import parse_file_size
+            try:
+                self._global_max_file_size = parse_file_size(self.global_settings.max_file_size)
+            except ValueError as e:
+                self.logger.warning(f"Invalid global max_file_size: {e}")
+                self._global_max_file_size = None
+        else:
+            self._global_max_file_size = None
+            
+        if self.global_settings.exclude_paths_file:
+            # Load additional exclude patterns from global preset
+            exclude_path = Path(self.global_settings.exclude_paths_file)
+            if exclude_path.exists():
+                self._load_exclude_patterns_from_file(exclude_path)
+            else:
+                self.logger.warning(f"Global exclude_paths_file not found: {exclude_path}")
+    
+    def _load_exclude_patterns_from_file(self, exclude_file: Path) -> None:
+        """Load exclusion patterns from a file (helper method)."""
+        try:
+            with open(exclude_file, "r", encoding="utf-8") as f:
+                lines = [
+                    line.strip()
+                    for line in f
+                    if line.strip() and not line.strip().startswith("#")
+                ]
+
+            # Add to gitignore spec if patterns found
+            patterns = [line for line in lines if any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")]
+            if patterns:
+                spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+                if self.gitignore_spec:
+                    # Combine with existing spec
+                    all_patterns = list(self.gitignore_spec.patterns) + list(spec.patterns)
+                    self.gitignore_spec = pathspec.PathSpec(all_patterns)
+                else:
+                    self.gitignore_spec = spec
+                    
+        except Exception as e:
+            self.logger.error(f"Error loading exclude patterns from {exclude_file}: {e}")

@@ -53,16 +53,22 @@ class OutputWriter:
             return config
             
         from dataclasses import replace
-        from .config import SeparatorStyle, LineEnding, EncodingConfig, OutputConfig
+        from .config import SeparatorStyle, LineEnding, EncodingConfig, OutputConfig, FilterConfig, SecurityConfig, SecurityCheckMode
         
         # Create updated components
         encoding_config = config.encoding
         output_config = config.output
+        filter_config = config.filter
+        security_config = config.security
         
-        # Apply encoding if not set
+        # Apply encoding settings
         if not config.encoding.target_charset and self.global_settings.encoding:
             encoding_config = replace(config.encoding, target_charset=self.global_settings.encoding)
             self.logger.debug(f"Applied global encoding: {self.global_settings.encoding}")
+        
+        if self.global_settings.abort_on_encoding_error is not None:
+            encoding_config = replace(encoding_config, abort_on_error=self.global_settings.abort_on_encoding_error)
+            self.logger.debug(f"Applied global abort_on_encoding_error: {self.global_settings.abort_on_encoding_error}")
         
         # Apply separator style if global setting exists
         if self.global_settings.separator_style:
@@ -82,8 +88,22 @@ class OutputWriter:
             except ValueError:
                 self.logger.warning(f"Invalid global line ending: {self.global_settings.line_ending}")
         
+        # Apply filter settings
+        if self.global_settings.remove_scraped_metadata is not None:
+            filter_config = replace(filter_config, remove_scraped_metadata=self.global_settings.remove_scraped_metadata)
+            self.logger.debug(f"Applied global remove_scraped_metadata: {self.global_settings.remove_scraped_metadata}")
+        
+        # Apply security settings
+        if self.global_settings.security_check and not config.security.security_check:
+            try:
+                security_mode = SecurityCheckMode(self.global_settings.security_check)
+                security_config = replace(security_config, security_check=security_mode)
+                self.logger.debug(f"Applied global security_check: {self.global_settings.security_check}")
+            except ValueError:
+                self.logger.warning(f"Invalid global security_check mode: {self.global_settings.security_check}")
+        
         # Return updated config
-        return replace(config, encoding=encoding_config, output=output_config)
+        return replace(config, encoding=encoding_config, output=output_config, filter=filter_config, security=security_config)
 
     def _remove_scraped_metadata(self, content: str) -> str:
         """Remove scraped metadata from the end of markdown content."""

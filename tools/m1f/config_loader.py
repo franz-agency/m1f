@@ -121,6 +121,15 @@ global_defaults:
       - ".svn"
       - "node_modules"
     
+    # File filtering options
+    include_dot_paths: false      # Include hidden files by default
+    include_binary_files: false   # Skip binary files
+    max_file_size: "50MB"        # Skip very large files
+    
+    # Processing options
+    remove_scraped_metadata: false  # Keep metadata by default
+    abort_on_encoding_error: false  # Be resilient to encoding issues
+    
     # Extension-specific defaults
     extensions:
       # HTML files - strip common tags by default

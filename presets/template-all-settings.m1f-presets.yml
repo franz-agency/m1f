@@ -1,0 +1,343 @@
+# Complete m1f Preset Template
+# This file contains ALL available preset settings with explanations
+# Copy and modify this template for your own projects
+
+# Each preset file can contain multiple preset groups
+# Groups are processed by priority (higher numbers first)
+
+# Group name - can be any valid YAML key
+example_group_name:
+  # Group description (optional)
+  description: "Comprehensive example showing all available settings"
+  
+  # Whether this group is enabled (default: true)
+  enabled: true
+  
+  # Priority for this group (higher = processed first)
+  # When multiple groups match a file, higher priority wins
+  priority: 10
+  
+  # Base path for relative patterns (optional)
+  # All patterns in this group will be relative to this path
+  base_path: "src"
+  
+  # Global settings that apply to all files in this group
+  global_settings:
+    # === ENCODING AND FORMATTING ===
+    
+    # Target character encoding for all files
+    # Options: utf-8, utf-16, utf-16-le, utf-16-be, ascii, latin-1, cp1252
+    encoding: "utf-8"
+    
+    # Separator style between files in output
+    # Options: Standard, Detailed, Markdown, MachineReadable, None
+    separator_style: "Detailed"
+    
+    # Line ending style for generated content
+    # Options: lf, crlf
+    line_ending: "lf"
+    
+    # === INCLUDE/EXCLUDE PATTERNS ===
+    
+    # Patterns to include (gitignore-style patterns)
+    include_patterns:
+      - "src/**/*.js"
+      - "lib/**/*.py"
+      - "!src/vendor/**"  # Exclude even if matched above
+    
+    # Patterns to exclude (gitignore-style patterns)
+    exclude_patterns:
+      - "*.min.js"
+      - "*.map"
+      - "build/"
+      - "dist/"
+      - "**/*.log"
+    
+    # File extensions to include (with or without dot)
+    include_extensions:
+      - ".py"
+      - ".js"
+      - ".jsx"
+      - ".ts"
+      - ".tsx"
+      - ".md"
+    
+    # File extensions to exclude (with or without dot)
+    exclude_extensions:
+      - ".log"
+      - ".tmp"
+      - ".cache"
+      - ".bak"
+      - ".swp"
+    
+    # === FILE FILTERING OPTIONS ===
+    
+    # Include files/directories starting with dot (default: false)
+    include_dot_paths: false
+    
+    # Include binary files (default: false)
+    include_binary_files: false
+    
+    # Follow symbolic links (default: false)
+    # WARNING: Be careful of symlink cycles!
+    include_symlinks: false
+    
+    # Disable default exclusions like node_modules, .git, etc (default: false)
+    no_default_excludes: false
+    
+    # Maximum file size to include
+    # Supports: B, KB, MB, GB, TB (e.g., "50KB", "10MB", "1.5GB")
+    max_file_size: "10MB"
+    
+    # Path to file containing additional exclude patterns
+    # Can be a .gitignore file or custom exclude file
+    exclude_paths_file: ".gitignore"
+    
+    # === PROCESSING OPTIONS ===
+    
+    # Remove scraped metadata from HTML2MD files (default: false)
+    # Removes URL, timestamp, source info from end of markdown files
+    remove_scraped_metadata: true
+    
+    # Abort processing if encoding conversion fails (default: false)
+    # If false, problematic characters are replaced with placeholders
+    abort_on_encoding_error: false
+    
+    # === SECURITY OPTIONS ===
+    
+    # Scan files for secrets before including
+    # Options: abort (stop processing), skip (skip file), warn (include with warning), null (disable)
+    security_check: "warn"
+    
+    # === EXTENSION-SPECIFIC DEFAULTS ===
+    # Define default processing for specific file extensions
+    extensions:
+      # HTML files
+      .html:
+        actions:
+          - strip_tags      # Remove HTML tags
+          - minify         # Remove unnecessary whitespace
+          - compress_whitespace
+        strip_tags:
+          - "script"       # Remove script tags
+          - "style"        # Remove style tags
+          - "meta"
+          - "link"
+        preserve_tags:
+          - "pre"          # Keep pre tags
+          - "code"         # Keep code tags
+      
+      # Markdown files
+      .md:
+        actions:
+          - remove_empty_lines
+        separator_style: "Markdown"  # Override separator for markdown
+      
+      # CSS files
+      .css:
+        actions:
+          - minify
+          - strip_comments
+      
+      # JavaScript files
+      .js:
+        actions:
+          - strip_comments
+          - compress_whitespace
+      
+      # Python files
+      .py:
+        actions:
+          - strip_comments    # Removes # comments, preserves docstrings
+          - remove_empty_lines
+      
+      # JSON files
+      .json:
+        actions:
+          - compress_whitespace
+      
+      # Log files
+      .log:
+        actions:
+          - custom
+        custom_processor: "truncate"
+        processor_args:
+          max_chars: 5000
+  
+  # Individual file presets (matched by pattern or extension)
+  presets:
+    # Preset name (for identification)
+    documentation:
+      # File extensions this preset applies to
+      extensions: [".md", ".rst", ".txt"]
+      
+      # Glob patterns this preset applies to
+      patterns:
+        - "docs/**/*"
+        - "README*"
+        - "*.md"
+      
+      # Processing actions to apply (in order)
+      actions:
+        - remove_empty_lines
+        - compress_whitespace
+      
+      # Override separator style for these files
+      separator_style: "Markdown"
+      
+      # Include file metadata in output
+      include_metadata: true
+      
+      # Maximum lines to include (truncate after this)
+      max_lines: 1000
+    
+    # Configuration files
+    config_files:
+      patterns:
+        - "*.json"
+        - "*.yml"
+        - "*.yaml"
+        - "*.toml"
+        - "*.ini"
+        - ".env*"
+      actions:
+        - custom
+      custom_processor: "redact_secrets"
+      processor_args:
+        patterns:
+          # Regex patterns to find and redact
+          - '(?i)(api[_-]?key|secret|password|token)\s*[:=]\s*["\']?[\w-]+["\']?'
+          - '(?i)bearer\s+[\w-]+'
+    
+    # Source code
+    source_code:
+      extensions: [".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".c", ".cpp"]
+      actions:
+        - strip_comments
+        - remove_empty_lines
+      include_metadata: true
+    
+    # Minified files - skip processing
+    minified:
+      patterns:
+        - "*.min.js"
+        - "*.min.css"
+      actions: []  # Empty list = no processing
+      include_metadata: false
+    
+    # Large data files
+    data_files:
+      extensions: [".sql", ".csv", ".xml"]
+      actions:
+        - custom
+      custom_processor: "truncate"
+      processor_args:
+        max_chars: 10000
+      max_lines: 500
+    
+    # Binary files that somehow got included
+    binary_fallback:
+      extensions: [".png", ".jpg", ".gif", ".pdf", ".zip"]
+      actions:
+        - custom
+      custom_processor: "truncate"
+      processor_args:
+        max_chars: 100  # Just show file info
+    
+    # Default preset for unmatched files
+    default:
+      actions:
+        - remove_empty_lines
+      include_metadata: true
+      separator_style: "Standard"
+
+# Second group example - Production settings
+production:
+  description: "Production build settings - aggressive optimization"
+  enabled: false  # Enable with --preset-group production
+  priority: 20    # Higher priority than example_group_name
+  
+  global_settings:
+    # Override encoding for production
+    encoding: "utf-8"
+    separator_style: "MachineReadable"
+    
+    # Exclude all development files
+    exclude_patterns:
+      - "test/**"
+      - "tests/**"
+      - "spec/**"
+      - "*.test.*"
+      - "*.spec.*"
+      - "__tests__/**"
+      - "node_modules/**"
+      - ".git/**"
+    
+    # Strict file size limits
+    max_file_size: "1MB"
+    
+    # Security settings
+    security_check: "abort"  # Strict for production
+    abort_on_encoding_error: true
+  
+  presets:
+    # Aggressive minification for all web assets
+    web_assets:
+      extensions: [".html", ".css", ".js"]
+      actions:
+        - minify
+        - strip_tags
+        - strip_comments
+        - compress_whitespace
+      strip_tags: ["script", "style", "meta", "link", "comment"]
+
+# Third group example - Development settings
+development:
+  description: "Development settings - preserve readability"
+  enabled: false  # Enable with --preset-group development
+  priority: 15
+  
+  global_settings:
+    # Keep everything readable
+    separator_style: "Detailed"
+    
+    # Include test files
+    include_patterns:
+      - "test/**"
+      - "tests/**"
+      - "*.test.*"
+      - "*.spec.*"
+    
+    # Include hidden files for development
+    include_dot_paths: true
+    
+    # More lenient size limits
+    max_file_size: "50MB"
+    
+    # Security as warning only
+    security_check: "warn"
+  
+  presets:
+    # Keep source code readable
+    source:
+      extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
+      actions: []  # No processing - keep as-is
+      include_metadata: true
+
+# Available Processing Actions:
+# - minify: Remove unnecessary whitespace (HTML, CSS, JS)
+# - strip_tags: Remove specified HTML tags
+# - strip_comments: Remove comments based on file type
+# - compress_whitespace: Normalize whitespace
+# - remove_empty_lines: Remove all empty lines
+# - custom: Apply custom processor
+
+# Built-in Custom Processors:
+# - truncate: Limit content to max_chars
+# - redact_secrets: Remove sensitive information
+# - extract_functions: Extract only function definitions (Python)
+
+# Usage Examples:
+# python -m tools.m1f -s . -o bundle.txt --preset this-file.yml
+# python -m tools.m1f -s . -o prod.txt --preset this-file.yml --preset-group production
+# python -m tools.m1f -s . -o dev.txt --preset this-file.yml --preset-group development

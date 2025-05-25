@@ -248,10 +248,102 @@ python -m tools.m1f -s . -o out.txt --preset base.yml project.yml
 python -m tools.m1f -s . -o out.txt --preset presets.yml --disable-presets
 ```
 
+## Complete List of Supported Settings
+
+### Global Settings
+These apply to all files unless overridden:
+
+```yaml
+global_settings:
+  # Encoding and formatting
+  encoding: "utf-8"
+  separator_style: "Detailed"
+  line_ending: "lf"
+  
+  # Include/exclude patterns
+  include_patterns: ["src/**/*", "lib/**/*"]
+  exclude_patterns: ["*.min.js", "*.map"]
+  include_extensions: [".py", ".js", ".md"]
+  exclude_extensions: [".log", ".tmp"]
+  
+  # File filtering
+  include_dot_paths: false
+  include_binary_files: false
+  include_symlinks: false
+  no_default_excludes: false
+  max_file_size: "10MB"
+  exclude_paths_file: ".gitignore"
+  
+  # Processing options
+  remove_scraped_metadata: true
+  abort_on_encoding_error: false
+  
+  # Security
+  security_check: "warn"  # abort, skip, warn
+```
+
+### Extension-Specific Settings
+Currently, the following settings can be overridden per extension in global_settings:
+
+```yaml
+global_settings:
+  extensions:
+    .md:
+      actions: [remove_empty_lines]
+      # Note: Other settings like security_check and max_file_size 
+      # are not yet supported per-extension
+    .php:
+      actions: [strip_comments]
+    .css:
+      actions: [minify]
+```
+
+**Note**: Per-extension overrides for `security_check`, `max_file_size`, and other filter settings are planned for a future release. Currently, these can only be set globally.
+
+## Advanced Examples
+
+### Different Processing by Location
+
+Process files differently based on their location:
+
+```yaml
+conditional:
+  presets:
+    # Production files - minify and strip
+    production:
+      patterns: ["dist/**/*", "build/**/*"]
+      actions: [minify, strip_comments]
+      
+    # Development files - keep readable
+    development:
+      patterns: ["src/**/*", "dev/**/*"]
+      actions: [remove_empty_lines]
+      
+    # Vendor files - skip processing
+    vendor:
+      patterns: ["vendor/**/*", "node_modules/**/*"]
+      actions: []  # No processing
+```
+
+### Combining Multiple Presets
+
+You can load multiple preset files that build on each other:
+
+```bash
+python -m tools.m1f -s . -o bundle.txt \
+  --preset base-rules.yml \
+  --preset project-specific.yml \
+  --preset production-overrides.yml
+```
+
 ## Creating Custom Presets
 
 1. **Start with a template**:
    ```bash
+   # Use the comprehensive template with all available settings
+   cp presets/template-all-settings.m1f-presets.yml my-project.m1f-presets.yml
+   
+   # Or start from a simpler example
    cp presets/web-project.m1f-presets.yml my-project.m1f-presets.yml
    ```
 
