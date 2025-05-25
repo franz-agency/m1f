@@ -7,9 +7,9 @@ from setuptools import setup, find_packages
 setup(
     name="m1f",
     version="2.1.0",
-    description="Make One File - Combine multiple text files into a single output file",
+    description="m1f - Make One File - Combine multiple text files into a single output file",
     author="Franz und Franz",
-    author_email="info@franz.agency",
+    author_email="office@franz.agency",
     url="https://m1f.dev",
     packages=find_packages(),
     entry_points={
