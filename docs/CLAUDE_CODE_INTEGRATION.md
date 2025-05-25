@@ -47,7 +47,7 @@ Create `.claude/settings.json` in the project root:
 
 ```json
 {
-  "model": "claude-3-opus-20240229",
+  "model": "claude-opus-4",
   "customInstructions": "You are helping with the m1f tools project. Key tools available: m1f.py (file bundler), s1f.py (file splitter), html2md (HTML to Markdown converter), wp_export_md.py (WordPress exporter).",
   "permissions": {
     "write": true,
@@ -211,14 +211,14 @@ claude -p "Run the test suite, identify any failures, and fix them"
 Set these in your shell profile for persistent configuration:
 
 ```bash
-export ANTHROPIC_MODEL="claude-3-opus-20240229"
+export ANTHROPIC_MODEL="claude-sonnet-4-20250514"
 export CLAUDE_CODE_PROJECT_ROOT="/path/to/m1f"
 ```
 
 ## Troubleshooting
 
 1. **Permission errors**: Ensure Claude Code has write permissions in settings
-2. **Model selection**: Use Opus for complex analysis, Sonnet for quick tasks
+2. **Model selection**: Use Claude Opus 4 for the most complex analysis, Claude Sonnet 4 for balanced performance
 3. **Rate limits**: Be mindful of API usage limits
 
 ## Security Considerations
