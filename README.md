@@ -20,6 +20,15 @@ The core tools are:
 These tools solve the challenge of providing comprehensive context to AI
 assistants while optimizing token usage.
 
+## Quick Start
+
+For the recommended development workflow and setup instructions, see the
+[M1F Development Workflow](docs/M1F_DEVELOPMENT_WORKFLOW.md) guide. This includes:
+
+- Setting up convenient shell aliases for global access
+- Using pre-generated m1f bundles in your projects
+- Development best practices
+
 ## Features
 
 ### Content Deduplication
