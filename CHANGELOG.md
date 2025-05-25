@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.1.1] - 2025-01-25
+
+### Changed
+
+- Small documentation update
+- Improved example consistency across documentation
+- Updated file paths in test fixtures
+- Cleaned up outdated references
+
 ## [2.1.0] - 2025-01-25
 
 ### Added
