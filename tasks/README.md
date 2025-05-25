@@ -1,11 +1,17 @@
-# AI Context File Generator
+# AI Context File Generator & Auto-Bundling System
 
 ## Overview
 
 This directory contains tasks for creating selective file bundles that serve as
-context for AI interactions. Using the `m1f.py` tool, you can combine selected
-important files from your project into a single file that can be loaded into an
-AI's context window.
+context for AI interactions. The system includes:
+
+1. **Manual Selection** - Create bundles from carefully selected files
+2. **Auto-Bundling** - Automatically organize project content into topic-based bundles
+3. **Preset System** - Apply file-specific processing rules
+4. **Watch Mode** - Automatically regenerate bundles when files change
+
+Using the `m1f.py` tool and auto-bundling scripts, you can create optimized
+context files for AI assistants.
 
 ## When to Use This Tool
 
@@ -34,9 +40,11 @@ essential. This tool helps you to:
 3. Create machine-readable formats optimized for Large Language Models
 4. Efficiently manage context limitations by focusing on what matters
 
-## Tasks in m1f.json
+## Available Task Files
 
-The `m1f.json` file defines two VS Code tasks:
+### m1f.json - Core Context Generation Tasks
+
+The `m1f.json` file defines core tasks for manual file selection:
 
 ### 1. AI Context: Create Combined File
 
@@ -106,18 +114,79 @@ ${workspaceFolder}/utils/crypto.py
    - Include this file in the AI's context using the editor's method
    - In Windsurf: Type `@filename` in chat or use the "Add to Context" option
 
+### auto_bundle.json - Automated Topic-Based Bundling
+
+The `auto_bundle.json` file provides tasks for automatic bundle generation:
+
+#### Available Auto-Bundle Tasks:
+
+1. **Auto Bundle: Docs Bundle** - All documentation, READMEs, and markdown files
+2. **Auto Bundle: Source Bundle** - All source code files
+3. **Auto Bundle: Tests Bundle** - All test files and fixtures
+4. **Auto Bundle: Complete Bundle** - Combined documentation, source, and tests
+5. **Auto Bundle: Custom Focus** - Topic-specific bundles (html2md, m1f, s1f, etc.)
+6. **Auto Bundle: Watch and Update** - Monitor changes and regenerate bundles
+7. **Auto Bundle: With Preset** - Apply processing rules during bundling
+8. **Auto Bundle: Generate All Bundles** - Creates all standard bundles in one go
+9. **Auto Bundle: Preset - All Standard** - Creates all standard preset-based bundles
+10. **Auto Bundle: Preset - Focused** - Creates focused bundles using presets
+11. **Auto Bundle: List Presets** - Lists all available presets and their groups
+
+#### Using Auto-Bundle Tasks:
+
+1. Open VS Code Command Palette (`Ctrl+Shift+P`)
+2. Type "Tasks: Run Task"
+3. Select an auto-bundle task (e.g., "Auto Bundle: Complete Bundle")
+4. The bundle will be created in `.ai-context/`
+
+#### Configuration:
+
+Auto-bundling is configured via `.m1f.config.yml`. See the [Auto Bundle Guide](../docs/AUTO_BUNDLE_GUIDE.md) for details.
+
+#### Preset-Based Auto-Bundling:
+
+The preset-based tasks (9-11) use the `scripts/auto_bundle_preset.sh` script which leverages the m1f preset system:
+
+- **Intelligent file filtering** - Presets apply smart includes/excludes based on file type
+- **Per-file-type processing** - Different settings for different file extensions
+- **Security scanning control** - Enable/disable security checks per file type
+- **Size limit management** - Different size limits for CSS vs PHP files
+- **Processing actions** - Minify, strip tags, compress whitespace per file type
+
+Example preset usage:
+```bash
+# Create all standard bundles using presets
+./scripts/auto_bundle_preset.sh all
+
+# Create WordPress-specific bundles
+./scripts/auto_bundle_preset.sh focus wordpress
+
+# Use specific preset with group
+./scripts/auto_bundle_preset.sh preset web-project frontend
+```
+
+Available presets:
+- `wordpress` - WordPress themes and plugins with appropriate excludes
+- `web-project` - Modern web projects with frontend/backend separation
+- `documentation` - Documentation-focused bundles
+- `example-globals` - Example with comprehensive global settings
+
+See [m1f Presets Documentation](../docs/m1f_presets.md) for detailed preset information.
+
 ## Best Practices for Effective AI Context
 
-1. **Be selective**: Choose only the most important 20-50 files for your current
-   task
-2. **Include structure files**: Add README.md, configuration files, and key
-   interfaces
-3. **Group related files**: When customizing your list, organize files by
-   related functionality
-4. **Refresh context files**: Create new context files for different tasks
-   rather than using one for everything
-5. **Comment your file lists**: Add comments in `ai_context_files.txt` to
-   explain why files are included
+### For Manual Selection:
+1. **Be selective**: Choose only the most important 20-50 files for your current task
+2. **Include structure files**: Add README.md, configuration files, and key interfaces
+3. **Group related files**: When customizing your list, organize files by related functionality
+4. **Comment your file lists**: Add comments in `ai_context_files.txt` to explain why files are included
+
+### For Auto-Bundling:
+1. **Use focused bundles**: Start with topic-specific bundles (docs, src) before using complete
+2. **Configure properly**: Customize `.m1f.config.yml` for your project structure
+3. **Apply presets**: Use the preset system to optimize file processing
+4. **Watch mode**: Use watch tasks during active development
+5. **Refresh regularly**: Regenerate bundles after significant changes
 
 ## Customizing the Process
 

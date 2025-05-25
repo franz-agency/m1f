@@ -110,7 +110,9 @@ python -m tools.m1f -s . -o out.txt --preset defaults.yml project.yml overrides.
 - **remove_empty_lines** - Remove all empty lines
 - **custom** - Apply custom processors
 
-For detailed preset documentation, see [Preset System Guide](m1f_presets.md).
+For detailed preset documentation, see:
+- [Preset System Guide](m1f_presets.md) - Complete preset documentation
+- [Per-File-Type Settings](m1f_preset_per_file_settings.md) - File-specific overrides
 
 ## Usage Examples
 

@@ -45,6 +45,13 @@ class FilePreset:
     include_metadata: bool = True
     max_lines: Optional[int] = None  # Truncate after N lines
     
+    # File-specific filter overrides
+    max_file_size: Optional[str] = None  # Override max file size for these files
+    security_check: Optional[str] = None  # Override security check for these files
+    include_dot_paths: Optional[bool] = None
+    include_binary_files: Optional[bool] = None
+    remove_scraped_metadata: Optional[bool] = None
+    
     # Custom processing
     custom_processor: Optional[str] = None  # Name of custom processor
     processor_args: Dict[str, Any] = field(default_factory=dict)
@@ -196,6 +203,29 @@ class PresetGroup:
             merged.max_lines = global_preset.max_lines
         
         return merged
+    
+    def get_file_specific_settings(self, file_path: Path) -> Optional[Dict[str, Any]]:
+        """Get file-specific settings (security_check, max_file_size, etc.) for a file."""
+        # First check if we have a preset for this file
+        preset = self.get_preset_for_file(file_path)
+        if not preset:
+            return None
+            
+        # Collect file-specific settings
+        settings = {}
+        
+        if preset.security_check is not None:
+            settings['security_check'] = preset.security_check
+        if preset.max_file_size is not None:
+            settings['max_file_size'] = preset.max_file_size
+        if preset.include_dot_paths is not None:
+            settings['include_dot_paths'] = preset.include_dot_paths
+        if preset.include_binary_files is not None:
+            settings['include_binary_files'] = preset.include_binary_files
+        if preset.remove_scraped_metadata is not None:
+            settings['remove_scraped_metadata'] = preset.remove_scraped_metadata
+            
+        return settings if settings else None
 
 
 class PresetManager:

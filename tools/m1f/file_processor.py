@@ -314,6 +314,11 @@ class FileProcessor:
         # Check if file exists
         if not file_path.exists():
             return False
+            
+        # Get file-specific settings from presets
+        file_settings = {}
+        if self.preset_manager:
+            file_settings = self.preset_manager.get_file_specific_settings(file_path) or {}
 
         # Check exact excludes
         if str(file_path) in self.exact_excludes:
@@ -335,6 +340,9 @@ class FileProcessor:
         include_dots = self.config.filter.include_dot_paths
         if hasattr(self, '_global_include_dot_paths') and self._global_include_dot_paths is not None:
             include_dots = include_dots or self._global_include_dot_paths
+        # File-specific override
+        if 'include_dot_paths' in file_settings:
+            include_dots = file_settings['include_dot_paths']
             
         if not explicitly_included and not include_dots:
             if is_hidden_path(file_path):
@@ -344,6 +352,9 @@ class FileProcessor:
         include_binary = self.config.filter.include_binary_files
         if hasattr(self, '_global_include_binary_files') and self._global_include_binary_files is not None:
             include_binary = include_binary or self._global_include_binary_files
+        # File-specific override
+        if 'include_binary_files' in file_settings:
+            include_binary = file_settings['include_binary_files']
             
         if not include_binary:
             if is_binary_file(file_path):
@@ -390,6 +401,16 @@ class FileProcessor:
                 max_size = min(max_size, self._global_max_file_size)
             else:
                 max_size = self._global_max_file_size
+        
+        # File-specific override
+        if 'max_file_size' in file_settings:
+            from .utils import parse_file_size
+            try:
+                file_max_size = parse_file_size(file_settings['max_file_size'])
+                # If file-specific limit is set, use it (not the minimum)
+                max_size = file_max_size
+            except ValueError as e:
+                self.logger.warning(f"Invalid file-specific max_file_size for {file_path}: {e}")
                 
         if max_size is not None:
             try:

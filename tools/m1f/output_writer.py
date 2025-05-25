@@ -217,7 +217,13 @@ class OutputWriter:
                     content = self.preset_manager.process_content(content, preset, file_path)
 
             # Remove scraped metadata if requested
-            content = self._remove_scraped_metadata(content)
+            # Check file-specific override first
+            remove_metadata = self.config.filter.remove_scraped_metadata
+            if preset and hasattr(preset, 'remove_scraped_metadata') and preset.remove_scraped_metadata is not None:
+                remove_metadata = preset.remove_scraped_metadata
+            
+            if remove_metadata:
+                content = self._remove_scraped_metadata(content)
 
             # Check for content deduplication
             if self._content_dedupe and not rel_path.startswith(("intro:", "include:")):

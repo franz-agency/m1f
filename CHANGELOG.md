@@ -18,6 +18,11 @@ and this project adheres to
   - Custom processors: truncate, redact_secrets, extract_functions
   - CLI options: `--preset`, `--preset-group`, `--disable-presets`
   - Example presets: WordPress, web projects, documentation
+  - **Per-file-type overrides**: Different settings for different extensions
+    - `security_check`: Enable/disable security scanning per file type
+    - `max_file_size`: Different size limits for CSS, JS, PHP, etc.
+    - `remove_scraped_metadata`: Clean HTML2MD files selectively
+    - `include_dot_paths`, `include_binary_files`: File-type specific filtering
 
 - **Auto-bundling System**: Automatic project organization for AI/LLM consumption
   - `scripts/auto_bundle.sh` - Basic bundling with predefined categories

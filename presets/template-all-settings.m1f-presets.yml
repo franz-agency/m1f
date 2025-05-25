@@ -126,12 +126,17 @@ example_group_name:
         preserve_tags:
           - "pre"          # Keep pre tags
           - "code"         # Keep code tags
+        # File-specific overrides
+        max_file_size: "500KB"  # HTML-specific size limit
+        security_check: "warn"  # Less strict for HTML
       
       # Markdown files
       .md:
         actions:
           - remove_empty_lines
         separator_style: "Markdown"  # Override separator for markdown
+        security_check: null  # Disable security check for docs
+        remove_scraped_metadata: true  # Clean scraped content
       
       # CSS files
       .css:
@@ -190,6 +195,10 @@ example_group_name:
       
       # Maximum lines to include (truncate after this)
       max_lines: 1000
+      
+      # File-specific overrides
+      security_check: null  # No security check for docs
+      remove_scraped_metadata: true
     
     # Configuration files
     config_files:

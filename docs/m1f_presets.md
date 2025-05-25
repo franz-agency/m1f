@@ -283,24 +283,91 @@ global_settings:
 ```
 
 ### Extension-Specific Settings
-Currently, the following settings can be overridden per extension in global_settings:
+All file-specific settings can now be overridden per extension in global_settings or in individual presets:
 
 ```yaml
 global_settings:
   extensions:
     .md:
       actions: [remove_empty_lines]
-      # Note: Other settings like security_check and max_file_size 
-      # are not yet supported per-extension
+      security_check: null  # Disable security checks for markdown
+      remove_scraped_metadata: true
     .php:
       actions: [strip_comments]
+      security_check: "abort"  # Strict security for PHP
+      max_file_size: "5MB"
     .css:
       actions: [minify]
+      max_file_size: "50KB"  # Stricter size limit for CSS
+    .log:
+      include_dot_paths: true  # Include hidden log files
+      max_file_size: "100KB"
+
+presets:
+  sensitive_code:
+    extensions: [".env", ".key", ".pem"]
+    security_check: "abort"
+    include_binary_files: false
+    
+  documentation:
+    extensions: [".md", ".txt", ".rst"]
+    security_check: null  # No security check for docs
+    remove_scraped_metadata: true
 ```
 
-**Note**: Per-extension overrides for `security_check`, `max_file_size`, and other filter settings are planned for a future release. Currently, these can only be set globally.
-
 ## Advanced Examples
+
+### Security Check per File Type
+
+Disable security checks for documentation but keep them for code:
+
+```yaml
+security_example:
+  global_settings:
+    security_check: "abort"  # Default: strict
+    
+    extensions:
+      .md:
+        security_check: null  # Disable for markdown
+      .txt:
+        security_check: null  # Disable for text
+      .rst:
+        security_check: null  # Disable for reStructuredText
+      .php:
+        security_check: "abort"  # Keep strict for PHP
+      .js:
+        security_check: "warn"  # Warn only for JS
+      .env:
+        security_check: "abort"  # Very strict for env files
+```
+
+### Size Limits per File Type
+
+Different size limits for different file types:
+
+```yaml
+size_limits:
+  global_settings:
+    max_file_size: "1MB"  # Default limit
+    
+    extensions:
+      .css:
+        max_file_size: "50KB"   # Stricter for CSS
+      .js:
+        max_file_size: "100KB"  # JavaScript limit
+      .php:
+        max_file_size: "5MB"    # More lenient for PHP
+      .sql:
+        max_file_size: "10MB"   # Large SQL dumps allowed
+      .log:
+        max_file_size: "500KB"  # Log file limit
+
+  presets:
+    # Override for specific patterns
+    vendor_files:
+      patterns: ["vendor/**/*", "node_modules/**/*"]
+      max_file_size: "10KB"  # Very small for vendor files
+```
 
 ### Different Processing by Location
 
