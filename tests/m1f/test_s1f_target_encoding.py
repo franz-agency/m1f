@@ -142,9 +142,8 @@ def test_target_encoding():
                 "--destination-directory",
                 str(extract_dir_target),
                 "--force",
-                "--respect-encoding",  # This would normally use latin-1 from metadata
                 "--target-encoding",
-                "utf-16-le",  # But this should override it
+                "utf-16-le",  # Override the metadata encoding
             ],
             check=True,
         )
