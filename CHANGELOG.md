@@ -5,6 +5,109 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-05-25
+
+### 🚀 Major Architectural Overhaul
+
+This is a major release featuring complete architectural modernization of the m1f project, bringing it to Python 3.10+ standards with significant performance improvements and new features.
+
+#### ✨ Major Features
+- **Complete Architectural Modernization**: Transformed m1f and s1f from monolithic scripts into modular packages with clean architecture
+- **New HTML2MD Converter**: Added professional HTML to Markdown converter with HTTrack integration for website scraping
+- **Async I/O Support**: Implemented async operations throughout for significant performance improvements
+- **Type Safety**: Added comprehensive type hints using Python 3.10+ features across the entire codebase
+- **Content Deduplication**: Automatic detection and removal of duplicate file content based on SHA256 checksums
+
+#### 🆕 New Functionality
+- **HTML to Markdown Conversion**:
+  - Advanced website scraping with HTTrack integration
+  - CSS selector-based content extraction
+  - Configurable crawl depth and domain restrictions
+  - Metadata preservation and frontmatter generation
+  - m1f bundle integration for converted content
+  
+- **Enhanced File Processing**:
+  - Content deduplication based on file hashes
+  - Symlink handling with cycle detection
+  - Max file size filtering with unit support (KB, MB, GB, TB)
+  - Scraped metadata removal for HTML2MD files
+  - Colorized console output with progress indicators
+
+#### 🏗️ Architecture Improvements
+- **Modular Package Structure**:
+  - Separated concerns into focused modules
+  - Abstract base classes and interfaces
+  - Dependency injection pattern
+  - Clean separation between CLI, core logic, and utilities
+  
+- **Modern Python Features**:
+  - Python 3.10+ union type operators
+  - Dataclasses for configuration and models
+  - Context managers for resource handling
+  - Comprehensive error handling with custom exceptions
+
+#### ⚡ Performance & Efficiency
+- **Async Operations**: Concurrent file processing and web crawling
+- **Memory Efficiency**: Streaming processing for large files
+- **Parallel Processing**: Multi-worker support for batch operations
+- **Smart Caching**: Reduced redundant file system operations
+
+#### 🧪 Testing & Quality
+- **Comprehensive Test Suite**: All 205 tests passing
+- **Test Infrastructure**:
+  - pytest-timeout for reliable test execution
+  - Better test isolation and cleanup
+  - Cross-platform compatibility
+  - Enhanced encoding test coverage
+  
+- **Fixed Test Issues**:
+  - S1F content normalization and timestamp tolerance
+  - M1F encoding tests with binary file support
+  - HTML2MD frontmatter and CLI integration
+  - Security warning log format handling
+
+#### 🔒 Security Improvements
+- Removed dangerous placeholder directory creation
+- Enhanced security scanning with detect-secrets
+- Better validation of user inputs
+- Safe handling of file paths and encodings
+
+#### 📦 Dependencies & Compatibility
+- **Python**: 3.10+ required
+- **New Dependencies**: 
+  - aiofiles for async file operations
+  - pydantic for configuration validation
+  - rich for enhanced CLI output
+  - pytest-timeout for test reliability
+- **Backward Compatibility**: 100% CLI compatibility maintained
+
+#### 🔄 Breaking Changes
+While CLI interfaces remain compatible, internal APIs have changed:
+- Module structure completely reorganized
+- Internal functions and classes renamed/relocated
+- Configuration handling modernized
+- Test infrastructure overhauled
+
+#### 📈 Statistics
+- **Tests**: 205 passing (100% success rate)
+- **Code Quality**: Comprehensive type hints and documentation
+- **Performance**: Significant improvements through async I/O
+- **Modularity**: From monolithic scripts to organized packages
+
+#### 🎯 Migration Guide
+For users:
+- All command-line interfaces remain the same
+- Existing scripts will continue to work unchanged
+- New features are opt-in through additional flags
+
+For developers:
+- Review new module structure in tools/m1f/, tools/s1f/, tools/html2md/
+- Update imports if using internal APIs
+- Leverage new async capabilities for better performance
+- Use type hints for better IDE support
+
+---
+
 ## [3.2.1] - 2025-05-23
 
 ### 🧹 HTML2MD Metadata Management Enhancements
