@@ -54,6 +54,10 @@ class FileCombiner:
         self.archive_creator = ArchiveCreator(config, logger_manager)
         self.security_scanner = SecurityScanner(config, logger_manager)
 
+        # Share preset manager between components
+        if self.file_processor.preset_manager:
+            self.security_scanner.preset_manager = self.file_processor.preset_manager
+
     async def run(self) -> ProcessingResult:
         """Run the file combination process."""
         start_time = time.time()

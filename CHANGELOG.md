@@ -6,6 +6,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [2.1.0] - 2025-01-25
+
+### Added
+
+- **Preset System**: Flexible file-specific processing rules
+
+  - Hierarchical preset loading: global (~/.m1f/) → user → project
+  - Global settings: encoding, separator style, line endings, includes/excludes
+  - Extension-specific processing: HTML minification, CSS compression, comment
+    stripping
+  - Built-in actions: minify, strip_tags, strip_comments, compress_whitespace,
+    remove_empty_lines
+  - Custom processors: truncate, redact_secrets, extract_functions
+  - CLI options: `--preset`, `--preset-group`, `--disable-presets`
+  - Example presets: WordPress, web projects, documentation
+  - **Per-file-type overrides**: Different settings for different extensions
+    - `security_check`: Enable/disable security scanning per file type
+    - `max_file_size`: Different size limits for CSS, JS, PHP, etc.
+    - `remove_scraped_metadata`: Clean HTML2MD files selectively
+    - `include_dot_paths`, `include_binary_files`: File-type specific filtering
+  - **Auto-bundling with presets**: New scripts and VS Code tasks
+    - `scripts/auto_bundle_preset.sh` - Preset-based intelligent bundling
+    - `tasks/auto_bundle.json` - 11 VS Code tasks for automated bundling
+    - Focus areas: WordPress, web projects, documentation
+    - Integration with preset system for file-specific processing
+  - **Test suite**: Basic preset functionality tests
+    - Global settings and file filtering tests
+    - File-specific action processing tests
+    - Integration verification
+
+- **Auto-bundling System**: Automatic project organization for AI/LLM
+  consumption
+  - `scripts/auto_bundle.sh` - Basic bundling with predefined categories
+  - `scripts/auto_bundle_v2.sh` - Advanced bundling with YAML configuration
+  - `.m1f.config.yml` - Customizable bundle definitions and priorities
+  - `scripts/watch_and_bundle.sh` - File watcher for automatic updates
+  - Bundle types: docs, src, tests, complete, and custom focus areas
+- **Claude Code Integration** (optional): AI-powered tool automation
+
+  - `tools/claude_orchestrator.py` - Natural language command processing
+  - Integration with Claude Code CLI for workflow automation
+  - Project-specific `.claude/settings.json` configuration
+  - Example workflows and documentation
+
+- **HTML2MD Preprocessing System**: Configurable HTML cleaning
+  - `tools/html2md/analyze_html.py` - Analyze HTML for preprocessing patterns
+  - `tools/html2md/preprocessors.py` - Generic preprocessing framework
+  - Removed hardcoded project-specific logic
+  - Support for custom preprocessing configurations per project
+
+### Changed
+
+- HTML2MD now uses configurable preprocessing instead of hardcoded rules
+- Updated documentation structure to include new features
+
+### Fixed
+
+- Preset `strip_tags` action now properly strips all HTML tags when no specific
+  tags are specified
+- Added missing `get_file_specific_settings` method to PresetManager class
+
+### Documentation
+
+- Added Preset System Guide (`docs/m1f_presets.md`)
+- Added Auto Bundle Guide (`docs/AUTO_BUNDLE_GUIDE.md`)
+- Added Claude Code Integration Guide (`docs/CLAUDE_CODE_INTEGRATION.md`)
+- Added example workflows (`examples/claude_workflows.md`)
+- Updated main documentation index with new features
+
 ## [2.0.1] - 2025-05-25
 
 ### Fixed

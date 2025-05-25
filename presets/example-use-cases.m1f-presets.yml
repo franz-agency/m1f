@@ -1,0 +1,178 @@
+# Example Use Cases for m1f Presets
+# This file demonstrates the specific use cases mentioned
+
+# Use Case 1: Different security settings per file type
+# "I want to disable security_check for all *.md files, but keep it for PHP files"
+security_per_type:
+  description: "Different security settings for different file types"
+  priority: 10
+  
+  global_settings:
+    # Default security setting for all files
+    security_check: "abort"  # Strict by default
+    
+    # Per-extension overrides
+    extensions:
+      # Disable security check for documentation
+      .md:
+        security_check: null  # Disabled for markdown
+      .txt:
+        security_check: null  # Disabled for text files
+      .rst:
+        security_check: null  # Disabled for reStructuredText
+        
+      # Keep strict security for code files
+      .php:
+        security_check: "abort"  # Very strict for PHP
+      .js:
+        security_check: "warn"   # Warning only for JavaScript
+      .py:
+        security_check: "abort"  # Strict for Python
+      
+      # Special handling for config files
+      .env:
+        security_check: "abort"  # Always check .env files
+      .json:
+        security_check: "warn"   # Warn for JSON configs
+      .yml:
+        security_check: "warn"   # Warn for YAML configs
+
+# Use Case 2: Different size limits per file type
+# "I want to exclude all CSS files over 50KB, but include PHP files that are larger"
+size_limits_per_type:
+  description: "Different file size limits for different file types"
+  priority: 10
+  
+  global_settings:
+    # Default size limit
+    max_file_size: "1MB"
+    
+    # Per-extension size limits
+    extensions:
+      # Strict limits for frontend assets
+      .css:
+        max_file_size: "50KB"   # Exclude CSS files over 50KB
+        actions: [minify]       # Also minify them
+      .js:
+        max_file_size: "100KB"  # 100KB limit for JS
+        actions: [strip_comments, compress_whitespace]
+      
+      # More lenient for backend code
+      .php:
+        max_file_size: "5MB"    # Allow larger PHP files
+        actions: [strip_comments]
+      .py:
+        max_file_size: "2MB"    # Python files up to 2MB
+      
+      # Very strict for certain files
+      .log:
+        max_file_size: "100KB"  # Small log files only
+        actions: [custom]
+        custom_processor: "truncate"
+        processor_args:
+          max_chars: 5000
+      
+      # Large data files
+      .sql:
+        max_file_size: "10MB"   # Allow large SQL dumps
+        max_lines: 1000         # But truncate to 1000 lines
+
+# Combined example: Full project configuration
+web_project_complete:
+  description: "Complete web project with mixed requirements"
+  priority: 15
+  
+  global_settings:
+    # General settings
+    encoding: "utf-8"
+    separator_style: "Detailed"
+    security_check: "warn"  # Default: warn
+    max_file_size: "2MB"    # Default: 2MB
+    
+    # Global excludes
+    exclude_patterns:
+      - "*.min.js"
+      - "*.min.css"
+      - "vendor/**"
+      - "node_modules/**"
+    
+    # Extension-specific rules
+    extensions:
+      # Documentation - no security check, clean metadata
+      .md:
+        security_check: null
+        remove_scraped_metadata: true
+        max_file_size: "500KB"
+        actions: [remove_empty_lines]
+      
+      # Frontend assets - strict size limits
+      .css:
+        max_file_size: "50KB"
+        security_check: "skip"
+        actions: [minify, strip_comments]
+      .js:
+        max_file_size: "100KB"
+        security_check: "warn"
+        actions: [strip_comments, compress_whitespace]
+      
+      # Backend code - larger files allowed, strict security
+      .php:
+        max_file_size: "5MB"
+        security_check: "abort"
+        actions: [strip_comments, remove_empty_lines]
+      
+      # Config files - strict security, moderate size
+      .env:
+        max_file_size: "10KB"
+        security_check: "abort"
+        include_dot_paths: true  # Include .env files
+      .json:
+        max_file_size: "1MB"
+        security_check: "warn"
+        actions: [compress_whitespace]
+      
+      # Binary/data files
+      .sql:
+        max_file_size: "10MB"
+        security_check: null  # No point checking SQL
+        max_lines: 2000
+      .csv:
+        max_file_size: "5MB"
+        security_check: null
+        max_lines: 1000
+  
+  presets:
+    # Override for test files - more lenient
+    test_files:
+      patterns:
+        - "test/**/*"
+        - "tests/**/*"
+        - "*.test.*"
+        - "*.spec.*"
+      security_check: null  # No security check for tests
+      max_file_size: "10MB"  # Allow larger test files
+    
+    # Override for production builds - stricter
+    production:
+      patterns:
+        - "dist/**/*"
+        - "build/**/*"
+        - "public/**/*"
+      actions: [minify, strip_comments, compress_whitespace]
+      max_file_size: "200KB"  # Strict for production
+      security_check: "abort"
+    
+    # Third-party code - skip most processing
+    vendor:
+      patterns:
+        - "vendor/**/*"
+        - "node_modules/**/*"
+        - "bower_components/**/*"
+      actions: []  # No processing
+      max_file_size: "50KB"  # Only include small vendor files
+      security_check: null  # Don't check vendor code
+
+# Usage examples:
+# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
+# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
+# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete

@@ -56,6 +56,27 @@ content:
 - **LLM-Ready Content**: Prepare web content for AI analysis by removing
   time-specific metadata that may confuse models
 
+### Preset System
+
+m1f includes a powerful preset system for applying different processing rules to
+different file types:
+
+- **Hierarchical Configuration**: Global (~/.m1f/) → User → Project settings
+- **File-Specific Processing**: Different rules for HTML, CSS, JS, Python, etc.
+- **Built-in Actions**: Minify, strip tags, remove comments, compress whitespace
+- **Custom Processors**: Truncate large files, redact secrets, extract functions
+- **Example Presets**: WordPress, web projects, documentation bundles
+
+```bash
+# Use WordPress preset for a WordPress site
+python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+
+# Apply production optimizations
+python -m tools.m1f -s ./project -o bundle.txt --preset prod.yml --preset-group production
+```
+
+See [Preset System Guide](docs/m1f_presets.md) for detailed documentation.
+
 ## Installation
 
 ```bash
@@ -70,6 +91,23 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 ```
+
+### Optional: Claude Code Integration
+
+For AI-powered automation of m1f tools, you can install Claude Code:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+This enables natural language control of all tools. For example:
+
+- "Bundle all Python files into a single m1f"
+- "Convert HTML documentation to Markdown with preprocessing"
+- "Create topic-based bundles from documentation"
+
+See [Claude Code Integration Guide](docs/CLAUDE_CODE_INTEGRATION.md) for setup
+and usage.
 
 ## Documentation
 

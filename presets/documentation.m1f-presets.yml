@@ -1,0 +1,139 @@
+# Documentation Project Preset Configuration for m1f
+# Optimized for documentation and knowledge base projects
+
+documentation:
+  description: "Documentation project processing"
+  enabled: true
+  priority: 20  # Higher priority for documentation-focused projects
+  
+  presets:
+    # Markdown files - main content
+    markdown:
+      extensions: [".md", ".mdx", ".markdown"]
+      actions:
+        - remove_empty_lines
+      separator_style: "Markdown"
+      include_metadata: true
+    
+    # reStructuredText
+    rst:
+      extensions: [".rst", ".rest"]
+      actions:
+        - remove_empty_lines
+      separator_style: "Standard"
+    
+    # Code examples in docs
+    code_examples:
+      patterns:
+        - "examples/**/*"
+        - "snippets/**/*"
+        - "code/**/*"
+      actions:
+        - strip_comments
+        - compress_whitespace
+      # Keep examples concise
+      max_lines: 50
+      separator_style: "Detailed"
+    
+    # API documentation
+    api_docs:
+      patterns:
+        - "api/**/*.md"
+        - "reference/**/*.md"
+        - "openapi*.yml"
+        - "swagger*.json"
+      actions:
+        - compress_whitespace
+      separator_style: "Detailed"
+    
+    # Jupyter notebooks
+    notebooks:
+      extensions: [".ipynb"]
+      actions:
+        - custom
+      custom_processor: "extract_markdown_cells"
+      separator_style: "Markdown"
+    
+    # HTML documentation
+    html_docs:
+      extensions: [".html"]
+      patterns:
+        - "build/html/**/*.html"
+        - "_build/**/*.html"
+      actions:
+        - strip_tags
+        - minify
+      strip_tags:
+        - "script"
+        - "style"
+        - "nav"
+        - "header"
+        - "footer"
+      preserve_tags:
+        - "main"
+        - "article"
+        - "pre"
+        - "code"
+    
+    # Images in documentation
+    images:
+      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg"]
+      patterns:
+        - "images/**/*"
+        - "assets/**/*"
+        - "_static/**/*"
+      actions:
+        - custom
+      custom_processor: "truncate"
+      processor_args:
+        max_chars: 100  # Just show path and basic info
+      include_metadata: true
+    
+    # Configuration files
+    config:
+      patterns:
+        - "mkdocs.yml"
+        - "docusaurus.config.js"
+        - "conf.py"  # Sphinx
+        - "_config.yml"  # Jekyll
+        - "book.toml"  # mdBook
+      actions: []
+      include_metadata: true
+    
+    default:
+      actions: []
+      include_metadata: true
+      separator_style: "Standard"
+
+# Technical writing specific
+technical_writing:
+  description: "Technical documentation with special formatting"
+  enabled: false  # Enable when needed
+  priority: 15
+  
+  presets:
+    # AsciiDoc files
+    asciidoc:
+      extensions: [".adoc", ".asciidoc", ".asc"]
+      actions:
+        - remove_empty_lines
+      separator_style: "Standard"
+    
+    # LaTeX documents
+    latex:
+      extensions: [".tex", ".latex"]
+      actions:
+        - strip_comments
+        - compress_whitespace
+      separator_style: "Standard"
+    
+    # Diagrams as code
+    diagrams:
+      extensions: [".puml", ".plantuml", ".mermaid", ".dot"]
+      actions:
+        - strip_comments
+      separator_style: "Standard"
+      
+    default:
+      actions: []
+      include_metadata: true

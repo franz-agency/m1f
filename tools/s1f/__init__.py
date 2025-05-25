@@ -5,7 +5,7 @@ s1f - Split One File
 A modern Python tool to split a combined file (created by m1f) back into individual files.
 """
 
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
 

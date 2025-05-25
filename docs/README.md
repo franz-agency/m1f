@@ -22,6 +22,17 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 - [html2md Test Suite](./html2md_test_suite.md) - Documentation for the
   comprehensive test suite
 
+### Advanced Features
+
+- [Auto Bundle Guide](./AUTO_BUNDLE_GUIDE.md) - Automatic project bundling for
+  AI/LLM consumption
+- [Claude Code Integration](./CLAUDE_CODE_INTEGRATION.md) - Optional AI-powered
+  tool automation
+- [Preset System Guide](./m1f_presets.md) - File-specific processing rules and
+  configurations
+- [Per-File-Type Settings](./m1f_preset_per_file_settings.md) - Fine-grained
+  control over file processing
+
 ## Quick Navigation
 
 ### Common Workflows
@@ -39,6 +50,8 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 - **Check token count**: Use `python tools/token_counter.py ./combined.txt`
 - **Convert HTML to Markdown**: Use
   `python -m tools.html2md convert ./html ./markdown`
+- **Auto-bundle project**: Use `./scripts/auto_bundle.sh` or configure with
+  `.m1f.config.yml`
 
 ### Key Concepts
 

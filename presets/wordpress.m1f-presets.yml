@@ -1,0 +1,154 @@
+# WordPress Project Preset Configuration for m1f
+# This preset defines how different file types should be processed when bundling
+
+wordpress:
+  description: "WordPress project processing rules"
+  enabled: true
+  priority: 10
+  
+  # Global settings for WordPress projects
+  global_settings:
+    # Default encoding and formatting
+    encoding: "utf-8"
+    separator_style: "Detailed"
+    line_ending: "lf"
+    
+    # WordPress-specific excludes
+    exclude_patterns:
+      - "wp-content/uploads"
+      - "wp-content/cache"
+      - "wp-content/upgrade"
+      - "wp-content/backups"
+      - "*.log"
+      - "error_log"
+      - ".htaccess"
+    
+    # Common WordPress file extensions to exclude
+    exclude_extensions:
+      - ".exe"
+      - ".dll"
+      - ".so"
+      - ".dylib"
+      - ".zip"
+      - ".tar"
+      - ".gz"
+      - ".sql.gz"
+    
+    # Extension-specific processing defaults
+    extensions:
+      .php:
+        actions:
+          - strip_comments
+          - remove_empty_lines
+      .js:
+        actions:
+          - strip_comments
+          - compress_whitespace
+      .css:
+        actions:
+          - minify
+          - strip_comments
+  
+  presets:
+    # PHP files - WordPress core and plugins
+    php:
+      extensions: [".php"]
+      patterns:
+        - "*.php"
+        - "wp-content/plugins/**/*.php"
+        - "wp-content/themes/**/*.php"
+      actions:
+        - strip_comments
+        - remove_empty_lines
+      # Don't include metadata for cleaner output
+      include_metadata: true
+      separator_style: "Detailed"
+    
+    # HTML templates and output
+    html:
+      extensions: [".html", ".htm"]
+      patterns:
+        - "*.html"
+        - "wp-content/themes/**/*.html"
+      actions:
+        - minify
+        - strip_tags
+      strip_tags:
+        - "script"
+        - "style"
+        - "noscript"
+      preserve_tags:
+        - "pre"
+        - "code"
+      separator_style: "Standard"
+    
+    # Markdown documentation
+    md:
+      extensions: [".md", ".markdown"]
+      patterns:
+        - "*.md"
+        - "README*"
+        - "docs/**/*.md"
+      actions:
+        - remove_empty_lines
+      include_metadata: true
+      separator_style: "Markdown"
+    
+    # JavaScript files
+    js:
+      extensions: [".js"]
+      patterns:
+        - "wp-content/themes/**/*.js"
+        - "wp-content/plugins/**/*.js"
+      actions:
+        - strip_comments
+        - compress_whitespace
+      # Exclude minified files from processing
+      exclude_patterns:
+        - "*.min.js"
+      separator_style: "Standard"
+    
+    # CSS files
+    css:
+      extensions: [".css", ".scss", ".sass"]
+      patterns:
+        - "wp-content/themes/**/*.css"
+      actions:
+        - minify
+        - strip_comments
+      exclude_patterns:
+        - "*.min.css"
+      separator_style: "Standard"
+    
+    # Configuration files
+    config:
+      patterns:
+        - "wp-config*.php"
+        - ".env*"
+        - "*.json"
+        - "*.yml"
+        - "*.yaml"
+      actions:
+        - custom
+      custom_processor: "redact_secrets"
+      processor_args:
+        patterns:
+          - '(?i)define\s*\(\s*["\']DB_(NAME|USER|PASSWORD|HOST)["\'].*?\)'
+          - '(?i)(api[_-]?key|secret|password|token)\s*[:=]\s*["\']?[\w-]+["\']?'
+      include_metadata: true
+    
+    # SQL files
+    sql:
+      extensions: [".sql"]
+      actions:
+        - strip_comments
+        - compress_whitespace
+      # Truncate large dump files
+      max_lines: 1000
+    
+    # Default for unmatched files
+    default:
+      actions:
+        - remove_empty_lines
+      include_metadata: true
+      separator_style: "Standard"

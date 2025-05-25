@@ -1,0 +1,304 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Auto Bundle: Docs Bundle",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/auto_bundle_v2.sh",
+            "args": ["docs"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates a documentation bundle with all README files, docs/, and markdown content"
+        },
+        {
+            "label": "Auto Bundle: Source Bundle",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/auto_bundle_v2.sh",
+            "args": ["src"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates a source code bundle with all Python scripts and modules"
+        },
+        {
+            "label": "Auto Bundle: Tests Bundle",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/auto_bundle_v2.sh",
+            "args": ["tests"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates a test suite bundle with all test files and fixtures"
+        },
+        {
+            "label": "Auto Bundle: Complete Bundle",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/auto_bundle_v2.sh",
+            "args": ["complete"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates a complete project bundle with all documentation, source, and tests"
+        },
+        {
+            "label": "Auto Bundle: Custom Focus",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/auto_bundle_v2.sh",
+            "args": ["${input:bundleFocus}"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates a custom bundle based on focus area (html2md, m1f, s1f, etc.)"
+        },
+        {
+            "label": "Auto Bundle: Watch and Update",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/watch_and_bundle.sh",
+            "args": ["${input:watchBundleType}"],
+            "problemMatcher": [],
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Watches for file changes and automatically regenerates the specified bundle"
+        },
+        {
+            "label": "Auto Bundle: Generate All Bundles",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "for type in docs src tests complete; do echo \"=== Generating $type bundle ===\"; ${workspaceFolder}/scripts/auto_bundle_v2.sh $type; done"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Generates all standard bundles (docs, src, tests, complete) in one go"
+        },
+        {
+            "label": "Auto Bundle: With Preset",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/tools/m1f.py",
+                "--source-directory",
+                "${workspaceFolder}",
+                "--output-file",
+                "${workspaceFolder}/.ai-context/bundle_with_preset_${input:presetType}.m1f.txt",
+                "--preset",
+                "${workspaceFolder}/presets/${input:presetFile}",
+                "--preset-group",
+                "${input:presetGroup}",
+                "--separator-style",
+                "MachineReadable",
+                "--force",
+                "--minimal-output"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates a bundle using the preset system for file-specific processing"
+        },
+        {
+            "label": "Auto Bundle: Preset - All Standard",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
+            "args": ["all"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates all standard preset-based bundles (docs, source, complete)"
+        },
+        {
+            "label": "Auto Bundle: Preset - Focused",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
+            "args": ["focus", "${input:focusArea}"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Creates focused bundles for specific area using presets"
+        },
+        {
+            "label": "Auto Bundle: List Presets",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
+            "args": ["list"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "none"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Lists all available presets and their groups"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "bundleFocus",
+            "type": "pickString",
+            "description": "Select bundle focus area",
+            "options": [
+                "html2md",
+                "m1f", 
+                "s1f",
+                "presets",
+                "auto-bundle",
+                "claude-code"
+            ]
+        },
+        {
+            "id": "watchBundleType",
+            "type": "pickString",
+            "description": "Select bundle type to watch",
+            "options": [
+                "docs",
+                "src",
+                "tests",
+                "complete"
+            ],
+            "default": "complete"
+        },
+        {
+            "id": "presetType",
+            "type": "promptString",
+            "description": "Enter preset type (e.g., wordpress, web, docs)",
+            "default": "web"
+        },
+        {
+            "id": "presetFile",
+            "type": "pickString",
+            "description": "Select preset file",
+            "options": [
+                "wordpress.m1f-presets.yml",
+                "web-project.m1f-presets.yml",
+                "documentation.m1f-presets.yml",
+                "example-globals.m1f-presets.yml",
+                "template-all-settings.m1f-presets.yml",
+                "example-use-cases.m1f-presets.yml"
+            ]
+        },
+        {
+            "id": "presetGroup",
+            "type": "promptString",
+            "description": "Enter preset group name (optional)",
+            "default": ""
+        },
+        {
+            "id": "focusArea",
+            "type": "pickString",
+            "description": "Select focus area for preset bundling",
+            "options": [
+                "wordpress",
+                "web",
+                "docs"
+            ]
+        }
+    ]
+}

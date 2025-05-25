@@ -84,6 +84,12 @@ class Html2mdConverter:
         Returns:
             Markdown content
         """
+        # Apply preprocessing if configured
+        if hasattr(self.config, "preprocessing") and self.config.preprocessing:
+            from .preprocessors import preprocess_html
+
+            html_content = preprocess_html(html_content, self.config.preprocessing)
+
         # Handle CSS selectors if specified
         if self.config.conversion.outermost_selector:
             from bs4 import BeautifulSoup
@@ -169,11 +175,28 @@ class Html2mdConverter:
         """
         logger.info(f"Converting {file_path}")
 
-        # Parse HTML
-        parsed = self._parser.parse_file(file_path)
+        # Read file content
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+        except UnicodeDecodeError:
+            # Try with different encodings
+            for encoding in ["latin-1", "cp1252"]:
+                try:
+                    with open(file_path, "r", encoding=encoding) as f:
+                        html_content = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                # Last resort - ignore errors
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    html_content = f.read()
 
-        # Convert to Markdown
-        markdown = self._converter.convert(parsed)
+        # Convert using the convert_html method which includes preprocessing
+        markdown = self.convert_html(
+            html_content, base_url=file_path.as_uri(), source_file=str(file_path)
+        )
 
         # Determine output path
         if file_path.is_relative_to(self.config.source):
@@ -496,3 +519,32 @@ def convert_url(url: str, destination_dir: Union[str, Path] = ".", **kwargs) -> 
     )
     converter = Html2mdConverter(config)
     return converter.convert_url(url)
+
+
+def convert_html(html_content: str, **kwargs) -> str:
+    """Convert HTML content to Markdown.
+
+    Args:
+        html_content: HTML content to convert
+        **kwargs: Additional options
+
+    Returns:
+        Markdown content
+    """
+    from pathlib import Path
+    from .config.models import ConversionOptions, Config
+
+    # Create minimal config
+    config = Config(
+        source=Path("."),
+        destination=Path("."),
+    )
+
+    # Apply conversion options
+    if kwargs:
+        for key, value in kwargs.items():
+            if hasattr(config.conversion, key):
+                setattr(config.conversion, key, value)
+
+    converter = Html2mdConverter(config)
+    return converter.convert_html(html_content)

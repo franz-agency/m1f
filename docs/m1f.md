@@ -72,6 +72,51 @@ python -m tools.m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--create-archive`          | Create a backup archive of all processed files                                                                                                                                                                                                                   |
 | `--archive-type`            | Type of archive to create (`zip` or `tar.gz`)                                                                                                                                                                                                                    |
 | `--security-check`          | Scan files for secrets before merging (`abort`, `skip`, `warn`)                                                                                                                                                                                                  |
+| `--preset`                  | One or more preset configuration files for file-specific processing. Files are loaded in order with later files overriding earlier ones                                                                                                                          |
+| `--preset-group`            | Specific preset group to use from the configuration. If not specified, all matching presets from all groups are considered                                                                                                                                       |
+| `--disable-presets`         | Disable all preset processing even if preset files are loaded                                                                                                                                                                                                    |
+
+## Preset System
+
+The preset system allows you to define file-specific processing rules for
+different file types within the same bundle. This is particularly useful for
+projects with mixed content types.
+
+### Preset Hierarchy
+
+Presets are loaded in the following order (highest priority wins):
+
+1. **Global Presets** (~/.m1f/global-presets.yml) - Lowest priority
+2. **User Presets** (~/.m1f/presets/\*.yml) - Medium priority
+3. **Project Presets** (via --preset parameter) - Highest priority
+
+### Quick Preset Examples
+
+```bash
+# Use built-in WordPress preset
+python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+
+# Use specific preset group
+python -m tools.m1f -s ./project -o bundle.txt --preset my-presets.yml --preset-group production
+
+# Load multiple preset files (merged in order)
+python -m tools.m1f -s . -o out.txt --preset defaults.yml project.yml overrides.yml
+```
+
+### Available Processing Actions
+
+- **minify** - Remove unnecessary whitespace (HTML, CSS, JS)
+- **strip_tags** - Remove specified HTML tags
+- **strip_comments** - Remove comments based on file type
+- **compress_whitespace** - Normalize whitespace
+- **remove_empty_lines** - Remove all empty lines
+- **custom** - Apply custom processors
+
+For detailed preset documentation, see:
+
+- [Preset System Guide](m1f_presets.md) - Complete preset documentation
+- [Per-File-Type Settings](m1f_preset_per_file_settings.md) - File-specific
+  overrides
 
 ## Usage Examples
 
@@ -325,3 +370,56 @@ efficiently:
 
 For extremely large directories with tens of thousands of files or very large
 individual files, the script might take some time to process.
+
+## Preset System
+
+The preset system provides powerful file-specific processing capabilities:
+
+### Key Features
+
+- **Hierarchical Configuration**: Settings cascade from global → project → CLI
+- **File-Type Processing**: Apply different rules to different file extensions
+- **Processing Actions**:
+  - `minify` - Reduce file size by removing unnecessary characters
+  - `strip_tags` - Remove HTML tags
+  - `strip_comments` - Remove code comments
+  - `compress_whitespace` - Reduce multiple spaces/newlines
+  - `remove_empty_lines` - Clean up empty lines
+- **Per-File Settings**: Override security, size limits, and filters per file
+  type
+- **Custom Processors**: Extend with your own processing functions
+
+### Quick Start
+
+1. Create a preset file in your project (`.m1f-presets.yml`):
+
+```yaml
+globals:
+  global_settings:
+    include_extensions: [.js, .css, .html, .php]
+    security_check: warn
+    max_file_size: 1MB
+
+  presets:
+    frontend:
+      extensions: [.js, .css, .html]
+      actions: [minify]
+
+    backend:
+      extensions: [.php]
+      security_check: fail
+      max_file_size: 500KB
+```
+
+2. Use the preset:
+
+```bash
+m1f -s ./src -o output.txt --preset .m1f-presets.yml
+```
+
+### Documentation
+
+- [Complete Preset Guide](m1f_presets.md) - Full preset system documentation
+- [Per-File Settings](m1f_preset_per_file_settings.md) - Advanced file-type
+  overrides
+- [Example Presets](../presets/) - Ready-to-use preset templates

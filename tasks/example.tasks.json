@@ -1,0 +1,62 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "$ref": "../tasks/m1f.json#/tasks/0"
+        },
+        {
+            "$ref": "../tasks/m1f.json#/tasks/1"
+        },
+        {
+            "$ref": "../tasks/m1f.json#/tasks/2"
+        },
+        {
+            "$ref": "../tasks/m1f.json#/tasks/3"
+        },
+        {
+            "$ref": "../tasks/m1f.json#/tasks/4"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/0"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/1"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/2"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/3"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/4"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/5"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/6"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/7"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/8"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/9"
+        },
+        {
+            "$ref": "../tasks/auto_bundle.json#/tasks/10"
+        },
+        {
+            "$ref": "../tasks/linting.json#/tasks/0"
+        },
+        {
+            "$ref": "../tasks/linting.json#/tasks/1"
+        },
+        {
+            "$ref": "../tasks/linting.json#/tasks/2"
+        }
+    ]
+}

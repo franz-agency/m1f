@@ -17,6 +17,7 @@ from .exceptions import PermissionError, EncodingError
 from .logging import LoggerManager
 from .separator_generator import SeparatorGenerator
 from .utils import calculate_checksum
+from .presets import PresetManager
 
 
 class OutputWriter:
@@ -25,10 +26,127 @@ class OutputWriter:
     def __init__(self, config: Config, logger_manager: LoggerManager):
         self.config = config
         self.logger = logger_manager.get_logger(__name__)
+
+        # Initialize preset manager first to get global settings
+        self.preset_manager = None
+        self.global_settings = None
+        if not config.preset.disable_presets and config.preset.preset_files:
+            try:
+                from .presets import load_presets
+
+                self.preset_manager = load_presets(config.preset.preset_files)
+                self.global_settings = self.preset_manager.get_global_settings()
+                self.logger.debug(
+                    f"Loaded {len(self.preset_manager.groups)} preset groups"
+                )
+            except Exception as e:
+                self.logger.warning(f"Failed to load presets: {e}")
+
+        # Apply global settings to config if available
+        config = self._apply_global_settings(config)
+
         self.encoding_handler = EncodingHandler(config, logger_manager)
         self.separator_generator = SeparatorGenerator(config, logger_manager)
         self._processed_checksums: Set[str] = set()
         self._content_dedupe: bool = True  # Enable content deduplication by default
+
+    def _apply_global_settings(self, config: Config) -> Config:
+        """Apply global preset settings to config if not already set."""
+        if not self.global_settings:
+            return config
+
+        from dataclasses import replace
+        from .config import (
+            SeparatorStyle,
+            LineEnding,
+            EncodingConfig,
+            OutputConfig,
+            FilterConfig,
+            SecurityConfig,
+            SecurityCheckMode,
+        )
+
+        # Create updated components
+        encoding_config = config.encoding
+        output_config = config.output
+        filter_config = config.filter
+        security_config = config.security
+
+        # Apply encoding settings
+        if not config.encoding.target_charset and self.global_settings.encoding:
+            encoding_config = replace(
+                config.encoding, target_charset=self.global_settings.encoding
+            )
+            self.logger.debug(
+                f"Applied global encoding: {self.global_settings.encoding}"
+            )
+
+        if self.global_settings.abort_on_encoding_error is not None:
+            encoding_config = replace(
+                encoding_config,
+                abort_on_error=self.global_settings.abort_on_encoding_error,
+            )
+            self.logger.debug(
+                f"Applied global abort_on_encoding_error: {self.global_settings.abort_on_encoding_error}"
+            )
+
+        # Apply separator style if global setting exists
+        if self.global_settings.separator_style:
+            try:
+                global_style = SeparatorStyle(self.global_settings.separator_style)
+                output_config = replace(output_config, separator_style=global_style)
+                self.logger.debug(
+                    f"Applied global separator style: {self.global_settings.separator_style}"
+                )
+            except ValueError:
+                self.logger.warning(
+                    f"Invalid global separator style: {self.global_settings.separator_style}"
+                )
+
+        # Apply line ending if global setting exists
+        if self.global_settings.line_ending:
+            try:
+                global_ending = LineEnding.from_str(self.global_settings.line_ending)
+                output_config = replace(output_config, line_ending=global_ending)
+                self.logger.debug(
+                    f"Applied global line ending: {self.global_settings.line_ending}"
+                )
+            except ValueError:
+                self.logger.warning(
+                    f"Invalid global line ending: {self.global_settings.line_ending}"
+                )
+
+        # Apply filter settings
+        if self.global_settings.remove_scraped_metadata is not None:
+            filter_config = replace(
+                filter_config,
+                remove_scraped_metadata=self.global_settings.remove_scraped_metadata,
+            )
+            self.logger.debug(
+                f"Applied global remove_scraped_metadata: {self.global_settings.remove_scraped_metadata}"
+            )
+
+        # Apply security settings
+        if self.global_settings.security_check and not config.security.security_check:
+            try:
+                security_mode = SecurityCheckMode(self.global_settings.security_check)
+                security_config = replace(security_config, security_check=security_mode)
+                self.logger.debug(
+                    f"Applied global security_check: {self.global_settings.security_check}"
+                )
+            except ValueError:
+                self.logger.warning(
+                    f"Invalid global security_check mode: {self.global_settings.security_check}"
+                )
+
+        # Return updated config
+        return replace(
+            config,
+            encoding=encoding_config,
+            output=output_config,
+            filter=filter_config,
+            security=security_config,
+        )
 
     def _remove_scraped_metadata(self, content: str) -> str:
         """Remove scraped metadata from the end of markdown content."""
@@ -131,8 +249,30 @@ class OutputWriter:
             # Read file with encoding handling
             content, encoding_info = await self.encoding_handler.read_file(file_path)
 
+            # Apply preset processing if available
+            preset = None
+            if self.preset_manager:
+                preset = self.preset_manager.get_preset_for_file(
+                    file_path, self.config.preset.preset_group
+                )
+                if preset:
+                    self.logger.debug(f"Applying preset to {file_path}")
+                    content = self.preset_manager.process_content(
+                        content, preset, file_path
+                    )
+
             # Remove scraped metadata if requested
-            content = self._remove_scraped_metadata(content)
+            # Check file-specific override first
+            remove_metadata = self.config.filter.remove_scraped_metadata
+            if (
+                preset
+                and hasattr(preset, "remove_scraped_metadata")
+                and preset.remove_scraped_metadata is not None
+            ):
+                remove_metadata = preset.remove_scraped_metadata
+
+            if remove_metadata:
+                content = self._remove_scraped_metadata(content)
 
             # Check for content deduplication
             if self._content_dedupe and not rel_path.startswith(("intro:", "include:")):
@@ -145,12 +285,41 @@ class OutputWriter:
                 self._processed_checksums.add(content_checksum)
 
             # Generate separator
+            # Check if preset overrides separator style
+            separator_style = self.config.output.separator_style
+            if self.preset_manager and preset and preset.separator_style:
+                try:
+                    separator_style = SeparatorStyle(preset.separator_style)
+                except ValueError:
+                    self.logger.warning(
+                        f"Invalid separator style in preset: {preset.separator_style}"
+                    )
+
+            # Temporarily override separator style if needed
+            original_style = self.separator_generator.config.output.separator_style
+            if separator_style != original_style:
+                # Create a temporary config with the new style
+                from dataclasses import replace
+
+                temp_output = replace(
+                    self.separator_generator.config.output,
+                    separator_style=separator_style,
+                )
+                temp_config = replace(
+                    self.separator_generator.config, output=temp_output
+                )
+                self.separator_generator.config = temp_config
+
             separator = await self.separator_generator.generate_separator(
                 file_path=file_path,
                 rel_path=rel_path,
                 encoding_info=encoding_info,
                 file_content=content,
             )
+
+            # Restore original config if changed
+            if separator_style != original_style:
+                self.separator_generator.config = self.config
 
             # Write separator
             if separator:
