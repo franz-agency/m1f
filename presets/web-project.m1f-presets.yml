@@ -1,0 +1,152 @@
+# Web Project Preset Configuration for m1f
+# General web development project processing rules
+
+frontend:
+  description: "Frontend web project processing"
+  enabled: true
+  priority: 10
+  
+  presets:
+    # React/Vue/Angular components
+    components:
+      extensions: [".jsx", ".tsx", ".vue"]
+      patterns:
+        - "src/components/**/*"
+        - "src/pages/**/*"
+      actions:
+        - strip_comments
+        - compress_whitespace
+      separator_style: "Detailed"
+    
+    # HTML files
+    html:
+      extensions: [".html", ".htm"]
+      actions:
+        - minify
+        - strip_tags
+      strip_tags:
+        - "script"
+        - "link"
+        - "meta"
+      preserve_tags:
+        - "main"
+        - "article"
+        - "section"
+    
+    # Stylesheets
+    styles:
+      extensions: [".css", ".scss", ".sass", ".less"]
+      patterns:
+        - "src/**/*.css"
+        - "styles/**/*"
+      actions:
+        - minify
+      exclude_patterns:
+        - "*.min.css"
+        - "node_modules/**"
+    
+    # TypeScript/JavaScript
+    scripts:
+      extensions: [".js", ".ts", ".mjs"]
+      patterns:
+        - "src/**/*.js"
+        - "src/**/*.ts"
+      actions:
+        - strip_comments
+        - remove_empty_lines
+      exclude_patterns:
+        - "*.min.js"
+        - "dist/**"
+        - "build/**"
+    
+    # JSON data files
+    data:
+      extensions: [".json"]
+      actions:
+        - compress_whitespace
+      # Truncate large data files
+      max_lines: 100
+      patterns:
+        - "src/data/**/*.json"
+    
+    # Images - just include reference
+    images:
+      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"]
+      actions:
+        - custom
+      custom_processor: "truncate"
+      processor_args:
+        max_chars: 50  # Just show filename
+      include_metadata: true
+    
+    # Configuration
+    config:
+      patterns:
+        - "package.json"
+        - "tsconfig*.json"
+        - "webpack.config.*"
+        - "vite.config.*"
+        - ".env*"
+      actions:
+        - custom
+      custom_processor: "redact_secrets"
+      include_metadata: true
+    
+    default:
+      actions: []
+      include_metadata: true
+
+backend:
+  description: "Backend API project processing"
+  enabled: true
+  priority: 5
+  
+  presets:
+    # API routes
+    routes:
+      patterns:
+        - "routes/**/*.js"
+        - "api/**/*.py"
+        - "controllers/**/*"
+      actions:
+        - strip_comments
+        - custom
+      custom_processor: "extract_functions"
+      separator_style: "Detailed"
+    
+    # Database models
+    models:
+      patterns:
+        - "models/**/*"
+        - "entities/**/*"
+        - "schemas/**/*"
+      actions:
+        - strip_comments
+        - remove_empty_lines
+      separator_style: "Detailed"
+    
+    # Tests - only structure
+    tests:
+      patterns:
+        - "test/**/*"
+        - "tests/**/*"
+        - "__tests__/**/*"
+      actions:
+        - custom
+      custom_processor: "extract_functions"
+      max_lines: 50
+    
+    # SQL/Migrations
+    database:
+      extensions: [".sql"]
+      patterns:
+        - "migrations/**/*.sql"
+        - "db/**/*.sql"
+      actions:
+        - strip_comments
+      max_lines: 200
+    
+    default:
+      actions:
+        - remove_empty_lines
+      include_metadata: true

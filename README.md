@@ -56,6 +56,26 @@ content:
 - **LLM-Ready Content**: Prepare web content for AI analysis by removing
   time-specific metadata that may confuse models
 
+### Preset System
+
+m1f includes a powerful preset system for applying different processing rules to different file types:
+
+- **Hierarchical Configuration**: Global (~/.m1f/) → User → Project settings
+- **File-Specific Processing**: Different rules for HTML, CSS, JS, Python, etc.
+- **Built-in Actions**: Minify, strip tags, remove comments, compress whitespace
+- **Custom Processors**: Truncate large files, redact secrets, extract functions
+- **Example Presets**: WordPress, web projects, documentation bundles
+
+```bash
+# Use WordPress preset for a WordPress site
+python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+
+# Apply production optimizations
+python -m tools.m1f -s ./project -o bundle.txt --preset prod.yml --preset-group production
+```
+
+See [Preset System Guide](docs/m1f_presets.md) for detailed documentation.
+
 ## Installation
 
 ```bash

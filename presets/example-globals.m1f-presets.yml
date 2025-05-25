@@ -1,0 +1,116 @@
+# Example preset with global settings
+# Shows how global defaults can be overridden locally
+
+web_project:
+  description: "Web project with global HTML processing"
+  priority: 10
+  
+  # Global settings that apply to all files
+  global_settings:
+    # General settings
+    encoding: "utf-8"
+    separator_style: "Detailed"
+    line_ending: "lf"
+    
+    # Global include/exclude patterns
+    exclude_patterns:
+      - "*.min.js"
+      - "*.min.css"
+      - "*.map"
+    exclude_extensions:
+      - ".log"
+      - ".tmp"
+      - ".cache"
+    
+    # Extension-specific defaults
+    extensions:
+      # All HTML files get these settings by default
+      .html:
+        actions:
+          - strip_tags
+          - minify
+        strip_tags:
+          - "script"
+          - "style"
+          - "meta"
+          - "link"
+        preserve_tags:
+          - "main"
+          - "article"
+      
+      # All CSS files get minified by default
+      .css:
+        actions:
+          - minify
+          - strip_comments
+      
+      # All JS files get comments stripped by default
+      .js:
+        actions:
+          - strip_comments
+          - compress_whitespace
+  
+  presets:
+    # Documentation HTML - override global settings
+    docs:
+      patterns:
+        - "docs/**/*.html"
+        - "documentation/**/*.html"
+      # Override global - don't strip any tags from docs
+      strip_tags: []
+      actions:
+        - compress_whitespace  # Only compress, no tag stripping
+    
+    # Main site HTML - use global defaults
+    site:
+      patterns:
+        - "public/**/*.html"
+        - "dist/**/*.html"
+      # Inherits global HTML settings (strip_tags, minify)
+    
+    # Development JS - override global
+    dev_scripts:
+      patterns:
+        - "src/**/*.js"
+        - "dev/**/*.js"
+      actions: []  # No processing for dev files
+      
+    # Vendor CSS - keep as-is
+    vendor_styles:
+      patterns:
+        - "vendor/**/*.css"
+        - "node_modules/**/*.css"
+      actions: []  # Override global - no processing
+    
+    # Default for other files
+    default:
+      actions:
+        - remove_empty_lines
+
+# Another group showing m1f project exception
+m1f_project:
+  description: "Special rules for m1f project itself"
+  priority: 20  # Higher priority than web_project
+  
+  global_settings:
+    # Override encoding for this project
+    encoding: "utf-8"
+    
+    extensions:
+      .html:
+        # For m1f project, don't strip tags from HTML
+        actions:
+          - compress_whitespace
+  
+  presets:
+    # Test HTML files need full content
+    test_html:
+      patterns:
+        - "tests/**/*.html"
+      actions: []  # No processing at all
+      
+    # Example HTML files
+    examples:
+      patterns:
+        - "examples/**/*.html"
+      # Uses global (only compress_whitespace)

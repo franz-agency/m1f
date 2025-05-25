@@ -10,6 +10,15 @@ and this project adheres to
 
 ### Added
 
+- **Preset System**: Flexible file-specific processing rules
+  - Hierarchical preset loading: global (~/.m1f/) → user → project
+  - Global settings: encoding, separator style, line endings, includes/excludes
+  - Extension-specific processing: HTML minification, CSS compression, comment stripping
+  - Built-in actions: minify, strip_tags, strip_comments, compress_whitespace, remove_empty_lines
+  - Custom processors: truncate, redact_secrets, extract_functions
+  - CLI options: `--preset`, `--preset-group`, `--disable-presets`
+  - Example presets: WordPress, web projects, documentation
+
 - **Auto-bundling System**: Automatic project organization for AI/LLM consumption
   - `scripts/auto_bundle.sh` - Basic bundling with predefined categories
   - `scripts/auto_bundle_v2.sh` - Advanced bundling with YAML configuration
@@ -36,6 +45,7 @@ and this project adheres to
 
 ### Documentation
 
+- Added Preset System Guide (`docs/m1f_presets.md`)
 - Added Auto Bundle Guide (`docs/AUTO_BUNDLE_GUIDE.md`)
 - Added Claude Code Integration Guide (`docs/CLAUDE_CODE_INTEGRATION.md`)
 - Added example workflows (`examples/claude_workflows.md`)

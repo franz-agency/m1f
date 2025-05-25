@@ -118,6 +118,15 @@ class LoggingConfig:
 
 
 @dataclass(frozen=True)
+class PresetConfig:
+    """Configuration for preset settings."""
+    
+    preset_files: List[Path] = field(default_factory=list)
+    preset_group: Optional[str] = None
+    disable_presets: bool = False
+
+
+@dataclass(frozen=True)
 class Config:
     """Main configuration class that combines all settings."""
 
@@ -130,6 +139,7 @@ class Config:
     security: SecurityConfig
     archive: ArchiveConfig
     logging: LoggingConfig
+    preset: PresetConfig
 
     @classmethod
     def from_args(cls, args: argparse.Namespace) -> Config:
@@ -213,6 +223,17 @@ class Config:
         logging_config = LoggingConfig(
             verbose=args.verbose, quiet=getattr(args, "quiet", False)
         )
+        
+        # Create preset configuration
+        preset_files = []
+        if hasattr(args, "preset_files") and args.preset_files:
+            preset_files = [Path(f).resolve() for f in args.preset_files]
+            
+        preset_config = PresetConfig(
+            preset_files=preset_files,
+            preset_group=getattr(args, "preset_group", None),
+            disable_presets=getattr(args, "disable_presets", False),
+        )
 
         return cls(
             source_directory=source_dir,
@@ -224,6 +245,7 @@ class Config:
             security=security_config,
             archive=archive_config,
             logging=logging_config,
+            preset=preset_config,
         )
 
 

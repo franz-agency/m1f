@@ -27,6 +27,18 @@ class FileProcessor:
         self.logger = logger_manager.get_logger(__name__)
         self._symlink_visited: Set[str] = set()
         self._processed_files: Set[str] = set()
+        
+        # Initialize preset manager for global settings
+        self.preset_manager = None
+        self.global_settings = None
+        if not config.preset.disable_presets and config.preset.preset_files:
+            try:
+                from .presets import load_presets
+                self.preset_manager = load_presets(config.preset.preset_files)
+                self.global_settings = self.preset_manager.get_global_settings()
+                self.logger.debug("Loaded global preset settings")
+            except Exception as e:
+                self.logger.warning(f"Failed to load preset settings: {e}")
 
         # Build exclusion sets
         self._build_exclusion_sets()
@@ -42,6 +54,12 @@ class FileProcessor:
         for pattern in self.config.filter.exclude_patterns:
             if "/" not in pattern and "*" not in pattern and "?" not in pattern:
                 self.excluded_dirs.add(pattern.lower())
+                
+        # Add global preset exclude patterns
+        if self.global_settings and self.global_settings.exclude_patterns:
+            for pattern in self.global_settings.exclude_patterns:
+                if "/" not in pattern and "*" not in pattern and "?" not in pattern:
+                    self.excluded_dirs.add(pattern.lower())
 
         # File exclusions
         self.excluded_files = set()
@@ -99,6 +117,12 @@ class FileProcessor:
         for pattern in self.config.filter.exclude_patterns:
             if any(ch in pattern for ch in ["*", "?", "!"]) or pattern.endswith("/"):
                 patterns.append(pattern)
+                
+        # Add global preset exclude patterns
+        if self.global_settings and self.global_settings.exclude_patterns:
+            for pattern in self.global_settings.exclude_patterns:
+                if any(ch in pattern for ch in ["*", "?", "!"]) or pattern.endswith("/"):
+                    patterns.append(pattern)
 
         if patterns:
             try:
@@ -315,12 +339,24 @@ class FileProcessor:
                 return False
 
         # Check extensions
-        if self.config.filter.include_extensions:
-            if file_path.suffix.lower() not in self.config.filter.include_extensions:
+        # Combine config and global preset include extensions
+        include_exts = set(self.config.filter.include_extensions)
+        if self.global_settings and self.global_settings.include_extensions:
+            include_exts.update(ext.lower() if ext.startswith('.') else f'.{ext.lower()}' 
+                               for ext in self.global_settings.include_extensions)
+        
+        if include_exts:
+            if file_path.suffix.lower() not in include_exts:
                 return False
 
-        if self.config.filter.exclude_extensions:
-            if file_path.suffix.lower() in self.config.filter.exclude_extensions:
+        # Combine config and global preset exclude extensions
+        exclude_exts = set(self.config.filter.exclude_extensions)
+        if self.global_settings and self.global_settings.exclude_extensions:
+            exclude_exts.update(ext.lower() if ext.startswith('.') else f'.{ext.lower()}' 
+                               for ext in self.global_settings.exclude_extensions)
+        
+        if exclude_exts:
+            if file_path.suffix.lower() in exclude_exts:
                 return False
 
         # Check symlinks
