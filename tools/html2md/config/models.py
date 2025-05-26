@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 
 class OutputFormat(Enum):
@@ -118,7 +118,13 @@ class CrawlerConfig:
     excluded_paths: Set[str] = field(default_factory=set)
     rate_limit: float = 1.0  # seconds between requests
     timeout: int = 30
-    user_agent: str = "html2md/1.0"
+    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+    
+    # HTTrack-specific options
+    concurrent_requests: int = 4
+    request_delay: float = 0.5  # seconds between requests
+    respect_robots_txt: bool = True
+    max_pages: int = 1000
 
 
 @dataclass
