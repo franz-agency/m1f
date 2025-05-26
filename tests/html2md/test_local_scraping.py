@@ -65,7 +65,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
     try:
         # Fetch HTML
         headers = {
-            "User-Agent": "HTTrack/3.49-2 (+http://www.httrack.com/)"  # HTTrack default user agent
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"  # Updated user agent
         }
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
