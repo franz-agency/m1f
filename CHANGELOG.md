@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- **HTTrack Integration**: Replaced Python HTTrack module with native Linux httrack command
+  - Now uses real HTTrack command-line tool for professional-grade website mirroring
+  - Better performance, reliability, and standards compliance
+  - Requires system installation: `sudo apt-get install httrack`
+  - Updated user agent to `html2md/2.0 (+https://franz.agency)`
+  - Enhanced command-line options mapping for HTTrack features
+
 ## [2.1.1] - 2025-01-25
 
 ### Changed

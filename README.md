@@ -15,7 +15,7 @@ The core tools are:
 - **token_counter**: Estimates token usage for LLM context planning and
   optimization
 - **html2md**: Modern HTML to Markdown converter with website crawling
-  capabilities using HTTrack
+  capabilities using the native HTTrack command-line tool
 
 These tools solve the challenge of providing comprehensive context to AI
 assistants while optimizing token usage.

@@ -327,7 +327,7 @@ Install dependencies:
 pip install beautifulsoup4 markdownify chardet pyyaml aiofiles httpx
 ```
 
-For HTTrack support:
+For HTTrack support (required for website crawling):
 
 ```bash
 # Ubuntu/Debian
@@ -335,4 +335,9 @@ sudo apt-get install httrack
 
 # macOS
 brew install httrack
+
+# Windows (use WSL)
+sudo apt-get install httrack
 ```
+
+**Note**: The tool uses the native HTTrack command-line utility, not a Python module, for professional-grade website mirroring.
