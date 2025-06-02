@@ -79,9 +79,27 @@ class AutoBundler:
             return False
         return True
     
-    def setup_directories(self):
-        """Create .m1f directory structure"""
-        directories = ["docs", "src", "tests", "complete", "tools", "m1f"]
+    def setup_directories_from_config(self, config: Dict[str, Any]):
+        """Create directories based on output paths in config"""
+        bundles = config.get('bundles', {})
+        created_dirs = set()
+        
+        for bundle_name, bundle_config in bundles.items():
+            output = bundle_config.get('output', '')
+            if output:
+                # Get the directory part of the output path
+                output_path = self.project_root / output
+                output_dir = output_path.parent
+                
+                # Create directory if not already created
+                if str(output_dir) not in created_dirs:
+                    output_dir.mkdir(parents=True, exist_ok=True)
+                    created_dirs.add(str(output_dir))
+                    print_info(f"Created directory: {output_dir}")
+    
+    def setup_directories_simple(self):
+        """Create .m1f directory structure for simple mode"""
+        directories = ["docs", "src", "tests", "complete"]
         
         for dir_name in directories:
             dir_path = self.project_root / self.m1f_dir / dir_name
@@ -411,13 +429,16 @@ def main():
     if not bundler.check_prerequisites():
         return 1
     
-    # Setup directories
-    bundler.setup_directories()
-    
     # Determine mode
     config = None
     if not args.simple:
         config = bundler.load_config()
+    
+    # Setup directories based on mode
+    if config:
+        bundler.setup_directories_from_config(config)
+    else:
+        bundler.setup_directories_simple()
     
     # Run bundling
     start_time = datetime.now()
