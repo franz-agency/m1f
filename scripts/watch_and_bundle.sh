@@ -70,19 +70,18 @@ get_watch_paths() {
     find "$PROJECT_ROOT" -maxdepth 1 -name "*.py" 2>/dev/null || true
 }
 
+# Get dynamic ignore patterns from config
+get_ignore_regex() {
+    python3 "$SCRIPT_DIR/get_watcher_ignores.py" --regex 2>/dev/null || echo "(\.m1f/|\.venv/|__pycache__|\.git/|\.pyc$)"
+}
+
 # Function to check if file should trigger update
 should_update_for_file() {
     local file="$1"
+    local ignore_regex=$(get_ignore_regex)
     
-    # Skip m1f bundles themselves
-    if [[ "$file" == *"/.m1f/"* ]]; then
-        return 1
-    fi
-    
-    # Skip common non-relevant files
-    if [[ "$file" == *".pyc" ]] || [[ "$file" == *"__pycache__"* ]] || \
-       [[ "$file" == *".git/"* ]] || [[ "$file" == *".venv/"* ]] || \
-       [[ "$file" == *"node_modules/"* ]]; then
+    # Check against dynamic ignore patterns
+    if echo "$file" | grep -qE "$ignore_regex"; then
         return 1
     fi
     
@@ -186,10 +185,13 @@ process_pending_updates() {
 watch_with_polling() {
     print_info "Starting polling-based file watcher (checking every ${WATCH_INTERVAL}s)..."
     
+    # Get ignore regex
+    local ignore_regex=$(get_ignore_regex)
+    
     # Create initial checksums
     local checksum_file="/tmp/m1f_checksums_$(date +%s).txt"
     find "$PROJECT_ROOT" -type f -name "*.py" -o -name "*.md" -o -name "*.txt" | \
-        grep -v -E "(\.m1f/|\.venv/|__pycache__|\.git/)" | \
+        grep -v -E "$ignore_regex" | \
         xargs md5sum > "$checksum_file" 2>/dev/null || true
     
     while true; do
@@ -198,7 +200,7 @@ watch_with_polling() {
         # Create new checksums
         local new_checksum_file="/tmp/m1f_checksums_new.txt"
         find "$PROJECT_ROOT" -type f -name "*.py" -o -name "*.md" -o -name "*.txt" | \
-            grep -v -E "(\.m1f/|\.venv/|__pycache__|\.git/)" | \
+            grep -v -E "$ignore_regex" | \
             xargs md5sum > "$new_checksum_file" 2>/dev/null || true
         
         # Compare checksums
@@ -221,9 +223,12 @@ watch_with_polling() {
 watch_with_inotifywait() {
     print_info "Starting inotifywait-based file watcher..."
     
+    # Get ignore pattern for inotify
+    local ignore_pattern=$(python3 "$SCRIPT_DIR/get_watcher_ignores.py" --inotify 2>/dev/null || echo '(\.m1f/|\.venv/|__pycache__|\.git/|\.pyc$)')
+    
     # Watch for relevant events
     inotifywait -mr \
-        --exclude '(\.m1f/|\.venv/|__pycache__|\.git/|\.pyc$)' \
+        --exclude "$ignore_pattern" \
         -e modify,create,delete,move \
         "$PROJECT_ROOT" |
     while read -r directory event file; do
@@ -238,13 +243,11 @@ watch_with_inotifywait() {
 watch_with_fswatch() {
     print_info "Starting fswatch-based file watcher..."
     
-    fswatch -r \
-        --exclude '\.m1f/' \
-        --exclude '\.venv/' \
-        --exclude '__pycache__' \
-        --exclude '\.git/' \
-        --exclude '.*\.pyc$' \
-        "$PROJECT_ROOT" |
+    # Get exclude arguments for fswatch
+    local exclude_args=$(python3 "$SCRIPT_DIR/get_watcher_ignores.py" --fswatch 2>/dev/null || echo "--exclude '\.m1f/' --exclude '\.venv/' --exclude '__pycache__' --exclude '\.git/' --exclude '.*\.pyc$'")
+    
+    # Use eval to properly expand the exclude arguments
+    eval "fswatch -r $exclude_args '$PROJECT_ROOT'" |
     while read -r file; do
         handle_file_change "$file"
         

@@ -13,6 +13,34 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
+# Check if we should restart with venv Python
+def check_venv():
+    """Check if running in venv, restart with venv Python if not"""
+    venv_path = Path(__file__).parent.parent / '.venv'
+    
+    # Check if venv exists
+    if not venv_path.exists():
+        return
+    
+    # Check if already running in venv
+    if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+        return
+    
+    # Find venv Python executable
+    if sys.platform == 'win32':
+        venv_python = venv_path / 'Scripts' / 'python.exe'
+    else:
+        venv_python = venv_path / 'bin' / 'python'
+    
+    if venv_python.exists():
+        # Restart with venv Python
+        import subprocess
+        cmd = [str(venv_python)] + sys.argv
+        sys.exit(subprocess.call(cmd))
+
+# Check venv before proceeding
+check_venv()
+
 # Try to import YAML support
 try:
     import yaml
@@ -194,6 +222,10 @@ class AutoBundler:
         if 'preset' in bundle_config:
             cmd_parts.extend(['--preset', f'"{self.project_root / bundle_config["preset"]}"'])
         
+        # Preset group
+        if 'preset_group' in bundle_config:
+            cmd_parts.extend(['--preset-group', bundle_config['preset_group']])
+        
         # Other options
         if bundle_config.get('filename_mtime_hash'):
             cmd_parts.append('--filename-mtime-hash')
@@ -372,9 +404,103 @@ class AutoBundler:
             for bundle_type in self.simple_bundles:
                 self.create_bundle_simple(bundle_type)
     
+    def list_presets(self):
+        """List available presets with their groups"""
+        presets_dir = self.project_root / "presets"
+        
+        print_header("Available Presets")
+        
+        if not presets_dir.exists():
+            print_warning("No presets directory found")
+            return
+        
+        for preset_file in sorted(presets_dir.glob("*.m1f-presets.yml")):
+            name = preset_file.stem.replace('.m1f-presets', '')
+            print(f"\n{Colors.BOLD}Preset: {name}{Colors.ENDC}")
+            
+            # Try to load and show groups
+            if YAML_AVAILABLE:
+                try:
+                    with open(preset_file, 'r') as f:
+                        data = yaml.safe_load(f)
+                    
+                    # Show description if available
+                    if 'description' in data:
+                        print(f"  Description: {data['description']}")
+                    
+                    # Show groups
+                    groups = [k for k in data.keys() if k not in ['globals', 'description']]
+                    if groups:
+                        print(f"  Groups: {', '.join(groups)}")
+                    
+                    # Show per-file settings if available
+                    if 'globals' in data and 'per_file_settings' in data['globals']:
+                        settings = list(data['globals']['per_file_settings'].keys())
+                        if settings:
+                            print(f"  Per-file settings: {', '.join(settings[:3])}" + 
+                                  (" ..." if len(settings) > 3 else ""))
+                except Exception as e:
+                    print(f"  (Could not parse preset: {e})")
+    
+    def create_focused_bundles(self, focus: str):
+        """Create area-specific bundles"""
+        print_info(f"Creating focused bundles for: {focus}")
+        
+        focus_configs = {
+            "wordpress": [
+                ("wordpress.m1f-presets.yml", "theme", "wp_theme"),
+                ("wordpress.m1f-presets.yml", "plugin", "wp_plugin"),
+            ],
+            "web": [
+                ("web-project.m1f-presets.yml", "frontend", "web_frontend"),
+                ("web-project.m1f-presets.yml", "backend", "web_backend"),
+            ],
+            "docs": [
+                ("documentation.m1f-presets.yml", None, "all_docs"),
+            ]
+        }
+        
+        if focus not in focus_configs:
+            print_error(f"Unknown focus area: {focus}")
+            print("Available: wordpress, web, docs")
+            return False
+        
+        success = True
+        for preset_file, group, output_name in focus_configs[focus]:
+            preset_path = self.project_root / "presets" / preset_file
+            
+            if not preset_path.exists():
+                print_warning(f"Preset not found: {preset_file}")
+                continue
+            
+            # Create bundle config
+            bundle_config = {
+                "description": f"{focus} bundle",
+                "output": f".m1f/m1f/{output_name}.txt",
+                "sources": [{"path": "."}],
+                "preset": f"presets/{preset_file}"
+            }
+            
+            if group:
+                bundle_config["preset_group"] = group
+            
+            # Use a dummy config with empty globals
+            dummy_config = {"global": {}}
+            
+            if not self.create_bundle_advanced(output_name, bundle_config, dummy_config):
+                success = False
+        
+        return success
+    
     def show_usage(self, mode: str):
         """Show usage information"""
-        print("Usage: auto_bundle.py [options] [bundle_name]")
+        print("Usage: auto_bundle.py [command] [options]")
+        print()
+        print("Commands:")
+        print("  (default)           Create bundles based on mode (config or simple)")
+        print("  focus <area>        Create focused bundles for specific area")
+        print("                      Areas: wordpress, web, docs")
+        print("  list-presets        Show available presets and their groups")
         print()
         
         if mode == "advanced":
@@ -418,8 +544,15 @@ class AutoBundler:
         print("-" * 40)
 
 def main():
-    parser = argparse.ArgumentParser(description="M1F Auto-Bundle Tool")
-    parser.add_argument("bundle", nargs="?", help="Specific bundle to create")
+    parser = argparse.ArgumentParser(description="M1F Auto-Bundle Tool", 
+                                     usage="%(prog)s [command] [options]")
+    
+    # Positional arguments
+    parser.add_argument("command", nargs="?", default="bundle",
+                        help="Command to run: bundle (default), focus, list-presets")
+    parser.add_argument("args", nargs="*", help="Command arguments")
+    
+    # Options
     parser.add_argument("--simple", action="store_true", help="Force simple mode")
     parser.add_argument("--show-stats", action="store_true", help="Show statistics after bundling")
     parser.add_argument("-v", "--verbose", action="store_true", help="Show verbose output")
@@ -436,24 +569,63 @@ def main():
     if not bundler.check_prerequisites():
         return 1
     
-    # Determine mode
-    config = None
-    if not args.simple:
+    # Handle commands
+    if args.command == "list-presets":
+        bundler.list_presets()
+        return 0
+    
+    elif args.command == "focus":
+        if not args.args:
+            print_error("Focus area required")
+            print("Available: wordpress, web, docs")
+            return 1
+        
+        # Setup directories
+        bundler.setup_directories_from_config({"bundles": {}})
+        
+        # Create focused bundles
+        if bundler.create_focused_bundles(args.args[0]):
+            if args.show_stats:
+                bundler.show_statistics()
+            return 0
+        else:
+            return 1
+    
+    elif args.command in ["bundle", None]:
+        # Default bundle command
+        bundle_name = args.args[0] if args.args else None
+        
+        # Determine mode
+        config = None
+        if not args.simple:
+            config = bundler.load_config()
+        
+        # Setup directories based on mode
+        if config:
+            bundler.setup_directories_from_config(config)
+        else:
+            bundler.setup_directories_simple()
+        
+        # Run bundling
+        start_time = datetime.now()
+        
+        if config:
+            bundler.run_advanced_mode(config, bundle_name)
+        else:
+            bundler.run_simple_mode(bundle_name)
+    
+    else:
+        # Check if command is a bundle name (backward compatibility)
         config = bundler.load_config()
-    
-    # Setup directories based on mode
-    if config:
-        bundler.setup_directories_from_config(config)
-    else:
-        bundler.setup_directories_simple()
-    
-    # Run bundling
-    start_time = datetime.now()
-    
-    if config:
-        bundler.run_advanced_mode(config, args.bundle)
-    else:
-        bundler.run_simple_mode(args.bundle)
+        if config and args.command in config.get('bundles', {}):
+            # Setup and run as bundle
+            bundler.setup_directories_from_config(config)
+            start_time = datetime.now()
+            bundler.run_advanced_mode(config, args.command)
+        else:
+            print_error(f"Unknown command: {args.command}")
+            bundler.show_usage("advanced" if config else "simple")
+            return 1
     
     # Show statistics if requested
     if args.show_stats:

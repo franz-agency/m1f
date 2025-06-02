@@ -202,13 +202,13 @@ Example preset usage:
 
 ```bash
 # Create all standard bundles using presets
-./scripts/auto_bundle_preset.sh all
+./scripts/auto_bundle.py all
 
 # Create WordPress-specific bundles
-./scripts/auto_bundle_preset.sh focus wordpress
+./scripts/auto_bundle.py focus wordpress
 
 # Use specific preset with group
-./scripts/auto_bundle_preset.sh preset web-project frontend
+./scripts/auto_bundle.py preset web-project frontend
 ```
 
 Available presets:

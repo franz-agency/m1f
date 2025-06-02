@@ -131,8 +131,8 @@ wordpress:
       custom_processor: "redact_secrets"
       processor_args:
         patterns:
-          - '(?i)define\s*\(\s*["\']DB_(NAME|USER|PASSWORD|HOST)["\'].*?\)'
-          - '(?i)(api[_-]?key|secret|password|token)\s*[:=]\s*["\']?[\w-]+["\']?'
+          - "(?i)define\\s*\\(\\s*[\"']DB_(NAME|USER|PASSWORD|HOST)[\"'].*?\\)"
+          - "(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*[\"']?[\\w-]+[\"']?"
       include_metadata: true
     
     # SQL files

@@ -215,8 +215,8 @@ example_group_name:
       processor_args:
         patterns:
           # Regex patterns to find and redact
-          - '(?i)(api[_-]?key|secret|password|token)\s*[:=]\s*["\']?[\w-]+["\']?'
-          - '(?i)bearer\s+[\w-]+'
+          - "(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*[\"']?[\\w-]+[\"']?"
+          - "(?i)bearer\\s+[\\w-]+"
     
     # Source code
     source_code:

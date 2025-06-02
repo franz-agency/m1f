@@ -492,13 +492,13 @@ The preset system integrates seamlessly with the auto-bundling scripts:
 
    ```bash
    # Use preset-based bundling script
-   ./scripts/auto_bundle_preset.sh all
+   ./scripts/auto_bundle.py all
 
    # Focus on specific area with presets
-   ./scripts/auto_bundle_preset.sh focus wordpress
+   ./scripts/auto_bundle.py focus wordpress
 
    # Use custom preset
-   ./scripts/auto_bundle_preset.sh preset my-preset.yml frontend
+   ./scripts/auto_bundle.py preset my-preset.yml frontend
    ```
 
 3. **Available Preset Bundles**:

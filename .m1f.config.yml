@@ -39,6 +39,7 @@ global:
       - ".venv/"
       - "tmp/"
       - "htmlcov/"
+      # Note: global_excludes are automatically added to ignored_paths
 
 # Bundle definitions
 bundles:
