@@ -12,5 +12,5 @@
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
-  "license": "See LICENSE.md"
+  "license": "Apache-2.0"
 }
