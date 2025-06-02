@@ -49,7 +49,7 @@ bundles:
     output: ".m1f/m1f/99_allm1f_docs.txt"
     sources:
       - path: "."
-        include_extensions: [".md","*.txt","*.json"]
+        include_extensions: [".md", ".txt", ".json"]
         excludes: ["tests/**"]
     preset: "presets/docs-bundle.m1f-presets.yml"
 
@@ -107,4 +107,3 @@ bundles:
           "tests/html2md_server/test_pages/**",  # Test HTML pages
           ".gitignore"
         ]
-    use_gitignore: true
