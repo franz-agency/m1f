@@ -378,7 +378,7 @@ import json
 import sys
 
 try:
-    with open('$ConfigFile', 'r') as f:
+    with open(r'$ConfigFile', 'r') as f:
         config = yaml.safe_load(f)
     
     bundles = config.get('bundles', {})
@@ -404,7 +404,7 @@ function Get-GlobalConfig {
     $script = @"
 import yaml
 try:
-    with open('$ConfigFile', 'r') as f:
+    with open(r'$ConfigFile', 'r') as f:
         config = yaml.safe_load(f)
     global_conf = config.get('global', {})
     keys = '$Key'.split('.')
@@ -441,11 +441,10 @@ function Build-M1fCommandYaml {
             }
         }
         
-        # Include patterns
+        # Include patterns - Note: m1f doesn't support --include-patterns
+        # We need to handle this differently or skip it
         if ($source.include_patterns) {
-            foreach ($pattern in $source.include_patterns) {
-                $cmdParts += @("--include-patterns", $pattern)
-            }
+            Write-Warning "include_patterns is not supported by m1f tool. Skipping patterns for this source."
         }
         
         # Excludes
@@ -525,7 +524,7 @@ function Show-AIHints {
     $script = @"
 import yaml
 try:
-    with open('$ConfigFile', 'r') as f:
+    with open(r'$ConfigFile', 'r') as f:
         config = yaml.safe_load(f)
     
     # Get priorities
@@ -542,6 +541,8 @@ try:
     limits = ai_config.get('token_limits', {})
     for model, limit in limits.items():
         print(f"  - {model}: {limit:,} tokens")
+except Exception as e:
+    print(f"Error reading AI config: {e}")
 "@
     
     & python -c $script

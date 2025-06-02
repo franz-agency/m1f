@@ -392,6 +392,10 @@ for source in sources:
         for ext in source['include_extensions']:
             cmd_parts.extend(['--include-extensions', ext])
     
+    # Include patterns - Note: m1f doesn't support --include-patterns
+    if 'include_patterns' in source:
+        print(f"WARNING: include_patterns is not supported by m1f tool. Skipping patterns for source: {path}", file=sys.stderr)
+    
     # Excludes
     if 'excludes' in source:
         cmd_parts.append('--excludes')
@@ -490,7 +494,8 @@ try:
     limits = ai_config.get('token_limits', {})
     for model, limit in limits.items():
         print(f"  - {model}: {limit:,} tokens")
-        
+except Exception as e:
+    print(f"Error reading AI config: {e}")
 EOF
     
     echo "========================================="

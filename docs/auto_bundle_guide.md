@@ -109,7 +109,6 @@ bundles:
     sources:
       - path: "source/directory"
         include_extensions: [".py", ".js"]
-        include_patterns: ["**/test_*.py"]
         excludes: ["**/node_modules/**"]
     separator_style: "Detailed"
     priority: "high"
@@ -144,9 +143,10 @@ ai_optimization:
 ### Source Options
 
 - `path`: Source directory (relative to project root)
-- `include_extensions`: List of file extensions to include
-- `include_patterns`: Glob patterns for files to include
+- `include_extensions`: List of file extensions to include (e.g., [".py", ".js"])
 - `excludes`: List of glob patterns to exclude
+
+**Note**: The `include_patterns` option shown in some examples is not supported by the m1f tool. Use `include_extensions` with appropriate source paths instead.
 
 ### Output Options
 
@@ -231,9 +231,9 @@ bundles:
     enabled_if_exists: "mobile/"
 ```
 
-### Pattern-Based Bundle
+### Extension-Based Bundle
 
-Include files matching specific patterns:
+Include files with specific extensions:
 ```yaml
 bundles:
   configs:
@@ -241,10 +241,12 @@ bundles:
     output: ".m1f/configs/settings.m1f.txt"
     sources:
       - path: "."
-        include_patterns:
-          - "**/*.config.js"
-          - "**/config/*.yml"
-          - ".env*"
+        include_extensions: [".json", ".yml", ".yaml", ".env"]
+        excludes:
+          - "**/node_modules/**"
+          - "**/.venv/**"
+      - path: "config/"
+        include_extensions: [".js", ".json"]
     separator_style: "Standard"
 ```
 
