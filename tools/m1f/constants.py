@@ -27,7 +27,7 @@ DEFAULT_EXCLUDED_DIRS: Set[str] = {
 
 # Default files to exclude
 DEFAULT_EXCLUDED_FILES: Set[str] = {
-    "LICENSE.md",
+    "LICENSE",
     "package-lock.json",
     "composer.lock",
     "poetry.lock",
