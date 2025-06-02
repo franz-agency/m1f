@@ -9,12 +9,12 @@ bundles:
     output: ".m1f/docs/manual.m1f.txt"
     sources:
       - path: "."
-        include_extensions: [".md", ".rst", ".txt"]
+        include_extensions: [".md"]
         excludes:
           - "**/test_*.md"
           - "**/node_modules/**"
           - "**/.venv/**"
-    separator_style: "Markdown"
+    separator_style: "Standard"
     priority: "high"  # High priority for AI context
     
   # API documentation - separate for detailed reference
@@ -23,8 +23,8 @@ bundles:
     output: ".m1f/docs/api_docs.m1f.txt"
     sources:
       - path: "docs/"
-        include_extensions: [".md", ".rst"]
-    separator_style: "Markdown"
+        include_extensions: [".md"]
+    separator_style: "Standard"
     priority: "medium"
     enabled_if_exists: "docs/"  # Only create if docs/ directory exists
 
@@ -64,12 +64,8 @@ bundles:
     description: "Test structure and organization"
     output: ".m1f/tests/tests.m1f.txt"
     sources:
-      - path: "."
-        include_patterns:  # Only include test files
-          - "**/test_*.py"
-          - "**/*_test.py"
-          - "**/conftest.py"
-          - "**/pytest.ini"
+      - path: "tests/"
+        include_extensions: [".py", ".yml", ".yaml", ".ini"]
         excludes:
           - "**/test_data/**"
           - "**/fixtures/**"
@@ -101,11 +97,12 @@ bundles:
     description: "Core business logic only"
     output: ".m1f/focus/core_logic.m1f.txt"
     sources:
-      - path: "src/"
-        include_patterns:
-          - "**/core/**/*.py"
-          - "**/models/**/*.py"
-          - "**/services/**/*.py"
+      - path: "src/core/"
+        include_extensions: [".py"]
+      - path: "src/models/"
+        include_extensions: [".py"]
+      - path: "src/services/"
+        include_extensions: [".py"]
     separator_style: "Detailed"
     priority: "high"
     enabled: false  # Enable when needed
