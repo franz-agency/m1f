@@ -587,7 +587,7 @@ EOF
     fi
     
     # Get bundles to create
-    if [ $# -eq 0 ]; then
+    if [ -z "$1" ]; then
         # Create all bundles
         bundles_json=$(parse_config)
     else
