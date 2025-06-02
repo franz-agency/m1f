@@ -12,7 +12,7 @@ documentation:
       extensions: [".md", ".mdx", ".markdown"]
       actions:
         - remove_empty_lines
-      separator_style: "Markdown"
+      separator_style: "Standard"
       include_metadata: true
     
     # reStructuredText

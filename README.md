@@ -23,7 +23,7 @@ assistants while optimizing token usage.
 ## Quick Start
 
 For the recommended development workflow and setup instructions, see the
-[M1F Development Workflow](docs/m1f_development_workflow.md) guide. This
+[M1F Development Workflow](docs/04_m1f_development_workflow.md) guide. This
 includes:
 
 - Setting up convenient shell aliases for global access
@@ -141,7 +141,7 @@ python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-pr
 python -m tools.m1f -s ./project -o bundle.txt --preset prod.yml --preset-group production
 ```
 
-See [Preset System Guide](docs/m1f_presets.md) for detailed documentation.
+See [Preset System Guide](docs/02_m1f_presets.md) for detailed documentation.
 
 ## Installation
 
@@ -172,7 +172,7 @@ This enables natural language control of all tools. For example:
 - "Convert HTML documentation to Markdown with preprocessing"
 - "Create topic-based bundles from documentation"
 
-See [Claude Code Integration Guide](docs/claude_code_integration.md) for setup
+See [Claude Code Integration Guide](docs/05_claude_code_integration.md) for setup
 and usage.
 
 ## Documentation

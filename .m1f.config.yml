@@ -30,7 +30,7 @@ bundles:
       - path: "docs/"
         include_extensions: [".md"]
         excludes:
-          - "CHANGELOG.md"  # Separate changelog
+          - "99_CHANGELOG.md"  # Separate changelog
     separator_style: "Standard"
     priority: "high"
     enabled_if_exists: "docs/"
@@ -202,39 +202,3 @@ global:
       - ".venv/"
       - "tmp/"
       - "htmlcov/"
-    
-# AI/LLM optimization settings
-ai_optimization:
-  # Token limits for different models
-  token_limits:
-    claude-3.5-sonnet: 200000
-    claude-3-opus: 200000
-    gpt-4-turbo: 128000
-    gpt-4: 32000
-    default: 100000
-    
-  # Bundle prioritization for context windows
-  context_priority:
-    - "readme"       # First: understand what the project is
-    - "tool_docs"    # Second: understand how to use the tools
-    - "m1f_tool"     # Third: main tool implementation
-    - "config"       # Fourth: configuration examples
-    - "s1f_tool"     # Fifth: extraction tool
-    - "html2md_tool" # Sixth: HTML conversion
-    - "webscraper_tool" # Seventh: web scraping
-    - "scripts"      # Eighth: automation scripts
-    - "test_structure" # Ninth: test organization
-    - "complete"     # Last resort: everything
-    
-  # Recommendations for AI usage
-  usage_hints:
-    readme: "Start here to understand the project purpose and basic usage"
-    tool_docs: "Detailed documentation for each tool's features and options"
-    m1f_tool: "Core implementation of the file bundling tool"
-    s1f_tool: "Implementation of the extraction tool"
-    html2md_tool: "HTML to Markdown converter implementation"
-    webscraper_tool: "Web scraping tool implementation"
-    config: "Configuration examples and presets"
-    scripts: "Automation and build scripts"
-    test_structure: "Test organization (reference only when debugging)"
-    complete: "Full project (only use if specific info not found elsewhere)"

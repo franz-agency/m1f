@@ -254,7 +254,7 @@ my_project:
 
 ## See Also
 
-- [Preset System Guide](m1f_presets.md) - General preset documentation
+- [Preset System Guide](02_m1f_presets.md) - General preset documentation
 - [Preset Template](../presets/template-all-settings.m1f-presets.yml) - Complete
   example with all settings
 - [Use Case Examples](../presets/example-use-cases.m1f-presets.yml) - Real-world

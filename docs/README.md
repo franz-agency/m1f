@@ -6,33 +6,33 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 
 ### Core Tools
 
-- [m1f (Make One File)](./m1f.md) - Documentation for the main tool that
+- [m1f (Make One File)](01_m1f.md) - Documentation for the main tool that
   combines multiple files into a single file with content deduplication and
   async I/O
-- [s1f (Split One File)](./s1f.md) - Documentation for the tool that extracts
+- [s1f (Split One File)](20_s1f.md) - Documentation for the tool that extracts
   individual files from a combined file with modern Python architecture
-- [token_counter](./token_counter.md) - Documentation for the token estimation
+- [token_counter](98_token_counter.md) - Documentation for the token estimation
   tool
 
 ### Web Scraping and HTML Conversion
 
-- [webscraper](./webscraper.md) - Download websites for offline viewing and
+- [webscraper](34_webscraper.md) - Download websites for offline viewing and
   processing
-- [html2md Overview](./html2md.md) - Comprehensive guide to the HTML to Markdown
+- [html2md Overview](30_html2md.md) - Comprehensive guide to the HTML to Markdown
   converter
-- [html2md Guide](./html2md_guide.md) - Detailed usage guide with examples
-- [html2md Test Suite](./html2md_test_suite.md) - Documentation for the
+- [html2md Guide](31_html2md_guide.md) - Detailed usage guide with examples
+- [html2md Test Suite](33_html2md_test_suite.md) - Documentation for the
   comprehensive test suite
 
 ### Advanced Features
 
-- [Auto Bundle Guide](auto_bundle_guide.md) - Automatic project bundling for
+- [Auto Bundle Guide](06_auto_bundle_guide.md) - Automatic project bundling for
   AI/LLM consumption
-- [Claude Code Integration](claude_code_integration.md) - Optional AI-powered
+- [Claude Code Integration](05_claude_code_integration.md) - Optional AI-powered
   tool automation
-- [Preset System Guide](./m1f_presets.md) - File-specific processing rules and
+- [Preset System Guide](02_m1f_presets.md) - File-specific processing rules and
   configurations
-- [Per-File-Type Settings](./m1f_preset_per_file_settings.md) - Fine-grained
+- [Per-File-Type Settings](03_m1f_preset_per_file_settings.md) - Fine-grained
   control over file processing
 
 ## Quick Navigation
@@ -60,13 +60,13 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 ### Key Concepts
 
 - **Separator Styles**: Different formats for separating files in the combined
-  output ([details](./m1f.md#separator-styles))
+  output ([details](01_m1f.md#separator-styles))
 - **File Filtering**: Include/exclude specific files using patterns
-  ([details](./m1f.md#command-line-options))
+  ([details](01_m1f.md#command-line-options))
 - **Security**: Scan for secrets before combining files
-  ([details](./m1f.md#security-check))
+  ([details](01_m1f.md#security-check))
 - **Content Selection**: Extract specific content using CSS selectors
-  ([details](./html2md.md#content-selection))
+  ([details](30_html2md.md#content-selection))
 
 ## Project Overview
 

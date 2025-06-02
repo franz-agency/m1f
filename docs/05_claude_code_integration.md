@@ -231,5 +231,5 @@ export CLAUDE_CODE_PROJECT_ROOT="/path/to/m1f"
 ## Further Resources
 
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
-- [m1f Tools Documentation](./m1f.md)
-- [html2md Documentation](./html2md.md)
+- [m1f Tools Documentation](01_m1f.md)
+- [html2md Documentation](30_html2md.md)

@@ -183,7 +183,7 @@ The `auto_bundle.json` file provides tasks for automatic bundle generation:
 #### Configuration:
 
 Auto-bundling is configured via `.m1f.config.yml`. See the
-[Auto Bundle Guide](../docs/auto_bundle_guide.md) for details.
+[Auto Bundle Guide](../docs/06_auto_bundle_guide.md) for details.
 
 #### Preset-Based Auto-Bundling:
 
@@ -218,7 +218,7 @@ Available presets:
 - `documentation` - Documentation-focused bundles
 - `example-globals` - Example with comprehensive global settings
 
-See [m1f Presets Documentation](../docs/m1f_presets.md) for detailed preset
+See [m1f Presets Documentation](../docs/02_m1f_presets.md) for detailed preset
 information.
 
 ## Best Practices for Effective AI Context
