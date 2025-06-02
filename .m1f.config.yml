@@ -1,106 +1,176 @@
 # m1f Auto-Bundle Configuration
-# Customize how your project is bundled for AI/LLM consumption
+# Optimized for AI/LLM consumption with better thematic organization
 
 # Bundle definitions
 bundles:
-  # Documentation bundle - for understanding project structure and usage
-  docs:
-    description: "Project documentation and guides"
-    output: ".m1f/docs/manual.m1f.txt"
+  # Core documentation - Project overview and usage
+  readme:
+    description: "Project overview, setup and basic usage"
+    output: ".m1f/docs/readme.m1f.txt"
     sources:
       - path: "."
         include_extensions: [".md"]
         excludes:
+          - "CLAUDE.md"  # Exclude Claude-specific instructions
           - "**/test_*.md"
+          - "**/tests/**"
           - "**/node_modules/**"
           - "**/.venv/**"
+          - "docs/**"  # Separate docs folder content
     separator_style: "Standard"
-    priority: "high"  # High priority for AI context
+    priority: "high"
+    # Include file list at the beginning for LLMs
+    input_include_files: [".m1f/docs/readme_filelist.txt"]
     
-  # API documentation - separate for detailed reference
-  api_docs:
-    description: "API documentation and references"
-    output: ".m1f/docs/api_docs.m1f.txt"
+  # Tool documentation - Detailed guides for each tool
+  tool_docs:
+    description: "Detailed documentation for each tool"
+    output: ".m1f/docs/tool_docs.m1f.txt"
     sources:
       - path: "docs/"
         include_extensions: [".md"]
-    separator_style: "Standard"
-    priority: "medium"
-    enabled_if_exists: "docs/"  # Only create if docs/ directory exists
-
-  # Source code bundle - core implementation
-  src:
-    description: "Source code without tests"
-    output: ".m1f/src/source.m1f.txt"
-    sources:
-      - path: "."
-        include_extensions: [".py"]
         excludes:
-          - "**/test_*.py"
-          - "**/*_test.py"
-          - "**/tests/**"
-          - "**/__pycache__/**"
+          - "CHANGELOG.md"  # Separate changelog
+    separator_style: "Standard"
+    priority: "high"
+    enabled_if_exists: "docs/"
+    # Include file list at the beginning
+    input_include_files: [".m1f/docs/tool_docs_filelist.txt"]
+
+  # m1f tool implementation
+  m1f_tool:
+    description: "m1f tool source code"
+    output: ".m1f/tools/m1f.m1f.txt"
+    sources:
+      - path: "tools/m1f/"
+        include_extensions: [".py"]
+      - path: "tools/m1f.py"
+        include_extensions: [".py"]
     separator_style: "Detailed"
     priority: "high"
-    focus_areas:  # Specific areas to highlight
-      - "tools/*.py"
-      - "core/*.py"
+    # Include file list at the beginning
+    input_include_files: [".m1f/tools/m1f_filelist.txt"]
+    
+  # s1f tool implementation  
+  s1f_tool:
+    description: "s1f tool source code"
+    output: ".m1f/tools/s1f.m1f.txt"
+    sources:
+      - path: "tools/s1f/"
+        include_extensions: [".py"]
+      - path: "tools/s1f.py"
+        include_extensions: [".py"]
+    separator_style: "Detailed"
+    priority: "medium"
+    input_include_files: [".m1f/tools/s1f_filelist.txt"]
 
-  # Tools bundle - separate bundle for tools directory
-  tools:
-    description: "Tools and utilities"
-    output: ".m1f/src/tools.m1f.txt"
+  # html2md tool implementation
+  html2md_tool:
+    description: "html2md tool source code"
+    output: ".m1f/tools/html2md.m1f.txt"
+    sources:
+      - path: "tools/html2md/"
+        include_extensions: [".py"]
+    separator_style: "Detailed"
+    priority: "medium"
+    input_include_files: [".m1f/tools/html2md_filelist.txt"]
+
+  # webscraper tool implementation
+  webscraper_tool:
+    description: "webscraper tool source code"
+    output: ".m1f/tools/webscraper.m1f.txt"
+    sources:
+      - path: "tools/webscraper/"
+        include_extensions: [".py"]
+    separator_style: "Detailed"
+    priority: "medium"
+    input_include_files: [".m1f/tools/webscraper_filelist.txt"]
+
+  # Other utilities
+  utilities:
+    description: "Other utility tools and helpers"
+    output: ".m1f/tools/utilities.m1f.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
         excludes:
-          - "**/test_*.py"
-    separator_style: "Detailed"
-    priority: "high"
-    enabled_if_exists: "tools/"
+          - "tools/m1f/**"
+          - "tools/s1f/**"
+          - "tools/html2md/**"
+          - "tools/webscraper/**"
+          - "tools/m1f.py"
+          - "tools/s1f.py"
+    separator_style: "Standard"
+    priority: "low"
+    input_include_files: [".m1f/tools/utilities_filelist.txt"]
 
-  # Test structure bundle - tests without data
-  tests:
-    description: "Test structure and organization"
-    output: ".m1f/tests/tests.m1f.txt"
+  # Configuration and setup files
+  config:
+    description: "Configuration files and presets"
+    output: ".m1f/config/config.m1f.txt"
+    sources:
+      - path: "."
+        include_extensions: [".yml", ".yaml", ".json", ".toml", ".ini"]
+        excludes:
+          - "**/tests/**"
+          - "**/node_modules/**"
+          - ".m1f.config.yml"  # Don't include self
+      - path: "presets/"
+        include_extensions: [".yml", ".yaml"]
+    separator_style: "Standard"
+    priority: "medium"
+    input_include_files: [".m1f/config/config_filelist.txt"]
+
+  # Scripts and automation
+  scripts:
+    description: "Build scripts and automation"
+    output: ".m1f/scripts/scripts.m1f.txt"
+    sources:
+      - path: "scripts/"
+        include_extensions: [".sh", ".ps1", ".py"]
+      - path: "dev/"
+        include_extensions: [".sh", ".ps1", ".py"]
+    separator_style: "Standard"
+    priority: "low"
+    input_include_files: [".m1f/scripts/scripts_filelist.txt"]
+
+  # Test structure (no test data)
+  test_structure:
+    description: "Test file structure and main test files"
+    output: ".m1f/tests/structure.m1f.txt"
     sources:
       - path: "tests/"
-        include_extensions: [".py", ".yml", ".yaml", ".ini"]
+        include_extensions: [".py", ".md"]
         excludes:
-          - "**/test_data/**"
-          - "**/fixtures/**"
-          - "**/*.pyc"
+          - "**/source/**"  # Exclude test data
+          - "**/expected/**"
+          - "**/output/**"
+          - "**/test_pages/**"
+          - "**/scraped_examples/**"
+          - "**/*.html"
+          - "**/*.css"
+          - "**/*.js"
     separator_style: "Standard"
-    priority: "low"  # Lower priority for AI context
-    metadata:
-      include_file_stats: false  # Don't include file sizes for tests
+    priority: "low"
+    input_include_files: [".m1f/tests/structure_filelist.txt"]
 
-  # Complete project bundle
+  # Complete project (emergency fallback)
   complete:
-    description: "Complete project snapshot"
+    description: "Complete project snapshot (use sparingly)"
     output: ".m1f/complete/project.m1f.txt"
     sources:
       - path: "."
-        # Include all file types - m1f will respect .gitignore automatically
         excludes:
-          - "**/.m1f/**"  # Don't include m1f bundles in themselves
+          - "**/.m1f/**"  # Don't include bundles in themselves
+          - "CLAUDE.md"    # Exclude Claude instructions
+          - "**/test_data/**"
+          - "**/fixtures/**"
+          - "**/output/**"
+          - "**/scraped_examples/**"
     separator_style: "Detailed"
-    priority: "medium"
-
-  # Custom focus bundles - define your own
-  core_logic:
-    description: "Core business logic only"
-    output: ".m1f/focus/core_logic.m1f.txt"
-    sources:
-      - path: "src/core/"
-        include_extensions: [".py"]
-      - path: "src/models/"
-        include_extensions: [".py"]
-      - path: "src/services/"
-        include_extensions: [".py"]
-    separator_style: "Detailed"
-    priority: "high"
-    enabled: false  # Enable when needed
+    filename_mtime_hash: true
+    priority: "low"
+    enabled: false  # Disabled by default to save space
 
 # Global settings
 global:
@@ -112,11 +182,15 @@ global:
     - "**/__pycache__/**"
     - "**/*.pyc"
     - "**/.*"  # Hidden files
+    - "**/*.log"
+    - "**/htmlcov/**"
+    - "**/tmp/**"
     
   # Default settings for all bundles
   defaults:
     force_overwrite: true
-    max_file_size: "10MB"
+    max_file_size: "5MB"  # Reduced from 10MB
+    minimal_output: false  # Generate file lists
     
   # File watcher settings
   watcher:
@@ -126,26 +200,41 @@ global:
       - ".m1f/"
       - ".git/"
       - ".venv/"
+      - "tmp/"
+      - "htmlcov/"
     
 # AI/LLM optimization settings
 ai_optimization:
   # Token limits for different models
   token_limits:
-    claude: 200000
-    gpt4: 128000
+    claude-3.5-sonnet: 200000
+    claude-3-opus: 200000
+    gpt-4-turbo: 128000
+    gpt-4: 32000
     default: 100000
     
   # Bundle prioritization for context windows
   context_priority:
-    - "docs"      # First priority: understand the project
-    - "src"       # Second: core implementation
-    - "tools"     # Third: specific tools
-    - "complete"  # Last resort: everything
+    - "readme"       # First: understand what the project is
+    - "tool_docs"    # Second: understand how to use the tools
+    - "m1f_tool"     # Third: main tool implementation
+    - "config"       # Fourth: configuration examples
+    - "s1f_tool"     # Fifth: extraction tool
+    - "html2md_tool" # Sixth: HTML conversion
+    - "webscraper_tool" # Seventh: web scraping
+    - "scripts"      # Eighth: automation scripts
+    - "test_structure" # Ninth: test organization
+    - "complete"     # Last resort: everything
     
   # Recommendations for AI usage
   usage_hints:
-    docs: "Start here to understand project structure and usage"
-    src: "Core implementation details"
-    tools: "Specific tool implementations"
-    tests: "Test structure (reference only when debugging)"
-    complete: "Full project context (use sparingly due to size)"
+    readme: "Start here to understand the project purpose and basic usage"
+    tool_docs: "Detailed documentation for each tool's features and options"
+    m1f_tool: "Core implementation of the file bundling tool"
+    s1f_tool: "Implementation of the extraction tool"
+    html2md_tool: "HTML to Markdown converter implementation"
+    webscraper_tool: "Web scraping tool implementation"
+    config: "Configuration examples and presets"
+    scripts: "Automation and build scripts"
+    test_structure: "Test organization (reference only when debugging)"
+    complete: "Full project (only use if specific info not found elsewhere)"

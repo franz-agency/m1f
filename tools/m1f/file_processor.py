@@ -68,15 +68,26 @@ class FileProcessor:
         if not self.config.filter.no_default_excludes:
             self.excluded_dirs = {d.lower() for d in DEFAULT_EXCLUDED_DIRS}
 
-        # Add user-specified exclusions
-        for pattern in self.config.filter.exclude_patterns:
-            if "/" not in pattern and "*" not in pattern and "?" not in pattern:
-                self.excluded_dirs.add(pattern.lower())
-
-        # Add global preset exclude patterns
+        # Collect all exclude patterns from config and global settings
+        all_exclude_patterns = list(self.config.filter.exclude_patterns)
         if self.global_settings and self.global_settings.exclude_patterns:
-            for pattern in self.global_settings.exclude_patterns:
-                if "/" not in pattern and "*" not in pattern and "?" not in pattern:
+            all_exclude_patterns.extend(self.global_settings.exclude_patterns)
+
+        # Process exclude patterns - determine if they are directories or files
+        for pattern in all_exclude_patterns:
+            if "/" not in pattern and "*" not in pattern and "?" not in pattern:
+                # Simple name without wildcards or paths
+                if self.config.source_directory:
+                    potential_path = self.config.source_directory / pattern
+                    if potential_path.exists():
+                        if potential_path.is_dir():
+                            self.excluded_dirs.add(pattern.lower())
+                        # If it's a file, it will be handled by gitignore spec
+                    else:
+                        # If not found, assume it's a directory pattern for safety
+                        self.excluded_dirs.add(pattern.lower())
+                else:
+                    # No source directory specified, add to dirs for backward compatibility
                     self.excluded_dirs.add(pattern.lower())
 
         # File exclusions
@@ -132,17 +143,15 @@ class FileProcessor:
         """Build gitignore spec from command-line patterns."""
         patterns = []
 
+        # ALL patterns should be processed, not just those with wildcards
+        # This allows excluding specific files like "CLAUDE.md" without wildcards
         for pattern in self.config.filter.exclude_patterns:
-            if any(ch in pattern for ch in ["*", "?", "!"]) or pattern.endswith("/"):
-                patterns.append(pattern)
+            patterns.append(pattern)
 
         # Add global preset exclude patterns
         if self.global_settings and self.global_settings.exclude_patterns:
             for pattern in self.global_settings.exclude_patterns:
-                if any(ch in pattern for ch in ["*", "?", "!"]) or pattern.endswith(
-                    "/"
-                ):
-                    patterns.append(pattern)
+                patterns.append(pattern)
 
         if patterns:
             try:
