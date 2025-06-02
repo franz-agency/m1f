@@ -1,6 +1,6 @@
 #!/bin/bash
 # Auto Bundle Script for m1f Projects
-# Automatically creates and updates m1f bundles for different project aspects
+# Supports both simple mode and advanced YAML configuration mode
 
 set -e  # Exit on error
 
@@ -19,14 +19,18 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 M1F_DIR=".m1f"
 M1F_TOOL="$PROJECT_ROOT/tools/m1f.py"
 VENV_PATH="$PROJECT_ROOT/.venv"
+CONFIG_FILE="$PROJECT_ROOT/.m1f.config.yml"
 
-# Bundle configurations
+# Default bundle configurations (fallback when no config file)
 declare -A BUNDLES=(
     ["docs"]="Documentation bundle"
     ["src"]="Source code bundle"
     ["tests"]="Test files bundle"
     ["complete"]="Complete project bundle"
 )
+
+# Operation mode
+MODE="simple"  # Can be "simple" or "advanced"
 
 # Function to print colored output
 print_info() {
@@ -319,18 +323,335 @@ main() {
     print_success "Auto-bundle completed in ${duration}s"
 }
 
-# Show usage if --help is passed
-if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
-    echo "Usage: $0 [bundle_type]"
+# Parse YAML config using Python
+parse_config() {
+    python3 -c "
+import yaml
+import sys
+import json
+
+try:
+    with open('$CONFIG_FILE', 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Get bundle names or specific bundle
+    if len(sys.argv) > 1:
+        bundle_name = sys.argv[1]
+        if bundle_name in config.get('bundles', {}):
+            print(json.dumps({bundle_name: config['bundles'][bundle_name]}))
+        else:
+            print(json.dumps({}))
+    else:
+        print(json.dumps(config.get('bundles', {})))
+except Exception as e:
+    print(json.dumps({'error': str(e)}))
+" "$1"
+}
+
+# Get global config value
+get_global_config() {
+    local key="$1"
+    python3 -c "
+import yaml
+try:
+    with open('$CONFIG_FILE', 'r') as f:
+        config = yaml.safe_load(f)
+    global_conf = config.get('global', {})
+    keys = '$key'.split('.')
+    value = global_conf
+    for k in keys:
+        value = value.get(k, '')
+    print(value)
+except:
+    print('')
+"
+}
+
+# Build m1f command from YAML config
+build_m1f_command_yaml() {
+    local bundle_json="$1"
+    local bundle_name="$2"
+    
+    python3 << EOF
+import json
+import sys
+
+bundle = json.loads('''$bundle_json''')['$bundle_name']
+
+# Start building command
+cmd_parts = ['python', '"$M1F_TOOL"']
+
+# Process sources
+sources = bundle.get('sources', [])
+for source in sources:
+    path = source.get('path', '.')
+    cmd_parts.extend(['-s', f'"$PROJECT_ROOT/{path}"'])
+    
+    # Include extensions
+    if 'include_extensions' in source:
+        for ext in source['include_extensions']:
+            cmd_parts.extend(['--include-extensions', ext])
+    
+    # Excludes
+    if 'excludes' in source:
+        cmd_parts.append('--excludes')
+        for exclude in source['excludes']:
+            cmd_parts.append(f'"{exclude}"')
+
+# Output file
+output = bundle.get('output', '')
+if output:
+    cmd_parts.extend(['-o', f'"$PROJECT_ROOT/{output}"'])
+
+# Separator style
+sep_style = bundle.get('separator_style', 'Standard')
+cmd_parts.extend(['--separator-style', sep_style])
+
+# Other options
+if bundle.get('filename_mtime_hash'):
+    cmd_parts.append('--filename-mtime-hash')
+
+if bundle.get('minimal_output', True):
+    cmd_parts.append('--minimal-output')
+
+cmd_parts.append('-f')  # Force overwrite
+
+print(' '.join(cmd_parts))
+EOF
+}
+
+# Create bundle in advanced mode
+create_bundle_advanced() {
+    local bundle_name="$1"
+    local bundle_json="$2"
+    
+    # Check if bundle is enabled
+    local enabled=$(echo "$bundle_json" | python3 -c "
+import json, sys
+bundle = json.load(sys.stdin)
+enabled = bundle.get('$bundle_name', {}).get('enabled', True)
+enabled_if = bundle.get('$bundle_name', {}).get('enabled_if_exists', '')
+print(f'{enabled}|{enabled_if}')
+")
+    
+    local is_enabled=$(echo "$enabled" | cut -d'|' -f1)
+    local condition=$(echo "$enabled" | cut -d'|' -f2)
+    
+    if [[ "$is_enabled" == "False" ]]; then
+        print_info "Skipping disabled bundle: $bundle_name"
+        return
+    fi
+    
+    if [[ -n "$condition" ]] && ! [ -d "$PROJECT_ROOT/$condition" ]; then
+        print_info "Skipping bundle $bundle_name (condition not met: $condition)"
+        return
+    fi
+    
+    local description=$(echo "$bundle_json" | python3 -c "
+import json, sys
+bundle = json.load(sys.stdin)
+print(bundle.get('$bundle_name', {}).get('description', ''))
+")
+    
+    print_info "Creating bundle: $bundle_name - $description"
+    
+    # Build and execute command
+    local cmd=$(build_m1f_command_yaml "$bundle_json" "$bundle_name")
+    eval "$cmd" || {
+        print_error "Failed to create bundle: $bundle_name"
+        return 1
+    }
+    
+    print_success "Created: $bundle_name"
+}
+
+# Show AI optimization hints
+show_ai_hints() {
+    print_info "AI/LLM Usage Recommendations:"
+    echo "========================================="
+    
+    python3 << EOF
+import yaml
+try:
+    with open('$CONFIG_FILE', 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Get priorities
+    ai_config = config.get('ai_optimization', {})
+    priorities = ai_config.get('context_priority', [])
+    hints = ai_config.get('usage_hints', {})
+    
+    print("Bundle Priority Order:")
+    for i, bundle in enumerate(priorities, 1):
+        hint = hints.get(bundle, '')
+        print(f"  {i}. {bundle}: {hint}")
+    
+    print("\nToken Limits:")
+    limits = ai_config.get('token_limits', {})
+    for model, limit in limits.items():
+        print(f"  - {model}: {limit:,} tokens")
+        
+EOF
+    
+    echo "========================================="
+}
+
+# Check if config file exists and has Python yaml support
+check_advanced_mode() {
+    if [ -f "$CONFIG_FILE" ] && command -v python3 &> /dev/null && python3 -c "import yaml" 2>/dev/null; then
+        MODE="advanced"
+    else
+        MODE="simple"
+    fi
+}
+
+# Show usage
+show_usage() {
+    echo "Usage: $0 [options] [bundle_type]"
     echo ""
-    echo "Bundle types:"
-    for bundle_type in "${!BUNDLES[@]}"; do
-        echo "  $bundle_type - ${BUNDLES[$bundle_type]}"
-    done
+    
+    if [[ "$MODE" == "advanced" ]]; then
+        echo "Running in ADVANCED mode (using .m1f.config.yml)"
+        echo ""
+        echo "Available bundles from config:"
+        parse_config | python3 -c "
+import json, sys
+bundles = json.load(sys.stdin)
+for name, config in bundles.items():
+    desc = config.get('description', 'No description')
+    print(f'  - {name}: {desc}')
+"
+    else
+        echo "Running in SIMPLE mode (no config file found)"
+        echo ""
+        echo "Bundle types:"
+        for bundle_type in "${!BUNDLES[@]}"; do
+            echo "  $bundle_type - ${BUNDLES[$bundle_type]}"
+        done
+    fi
+    
+    echo ""
+    echo "Options:"
+    echo "  -h, --help    Show this help message"
+    echo "  --simple      Force simple mode (ignore config file)"
     echo ""
     echo "If no bundle type is specified, all bundles will be created."
-    exit 0
+}
+
+# Main execution for advanced mode
+main_advanced() {
+    local start_time=$(date +%s)
+    
+    print_info "M1F Auto-Bundle (Advanced Mode)"
+    print_info "Using config: $CONFIG_FILE"
+    
+    # Activate virtual environment
+    activate_venv
+    
+    # Setup directories based on config
+    local dirs=$(parse_config | python3 -c "
+import json, sys
+from pathlib import Path
+config = json.load(sys.stdin)
+dirs = set()
+for bundle in config.values():
+    if isinstance(bundle, dict) and 'output' in bundle:
+        output_path = Path(bundle['output'])
+        dirs.add(str(output_path.parent))
+print(' '.join(sorted(dirs)))
+")
+    
+    for dir in $dirs; do
+        mkdir -p "$PROJECT_ROOT/$dir"
+    done
+    
+    # Create .gitignore
+    if [ ! -f "$PROJECT_ROOT/$M1F_DIR/.gitignore" ]; then
+        cat > "$PROJECT_ROOT/$M1F_DIR/.gitignore" << EOF
+# Auto-generated m1f bundles
+*.m1f
+*.m1f.txt
+*_filelist.txt
+*_dirlist.txt
+*.log
+
+# But track the structure and config
+!.gitkeep
+!../.m1f.config.yml
+EOF
+    fi
+    
+    # Get bundles to create
+    if [ $# -eq 0 ]; then
+        # Create all bundles
+        bundles_json=$(parse_config)
+    else
+        # Create specific bundle
+        bundles_json=$(parse_config "$1")
+        if [ "$bundles_json" == "{}" ]; then
+            print_error "Unknown bundle: $1"
+            show_usage
+            exit 1
+        fi
+    fi
+    
+    # Create bundles
+    echo "$bundles_json" | python3 -c "
+import json, sys
+bundles = json.load(sys.stdin)
+for name in bundles:
+    print(name)
+" | while read -r bundle_name; do
+        create_bundle_advanced "$bundle_name" "$bundles_json"
+    done
+    
+    # Show AI hints if creating all bundles
+    if [ $# -eq 0 ]; then
+        echo
+        show_ai_hints
+    fi
+    
+    # Show statistics
+    show_statistics
+    
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    
+    print_success "Auto-bundle completed in ${duration}s"
+}
+
+# Parse command line arguments
+BUNDLE_TYPE=""
+FORCE_SIMPLE=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            check_advanced_mode
+            show_usage
+            exit 0
+            ;;
+        --simple)
+            FORCE_SIMPLE=true
+            shift
+            ;;
+        *)
+            BUNDLE_TYPE="$1"
+            shift
+            ;;
+    esac
+done
+
+# Check mode
+if [[ "$FORCE_SIMPLE" == "true" ]]; then
+    MODE="simple"
+else
+    check_advanced_mode
 fi
 
-# Run main function
-main "$@"
+# Run appropriate main function
+if [[ "$MODE" == "advanced" ]]; then
+    main_advanced "$BUNDLE_TYPE"
+else
+    main "$BUNDLE_TYPE"
+fi
