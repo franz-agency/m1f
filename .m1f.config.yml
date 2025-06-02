@@ -91,7 +91,7 @@ bundles:
   # All non-binary files excluding tests
   all:
     description: "All non-binary files"
-    output: ".m1f/m1/98_all_non_binary.txt"
+    output: ".m1f/m1f/98_all_non_binary.txt"
     sources:
       - path: "."
         # Only extensions that actually exist in the project
