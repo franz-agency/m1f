@@ -24,9 +24,9 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 
 ### Advanced Features
 
-- [Auto Bundle Guide](./AUTO_BUNDLE_GUIDE.md) - Automatic project bundling for
+- [Auto Bundle Guide](auto_bundle_guide.md) - Automatic project bundling for
   AI/LLM consumption
-- [Claude Code Integration](./CLAUDE_CODE_INTEGRATION.md) - Optional AI-powered
+- [Claude Code Integration](claude_code_integration.md) - Optional AI-powered
   tool automation
 - [Preset System Guide](./m1f_presets.md) - File-specific processing rules and
   configurations

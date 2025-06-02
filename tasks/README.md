@@ -183,7 +183,7 @@ The `auto_bundle.json` file provides tasks for automatic bundle generation:
 #### Configuration:
 
 Auto-bundling is configured via `.m1f.config.yml`. See the
-[Auto Bundle Guide](../docs/AUTO_BUNDLE_GUIDE.md) for details.
+[Auto Bundle Guide](../docs/auto_bundle_guide.md) for details.
 
 #### Preset-Based Auto-Bundling:
 

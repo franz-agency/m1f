@@ -273,6 +273,6 @@ If you can't create symlinks:
 
 ## Next Steps
 
-- Read the [M1F Development Workflow](docs/M1F_DEVELOPMENT_WORKFLOW.md) guide
+- Read the [M1F Development Workflow](docs/m1f_development_workflow.md) guide
 - Check out example presets in the `presets/` directory
 - Run `m1f --help` to see all available options

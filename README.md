@@ -23,7 +23,7 @@ assistants while optimizing token usage.
 ## Quick Start
 
 For the recommended development workflow and setup instructions, see the
-[M1F Development Workflow](docs/M1F_DEVELOPMENT_WORKFLOW.md) guide. This includes:
+[M1F Development Workflow](docs/m1f_development_workflow.md) guide. This includes:
 
 - Setting up convenient shell aliases for global access
 - Using pre-generated m1f bundles in your projects
@@ -115,7 +115,7 @@ This enables natural language control of all tools. For example:
 - "Convert HTML documentation to Markdown with preprocessing"
 - "Create topic-based bundles from documentation"
 
-See [Claude Code Integration Guide](docs/CLAUDE_CODE_INTEGRATION.md) for setup
+See [Claude Code Integration Guide](docs/claude_code_integration.md) for setup
 and usage.
 
 ## Documentation

@@ -514,5 +514,5 @@ The preset system integrates seamlessly with the auto-bundling scripts:
 - **Security Control**: Different security levels for different file types
 - **Size Management**: Appropriate size limits per file type
 
-See the [Auto Bundle Guide](AUTO_BUNDLE_GUIDE.md) for more details on the
+See the [Auto Bundle Guide](auto_bundle_guide.md) for more details on the
 bundling system.
