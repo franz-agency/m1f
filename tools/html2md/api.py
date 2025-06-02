@@ -121,6 +121,10 @@ class Html2mdConverter:
         # Parse HTML
         parsed = self._parser.parse(html_content, base_url)
 
+        # Remove script and style tags that may have been missed by preprocessing
+        for tag in parsed.find_all(["script", "style", "noscript"]):
+            tag.decompose()
+
         # Apply heading offset if specified
         if self.config.conversion.heading_offset:
             for i in range(1, 7):
@@ -309,7 +313,10 @@ class Html2mdConverter:
         return output_path
 
     def convert_website(self, start_url: str) -> Dict[str, Path]:
-        """Convert an entire website to Markdown using HTTrack.
+        """Convert an entire website to Markdown.
+
+        DEPRECATED: Use the webscraper tool to download websites first,
+        then use convert_directory to convert the downloaded HTML files.
 
         Args:
             start_url: Starting URL for crawling
@@ -317,59 +324,16 @@ class Html2mdConverter:
         Returns:
             Dictionary mapping source files to generated markdown files
         """
+        logger.warning(
+            "convert_website is deprecated. Use webscraper tool for downloading."
+        )
         logger.info(f"Website conversion starting from {start_url}")
 
-        # Import crawler
-        from .crawlers import WebCrawler
-
-        # Create temporary directory for crawler output
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-
-            # Use configured crawler to mirror the website
-            crawler = WebCrawler(self.config.crawler)
-            site_dir = crawler.crawl_sync(start_url, temp_path)
-
-            # Find all downloaded HTML files
-            html_files = crawler.find_downloaded_files(site_dir)
-
-            logger.info(f"HTTrack downloaded {len(html_files)} HTML files")
-
-            # Convert all HTML files
-            results = {}
-            for html_file in html_files:
-                try:
-                    # Parse HTML
-                    parsed = self._parser.parse_file(html_file)
-
-                    # Determine base URL for this file
-                    rel_path = html_file.relative_to(site_dir)
-                    from urllib.parse import urljoin
-
-                    file_url = urljoin(start_url, str(rel_path))
-
-                    # Convert to Markdown
-                    markdown = self._converter.convert(parsed, base_url=file_url)
-
-                    # Determine output path
-                    output_path = self.config.destination / rel_path.with_suffix(".md")
-                    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-                    # Write file
-                    output_path.write_text(
-                        markdown, encoding=self.config.target_encoding
-                    )
-
-                    results[str(html_file)] = output_path
-                    logger.debug(f"Converted {html_file} -> {output_path}")
-
-                except Exception as e:
-                    logger.error(f"Failed to convert {html_file}: {e}")
-
-            logger.info(f"Successfully converted {len(results)} files")
-            return results
+        # Import crawler from webscraper module
+        raise NotImplementedError(
+            "Website crawling has been moved to the webscraper tool. "
+            "Please use: python -m tools.webscraper <url> -o <output_dir>"
+        )
 
     async def convert_website_async(self, start_url: str) -> Dict[str, Path]:
         """Async version of convert_website for backward compatibility.

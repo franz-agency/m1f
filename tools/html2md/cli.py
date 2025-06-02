@@ -78,9 +78,11 @@ Examples:
     )
     add_convert_arguments(convert_parser)
 
-    # Crawl command
-    crawl_parser = subparsers.add_parser("crawl", help="Crawl and convert a website")
-    add_crawl_arguments(crawl_parser)
+    # Analyze command
+    analyze_parser = subparsers.add_parser(
+        "analyze", help="Analyze HTML structure for selector suggestions"
+    )
+    add_analyze_arguments(analyze_parser)
 
     # Config command
     config_parser = subparsers.add_parser("config", help="Generate configuration file")
@@ -124,69 +126,29 @@ def add_convert_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_crawl_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add arguments for crawl command."""
-    parser.add_argument("url", help="URL to crawl")
-
+def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add arguments for analyze command."""
     parser.add_argument(
-        "-o", "--output", type=Path, required=True, help="Output directory"
-    )
-
-    parser.add_argument("-c", "--config", type=Path, help="Configuration file")
-
-    parser.add_argument("--max-depth", type=int, default=5, help="Maximum crawl depth")
-
-    parser.add_argument(
-        "--max-pages", type=int, default=1000, help="Maximum pages to crawl"
-    )
-
-    parser.add_argument(
-        "--format",
-        choices=["markdown", "m1f_bundle"],
-        default="markdown",
-        help="Output format",
-    )
-    
-    # Scraper backend selection
-    parser.add_argument(
-        "--scraper",
-        type=str,
-        choices=["httrack", "beautifulsoup", "bs4", "selectolax", "httpx", "scrapy", "playwright"],
-        default="beautifulsoup",
-        help="Web scraper backend to use (default: beautifulsoup)"
-    )
-    
-    parser.add_argument(
-        "--scraper-config",
+        "files",
+        nargs="+",
         type=Path,
-        help="Path to scraper-specific configuration file (YAML/JSON)"
+        help="HTML files to analyze (2-3 files recommended)",
     )
-    
-    # Common scraper options
+
     parser.add_argument(
-        "--request-delay",
-        type=float,
-        default=0.5,
-        help="Delay between requests in seconds (default: 0.5)"
+        "--show-structure", action="store_true", help="Show detailed HTML structure"
     )
-    
+
     parser.add_argument(
-        "--concurrent-requests",
-        type=int,
-        default=5,
-        help="Number of concurrent requests (default: 5)"
-    )
-    
-    parser.add_argument(
-        "--user-agent",
-        type=str,
-        help="Custom user agent string"
-    )
-    
-    parser.add_argument(
-        "--no-robots",
+        "--common-patterns",
         action="store_true",
-        help="Ignore robots.txt"
+        help="Find common patterns across files",
+    )
+
+    parser.add_argument(
+        "--suggest-selectors",
+        action="store_true",
+        help="Suggest CSS selectors for content extraction",
     )
 
 
@@ -260,70 +222,199 @@ def handle_convert(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
-def handle_crawl(args: argparse.Namespace) -> None:
-    """Handle crawl command."""
-    # Load or create configuration
-    if args.config:
-        from .config import load_config
+def handle_analyze(args: argparse.Namespace) -> None:
+    """Handle analyze command."""
+    from bs4 import BeautifulSoup
+    from collections import Counter
+    import json
 
-        config = load_config(args.config)
-    else:
-        config = Config(
-            source=Path("."), destination=args.output  # Not used for crawling
-        )
+    console.print(f"Analyzing {len(args.files)} HTML files...")
 
-    # Update config with CLI arguments
-    config.crawler.max_depth = args.max_depth
-    config.crawler.max_pages = args.max_pages
-    
-    # Set scraper backend
-    from .config.models import ScraperBackend
-    config.crawler.scraper_backend = ScraperBackend(args.scraper)
-    
-    # Update scraper configuration
-    config.crawler.request_delay = args.request_delay
-    config.crawler.concurrent_requests = args.concurrent_requests
-    config.crawler.respect_robots_txt = not args.no_robots
-    
-    if args.user_agent:
-        config.crawler.user_agent = args.user_agent
-    
-    # Load scraper-specific config if provided
-    if args.scraper_config:
-        import yaml
-        import json
-        
-        scraper_config_path = args.scraper_config
-        if scraper_config_path.suffix == '.json':
-            with open(scraper_config_path) as f:
-                config.crawler.scraper_config = json.load(f)
-        else:  # Assume YAML
-            with open(scraper_config_path) as f:
-                config.crawler.scraper_config = yaml.safe_load(f)
+    # Read and parse all files
+    parsed_files = []
+    for file_path in args.files:
+        if not file_path.exists():
+            console.print(f"❌ File not found: {file_path}", style="red")
+            continue
 
-    if hasattr(args, "format"):
-        config.output_format = OutputFormat(args.format)
+        try:
+            content = file_path.read_text(encoding="utf-8")
+            soup = BeautifulSoup(content, "html.parser")
+            parsed_files.append((file_path, soup))
+            console.print(f"✅ Parsed: {file_path.name}", style="green")
+        except Exception as e:
+            console.print(f"❌ Error parsing {file_path}: {e}", style="red")
 
-    config.verbose = args.verbose
-    config.quiet = args.quiet
-    config.log_file = args.log_file
-
-    # Create converter
-    converter = Html2mdConverter(config)
-
-    console.print(f"Crawling website: {args.url}")
-    console.print(f"Using scraper backend: {args.scraper}")
-    console.print("This may take a while...")
-
-    try:
-        # Convert the website
-        results = converter.convert_website(args.url)
-        console.print(f"✅ Successfully converted {len(results)} pages", style="green")
-        console.print(f"Output directory: {args.output}")
-
-    except Exception as e:
-        console.print(f"❌ Error during crawling: {e}", style="red")
+    if not parsed_files:
+        console.print("No files could be parsed", style="red")
         sys.exit(1)
+
+    # Analyze structure
+    if args.show_structure:
+        console.print("\n[bold]HTML Structure Analysis:[/bold]")
+        for file_path, soup in parsed_files:
+            console.print(f"\n[blue]{file_path.name}:[/blue]")
+            _show_structure(soup)
+
+    # Find common patterns
+    if args.common_patterns:
+        console.print("\n[bold]Common Patterns:[/bold]")
+        _find_common_patterns(parsed_files)
+
+    # Suggest selectors
+    if args.suggest_selectors or (not args.show_structure and not args.common_patterns):
+        console.print("\n[bold]Suggested CSS Selectors:[/bold]")
+        suggestions = _suggest_selectors(parsed_files)
+
+        console.print("\n[yellow]Content selectors:[/yellow]")
+        for selector, confidence in suggestions["content"]:
+            console.print(f"  {selector} (confidence: {confidence:.0%})")
+
+        console.print("\n[yellow]Elements to ignore:[/yellow]")
+        for selector in suggestions["ignore"]:
+            console.print(f"  {selector}")
+
+        # Print example configuration
+        console.print("\n[bold]Example configuration:[/bold]")
+        console.print("```yaml")
+        console.print("extractor:")
+        if suggestions["content"]:
+            console.print(f"  content_selector: \"{suggestions['content'][0][0]}\"")
+        console.print("  ignore_selectors:")
+        for selector in suggestions["ignore"]:
+            console.print(f'    - "{selector}"')
+        console.print("```")
+
+
+def _show_structure(soup):
+    """Show the structure of an HTML document."""
+    # Find main content areas
+    main_areas = soup.find_all(["main", "article", "section", "div"], limit=10)
+
+    for area in main_areas:
+        # Get identifying attributes
+        attrs = []
+        if area.get("id"):
+            attrs.append(f"id=\"{area.get('id')}\"")
+        if area.get("class"):
+            classes = " ".join(area.get("class"))
+            attrs.append(f'class="{classes}"')
+
+        attr_str = " ".join(attrs) if attrs else ""
+        console.print(f"  <{area.name} {attr_str}>")
+
+        # Show child elements
+        for child in area.find_all(recursive=False, limit=5):
+            if child.name:
+                child_attrs = []
+                if child.get("id"):
+                    child_attrs.append(f"id=\"{child.get('id')}\"")
+                if child.get("class"):
+                    child_classes = " ".join(child.get("class"))
+                    child_attrs.append(f'class="{child_classes}"')
+                child_attr_str = " ".join(child_attrs) if child_attrs else ""
+                console.print(f"    <{child.name} {child_attr_str}>")
+
+
+def _find_common_patterns(parsed_files):
+    """Find common patterns across HTML files."""
+    # Collect all class names and IDs
+    all_classes = Counter()
+    all_ids = Counter()
+    tag_patterns = Counter()
+
+    for _, soup in parsed_files:
+        # Count classes
+        for elem in soup.find_all(class_=True):
+            for cls in elem.get("class", []):
+                all_classes[cls] += 1
+
+        # Count IDs
+        for elem in soup.find_all(id=True):
+            all_ids[elem.get("id")] += 1
+
+        # Count tag patterns
+        for elem in soup.find_all(
+            ["main", "article", "section", "header", "footer", "nav", "aside"]
+        ):
+            tag_patterns[elem.name] += 1
+
+    # Show most common patterns
+    console.print("\n[yellow]Most common classes:[/yellow]")
+    for cls, count in all_classes.most_common(10):
+        console.print(f"  .{cls} (found {count} times)")
+
+    console.print("\n[yellow]Most common IDs:[/yellow]")
+    for id_name, count in all_ids.most_common(10):
+        console.print(f"  #{id_name} (found {count} times)")
+
+    console.print("\n[yellow]Common structural elements:[/yellow]")
+    for tag, count in tag_patterns.most_common():
+        console.print(f"  <{tag}> (found {count} times)")
+
+
+def _suggest_selectors(parsed_files):
+    """Suggest CSS selectors for content extraction."""
+    suggestions = {"content": [], "ignore": []}
+
+    # Common content selectors to try
+    content_selectors = [
+        "main",
+        "article",
+        "[role='main']",
+        "#content",
+        "#main",
+        ".content",
+        ".main-content",
+        ".entry-content",
+        ".post-content",
+        ".page-content",
+    ]
+
+    # Common elements to ignore
+    ignore_patterns = [
+        "nav",
+        "header",
+        "footer",
+        "aside",
+        ".sidebar",
+        ".navigation",
+        ".menu",
+        ".header",
+        ".footer",
+        ".ads",
+        ".advertisement",
+        ".cookie-notice",
+        ".popup",
+        ".modal",
+        "#comments",
+        ".comments",
+    ]
+
+    # Test content selectors
+    for selector in content_selectors:
+        found_count = 0
+        total_files = len(parsed_files)
+
+        for _, soup in parsed_files:
+            if soup.select(selector):
+                found_count += 1
+
+        if found_count > 0:
+            confidence = found_count / total_files
+            suggestions["content"].append((selector, confidence))
+
+    # Sort by confidence
+    suggestions["content"].sort(key=lambda x: x[1], reverse=True)
+
+    # Add ignore selectors that exist
+    for _, soup in parsed_files:
+        for pattern in ignore_patterns:
+            if soup.select(pattern):
+                if pattern not in suggestions["ignore"]:
+                    suggestions["ignore"].append(pattern)
+
+    return suggestions
 
 
 def handle_config(args: argparse.Namespace) -> None:
@@ -438,8 +529,8 @@ def main() -> None:
     try:
         if args.command == "convert":
             handle_convert(args)
-        elif args.command == "crawl":
-            handle_crawl(args)
+        elif args.command == "analyze":
+            handle_analyze(args)
         elif args.command == "config":
             handle_config(args)
         else:

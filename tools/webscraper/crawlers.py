@@ -22,7 +22,7 @@ from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse
 
 from .scrapers import create_scraper, ScraperConfig, ScrapedPage
-from .config.models import CrawlerConfig, ScraperBackend
+from .config import CrawlerConfig, ScraperBackend
 
 logger = logging.getLogger(__name__)
 
@@ -38,19 +38,23 @@ class WebCrawler:
         """
         self.config = config
         self._scraper_config = self._create_scraper_config()
-        
+
     def _create_scraper_config(self) -> ScraperConfig:
         """Create scraper configuration from crawler config.
-        
+
         Returns:
             ScraperConfig instance
         """
         # Convert allowed_domains from set to list
-        allowed_domains = list(self.config.allowed_domains) if self.config.allowed_domains else []
-        
+        allowed_domains = (
+            list(self.config.allowed_domains) if self.config.allowed_domains else []
+        )
+
         # Convert excluded_paths to exclude_patterns
-        exclude_patterns = list(self.config.excluded_paths) if self.config.excluded_paths else []
-        
+        exclude_patterns = (
+            list(self.config.excluded_paths) if self.config.excluded_paths else []
+        )
+
         # Create scraper config
         scraper_config = ScraperConfig(
             max_depth=self.config.max_depth,
@@ -62,15 +66,15 @@ class WebCrawler:
             request_delay=self.config.request_delay,
             user_agent=self.config.user_agent,
             timeout=float(self.config.timeout),
-            follow_redirects=self.config.follow_links
+            follow_redirects=True,  # Always follow redirects
         )
-        
+
         # Apply any backend-specific configuration
         if self.config.scraper_config:
             for key, value in self.config.scraper_config.items():
                 if hasattr(scraper_config, key):
                     setattr(scraper_config, key, value)
-                    
+
         return scraper_config
 
     async def crawl(self, start_url: str, output_dir: Path) -> Dict[str, Any]:
@@ -89,76 +93,81 @@ class WebCrawler:
         Raises:
             Exception: If crawling fails
         """
-        logger.info(f"Starting crawl of {start_url} using {self.config.scraper_backend} backend")
-        
+        logger.info(
+            f"Starting crawl of {start_url} using {self.config.scraper_backend} backend"
+        )
+
         # Create output directory
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Parse URL to get domain for output structure
         parsed_url = urlparse(start_url)
         domain = parsed_url.netloc
         site_dir = output_dir / domain
         site_dir.mkdir(exist_ok=True)
-        
+
         # Create scraper instance
         backend_name = self.config.scraper_backend.value
         scraper = create_scraper(backend_name, self._scraper_config)
-        
+
         pages = []
         errors = []
-        
+
         try:
             async with scraper:
                 async for page in scraper.scrape_site(start_url):
                     pages.append(page)
-                    
+
                     # Save page to disk
                     try:
                         await self._save_page(page, site_dir)
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})
-                        
+                        # Continue with other pages despite the error
+
         except Exception as e:
             logger.error(f"Crawl failed: {e}")
             raise
-            
-        logger.info(f"Crawl completed. Scraped {len(pages)} pages with {len(errors)} errors")
-        
+
+        logger.info(
+            f"Crawl completed. Scraped {len(pages)} pages with {len(errors)} errors"
+        )
+
         return {
             "pages": pages,
             "total_pages": len(pages),
             "errors": errors,
-            "output_dir": site_dir
+            "output_dir": site_dir,
         }
-        
+
     async def _save_page(self, page: ScrapedPage, output_dir: Path) -> Path:
         """Save a scraped page to disk.
-        
+
         Args:
             page: ScrapedPage instance
             output_dir: Directory to save the page
-            
+
         Returns:
             Path to saved file
         """
         # Parse URL to create file path
         parsed = urlparse(page.url)
-        
+
         # Create subdirectories based on URL path
-        if parsed.path and parsed.path != '/':
+        if parsed.path and parsed.path != "/":
             # Remove leading slash and split path
-            path_parts = parsed.path.lstrip('/').split('/')
-            
+            path_parts = parsed.path.lstrip("/").split("/")
+
             # Handle file extension
-            if path_parts[-1].endswith('.html') or '.' in path_parts[-1]:
+            if path_parts[-1].endswith(".html") or "." in path_parts[-1]:
                 filename = path_parts[-1]
                 subdirs = path_parts[:-1]
             else:
                 # Assume it's a directory, create index.html
-                filename = 'index.html'
+                filename = "index.html"
                 subdirs = path_parts
-                
+
             # Create subdirectories
             if subdirs:
                 subdir = output_dir / Path(*subdirs)
@@ -168,34 +177,52 @@ class WebCrawler:
                 file_path = output_dir / filename
         else:
             # Root page
-            file_path = output_dir / 'index.html'
-            
+            file_path = output_dir / "index.html"
+
         # Ensure .html extension
         if not file_path.suffix:
-            file_path = file_path.with_suffix('.html')
-        elif file_path.suffix not in ('.html', '.htm'):
+            file_path = file_path.with_suffix(".html")
+        elif file_path.suffix not in (".html", ".htm"):
             file_path = file_path.with_name(f"{file_path.name}.html")
-            
+
         # Write content
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(page.content, encoding=page.encoding)
-        
+
         logger.debug(f"Saved {page.url} to {file_path}")
-        
+
         # Save metadata if available
-        if page.metadata:
-            metadata_path = file_path.with_suffix('.meta.json')
+        try:
+            metadata_path = file_path.with_suffix(".meta.json")
             import json
+
             metadata = {
                 "url": page.url,
                 "title": page.title,
                 "encoding": page.encoding,
                 "status_code": page.status_code,
-                "headers": page.headers,
-                "metadata": page.metadata
+                "headers": page.headers if page.headers else {},
+                "metadata": page.metadata if page.metadata else {},
             }
-            metadata_path.write_text(json.dumps(metadata, indent=2))
-            
+            # Filter out None values and ensure all keys are strings
+            clean_metadata = {}
+            for k, v in metadata.items():
+                if v is not None:
+                    if isinstance(v, dict):
+                        # Clean nested dictionaries - ensure no None keys
+                        clean_v = {}
+                        for sub_k, sub_v in v.items():
+                            if sub_k is not None:
+                                clean_v[str(sub_k)] = sub_v
+                        clean_metadata[k] = clean_v
+                    else:
+                        clean_metadata[k] = v
+
+            metadata_path.write_text(json.dumps(clean_metadata, indent=2, default=str))
+        except Exception as e:
+            logger.warning(f"Failed to save metadata for {page.url}: {e}")
+            # Don't fail the entire page save just because metadata failed
+
         return file_path
 
     def find_downloaded_files(self, site_dir: Path) -> List[Path]:
@@ -220,21 +247,18 @@ class WebCrawler:
             html_files.extend(files)
 
         # Filter out metadata files
-        filtered_files = [
-            f for f in html_files 
-            if not f.name.endswith('.meta.json')
-        ]
+        filtered_files = [f for f in html_files if not f.name.endswith(".meta.json")]
 
         logger.info(f"Found {len(filtered_files)} HTML files in {site_dir}")
         return sorted(filtered_files)
-    
+
     def crawl_sync(self, start_url: str, output_dir: Path) -> Path:
         """Synchronous version of crawl method.
-        
+
         Args:
             start_url: Starting URL for crawling
             output_dir: Directory to store downloaded files
-            
+
         Returns:
             Path to site directory
         """

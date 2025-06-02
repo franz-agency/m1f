@@ -30,12 +30,14 @@ class OutputFormat(Enum):
 
 class ScraperBackend(str, Enum):
     """Available web scraper backends."""
-    
+
     HTTRACK = "httrack"
     BEAUTIFULSOUP = "beautifulsoup"
+    BS4 = "bs4"  # Alias for beautifulsoup
     SCRAPY = "scrapy"
     PLAYWRIGHT = "playwright"
-    HTTPX_SELECTOLAX = "httpx_selectolax"
+    SELECTOLAX = "selectolax"
+    HTTPX = "httpx"  # Alias for selectolax
 
 
 @dataclass
@@ -151,7 +153,7 @@ class CrawlerConfig:
     request_delay: float = 0.5  # seconds between requests
     respect_robots_txt: bool = True
     max_pages: int = 1000
-    
+
     # Scraper backend configuration
     scraper_backend: ScraperBackend = ScraperBackend.BEAUTIFULSOUP
     scraper_config: Dict[str, Any] = field(default_factory=dict)
@@ -203,3 +205,13 @@ class Config:
 
     # Preprocessing configuration
     preprocessing: Optional[Any] = None  # PreprocessingConfig instance
+
+    def __post_init__(self):
+        """Initialize preprocessing with defaults if not provided."""
+        if self.preprocessing is None:
+            from ..preprocessors import PreprocessingConfig
+
+            self.preprocessing = PreprocessingConfig(
+                remove_elements=["script", "style", "noscript"],
+                remove_empty_elements=True,
+            )

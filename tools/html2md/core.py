@@ -174,6 +174,10 @@ class MarkdownConverter:
         if options:
             opts.update(options)
 
+        # Remove script and style tags before conversion
+        for tag in soup.find_all(["script", "style", "noscript"]):
+            tag.decompose()
+
         # Convert to markdown
         markdown = markdownify(str(soup), **opts)
 
