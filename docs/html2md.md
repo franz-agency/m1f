@@ -1,23 +1,25 @@
 # html2md (HTML to Markdown Converter)
 
-A modern HTML to Markdown converter with HTML structure analysis, async I/O,
-and parallel processing capabilities.
+A modern HTML to Markdown converter with HTML structure analysis, async I/O, and
+parallel processing capabilities.
 
 ## Overview
 
 The html2md tool (v3.0.0) provides a robust solution for converting HTML content
 to Markdown format, with fine-grained control over the conversion process. Built
-with Python 3.10+ and modern async architecture, it focuses on intelligent content
-extraction and conversion.
+with Python 3.10+ and modern async architecture, it focuses on intelligent
+content extraction and conversion.
 
-**Note:** Web scraping functionality has been moved to the separate `webscraper` tool
-for better modularity. Use `webscraper` to download websites, then `html2md` to
-convert the downloaded HTML files.
+**Note:** Web scraping functionality has been moved to the separate `webscraper`
+tool for better modularity. Use `webscraper` to download websites, then
+`html2md` to convert the downloaded HTML files.
 
 ## Key Features
 
-- **HTML Structure Analysis**: Analyze HTML files to find optimal content selectors
-- **Intelligent Content Extraction**: Use CSS selectors to extract specific content
+- **HTML Structure Analysis**: Analyze HTML files to find optimal content
+  selectors
+- **Intelligent Content Extraction**: Use CSS selectors to extract specific
+  content
 - **Async I/O**: High-performance concurrent file processing
 - **API Mode**: Programmatic access for integration with other tools
 - **Type Safety**: Full type annotations throughout the codebase
@@ -79,18 +81,18 @@ Convert local HTML files to Markdown:
 python -m tools.html2md convert <source> -o <output> [options]
 ```
 
-| Option                 | Description                                                          |
-| ---------------------- | -------------------------------------------------------------------- |
-| `source`               | Source file or directory                                             |
-| `-o, --output`         | Output file or directory (required)                                  |
-| `-c, --config`         | Configuration file path                                              |
-| `--content-selector`   | CSS selector for main content                                        |
-| `--ignore-selectors`   | CSS selectors to ignore (space-separated)                            |
-| `--heading-offset`     | Offset heading levels                                                |
-| `--no-frontmatter`     | Don't add YAML frontmatter                                           |
-| `--parallel`           | Enable parallel processing                                           |
-| `-v, --verbose`        | Enable verbose output                                                |
-| `-q, --quiet`          | Suppress all output except errors                                    |
+| Option               | Description                               |
+| -------------------- | ----------------------------------------- |
+| `source`             | Source file or directory                  |
+| `-o, --output`       | Output file or directory (required)       |
+| `-c, --config`       | Configuration file path                   |
+| `--content-selector` | CSS selector for main content             |
+| `--ignore-selectors` | CSS selectors to ignore (space-separated) |
+| `--heading-offset`   | Offset heading levels                     |
+| `--no-frontmatter`   | Don't add YAML frontmatter                |
+| `--parallel`         | Enable parallel processing                |
+| `-v, --verbose`      | Enable verbose output                     |
+| `-q, --quiet`        | Suppress all output except errors         |
 
 ### Analyze Command
 
@@ -100,12 +102,12 @@ Analyze HTML structure for optimal content extraction:
 python -m tools.html2md analyze <files> [options]
 ```
 
-| Option                 | Description                                                          |
-| ---------------------- | -------------------------------------------------------------------- |
-| `files`                | HTML files to analyze (2-3 files recommended)                        |
-| `--show-structure`     | Show detailed HTML structure                                         |
-| `--common-patterns`    | Find common patterns across files                                    |
-| `--suggest-selectors`  | Suggest CSS selectors for content extraction (default if no options) |
+| Option                | Description                                                          |
+| --------------------- | -------------------------------------------------------------------- |
+| `files`               | HTML files to analyze (2-3 files recommended)                        |
+| `--show-structure`    | Show detailed HTML structure                                         |
+| `--common-patterns`   | Find common patterns across files                                    |
+| `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
 
 ## Usage Examples
 
@@ -287,7 +289,8 @@ tools/html2md/
 ### Key Components
 
 - **API Mode**: Use as a library in other Python projects
-- **Scraper Backends**: Pluggable architecture supporting BeautifulSoup and HTTrack
+- **Scraper Backends**: Pluggable architecture supporting BeautifulSoup and
+  HTTrack
 - **Type Safety**: Full type hints and dataclass models
 - **Clean Architecture**: Separation of concerns with dependency injection
 - **Async Support**: Modern async/await for high performance
@@ -389,4 +392,5 @@ brew install httrack
 sudo apt-get install httrack
 ```
 
-**Note**: The tool uses the native HTTrack command-line utility, not a Python module, for professional-grade website mirroring.
+**Note**: The tool uses the native HTTrack command-line utility, not a Python
+module, for professional-grade website mirroring.

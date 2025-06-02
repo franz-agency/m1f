@@ -12,26 +12,34 @@ and this project adheres to
 
 ### Added
 
-- **Pluggable Web Scraper Backends**: HTML2MD now supports multiple scraper backends for different use cases
-  - **Selectolax** (httpx + selectolax): Blazing fast HTML parsing with minimal resource usage
-  - **Scrapy**: Industrial-strength web scraping framework with middleware support
+- **Pluggable Web Scraper Backends**: HTML2MD now supports multiple scraper
+  backends for different use cases
+  - **Selectolax** (httpx + selectolax): Blazing fast HTML parsing with minimal
+    resource usage
+  - **Scrapy**: Industrial-strength web scraping framework with middleware
+    support
   - **Playwright**: Browser automation for JavaScript-heavy sites and SPAs
   - Each scraper is optimized for specific scenarios:
     - Selectolax: Maximum performance for simple HTML (20+ concurrent requests)
     - Scrapy: Complex crawling with retry logic, caching, and auto-throttle
     - Playwright: Full JavaScript execution with multiple browser support
-  - CLI option `--scraper` to select backend (beautifulsoup, httrack, selectolax, scrapy, playwright)
+  - CLI option `--scraper` to select backend (beautifulsoup, httrack,
+    selectolax, scrapy, playwright)
   - Backend-specific configuration files in `scrapers/configs/`
   - Graceful fallback when optional dependencies are not installed
 
 ### Changed
 
 - **HTML2MD Version**: Bumped to 3.0.0 for major feature addition
-- **Scraper Architecture**: Refactored to plugin-based system with abstract base class
-- **Documentation**: Comprehensive updates for all scraper backends with examples
+- **Scraper Architecture**: Refactored to plugin-based system with abstract base
+  class
+- **Documentation**: Comprehensive updates for all scraper backends with
+  examples
 - **CLI**: Extended to support new scraper options and configuration
-- **HTTrack Integration**: Replaced Python HTTrack module with native Linux httrack command
-  - Now uses real HTTrack command-line tool for professional-grade website mirroring
+- **HTTrack Integration**: Replaced Python HTTrack module with native Linux
+  httrack command
+  - Now uses real HTTrack command-line tool for professional-grade website
+    mirroring
   - Better performance, reliability, and standards compliance
   - Requires system installation: `sudo apt-get install httrack`
   - Updated user agent to `html2md/2.0 (+https://franz.agency)`

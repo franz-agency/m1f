@@ -15,8 +15,7 @@ The core tools are:
 - **token_counter**: Estimates token usage for LLM context planning and
   optimization
 - **webscraper**: Downloads websites for offline viewing and processing
-- **html2md**: Modern HTML to Markdown converter with HTML analysis
-  capabilities
+- **html2md**: Modern HTML to Markdown converter with HTML analysis capabilities
 
 These tools solve the challenge of providing comprehensive context to AI
 assistants while optimizing token usage.
@@ -24,7 +23,8 @@ assistants while optimizing token usage.
 ## Quick Start
 
 For the recommended development workflow and setup instructions, see the
-[M1F Development Workflow](docs/m1f_development_workflow.md) guide. This includes:
+[M1F Development Workflow](docs/m1f_development_workflow.md) guide. This
+includes:
 
 - Setting up convenient shell aliases for global access
 - Using pre-generated m1f bundles in your projects
@@ -56,9 +56,12 @@ deduplicated if their content is identical.
 
 ### Web Scraping and HTML Conversion
 
-The toolkit now separates web scraping from HTML-to-Markdown conversion for better modularity. The primary use case is downloading online documentation to provide to LLMs like Claude.
+The toolkit now separates web scraping from HTML-to-Markdown conversion for
+better modularity. The primary use case is downloading online documentation to
+provide to LLMs like Claude.
 
 #### webscraper
+
 Downloads websites (especially documentation) for offline processing:
 
 ```bash
@@ -72,9 +75,11 @@ python -m tools.webscraper https://docs.example.com -o ./html \
   --scraper beautifulsoup
 ```
 
-Supported scrapers: beautifulsoup (default), httrack, scrapy, playwright, selectolax
+Supported scrapers: beautifulsoup (default), httrack, scrapy, playwright,
+selectolax
 
 #### html2md
+
 Converts HTML files to Markdown with intelligent content extraction:
 
 ```bash

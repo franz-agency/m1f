@@ -218,7 +218,8 @@ export CLAUDE_CODE_PROJECT_ROOT="/path/to/m1f"
 ## Troubleshooting
 
 1. **Permission errors**: Ensure Claude Code has write permissions in settings
-2. **Model selection**: Use Claude Opus 4 for the most complex analysis, Claude Sonnet 4 for balanced performance
+2. **Model selection**: Use Claude Opus 4 for the most complex analysis, Claude
+   Sonnet 4 for balanced performance
 3. **Rate limits**: Be mindful of API usage limits
 
 ## Security Considerations

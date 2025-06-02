@@ -30,7 +30,8 @@ pip install toml      # For TOML configuration files
 
 ### HTTrack Installation
 
-HTTrack is required for website mirroring functionality. The tool uses the real Linux HTTrack command-line tool, not a Python module:
+HTTrack is required for website mirroring functionality. The tool uses the real
+Linux HTTrack command-line tool, not a Python module:
 
 ```bash
 # Ubuntu/Debian
@@ -44,7 +45,9 @@ brew install httrack
 # Or download installer from https://www.httrack.com/
 ```
 
-**Note**: The tool uses the native HTTrack command-line utility for professional-grade website mirroring. This provides better performance, reliability, and standards compliance compared to Python-based alternatives.
+**Note**: The tool uses the native HTTrack command-line utility for
+professional-grade website mirroring. This provides better performance,
+reliability, and standards compliance compared to Python-based alternatives.
 
 ## Quick Start
 

@@ -33,6 +33,7 @@ pip install -r requirements.txt
 ### Windows
 
 #### PowerShell
+
 ```powershell
 # Create virtual environment
 python -m venv .venv
@@ -48,6 +49,7 @@ pip install -r requirements.txt
 ```
 
 #### Command Prompt (cmd)
+
 ```cmd
 # Create virtual environment
 python -m venv .venv
@@ -76,12 +78,14 @@ source .venv/bin/activate
 Since the update script is a bash script, you have a few options:
 
 #### Option A: Use Git Bash
+
 ```bash
 # In Git Bash
 ./scripts/update_m1f_files.sh
 ```
 
 #### Option B: Run Python commands directly
+
 ```powershell
 # In PowerShell with activated venv
 # Create .m1f directory
@@ -116,6 +120,7 @@ For Windows, we recommend creating batch files or PowerShell functions:
 #### Option A: Add to PATH (Recommended)
 
 1. Create a `bin` directory in the m1f project:
+
 ```powershell
 New-Item -ItemType Directory -Force -Path bin
 ```
@@ -123,6 +128,7 @@ New-Item -ItemType Directory -Force -Path bin
 2. Create batch files for each tool:
 
 **bin/m1f.bat:**
+
 ```batch
 @echo off
 cd /d "C:\path\to\m1f"
@@ -131,6 +137,7 @@ python tools\m1f.py %*
 ```
 
 **bin/s1f.bat:**
+
 ```batch
 @echo off
 cd /d "C:\path\to\m1f"
@@ -139,6 +146,7 @@ python tools\s1f.py %*
 ```
 
 **bin/html2md.bat:**
+
 ```batch
 @echo off
 cd /d "C:\path\to\m1f"
@@ -203,9 +211,11 @@ cat .m1f/m1f/m1f-documentation.txt
 
 ### Windows - Symlinks
 
-Windows supports symlinks, but they require administrator privileges or Developer Mode:
+Windows supports symlinks, but they require administrator privileges or
+Developer Mode:
 
 #### With Developer Mode enabled (Windows 10/11):
+
 ```powershell
 cd C:\path\to\your\project
 New-Item -ItemType Directory -Force -Path .m1f
@@ -213,6 +223,7 @@ New-Item -ItemType SymbolicLink -Path ".m1f\m1f" -Target "C:\path\to\m1f\.m1f"
 ```
 
 #### Without Developer Mode (using Junction):
+
 ```powershell
 cd C:\path\to\your\project
 New-Item -ItemType Directory -Force -Path .m1f
@@ -220,7 +231,9 @@ cmd /c mklink /J ".m1f\m1f" "C:\path\to\m1f\.m1f"
 ```
 
 #### Alternative: Copy Instead of Symlink
+
 If symlinks are problematic, you can simply copy the files:
+
 ```powershell
 cd C:\path\to\your\project
 New-Item -ItemType Directory -Force -Path .m1f\m1f
@@ -246,6 +259,7 @@ m1f --help
 ### Virtual Environment Not Activating (Windows)
 
 If you get an error about execution policies in PowerShell:
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
@@ -253,12 +267,14 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ### Command Not Found (Linux/macOS)
 
 Make sure you've:
+
 1. Run the setup script: `./scripts/setup_m1f_aliases.sh`
 2. Reloaded your shell: `source ~/.bashrc` or `source ~/.zshrc`
 
 ### Path Issues (Windows)
 
 If batch files aren't found:
+
 1. Verify the bin directory is in your PATH
 2. Open a new Command Prompt or PowerShell window
 3. Try using the full path: `C:\path\to\m1f\bin\m1f.bat`
@@ -266,6 +282,7 @@ If batch files aren't found:
 ### Symlink Permission Errors (Windows)
 
 If you can't create symlinks:
+
 1. Enable Developer Mode in Windows Settings
 2. Or run PowerShell as Administrator
 3. Or use the Junction alternative (mklink /J)

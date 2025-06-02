@@ -1,10 +1,13 @@
 # Web Scraper Backends
 
-The HTML2MD tool supports multiple web scraping backends, each optimized for different use cases. Choose the right backend based on your specific needs for optimal results.
+The HTML2MD tool supports multiple web scraping backends, each optimized for
+different use cases. Choose the right backend based on your specific needs for
+optimal results.
 
 ## Overview
 
-The HTML2MD scraper backend system provides flexibility to choose the most appropriate tool for your web scraping needs:
+The HTML2MD scraper backend system provides flexibility to choose the most
+appropriate tool for your web scraping needs:
 
 - **Static websites**: BeautifulSoup4 (default) - Fast and lightweight
 - **Complete mirroring**: HTTrack - Professional website copying
@@ -19,17 +22,20 @@ The HTML2MD scraper backend system provides flexibility to choose the most appro
 BeautifulSoup4 is the default backend, ideal for scraping static HTML websites.
 
 **Pros:**
+
 - Easy to use and lightweight
 - Fast for simple websites
 - Good encoding detection
 - Excellent HTML parsing capabilities
 
 **Cons:**
+
 - No JavaScript support
 - Basic crawling capabilities
 - Single-threaded by default
 
 **Usage:**
+
 ```bash
 # Default backend (no need to specify)
 python -m tools.html2md crawl https://example.com -o output/
@@ -50,6 +56,7 @@ python -m tools.html2md crawl https://example.com -o output/ \
 HTTrack is a professional website copier that creates complete offline mirrors.
 
 **Pros:**
+
 - Complete website mirroring
 - Preserves directory structure
 - Handles complex websites well
@@ -57,11 +64,13 @@ HTTrack is a professional website copier that creates complete offline mirrors.
 - Built-in robots.txt support
 
 **Cons:**
+
 - Requires system installation
 - Less flexible for custom parsing
 - Larger resource footprint
 
 **Installation:**
+
 ```bash
 # Ubuntu/Debian
 sudo apt-get install httrack
@@ -74,6 +83,7 @@ brew install httrack
 ```
 
 **Usage:**
+
 ```bash
 python -m tools.html2md crawl https://example.com -o output/ --scraper httrack
 
@@ -114,13 +124,14 @@ crawler:
   concurrent_requests: 5
   respect_robots_txt: true
   user_agent: "MyBot/1.0"
-  
+
   # Backend-specific configuration
   scraper_config:
-    parser: "html.parser"  # For BeautifulSoup
+    parser: "html.parser" # For BeautifulSoup
 ```
 
 Use with:
+
 ```bash
 python -m tools.html2md crawl https://example.com -o output/ -c config.yaml
 ```
@@ -132,21 +143,23 @@ Each backend can have specific configuration options:
 #### BeautifulSoup Configuration
 
 Create a `beautifulsoup.yaml`:
+
 ```yaml
 scraper_config:
-  parser: "lxml"  # Options: "html.parser", "lxml", "html5lib"
+  parser: "lxml" # Options: "html.parser", "lxml", "html5lib"
   features: "lxml"
-  encoding: "auto"  # Or specific encoding like "utf-8"
+  encoding: "auto" # Or specific encoding like "utf-8"
 ```
 
 #### HTTrack Configuration
 
 Create a `httrack.yaml`:
+
 ```yaml
 scraper_config:
   mirror_options:
-    - "--assume-insecure"  # For HTTPS issues
-    - "--robots=3"         # Strict robots.txt compliance
+    - "--assume-insecure" # For HTTPS issues
+    - "--robots=3" # Strict robots.txt compliance
   extra_filters:
     - "+*.css"
     - "+*.js"
@@ -192,6 +205,7 @@ python -m tools.html2md crawl https://api.example.com/docs -o api-docs/ \
 ### BeautifulSoup Issues
 
 **Encoding Problems:**
+
 ```bash
 # Force UTF-8 encoding
 python -m tools.html2md crawl https://example.com -o output/ \
@@ -199,6 +213,7 @@ python -m tools.html2md crawl https://example.com -o output/ \
 ```
 
 **Parser Issues:**
+
 ```bash
 # Try different parser
 python -m tools.html2md crawl https://example.com -o output/ \
@@ -208,6 +223,7 @@ python -m tools.html2md crawl https://example.com -o output/ \
 ### HTTrack Issues
 
 **SSL Certificate Problems:**
+
 ```bash
 # Ignore SSL errors (use with caution)
 python -m tools.html2md crawl https://example.com -o output/ \
@@ -215,42 +231,47 @@ python -m tools.html2md crawl https://example.com -o output/ \
   --scraper-config '{"extra_args": ["--assume-insecure"]}'
 ```
 
-**Incomplete Downloads:**
-HTTrack creates a cache that allows resuming. Check the `.httrack` directory in your output folder.
+**Incomplete Downloads:** HTTrack creates a cache that allows resuming. Check
+the `.httrack` directory in your output folder.
 
 ## Performance Comparison
 
-| Backend | Speed | Memory Usage | JavaScript | Accuracy |
-|---------|-------|-------------|------------|----------|
-| BeautifulSoup | Fast | Low | No | High |
-| HTTrack | Medium | Medium | No | Very High |
-| Selectolax | Fastest | Very Low | No | Medium |
-| Scrapy | Very Fast | Low-Medium | No | High |
-| Playwright | Slow | High | Yes | Very High |
+| Backend       | Speed     | Memory Usage | JavaScript | Accuracy  |
+| ------------- | --------- | ------------ | ---------- | --------- |
+| BeautifulSoup | Fast      | Low          | No         | High      |
+| HTTrack       | Medium    | Medium       | No         | Very High |
+| Selectolax    | Fastest   | Very Low     | No         | Medium    |
+| Scrapy        | Very Fast | Low-Medium   | No         | High      |
+| Playwright    | Slow      | High         | Yes        | Very High |
 
 ## Additional Backends
 
 ### Selectolax (httpx + selectolax)
 
-The fastest HTML parsing solution using httpx for networking and selectolax for parsing.
+The fastest HTML parsing solution using httpx for networking and selectolax for
+parsing.
 
 **Pros:**
+
 - Blazing fast performance (C-based parser)
 - Minimal memory footprint
 - Excellent for large-scale simple scraping
 - Modern async HTTP/2 support
 
 **Cons:**
+
 - No JavaScript support
 - Limited parsing features compared to BeautifulSoup
 - Less mature ecosystem
 
 **Installation:**
+
 ```bash
 pip install httpx selectolax
 ```
 
 **Usage:**
+
 ```bash
 # Basic usage
 python -m tools.html2md crawl https://example.com -o output/ --scraper selectolax
@@ -270,6 +291,7 @@ python -m tools.html2md crawl https://example.com -o output/ --scraper httpx
 Industrial-strength web scraping framework with advanced features.
 
 **Pros:**
+
 - Battle-tested in production
 - Built-in retry logic and error handling
 - Auto-throttle based on server response
@@ -278,16 +300,19 @@ Industrial-strength web scraping framework with advanced features.
 - Advanced caching and queuing
 
 **Cons:**
+
 - Steeper learning curve
 - Heavier than simple scrapers
 - Twisted-based (different async model)
 
 **Installation:**
+
 ```bash
 pip install scrapy
 ```
 
 **Usage:**
+
 ```bash
 # Basic usage
 python -m tools.html2md crawl https://example.com -o output/ --scraper scrapy
@@ -309,6 +334,7 @@ python -m tools.html2md crawl https://example.com -o output/ \
 Browser automation for JavaScript-heavy websites and SPAs.
 
 **Pros:**
+
 - Full JavaScript execution
 - Handles SPAs and dynamic content
 - Multiple browser engines (Chromium, Firefox, WebKit)
@@ -317,17 +343,20 @@ Browser automation for JavaScript-heavy websites and SPAs.
 - Network interception
 
 **Cons:**
+
 - High resource usage
 - Slower than HTML-only scrapers
 - Requires browser installation
 
 **Installation:**
+
 ```bash
 pip install playwright
 playwright install  # Install browser binaries
 ```
 
 **Usage:**
+
 ```bash
 # Basic usage
 python -m tools.html2md crawl https://example.com -o output/ --scraper playwright
@@ -359,16 +388,16 @@ async def scrape_example():
         max_pages=100,
         request_delay=0.5
     )
-    
+
     # Create scraper instance
     scraper = create_scraper('beautifulsoup', config)
-    
+
     # Scrape single page
     async with scraper:
         page = await scraper.scrape_url('https://example.com')
         print(f"Title: {page.title}")
         print(f"Content length: {len(page.content)}")
-        
+
     # Scrape entire site
     async with scraper:
         async for page in scraper.scrape_site('https://example.com'):

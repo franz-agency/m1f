@@ -1,10 +1,12 @@
 # HTML2MD Web Scrapers
 
-This module provides a pluggable architecture for web scraping backends in the HTML2MD tool.
+This module provides a pluggable architecture for web scraping backends in the
+HTML2MD tool.
 
 ## Architecture
 
 The scraper system is built around:
+
 - `WebScraperBase`: Abstract base class defining the scraper interface
 - `ScraperConfig`: Configuration dataclass for all scrapers
 - `create_scraper()`: Factory function to instantiate scrapers
@@ -13,11 +15,13 @@ The scraper system is built around:
 ## Available Scrapers
 
 ### BeautifulSoup (`beautifulsoup`, `bs4`)
+
 - **Purpose**: General-purpose web scraping for static sites
 - **Features**: Async support, encoding detection, metadata extraction
 - **Best for**: Most websites without JavaScript requirements
 
 ### HTTrack (`httrack`)
+
 - **Purpose**: Complete website mirroring
 - **Features**: Professional mirroring, preserves structure
 - **Best for**: Creating offline copies of entire websites
@@ -43,7 +47,7 @@ scraper = create_scraper('beautifulsoup', config)
 async with scraper:
     # Scrape single page
     page = await scraper.scrape_url('https://example.com')
-    
+
     # Scrape entire site
     async for page in scraper.scrape_site('https://example.com'):
         print(f"Scraped: {page.url}")
@@ -59,15 +63,17 @@ To add a new scraper backend:
    - `scrape_url()`: Scrape a single URL
    - `scrape_site()`: Scrape an entire website
 4. Register in `__init__.py`:
+
    ```python
    from .playwright import PlaywrightScraper
-   
+
    SCRAPER_REGISTRY['playwright'] = PlaywrightScraper
    ```
 
 ## Configuration
 
 All scrapers share common configuration options through `ScraperConfig`:
+
 - `max_depth`: Maximum crawl depth
 - `max_pages`: Maximum pages to scrape
 - `allowed_domains`: List of allowed domains

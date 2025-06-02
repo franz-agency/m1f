@@ -1,14 +1,18 @@
 # Auto Bundle Guide
 
-The auto_bundle scripts automatically create and update m1f bundles for different aspects of your project. They support both a simple mode with predefined bundles and an advanced mode using YAML configuration.
+The auto_bundle scripts automatically create and update m1f bundles for
+different aspects of your project. They support both a simple mode with
+predefined bundles and an advanced mode using YAML configuration.
 
 ## Overview
 
 The auto_bundle scripts are available in two versions:
+
 - **Bash**: `scripts/auto_bundle.sh` (Linux/macOS)
 - **PowerShell**: `scripts/auto_bundle.ps1` (Windows)
 
 Both scripts provide identical functionality and support two operation modes:
+
 1. **Simple Mode**: Uses hardcoded bundle definitions
 2. **Advanced Mode**: Uses `.m1f.config.yml` for flexible configuration
 
@@ -17,10 +21,12 @@ Both scripts provide identical functionality and support two operation modes:
 ### Prerequisites
 
 **For Simple Mode:**
+
 - Python 3.x
 - m1f tool installed
 
 **For Advanced Mode (additional):**
+
 - PyYAML (`pip install pyyaml`)
 - `.m1f.config.yml` configuration file
 
@@ -29,6 +35,7 @@ Both scripts provide identical functionality and support two operation modes:
 ### Basic Commands
 
 **Bash (Linux/macOS):**
+
 ```bash
 # Create all bundles
 ./scripts/auto_bundle.sh
@@ -44,6 +51,7 @@ Both scripts provide identical functionality and support two operation modes:
 ```
 
 **PowerShell (Windows):**
+
 ```powershell
 # Create all bundles
 .\scripts\auto_bundle.ps1
@@ -62,7 +70,8 @@ Both scripts provide identical functionality and support two operation modes:
 
 ### Simple Mode
 
-Simple mode uses predefined bundle configurations and creates a standard directory structure:
+Simple mode uses predefined bundle configurations and creates a standard
+directory structure:
 
 ```
 .m1f/
@@ -80,6 +89,7 @@ Simple mode uses predefined bundle configurations and creates a standard directo
 ```
 
 **Default Bundles:**
+
 - `docs`: Documentation files (.md, .rst, .txt)
 - `src`: Source code files (.py, excluding tests)
 - `tests`: Test files structure
@@ -87,9 +97,11 @@ Simple mode uses predefined bundle configurations and creates a standard directo
 
 ### Advanced Mode
 
-Advanced mode uses a YAML configuration file (`.m1f.config.yml`) for flexible bundle definitions.
+Advanced mode uses a YAML configuration file (`.m1f.config.yml`) for flexible
+bundle definitions.
 
 **Key Features:**
+
 - Custom bundle definitions
 - Conditional bundles (enabled_if_exists)
 - Priority-based bundling for AI/LLM contexts
@@ -143,10 +155,12 @@ ai_optimization:
 ### Source Options
 
 - `path`: Source directory (relative to project root)
-- `include_extensions`: List of file extensions to include (e.g., [".py", ".js"])
+- `include_extensions`: List of file extensions to include (e.g., [".py",
+  ".js"])
 - `excludes`: List of glob patterns to exclude
 
-**Note**: The `include_patterns` option shown in some examples is not supported by the m1f tool. Use `include_extensions` with appropriate source paths instead.
+**Note**: The `include_patterns` option shown in some examples is not supported
+by the m1f tool. Use `include_extensions` with appropriate source paths instead.
 
 ### Output Options
 
@@ -168,6 +182,7 @@ The advanced mode includes features specifically for AI/LLM usage:
 ### Token Management
 
 Configure token limits for different models:
+
 ```yaml
 ai_optimization:
   token_limits:
@@ -179,18 +194,20 @@ ai_optimization:
 ### Context Priority
 
 Define bundle loading priority for optimal context usage:
+
 ```yaml
 ai_optimization:
   context_priority:
-    - "docs"      # First: understand the project
-    - "src"       # Second: core implementation
-    - "tools"     # Third: specific tools
-    - "complete"  # Last resort: everything
+    - "docs" # First: understand the project
+    - "src" # Second: core implementation
+    - "tools" # Third: specific tools
+    - "complete" # Last resort: everything
 ```
 
 ### Usage Hints
 
 Provide guidance for each bundle:
+
 ```yaml
 ai_optimization:
   usage_hints:
@@ -204,6 +221,7 @@ ai_optimization:
 ### Creating a Custom Bundle
 
 Add to `.m1f.config.yml`:
+
 ```yaml
 bundles:
   frontend:
@@ -220,6 +238,7 @@ bundles:
 ### Conditional Bundle
 
 Create bundle only if directory exists:
+
 ```yaml
 bundles:
   mobile:
@@ -234,6 +253,7 @@ bundles:
 ### Extension-Based Bundle
 
 Include files with specific extensions:
+
 ```yaml
 bundles:
   configs:
@@ -264,14 +284,17 @@ bundles:
 ### Common Issues
 
 **"Config file not found"**
+
 - Ensure `.m1f.config.yml` exists in project root
 - Check file permissions
 
 **"PyYAML not installed"**
+
 - Install with: `pip install pyyaml`
 - Script falls back to simple mode if unavailable
 
 **"Bundle creation failed"**
+
 - Check source paths exist
 - Verify include/exclude patterns
 - Ensure output directory is writable
@@ -279,6 +302,7 @@ bundles:
 ### Mode Detection
 
 The script automatically detects which mode to use:
+
 1. Checks for `.m1f.config.yml`
 2. Verifies Python and PyYAML availability
 3. Falls back to simple mode if requirements not met
@@ -290,6 +314,7 @@ Use `--simple` (bash) or `-Simple` (PowerShell) to force simple mode.
 ### With File Watchers
 
 Use with `watch_and_bundle.sh` for automatic updates:
+
 ```bash
 ./scripts/watch_and_bundle.sh
 ```
@@ -305,6 +330,7 @@ Use with `watch_and_bundle.sh` for automatic updates:
 ### With AI Tools
 
 Reference bundles in AI prompts:
+
 ```
 Please review the documentation in .m1f/docs/manual.m1f.txt
 and the source code in .m1f/src/source.m1f.txt
@@ -315,6 +341,7 @@ and the source code in .m1f/src/source.m1f.txt
 ### Bundle Info File
 
 Each run creates/updates `.m1f/BUNDLE_INFO.md` with:
+
 - Generation timestamp
 - Available bundles list
 - Usage examples
@@ -323,6 +350,7 @@ Each run creates/updates `.m1f/BUNDLE_INFO.md` with:
 ### Statistics
 
 Both modes display bundle statistics:
+
 - Number of files per bundle
 - Total size of each bundle
 - Execution time
@@ -332,6 +360,7 @@ Both modes display bundle statistics:
 ### Global Exclusions
 
 Define exclusions that apply to all bundles:
+
 ```yaml
 global:
   global_excludes:
@@ -343,6 +372,7 @@ global:
 ### Custom Separator Styles
 
 Choose from:
+
 - `Standard`: Simple file separators
 - `Detailed`: Include file metadata
 - `Markdown`: Markdown-friendly format
@@ -350,6 +380,7 @@ Choose from:
 ### File Metadata
 
 Enable `filename_mtime_hash` for:
+
 - File modification timestamps
 - File content hashes
 - Change tracking
@@ -357,6 +388,7 @@ Enable `filename_mtime_hash` for:
 ## Migration from v1 to v2
 
 If you were using the old `auto_bundle_v2.sh`:
+
 1. The functionality is now integrated into `auto_bundle.sh`
 2. Your `.m1f.config.yml` continues to work
 3. Simple mode provides backward compatibility

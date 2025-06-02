@@ -16,7 +16,7 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 
 ### Web Scraping and HTML Conversion
 
-- [webscraper](./webscraper.md) - Download websites for offline viewing and 
+- [webscraper](./webscraper.md) - Download websites for offline viewing and
   processing
 - [html2md Overview](./html2md.md) - Comprehensive guide to the HTML to Markdown
   converter
