@@ -627,6 +627,12 @@ function Main-Advanced {
         }
     }
     
+    # Ensure main .m1f directory exists
+    $M1fPath = Join-Path $ProjectRoot $M1fDir
+    if (!(Test-Path $M1fPath)) {
+        New-Item -ItemType Directory -Path $M1fPath -Force | Out-Null
+    }
+    
     $dirs | Select-Object -Unique | ForEach-Object {
         $fullPath = Join-Path $ProjectRoot $_
         if (!(Test-Path $fullPath)) {
@@ -635,7 +641,7 @@ function Main-Advanced {
     }
     
     # Create .gitignore
-    $GitIgnorePath = Join-Path (Join-Path $ProjectRoot $M1fDir) ".gitignore"
+    $GitIgnorePath = Join-Path $M1fPath ".gitignore"
     if (!(Test-Path $GitIgnorePath)) {
         @"
 # Auto-generated m1f bundles

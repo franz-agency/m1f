@@ -81,8 +81,9 @@ bundles:
     output: ".m1f/complete/project.m1f.txt"
     sources:
       - path: "."
-        exclude-path-file:
-          - ".gitignore"
+        # Include all file types - m1f will respect .gitignore automatically
+        excludes:
+          - "**/.m1f/**"  # Don't include m1f bundles in themselves
     separator_style: "Detailed"
     priority: "medium"
 

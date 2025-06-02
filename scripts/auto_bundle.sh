@@ -325,18 +325,19 @@ main() {
 
 # Parse YAML config using Python
 parse_config() {
+    local bundle_name="${1:-}"
     python3 -c "
 import yaml
 import sys
 import json
 
 try:
-    with open('$CONFIG_FILE', 'r') as f:
+    with open('${CONFIG_FILE}', 'r') as f:
         config = yaml.safe_load(f)
     
     # Get bundle names or specific bundle
-    if len(sys.argv) > 1:
-        bundle_name = sys.argv[1]
+    bundle_name = '${bundle_name}'
+    if bundle_name:
         if bundle_name in config.get('bundles', {}):
             print(json.dumps({bundle_name: config['bundles'][bundle_name]}))
         else:
@@ -345,7 +346,7 @@ try:
         print(json.dumps(config.get('bundles', {})))
 except Exception as e:
     print(json.dumps({'error': str(e)}))
-" "$1"
+"
 }
 
 # Get global config value
@@ -354,10 +355,10 @@ get_global_config() {
     python3 -c "
 import yaml
 try:
-    with open('$CONFIG_FILE', 'r') as f:
+    with open('${CONFIG_FILE}', 'r') as f:
         config = yaml.safe_load(f)
     global_conf = config.get('global', {})
-    keys = '$key'.split('.')
+    keys = '${key}'.split('.')
     value = global_conf
     for k in keys:
         value = value.get(k, '')
@@ -565,6 +566,9 @@ for bundle in config.values():
         dirs.add(str(output_path.parent))
 print(' '.join(sorted(dirs)))
 ")
+    
+    # Ensure main .m1f directory exists
+    mkdir -p "$PROJECT_ROOT/$M1F_DIR"
     
     for dir in $dirs; do
         mkdir -p "$PROJECT_ROOT/$dir"
