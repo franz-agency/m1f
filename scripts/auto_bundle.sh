@@ -380,6 +380,7 @@ build_m1f_command_yaml() {
     python3 << EOF
 import json
 import sys
+import os
 
 bundle = json.loads('''$bundle_json''')['$bundle_name']
 
@@ -388,14 +389,43 @@ cmd_parts = ['python', '"$M1F_TOOL"']
 
 # Process sources
 sources = bundle.get('sources', [])
+
+# First, handle bundle-level include_files
+if 'include_files' in bundle:
+    for file in bundle['include_files']:
+        # Add .py extension if missing (but only for extensionless files)
+        if not os.path.splitext(file)[1] and not os.path.exists(f"$PROJECT_ROOT/{file}"):
+            file += '.py'
+        cmd_parts.extend(['-s', f'"$PROJECT_ROOT/{file}"'])
+
+# Then process sources
 for source in sources:
     path = source.get('path', '.')
-    cmd_parts.extend(['-s', f'"$PROJECT_ROOT/{path}"'])
     
-    # Include extensions
-    if 'include_extensions' in source:
-        for ext in source['include_extensions']:
-            cmd_parts.extend(['--include-extensions', ext])
+    # Handle include_files at source level
+    if 'include_files' in source:
+        # Process each file individually
+        for file in source['include_files']:
+            # Add .py extension if missing (but only for extensionless files)
+            if not os.path.splitext(file)[1]:
+                # Check if file exists without extension first
+                test_path = os.path.join(path, file) if path != '.' else file
+                if not os.path.exists(f"$PROJECT_ROOT/{test_path}"):
+                    file += '.py'
+            # Create full path relative to source path
+            if path != '.':
+                full_path = os.path.join(path, file)
+            else:
+                full_path = file
+            cmd_parts.extend(['-s', f'"$PROJECT_ROOT/{full_path}"'])
+    else:
+        # Normal path processing
+        cmd_parts.extend(['-s', f'"$PROJECT_ROOT/{path}"'])
+        
+        # Include extensions
+        if 'include_extensions' in source:
+            for ext in source['include_extensions']:
+                cmd_parts.extend(['--include-extensions', ext])
     
     # Include patterns - Note: m1f doesn't support --include-patterns
     if 'include_patterns' in source:

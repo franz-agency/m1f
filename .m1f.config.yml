@@ -63,7 +63,48 @@ bundles:
 
   m1f-code:
     description: "m1f complete code"
-    output: ".m1f/m1f/98_m1f_complete_code.txt"
+    output: ".m1f/m1f/96_m1f_complete_tool_code.txt"
+    sources:
+      - path: "tools/m1f"
+        include_extensions: [".py"]
+      - path: "tools/"
+        include_files: [
+          "m1f.py",
+          "path_utils",
+          "__init__.py"
+        ]
+
+  s1f-code:
+    description: "m1f complete code"
+    output: ".m1f/m1f/96_m1f_complete_tool_code.txt"
+    sources:
+      - path: "tools/m1f"
+        include_extensions: [".py"]
+
+  tool-code:
+    description: "m1f complete tool code"
+    output: ".m1f/m1f/97_m1f_complete_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
+    
+  # All non-binary files excluding tests
+  all:
+    description: "All non-binary files"
+    output: ".m1f/m1/98_all_non_binary.txt"
+    sources:
+      - path: "."
+        # Only extensions that actually exist in the project
+        include_extensions: [
+          ".py", ".txt", ".md", ".json", ".js", ".yml", ".yaml",
+          ".sh", ".toml", ".ps1", ".example"
+        ]
+        excludes: [
+          "tests/*/source/**",      # Test input data
+          "tests/*/output/**",      # Test output data
+          "tests/*/expected/**",    # Expected test results
+          "tests/*/scraped_examples/**",  # Scraped test examples
+          "tests/html2md_server/test_pages/**",  # Test HTML pages
+          ".gitignore"
+        ]
+    use_gitignore: true
