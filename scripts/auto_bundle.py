@@ -122,7 +122,7 @@ class AutoBundler:
             print_error(f"Failed to execute command: {e}")
             return False
     
-    def build_m1f_command(self, bundle_config: Dict[str, Any], bundle_name: str) -> List[str]:
+    def build_m1f_command(self, bundle_config: Dict[str, Any], bundle_name: str, config: Dict[str, Any]) -> List[str]:
         """Build m1f command from bundle configuration"""
         cmd_parts = ["python", f'"{self.m1f_tool}"']
         
@@ -168,11 +168,18 @@ class AutoBundler:
                     cmd_parts.append('--include-extensions')
                     cmd_parts.extend(source['include_extensions'])
             
-            # Excludes
+            # Excludes from source
             if 'excludes' in source:
                 cmd_parts.append('--excludes')
                 for exclude in source['excludes']:
                     cmd_parts.append(f'"{exclude}"')
+        
+        # Add global excludes if they exist
+        global_excludes = config.get('global', {}).get('global_excludes', [])
+        if global_excludes and '--excludes' not in cmd_parts:
+            cmd_parts.append('--excludes')
+        for exclude in global_excludes:
+            cmd_parts.append(f'"{exclude}"')
         
         # Output file
         output = bundle_config.get('output', '')
@@ -202,7 +209,7 @@ class AutoBundler:
         
         return cmd_parts
     
-    def create_bundle_advanced(self, bundle_name: str, bundle_config: Dict[str, Any]) -> bool:
+    def create_bundle_advanced(self, bundle_name: str, bundle_config: Dict[str, Any], config: Dict[str, Any]) -> bool:
         """Create bundle in advanced mode"""
         # Check if enabled
         if not bundle_config.get('enabled', True):
@@ -219,7 +226,7 @@ class AutoBundler:
         print_info(f"Creating bundle: {bundle_name} - {description}")
         
         # Build and execute command
-        cmd_parts = self.build_m1f_command(bundle_config, bundle_name)
+        cmd_parts = self.build_m1f_command(bundle_config, bundle_name, config)
         
         if self.run_m1f_command(cmd_parts):
             print_success(f"Created: {bundle_name}")
@@ -343,13 +350,13 @@ class AutoBundler:
         
         if bundle_filter:
             if bundle_filter in bundles:
-                self.create_bundle_advanced(bundle_filter, bundles[bundle_filter])
+                self.create_bundle_advanced(bundle_filter, bundles[bundle_filter], config)
             else:
                 print_error(f"Bundle '{bundle_filter}' not found in config")
         else:
             # Create all bundles
             for bundle_name, bundle_config in bundles.items():
-                self.create_bundle_advanced(bundle_name, bundle_config)
+                self.create_bundle_advanced(bundle_name, bundle_config, config)
     
     def run_simple_mode(self, bundle_filter: Optional[str] = None):
         """Run in simple mode without config"""

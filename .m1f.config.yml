@@ -4,16 +4,15 @@
 global:
   # Exclusions that apply to all bundles
   global_excludes:
-    - "**/.git/**"
-    - "**/.venv/**"
-    - "**/node_modules/**"
-    - "**/__pycache__/**"
     - "**/*.pyc"
-    - "**/.*"  # Hidden files
     - "**/*.log"
     - "**/htmlcov/**"
     - "**/tmp/**"
     - "**/dev/**"
+    - "**/tests/**/source/**"  # Test input data
+    - "**/tests/**/output/**"  # Test output data
+    - "**/tests/**/expected/**"  # Expected test results
+    - "**/tests/**/scraped_examples/**"  # Scraped test examples
 
   global_settings:
     # Default security setting for all files
@@ -100,10 +99,5 @@ bundles:
           ".sh", ".toml", ".ps1", ".example"
         ]
         excludes: [
-          "tests/*/source/**",      # Test input data
-          "tests/*/output/**",      # Test output data
-          "tests/*/expected/**",    # Expected test results
-          "tests/*/scraped_examples/**",  # Scraped test examples
-          "tests/html2md_server/test_pages/**",  # Test HTML pages
           ".gitignore"
         ]
