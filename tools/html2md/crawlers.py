@@ -13,200 +13,193 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Web crawling functionality using HTTrack."""
+"""Web crawling functionality using configurable scraper backends."""
 
+import asyncio
 import logging
-import shutil
-import subprocess
-import tempfile
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse
+
+from .scrapers import create_scraper, ScraperConfig, ScrapedPage
+from .config.models import CrawlerConfig, ScraperBackend
 
 logger = logging.getLogger(__name__)
 
 
-class HTTrackCrawler:
-    """Web crawler using the real HTTrack command-line tool."""
+class WebCrawler:
+    """Web crawler that uses configurable scraper backends."""
 
-    def __init__(self, config):
-        """Initialize HTTrack crawler with configuration.
+    def __init__(self, config: CrawlerConfig):
+        """Initialize crawler with configuration.
 
         Args:
             config: CrawlerConfig instance with crawling settings
         """
         self.config = config
-        self.httrack_path = self._find_httrack()
-
-    def _find_httrack(self) -> str:
-        """Find HTTrack executable on the system.
-
+        self._scraper_config = self._create_scraper_config()
+        
+    def _create_scraper_config(self) -> ScraperConfig:
+        """Create scraper configuration from crawler config.
+        
         Returns:
-            Path to httrack executable
-
-        Raises:
-            RuntimeError: If HTTrack is not found
+            ScraperConfig instance
         """
-        # Check common locations
-        possible_paths = [
-            "httrack",  # In PATH
-            "/usr/bin/httrack",
-            "/usr/local/bin/httrack",
-            "/opt/httrack/bin/httrack",
-        ]
-
-        for path in possible_paths:
-            if shutil.which(path) or Path(path).exists():
-                logger.debug(f"Found HTTrack at: {path}")
-                return path
-
-        raise RuntimeError(
-            "HTTrack is not installed or not found in PATH. "
-            "Please install it using: sudo apt-get install httrack"
+        # Convert allowed_domains from set to list
+        allowed_domains = list(self.config.allowed_domains) if self.config.allowed_domains else []
+        
+        # Convert excluded_paths to exclude_patterns
+        exclude_patterns = list(self.config.excluded_paths) if self.config.excluded_paths else []
+        
+        # Create scraper config
+        scraper_config = ScraperConfig(
+            max_depth=self.config.max_depth,
+            max_pages=self.config.max_pages,
+            allowed_domains=allowed_domains,
+            exclude_patterns=exclude_patterns,
+            respect_robots_txt=self.config.respect_robots_txt,
+            concurrent_requests=self.config.concurrent_requests,
+            request_delay=self.config.request_delay,
+            user_agent=self.config.user_agent,
+            timeout=float(self.config.timeout),
+            follow_redirects=self.config.follow_links
         )
+        
+        # Apply any backend-specific configuration
+        if self.config.scraper_config:
+            for key, value in self.config.scraper_config.items():
+                if hasattr(scraper_config, key):
+                    setattr(scraper_config, key, value)
+                    
+        return scraper_config
 
-    def crawl(self, start_url: str, output_dir: Path) -> Path:
-        """Crawl a website using HTTrack.
+    async def crawl(self, start_url: str, output_dir: Path) -> Dict[str, Any]:
+        """Crawl a website using the configured scraper backend.
 
         Args:
             start_url: Starting URL for crawling
             output_dir: Directory to store downloaded files
 
         Returns:
-            Path to the directory containing downloaded files
+            Dictionary with crawl results including:
+            - pages: List of scraped pages
+            - total_pages: Total number of pages scraped
+            - errors: List of any errors encountered
 
         Raises:
-            subprocess.CalledProcessError: If HTTrack fails
+            Exception: If crawling fails
         """
-        logger.info(f"Starting HTTrack crawl of {start_url}")
-
-        # Parse URL to get domain
-        parsed_url = urlparse(start_url)
-        domain = parsed_url.netloc
-
+        logger.info(f"Starting crawl of {start_url} using {self.config.scraper_backend} backend")
+        
         # Create output directory
         output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Parse URL to get domain for output structure
+        parsed_url = urlparse(start_url)
+        domain = parsed_url.netloc
         site_dir = output_dir / domain
-
-        # Build HTTrack command
-        cmd = self._build_httrack_command(start_url, output_dir)
-
-        logger.debug(f"Running HTTrack command: {' '.join(cmd)}")
-
+        site_dir.mkdir(exist_ok=True)
+        
+        # Create scraper instance
+        backend_name = self.config.scraper_backend.value
+        scraper = create_scraper(backend_name, self._scraper_config)
+        
+        pages = []
+        errors = []
+        
         try:
-            # Run HTTrack
-            result = subprocess.run(
-                cmd,
-                cwd=output_dir,
-                capture_output=True,
-                text=True,
-                timeout=3600,  # 1 hour timeout
-            )
-
-            if result.returncode != 0:
-                logger.error(f"HTTrack failed with return code {result.returncode}")
-                logger.error(f"STDOUT: {result.stdout}")
-                logger.error(f"STDERR: {result.stderr}")
-                raise subprocess.CalledProcessError(
-                    result.returncode, cmd, result.stdout, result.stderr
-                )
-
-            logger.info("HTTrack crawl completed successfully")
-            logger.debug(f"HTTrack output: {result.stdout}")
-
-            return site_dir
-
-        except subprocess.TimeoutExpired:
-            logger.error("HTTrack crawl timed out after 1 hour")
-            raise
+            async with scraper:
+                async for page in scraper.scrape_site(start_url):
+                    pages.append(page)
+                    
+                    # Save page to disk
+                    try:
+                        await self._save_page(page, site_dir)
+                    except Exception as e:
+                        logger.error(f"Failed to save page {page.url}: {e}")
+                        errors.append({"url": page.url, "error": str(e)})
+                        
         except Exception as e:
-            logger.error(f"HTTrack crawl failed: {e}")
+            logger.error(f"Crawl failed: {e}")
             raise
-
-    def _build_httrack_command(self, start_url: str, output_dir: Path) -> List[str]:
-        """Build HTTrack command with appropriate options.
-
+            
+        logger.info(f"Crawl completed. Scraped {len(pages)} pages with {len(errors)} errors")
+        
+        return {
+            "pages": pages,
+            "total_pages": len(pages),
+            "errors": errors,
+            "output_dir": site_dir
+        }
+        
+    async def _save_page(self, page: ScrapedPage, output_dir: Path) -> Path:
+        """Save a scraped page to disk.
+        
         Args:
-            start_url: Starting URL for crawling
-            output_dir: Output directory
-
+            page: ScrapedPage instance
+            output_dir: Directory to save the page
+            
         Returns:
-            List of command arguments
+            Path to saved file
         """
-        cmd = [self.httrack_path]
-
-        # Basic options
-        cmd.extend(
-            [
-                start_url,
-                "-O",
-                str(output_dir),  # Output directory
-                "-q",  # Quiet mode (less verbose)
-                "-r",
-                str(self.config.max_depth),  # Recursion depth
-                (
-                    "-s0" if self.config.respect_robots_txt else "-s2"
-                ),  # robots.txt handling
-                "-c",
-                str(getattr(self.config, "concurrent_requests", 4)),  # Connections
-                "-T",
-                str(self.config.timeout),  # Timeout
-            ]
-        )
-
-        # Rate limiting
-        if hasattr(self.config, "request_delay") and self.config.request_delay > 0:
-            # Convert seconds to milliseconds for HTTrack
-            delay_ms = int(self.config.request_delay * 1000)
-            cmd.extend(["-E", str(delay_ms)])
-
-        # User agent
-        if hasattr(self.config, "user_agent"):
-            cmd.extend(["-F", self.config.user_agent])
+        # Parse URL to create file path
+        parsed = urlparse(page.url)
+        
+        # Create subdirectories based on URL path
+        if parsed.path and parsed.path != '/':
+            # Remove leading slash and split path
+            path_parts = parsed.path.lstrip('/').split('/')
+            
+            # Handle file extension
+            if path_parts[-1].endswith('.html') or '.' in path_parts[-1]:
+                filename = path_parts[-1]
+                subdirs = path_parts[:-1]
+            else:
+                # Assume it's a directory, create index.html
+                filename = 'index.html'
+                subdirs = path_parts
+                
+            # Create subdirectories
+            if subdirs:
+                subdir = output_dir / Path(*subdirs)
+                subdir.mkdir(parents=True, exist_ok=True)
+                file_path = subdir / filename
+            else:
+                file_path = output_dir / filename
         else:
-            cmd.extend(["-F", "html2md-httrack/2.0 (+https://franz.agency)"])
-
-        # Domain restrictions
-        if self.config.allowed_domains:
-            for domain in self.config.allowed_domains:
-                cmd.extend(["+", f"*{domain}/*"])
-
-        # Path exclusions
-        if self.config.excluded_paths:
-            for path in self.config.excluded_paths:
-                cmd.extend(["-", path])
-
-        # Additional HTTrack options for better HTML extraction
-        cmd.extend(
-            [
-                "-j",  # Parse Java files (for better link extraction)
-                "-K",  # Keep original links when possible
-                "-x",  # Do not make any index files
-                "-N",
-                "100",  # Maximum number of non-HTML files per site
-                "-G",  # Store all files in cache
-            ]
-        )
-
-        # File type restrictions (focus on HTML)
-        cmd.extend(
-            [
-                "-*",  # Exclude all by default
-                "+*.html",
-                "+*.htm",
-                "+*.php",
-                "+*.asp",
-                "+*.aspx",
-                "+*.jsp",
-                "+*.css",  # Include CSS for completeness
-                "+*.js",  # Include JS for completeness
-            ]
-        )
-
-        return cmd
+            # Root page
+            file_path = output_dir / 'index.html'
+            
+        # Ensure .html extension
+        if not file_path.suffix:
+            file_path = file_path.with_suffix('.html')
+        elif file_path.suffix not in ('.html', '.htm'):
+            file_path = file_path.with_name(f"{file_path.name}.html")
+            
+        # Write content
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(page.content, encoding=page.encoding)
+        
+        logger.debug(f"Saved {page.url} to {file_path}")
+        
+        # Save metadata if available
+        if page.metadata:
+            metadata_path = file_path.with_suffix('.meta.json')
+            import json
+            metadata = {
+                "url": page.url,
+                "title": page.title,
+                "encoding": page.encoding,
+                "status_code": page.status_code,
+                "headers": page.headers,
+                "metadata": page.metadata
+            }
+            metadata_path.write_text(json.dumps(metadata, indent=2))
+            
+        return file_path
 
     def find_downloaded_files(self, site_dir: Path) -> List[Path]:
-        """Find all HTML files downloaded by HTTrack.
+        """Find all HTML files in the output directory.
 
         Args:
             site_dir: Directory containing downloaded files
@@ -220,75 +213,36 @@ class HTTrackCrawler:
 
         html_files = []
 
-        # HTTrack typically creates files with various extensions
-        patterns = ["*.html", "*.htm", "*.php", "*.asp", "*.aspx", "*.jsp"]
-
+        # Find all HTML files
+        patterns = ["*.html", "*.htm"]
         for pattern in patterns:
             files = list(site_dir.rglob(pattern))
             html_files.extend(files)
 
-        # Filter out HTTrack's own files
-        filtered_files = []
-        for file_path in html_files:
-            # Skip HTTrack's index and cache files
-            if (
-                file_path.name.startswith(("hts-", "index.html"))
-                and file_path.parent == site_dir
-            ):
-                continue
-            # Skip cache directories
-            if "hts-cache" in str(file_path):
-                continue
-            filtered_files.append(file_path)
+        # Filter out metadata files
+        filtered_files = [
+            f for f in html_files 
+            if not f.name.endswith('.meta.json')
+        ]
 
         logger.info(f"Found {len(filtered_files)} HTML files in {site_dir}")
         return sorted(filtered_files)
-
-    def cleanup_httrack_files(self, site_dir: Path) -> None:
-        """Clean up HTTrack-specific files and directories.
-
-        Args:
-            site_dir: Directory containing downloaded files
-        """
-        if not site_dir.exists():
-            return
-
-        # Remove HTTrack cache and metadata
-        cleanup_patterns = [
-            "hts-cache",
-            "hts-log.txt",
-            "cookies.txt",
-            "index.html",  # HTTrack's generated index
-        ]
-
-        for pattern in cleanup_patterns:
-            for item in site_dir.rglob(pattern):
-                try:
-                    if item.is_dir():
-                        shutil.rmtree(item)
-                        logger.debug(f"Removed directory: {item}")
-                    else:
-                        item.unlink()
-                        logger.debug(f"Removed file: {item}")
-                except Exception as e:
-                    logger.warning(f"Failed to remove {item}: {e}")
-
-
-class AsyncHTTrackCrawler(HTTrackCrawler):
-    """Async wrapper for HTTrack crawler."""
-
-    async def crawl_async(self, start_url: str, output_dir: Path) -> Path:
-        """Async version of crawl method.
-
+    
+    def crawl_sync(self, start_url: str, output_dir: Path) -> Path:
+        """Synchronous version of crawl method.
+        
         Args:
             start_url: Starting URL for crawling
             output_dir: Directory to store downloaded files
-
+            
         Returns:
-            Path to the directory containing downloaded files
+            Path to site directory
         """
-        import asyncio
-
-        # Run HTTrack in a thread pool since it's a blocking operation
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.crawl, start_url, output_dir)
+        # Run async crawl in new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(self.crawl(start_url, output_dir))
+            return result["output_dir"]
+        finally:
+            loop.close()

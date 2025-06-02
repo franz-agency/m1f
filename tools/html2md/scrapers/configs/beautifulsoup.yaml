@@ -1,0 +1,12 @@
+# BeautifulSoup scraper configuration example
+scraper_backend: beautifulsoup
+scraper_config:
+  parser: "html.parser"  # Options: "html.parser", "lxml", "html5lib"
+  
+crawler:
+  max_depth: 5
+  max_pages: 100
+  request_delay: 0.5
+  concurrent_requests: 5
+  respect_robots_txt: true
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"

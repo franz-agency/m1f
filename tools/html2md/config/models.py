@@ -28,6 +28,16 @@ class OutputFormat(Enum):
     JSON = "json"
 
 
+class ScraperBackend(str, Enum):
+    """Available web scraper backends."""
+    
+    HTTRACK = "httrack"
+    BEAUTIFULSOUP = "beautifulsoup"
+    SCRAPY = "scrapy"
+    PLAYWRIGHT = "playwright"
+    HTTPX_SELECTOLAX = "httpx_selectolax"
+
+
 @dataclass
 class ConversionOptions:
     """Options for HTML to Markdown conversion."""
@@ -141,6 +151,10 @@ class CrawlerConfig:
     request_delay: float = 0.5  # seconds between requests
     respect_robots_txt: bool = True
     max_pages: int = 1000
+    
+    # Scraper backend configuration
+    scraper_backend: ScraperBackend = ScraperBackend.BEAUTIFULSOUP
+    scraper_config: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

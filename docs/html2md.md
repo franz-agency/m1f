@@ -1,23 +1,22 @@
 # html2md (HTML to Markdown Converter)
 
-A modern HTML to Markdown converter with async I/O, HTTrack integration, and
-parallel processing capabilities.
+A modern HTML to Markdown converter with configurable web scraper backends, async I/O,
+and parallel processing capabilities.
 
 ## Overview
 
-The html2md tool (v2.0.0) provides a robust solution for converting HTML content
+The html2md tool (v3.0.0) provides a robust solution for converting HTML content
 to Markdown format, with fine-grained control over the conversion process. Built
-with Python 3.10+ and modern async architecture, it is especially useful for
-transforming existing HTML documentation, extracting specific content from web
-pages, and preparing content for use with Large Language Models.
+with Python 3.10+ and modern async architecture, it features pluggable web scraper
+backends for different use cases.
 
 ## Key Features
 
+- **Multiple Scraper Backends**: Choose from BeautifulSoup (default), HTTrack, Selectolax, Scrapy, or Playwright
 - **Async I/O**: High-performance concurrent file processing
-- **HTTrack Integration**: Download and convert entire websites
 - **API Mode**: Programmatic access for integration with other tools
 - **Type Safety**: Full type annotations throughout the codebase
-- **Modern Architecture**: Clean modular design with dependency injection
+- **Modern Architecture**: Clean modular design with plugin system
 - Recursive directory scanning for batch conversion
 - CSS selector support for extracting specific content
 - Smart internal link handling (HTML → Markdown)
@@ -32,45 +31,78 @@ pages, and preparing content for use with Large Language Models.
 
 ```bash
 # Basic conversion of all HTML files in a directory
-python -m tools.html2md --source-dir ./website --destination-dir ./docs
+python -m tools.html2md convert ./website -o ./docs
 
 # Extract only main content from HTML files
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --outermost-selector "main.content" --ignore-selectors "nav" ".sidebar" "footer"
+python -m tools.html2md convert ./website -o ./docs \
+  --content-selector "main.content" --ignore-selectors "nav" ".sidebar" "footer"
 
 # Add YAML frontmatter and adjust heading levels
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --add-frontmatter --heading-offset 1
+python -m tools.html2md convert ./website -o ./docs \
+  --no-frontmatter --heading-offset 1
 
-# Download and convert a website with HTTrack (new in v2.0.0)
-python -m tools.html2md --source-dir https://example.com --destination-dir ./docs \
-  --httrack --include-patterns "*.html" "*/docs/*"
+# Download and convert a website with BeautifulSoup (default)
+python -m tools.html2md crawl https://example.com -o ./docs
+
+# Download and convert with HTTrack backend
+python -m tools.html2md crawl https://example.com -o ./docs --scraper httrack
+
+# Use Selectolax for blazing fast performance
+python -m tools.html2md crawl https://example.com -o ./docs --scraper selectolax
+
+# Use Playwright for JavaScript-heavy sites
+python -m tools.html2md crawl https://spa-app.com -o ./docs --scraper playwright
+
+# Use Scrapy for large-scale crawling
+python -m tools.html2md crawl https://large-site.com -o ./docs --scraper scrapy
 ```
 
-## Command Line Options
+## Command Line Interface
 
-| Option                  | Description                                                                  |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| `--source-dir`          | Directory containing HTML files to process                                   |
-| `--destination-dir`     | Directory where converted Markdown files will be written                     |
-| `--outermost-selector`  | CSS selector to extract specific content (e.g., `main` or `article.content`) |
-| `--ignore-selectors`    | CSS selectors for elements to remove (e.g., `nav` `.sidebar` `footer`)       |
-| `--remove-elements`     | HTML elements to remove (default: script, style, iframe, noscript)           |
-| `--include-extensions`  | File extensions to include (default: .html, .htm, .xhtml)                    |
-| `--exclude-patterns`    | Patterns to exclude from processing                                          |
-| `--exclude-dirs`        | Directory names to exclude from processing                                   |
-| `--heading-offset`      | Number to add to heading levels (e.g., h1 → h2 if offset=1)                  |
-| `--add-frontmatter`     | Add YAML frontmatter to the output Markdown                                  |
-| `--frontmatter-fields`  | Custom frontmatter fields (format: key=value)                                |
-| `--strip-classes`       | Strip class attributes from HTML elements (default: true)                    |
-| `--add-line-breaks`     | Add line breaks between block elements (default: true)                       |
-| `--convert-code-blocks` | Convert code blocks with language hints (default: true)                      |
-| `--target-encoding`     | Convert all files to the specified character encoding                        |
-| `--parallel`            | Enable parallel processing for faster conversion                             |
-| `--max-workers`         | Maximum number of worker processes for parallel conversion                   |
-| `-f, --force`           | Force overwrite of existing Markdown files                                   |
-| `-v, --verbose`         | Enable verbose output                                                        |
-| `-q, --quiet`           | Suppress all console output                                                  |
+The html2md tool uses subcommands for different operations:
+
+### Convert Command
+
+Convert local HTML files to Markdown:
+
+```bash
+python -m tools.html2md convert <source> -o <output> [options]
+```
+
+| Option                 | Description                                                          |
+| ---------------------- | -------------------------------------------------------------------- |
+| `source`               | Source file or directory                                             |
+| `-o, --output`         | Output file or directory (required)                                  |
+| `-c, --config`         | Configuration file path                                              |
+| `--content-selector`   | CSS selector for main content                                        |
+| `--ignore-selectors`   | CSS selectors to ignore (space-separated)                            |
+| `--heading-offset`     | Offset heading levels                                                |
+| `--no-frontmatter`     | Don't add YAML frontmatter                                           |
+| `--parallel`           | Enable parallel processing                                           |
+| `-v, --verbose`        | Enable verbose output                                                |
+| `-q, --quiet`          | Suppress all output except errors                                    |
+
+### Crawl Command
+
+Crawl and convert websites:
+
+```bash
+python -m tools.html2md crawl <url> -o <output> [options]
+```
+
+| Option                    | Description                                                       |
+| ------------------------- | ----------------------------------------------------------------- |
+| `url`                     | URL to crawl                                                      |
+| `-o, --output`            | Output directory (required)                                       |
+| `-c, --config`            | Configuration file path                                           |
+| `--scraper`               | Scraper backend: beautifulsoup, httrack, selectolax, scrapy, playwright (default: beautifulsoup) |
+| `--max-depth`             | Maximum crawl depth (default: 5)                                  |
+| `--max-pages`             | Maximum pages to crawl (default: 1000)                            |
+| `--request-delay`         | Delay between requests in seconds (default: 0.5)                  |
+| `--concurrent-requests`   | Number of concurrent requests (default: 5)                        |
+| `--user-agent`            | Custom user agent string                                          |
+| `--no-robots`             | Ignore robots.txt                                                 |
+| `--scraper-config`        | Path to scraper-specific config file                              |
 
 ## Usage Examples
 
@@ -78,77 +110,94 @@ python -m tools.html2md --source-dir https://example.com --destination-dir ./doc
 
 ```bash
 # Simple conversion of all HTML files in a directory
-python -m tools.html2md --source-dir ./website --destination-dir ./docs
+python -m tools.html2md convert ./website -o ./docs
 
 # Convert files with verbose logging
-python -m tools.html2md --source-dir ./website --destination-dir ./docs --verbose
+python -m tools.html2md convert ./website -o ./docs --verbose
 ```
 
 ### Content Selection
 
 ```bash
 # Extract only the main content and ignore navigation elements
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --outermost-selector "main" --ignore-selectors "nav" ".sidebar" "footer"
+python -m tools.html2md convert ./website -o ./docs \
+  --content-selector "main" --ignore-selectors "nav" ".sidebar" "footer"
 
-# Extract article content and remove additional elements
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --outermost-selector "article.content" \
-  --ignore-selectors ".author-bio" ".share-buttons" ".related-articles" \
-  --remove-elements "script" "style" "iframe" "noscript" "div.comments"
+# Extract article content from specific selectors
+python -m tools.html2md convert ./website -o ./docs \
+  --content-selector "article.content" \
+  --ignore-selectors ".author-bio" ".share-buttons" ".related-articles"
+```
+
+### Web Crawling
+
+```bash
+# Crawl a website with default BeautifulSoup backend
+python -m tools.html2md crawl https://example.com -o ./docs
+
+# Use HTTrack for complete mirroring
+python -m tools.html2md crawl https://example.com -o ./docs --scraper httrack
+
+# Crawl with custom settings
+python -m tools.html2md crawl https://example.com -o ./docs \
+  --max-depth 3 \
+  --max-pages 100 \
+  --request-delay 1.0 \
+  --user-agent "MyBot/1.0"
 ```
 
 ### File Filtering
 
 ```bash
 # Process only specific file types
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --include-extensions .html .xhtml
-
-# Exclude specific directories and patterns
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --exclude-dirs "drafts" "archived" "temp" \
-  --exclude-patterns "draft-" "temp-" "_private"
+python -m tools.html2md convert ./website -o ./docs \
+  -c config.yaml  # Use a configuration file for file filtering
 ```
 
 ### Formatting Options
 
 ```bash
 # Adjust heading levels (e.g., h1 → h2, h2 → h3)
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
+python -m tools.html2md convert ./website -o ./docs \
   --heading-offset 1
 
-# Add YAML frontmatter with custom fields
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --add-frontmatter --frontmatter-fields "layout=post" "category=documentation"
+# Skip frontmatter generation
+python -m tools.html2md convert ./website -o ./docs \
+  --no-frontmatter
 
-# Preserve class attributes and disable line breaks adjustment
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --strip-classes=False --add-line-breaks=False
+# Use configuration file for advanced formatting options
+python -m tools.html2md convert ./website -o ./docs -c config.yaml
 ```
 
 ### Performance Optimization
 
 ```bash
 # Use parallel processing for faster conversion of large sites
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --parallel --max-workers 4
+python -m tools.html2md convert ./website -o ./docs \
+  --parallel
 
-# Force overwrite of existing files
-python -m tools.html2md --source-dir ./website --destination-dir ./docs \
-  --force
+# Crawl with optimized settings for large sites
+python -m tools.html2md crawl https://example.com -o ./docs \
+  --scraper beautifulsoup \
+  --concurrent-requests 10 \
+  --max-pages 5000
 ```
 
-### HTTrack Integration (New in v2.0.0)
+### Web Crawling with Scraper Backends (New in v3.0.0)
 
 ```bash
-# Download and convert an entire website
-python -m tools.html2md --source-dir https://example.com --destination-dir ./docs \
-  --httrack --httrack-path /usr/local/bin/httrack
+# Crawl and convert with BeautifulSoup (default)
+python -m tools.html2md crawl https://example.com -o ./docs
 
-# Download specific sections of a website
-python -m tools.html2md --source-dir https://docs.example.com --destination-dir ./docs \
-  --httrack --include-patterns "*/api/*" "*/guide/*" --exclude-patterns "*/old/*"
+# Use HTTrack for complete website mirroring
+python -m tools.html2md crawl https://example.com -o ./docs --scraper httrack
+
+# Crawl with custom settings
+python -m tools.html2md crawl https://docs.example.com -o ./docs \
+  --scraper beautifulsoup \
+  --max-depth 10 \
+  --max-pages 500 \
+  --request-delay 1.0
 ```
 
 ## Advanced Features
@@ -229,7 +278,7 @@ The converter provides robust character encoding detection and conversion:
 
 ## Architecture
 
-HTML2MD v2.0.0 features a modern, modular architecture:
+HTML2MD v3.0.0 features a modern, modular architecture:
 
 ```
 tools/html2md/
@@ -242,15 +291,26 @@ tools/html2md/
 │   ├── loader.py     # Config file loader
 │   └── models.py     # Config data models
 ├── core.py           # Core conversion logic
+├── crawlers.py       # Web crawling with scraper backends
+├── scrapers/         # Pluggable web scraper backends
+│   ├── __init__.py
+│   ├── base.py       # Abstract base class
+│   ├── beautifulsoup.py  # BeautifulSoup scraper
+│   ├── httrack.py    # HTTrack wrapper
+│   ├── selectolax.py # httpx + selectolax scraper
+│   ├── scrapy_scraper.py # Scrapy framework integration
+│   └── playwright.py # Playwright browser automation
+├── preprocessors.py  # HTML preprocessing
 └── utils.py          # Utility functions
 ```
 
 ### Key Components
 
 - **API Mode**: Use as a library in other Python projects
-- **HTTrack Integration**: Download and convert websites in one step
+- **Scraper Backends**: Pluggable architecture supporting BeautifulSoup and HTTrack
 - **Type Safety**: Full type hints and dataclass models
 - **Clean Architecture**: Separation of concerns with dependency injection
+- **Async Support**: Modern async/await for high performance
 
 ## Integration with m1f
 
@@ -260,7 +320,7 @@ documentation handling:
 1. First convert HTML files to Markdown:
 
    ```bash
-   python -m tools.html2md --source-dir ./html-docs --destination-dir ./markdown-docs
+   python -m tools.html2md convert ./html-docs -o ./markdown-docs
    ```
 
 2. Then use m1f to combine the Markdown files:
@@ -284,28 +344,37 @@ This workflow is ideal for:
   processes
 - Memory usage scales with the number of worker processes and file sizes
 
-## Programmatic API (New in v2.0.0)
+## Programmatic API
 
 Use html2md in your Python projects:
 
 ```python
-from tools.html2md.api import HTML2MDConverter
-import asyncio
+from tools.html2md.api import Html2mdConverter
+from tools.html2md.config import Config
+from pathlib import Path
 
-# Create converter instance
-converter = HTML2MDConverter(
-    outermost_selector="main",
-    ignore_selectors=["nav", "footer"],
-    add_frontmatter=True
+# Create converter with configuration
+config = Config(
+    source=Path("./html"),
+    destination=Path("./markdown")
 )
+converter = Html2mdConverter(config)
 
 # Convert a single file
-result = asyncio.run(converter.convert_file("page.html"))
-print(result.content)
+output_path = converter.convert_file(Path("page.html"))
+print(f"Converted to: {output_path}")
 
-# Convert multiple URLs
-urls = ["https://example.com/page1", "https://example.com/page2"]
-results = asyncio.run(converter.convert_directory_from_urls(urls))
+# Convert entire directory
+results = converter.convert_directory()
+print(f"Converted {len(results)} files")
+
+# Convert a URL
+output_path = converter.convert_url("https://example.com")
+
+# Convert entire website with crawling
+results = converter.convert_website("https://example.com")
+for source, output in results.items():
+    print(f"{source} -> {output}")
 ```
 
 ## Requirements and Dependencies

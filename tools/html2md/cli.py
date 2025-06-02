@@ -146,6 +146,48 @@ def add_crawl_arguments(parser: argparse.ArgumentParser) -> None:
         default="markdown",
         help="Output format",
     )
+    
+    # Scraper backend selection
+    parser.add_argument(
+        "--scraper",
+        type=str,
+        choices=["httrack", "beautifulsoup", "bs4", "selectolax", "httpx", "scrapy", "playwright"],
+        default="beautifulsoup",
+        help="Web scraper backend to use (default: beautifulsoup)"
+    )
+    
+    parser.add_argument(
+        "--scraper-config",
+        type=Path,
+        help="Path to scraper-specific configuration file (YAML/JSON)"
+    )
+    
+    # Common scraper options
+    parser.add_argument(
+        "--request-delay",
+        type=float,
+        default=0.5,
+        help="Delay between requests in seconds (default: 0.5)"
+    )
+    
+    parser.add_argument(
+        "--concurrent-requests",
+        type=int,
+        default=5,
+        help="Number of concurrent requests (default: 5)"
+    )
+    
+    parser.add_argument(
+        "--user-agent",
+        type=str,
+        help="Custom user agent string"
+    )
+    
+    parser.add_argument(
+        "--no-robots",
+        action="store_true",
+        help="Ignore robots.txt"
+    )
 
 
 def add_config_arguments(parser: argparse.ArgumentParser) -> None:
@@ -233,6 +275,31 @@ def handle_crawl(args: argparse.Namespace) -> None:
     # Update config with CLI arguments
     config.crawler.max_depth = args.max_depth
     config.crawler.max_pages = args.max_pages
+    
+    # Set scraper backend
+    from .config.models import ScraperBackend
+    config.crawler.scraper_backend = ScraperBackend(args.scraper)
+    
+    # Update scraper configuration
+    config.crawler.request_delay = args.request_delay
+    config.crawler.concurrent_requests = args.concurrent_requests
+    config.crawler.respect_robots_txt = not args.no_robots
+    
+    if args.user_agent:
+        config.crawler.user_agent = args.user_agent
+    
+    # Load scraper-specific config if provided
+    if args.scraper_config:
+        import yaml
+        import json
+        
+        scraper_config_path = args.scraper_config
+        if scraper_config_path.suffix == '.json':
+            with open(scraper_config_path) as f:
+                config.crawler.scraper_config = json.load(f)
+        else:  # Assume YAML
+            with open(scraper_config_path) as f:
+                config.crawler.scraper_config = yaml.safe_load(f)
 
     if hasattr(args, "format"):
         config.output_format = OutputFormat(args.format)
@@ -245,6 +312,7 @@ def handle_crawl(args: argparse.Namespace) -> None:
     converter = Html2mdConverter(config)
 
     console.print(f"Crawling website: {args.url}")
+    console.print(f"Using scraper backend: {args.scraper}")
     console.print("This may take a while...")
 
     try:

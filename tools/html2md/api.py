@@ -320,17 +320,17 @@ class Html2mdConverter:
         logger.info(f"Website conversion starting from {start_url}")
 
         # Import crawler
-        from .crawlers import HTTrackCrawler
+        from .crawlers import WebCrawler
 
-        # Create temporary directory for HTTrack output
+        # Create temporary directory for crawler output
         import tempfile
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
-            # Use HTTrack to mirror the website
-            crawler = HTTrackCrawler(self.config.crawler)
-            site_dir = crawler.crawl(start_url, temp_path)
+            # Use configured crawler to mirror the website
+            crawler = WebCrawler(self.config.crawler)
+            site_dir = crawler.crawl_sync(start_url, temp_path)
 
             # Find all downloaded HTML files
             html_files = crawler.find_downloaded_files(site_dir)
