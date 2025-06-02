@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
 """
 A simple hello world script
 """

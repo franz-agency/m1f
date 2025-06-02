@@ -124,7 +124,7 @@ For detailed documentation, please check the [docs directory](./docs/README.md).
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md)
+This project is licensed under the MIT License. See the [LICENSE.md](LICENSE)
 file for details.
 
 ## Contributing
