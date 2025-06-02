@@ -81,29 +81,9 @@ bundles:
     output: ".m1f/complete/project.m1f.txt"
     sources:
       - path: "."
-        include_extensions: [
-          ".py", ".md", ".yml", ".yaml", ".json", ".txt", ".sh", 
-          ".ps1", ".bat", ".cmd",  # Scripts
-          ".ini", ".toml", ".cfg", ".conf",  # Config files
-          ".rst", ".adoc",  # Documentation
-          ".html", ".css", ".js",  # Web files
-          ".xml", ".env",  # Other configs
-          ".gitignore", ".dockerignore"  # Important dot files
-        ]
-        excludes:
-          - "**/test_data/**"
-          - "**/fixtures/**"
-          - "**/*.pyc"
-          - "**/htmlcov/**"
-          - "**/.m1f/**"  # Don't include m1f bundles in themselves
-          - "**/node_modules/**"
-          - "**/.venv/**"
-          - "**/__pycache__/**"
-          - "**/dist/**"
-          - "**/build/**"
-          - "**/.git/**"
+        exclude-path-file:
+          - ".gitignore"
     separator_style: "Detailed"
-    filename_mtime_hash: true
     priority: "medium"
 
   # Custom focus bundles - define your own
@@ -134,7 +114,6 @@ global:
     
   # Default settings for all bundles
   defaults:
-    minimal_output: true
     force_overwrite: true
     max_file_size: "10MB"
     
