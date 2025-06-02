@@ -1,24 +1,28 @@
 # html2md (HTML to Markdown Converter)
 
-A modern HTML to Markdown converter with configurable web scraper backends, async I/O,
+A modern HTML to Markdown converter with HTML structure analysis, async I/O,
 and parallel processing capabilities.
 
 ## Overview
 
 The html2md tool (v3.0.0) provides a robust solution for converting HTML content
 to Markdown format, with fine-grained control over the conversion process. Built
-with Python 3.10+ and modern async architecture, it features pluggable web scraper
-backends for different use cases.
+with Python 3.10+ and modern async architecture, it focuses on intelligent content
+extraction and conversion.
+
+**Note:** Web scraping functionality has been moved to the separate `webscraper` tool
+for better modularity. Use `webscraper` to download websites, then `html2md` to
+convert the downloaded HTML files.
 
 ## Key Features
 
-- **Multiple Scraper Backends**: Choose from BeautifulSoup (default), HTTrack, Selectolax, Scrapy, or Playwright
+- **HTML Structure Analysis**: Analyze HTML files to find optimal content selectors
+- **Intelligent Content Extraction**: Use CSS selectors to extract specific content
 - **Async I/O**: High-performance concurrent file processing
 - **API Mode**: Programmatic access for integration with other tools
 - **Type Safety**: Full type annotations throughout the codebase
-- **Modern Architecture**: Clean modular design with plugin system
+- **Modern Architecture**: Clean modular design
 - Recursive directory scanning for batch conversion
-- CSS selector support for extracting specific content
 - Smart internal link handling (HTML → Markdown)
 - Customizable element filtering and removal
 - YAML frontmatter generation
@@ -41,20 +45,26 @@ python -m tools.html2md convert ./website -o ./docs \
 python -m tools.html2md convert ./website -o ./docs \
   --no-frontmatter --heading-offset 1
 
-# Download and convert a website with BeautifulSoup (default)
-python -m tools.html2md crawl https://example.com -o ./docs
+# Analyze HTML structure to find best selectors
+python -m tools.html2md analyze ./html/*.html --suggest-selectors
 
-# Download and convert with HTTrack backend
-python -m tools.html2md crawl https://example.com -o ./docs --scraper httrack
+# Analyze with detailed structure output
+python -m tools.html2md analyze ./html/*.html --show-structure --common-patterns
+```
 
-# Use Selectolax for blazing fast performance
-python -m tools.html2md crawl https://example.com -o ./docs --scraper selectolax
+### Complete Workflow Example
 
-# Use Playwright for JavaScript-heavy sites
-python -m tools.html2md crawl https://spa-app.com -o ./docs --scraper playwright
+```bash
+# Step 1: Download website using webscraper
+python -m tools.webscraper https://example.com -o ./html_files
 
-# Use Scrapy for large-scale crawling
-python -m tools.html2md crawl https://large-site.com -o ./docs --scraper scrapy
+# Step 2: Analyze HTML structure
+python -m tools.html2md analyze ./html_files/*.html --suggest-selectors
+
+# Step 3: Convert with optimal selectors
+python -m tools.html2md convert ./html_files -o ./markdown \
+  --content-selector "article" \
+  --ignore-selectors "nav" ".sidebar" ".ads"
 ```
 
 ## Command Line Interface
@@ -82,27 +92,20 @@ python -m tools.html2md convert <source> -o <output> [options]
 | `-v, --verbose`        | Enable verbose output                                                |
 | `-q, --quiet`          | Suppress all output except errors                                    |
 
-### Crawl Command
+### Analyze Command
 
-Crawl and convert websites:
+Analyze HTML structure for optimal content extraction:
 
 ```bash
-python -m tools.html2md crawl <url> -o <output> [options]
+python -m tools.html2md analyze <files> [options]
 ```
 
-| Option                    | Description                                                       |
-| ------------------------- | ----------------------------------------------------------------- |
-| `url`                     | URL to crawl                                                      |
-| `-o, --output`            | Output directory (required)                                       |
-| `-c, --config`            | Configuration file path                                           |
-| `--scraper`               | Scraper backend: beautifulsoup, httrack, selectolax, scrapy, playwright (default: beautifulsoup) |
-| `--max-depth`             | Maximum crawl depth (default: 5)                                  |
-| `--max-pages`             | Maximum pages to crawl (default: 1000)                            |
-| `--request-delay`         | Delay between requests in seconds (default: 0.5)                  |
-| `--concurrent-requests`   | Number of concurrent requests (default: 5)                        |
-| `--user-agent`            | Custom user agent string                                          |
-| `--no-robots`             | Ignore robots.txt                                                 |
-| `--scraper-config`        | Path to scraper-specific config file                              |
+| Option                 | Description                                                          |
+| ---------------------- | -------------------------------------------------------------------- |
+| `files`                | HTML files to analyze (2-3 files recommended)                        |
+| `--show-structure`     | Show detailed HTML structure                                         |
+| `--common-patterns`    | Find common patterns across files                                    |
+| `--suggest-selectors`  | Suggest CSS selectors for content extraction (default if no options) |
 
 ## Usage Examples
 
@@ -129,21 +132,21 @@ python -m tools.html2md convert ./website -o ./docs \
   --ignore-selectors ".author-bio" ".share-buttons" ".related-articles"
 ```
 
-### Web Crawling
+### HTML Analysis
 
 ```bash
-# Crawl a website with default BeautifulSoup backend
-python -m tools.html2md crawl https://example.com -o ./docs
+# Analyze HTML files to find optimal selectors
+python -m tools.html2md analyze ./html/*.html
 
-# Use HTTrack for complete mirroring
-python -m tools.html2md crawl https://example.com -o ./docs --scraper httrack
+# Show detailed structure of HTML files
+python -m tools.html2md analyze ./html/*.html --show-structure
 
-# Crawl with custom settings
-python -m tools.html2md crawl https://example.com -o ./docs \
-  --max-depth 3 \
-  --max-pages 100 \
-  --request-delay 1.0 \
-  --user-agent "MyBot/1.0"
+# Find common patterns across multiple files
+python -m tools.html2md analyze ./html/*.html --common-patterns
+
+# Get all analysis options
+python -m tools.html2md analyze ./html/*.html \
+  --show-structure --common-patterns --suggest-selectors
 ```
 
 ### File Filtering
@@ -175,29 +178,6 @@ python -m tools.html2md convert ./website -o ./docs -c config.yaml
 # Use parallel processing for faster conversion of large sites
 python -m tools.html2md convert ./website -o ./docs \
   --parallel
-
-# Crawl with optimized settings for large sites
-python -m tools.html2md crawl https://example.com -o ./docs \
-  --scraper beautifulsoup \
-  --concurrent-requests 10 \
-  --max-pages 5000
-```
-
-### Web Crawling with Scraper Backends (New in v3.0.0)
-
-```bash
-# Crawl and convert with BeautifulSoup (default)
-python -m tools.html2md crawl https://example.com -o ./docs
-
-# Use HTTrack for complete website mirroring
-python -m tools.html2md crawl https://example.com -o ./docs --scraper httrack
-
-# Crawl with custom settings
-python -m tools.html2md crawl https://docs.example.com -o ./docs \
-  --scraper beautifulsoup \
-  --max-depth 10 \
-  --max-pages 500 \
-  --request-delay 1.0
 ```
 
 ## Advanced Features

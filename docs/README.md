@@ -14,8 +14,10 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 - [token_counter](./token_counter.md) - Documentation for the token estimation
   tool
 
-### HTML to Markdown Converter
+### Web Scraping and HTML Conversion
 
+- [webscraper](./webscraper.md) - Download websites for offline viewing and 
+  processing
 - [html2md Overview](./html2md.md) - Comprehensive guide to the HTML to Markdown
   converter
 - [html2md Guide](./html2md_guide.md) - Detailed usage guide with examples
@@ -48,6 +50,8 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 - **File extraction**: Use
   `python -m tools.s1f -i ./combined.txt -d ./extracted_files`
 - **Check token count**: Use `python tools/token_counter.py ./combined.txt`
+- **Download website**: Use
+  `python -m tools.webscraper https://example.com -o ./html`
 - **Convert HTML to Markdown**: Use
   `python -m tools.html2md convert ./html ./markdown`
 - **Auto-bundle project**: Use `./scripts/auto_bundle.sh` or configure with

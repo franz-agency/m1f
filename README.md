@@ -14,8 +14,9 @@ The core tools are:
   preserving original structure
 - **token_counter**: Estimates token usage for LLM context planning and
   optimization
-- **html2md**: Modern HTML to Markdown converter with website crawling
-  capabilities using the native HTTrack command-line tool
+- **webscraper**: Downloads websites for offline viewing and processing
+- **html2md**: Modern HTML to Markdown converter with HTML analysis
+  capabilities
 
 These tools solve the challenge of providing comprehensive context to AI
 assistants while optimizing token usage.
@@ -53,9 +54,60 @@ The deduplication is based purely on file content (using SHA256 checksums), so
 even files with different names, paths, or modification times will be
 deduplicated if their content is identical.
 
-### HTML2MD Integration
+### Web Scraping and HTML Conversion
 
-m1f now includes enhanced support for working with HTML-to-Markdown converted
+The toolkit now separates web scraping from HTML-to-Markdown conversion for better modularity. The primary use case is downloading online documentation to provide to LLMs like Claude.
+
+#### webscraper
+Downloads websites (especially documentation) for offline processing:
+
+```bash
+# Download a documentation website
+python -m tools.webscraper https://docs.example.com -o ./downloaded_html
+
+# Advanced options for larger documentation sites
+python -m tools.webscraper https://docs.example.com -o ./html \
+  --max-pages 50 \
+  --max-depth 3 \
+  --scraper beautifulsoup
+```
+
+Supported scrapers: beautifulsoup (default), httrack, scrapy, playwright, selectolax
+
+#### html2md
+Converts HTML files to Markdown with intelligent content extraction:
+
+```bash
+# Convert HTML directory to Markdown
+python -m tools.html2md convert ./downloaded_html -o ./markdown
+
+# Analyze HTML structure to find best selectors
+python -m tools.html2md analyze ./html/*.html --suggest-selectors
+
+# Convert with specific content extraction
+python -m tools.html2md convert ./html -o ./md \
+  --content-selector "article.post" \
+  --ignore-selectors "nav" ".sidebar" ".ads"
+```
+
+#### Complete Workflow: Documentation for LLMs
+
+```bash
+# 1. Download documentation
+python -m tools.webscraper https://docs.framework.com -o ./docs_html
+
+# 2. Convert to Markdown
+python -m tools.html2md convert ./docs_html -o ./docs_md
+
+# 3. Bundle into single file for LLM
+python -m tools.m1f -s ./docs_md -o ./framework_docs.txt
+
+# Now framework_docs.txt can be provided to Claude or other LLMs
+```
+
+### HTML2MD Integration with m1f
+
+m1f includes enhanced support for working with HTML-to-Markdown converted
 content:
 
 - **Metadata Cleaning**: Use `--remove-scraped-metadata` to automatically remove
