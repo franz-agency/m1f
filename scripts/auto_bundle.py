@@ -147,8 +147,8 @@ class AutoBundler:
                 
                 # Include extensions
                 if 'include_extensions' in source:
-                    for ext in source['include_extensions']:
-                        cmd_parts.extend(['--include-extensions', ext])
+                    cmd_parts.append('--include-extensions')
+                    cmd_parts.extend(source['include_extensions'])
             
             # Excludes
             if 'excludes' in source:
