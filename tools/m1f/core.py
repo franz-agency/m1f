@@ -38,7 +38,7 @@ from .file_processor import FileProcessor
 from .output_writer import OutputWriter
 from .archive_creator import ArchiveCreator
 from .security_scanner import SecurityScanner
-from .utils import format_duration
+from .utils import format_duration, sort_files_by_depth_and_name, sort_directories_by_depth_and_name
 
 
 @dataclass
@@ -106,6 +106,10 @@ class FileCombiner:
                 )
 
             self.logger.info(f"Found {len(files_to_process)} files to process")
+            
+            # Sort files by depth and name (README.md first)
+            files_to_process = sort_files_by_depth_and_name(files_to_process)
+            self.logger.debug("Files sorted by depth and name")
 
             # Security check if enabled
             flagged_files = []
@@ -375,7 +379,16 @@ class FileCombiner:
         """Write a list of paths to a file."""
         try:
             if list_type == "files":
+                # Preserve the order from the already-sorted files list
                 paths = [rel_path for _, rel_path in files]
+                # Remove duplicates while preserving order
+                seen = set()
+                unique_paths = []
+                for p in paths:
+                    if p not in seen:
+                        seen.add(p)
+                        unique_paths.append(p)
+                sorted_paths = unique_paths
             else:  # directories
                 unique_dirs = set()
                 for _, rel_path in files:
@@ -386,10 +399,8 @@ class FileCombiner:
                         unique_dirs.add(str(current))
                         current = current.parent
 
-                paths = list(unique_dirs)
-
-            # Sort paths
-            sorted_paths = sorted(set(paths))
+                # Sort directories by depth and name
+                sorted_paths = sort_directories_by_depth_and_name(list(unique_dirs))
 
             # Write to file
             def write_file():

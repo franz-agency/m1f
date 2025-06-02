@@ -38,7 +38,6 @@ wordpress:
     extensions:
       .php:
         actions:
-          - strip_comments
           - remove_empty_lines
       .js:
         actions:
@@ -58,7 +57,6 @@ wordpress:
         - "wp-content/plugins/**/*.php"
         - "wp-content/themes/**/*.php"
       actions:
-        - strip_comments
         - remove_empty_lines
       # Don't include metadata for cleaner output
       include_metadata: true
