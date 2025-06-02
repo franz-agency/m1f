@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Test script for s1f.py's new --target-encoding parameter.
 This tests that we can explicitly specify the output encoding regardless of the original encoding.
