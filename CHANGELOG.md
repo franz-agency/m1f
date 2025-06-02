@@ -8,8 +8,28 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.0.0] - 2025-06-02
+
+### Added
+
+- **Pluggable Web Scraper Backends**: HTML2MD now supports multiple scraper backends for different use cases
+  - **Selectolax** (httpx + selectolax): Blazing fast HTML parsing with minimal resource usage
+  - **Scrapy**: Industrial-strength web scraping framework with middleware support
+  - **Playwright**: Browser automation for JavaScript-heavy sites and SPAs
+  - Each scraper is optimized for specific scenarios:
+    - Selectolax: Maximum performance for simple HTML (20+ concurrent requests)
+    - Scrapy: Complex crawling with retry logic, caching, and auto-throttle
+    - Playwright: Full JavaScript execution with multiple browser support
+  - CLI option `--scraper` to select backend (beautifulsoup, httrack, selectolax, scrapy, playwright)
+  - Backend-specific configuration files in `scrapers/configs/`
+  - Graceful fallback when optional dependencies are not installed
+
 ### Changed
 
+- **HTML2MD Version**: Bumped to 3.0.0 for major feature addition
+- **Scraper Architecture**: Refactored to plugin-based system with abstract base class
+- **Documentation**: Comprehensive updates for all scraper backends with examples
+- **CLI**: Extended to support new scraper options and configuration
 - **HTTrack Integration**: Replaced Python HTTrack module with native Linux httrack command
   - Now uses real HTTrack command-line tool for professional-grade website mirroring
   - Better performance, reliability, and standards compliance
@@ -17,7 +37,13 @@ and this project adheres to
   - Updated user agent to `html2md/2.0 (+https://franz.agency)`
   - Enhanced command-line options mapping for HTTrack features
 
-## [2.1.1] - 2025-01-25
+### Documentation
+
+- Added Web Scraper Backends Guide (`docs/html2md_scraper_backends.md`)
+- Updated HTML2MD documentation with new scraper examples
+- Added configuration examples for each scraper backend
+
+## [2.1.1] - 2025-05-25
 
 ### Changed
 
@@ -26,7 +52,7 @@ and this project adheres to
 - Updated file paths in test fixtures
 - Cleaned up outdated references
 
-## [2.1.0] - 2025-01-25
+## [2.1.0] - 2025-05-25
 
 ### Added
 
@@ -185,7 +211,7 @@ improvements and new features.
 
 ---
 
-## [1.4.0] - 2025-01-21
+## [1.4.0] - 2025-05-19
 
 ### Added
 
@@ -206,7 +232,7 @@ improvements and new features.
 
 ---
 
-## [1.3.0] - 2024-12-15
+## [1.3.0] - 2025-05-18
 
 ### Added
 
@@ -226,7 +252,7 @@ improvements and new features.
 
 ---
 
-## [1.2.0] - 2024-11-30
+## [1.2.0] - 2025-05-17
 
 ### Added
 
@@ -247,7 +273,7 @@ improvements and new features.
 
 ---
 
-## [1.1.0] - 2024-10-15
+## [1.1.0] - 2025-05-16
 
 ### Added
 
@@ -270,7 +296,7 @@ improvements and new features.
 
 ---
 
-## [1.0.0] - 2024-09-01
+## [1.0.0] - 2025-05-15
 
 ### Added
 
