@@ -92,7 +92,6 @@ function Setup-M1fDirectory {
 *.m1f.txt
 *_filelist.txt
 *_dirlist.txt
-*.log
 
 # But track the structure
 !.gitkeep
@@ -125,6 +124,7 @@ function Create-DocsBundle {
         --excludes "**/node_modules/**" "**/.venv/**" "**/.*" `
         --separator-style Markdown `
         --minimal-output `
+        --quiet `
         -f
     
     # Also create a separate API docs bundle if docs/ exists
@@ -137,6 +137,7 @@ function Create-DocsBundle {
             --include-extensions .md .rst .txt `
             --separator-style Markdown `
             --minimal-output `
+            --quiet `
             -f
     }
     
@@ -158,6 +159,7 @@ function Create-SrcBundle {
         --excludes "**/test_*.py" "**/*_test.py" "**/tests/**" "**/node_modules/**" "**/.venv/**" "**/.*" `
         --separator-style Detailed `
         --minimal-output `
+        --quiet `
         -f
     
     # Create separate bundles for specific components if they exist
@@ -171,6 +173,7 @@ function Create-SrcBundle {
             --excludes "**/test_*.py" "**/*_test.py" `
             --separator-style Detailed `
             --minimal-output `
+            --quiet `
             -f
     }
     
@@ -192,7 +195,8 @@ function Create-TestsBundle {
         --excludes "**/test_data/**" "**/fixtures/**" "**/node_modules/**" "**/.venv/**" "**/.*" `
         --separator-style Standard `
         --minimal-output `
-        -f 2>$null | Select-String -Pattern "(test_|_test\.py|tests/)"
+        --quiet `
+        -f
     
     # Create a test overview without test data
     $TestsPath = Join-Path $ProjectRoot "tests"
@@ -223,6 +227,7 @@ function Create-CompleteBundle {
         --separator-style Detailed `
         --filename-mtime-hash `
         --minimal-output `
+        --quiet `
         -f
     
     Write-Success "Complete project bundle created: $OutputFile"
@@ -481,6 +486,9 @@ function Build-M1fCommandYaml {
         $cmdParts += "--minimal-output"
     }
     
+    # Always add --quiet to prevent log file creation
+    $cmdParts += "--quiet"
+    
     $cmdParts += "-f"  # Force overwrite
     
     return $cmdParts -join " "
@@ -649,7 +657,6 @@ function Main-Advanced {
 *.m1f.txt
 *_filelist.txt
 *_dirlist.txt
-*.log
 
 # But track the structure and config
 !.gitkeep

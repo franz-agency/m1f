@@ -72,7 +72,6 @@ setup_m1f_directory() {
 *.m1f.txt
 *_filelist.txt
 *_dirlist.txt
-*.log
 
 # But track the structure
 !.gitkeep
@@ -100,6 +99,7 @@ create_docs_bundle() {
         --excludes "**/node_modules/**" "**/.venv/**" "**/.*" \
         --separator-style Markdown \
         --minimal-output \
+        --quiet \
         -f
     
     # Also create a separate API docs bundle if docs/ exists
@@ -110,6 +110,7 @@ create_docs_bundle() {
             --include-extensions .md .rst .txt \
             --separator-style Markdown \
             --minimal-output \
+            --quiet \
             -f
     fi
     
@@ -131,6 +132,7 @@ create_src_bundle() {
         --excludes "**/test_*.py" "**/*_test.py" "**/tests/**" "**/node_modules/**" "**/.venv/**" "**/.*" \
         --separator-style Detailed \
         --minimal-output \
+        --quiet \
         -f
     
     # Create separate bundles for specific components if they exist
@@ -142,6 +144,7 @@ create_src_bundle() {
             --excludes "**/test_*.py" "**/*_test.py" \
             --separator-style Detailed \
             --minimal-output \
+            --quiet \
             -f
     fi
     
@@ -163,8 +166,8 @@ create_tests_bundle() {
         --excludes "**/test_data/**" "**/fixtures/**" "**/node_modules/**" "**/.venv/**" "**/.*" \
         --separator-style Standard \
         --minimal-output \
-        -f \
-        2>/dev/null | grep -E "(test_|_test\.py|tests/)" || true
+        --quiet \
+        -f
     
     # Create a test overview without test data
     if [ -d "$PROJECT_ROOT/tests" ]; then
@@ -192,6 +195,7 @@ create_complete_bundle() {
         --separator-style Detailed \
         --filename-mtime-hash \
         --minimal-output \
+        --quiet \
         -f
     
     print_success "Complete project bundle created: $output_file"
@@ -419,6 +423,9 @@ if bundle.get('filename_mtime_hash'):
 if bundle.get('minimal_output', True):
     cmd_parts.append('--minimal-output')
 
+# Always add --quiet to prevent log file creation
+cmd_parts.append('--quiet')
+
 cmd_parts.append('-f')  # Force overwrite
 
 print(' '.join(cmd_parts))
@@ -582,7 +589,6 @@ print(' '.join(sorted(dirs)))
 *.m1f.txt
 *_filelist.txt
 *_dirlist.txt
-*.log
 
 # But track the structure and config
 !.gitkeep
