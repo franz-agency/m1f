@@ -13,12 +13,22 @@ global:
     - "**/*.log"
     - "**/htmlcov/**"
     - "**/tmp/**"
-    
+    - "**/dev/**"
+
+  global_settings:
+    # Default security setting for all files
+    security_check: "warn"  # Strict by default
+
+    # Per-extension overrides
+    extensions:
+      .py:
+        security_check: "abort"  # Strict for Python
+
   # Default settings for all bundles
   defaults:
     force_overwrite: true
-    max_file_size: "5MB"  # Reduced from 10MB
-    minimal_output: false  # Generate file lists
+    max_file_size: "1MB"
+    minimal_output: false
     
   # File watcher settings
   watcher:
@@ -35,19 +45,25 @@ global:
 bundles:
   # Documentation bundle - all markdown files
   all-docs:
-    description: "All markdown documentation files"
-    output: ".m1f/docs/99_allm1f_docs.txt"
+    description: "All documentation files"
+    output: ".m1f/m1f/99_allm1f_docs.txt"
     sources:
       - path: "."
-        include_extensions: [".md"]
+        include_extensions: [".md","*.txt","*.json"]
         excludes: ["tests/**"]
     preset: "presets/docs-bundle.m1f-presets.yml"
 
   m1f-docs:
     description: "m1f docs"
-    output: ".m1f/m1f/66_m1f_docs.txt"
+    output: ".m1f/m1f/55_m1f_docs.txt"
     sources:
-      - path: "."
+      - path: "docs/01_m1f"
         include_extensions: [".md"]
-        excludes: ["tests/**"]
     preset: "presets/docs-bundle.m1f-presets.yml"
+
+  m1f-code:
+    description: "m1f complete code"
+    output: ".m1f/m1f/98_m1f_complete_code.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
