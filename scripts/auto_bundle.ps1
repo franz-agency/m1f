@@ -294,6 +294,13 @@ function Show-Statistics {
         
         foreach ($bundleName in $bundles.PSObject.Properties.Name) {
             if ($bundleName -ne "error" -and $bundles.$bundleName.output) {
+                # Skip disabled bundles
+                $enabled = if ($null -eq $bundles.$bundleName.enabled) { $true } else { $bundles.$bundleName.enabled }
+                $enabledIf = $bundles.$bundleName.enabled_if_exists
+                
+                if ($enabled -eq $false) { continue }
+                if ($enabledIf -and !(Test-Path (Join-Path $ProjectRoot $enabledIf))) { continue }
+                
                 $outputPath = Join-Path $ProjectRoot $bundles.$bundleName.output
                 $bundleDir = Split-Path -Parent $outputPath
                 
