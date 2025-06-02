@@ -1,0 +1,14 @@
+# Preset for documentation bundles
+# Removes empty lines from markdown files
+
+# Global settings for this preset
+name: "Documentation Bundle"
+description: "Optimizes markdown files by removing empty lines"
+
+# File-specific processors
+processors:
+  # Markdown files - remove empty lines
+  - pattern: "**/*.md"
+    operations:
+      - type: remove_empty_lines
+        description: "Remove empty lines from markdown files"

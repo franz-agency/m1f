@@ -1,176 +1,4 @@
 # m1f Auto-Bundle Configuration
-# Optimized for AI/LLM consumption with better thematic organization
-
-# Bundle definitions
-bundles:
-  # Core documentation - Project overview and usage
-  readme:
-    description: "Project overview, setup and basic usage"
-    output: ".m1f/docs/readme.m1f.txt"
-    sources:
-      - path: "."
-        include_extensions: [".md"]
-        excludes:
-          - "CLAUDE.md"  # Exclude Claude-specific instructions
-          - "**/test_*.md"
-          - "**/tests/**"
-          - "**/node_modules/**"
-          - "**/.venv/**"
-          - "docs/**"  # Separate docs folder content
-    separator_style: "Standard"
-    priority: "high"
-    # Include file list at the beginning for LLMs
-    input_include_files: [".m1f/docs/readme_filelist.txt"]
-    
-  # Tool documentation - Detailed guides for each tool
-  tool_docs:
-    description: "Detailed documentation for each tool"
-    output: ".m1f/docs/tool_docs.m1f.txt"
-    sources:
-      - path: "docs/"
-        include_extensions: [".md"]
-        excludes:
-          - "99_CHANGELOG.md"  # Separate changelog
-    separator_style: "Standard"
-    priority: "high"
-    enabled_if_exists: "docs/"
-    # Include file list at the beginning
-    input_include_files: [".m1f/docs/tool_docs_filelist.txt"]
-
-  # m1f tool implementation
-  m1f_tool:
-    description: "m1f tool source code"
-    output: ".m1f/tools/m1f.m1f.txt"
-    sources:
-      - path: "tools/m1f/"
-        include_extensions: [".py"]
-      - path: "tools/m1f.py"
-        include_extensions: [".py"]
-    separator_style: "Detailed"
-    priority: "high"
-    # Include file list at the beginning
-    input_include_files: [".m1f/tools/m1f_filelist.txt"]
-    
-  # s1f tool implementation  
-  s1f_tool:
-    description: "s1f tool source code"
-    output: ".m1f/tools/s1f.m1f.txt"
-    sources:
-      - path: "tools/s1f/"
-        include_extensions: [".py"]
-      - path: "tools/s1f.py"
-        include_extensions: [".py"]
-    separator_style: "Detailed"
-    priority: "medium"
-    input_include_files: [".m1f/tools/s1f_filelist.txt"]
-
-  # html2md tool implementation
-  html2md_tool:
-    description: "html2md tool source code"
-    output: ".m1f/tools/html2md.m1f.txt"
-    sources:
-      - path: "tools/html2md/"
-        include_extensions: [".py"]
-    separator_style: "Detailed"
-    priority: "medium"
-    input_include_files: [".m1f/tools/html2md_filelist.txt"]
-
-  # webscraper tool implementation
-  webscraper_tool:
-    description: "webscraper tool source code"
-    output: ".m1f/tools/webscraper.m1f.txt"
-    sources:
-      - path: "tools/webscraper/"
-        include_extensions: [".py"]
-    separator_style: "Detailed"
-    priority: "medium"
-    input_include_files: [".m1f/tools/webscraper_filelist.txt"]
-
-  # Other utilities
-  utilities:
-    description: "Other utility tools and helpers"
-    output: ".m1f/tools/utilities.m1f.txt"
-    sources:
-      - path: "tools/"
-        include_extensions: [".py"]
-        excludes:
-          - "tools/m1f/**"
-          - "tools/s1f/**"
-          - "tools/html2md/**"
-          - "tools/webscraper/**"
-          - "tools/m1f.py"
-          - "tools/s1f.py"
-    separator_style: "Standard"
-    priority: "low"
-    input_include_files: [".m1f/tools/utilities_filelist.txt"]
-
-  # Configuration and setup files
-  config:
-    description: "Configuration files and presets"
-    output: ".m1f/config/config.m1f.txt"
-    sources:
-      - path: "."
-        include_extensions: [".yml", ".yaml", ".json", ".toml", ".ini"]
-        excludes:
-          - "**/tests/**"
-          - "**/node_modules/**"
-          - ".m1f.config.yml"  # Don't include self
-      - path: "presets/"
-        include_extensions: [".yml", ".yaml"]
-    separator_style: "Standard"
-    priority: "medium"
-    input_include_files: [".m1f/config/config_filelist.txt"]
-
-  # Scripts and automation
-  scripts:
-    description: "Build scripts and automation"
-    output: ".m1f/scripts/scripts.m1f.txt"
-    sources:
-      - path: "scripts/"
-        include_extensions: [".sh", ".ps1", ".py"]
-      - path: "dev/"
-        include_extensions: [".sh", ".ps1", ".py"]
-    separator_style: "Standard"
-    priority: "low"
-    input_include_files: [".m1f/scripts/scripts_filelist.txt"]
-
-  # Test structure (no test data)
-  test_structure:
-    description: "Test file structure and main test files"
-    output: ".m1f/tests/structure.m1f.txt"
-    sources:
-      - path: "tests/"
-        include_extensions: [".py", ".md"]
-        excludes:
-          - "**/source/**"  # Exclude test data
-          - "**/expected/**"
-          - "**/output/**"
-          - "**/test_pages/**"
-          - "**/scraped_examples/**"
-          - "**/*.html"
-          - "**/*.css"
-          - "**/*.js"
-    separator_style: "Standard"
-    priority: "low"
-    input_include_files: [".m1f/tests/structure_filelist.txt"]
-
-  # Complete project (emergency fallback)
-  complete:
-    description: "Complete project snapshot (use sparingly)"
-    output: ".m1f/complete/project.m1f.txt"
-    sources:
-      - path: "."
-        excludes:
-          - "**/.m1f/**"  # Don't include bundles in themselves
-          - "CLAUDE.md"    # Exclude Claude instructions
-          - "**/test_data/**"
-          - "**/fixtures/**"
-          - "**/output/**"
-          - "**/scraped_examples/**"
-    separator_style: "Detailed"
-    filename_mtime_hash: true
-    priority: "low"
-    enabled: false  # Disabled by default to save space
 
 # Global settings
 global:
@@ -202,3 +30,24 @@ global:
       - ".venv/"
       - "tmp/"
       - "htmlcov/"
+
+# Bundle definitions
+bundles:
+  # Documentation bundle - all markdown files
+  all-docs:
+    description: "All markdown documentation files"
+    output: ".m1f/docs/99_allm1f_docs.txt"
+    sources:
+      - path: "."
+        include_extensions: [".md"]
+        excludes: ["tests/**"]
+    preset: "presets/docs-bundle.m1f-presets.yml"
+
+  m1f-docs:
+    description: "m1f docs"
+    output: ".m1f/m1f/66_m1f_docs.txt"
+    sources:
+      - path: "."
+        include_extensions: [".md"]
+        excludes: ["tests/**"]
+    preset: "presets/docs-bundle.m1f-presets.yml"

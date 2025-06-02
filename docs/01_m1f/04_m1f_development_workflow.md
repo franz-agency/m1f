@@ -13,7 +13,7 @@ The m1f project provides a self-contained development environment with:
 
 ## Prerequisites
 
-For initial setup instructions, see the [SETUP.md](../SETUP.md) guide.
+For initial setup instructions, see the [SETUP.md](../../SETUP.md) guide.
 
 ## Using m1f in Other Projects
 

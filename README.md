@@ -12,10 +12,10 @@ The core tools are:
   reference file for providing comprehensive context to LLMs
 - **s1f (Split One File)**: Extracts individual files from a combined file,
   preserving original structure
-- **token_counter**: Estimates token usage for LLM context planning and
-  optimization
 - **webscraper**: Downloads websites for offline viewing and processing
 - **html2md**: Modern HTML to Markdown converter with HTML analysis capabilities
+- **token_counter**: Estimates token usage for LLM context planning and
+  optimization
 
 These tools solve the challenge of providing comprehensive context to AI
 assistants while optimizing token usage.
@@ -23,7 +23,7 @@ assistants while optimizing token usage.
 ## Quick Start
 
 For the recommended development workflow and setup instructions, see the
-[M1F Development Workflow](docs/04_m1f_development_workflow.md) guide. This
+[M1F Development Workflow](docs/01_m1f/04_m1f_development_workflow.md) guide. This
 includes:
 
 - Setting up convenient shell aliases for global access
@@ -141,7 +141,7 @@ python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-pr
 python -m tools.m1f -s ./project -o bundle.txt --preset prod.yml --preset-group production
 ```
 
-See [Preset System Guide](docs/02_m1f_presets.md) for detailed documentation.
+See [Preset System Guide](docs/01_m1f/02_m1f_presets.md) for detailed documentation.
 
 ## Installation
 
@@ -172,7 +172,7 @@ This enables natural language control of all tools. For example:
 - "Convert HTML documentation to Markdown with preprocessing"
 - "Create topic-based bundles from documentation"
 
-See [Claude Code Integration Guide](docs/05_claude_code_integration.md) for setup
+See [Claude Code Integration Guide](docs/01_m1f/05_claude_code_integration.md) for setup
 and usage.
 
 ## Documentation
@@ -181,7 +181,7 @@ For detailed documentation, please check the [docs directory](./docs/README.md).
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE.md](LICENSE)
+This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE)
 file for details.
 
 ## Contributing
