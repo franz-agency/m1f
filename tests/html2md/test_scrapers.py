@@ -5,28 +5,28 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 
-from tools.html2md.scrapers import create_scraper, ScraperConfig, SCRAPER_REGISTRY
-from tools.html2md.scrapers.base import ScrapedPage
-from tools.html2md.scrapers.beautifulsoup import BeautifulSoupScraper
-from tools.html2md.scrapers.httrack import HTTrackScraper
+from tools.webscraper.scrapers import create_scraper, ScraperConfig, SCRAPER_REGISTRY
+from tools.webscraper.scrapers.base import ScrapedPage
+from tools.webscraper.scrapers.beautifulsoup import BeautifulSoupScraper
+from tools.webscraper.scrapers.httrack import HTTrackScraper
 
 # Import new scrapers conditionally
 try:
-    from tools.html2md.scrapers.selectolax import SelectolaxScraper
+    from tools.webscraper.scrapers.selectolax import SelectolaxScraper
 
     SELECTOLAX_AVAILABLE = True
 except ImportError:
     SELECTOLAX_AVAILABLE = False
 
 try:
-    from tools.html2md.scrapers.scrapy_scraper import ScrapyScraper
+    from tools.webscraper.scrapers.scrapy_scraper import ScrapyScraper
 
     SCRAPY_AVAILABLE = True
 except ImportError:
     SCRAPY_AVAILABLE = False
 
 try:
-    from tools.html2md.scrapers.playwright import PlaywrightScraper
+    from tools.webscraper.scrapers.playwright import PlaywrightScraper
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -305,7 +305,7 @@ class TestSelectolaxScraper:
     def test_httpx_not_available(self):
         """Test error when httpx/selectolax not installed."""
         config = ScraperConfig()
-        with patch("tools.html2md.scrapers.selectolax.HTTPX_AVAILABLE", False):
+        with patch("tools.webscraper.scrapers.selectolax.HTTPX_AVAILABLE", False):
             with pytest.raises(ImportError, match="httpx and selectolax are required"):
                 SelectolaxScraper(config)
 
@@ -323,7 +323,7 @@ class TestScrapyScraper:
     def test_scrapy_not_available(self):
         """Test error when scrapy not installed."""
         config = ScraperConfig()
-        with patch("tools.html2md.scrapers.scrapy_scraper.SCRAPY_AVAILABLE", False):
+        with patch("tools.webscraper.scrapers.scrapy_scraper.SCRAPY_AVAILABLE", False):
             with pytest.raises(ImportError, match="scrapy is required"):
                 ScrapyScraper(config)
 
@@ -361,7 +361,7 @@ class TestPlaywrightScraper:
     def test_playwright_not_available(self):
         """Test error when playwright not installed."""
         config = ScraperConfig()
-        with patch("tools.html2md.scrapers.playwright.PLAYWRIGHT_AVAILABLE", False):
+        with patch("tools.webscraper.scrapers.playwright.PLAYWRIGHT_AVAILABLE", False):
             with pytest.raises(ImportError, match="playwright is required"):
                 PlaywrightScraper(config)
 
