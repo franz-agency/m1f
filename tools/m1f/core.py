@@ -38,7 +38,11 @@ from .file_processor import FileProcessor
 from .output_writer import OutputWriter
 from .archive_creator import ArchiveCreator
 from .security_scanner import SecurityScanner
-from .utils import format_duration, sort_files_by_depth_and_name, sort_directories_by_depth_and_name
+from .utils import (
+    format_duration,
+    sort_files_by_depth_and_name,
+    sort_directories_by_depth_and_name,
+)
 
 
 @dataclass
@@ -106,7 +110,7 @@ class FileCombiner:
                 )
 
             self.logger.info(f"Found {len(files_to_process)} files to process")
-            
+
             # Sort files by depth and name (README.md first)
             files_to_process = sort_files_by_depth_and_name(files_to_process)
             self.logger.debug("Files sorted by depth and name")

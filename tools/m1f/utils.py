@@ -248,62 +248,66 @@ def parse_file_size(size_str: str) -> int:
 
 def sort_directories_by_depth_and_name(directories: List[str]) -> List[str]:
     """Sort directory paths by depth (ascending) and name.
-    
+
     Sorting rules:
     1. Directories higher in the tree come first (lower depth)
     2. Within the same depth level, sort alphabetically
-    
+
     Args:
         directories: List of directory path strings
-        
+
     Returns:
         Sorted list of directory paths
     """
+
     def sort_key(dir_path: str) -> Tuple[int, str]:
         path_obj = Path(dir_path)
-        
+
         # Calculate depth (number of path components)
         depth = len(path_obj.parts)
-        
+
         # Return sort key tuple: (depth, lowercase_path)
         return (depth, dir_path.lower())
-    
+
     return sorted(directories, key=sort_key)
 
 
-def sort_files_by_depth_and_name(file_paths: List[Tuple[Path, str]]) -> List[Tuple[Path, str]]:
+def sort_files_by_depth_and_name(
+    file_paths: List[Tuple[Path, str]],
+) -> List[Tuple[Path, str]]:
     """Sort file paths by depth (ascending) and name, with README.md prioritized.
-    
+
     Sorting rules:
     1. Files higher in the directory tree come first (lower depth)
     2. Within the same directory:
        - README.md (case-insensitive) always comes first
        - Other files are sorted alphabetically
-    
+
     Args:
         file_paths: List of tuples (full_path, relative_path)
-        
+
     Returns:
         Sorted list of file path tuples
     """
+
     def sort_key(item: Tuple[Path, str]) -> Tuple[int, str, int, str]:
         full_path, rel_path = item
         path_obj = Path(rel_path)
-        
+
         # Calculate depth (number of path components)
         depth = len(path_obj.parts)
-        
+
         # Get parent directory path
         parent = str(path_obj.parent)
-        
+
         # Get filename
         filename = path_obj.name
-        
+
         # Check if this is README.md (case-insensitive)
-        is_not_readme = 0 if filename.lower() == 'readme.md' else 1
-        
+        is_not_readme = 0 if filename.lower() == "readme.md" else 1
+
         # Return sort key tuple:
         # (depth, parent_path, is_not_readme, lowercase_filename)
         return (depth, parent.lower(), is_not_readme, filename.lower())
-    
+
     return sorted(file_paths, key=sort_key)
