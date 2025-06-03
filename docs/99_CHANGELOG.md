@@ -8,9 +8,72 @@ and this project adheres to
 
 ## [Unreleased]
 
-## [3.0.0] - 2025-06-02
+## [3.0.0] - 2025-01-03
 
 ### Added
+
+- **Python-based auto_bundle.py**: Cross-platform bundling implementation
+  - Pure Python alternative to shell scripts
+  - Improved include-extensions handling
+  - Dynamic watcher ignores based on configuration
+  - Global excludes support
+  - Better error handling and logging
+- **Enhanced Bundling Configuration**: Advanced m1f.config.yml structure
+  - Config-based directory setup
+  - Refined source rules for s1f-code and all bundles
+  - Improved path handling for m1f/s1f separation
+- **Depth-based Sorting**: Files and directories now sorted by depth for better organization
+- **Improved Documentation**: Comprehensive updates to m1f documentation
+  - Added CLI reference and troubleshooting guides
+  - Enhanced preset system documentation
+  - Clarified script invocation methods
+  - Added quick reference guides
+- **Testing Improvements**: Enhanced asyncio handling across test suites
+  - Better pytest configuration for async tests
+  - Preset configuration support in scrapers
+  - Fixed import and linting issues
+- **License Change**: Migrated from MIT to Apache 2.0 License
+  - Added NOTICE file with proper attribution
+  - Updated all license references throughout codebase
+
+### Changed
+
+- **Refactored Web Scraping Architecture**: Separated webscraper from HTML2MD
+  - Cleaner separation of concerns
+  - Better modularity for each tool
+  - Improved maintainability
+- **Build System Enhancements**: Overhauled build configuration
+  - Optimized bundling for tool segregation
+  - Added quiet flag to suppress unnecessary log file creation
+  - Enhanced PowerShell support with auto_bundle.ps1
+- **Documentation Structure**: Reorganized docs for better navigation
+  - Renamed files for improved sorting
+  - Moved changelog to dedicated location
+  - Updated all references to new structure
+
+### Fixed
+
+- **Script Issues**: Multiple fixes for auto-bundling scripts
+  - Corrected include-extensions parameter handling
+  - Fixed config file parsing and argument handling
+  - Resolved path resolution issues
+- **Test Errors**: All test suite issues resolved
+  - Fixed async test handling
+  - Corrected import statements
+  - Resolved linting issues (Black and Markdown)
+- **Configuration Issues**: Fixed various config problems
+  - Corrected output paths in m1f.config.yml
+  - Fixed switch handling in scripts
+  - Updated autobundler configurations
+
+### Dependencies
+
+- Updated aiohttp to 3.10.11 for security and performance improvements
+- Added new packages to support enhanced functionality
+
+---
+
+### Original 3.0.0 Features (from earlier development)
 
 - **Pluggable Web Scraper Backends**: HTML2MD now supports multiple scraper
   backends for different use cases

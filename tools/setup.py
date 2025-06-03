@@ -20,7 +20,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="m1f",
-    version="2.1.0",
+    version="3.0.0",
     description="m1f - Make One File - Combine multiple text files into a single output file",
     author="Franz und Franz",
     author_email="office@franz.agency",

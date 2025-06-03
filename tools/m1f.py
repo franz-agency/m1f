@@ -50,7 +50,7 @@ except ImportError:
     from m1f.logging import setup_logging, get_logger
 
 
-__version__ = "2.1.0"
+__version__ = "3.0.0"
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
 
