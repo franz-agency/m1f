@@ -49,8 +49,8 @@ import time
 TEST_SERVER_URL = "http://localhost:8080"
 
 
-def test_server_connectivity():
-    """Test if the test server is running and accessible."""
+def check_server_connectivity():
+    """Check if the test server is running and accessible."""
     try:
         response = requests.get(TEST_SERVER_URL, timeout=5)
         if response.status_code == 200:
@@ -68,6 +68,11 @@ def test_server_connectivity():
     except Exception as e:
         print(f"❌ Error connecting to test server: {e}")
         return False
+
+
+def test_server_connectivity():
+    """Test if the test server is running and accessible (pytest compatible)."""
+    assert check_server_connectivity(), "Test server is not accessible"
 
 
 def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None):
@@ -152,7 +157,7 @@ def main():
     print("=" * 50)
 
     # Check server connectivity
-    if not test_server_connectivity():
+    if not check_server_connectivity():
         sys.exit(1)
 
     # Test pages to scrape

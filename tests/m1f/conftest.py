@@ -122,8 +122,8 @@ def run_m1f(monkeypatch, capture_logs):
         Returns:
             Tuple of (exit_code, log_output)
         """
-        # Capture logs
-        log_capture = capture_logs.capture("m1f")
+        # Capture logs - use root logger since m1f configures the root logger
+        log_capture = capture_logs.capture("")
 
         # Mock user input if needed
         if auto_confirm:

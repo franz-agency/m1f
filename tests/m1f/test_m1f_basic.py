@@ -270,22 +270,21 @@ class TestM1FBasic(BaseM1FTest):
         test_file = create_test_file("test.txt", "test content")
         output_file = temp_dir / "verbose_output.txt"
 
-        with capture_logs.capture("m1f") as log_capture:
-            exit_code, _ = run_m1f(
-                [
-                    "--source-directory",
-                    str(test_file.parent),
-                    "--output-file",
-                    str(output_file),
-                    "--verbose",
-                    "--force",
-                ]
-            )
+        # run_m1f already captures logs and returns them
+        exit_code, log_output = run_m1f(
+            [
+                "--source-directory",
+                str(test_file.parent),
+                "--output-file",
+                str(output_file),
+                "--verbose",
+                "--force",
+            ]
+        )
 
         assert exit_code == 0
 
         # Check that verbose logging produced output
-        log_output = log_capture.get_output()
         assert log_output, "No verbose log output captured"
         assert (
             "DEBUG" in log_output or "INFO" in log_output
