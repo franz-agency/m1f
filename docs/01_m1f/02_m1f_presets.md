@@ -19,18 +19,18 @@ Instead of applying the same settings to all files, presets let you:
 1. **Use a built-in preset**:
 
    ```bash
-   python -m tools.m1f -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+   python tools/m1f.py -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
    ```
 
 2. **Specify a preset group**:
 
    ```bash
-   python -m tools.m1f -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
+   python tools/m1f.py -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
    ```
 
 3. **Use multiple preset files**:
    ```bash
-   python -m tools.m1f -s . -o bundle.txt --preset company-presets.yml project-presets.yml
+   python tools/m1f.py -s . -o bundle.txt --preset company-presets.yml project-presets.yml
    ```
 
 ## Preset Configuration File
@@ -202,7 +202,7 @@ frontend:
       extensions: [".css", ".scss"]
       actions:
         - minify
-      exclude_patterns: ["*.min.css"]
+      # Note: exclude_patterns is available in global_settings, not in presets
 
     images:
       extensions: [".png", ".jpg", ".svg"]
@@ -249,16 +249,16 @@ When multiple preset groups are loaded:
 
 ```bash
 # Use single preset file
-python -m tools.m1f -s . -o out.txt --preset my-presets.yml
+python tools/m1f.py -s . -o out.txt --preset my-presets.yml
 
 # Use specific group
-python -m tools.m1f -s . -o out.txt --preset presets.yml --preset-group backend
+python tools/m1f.py -s . -o out.txt --preset presets.yml --preset-group backend
 
 # Multiple preset files (merged in order)
-python -m tools.m1f -s . -o out.txt --preset base.yml project.yml
+python tools/m1f.py -s . -o out.txt --preset base.yml project.yml
 
 # Disable all presets
-python -m tools.m1f -s . -o out.txt --preset presets.yml --disable-presets
+python tools/m1f.py -s . -o out.txt --preset presets.yml --disable-presets
 ```
 
 ## Complete List of Supported Settings
@@ -413,7 +413,7 @@ conditional:
 You can load multiple preset files that build on each other:
 
 ```bash
-python -m tools.m1f -s . -o bundle.txt \
+python tools/m1f.py -s . -o bundle.txt \
   --preset base-rules.yml \
   --preset project-specific.yml \
   --preset production-overrides.yml
@@ -449,7 +449,7 @@ python -m tools.m1f -s . -o bundle.txt \
 # GitHub Actions example
 - name: Create bundle with presets
   run: |
-    python -m tools.m1f \
+    python tools/m1f.py \
       -s . \
       -o release-bundle.txt \
       --preset .github/release-presets.yml \
@@ -516,3 +516,9 @@ The preset system integrates seamlessly with the auto-bundling scripts:
 
 See the [Auto Bundle Guide](06_auto_bundle_guide.md) for more details on the
 bundling system.
+
+## See Also
+
+- [**Preset System Complete Reference**](./10_preset_reference.md) - Comprehensive reference with all settings, undocumented features, and advanced patterns
+- [**Per-File Settings Guide**](./03_m1f_preset_per_file_settings.md) - Deep dive into per-file processing
+- [**Auto Bundle Guide**](./06_auto_bundle_guide.md) - Automated bundling with presets

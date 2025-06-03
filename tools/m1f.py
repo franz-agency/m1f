@@ -34,11 +34,20 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
-from m1f.cli import create_parser, parse_args
-from m1f.config import Config
-from m1f.core import FileCombiner
-from m1f.exceptions import M1FError
-from m1f.logging import setup_logging, get_logger
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from tools.m1f.cli import create_parser, parse_args
+    from tools.m1f.config import Config
+    from tools.m1f.core import FileCombiner
+    from tools.m1f.exceptions import M1FError
+    from tools.m1f.logging import setup_logging, get_logger
+except ImportError:
+    # Fallback for direct script execution
+    from m1f.cli import create_parser, parse_args
+    from m1f.config import Config
+    from m1f.core import FileCombiner
+    from m1f.exceptions import M1FError
+    from m1f.logging import setup_logging, get_logger
 
 
 __version__ = "2.1.0"
