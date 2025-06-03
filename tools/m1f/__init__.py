@@ -30,6 +30,7 @@ def _scan_files_for_sensitive_info(files_to_process):
         ArchiveConfig,
         LoggingConfig,
         SecurityCheckMode,
+        PresetConfig,
     )
 
     config = Config(
@@ -42,6 +43,7 @@ def _scan_files_for_sensitive_info(files_to_process):
         security=SecurityConfig(security_check=SecurityCheckMode.WARN),
         archive=ArchiveConfig(),
         logging=LoggingConfig(),
+        preset=PresetConfig(),
     )
 
     # Create logger manager
@@ -72,6 +74,7 @@ def _detect_symlink_cycles(path):
         SecurityConfig,
         ArchiveConfig,
         LoggingConfig,
+        PresetConfig,
     )
 
     # Create basic config
@@ -85,6 +88,7 @@ def _detect_symlink_cycles(path):
         security=SecurityConfig(),
         archive=ArchiveConfig(),
         logging=LoggingConfig(),
+        preset=PresetConfig(),
     )
     logger_manager = LoggerManager(config.logging, Path("test_output.txt"))
 

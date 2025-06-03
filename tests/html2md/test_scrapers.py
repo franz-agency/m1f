@@ -142,9 +142,11 @@ class TestBeautifulSoupScraper:
 
         # Mock session
         mock_session = AsyncMock()
-        mock_session.get = AsyncMock(return_value=mock_response)
-        mock_session.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_session.__aexit__ = AsyncMock(return_value=None)
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+        mock_session.get = Mock(return_value=mock_context)
 
         with patch("aiohttp.ClientSession", return_value=mock_session):
             scraper.session = mock_session
@@ -209,12 +211,6 @@ class TestHTTrackScraper:
         """Test scraping single URL with HTTrack."""
         test_html = "<html><head><title>Test</title></head><body>Content</body></html>"
 
-        # Create expected output file
-        output_dir = tmp_path / "single_12345678" / "example.com"
-        output_dir.mkdir(parents=True)
-        output_file = output_dir / "index.html"
-        output_file.write_text(test_html)
-
         # Mock subprocess
         mock_process = AsyncMock()
         mock_process.returncode = 0
@@ -222,6 +218,14 @@ class TestHTTrackScraper:
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             with patch("tempfile.mkdtemp", return_value=str(tmp_path)):
+                # Create expected output file after HTTrack mock is called
+                # Use the actual hash calculation to match the scraper's logic
+                url_hash = str(hash("https://example.com"))[-8:]
+                output_dir = tmp_path / f"single_{url_hash}" / "example.com"
+                output_dir.mkdir(parents=True)
+                output_file = output_dir / "index.html"
+                output_file.write_text(test_html)
+                
                 async with scraper:
                     page = await scraper.scrape_url("https://example.com")
 
