@@ -40,8 +40,14 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Test pages configuration
-TEST_PAGES = {
+# Get test pages directory
+TEST_PAGES_DIR = Path(__file__).parent / "test_pages"
+
+# Dynamically build test pages configuration based on existing files
+TEST_PAGES = {}
+
+# Define metadata for known pages
+PAGE_METADATA = {
     "index": {
         "title": "HTML2MD Test Suite",
         "description": "Comprehensive test pages for html2md converter",
@@ -84,24 +90,42 @@ TEST_PAGES = {
     },
 }
 
+# Only include pages that actually exist
+if TEST_PAGES_DIR.exists():
+    for html_file in TEST_PAGES_DIR.glob("*.html"):
+        if html_file.name != "404.html":  # Skip error page
+            page_name = html_file.stem
+            if page_name in PAGE_METADATA:
+                TEST_PAGES[page_name] = PAGE_METADATA[page_name]
+            else:
+                # Add unknown pages with generic metadata
+                TEST_PAGES[page_name] = {
+                    "title": page_name.replace("-", " ").title(),
+                    "description": f"Test page: {page_name}",
+                }
+
 
 @app.route("/")
 def index():
     """Serve the test suite index page."""
     # Serve index.html as a static file to avoid template parsing
-    return send_from_directory("test_pages", "index.html")
+    test_pages_abs = str(TEST_PAGES_DIR.absolute())
+    return send_from_directory(test_pages_abs, "index.html")
 
 
 @app.route("/page/<page_name>")
 def serve_page(page_name):
     """Serve individual test pages as static files."""
+    # Check if page exists in our configuration
     if page_name in TEST_PAGES:
         template_file = f"{page_name}.html"
-        file_path = os.path.join("test_pages", template_file)
-
-        if os.path.exists(file_path):
+        file_path = TEST_PAGES_DIR / template_file
+        
+        if file_path.exists():
+            # Get absolute path for the test_pages directory
+            test_pages_abs = str(TEST_PAGES_DIR.absolute())
             # Serve as static file to avoid Jinja2 template parsing
-            return send_from_directory("test_pages", template_file)
+            return send_from_directory(test_pages_abs, template_file)
         else:
             # Return a placeholder if file doesn't exist yet
             return f"""
@@ -122,6 +146,13 @@ def serve_page(page_name):
             </body>
             </html>
             """
+    
+    # Check if it's a page that exists but isn't in metadata
+    file_path = TEST_PAGES_DIR / f"{page_name}.html"
+    if file_path.exists():
+        test_pages_abs = str(TEST_PAGES_DIR.absolute())
+        return send_from_directory(test_pages_abs, f"{page_name}.html")
+    
     return "Page not found", 404
 
 
@@ -134,7 +165,8 @@ def api_test_pages():
 @app.route("/static/<path:path>")
 def send_static(path):
     """Serve static files."""
-    return send_from_directory("static", path)
+    static_dir = Path(__file__).parent / "static"
+    return send_from_directory(str(static_dir.absolute()), path)
 
 
 @app.errorhandler(404)
@@ -144,6 +176,10 @@ def page_not_found(e):
 
 
 if __name__ == "__main__":
+    # Ensure TEST_PAGES is populated
+    if not TEST_PAGES:
+        logger.warning("No test pages found! Please check the test_pages directory.")
+    
     print(
         f"""
 ╔══════════════════════════════════════════════════════════════╗
@@ -151,11 +187,20 @@ if __name__ == "__main__":
 ║                                                              ║
 ║  Server running at: http://localhost:8080                    ║
 ║                                                              ║
-║  Available test pages:                                       ║
+║  Available test pages ({len(TEST_PAGES)} found):            ║
 """
     )
-    for page, info in TEST_PAGES.items():
-        print(f"║  • /page/{page:<20} - {info['title']:<25} ║")
+    
+    # Sort pages for consistent display
+    for page in sorted(TEST_PAGES.keys()):
+        info = TEST_PAGES[page]
+        # Truncate title if too long
+        title = info['title'][:25]
+        print(f"║  • /page/{page:<20} - {title:<25} ║")
+    
+    if not TEST_PAGES:
+        print("║  No test pages found in test_pages directory!               ║")
+    
     print(
         """║                                                              ║
 ║  Press Ctrl+C to stop the server                            ║
