@@ -9,31 +9,32 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 - [m1f (Make One File)](01_m1f/01_m1f.md) - Documentation for the main tool that
   combines multiple files into a single file with content deduplication and
   async I/O
-- [s1f (Split One File)](02_s1f/20_s1f.md) - Documentation for the tool that extracts
-  individual files from a combined file with modern Python architecture
-- [token_counter](99_misc/98_token_counter.md) - Documentation for the token estimation
-  tool
+- [s1f (Split One File)](02_s1f/20_s1f.md) - Documentation for the tool that
+  extracts individual files from a combined file with modern Python architecture
+- [token_counter](99_misc/98_token_counter.md) - Documentation for the token
+  estimation tool
 
 ### Web Scraping and HTML Conversion
 
-- [webscraper](04_webscraper/40_webscraper.md) - Download websites for offline viewing and
-  processing
-- [html2md Overview](03_html2md/30_html2md.md) - Comprehensive guide to the HTML to Markdown
-  converter
-- [html2md Guide](03_html2md/31_html2md_guide.md) - Detailed usage guide with examples
-- [html2md Test Suite](03_html2md/33_html2md_test_suite.md) - Documentation for the
-  comprehensive test suite
+- [webscraper](04_webscraper/40_webscraper.md) - Download websites for offline
+  viewing and processing
+- [html2md Overview](03_html2md/30_html2md.md) - Comprehensive guide to the HTML
+  to Markdown converter
+- [html2md Guide](03_html2md/31_html2md_guide.md) - Detailed usage guide with
+  examples
+- [html2md Test Suite](03_html2md/33_html2md_test_suite.md) - Documentation for
+  the comprehensive test suite
 
 ### Advanced Features
 
-- [Auto Bundle Guide](01_m1f/06_auto_bundle_guide.md) - Automatic project bundling for
-  AI/LLM consumption
-- [Claude Code Integration](01_m1f/05_claude_code_integration.md) - Optional AI-powered
-  tool automation
-- [Preset System Guide](01_m1f/02_m1f_presets.md) - File-specific processing rules and
-  configurations
-- [Per-File-Type Settings](01_m1f/03_m1f_preset_per_file_settings.md) - Fine-grained
-  control over file processing
+- [Auto Bundle Guide](01_m1f/06_auto_bundle_guide.md) - Automatic project
+  bundling for AI/LLM consumption
+- [Claude Code Integration](01_m1f/05_claude_code_integration.md) - Optional
+  AI-powered tool automation
+- [Preset System Guide](01_m1f/02_m1f_presets.md) - File-specific processing
+  rules and configurations
+- [Per-File-Type Settings](01_m1f/03_m1f_preset_per_file_settings.md) -
+  Fine-grained control over file processing
 
 ## Quick Navigation
 

@@ -1,10 +1,12 @@
 # Preset System Clarifications and Notes
 
-This document clarifies important aspects of the m1f preset system that may not be immediately obvious from the main documentation.
+This document clarifies important aspects of the m1f preset system that may not
+be immediately obvious from the main documentation.
 
 ## Command Invocation
 
 Both module and direct script invocation are supported:
+
 ```bash
 # Module invocation (recommended):
 python -m tools.m1f -s . -o out.txt --preset my-preset.yml
@@ -16,9 +18,13 @@ python tools/m1f.py -s . -o out.txt --preset my-preset.yml
 ## Pattern Matching Limitations
 
 ### Exclude Patterns
-Exclude patterns with `!` prefix (e.g., `!*.min.js`) are **not currently supported** in the `patterns` field of presets. To exclude files, use one of these approaches:
+
+Exclude patterns with `!` prefix (e.g., `!*.min.js`) are **not currently
+supported** in the `patterns` field of presets. To exclude files, use one of
+these approaches:
 
 1. **Global Settings Approach** (Recommended):
+
    ```yaml
    globals:
      global_settings:
@@ -35,7 +41,9 @@ Exclude patterns with `!` prefix (e.g., `!*.min.js`) are **not currently support
 Understanding where settings can be applied is crucial:
 
 ### 1. Global Settings Level
+
 Available in `globals.global_settings`:
+
 - `include_patterns` / `exclude_patterns`
 - `include_extensions` / `exclude_extensions`
 - `security_check`
@@ -43,7 +51,9 @@ Available in `globals.global_settings`:
 - All other general m1f settings
 
 ### 2. Preset Level
+
 Available in individual presets:
+
 - `patterns` (for matching files)
 - `extensions` (for matching files)
 - `actions` (processing actions)
@@ -55,43 +65,53 @@ Available in individual presets:
 - Override settings: `security_check`, `max_file_size`, etc.
 
 ### 3. Extension-Specific Global Settings
+
 Available in `globals.global_settings.extensions.{extension}`:
+
 - All preset-level settings can be applied per extension globally
 
 ## Built-in vs Example Processors
 
 ### Currently Implemented Custom Processors:
+
 - `truncate` - Limits file content by lines or characters
 - `redact_secrets` - Removes sensitive information using regex patterns
 - `extract_functions` - Extracts Python function definitions
 
 ### Example/Future Processors (Not Implemented):
+
 - `extract_code_cells` - Would extract code cells from Jupyter notebooks
 - Any other custom processors mentioned in examples
 
-To implement a custom processor, you would need to add it to the `tools/m1f/presets.py` file.
+To implement a custom processor, you would need to add it to the
+`tools/m1f/presets.py` file.
 
 ## Common Misconceptions
 
 ### 1. Exclude Patterns in Presets
+
 **Incorrect**:
+
 ```yaml
 presets:
   my_preset:
-    exclude_patterns: ["*.min.js"]  # This doesn't work here
+    exclude_patterns: ["*.min.js"] # This doesn't work here
 ```
 
 **Correct**:
+
 ```yaml
 globals:
   global_settings:
-    exclude_patterns: ["*.min.js"]  # Works here
+    exclude_patterns: ["*.min.js"] # Works here
 ```
 
 ### 2. Action vs Setting
+
 Some features are actions (in the `actions` list), while others are settings:
 
 **Actions** (go in `actions` list):
+
 - `minify`
 - `strip_tags`
 - `strip_comments`
@@ -100,29 +120,35 @@ Some features are actions (in the `actions` list), while others are settings:
 - `custom`
 
 **Settings** (separate fields):
+
 - `strip_tags: ["script", "style"]` (which tags to strip)
 - `preserve_tags: ["pre", "code"]` (which tags to keep)
 - `max_lines: 100` (truncation setting)
 - `separator_style: "Markdown"` (output format)
 
 ### 3. Pattern Base Path
-When using `base_path` at the group level, it affects all patterns in that group:
+
+When using `base_path` at the group level, it affects all patterns in that
+group:
 
 ```yaml
 my_group:
   base_path: "src"
   presets:
     components:
-      patterns: ["components/*.js"]  # Actually matches: src/components/*.js
+      patterns: ["components/*.js"] # Actually matches: src/components/*.js
 ```
 
 ## Best Practices
 
-1. **Test with Verbose Mode**: Always test new presets with `--verbose` to see which files match which presets.
+1. **Test with Verbose Mode**: Always test new presets with `--verbose` to see
+   which files match which presets.
 
-2. **Use Priority Wisely**: Higher priority groups are checked first. Use this to create override rules.
+2. **Use Priority Wisely**: Higher priority groups are checked first. Use this
+   to create override rules.
 
 3. **Combine Multiple Files**: Layer preset files for maximum flexibility:
+
    ```bash
    python tools/m1f.py -s . -o out.txt \
      --preset company-defaults.yml \
@@ -130,22 +156,27 @@ my_group:
      --preset local-overrides.yml
    ```
 
-4. **Document Your Presets**: Always add descriptions to explain the purpose of each preset group.
+4. **Document Your Presets**: Always add descriptions to explain the purpose of
+   each preset group.
 
 ## Debugging Tips
 
 ### Check What's Applied
+
 ```bash
 python tools/m1f.py -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
 ```
 
 ### Validate YAML
+
 ```bash
 python -c "import yaml; yaml.safe_load(open('my-preset.yml'))"
 ```
 
 ### Test Small First
-Create a test directory with a few files to verify preset behavior before running on large codebases.
+
+Create a test directory with a few files to verify preset behavior before
+running on large codebases.
 
 ## Version Information
 

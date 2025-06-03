@@ -1,6 +1,8 @@
 # m1f Preset System Complete Reference
 
-This document provides a comprehensive reference for the m1f preset system, including all available settings, undocumented features, and advanced usage patterns.
+This document provides a comprehensive reference for the m1f preset system,
+including all available settings, undocumented features, and advanced usage
+patterns.
 
 ## Preset File Format
 
@@ -10,27 +12,27 @@ This document provides a comprehensive reference for the m1f preset system, incl
 # Group name - can be selected with --preset-group
 group_name:
   description: "Optional description of this preset group"
-  enabled: true  # Can disable entire group
-  priority: 10   # Higher numbers are processed first (default: 0)
-  base_path: "src"  # Optional base path for all patterns in this group
-  
+  enabled: true # Can disable entire group
+  priority: 10 # Higher numbers are processed first (default: 0)
+  base_path: "src" # Optional base path for all patterns in this group
+
   presets:
     # Preset name (for internal reference)
     preset_name:
-      patterns: ["*.js", "*.jsx"]  # Glob patterns
-      extensions: [".js", ".jsx"]   # Extension matching (with or without dot)
+      patterns: ["*.js", "*.jsx"] # Glob patterns
+      extensions: [".js", ".jsx"] # Extension matching (with or without dot)
       actions:
         - minify
         - strip_comments
         - compress_whitespace
-      
+
       # Per-file overrides
-      security_check: "warn"  # abort, skip, warn
+      security_check: "warn" # abort, skip, warn
       max_file_size: "500KB"
       include_dot_paths: true
       include_binary_files: false
       remove_scraped_metadata: true
-      
+
       # Custom processor with arguments
       custom_processor: "truncate"
       processor_args:
@@ -43,7 +45,7 @@ globals:
     # Default file processing
     security_check: "warn"
     max_file_size: "1MB"
-    
+
     # Per-extension settings
     extensions:
       .py:
@@ -69,55 +71,59 @@ processors:
 
 ### Group-Level Settings
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `description` | string | none | Human-readable description |
-| `enabled` | boolean | true | Enable/disable this group |
-| `priority` | integer | 0 | Processing order (higher first) |
-| `base_path` | string | none | Base path for pattern matching |
-| `enabled_if_exists` | string | none | Only enable if this path exists |
+| Setting             | Type    | Default | Description                     |
+| ------------------- | ------- | ------- | ------------------------------- |
+| `description`       | string  | none    | Human-readable description      |
+| `enabled`           | boolean | true    | Enable/disable this group       |
+| `priority`          | integer | 0       | Processing order (higher first) |
+| `base_path`         | string  | none    | Base path for pattern matching  |
+| `enabled_if_exists` | string  | none    | Only enable if this path exists |
 
 ### Preset-Level Settings
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `patterns` | list | [] | Glob patterns to match files |
-| `extensions` | list | [] | File extensions to match |
-| `actions` | list | [] | Processing actions to apply |
-| `security_check` | string | "warn" | How to handle secrets |
-| `max_file_size` | string | none | Maximum file size to process |
-| `include_dot_paths` | boolean | false | Include hidden files |
-| `include_binary_files` | boolean | false | Process binary files |
-| `remove_scraped_metadata` | boolean | false | Remove HTML2MD metadata |
-| `custom_processor` | string | none | Name of custom processor |
-| `processor_args` | dict | {} | Arguments for custom processor |
-| `line_ending` | string | "lf" | Convert line endings (lf, crlf) |
-| `separator_style` | string | none | Override default separator style |
-| `include_metadata` | boolean | true | Include file metadata in output |
-| `max_lines` | integer | none | Truncate file after N lines |
-| `strip_tags` | list | [] | HTML tags to remove (for strip_tags action) |
-| `preserve_tags` | list | [] | HTML tags to preserve when stripping |
+| Setting                   | Type    | Default | Description                                 |
+| ------------------------- | ------- | ------- | ------------------------------------------- |
+| `patterns`                | list    | []      | Glob patterns to match files                |
+| `extensions`              | list    | []      | File extensions to match                    |
+| `actions`                 | list    | []      | Processing actions to apply                 |
+| `security_check`          | string  | "warn"  | How to handle secrets                       |
+| `max_file_size`           | string  | none    | Maximum file size to process                |
+| `include_dot_paths`       | boolean | false   | Include hidden files                        |
+| `include_binary_files`    | boolean | false   | Process binary files                        |
+| `remove_scraped_metadata` | boolean | false   | Remove HTML2MD metadata                     |
+| `custom_processor`        | string  | none    | Name of custom processor                    |
+| `processor_args`          | dict    | {}      | Arguments for custom processor              |
+| `line_ending`             | string  | "lf"    | Convert line endings (lf, crlf)             |
+| `separator_style`         | string  | none    | Override default separator style            |
+| `include_metadata`        | boolean | true    | Include file metadata in output             |
+| `max_lines`               | integer | none    | Truncate file after N lines                 |
+| `strip_tags`              | list    | []      | HTML tags to remove (for strip_tags action) |
+| `preserve_tags`           | list    | []      | HTML tags to preserve when stripping        |
 
 ## Available Actions
 
 ### Built-in Actions
 
 1. **`minify`** - Remove unnecessary whitespace and formatting
+
    - Reduces file size
    - Maintains functionality
    - Best for: JS, CSS, HTML
 
 2. **`strip_tags`** - Remove HTML/XML tags
+
    - Extracts text content only
    - Preserves text between tags
    - Best for: HTML, XML, Markdown with HTML
 
 3. **`strip_comments`** - Remove code comments
+
    - Removes single and multi-line comments
    - Language-aware (JS, Python, CSS, etc.)
    - Best for: Production code bundles
 
 4. **`compress_whitespace`** - Reduce multiple spaces/newlines
+
    - Converts multiple spaces to single space
    - Reduces multiple newlines to double newline
    - Best for: Documentation, logs
@@ -130,15 +136,17 @@ processors:
 ### Custom Processors
 
 1. **`truncate`** - Limit file length
+
    ```yaml
    custom_processor: "truncate"
    processor_args:
      max_lines: 100
      max_chars: 10000
-     add_marker: true  # Add "... truncated ..." marker
+     add_marker: true # Add "... truncated ..." marker
    ```
 
 2. **`redact_secrets`** - Remove sensitive data
+
    ```yaml
    custom_processor: "redact_secrets"
    processor_args:
@@ -161,15 +169,17 @@ processors:
 ### Pattern Types
 
 1. **Extension Matching**
+
    ```yaml
-   extensions: [".py", ".pyx", "py"]  # All are equivalent
+   extensions: [".py", ".pyx", "py"] # All are equivalent
    ```
 
 2. **Glob Patterns**
+
    ```yaml
    patterns:
-     - "*.test.js"      # All test files
-     - "src/**/*.js"    # All JS in src/
+     - "*.test.js" # All test files
+     - "src/**/*.js" # All JS in src/
      # Note: Exclude patterns with "!" are not currently supported
    ```
 
@@ -187,7 +197,7 @@ group_name:
   base_path: "src"
   presets:
     example:
-      patterns: ["components/*.js"]  # Actually matches: src/components/*.js
+      patterns: ["components/*.js"] # Actually matches: src/components/*.js
 ```
 
 ## Processing Order
@@ -207,7 +217,7 @@ globals:
     # Default settings for all files
     security_check: "warn"
     max_file_size: "1MB"
-    
+
     # Per-extension overrides
     extensions:
       .py:
@@ -233,7 +243,7 @@ globals:
 
 ```yaml
 production:
-  enabled_if_exists: ".env.production"  # Only active in production
+  enabled_if_exists: ".env.production" # Only active in production
   presets:
     minify_all:
       extensions: [".js", ".css", ".html"]
@@ -266,6 +276,7 @@ python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
 ```
 
 Shows:
+
 - Which preset is applied to each file
 - Which actions are performed
 - Processing time for each action
@@ -273,11 +284,13 @@ Shows:
 ### Common Issues
 
 1. **Preset not applied**
+
    - Check pattern matching
    - Verify preset group is enabled
    - Use verbose mode to debug
 
 2. **Wrong action order**
+
    - Actions are applied sequentially
    - Order matters (e.g., minify before strip_comments)
 
@@ -293,26 +306,26 @@ Shows:
 ```yaml
 web_development:
   description: "Modern web development bundle"
-  
+
   presets:
     # Minify production assets
     production_assets:
       patterns: ["dist/**/*", "build/**/*"]
       extensions: [".js", ".css"]
       actions: ["minify", "strip_comments"]
-      
+
     # Source code - keep readable
     source_code:
       patterns: ["src/**/*"]
       extensions: [".js", ".jsx", ".ts", ".tsx"]
       actions: ["strip_comments"]
       security_check: "abort"
-      
+
     # Documentation
     docs:
       extensions: [".md", ".mdx"]
       actions: ["compress_whitespace", "remove_empty_lines"]
-      
+
     # Configuration files
     config:
       patterns: ["*.json", "*.yml", "*.yaml"]
@@ -328,8 +341,8 @@ data_science:
     # Notebooks - extract code cells only (Note: extract_code_cells is an example)
     notebooks:
       extensions: [".ipynb"]
-      custom_processor: "extract_code_cells"  # This processor would need to be implemented
-      
+      custom_processor: "extract_code_cells" # This processor would need to be implemented
+
     # Large data files - truncate
     data_files:
       extensions: [".csv", ".json", ".parquet"]
@@ -337,7 +350,7 @@ data_science:
       custom_processor: "truncate"
       processor_args:
         max_lines: 1000
-        
+
     # Scripts - full content
     scripts:
       extensions: [".py", ".r", ".jl"]

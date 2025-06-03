@@ -3,6 +3,7 @@
 ## Most Common Commands
 
 ### Basic File Combination
+
 ```bash
 # Combine all files in current directory
 python tools/m1f.py -s . -o output.txt
@@ -15,6 +16,7 @@ python tools/m1f.py -s . -o output.txt -f
 ```
 
 ### File Type Filtering
+
 ```bash
 # Only Python files
 python tools/m1f.py -s . -o code.txt --include-extensions .py
@@ -27,6 +29,7 @@ python tools/m1f.py -s . -o output.txt --exclude-extensions .pyc .log
 ```
 
 ### Directory and Pattern Exclusions
+
 ```bash
 # Exclude specific directories
 python tools/m1f.py -s . -o output.txt --excludes "tests/" "docs/"
@@ -39,6 +42,7 @@ python tools/m1f.py -s . -o output.txt --exclude-paths-file .gitignore
 ```
 
 ### Output Formatting
+
 ```bash
 # Markdown format
 python tools/m1f.py -s . -o output.md --separator-style Markdown
@@ -51,6 +55,7 @@ python tools/m1f.py -s . -o output.txt --separator-style None
 ```
 
 ### Size Management
+
 ```bash
 # Skip large files
 python tools/m1f.py -s . -o output.txt --max-file-size 100KB
@@ -60,6 +65,7 @@ python tools/m1f.py -s . -o small.txt --max-file-size 50KB --include-extensions 
 ```
 
 ### Archive Creation
+
 ```bash
 # Create zip backup
 python tools/m1f.py -s . -o output.txt --create-archive
@@ -69,6 +75,7 @@ python tools/m1f.py -s . -o output.txt --create-archive --archive-type tar.gz
 ```
 
 ### Using Presets
+
 ```bash
 # Use single preset
 python tools/m1f.py -s . -o output.txt --preset wordpress.m1f-presets.yml
@@ -83,6 +90,7 @@ python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
 ## Common Patterns
 
 ### Documentation Bundle
+
 ```bash
 python tools/m1f.py -s ./docs -o documentation.txt \
     --include-extensions .md .rst .txt \
@@ -90,6 +98,7 @@ python tools/m1f.py -s ./docs -o documentation.txt \
 ```
 
 ### Source Code Bundle
+
 ```bash
 python tools/m1f.py -s ./src -o source-code.txt \
     --include-extensions .py .js .ts .jsx .tsx \
@@ -98,6 +107,7 @@ python tools/m1f.py -s ./src -o source-code.txt \
 ```
 
 ### WordPress Theme/Plugin
+
 ```bash
 python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
     --include-extensions .php .js .css \
@@ -106,6 +116,7 @@ python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
 ```
 
 ### Clean Documentation Export
+
 ```bash
 python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
     --include-extensions .md \
@@ -114,6 +125,7 @@ python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
 ```
 
 ### CI/CD Integration
+
 ```bash
 # Create timestamped output
 python tools/m1f.py -s . -o build.txt -t
@@ -127,15 +139,15 @@ python tools/m1f.py -s . -o output.txt --security-check abort
 
 ## Quick Option Reference
 
-| Short | Long | Purpose |
-|-------|------|---------|
-| `-s` | `--source-directory` | Source directory |
-| `-i` | `--input-file` | File list input |
-| `-o` | `--output-file` | Output file (required) |
-| `-f` | `--force` | Overwrite existing |
-| `-t` | `--add-timestamp` | Add timestamp to filename |
-| `-v` | `--verbose` | Detailed output |
-| `-q` | `--quiet` | Suppress output |
+| Short | Long                 | Purpose                   |
+| ----- | -------------------- | ------------------------- |
+| `-s`  | `--source-directory` | Source directory          |
+| `-i`  | `--input-file`       | File list input           |
+| `-o`  | `--output-file`      | Output file (required)    |
+| `-f`  | `--force`            | Overwrite existing        |
+| `-t`  | `--add-timestamp`    | Add timestamp to filename |
+| `-v`  | `--verbose`          | Detailed output           |
+| `-q`  | `--quiet`            | Suppress output           |
 
 ## Separator Styles
 
@@ -163,6 +175,7 @@ python tools/m1f.py -s . -o output.txt && echo "Success!"
 ## Aliases Setup
 
 Add to your shell profile:
+
 ```bash
 alias m1f='python /path/to/m1f/tools/m1f.py'
 alias m1f-docs='m1f -s . -o docs.txt --include-extensions .md .txt'

@@ -519,6 +519,10 @@ bundling system.
 
 ## See Also
 
-- [**Preset System Complete Reference**](./10_preset_reference.md) - Comprehensive reference with all settings, undocumented features, and advanced patterns
-- [**Per-File Settings Guide**](./03_m1f_preset_per_file_settings.md) - Deep dive into per-file processing
-- [**Auto Bundle Guide**](./06_auto_bundle_guide.md) - Automated bundling with presets
+- [**Preset System Complete Reference**](./10_preset_reference.md) -
+  Comprehensive reference with all settings, undocumented features, and advanced
+  patterns
+- [**Per-File Settings Guide**](./03_m1f_preset_per_file_settings.md) - Deep
+  dive into per-file processing
+- [**Auto Bundle Guide**](./06_auto_bundle_guide.md) - Automated bundling with
+  presets

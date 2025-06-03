@@ -218,8 +218,8 @@ Available presets:
 - `documentation` - Documentation-focused bundles
 - `example-globals` - Example with comprehensive global settings
 
-See [m1f Presets Documentation](../docs/01_m1f/02_m1f_presets.md) for detailed preset
-information.
+See [m1f Presets Documentation](../docs/01_m1f/02_m1f_presets.md) for detailed
+preset information.
 
 ## Best Practices for Effective AI Context
 
