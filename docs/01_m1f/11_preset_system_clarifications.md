@@ -4,13 +4,13 @@ This document clarifies important aspects of the m1f preset system that may not 
 
 ## Command Invocation
 
-Due to current module import issues, use the direct script invocation:
+Both module and direct script invocation are supported:
 ```bash
-# Correct:
-python tools/m1f.py -s . -o out.txt --preset my-preset.yml
-
-# Currently broken (import issues):
+# Module invocation (recommended):
 python -m tools.m1f -s . -o out.txt --preset my-preset.yml
+
+# Direct script invocation (alternative):
+python tools/m1f.py -s . -o out.txt --preset my-preset.yml
 ```
 
 ## Pattern Matching Limitations
