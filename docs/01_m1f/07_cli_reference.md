@@ -129,7 +129,7 @@ Examples:
 m1f -s . -o output.txt --exclude-paths-file .gitignore
 
 # Multiple files
-m1f -s . -o output.txt --exclude-paths-file .gitignore .m1f-exclude custom-excludes.txt
+m1f -s . -o output.txt --exclude-paths-file .gitignore .m1fignore custom-excludes.txt
 ```
 
 ### `--include-paths-file FILE ...`

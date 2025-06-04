@@ -20,11 +20,11 @@ global:
     # Use .gitignore as exclude file (can be single file or list)
     exclude_paths_file:
       - ".gitignore"
-      - ".m1f-exclude"
+      - ".m1fignore"
     # Example of multiple exclude files:
     # exclude_paths_file:
     #   - ".gitignore"
-    #   - ".m1f-exclude"
+    #   - ".m1fignore"
 
     # Per-extension overrides
     extensions:
@@ -143,7 +143,7 @@ bundles:
         include_extensions: [".py"]
     exclude_paths_file:
       - ".gitignore"
-      - ".m1f-exclude"
+      - ".m1fignore"
     
   # All non-binary files excluding tests
   all:
@@ -153,5 +153,5 @@ bundles:
       - path: "."
     exclude_paths_file:
       - ".gitignore"
-      - ".m1f-exclude"
+      - ".m1fignore"
         

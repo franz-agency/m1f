@@ -96,7 +96,7 @@ example_group_name:
     # Multiple files (merged in order):
     # exclude_paths_file:
     #   - ".gitignore"
-    #   - ".m1f-exclude"
+    #   - ".m1fignore"
     #   - "exclude-patterns.txt"
     
     # Path(s) to file(s) containing include patterns

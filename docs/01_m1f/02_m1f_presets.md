@@ -292,7 +292,7 @@ global_settings:
   # Or multiple files:
   # exclude_paths_file:
   #   - ".gitignore"
-  #   - ".m1f-exclude"
+  #   - ".m1fignore"
   #   - "custom-excludes.txt"
   
   # Include file(s) for whitelist mode
