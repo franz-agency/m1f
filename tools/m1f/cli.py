@@ -194,8 +194,17 @@ Perfect for:
     filter_group.add_argument(
         "--exclude-paths-file",
         type=str,
+        nargs="+",
         metavar="FILE",
-        help="File containing paths to exclude (supports gitignore format)",
+        help="File(s) containing paths to exclude (supports gitignore format, multiple files merged)",
+    )
+
+    filter_group.add_argument(
+        "--include-paths-file",
+        type=str,
+        nargs="+",
+        metavar="FILE",
+        help="File(s) containing paths to include (supports gitignore format, multiple files merged)",
     )
 
     filter_group.add_argument(

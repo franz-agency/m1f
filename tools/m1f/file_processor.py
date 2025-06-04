@@ -26,7 +26,7 @@ from typing import List, Tuple, Set, Optional
 
 import pathspec
 
-from .config import Config
+from .config import Config, FilterConfig
 from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, MAX_SYMLINK_DEPTH
 from .exceptions import FileNotFoundError, ValidationError
 from .logging import LoggerManager
@@ -102,42 +102,117 @@ class FileProcessor:
         if self.config.filter.exclude_paths_file:
             self._load_exclude_patterns()
 
+        # Load inclusions from file
+        self.exact_includes = set()
+        self.include_gitignore_spec = None
+        
+        if self.config.filter.include_paths_file:
+            self._load_include_patterns()
+
         # Build gitignore spec from command-line patterns
         self._build_gitignore_spec()
 
     def _load_exclude_patterns(self) -> None:
-        """Load exclusion patterns from file."""
-        exclude_file = self.config.filter.exclude_paths_file
-
-        if not exclude_file.exists():
-            self.logger.warning(f"Exclude file not found: {exclude_file}")
+        """Load exclusion patterns from file(s)."""
+        exclude_files_param = self.config.filter.exclude_paths_file
+        if not exclude_files_param:
             return
 
-        try:
-            with open(exclude_file, "r", encoding="utf-8") as f:
-                lines = [
-                    line.strip()
-                    for line in f
-                    if line.strip() and not line.strip().startswith("#")
-                ]
+        # Convert to list if it's a single string/Path
+        if isinstance(exclude_files_param, (str, Path)):
+            exclude_files = [exclude_files_param]
+        else:
+            exclude_files = exclude_files_param
 
-            # Detect if it's gitignore format
-            is_gitignore = exclude_file.name == ".gitignore" or any(
-                any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")
-                for line in lines
+        all_gitignore_lines = []
+        
+        for exclude_file_str in exclude_files:
+            exclude_file = Path(exclude_file_str)
+            
+            if not exclude_file.exists():
+                self.logger.info(f"Exclude file not found (skipping): {exclude_file}")
+                continue
+
+            try:
+                with open(exclude_file, "r", encoding="utf-8") as f:
+                    lines = [
+                        line.strip()
+                        for line in f
+                        if line.strip() and not line.strip().startswith("#")
+                    ]
+
+                # Detect if it's gitignore format
+                is_gitignore = exclude_file.name == ".gitignore" or any(
+                    any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")
+                    for line in lines
+                )
+
+                if is_gitignore:
+                    self.logger.info(f"Processing {exclude_file} as gitignore format")
+                    all_gitignore_lines.extend(lines)
+                else:
+                    self.logger.info(f"Processing {exclude_file} as exact path list")
+                    self.exact_excludes.update(Path(line) for line in lines)
+
+            except Exception as e:
+                self.logger.warning(f"Error reading exclude file {exclude_file}: {e}")
+
+        # Build combined gitignore spec from all collected lines
+        if all_gitignore_lines:
+            self.gitignore_spec = pathspec.PathSpec.from_lines(
+                "gitwildmatch", all_gitignore_lines
             )
 
-            if is_gitignore:
-                self.logger.info(f"Processing {exclude_file} as gitignore format")
-                self.gitignore_spec = pathspec.PathSpec.from_lines(
-                    "gitwildmatch", lines
-                )
-            else:
-                self.logger.info(f"Processing {exclude_file} as exact path list")
-                self.exact_excludes = {Path(line) for line in lines}
+    def _load_include_patterns(self) -> None:
+        """Load inclusion patterns from file(s)."""
+        include_files_param = self.config.filter.include_paths_file
+        if not include_files_param:
+            return
 
-        except Exception as e:
-            self.logger.error(f"Error loading exclude patterns: {e}")
+        # Convert to list if it's a single string/Path
+        if isinstance(include_files_param, (str, Path)):
+            include_files = [include_files_param]
+        else:
+            include_files = include_files_param
+
+        all_gitignore_lines = []
+        
+        for include_file_str in include_files:
+            include_file = Path(include_file_str)
+            
+            if not include_file.exists():
+                self.logger.info(f"Include file not found (skipping): {include_file}")
+                continue
+
+            try:
+                with open(include_file, "r", encoding="utf-8") as f:
+                    lines = [
+                        line.strip()
+                        for line in f
+                        if line.strip() and not line.strip().startswith("#")
+                    ]
+
+                # Detect if it's gitignore format
+                is_gitignore = any(
+                    any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")
+                    for line in lines
+                )
+
+                if is_gitignore:
+                    self.logger.info(f"Processing {include_file} as gitignore format")
+                    all_gitignore_lines.extend(lines)
+                else:
+                    self.logger.info(f"Processing {include_file} as exact path list")
+                    self.exact_includes.update(Path(line) for line in lines)
+
+            except Exception as e:
+                self.logger.warning(f"Error reading include file {include_file}: {e}")
+
+        # Build combined gitignore spec from all collected lines
+        if all_gitignore_lines:
+            self.include_gitignore_spec = pathspec.PathSpec.from_lines(
+                "gitwildmatch", all_gitignore_lines
+            )
 
     def _build_gitignore_spec(self) -> None:
         """Build gitignore spec from command-line patterns."""
@@ -348,8 +423,28 @@ class FileProcessor:
                 self.preset_manager.get_file_specific_settings(file_path) or {}
             )
 
+        # Check if we have include patterns - if yes, file must match one
+        if self.exact_includes or self.include_gitignore_spec:
+            include_matched = False
+            
+            # Check exact includes
+            if str(file_path) in self.exact_includes or file_path.name in [Path(p).name for p in self.exact_includes]:
+                include_matched = True
+            
+            # Check include gitignore patterns
+            if not include_matched and self.include_gitignore_spec:
+                rel_path = get_relative_path(
+                    file_path, self.config.source_directory or file_path.parent
+                )
+                if self.include_gitignore_spec.match_file(rel_path):
+                    include_matched = True
+            
+            # If we have include patterns but file doesn't match any, exclude it
+            if not include_matched:
+                return False
+
         # Check exact excludes
-        if str(file_path) in self.exact_excludes:
+        if str(file_path) in self.exact_excludes or file_path.name in [Path(p).name for p in self.exact_excludes]:
             return False
 
         # Check filename excludes
@@ -547,6 +642,64 @@ class FileProcessor:
             ):
                 self.excluded_dirs.clear()
                 self.excluded_files.clear()
+
+        # Apply exclude_paths_file from global settings
+        if self.global_settings.exclude_paths_file and not self.config.filter.exclude_paths_file:
+            self.config = Config(
+                source_directory=self.config.source_directory,
+                input_file=self.config.input_file,
+                input_include_files=self.config.input_include_files,
+                output=self.config.output,
+                filter=FilterConfig(
+                    exclude_paths=self.config.filter.exclude_paths,
+                    exclude_patterns=self.config.filter.exclude_patterns,
+                    exclude_paths_file=self.global_settings.exclude_paths_file,
+                    include_paths_file=self.config.filter.include_paths_file,
+                    include_extensions=self.config.filter.include_extensions,
+                    exclude_extensions=self.config.filter.exclude_extensions,
+                    include_dot_paths=self.config.filter.include_dot_paths,
+                    include_binary_files=self.config.filter.include_binary_files,
+                    include_symlinks=self.config.filter.include_symlinks,
+                    no_default_excludes=self.config.filter.no_default_excludes,
+                    max_file_size=self.config.filter.max_file_size,
+                    remove_scraped_metadata=self.config.filter.remove_scraped_metadata,
+                ),
+                encoding=self.config.encoding,
+                security=self.config.security,
+                archive=self.config.archive,
+                logging=self.config.logging,
+                preset=self.config.preset,
+            )
+            self._load_exclude_patterns()
+
+        # Apply include_paths_file from global settings
+        if self.global_settings.include_paths_file and not self.config.filter.include_paths_file:
+            self.config = Config(
+                source_directory=self.config.source_directory,
+                input_file=self.config.input_file,
+                input_include_files=self.config.input_include_files,
+                output=self.config.output,
+                filter=FilterConfig(
+                    exclude_paths=self.config.filter.exclude_paths,
+                    exclude_patterns=self.config.filter.exclude_patterns,
+                    exclude_paths_file=self.config.filter.exclude_paths_file,
+                    include_paths_file=self.global_settings.include_paths_file,
+                    include_extensions=self.config.filter.include_extensions,
+                    exclude_extensions=self.config.filter.exclude_extensions,
+                    include_dot_paths=self.config.filter.include_dot_paths,
+                    include_binary_files=self.config.filter.include_binary_files,
+                    include_symlinks=self.config.filter.include_symlinks,
+                    no_default_excludes=self.config.filter.no_default_excludes,
+                    max_file_size=self.config.filter.max_file_size,
+                    remove_scraped_metadata=self.config.filter.remove_scraped_metadata,
+                ),
+                encoding=self.config.encoding,
+                security=self.config.security,
+                archive=self.config.archive,
+                logging=self.config.logging,
+                preset=self.config.preset,
+            )
+            self._load_include_patterns()
 
         if self.global_settings.max_file_size:
             from .utils import parse_file_size

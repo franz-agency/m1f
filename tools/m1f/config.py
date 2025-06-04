@@ -21,7 +21,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional, Set, List
+from typing import Optional, Set, List, Union
 import argparse
 
 from .utils import parse_file_size
@@ -97,7 +97,8 @@ class FilterConfig:
 
     exclude_paths: Set[str] = field(default_factory=set)
     exclude_patterns: List[str] = field(default_factory=list)
-    exclude_paths_file: Optional[Path] = None
+    exclude_paths_file: Optional[Union[str, List[str]]] = None
+    include_paths_file: Optional[Union[str, List[str]]] = None
     include_extensions: Set[str] = field(default_factory=set)
     exclude_extensions: Set[str] = field(default_factory=set)
     include_dot_paths: bool = False
@@ -195,11 +196,8 @@ class Config:
         filter_config = FilterConfig(
             exclude_paths=set(getattr(args, "exclude_paths", [])),
             exclude_patterns=getattr(args, "excludes", []),
-            exclude_paths_file=(
-                Path(args.exclude_paths_file)
-                if getattr(args, "exclude_paths_file", None)
-                else None
-            ),
+            exclude_paths_file=getattr(args, "exclude_paths_file", None),
+            include_paths_file=getattr(args, "include_paths_file", None),
             include_extensions=set(
                 normalize_extensions(getattr(args, "include_extensions", []))
             ),

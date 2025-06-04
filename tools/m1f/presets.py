@@ -104,7 +104,8 @@ class GlobalSettings:
     include_symlinks: Optional[bool] = None
     no_default_excludes: Optional[bool] = None
     max_file_size: Optional[str] = None  # e.g., "50KB", "10MB"
-    exclude_paths_file: Optional[str] = None
+    exclude_paths_file: Optional[Union[str, List[str]]] = None
+    include_paths_file: Optional[Union[str, List[str]]] = None
 
     # Processing options
     remove_scraped_metadata: Optional[bool] = None

@@ -17,6 +17,12 @@ global:
   global_settings:
     # Default security setting for all files
     security_check: "warn"  # Strict by default
+    # Use .gitignore as exclude file (can be single file or list)
+    exclude_paths_file: ".gitignore"
+    # Example of multiple exclude files:
+    # exclude_paths_file:
+    #   - ".gitignore"
+    #   - ".m1f-exclude"
 
     # Per-extension overrides
     extensions:
@@ -140,11 +146,4 @@ bundles:
     output: ".m1f/m1f/98_m1f_allinone.txt"
     sources:
       - path: "."
-        # Only extensions that actually exist in the project
-        include_extensions: [
-          ".py", ".txt", ".md", ".json", ".js", ".yml", ".yaml",
-          ".sh", ".toml", ".ps1", ".example"
-        ]
-        excludes: [
-          ".gitignore"
-        ]
+        
