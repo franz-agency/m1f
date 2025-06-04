@@ -39,7 +39,7 @@ from typing import Optional
 
 # Add the tools directory to path to import the m1f module
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
-import m1f
+from tools import m1f
 
 # Test constants
 TEST_DIR = Path(__file__).parent

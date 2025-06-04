@@ -289,7 +289,12 @@ class OutputWriter:
                 content = self._remove_scraped_metadata(content)
 
             # Check for content deduplication
-            if self._content_dedupe and not rel_path.startswith(("intro:", "include:")):
+            # Skip deduplication for symlinks when include_symlinks is enabled
+            skip_dedupe = (
+                self.config.filter.include_symlinks and file_path.is_symlink()
+            )
+            
+            if self._content_dedupe and not rel_path.startswith(("intro:", "include:")) and not skip_dedupe:
                 content_checksum = calculate_checksum(content)
 
                 if content_checksum in self._processed_checksums:

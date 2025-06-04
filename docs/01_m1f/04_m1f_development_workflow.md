@@ -149,7 +149,7 @@ m1f/
 │   ├── m1f
 │   ├── m1f-s1f
 │   ├── m1f-html2md
-│   ├── m1f-scrape
+│   ├── scrape_tool
 │   └── ...
 ├── scripts/
 │   ├── install.sh            # Installation script

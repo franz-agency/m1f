@@ -21,7 +21,10 @@ from pathlib import Path
 
 import pytest
 
-from ..base_test import BaseS1FTest
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from base_test import BaseS1FTest
 
 
 class TestS1FEncoding(BaseS1FTest):

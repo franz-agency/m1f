@@ -18,6 +18,6 @@ HTML to Markdown converter - wrapper script.
 """
 
 if __name__ == "__main__":
-    from html2md.cli import main
+    from html2md_tool.cli import main
 
     main()

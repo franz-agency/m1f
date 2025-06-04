@@ -32,24 +32,24 @@ optimal LLM context usage.
 
 ```bash
 # Basic website download
-python -m tools.m1f-scrape https://example.com -o ./downloaded_html
+python -m tools.scrape_tool https://example.com -o ./downloaded_html
 
 # Download with specific depth and page limits
-python -m tools.m1f-scrape https://example.com -o ./html \
+python -m tools.scrape_tool https://example.com -o ./html \
   --max-pages 50 \
   --max-depth 3
 
 # Use different scraper backend
-python -m tools.m1f-scrape https://example.com -o ./html --scraper httrack
+python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
 
 # List downloaded files after completion
-python -m tools.m1f-scrape https://example.com -o ./html --list-files
+python -m tools.scrape_tool https://example.com -o ./html --list-files
 ```
 
 ## Command Line Interface
 
 ```bash
-python -m tools.m1f-scrape <url> -o <output> [options]
+python -m tools.scrape_tool <url> -o <output> [options]
 ```
 
 ### Required Arguments
@@ -83,7 +83,7 @@ python -m tools.m1f-scrape <url> -o <output> [options]
 - **Limitations**: No JavaScript support
 
 ```bash
-python -m tools.m1f-scrape https://example.com -o ./html --scraper beautifulsoup
+python -m tools.scrape_tool https://example.com -o ./html --scraper beautifulsoup
 ```
 
 ### HTTrack
@@ -93,7 +93,7 @@ python -m tools.m1f-scrape https://example.com -o ./html --scraper beautifulsoup
 - **Limitations**: Requires HTTrack to be installed separately
 
 ```bash
-python -m tools.m1f-scrape https://example.com -o ./html --scraper httrack
+python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
 ```
 
 ### Scrapy
@@ -103,7 +103,7 @@ python -m tools.m1f-scrape https://example.com -o ./html --scraper httrack
 - **Limitations**: More complex configuration
 
 ```bash
-python -m tools.m1f-scrape https://example.com -o ./html --scraper scrapy
+python -m tools.scrape_tool https://example.com -o ./html --scraper scrapy
 ```
 
 ### Playwright
@@ -113,7 +113,7 @@ python -m tools.m1f-scrape https://example.com -o ./html --scraper scrapy
 - **Limitations**: Slower, requires more resources
 
 ```bash
-python -m tools.m1f-scrape https://example.com -o ./html --scraper playwright
+python -m tools.scrape_tool https://example.com -o ./html --scraper playwright
 ```
 
 ### Selectolax
@@ -123,7 +123,7 @@ python -m tools.m1f-scrape https://example.com -o ./html --scraper playwright
 - **Limitations**: Basic feature set
 
 ```bash
-python -m tools.m1f-scrape https://example.com -o ./html --scraper selectolax
+python -m tools.scrape_tool https://example.com -o ./html --scraper selectolax
 ```
 
 ## Usage Examples
@@ -132,22 +132,22 @@ python -m tools.m1f-scrape https://example.com -o ./html --scraper selectolax
 
 ```bash
 # Download a simple website
-python -m tools.m1f-scrape https://docs.example.com -o ./docs_html
+python -m tools.scrape_tool https://docs.example.com -o ./docs_html
 
 # Download with verbose output
-python -m tools.m1f-scrape https://docs.example.com -o ./docs_html -v
+python -m tools.scrape_tool https://docs.example.com -o ./docs_html -v
 ```
 
 ### Controlled Crawling
 
 ```bash
 # Limit crawl depth for shallow scraping
-python -m tools.m1f-scrape https://blog.example.com -o ./blog \
+python -m tools.scrape_tool https://blog.example.com -o ./blog \
   --max-depth 2 \
   --max-pages 20
 
 # Slow crawling to be respectful
-python -m tools.m1f-scrape https://example.com -o ./html \
+python -m tools.scrape_tool https://example.com -o ./html \
   --request-delay 2.0 \
   --concurrent-requests 2
 ```
@@ -156,11 +156,11 @@ python -m tools.m1f-scrape https://example.com -o ./html \
 
 ```bash
 # Use custom user agent
-python -m tools.m1f-scrape https://example.com -o ./html \
+python -m tools.scrape_tool https://example.com -o ./html \
   --user-agent "MyBot/1.0 (Compatible)"
 
 # Use scraper-specific configuration
-python -m tools.m1f-scrape https://example.com -o ./html \
+python -m tools.scrape_tool https://example.com -o ./html \
   --scraper scrapy \
   --scraper-config ./scrapy-settings.yaml
 ```
@@ -218,7 +218,7 @@ to LLMs:
 
 ```bash
 # Step 1: Download documentation website
-python -m tools.m1f-scrape https://docs.example.com -o ./html_files
+python -m tools.scrape_tool https://docs.example.com -o ./html_files
 
 # Step 2: Analyze HTML structure
 python -m tools.mf1-html2md analyze ./html_files/*.html --suggest-selectors
@@ -240,7 +240,7 @@ python -m tools.m1f -s ./markdown -o ./docs_bundle.txt \
 
 ```bash
 # Download React documentation for LLM analysis
-python -m tools.m1f-scrape https://react.dev/learn -o ./react_docs \
+python -m tools.scrape_tool https://react.dev/learn -o ./react_docs \
   --max-pages 100 \
   --max-depth 3
 
@@ -284,14 +284,14 @@ Use the provided Cloudflare configuration:
 
 ```bash
 # Use ultra-conservative Cloudflare config
-python -m tools.m1f-scrape https://protected-site.com -o ./output \
-  --config tools/m1f-scrape/scrapers/configs/cloudflare.yaml
+python -m tools.scrape_tool https://protected-site.com -o ./output \
+  --config tools/scrape_tool/scrapers/configs/cloudflare.yaml
 ```
 
 Or manually set very conservative values:
 
 ```bash
-python -m tools.m1f-scrape https://protected-site.com -o ./output \
+python -m tools.scrape_tool https://protected-site.com -o ./output \
   --request-delay 30 \
   --concurrent-requests 1 \
   --max-pages 50 \
@@ -313,7 +313,7 @@ If conservative settings don't work:
 
 1. **Try Playwright backend**: Uses real browser automation
    ```bash
-   python -m tools.m1f-scrape https://site.com -o ./output --scraper playwright
+   python -m tools.scrape_tool https://site.com -o ./output --scraper playwright
    ```
 
 2. **Manual download**: Some sites require manual browsing

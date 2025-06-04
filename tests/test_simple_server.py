@@ -62,7 +62,7 @@ class TestHTML2MDServer:
         # Check that expected pages are listed
         expected_pages = [
             "m1f-documentation",
-            "mf1-html2md-documentation",
+            "html2md-documentation",
             "complex-layout",
             "code-examples",
         ]
@@ -94,11 +94,11 @@ class TestHTML2MDServer:
 
     def test_html2md_documentation_page(self):
         """Test the HTML2MD documentation test page."""
-        response = requests.get(f"{TEST_SERVER_URL}/page/mf1-html2md-documentation")
+        response = requests.get(f"{TEST_SERVER_URL}/page/html2md-documentation")
         assert response.status_code == 200
 
         # Check content contains HTML2MD information
-        assert "HTML2MD" in response.text or "mf1-html2md" in response.text
+        assert "HTML2MD" in response.text or "html2md" in response.text
 
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -165,7 +165,7 @@ class TestHTML2MDServer:
         """Test that pages have structure suitable for HTML to Markdown conversion."""
         test_pages = [
             "m1f-documentation",
-            "mf1-html2md-documentation",
+            "html2md-documentation",
             "complex-layout",
         ]
 

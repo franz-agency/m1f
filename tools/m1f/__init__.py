@@ -4,7 +4,12 @@ m1f - Make One File
 A modern Python tool to combine multiple text files into a single output file.
 """
 
-from .._version import __version__, __version_info__
+try:
+    from .._version import __version__, __version_info__
+except ImportError:
+    # Fallback when running as standalone script
+    __version__ = "3.1.0"
+    __version_info__ = (3, 1, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"

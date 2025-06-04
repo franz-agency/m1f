@@ -5,7 +5,12 @@ A powerful, modular tool for converting HTML content to Markdown format,
 optimized for processing entire websites and integration with m1f.
 """
 
-from .._version import __version__, __version_info__
+try:
+    from .._version import __version__, __version_info__
+except ImportError:
+    # Fallback when running as standalone script
+    __version__ = "3.1.0"
+    __version_info__ = (3, 1, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 

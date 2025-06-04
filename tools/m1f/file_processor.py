@@ -380,10 +380,20 @@ class FileProcessor:
                     )
 
                     # Check for duplicates
-                    dedup_key = str(file_path.resolve())
+                    # When include_symlinks is True, use the actual path (not resolved) for deduplication
+                    # This allows both the original file and symlinks pointing to it to be included
+                    if self.config.filter.include_symlinks and file_path.is_symlink():
+                        dedup_key = str(file_path)
+                    else:
+                        dedup_key = str(file_path.resolve())
+                    
                     if dedup_key not in self._processed_files:
                         files.append((file_path, rel_path))
                         self._processed_files.add(dedup_key)
+                    else:
+                        self.logger.debug(f"Skipping duplicate: {file_path} (key: {dedup_key})")
+                else:
+                    self.logger.debug(f"File excluded by filter: {file_path}")
 
         return files
 
@@ -424,8 +434,19 @@ class FileProcessor:
         if not file_path.exists():
             return False
 
-        # If explicitly included (from -i file), skip all filters
+        # If explicitly included (from -i file), skip most filters but still check binary
         if explicitly_included:
+            # Still check binary files even for explicitly included files
+            include_binary = self.config.filter.include_binary_files
+            if (
+                hasattr(self, "_global_include_binary_files")
+                and self._global_include_binary_files is not None
+            ):
+                include_binary = include_binary or self._global_include_binary_files
+            
+            if not include_binary and is_binary_file(file_path):
+                return False
+            
             return True
 
         # Get file-specific settings from presets
@@ -536,10 +557,16 @@ class FileProcessor:
                 include_symlinks = include_symlinks or self._global_include_symlinks
 
             if not include_symlinks:
+                self.logger.debug(f"Excluding symlink {file_path} (include_symlinks=False)")
                 return False
 
-            if self._detect_symlink_cycle(file_path):
+            # For file symlinks, we only need to check for cycles if it's a directory symlink
+            # File symlinks don't create cycles in the same way directory symlinks do
+            if file_path.is_dir() and self._detect_symlink_cycle(file_path):
+                self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
                 return False
+            
+            self.logger.debug(f"Including symlink {file_path} (include_symlinks=True)")
 
         # Check file size limit
         max_size = self.config.filter.max_file_size
