@@ -60,7 +60,7 @@ After installation, these commands are available globally:
 - `m1f-scrape` - Download websites for offline viewing
 - `m1f-token-counter` - Count tokens in files
 - `m1f-update` - Regenerate all m1f bundles
-- `m1f-link` - Create symlink to m1f bundles in current project
+- `m1f-link` - Link m1f documentation for AI tools (Claude Code, etc.)
 - `m1f-help` - Show help for all commands
 
 ## Uninstall
@@ -165,13 +165,38 @@ Create similar batch files for:
 
 ## Using m1f in Other Projects
 
-Create a symlink to access m1f bundles in your project:
+### Quick Setup for AI-Assisted Development
+
+When using AI tools like Claude Code, Cursor, or GitHub Copilot in your project, they need to understand how m1f works to help you effectively. The `m1f-link` command provides this context:
 
 ```bash
 cd /your/project
 m1f-link
-# Now access bundles at .m1f/m1f/
 ```
+
+This creates `.m1f/m1f-docs.txt` - a symlink to the complete m1f documentation that AI tools can read.
+
+#### Example AI Prompts:
+
+```bash
+# Ask Claude Code to create a configuration
+"Please read @.m1f/m1f-docs.txt and create a .m1f.config.yml 
+for my Python web project"
+
+# Get help with specific use cases
+"Based on @.m1f/m1f-docs.txt, how do I exclude all test 
+files but include fixture data?"
+
+# Troubleshoot issues
+"I'm getting this error: [error message]. Can you check 
+@.m1f/m1f-docs.txt to help me fix it?"
+```
+
+The AI will understand:
+- All m1f commands and parameters
+- How to create `.m1f.config.yml` files
+- Preset system and file processing options
+- Best practices for different project types
 
 Or manually:
 

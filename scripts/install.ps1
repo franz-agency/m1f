@@ -154,7 +154,7 @@ echo   m1f-html2md       - Convert HTML to Markdown
 echo   m1f-scrape        - Download websites for offline viewing
 echo   m1f-token-counter - Count tokens in files
 echo   m1f-update        - Update m1f bundle files
-echo   m1f-link          - Create symlink to m1f bundles in current project
+echo   m1f-link          - Link m1f documentation for AI tools
 echo   m1f-help          - Show this help message
 echo.
 echo For detailed help on each tool, use: ^<tool^> --help'
@@ -162,13 +162,18 @@ echo For detailed help on each tool, use: ^<tool^> --help'
 setlocal
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=%SCRIPT_DIR%.."
+set "M1F_DOCS=%PROJECT_ROOT%\.m1f\m1f-doc\99_m1fdocs.txt"
 if not exist ".m1f" mkdir ".m1f"
-if exist ".m1f\m1f" (
-    echo m1f link already exists in .m1f\m1f
+if exist ".m1f\m1f-docs.txt" (
+    echo m1f documentation already linked at .m1f\m1f-docs.txt
 ) else (
-    mklink /J ".m1f\m1f" "%PROJECT_ROOT%\.m1f"
-    echo Created junction: .m1f\m1f -^> %PROJECT_ROOT%\.m1f
-    echo You can now access m1f bundles at .m1f\m1f\
+    mklink ".m1f\m1f-docs.txt" "%M1F_DOCS%"
+    echo.
+    echo You can now reference m1f documentation in AI tools:
+    echo   @.m1f\m1f-docs.txt
+    echo.
+    echo Example usage with Claude Code:
+    echo   "Please read @.m1f\m1f-docs.txt and help me set up m1f for this project"
 )'
 }
 
@@ -200,7 +205,7 @@ Write-Host "  • m1f-html2md       - Convert HTML to Markdown"
 Write-Host "  • m1f-scrape        - Download websites for offline viewing"
 Write-Host "  • m1f-token-counter - Count tokens in files"
 Write-Host "  • m1f-update        - Regenerate m1f bundles"
-Write-Host "  • m1f-link          - Create symlinks to m1f bundles"
+Write-Host "  • m1f-link          - Link m1f documentation for AI tools"
 Write-Host "  • m1f-help          - Show available commands"
 Write-Host
 

@@ -26,7 +26,16 @@ cd /path/to/your/project
 m1f -s . -o combined.txt
 ```
 
-### Method 2: Using m1f Bundles in Your Project
+### Method 2: Providing m1f Documentation to AI Tools (Claude Code, etc.)
+
+When you want to use m1f in a project with AI assistance (like Claude Code, Cursor, or other AI-powered development tools), the AI needs to understand how m1f works and what parameters are available. The `m1f-link` command solves this by creating a symlink to the complete m1f documentation.
+
+#### Why this is important:
+- AI tools need context to understand how to use m1f
+- The documentation contains all parameters, options, and examples
+- AI can help create custom configurations and commands
+
+#### How to use:
 
 1. Navigate to your project:
 
@@ -34,21 +43,44 @@ m1f -s . -o combined.txt
    cd /path/to/your/project
    ```
 
-2. Create m1f symlink:
+2. Create documentation symlink:
 
    ```bash
    m1f-link
    ```
 
-3. Access m1f documentation and source:
+   This creates: `.m1f/m1f-docs.txt -> /path/to/m1f/.m1f/m1f-doc/99_m1fdocs.txt`
+
+3. Reference the documentation in your AI tool:
 
    ```bash
-   # View m1f documentation
-   cat .m1f/m1f/m1f-documentation.txt
-
-   # View m1f source code
-   cat .m1f/m1f/m1f-programs.txt
+   # For Claude Code, Cursor, or similar AI assistants:
+   @.m1f/m1f-docs.txt
+   
+   # Example prompts:
+   "Please read @.m1f/m1f-docs.txt and help me create a .m1f.config.yml 
+   for bundling my Python project"
+   
+   "Based on @.m1f/m1f-docs.txt, what's the best way to exclude test 
+   files while keeping documentation?"
+   
+   "Using @.m1f/m1f-docs.txt as reference, help me set up auto-bundling 
+   for a WordPress theme"
    ```
+
+This single documentation file contains:
+- Complete m1f usage guide and all parameters
+- Examples and best practices
+- Preset system documentation
+- Auto-bundle configuration guide
+- All tool documentation (m1f, s1f, html2md, webscraper)
+
+The AI can then:
+- Understand all m1f parameters and options
+- Help create custom `.m1f.config.yml` configurations
+- Suggest appropriate presets for your project type
+- Generate complex m1f commands with correct syntax
+- Troubleshoot issues based on error messages
 
 ## Development Workflow
 
@@ -110,18 +142,22 @@ m1f -s . -o combined.txt
 ```
 m1f/
 ├── .m1f/                      # Pre-generated m1f bundles
-│   ├── m1f-documentation.txt
-│   ├── m1f-programs.txt
-│   ├── m1f-tests.txt
-│   ├── m1f-allinone.txt
-│   └── README.md
+│   ├── m1f/                   # Tool bundles
+│   └── m1f-doc/              
+│       └── 99_m1fdocs.txt    # Complete documentation
+├── bin/                       # Executable commands
+│   ├── m1f
+│   ├── m1f-s1f
+│   ├── m1f-html2md
+│   ├── m1f-scrape
+│   └── ...
 ├── scripts/
-│   ├── setup_m1f_aliases.sh   # Setup shell aliases (includes m1f-update)
-│   └── watch_and_bundle.sh    # File watcher for auto-bundling
-└── tools/                     # m1f source code
-    ├── m1f.py
-    ├── s1f.py
-    └── html2md.py
+│   ├── install.sh            # Installation script
+│   └── watch_and_bundle.sh   # File watcher for auto-bundling
+└── tools/                    # m1f source code
+    ├── m1f/
+    ├── s1f/
+    └── html2md/
 
 your-project/
 └── .m1f/
