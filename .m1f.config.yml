@@ -80,12 +80,53 @@ bundles:
     sources:
       - path: "tools/s1f"
         include_files: [
-          - "s1f.py",
-          - "path_utils",
-          - "__init__.py" ]
+          "s1f.py",
+          "path_utils",
+          "__init__.py" ]
       - path: "tools/s1f"
         include_extensions: [".py"]
 
+  html2md-docs:
+    description: "html2md docs"
+    output: ".m1f/m1f/66_html2md_docs.txt"
+    sources:
+      - path: "docs/03_html2md"
+        include_extensions: [".md"]
+    preset: "presets/docs-bundle.m1f-presets.yml"
+
+  html2md-code:
+    description: "html2md complete code"
+    output: ".m1f/m1f/67_html2md_tool_code.txt"
+    sources:
+      - path: "tools/html2md"
+        include_extensions: [".py"]
+      - path: "tools/"
+        include_files: [
+          "html2md.py",
+          "path_utils",
+          "__init__.py"
+        ]
+
+  webscraper-docs:
+    description: "webscraper docs"
+    output: ".m1f/m1f/77_webscraper_docs.txt"
+    sources:
+      - path: "docs/04_webscraper"
+        include_extensions: [".md"]
+    preset: "presets/docs-bundle.m1f-presets.yml"
+
+  webscraper-code:
+    description: "webscraper complete code"
+    output: ".m1f/m1f/78_webscraper_tool_code.txt"
+    sources:
+      - path: "tools/webscraper"
+        include_extensions: [".py"]
+      - path: "tools/"
+        include_files: [
+          "webscraper.py",
+          "path_utils",
+          "__init__.py"
+        ]
   tool-code:
     description: "m1f complete tool code"
     output: ".m1f/m1f/97_m1f_complete_tool_code.txt"
@@ -96,7 +137,7 @@ bundles:
   # All non-binary files excluding tests
   all:
     description: "All non-binary files"
-    output: ".m1f/m1f/98_mf1_allinone.txt"
+    output: ".m1f/m1f/98_m1f_allinone.txt"
     sources:
       - path: "."
         # Only extensions that actually exist in the project
