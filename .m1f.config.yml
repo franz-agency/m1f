@@ -46,19 +46,22 @@ global:
       - ".git/"
       - ".venv/"
       - "tmp/"
-      - "htmlcov/"
+      - ".scrapes/"
       # Note: global_excludes are automatically added to ignored_paths
 
 # Bundle definitions
 bundles:
-  # Documentation bundle - all markdown files
+  # Documentation bundle
   all-docs:
-    description: "All documentation files"
-    output: ".m1f/m1f/99_allm1f_docs.txt"
+    description: "m1f documentation"
+    output: ".m1f/m1f-doc/99_m1fdocs.txt"
     sources:
       - path: "."
-        include_extensions: [".md", ".txt", ".json"]
+        include_extensions: [".md", ".txt", ".json", ".yml", ".yaml"]
         excludes: ["tests/**"]
+    exclude_paths_file:
+      - ".gitignore"
+      - ".m1fignore"
     preset: "presets/docs-bundle.m1f-presets.yml"
 
   m1f-docs:
