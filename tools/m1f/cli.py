@@ -97,7 +97,10 @@ Perfect for:
   %(prog)s -s ./docs -o docs.txt --include-extensions .md .rst .txt
   %(prog)s -s ./project -o all.txt --no-default-excludes --include-dot-paths
   %(prog)s -s ./src -o code.txt --security-check warn --quiet
-  %(prog)s -s ./files -o small-files.txt --max-file-size 50KB"""
+  %(prog)s -s ./files -o small-files.txt --max-file-size 50KB
+  %(prog)s auto-bundle                         # Create all bundles from .m1f.config.yml
+  %(prog)s auto-bundle docs                    # Create only the 'docs' bundle
+  %(prog)s auto-bundle --list                  # List available bundles"""
 
     parser = CustomArgumentParser(
         prog="m1f",

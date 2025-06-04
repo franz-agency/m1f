@@ -19,6 +19,21 @@ echo -e "${BLUE}m1f Alias Setup${NC}"
 echo -e "${BLUE}=================${NC}"
 echo
 
+# Explain what this script does
+echo "This script will add the following aliases to your shell configuration:"
+echo ""
+echo "  • m1f          - Main m1f tool for combining files"
+echo "  • s1f          - Split combined files back to original structure"
+echo "  • html2md      - Convert HTML to Markdown"
+echo "  • webscraper   - Download websites for offline viewing"
+echo "  • token-counter - Count tokens in files"
+echo "  • m1f-update   - Regenerate m1f bundles"
+echo "  • m1f-link     - Create symlinks to m1f bundles"
+echo "  • m1f-help     - Show available commands"
+echo ""
+echo "These aliases will be added to your shell configuration file."
+echo ""
+
 # Detect shell
 if [ -n "$ZSH_VERSION" ]; then
     SHELL_CONFIG="$HOME/.zshrc"
@@ -32,74 +47,44 @@ else
     SHELL_NAME="bash"
 fi
 
-# Create alias functions
+# Create alias content that sources the external file
 ALIAS_CONTENT="
 # m1f tools aliases (added by m1f setup script)
-# Project root: $PROJECT_ROOT
-
-# Main m1f command with virtual environment activation
-m1f() {
-    (cd \"$PROJECT_ROOT\" && source .venv/bin/activate && python tools/m1f.py \"\$@\")
-}
-
-# s1f command
-s1f() {
-    (cd \"$PROJECT_ROOT\" && source .venv/bin/activate && python tools/s1f.py \"\$@\")
-}
-
-# html2md command
-html2md() {
-    (cd \"$PROJECT_ROOT\" && source .venv/bin/activate && python tools/html2md.py \"\$@\")
-}
-
-# token-counter command
-token-counter() {
-    (cd \"$PROJECT_ROOT\" && source .venv/bin/activate && python tools/token_counter.py \"\$@\")
-}
-
-# Update m1f bundle files
-m1f-update() {
-    \"$PROJECT_ROOT/scripts/update_m1f_files.sh\"
-}
-
-# Create m1f symlink in current project
-m1f-link() {
-    if [ ! -d \".m1f\" ]; then
-        mkdir -p .m1f
-    fi
-    
-    if [ -e \".m1f/m1f\" ]; then
-        echo \"m1f link already exists in .m1f/m1f\"
-    else
-        ln -s \"$PROJECT_ROOT/.m1f\" .m1f/m1f
-        echo \"Created symlink: .m1f/m1f -> $PROJECT_ROOT/.m1f\"
-        echo \"You can now access m1f bundles at .m1f/m1f/\"
-    fi
-}
-
-# Show m1f help
-m1f-help() {
-    echo \"m1f Tools - Available Commands:\"
-    echo \"  m1f          - Main m1f tool for combining files\"
-    echo \"  s1f          - Split combined files back to original structure\"
-    echo \"  html2md      - Convert HTML to Markdown\"
-    echo \"  token-counter - Count tokens in files\"
-    echo \"  m1f-update   - Update m1f bundle files\"
-    echo \"  m1f-link     - Create symlink to m1f bundles in current project\"
-    echo \"  m1f-help     - Show this help message\"
-    echo \"\"
-    echo \"For detailed help on each tool, use: <tool> --help\"
-}
+# Source the m1f aliases file
+if [ -f \"$PROJECT_ROOT/scripts/m1f_aliases.sh\" ]; then
+    source \"$PROJECT_ROOT/scripts/m1f_aliases.sh\"
+fi
 "
 
 # Check if aliases already exist
 if grep -q "# m1f tools aliases" "$SHELL_CONFIG" 2>/dev/null; then
     echo -e "${YELLOW}m1f aliases already exist in $SHELL_CONFIG${NC}"
     echo -e "To update, remove the existing m1f section and run this script again."
+    echo ""
+    echo -e "${YELLOW}To remove the aliases:${NC}"
+    echo "1. Open $SHELL_CONFIG in your editor"
+    echo "2. Find and remove the m1f source line (about 3-4 lines)"
+    echo "3. Save the file and reload your shell"
+    echo ""
+    echo "Or run: sed -i '/# m1f tools aliases/,/^$/d' $SHELL_CONFIG"
     exit 1
 fi
 
+# Show what will be modified
+echo -e "${YELLOW}Shell configuration file:${NC} $SHELL_CONFIG"
+echo -e "${YELLOW}Project root:${NC} $PROJECT_ROOT"
+echo ""
+
+# Ask for confirmation
+echo -e "${YELLOW}Do you want to continue? (y/N)${NC}"
+read -r response
+if [[ ! "$response" =~ ^[Yy]$ ]]; then
+    echo "Setup cancelled."
+    exit 0
+fi
+
 # Add aliases to shell config
+echo ""
 echo -e "${GREEN}Adding m1f aliases to $SHELL_CONFIG...${NC}"
 echo "$ALIAS_CONTENT" >> "$SHELL_CONFIG"
 
@@ -110,7 +95,7 @@ mkdir -p "$HOME/.local/bin"
 cat > "$STANDALONE_SCRIPT" << EOF
 #!/bin/bash
 # Standalone m1f script
-cd "$PROJECT_ROOT" && source .venv/bin/activate && python tools/m1f.py "\$@"
+cd "$PROJECT_ROOT" && source .venv/bin/activate && python -m tools.m1f "\$@"
 EOF
 
 chmod +x "$STANDALONE_SCRIPT"
@@ -132,3 +117,11 @@ echo -e "4. View all available commands:"
 echo -e "   ${BLUE}m1f-help${NC}"
 echo
 echo -e "${GREEN}Standalone script also created at: $STANDALONE_SCRIPT${NC}"
+echo
+echo -e "${YELLOW}To remove the aliases later:${NC}"
+echo "1. Open $SHELL_CONFIG in your editor"
+echo "2. Find and remove the m1f source line (about 3-4 lines)"
+echo "3. Save the file and reload your shell"
+echo "4. Optionally remove: $STANDALONE_SCRIPT"
+echo ""
+echo "Or run: sed -i '/# m1f tools aliases/,/^$/d' $SHELL_CONFIG"

@@ -116,8 +116,8 @@ m1f/
 │   ├── m1f-allinone.txt
 │   └── README.md
 ├── scripts/
-│   ├── update_m1f_files.sh    # Update bundle files
-│   └── setup_m1f_aliases.sh   # Setup shell aliases
+│   ├── setup_m1f_aliases.sh   # Setup shell aliases (includes m1f-update)
+│   └── watch_and_bundle.sh    # File watcher for auto-bundling
 └── tools/                     # m1f source code
     ├── m1f.py
     ├── s1f.py

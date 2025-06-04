@@ -16,36 +16,36 @@ Combines multiple files into a single, AI-friendly mega-file. Smart enough to de
 m1f -s ./your-project -o context.txt --preset wordpress
 ```
 
-### ✂️ **s1f** - The Splitter  
+### ✂️ **m1f-s1f** - The Splitter  
 Extracts files back from bundles. Perfect for when your AI assistant generates that perfect codebase and you need it back in actual files.
 
 ```bash
 # Unbundle that AI-generated masterpiece
-s1f -i bundle.txt -d ./extracted
+m1f-s1f -i bundle.txt -d ./extracted
 ```
 
-### 🌐 **webscraper** - The Collector
+### 🌐 **m1f-scrape** - The Collector
 Downloads entire websites for offline processing. Multiple backends for different scenarios - from simple HTML to JavaScript-heavy SPAs.
 
 ```bash
 # Grab those docs
-webscraper https://docs.example.com -o ./html --scraper playwright
+m1f-scrape https://docs.example.com -o ./html --scraper playwright
 ```
 
-### 📝 **html2md** - The Converter
+### 📝 **m1f-html2md** - The Converter
 Transforms HTML into clean Markdown. Analyzes structure, suggests optimal selectors, and handles even the messiest enterprise documentation.
 
 ```bash
 # Make it readable
-html2md convert ./html -o ./markdown --content-selector "article"
+m1f-html2md convert ./html -o ./markdown --content-selector "article"
 ```
 
-### 🔢 **token_counter** - The Calculator
+### 🔢 **m1f-token-counter** - The Calculator
 Counts tokens before you hit those pesky context limits. Support for all major LLM encodings.
 
 ```bash
 # Will it fit?
-token_counter ./bundle.txt
+m1f-token-counter ./bundle.txt
 ```
 
 ## Real-World Magic
@@ -53,8 +53,8 @@ token_counter ./bundle.txt
 ### Feed Documentation to Your AI Assistant
 ```bash
 # Download → Convert → Bundle → Profit
-webscraper https://react.dev -o ./react-html
-html2md convert ./react-html -o ./react-md
+m1f-scrape https://react.dev -o ./react-html
+m1f-html2md convert ./react-html -o ./react-md
 m1f -s ./react-md -o react-docs-for-claude.txt
 ```
 
@@ -68,7 +68,7 @@ m1f -s ./wp-content/themes/mytheme -o theme-context.txt \
 ### Auto-Bundle Your Project
 ```bash
 # Set it and forget it
-./scripts/auto_bundle.sh complete
+m1f-update
 # Or watch for changes
 ./scripts/watch_and_bundle.sh
 ```
@@ -83,18 +83,32 @@ m1f -s ./wp-content/themes/mytheme -o theme-context.txt \
 
 ## Quick Start
 
+### Linux/macOS (3 commands)
 ```bash
-# Clone it
 git clone https://github.com/franzundfriends/m1f.git
 cd m1f
+source ./scripts/install.sh
+```
 
-# Set it up
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+### Windows (3 commands + restart)
+```powershell
+git clone https://github.com/franzundfriends/m1f.git
+cd m1f
+.\scripts\install.ps1
+# Restart PowerShell or run: . $PROFILE
+```
 
-# Use it
-python tools/m1f.py -s . -o bundle.txt
+That's it! ✨ The installer handles everything:
+- ✅ Checks Python 3.10+
+- ✅ Creates virtual environment
+- ✅ Installs all dependencies
+- ✅ Generates initial bundles
+- ✅ Sets up global commands
+
+Test it:
+```bash
+m1f --help
+m1f-update
 ```
 
 ## Pro Tips

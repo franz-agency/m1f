@@ -502,17 +502,17 @@ The preset system integrates seamlessly with the auto-bundling scripts:
    - Select your preset file and optional group
    - The bundle will apply file-specific processing
 
-2. **With Scripts**:
+2. **With m1f-update Command**:
 
    ```bash
-   # Use preset-based bundling script
-   ./scripts/auto_bundle.py all
+   # Create all bundles with auto-bundle
+   m1f-update
 
-   # Focus on specific area with presets
-   ./scripts/auto_bundle.py focus wordpress
+   # Create specific bundle
+   m1f-update wordpress
 
-   # Use custom preset
-   ./scripts/auto_bundle.py preset my-preset.yml frontend
+   # List available bundles
+   m1f-update --list
    ```
 
 3. **Available Preset Bundles**:

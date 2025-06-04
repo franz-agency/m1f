@@ -8,6 +8,19 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added - m1f
+
+- **Auto-Bundle Subcommand**: Integrated auto-bundle functionality directly into m1f
+  - New `auto-bundle` subcommand for creating multiple bundles from YAML config
+  - Reads `.m1f.config.yml` from project root
+  - Supports creating all bundles or specific bundles by name
+  - `--list` option to show available bundles with descriptions
+  - `--verbose` and `--quiet` options for output control
+  - `m1f-update` alias provides convenient access from anywhere
+  - Full compatibility with existing `.m1f.config.yml` format
+  - Supports all m1f options: presets, exclude/include files, conditional bundles
+  - Updated `watch_and_bundle.sh` to use new auto-bundle functionality
+
 ## [3.1.0] - 2025-06-04
 
 ### Added - html2md

@@ -308,6 +308,35 @@ Default security check mode (abort, skip, warn).
 
 Default maximum file size limit.
 
+## Subcommands
+
+### `auto-bundle`
+
+Create multiple m1f bundles based on a YAML configuration file (`.m1f.config.yml`).
+
+```bash
+# Create all bundles
+m1f auto-bundle
+
+# Create specific bundle
+m1f auto-bundle BUNDLE_NAME
+
+# List available bundles
+m1f auto-bundle --list
+
+# With options
+m1f auto-bundle --verbose
+m1f auto-bundle --quiet
+```
+
+**Options:**
+- `BUNDLE_NAME`: Name of specific bundle to create (optional)
+- `--list`: List available bundles from configuration
+- `--verbose`, `-v`: Enable verbose output
+- `--quiet`, `-q`: Suppress all console output
+
+See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration instructions.
+
 ## Notes
 
 1. **Module Invocation**: Currently, `python -m tools.m1f` may not work due to

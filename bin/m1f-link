@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# m1f-link - Create symlink to m1f bundles
+
+# Get the real path of this script
+SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
+BIN_DIR="$(dirname "$SCRIPT_PATH")"
+PROJECT_ROOT="$(dirname "$BIN_DIR")"
+
+# Create .m1f directory if it doesn't exist
+if [ ! -d ".m1f" ]; then
+    mkdir -p .m1f
+fi
+
+# Check if symlink already exists
+if [ -e ".m1f/m1f" ]; then
+    echo "m1f link already exists in .m1f/m1f"
+else
+    ln -s "$PROJECT_ROOT/.m1f" .m1f/m1f
+    echo "Created symlink: .m1f/m1f -> $PROJECT_ROOT/.m1f"
+    echo "You can now access m1f bundles at .m1f/m1f/"
+fi

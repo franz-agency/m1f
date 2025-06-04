@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# m1f-help - Show m1f help
+
+echo "m1f Tools - Available Commands:"
+echo "  m1f               - Main m1f tool for combining files"
+echo "  m1f-s1f           - Split combined files back to original structure"
+echo "  m1f-html2md       - Convert HTML to Markdown"
+echo "  m1f-scrape        - Download websites for offline viewing"
+echo "  m1f-token-counter - Count tokens in files"
+echo "  m1f-update        - Update m1f bundle files"
+echo "  m1f-link          - Create symlink to m1f bundles in current project"
+echo "  m1f-help          - Show this help message"
+echo ""
+echo "For detailed help on each tool, use: <tool> --help"
