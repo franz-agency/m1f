@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.2.0] - 2025-06-04
 
-### Added - m1f
+### Added
 
 - **Auto-Bundle Subcommand**: Integrated auto-bundle functionality directly into m1f
   - New `auto-bundle` subcommand for creating multiple bundles from YAML config
@@ -16,10 +16,47 @@ and this project adheres to
   - Supports creating all bundles or specific bundles by name
   - `--list` option to show available bundles with descriptions
   - `--verbose` and `--quiet` options for output control
-  - `m1f-update` alias provides convenient access from anywhere
+  - `m1f-update` command provides convenient access from anywhere
   - Full compatibility with existing `.m1f.config.yml` format
   - Supports all m1f options: presets, exclude/include files, conditional bundles
   - Updated `watch_and_bundle.sh` to use new auto-bundle functionality
+
+- **Simplified Installation System**: Complete installer scripts for all platforms
+  - New `install.sh` handles entire setup process (3 commands total!)
+  - New `install.ps1` for Windows with full automation
+  - Automatic Python 3.10+ version checking
+  - Virtual environment creation and dependency installation
+  - Initial bundle generation during setup
+  - Smart shell detection for immediate PATH activation
+  - `uninstall.sh` for clean removal
+
+- **PATH-based Command System**: Replaced aliases with executable wrappers
+  - Created `bin/` directory with standalone executable scripts
+  - Each wrapper activates venv and runs appropriate tool
+  - Works consistently across all shells and platforms
+  - Optional symlink creation in ~/.local/bin
+
+### Changed
+
+- **Command Naming Standardization**: All tools now use m1f- prefix
+  - `s1f` → `m1f-s1f`
+  - `html2md` → `m1f-html2md`
+  - `webscraper` → `m1f-scrape`
+  - `token-counter` → `m1f-token-counter`
+  - Prevents naming conflicts with system commands
+
+- **Module Execution**: Fixed import errors with proper module syntax
+  - All scripts now use `python -m tools.m1f` format
+  - Ensures reliable imports across different environments
+  - Updated all documentation examples
+
+### Removed
+
+- Obsolete scripts replaced by integrated functionality:
+  - `scripts/auto_bundle.py` (now `m1f auto-bundle`)
+  - `scripts/auto_bundle.sh` (now `m1f auto-bundle`)
+  - `scripts/auto_bundle.ps1` (now `m1f auto-bundle`)
+  - `scripts/update_m1f_files.sh` (now `m1f-update`)
 
 ## [3.1.0] - 2025-06-04
 

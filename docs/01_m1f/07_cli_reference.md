@@ -1,7 +1,7 @@
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
-available in m1f v2.1.0.
+available in m1f v3.2.0.
 
 ## Synopsis
 
@@ -32,7 +32,7 @@ Show help message and exit.
 
 ### `--version`
 
-Show program version and exit. Current version: v2.1.0
+Show program version and exit. Current version: v3.2.0
 
 ## Input/Output Options
 

@@ -1,6 +1,6 @@
 # m1f Documentation
 
-This directory contains detailed documentation for the m1f project v2.0.0.
+This directory contains detailed documentation for the m1f project v3.2.0.
 
 ## Contents
 
