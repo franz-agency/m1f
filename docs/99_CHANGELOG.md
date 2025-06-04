@@ -10,7 +10,28 @@ and this project adheres to
 
 ## [3.1.0] - 2025-06-04
 
-### Added
+### Added - html2md
+
+- **Custom Extractor System**: Site-specific content extraction
+  - Pluggable extractor architecture for optimal HTML parsing
+  - Support for function-based and class-based extractors
+  - Extract, preprocess, and postprocess hooks
+  - Dynamic loading of Python extractor files
+  - Default extractor for basic navigation removal
+- **Workflow Integration**: Organized .scrapes directory structure
+  - Standard directory layout: html/, md/, extractors/
+  - .scrapes directory added to .gitignore
+  - Supports Claude-assisted extractor development
+- **CLI Enhancement**: `--extractor` option for custom extraction logic
+- **API Enhancement**: Extractor parameter in Html2mdConverter constructor
+
+### Changed - html2md
+
+- Removed all Anthropic-specific code from core modules
+- Cleaned up api.py to remove hardcoded navigation selectors
+- Improved modularity with separate extractor system
+
+### Added - m1f
 
 - **Multiple Exclude/Include Files Support**: Enhanced file filtering capabilities
   - `exclude_paths_file` and `include_paths_file` now accept multiple files

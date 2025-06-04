@@ -20,6 +20,8 @@ import argparse
 import sys
 from typing import Optional, NoReturn
 
+from . import __version__
+
 # Try to import colorama for colored help
 try:
     from colorama import Fore, Style, init
@@ -109,7 +111,7 @@ Perfect for:
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 3.0.0",
+        version=f"%(prog)s {__version__}",
         help="Show program version and exit",
     )
 

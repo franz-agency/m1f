@@ -5,4 +5,6 @@ This package provides utilities for combining source files (m1f.py),
 splitting them back (s1f.py), and other related functionality.
 """
 
-__version__ = "3.0.0"
+from ._version import __version__, __version_info__
+
+__all__ = ["__version__", "__version_info__"]
