@@ -8,7 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
-## [3.0.0] - 2025-01-03
+## [3.0.1] - 2025-06-04
+
+### Fixed
+
+- **Configuration Parsing**: Fixed YAML syntax error in .m1f.config.yml
+  - Corrected array item syntax in include_files sections
+  - Removed erroneous hyphens within square bracket array notation
+
+## [3.0.0] - 2025-06-03
 
 ### Added
 
@@ -105,7 +113,6 @@ and this project adheres to
     mirroring
   - Better performance, reliability, and standards compliance
   - Requires system installation: `sudo apt-get install httrack`
-  - Updated user agent to `html2md/2.0 (+https://franz.agency)`
   - Enhanced command-line options mapping for HTTrack features
 
 ### Documentation
