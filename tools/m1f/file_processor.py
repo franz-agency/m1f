@@ -152,7 +152,11 @@ class FileProcessor:
                     all_gitignore_lines.extend(lines)
                 else:
                     self.logger.info(f"Processing {exclude_file} as exact path list")
-                    self.exact_excludes.update(Path(line) for line in lines)
+                    for line in lines:
+                        path = Path(line)
+                        if not path.is_absolute() and self.config.source_directory:
+                            path = self.config.source_directory / path
+                        self.exact_excludes.add(str(path.resolve()))
 
             except Exception as e:
                 self.logger.warning(f"Error reading exclude file {exclude_file}: {e}")
@@ -203,7 +207,11 @@ class FileProcessor:
                     all_gitignore_lines.extend(lines)
                 else:
                     self.logger.info(f"Processing {include_file} as exact path list")
-                    self.exact_includes.update(Path(line) for line in lines)
+                    for line in lines:
+                        path = Path(line)
+                        if not path.is_absolute() and self.config.source_directory:
+                            path = self.config.source_directory / path
+                        self.exact_includes.add(str(path.resolve()))
 
             except Exception as e:
                 self.logger.warning(f"Error reading include file {include_file}: {e}")
@@ -416,6 +424,10 @@ class FileProcessor:
         if not file_path.exists():
             return False
 
+        # If explicitly included (from -i file), skip all filters
+        if explicitly_included:
+            return True
+
         # Get file-specific settings from presets
         file_settings = {}
         if self.preset_manager:
@@ -427,8 +439,8 @@ class FileProcessor:
         if self.exact_includes or self.include_gitignore_spec:
             include_matched = False
             
-            # Check exact includes
-            if str(file_path) in self.exact_includes or file_path.name in [Path(p).name for p in self.exact_includes]:
+            # Check exact includes  
+            if str(file_path.resolve()) in self.exact_includes:
                 include_matched = True
             
             # Check include gitignore patterns
@@ -444,7 +456,7 @@ class FileProcessor:
                 return False
 
         # Check exact excludes
-        if str(file_path) in self.exact_excludes or file_path.name in [Path(p).name for p in self.exact_excludes]:
+        if str(file_path.resolve()) in self.exact_excludes:
             return False
 
         # Check filename excludes

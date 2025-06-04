@@ -29,12 +29,17 @@ def temp_dir():
         (tmp_path / "include_me.py").write_text("# Should be included")
         (tmp_path / "secret.key").write_text("SECRET_KEY")
         
+        # Create subdirectory with files
+        subdir = tmp_path / "subdir"
+        subdir.mkdir()
+        (subdir / "sub_file.py").write_text("# Subdir file")
+        
         # Create exclude files
         (tmp_path / ".gitignore").write_text("*.key\nexclude_me.py")
         (tmp_path / "extra_excludes.txt").write_text("file3.txt")
         
         # Create include files
-        (tmp_path / "includes.txt").write_text("include_me.py")
+        (tmp_path / "includes.txt").write_text("include_me.py\nsubdir/sub_file.py")
         (tmp_path / "more_includes.txt").write_text("file1.py")
         
         yield tmp_path
@@ -129,8 +134,8 @@ class TestMultipleExcludeIncludeFiles:
         files = await processor.gather_files()
         
         # Should only include files in the include list
-        file_names = [f[0].name for f in files]
-        assert file_names == ["include_me.py"]
+        file_names = sorted([f[0].name for f in files])
+        assert file_names == ["include_me.py", "sub_file.py"]
     
     @pytest.mark.asyncio
     async def test_multiple_include_files(self, temp_dir):
@@ -159,7 +164,7 @@ class TestMultipleExcludeIncludeFiles:
         
         # Should include files from both include files
         file_names = sorted([f[0].name for f in files])
-        assert file_names == ["file1.py", "include_me.py"]
+        assert file_names == ["file1.py", "include_me.py", "sub_file.py"]
     
     @pytest.mark.asyncio
     async def test_exclude_and_include_together(self, temp_dir):
@@ -189,10 +194,44 @@ class TestMultipleExcludeIncludeFiles:
         
         # Include list takes precedence, then excludes are applied
         file_names = sorted([f[0].name for f in files])
-        # include_me.py and file1.py are in include lists
-        # Neither are in exclude lists, so both should be included
-        assert file_names == ["file1.py", "include_me.py"]
+        # include_me.py, file1.py and sub_file.py are in include lists
+        # Neither are in exclude lists, so all should be included
+        assert file_names == ["file1.py", "include_me.py", "sub_file.py"]
     
+    @pytest.mark.asyncio  
+    async def test_input_file_bypasses_filters(self, temp_dir):
+        """Test that files from -i bypass all filters."""
+        # Create input file listing specific files
+        input_file = temp_dir / "input_files.txt"
+        input_file.write_text("exclude_me.py\nsecret.key\nfile1.py")
+        
+        config = Config(
+            source_directory=temp_dir,
+            input_file=input_file,
+            input_include_files=[],
+            output=OutputConfig(output_file=temp_dir / "output.txt"),
+            filter=FilterConfig(
+                exclude_paths_file=str(temp_dir / ".gitignore"),
+                include_paths_file=str(temp_dir / "includes.txt")
+            ),
+            encoding=EncodingConfig(),
+            security=SecurityConfig(),
+            archive=ArchiveConfig(),
+            logging=LoggingConfig(),
+            preset=PresetConfig()
+        )
+        
+        logger_manager = LoggerManager(config.logging)
+        processor = FileProcessor(config, logger_manager)
+        files = await processor.gather_files()
+        
+        # Files from input file should bypass all filters
+        file_names = sorted([f[0].name for f in files])
+        # exclude_me.py and secret.key would normally be excluded
+        assert "exclude_me.py" in file_names
+        assert "secret.key" in file_names
+        assert "file1.py" in file_names
+
     @pytest.mark.asyncio
     async def test_nonexistent_files_skipped(self, temp_dir):
         """Test that non-existent files are gracefully skipped."""

@@ -44,7 +44,19 @@ process multiple directories.
 ### `--input-file FILE`, `-i FILE`
 
 Path to a text file containing a list of files/directories to process, one per
-line. Useful for providing a specific list of files.
+line. These files are explicitly included and bypass all filter rules.
+
+**Important**: Source directory (`-s`) is still required. Relative paths in the 
+input file are resolved relative to the source directory. Absolute paths are 
+used as-is.
+
+Example input file:
+```
+# Comments are supported
+src/main.py          # Relative to source directory
+/absolute/path.txt   # Absolute path
+docs/**/*.md         # Glob patterns supported
+```
 
 ### `--output-file FILE`, `-o FILE` (REQUIRED)
 
@@ -109,9 +121,28 @@ m1f -s . -o output.txt --exclude-paths-file .gitignore .m1f-exclude custom-exclu
 
 ### `--include-paths-file FILE ...`
 
-File(s) containing paths to include (supports gitignore format). When specified,
+File(s) containing patterns to include (supports gitignore format). When specified,
 only files matching these patterns will be included (whitelist mode). Multiple 
 files can be specified and will be merged. Non-existent files are skipped gracefully.
+
+**Processing Order**:
+1. Files from `-i` (input-file) are always included, bypassing all filters
+2. Files from `-s` (source directory) are filtered by include patterns first
+3. Then exclude patterns are applied
+
+**Path Resolution**: Same as `-i` - relative paths are resolved relative to the 
+source directory (`-s`).
+
+Example include file:
+```
+# Include all Python files
+*.py
+# Include specific directories
+src/**/*
+api/**/*
+# Exclude tests even if they match above
+!test_*.py
+```
 
 Examples:
 ```bash
@@ -120,6 +151,9 @@ m1f -s . -o output.txt --include-paths-file important-files.txt
 
 # Multiple files  
 m1f -s . -o output.txt --include-paths-file core-files.txt api-files.txt
+
+# Combined with input file (input file takes precedence)
+m1f -s . -i explicit-files.txt -o output.txt --include-paths-file patterns.txt
 ```
 
 ### `--include-extensions [EXT ...]`
