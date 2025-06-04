@@ -13,3 +13,8 @@ package-lock.json
 
 # GitHub workflows (if present)
 .github/**
+
+pyproject.toml
+pytest.ini
+wp-cli.example.yml
+requirements.txt
