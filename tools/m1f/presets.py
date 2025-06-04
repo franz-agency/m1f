@@ -39,6 +39,7 @@ class ProcessingAction(Enum):
     STRIP_COMMENTS = "strip_comments"
     COMPRESS_WHITESPACE = "compress_whitespace"
     REMOVE_EMPTY_LINES = "remove_empty_lines"
+    JOIN_PARAGRAPHS = "join_paragraphs"
     CUSTOM = "custom"
 
 
@@ -487,6 +488,8 @@ class PresetManager:
                 content = self._compress_whitespace(content)
             elif action == ProcessingAction.REMOVE_EMPTY_LINES:
                 content = self._remove_empty_lines(content)
+            elif action == ProcessingAction.JOIN_PARAGRAPHS:
+                content = self._join_paragraphs(content)
             elif action == ProcessingAction.CUSTOM:
                 content = self._apply_custom_processor(
                     content, preset.custom_processor, preset.processor_args, file_path
@@ -658,6 +661,170 @@ class PresetManager:
         lines = content.splitlines()
         non_empty = [line for line in lines if line.strip()]
         return "\n".join(non_empty)
+
+    def _join_paragraphs(self, content: str) -> str:
+        """Join multi-line paragraphs into single lines for markdown files."""
+        lines = content.splitlines()
+        result = []
+        current_paragraph = []
+        in_code_block = False
+        in_list = False
+        list_indent = 0
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.strip()
+            
+            # Check for code blocks
+            if stripped.startswith('```'):
+                # Flush current paragraph
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                
+                # Add code block as-is
+                result.append(line)
+                in_code_block = not in_code_block
+                i += 1
+                continue
+            
+            # If in code block, add line as-is
+            if in_code_block:
+                result.append(line)
+                i += 1
+                continue
+            
+            # Check for indented code block (4 spaces or tab)
+            if line.startswith('    ') or line.startswith('\t'):
+                # Flush current paragraph
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                result.append(line)
+                i += 1
+                continue
+            
+            # Check for tables
+            if '|' in line and (i == 0 or i > 0 and '|' in lines[i-1]):
+                # Flush current paragraph
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                result.append(line)
+                i += 1
+                continue
+            
+            # Check for horizontal rules
+            if stripped in ['---', '***', '___'] or (
+                len(stripped) >= 3 and 
+                all(c in '-*_' for c in stripped) and 
+                len(set(stripped)) == 1
+            ):
+                # Flush current paragraph
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                result.append(line)
+                i += 1
+                continue
+            
+            # Check for headings
+            if stripped.startswith('#'):
+                # Flush current paragraph
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                # Add heading on single line
+                result.append(stripped)
+                i += 1
+                continue
+            
+            # Check for blockquotes
+            if stripped.startswith('>'):
+                # Flush current paragraph
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                
+                # Collect all consecutive blockquote lines
+                blockquote_lines = []
+                while i < len(lines) and lines[i].strip().startswith('>'):
+                    # Remove the > prefix and join
+                    content = lines[i].strip()[1:].strip()
+                    if content:
+                        blockquote_lines.append(content)
+                    i += 1
+                
+                if blockquote_lines:
+                    result.append('> ' + ' '.join(blockquote_lines))
+                continue
+            
+            # Check for list items
+            import re
+            list_pattern = re.match(r'^(\s*)([-*+]|\d+\.)\s+(.*)$', line)
+            if list_pattern:
+                # Flush current paragraph
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                
+                indent = list_pattern.group(1)
+                marker = list_pattern.group(2)
+                content = list_pattern.group(3)
+                
+                # Collect multi-line list item
+                list_item_lines = [content] if content else []
+                i += 1
+                
+                # Look for continuation lines
+                while i < len(lines):
+                    next_line = lines[i]
+                    next_stripped = next_line.strip()
+                    
+                    # Check if it's a new list item or other block element
+                    if (re.match(r'^\s*[-*+]\s+', next_line) or 
+                        re.match(r'^\s*\d+\.\s+', next_line) or
+                        next_stripped.startswith('#') or
+                        next_stripped.startswith('>') or
+                        next_stripped.startswith('```') or
+                        next_stripped in ['---', '***', '___'] or
+                        not next_stripped):
+                        break
+                    
+                    # It's a continuation of the current list item
+                    if next_line.startswith(' ' * (len(indent) + 2)) or next_line.startswith('\t'):
+                        # Remove the indentation and add to current item
+                        continuation = next_line[len(indent) + 2:].strip()
+                        if continuation:
+                            list_item_lines.append(continuation)
+                        i += 1
+                    else:
+                        break
+                
+                # Join the list item content
+                joined_content = ' '.join(list_item_lines) if list_item_lines else ''
+                result.append(f"{indent}{marker} {joined_content}")
+                continue
+            
+            # Empty line - flush current paragraph
+            if not stripped:
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                # Don't add empty lines
+                i += 1
+                continue
+            
+            # Regular paragraph line
+            current_paragraph.append(stripped)
+            i += 1
+        
+        # Flush any remaining paragraph
+        if current_paragraph:
+            result.append(' '.join(current_paragraph))
+        
+        return '\n'.join(result)
 
     def _apply_custom_processor(
         self, content: str, processor_name: str, args: Dict[str, Any], file_path: Path

@@ -1,7 +1,7 @@
 # Documentation bundle preset group
 docs_bundle:
   name: "Documentation Bundle"
-  description: "Optimizes markdown files by removing empty lines"
+  description: "Optimizes markdown files by joining paragraphs into single lines for better LLM processing"
   priority: 10
   enabled: true
   
@@ -10,4 +10,5 @@ docs_bundle:
       patterns: 
         - "**/*.md"
       actions:
+        - "join_paragraphs"
         - "remove_empty_lines"
