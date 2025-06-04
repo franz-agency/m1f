@@ -38,6 +38,84 @@ class FileSplitter:
         self.parser = CombinedFileParser(self.logger)
         self.writer = FileWriter(config, self.logger)
 
+    async def list_files(self) -> Tuple[ExtractionResult, int]:
+        """List files in the combined file without extracting.
+
+        Returns:
+            Tuple of (ExtractionResult, exit_code)
+        """
+        start_time = time.time()
+
+        try:
+            # Read the input file
+            content = await self._read_input_file()
+
+            # Parse the content
+            self.logger.info("Parsing combined file...")
+            extracted_files = self.parser.parse(content)
+
+            if not extracted_files:
+                self.logger.error("No files found in the combined file.")
+                return ExtractionResult(), 2
+
+            # Display file list
+            print(
+                f"\nFound {len(extracted_files)} file(s) in {self.config.input_file}:\n"
+            )
+
+            total_size = 0
+            for i, file in enumerate(extracted_files, 1):
+                meta = file.metadata
+                size_str = (
+                    format_size(meta.size_bytes) if meta.size_bytes else "Unknown"
+                )
+
+                # Build info line
+                info_parts = [f"{i:4d}. {meta.path}"]
+                info_parts.append(f"[{size_str}]")
+
+                if meta.checksum_sha256:
+                    info_parts.append(f"SHA256: {meta.checksum_sha256[:16]}...")
+
+                if meta.encoding:
+                    info_parts.append(f"Encoding: {meta.encoding}")
+
+                if meta.type:
+                    info_parts.append(f"Type: {meta.type}")
+
+                print("  ".join(info_parts))
+
+                if meta.size_bytes:
+                    total_size += meta.size_bytes
+
+            print(f"\nTotal size: {format_size(total_size)}")
+
+            result = ExtractionResult(
+                files_created=0,
+                files_overwritten=0,
+                files_failed=0,
+                execution_time=time.time() - start_time,
+            )
+
+            return result, 0
+
+        except S1FError as e:
+            self.logger.error(f"Error: {e}")
+            return (
+                ExtractionResult(execution_time=time.time() - start_time),
+                e.exit_code,
+            )
+        except KeyboardInterrupt:
+            self.logger.info("\nOperation cancelled by user.")
+            return ExtractionResult(execution_time=time.time() - start_time), 130
+        except Exception as e:
+            self.logger.error(f"Unexpected error: {e}")
+            if self.config.verbose:
+                import traceback
+
+                self.logger.debug(traceback.format_exc())
+            return ExtractionResult(execution_time=time.time() - start_time), 1
+
     async def split_file(self) -> Tuple[ExtractionResult, int]:
         """Split the combined file into individual files.
 

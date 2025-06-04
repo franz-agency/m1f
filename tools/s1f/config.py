@@ -25,7 +25,7 @@ class Config:
     """Configuration for the s1f file splitter."""
 
     input_file: Path
-    destination_directory: Path
+    destination_directory: Optional[Path] = None
     force_overwrite: bool = False
     verbose: bool = False
     timestamp_mode: str = "original"
@@ -37,7 +37,8 @@ class Config:
         """Validate configuration after initialization."""
         # Ensure paths are Path objects
         self.input_file = Path(self.input_file)
-        self.destination_directory = Path(self.destination_directory)
+        if self.destination_directory is not None:
+            self.destination_directory = Path(self.destination_directory)
 
         # Validate timestamp mode
         if self.timestamp_mode not in ["original", "current"]:
@@ -48,7 +49,9 @@ class Config:
         """Create configuration from command line arguments."""
         return cls(
             input_file=Path(args.input_file),
-            destination_directory=Path(args.destination_directory),
+            destination_directory=(
+                Path(args.destination_directory) if args.destination_directory else None
+            ),
             force_overwrite=args.force,
             verbose=args.verbose,
             timestamp_mode=args.timestamp_mode,
