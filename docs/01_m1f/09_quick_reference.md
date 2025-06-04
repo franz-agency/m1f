@@ -124,6 +124,33 @@ python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
     --separator-style Markdown
 ```
 
+### Multiple Exclude/Include Files
+
+```bash
+# Multiple exclude files (merged)
+python tools/m1f.py -s . -o output.txt \
+    --exclude-paths-file .gitignore .dockerignore custom-excludes.txt
+
+# Whitelist mode with include files
+python tools/m1f.py -s . -o api-bundle.txt \
+    --include-paths-file api-files.txt core-files.txt \
+    --exclude-paths-file .gitignore
+```
+
+### Working with File Lists (-i)
+
+```bash
+# Single input file
+python tools/m1f.py -s . -i files.txt -o output.txt
+
+# Merge multiple file lists (Bash)
+python tools/m1f.py -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
+
+# Combine with filters (input files bypass filters)
+python tools/m1f.py -s . -i must-include.txt -o output.txt \
+    --exclude-paths-file .gitignore
+```
+
 ### CI/CD Integration
 
 ```bash

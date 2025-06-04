@@ -89,9 +89,24 @@ example_group_name:
     # Supports: B, KB, MB, GB, TB (e.g., "50KB", "10MB", "1.5GB")
     max_file_size: "10MB"
     
-    # Path to file containing additional exclude patterns
+    # Path(s) to file(s) containing additional exclude patterns
     # Can be a .gitignore file or custom exclude file
+    # Single file:
     exclude_paths_file: ".gitignore"
+    # Multiple files (merged in order):
+    # exclude_paths_file:
+    #   - ".gitignore"
+    #   - ".m1f-exclude"
+    #   - "exclude-patterns.txt"
+    
+    # Path(s) to file(s) containing include patterns
+    # Only files matching these patterns will be included
+    # Single file:
+    # include_paths_file: "include-patterns.txt"
+    # Multiple files (merged in order):
+    # include_paths_file:
+    #   - ".m1f-include"
+    #   - "include-patterns.txt"
     
     # === PROCESSING OPTIONS ===
     

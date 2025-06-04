@@ -8,6 +8,24 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.1.0] - 2025-06-04
+
+### Added
+
+- **Multiple Exclude/Include Files Support**: Enhanced file filtering capabilities
+  - `exclude_paths_file` and `include_paths_file` now accept multiple files
+  - Files are merged in order, non-existent files are gracefully skipped
+  - Include files work as whitelists - only matching files are processed
+  - Full backward compatibility with single file syntax
+  - CLI supports multiple files: `--exclude-paths-file file1 file2 file3`
+  - YAML config supports both single file and list syntax
+
+### Changed
+
+- Enhanced file processor to handle pattern merging from multiple sources
+- Updated CLI arguments to accept multiple files with `nargs="+"`
+- Improved pattern matching for exact path excludes/includes
+
 ## [3.0.1] - 2025-06-04
 
 ### Fixed

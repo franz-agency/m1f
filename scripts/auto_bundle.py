@@ -244,6 +244,26 @@ class AutoBundler:
         if "preset_group" in bundle_config:
             cmd_parts.extend(["--preset-group", bundle_config["preset_group"]])
 
+        # Exclude paths file(s)
+        if "exclude_paths_file" in bundle_config:
+            exclude_files = bundle_config["exclude_paths_file"]
+            if isinstance(exclude_files, str):
+                exclude_files = [exclude_files]
+            if exclude_files:
+                cmd_parts.append("--exclude-paths-file")
+                for file in exclude_files:
+                    cmd_parts.append(str(self.project_root / file))
+
+        # Include paths file(s)
+        if "include_paths_file" in bundle_config:
+            include_files = bundle_config["include_paths_file"]
+            if isinstance(include_files, str):
+                include_files = [include_files]
+            if include_files:
+                cmd_parts.append("--include-paths-file")
+                for file in include_files:
+                    cmd_parts.append(f'"{self.project_root / file}"')
+
         # Other options
         if bundle_config.get("filename_mtime_hash"):
             cmd_parts.append("--filename-mtime-hash")
