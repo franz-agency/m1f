@@ -200,3 +200,6 @@ workers-site/
 CLAUDE.md
 
 /dev/
+
+# Scrapes directory for html2md workflow
+.scrapes/

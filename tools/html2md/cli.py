@@ -124,6 +124,10 @@ def add_convert_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--parallel", action="store_true", help="Enable parallel processing"
     )
+    
+    parser.add_argument(
+        "--extractor", type=Path, help="Path to custom extractor Python file"
+    )
 
 
 def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
@@ -204,7 +208,8 @@ def handle_convert(args: argparse.Namespace) -> None:
     config.log_file = args.log_file
 
     # Create converter
-    converter = Html2mdConverter(config)
+    extractor = args.extractor if hasattr(args, 'extractor') else None
+    converter = Html2mdConverter(config, extractor=extractor)
 
     # Convert based on source type
     if args.source.is_file():

@@ -30,6 +30,7 @@ from .config import (
     ProcessorConfig,
 )
 from .core import HTMLParser, MarkdownConverter
+from .extractors import BaseExtractor, DefaultExtractor, load_extractor
 from .utils import configure_logging, get_logger
 
 logger = get_logger(__name__)
@@ -39,12 +40,14 @@ class Html2mdConverter:
     """Main API class for HTML to Markdown conversion."""
 
     def __init__(
-        self, config: Union[Config, ConversionOptions, Dict, Path, str, None] = None
+        self, config: Union[Config, ConversionOptions, Dict, Path, str, None] = None,
+        extractor: Optional[Union[BaseExtractor, Path, str]] = None
     ):
         """Initialize converter with configuration.
 
         Args:
             config: Configuration object, ConversionOptions, dict, path to config file, or None
+            extractor: Custom extractor instance, path to extractor file, or None
         """
         if config is None:
             self.config = Config(source=Path("."), destination=Path("."))
@@ -81,6 +84,16 @@ class Html2mdConverter:
             getattr(self.config, "processor", ProcessorConfig())
         )
         self._console = Console()
+        
+        # Initialize extractor
+        if extractor is None:
+            self._extractor = DefaultExtractor()
+        elif isinstance(extractor, BaseExtractor):
+            self._extractor = extractor
+        elif isinstance(extractor, (Path, str)):
+            self._extractor = load_extractor(Path(extractor))
+        else:
+            raise TypeError(f"Invalid extractor type: {type(extractor)}")
 
     def convert_html(
         self,
@@ -98,30 +111,36 @@ class Html2mdConverter:
         Returns:
             Markdown content
         """
+        # Apply custom extractor preprocessing
+        html_content = self._extractor.preprocess(html_content, self.config.__dict__)
+        
         # Apply preprocessing if configured
         if hasattr(self.config, "preprocessing") and self.config.preprocessing:
             from .preprocessors import preprocess_html
 
             html_content = preprocess_html(html_content, self.config.preprocessing)
 
-        # Handle CSS selectors if specified
+        # Parse HTML
+        parsed = self._parser.parse(html_content, base_url)
+        
+        # Apply custom extractor
+        parsed = self._extractor.extract(parsed, self.config.__dict__)
+
+        # Handle CSS selectors if specified (after extraction)
         if self.config.conversion.outermost_selector:
             from bs4 import BeautifulSoup
 
-            soup = BeautifulSoup(html_content, "html.parser")
-            selected = soup.select_one(self.config.conversion.outermost_selector)
+            selected = parsed.select_one(self.config.conversion.outermost_selector)
             if selected:
                 # Remove ignored elements
                 if self.config.conversion.ignore_selectors:
                     for selector in self.config.conversion.ignore_selectors:
                         for elem in selected.select(selector):
                             elem.decompose()
-                html_content = str(selected)
+                # Create new soup from selected element
+                parsed = BeautifulSoup(str(selected), "html.parser")
 
-        # Parse HTML
-        parsed = self._parser.parse(html_content, base_url)
-
-        # Remove script and style tags that may have been missed by preprocessing
+        # Remove script and style tags that may have been missed
         for tag in parsed.find_all(["script", "style", "noscript"]):
             tag.decompose()
 
@@ -162,6 +181,9 @@ class Html2mdConverter:
             if frontmatter:
                 fm_str = yaml.dump(frontmatter, default_flow_style=False)
                 markdown = f"---\n{fm_str}---\n\n{markdown}"
+
+        # Apply custom extractor postprocessing
+        markdown = self._extractor.postprocess(markdown, self.config.__dict__)
 
         return markdown
 
