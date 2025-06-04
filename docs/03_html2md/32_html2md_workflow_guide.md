@@ -36,7 +36,7 @@ You have several options:
 
 #### Option A: Use webscraper tool
 ```bash
-python -m tools.webscraper https://example.com \
+python -m tools.m1f-scrape https://example.com \
   -o .scrapes/my-docs/html \
   --max-pages 50 \
   --scraper playwright
@@ -166,7 +166,7 @@ Here's a complete example for converting a documentation site:
 mkdir -p .scrapes/docs-site/{html,md,extractors}
 
 # 2. Download documentation
-python -m tools.webscraper https://docs.example.com \
+python -m tools.m1f-scrape https://docs.example.com \
   -o .scrapes/docs-site/html \
   --max-pages 100 \
   --scraper playwright

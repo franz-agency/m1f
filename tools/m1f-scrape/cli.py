@@ -1,4 +1,4 @@
-"""Command-line interface for webscraper."""
+"""Command-line interface for m1f-scrape."""
 
 import argparse
 import sys
@@ -17,7 +17,7 @@ console = Console()
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser."""
     parser = argparse.ArgumentParser(
-        prog="webscraper",
+        prog="m1f-scrape",
         description="Download websites for offline viewing",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

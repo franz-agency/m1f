@@ -339,7 +339,7 @@ class Html2mdConverter:
     def convert_website(self, start_url: str) -> Dict[str, Path]:
         """Convert an entire website to Markdown.
 
-        DEPRECATED: Use the webscraper tool to download websites first,
+        DEPRECATED: Use the m1f-scrape tool to download websites first,
         then use convert_directory to convert the downloaded HTML files.
 
         Args:
@@ -349,14 +349,14 @@ class Html2mdConverter:
             Dictionary mapping source files to generated markdown files
         """
         logger.warning(
-            "convert_website is deprecated. Use webscraper tool for downloading."
+            "convert_website is deprecated. Use m1f-scrape tool for downloading."
         )
         logger.info(f"Website conversion starting from {start_url}")
 
-        # Import crawler from webscraper module
+        # Import crawler from m1f-scrape module
         raise NotImplementedError(
-            "Website crawling has been moved to the webscraper tool. "
-            "Please use: python -m tools.webscraper <url> -o <output_dir>"
+            "Website crawling has been moved to the m1f-scrape tool. "
+            "Please use: python -m tools.m1f-scrape <url> -o <output_dir>"
         )
 
     async def convert_website_async(self, start_url: str) -> Dict[str, Path]:

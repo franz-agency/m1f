@@ -66,8 +66,8 @@ python -m tools.html2md analyze ./html/*.html --show-structure --common-patterns
 # Step 1: Create project structure
 mkdir -p .scrapes/my-project/{html,md,extractors}
 
-# Step 2: Download website using webscraper
-python -m tools.webscraper https://example.com -o .scrapes/my-project/html
+# Step 2: Download website using m1f-scrape
+python -m tools.m1f-scrape https://example.com -o .scrapes/my-project/html
 
 # Step 3: Analyze HTML structure (optional)
 python -m tools.html2md analyze .scrapes/my-project/html/*.html --suggest-selectors

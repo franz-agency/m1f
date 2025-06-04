@@ -126,7 +126,7 @@ Want to give Claude its own documentation? Here's how to scrape, process, and bu
 
 ```bash
 # 1. Download Claude's documentation
-webscraper https://docs.anthropic.com -o ./claude-docs-html \
+m1f-scrape https://docs.anthropic.com -o ./claude-docs-html \
   --max-pages 200 \
   --max-depth 4 \
   --request-delay 1.0

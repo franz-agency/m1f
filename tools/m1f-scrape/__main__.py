@@ -1,4 +1,4 @@
-"""Entry point for webscraper module."""
+"""Entry point for m1f-scrape module."""
 
 from .cli import main
 

@@ -1,4 +1,4 @@
-"""Configuration models for webscraper."""
+"""Configuration models for m1f-scrape."""
 
 from enum import Enum
 from typing import Any, Dict, Optional
@@ -61,7 +61,7 @@ class CrawlerConfig(BaseModel):
 
 
 class Config(BaseModel):
-    """Main configuration for webscraper."""
+    """Main configuration for m1f-scrape."""
 
     crawler: CrawlerConfig = Field(
         default_factory=CrawlerConfig, description="Crawler configuration"
