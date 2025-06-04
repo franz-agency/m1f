@@ -122,7 +122,7 @@ bundles:
     description: "webscraper docs"
     output: ".m1f/m1f/77_webscraper_docs.txt"
     sources:
-      - path: "docs/04_webscraper"
+      - path: "docs/04_scrape"
         include_extensions: [".md"]
     preset: "presets/docs-bundle.m1f-presets.yml"
 
