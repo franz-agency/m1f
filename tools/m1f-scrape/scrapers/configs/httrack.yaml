@@ -1,4 +1,4 @@
-# HTTrack scraper configuration example
+# HTTrack scraper configuration - Conservative settings for Cloudflare protection
 scraper_backend: httrack
 scraper_config:
   verify_ssl: true
@@ -6,10 +6,12 @@ scraper_config:
 crawler:
   max_depth: 10
   max_pages: 1000
-  request_delay: 0.2
-  concurrent_requests: 8
+  # Conservative delays to avoid Cloudflare detection
+  request_delay: 20  # 20 seconds between requests (0.05 requests/sec)
+  concurrent_requests: 2  # Max 2 simultaneous connections
   respect_robots_txt: true
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  # Use a realistic browser user agent
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
   
   # HTTrack-specific settings
   allowed_domains: []  # Empty = same domain only

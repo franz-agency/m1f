@@ -184,7 +184,13 @@ class HTTrackScraper(WebScraperBase):
         output_dir = self.temp_dir / "site"
         output_dir.mkdir(exist_ok=True)
 
-        # Build HTTrack command
+        # Build HTTrack command with conservative settings for Cloudflare
+        # Calculate connection rate (max 0.5 connections per second)
+        connection_rate = min(0.5, 1/self.config.request_delay)
+        
+        # Limit concurrent connections (max 2 for Cloudflare sites)
+        concurrent_connections = min(2, self.config.concurrent_requests)
+        
         cmd = [
             self.httrack_path,
             start_url,
@@ -196,9 +202,11 @@ class HTTrackScraper(WebScraperBase):
             "--disable-security-limits",
             f"--user-agent={self.config.user_agent}",
             "--timeout=" + str(int(self.config.timeout)),
-            f"--sockets={self.config.concurrent_requests}",
-            f"--connection-per-second={1/self.config.request_delay:.1f}",
+            f"--sockets={concurrent_connections}",  # Max 2 connections
+            f"--connection-per-second={connection_rate:.2f}",  # Max 0.5/sec
             f"--max-files={self.config.max_pages}",
+            "--max-rate=100000",  # Limit bandwidth to 100KB/s
+            "--min-rate=1000",  # Minimum 1KB/s
         ]
 
         # Add domain restrictions

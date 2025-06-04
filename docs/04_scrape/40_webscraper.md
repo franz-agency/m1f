@@ -260,10 +260,65 @@ python -m tools.m1f -s ./react_md -o ./react_documentation.txt
 
 1. **Respect robots.txt**: The tool automatically respects robots.txt files
 2. **Use appropriate delays**: Set `--request-delay` to avoid overwhelming
-   servers
+   servers (default: 15 seconds)
 3. **Limit concurrent requests**: Use `--concurrent-requests` responsibly
+   (default: 2 connections)
 4. **Test with small crawls**: Start with `--max-pages 10` to test your settings
 5. **Check output**: Use `--list-files` to verify what was downloaded
+
+## Dealing with Cloudflare Protection
+
+Many websites use Cloudflare or similar services to protect against bots. The
+scraper now includes conservative defaults to help avoid detection:
+
+### Default Conservative Settings
+
+- **Request delay**: 15 seconds between requests (previously 0.5s)
+- **Concurrent requests**: 2 simultaneous connections (previously 5)
+- **HTTrack backend**: Limited to 0.5 connections/second max
+- **Bandwidth limiting**: 100KB/s for HTTrack backend
+
+### For Heavy Cloudflare Protection
+
+Use the provided Cloudflare configuration:
+
+```bash
+# Use ultra-conservative Cloudflare config
+python -m tools.m1f-scrape https://protected-site.com -o ./output \
+  --config tools/m1f-scrape/scrapers/configs/cloudflare.yaml
+```
+
+Or manually set very conservative values:
+
+```bash
+python -m tools.m1f-scrape https://protected-site.com -o ./output \
+  --request-delay 30 \
+  --concurrent-requests 1 \
+  --max-pages 50 \
+  --scraper httrack
+```
+
+### Cloudflare Avoidance Tips
+
+1. **Start conservative**: Begin with 30-60 second delays
+2. **Use realistic user agents**: The default is a current Chrome browser
+3. **Limit scope**: Download only what you need with `--max-pages`
+4. **Single connection**: Use `--concurrent-requests 1` for sensitive sites
+5. **Respect robots.txt**: Always enabled by default
+6. **Add randomness**: Consider adding random delays in custom scripts
+
+### When Cloudflare Still Blocks
+
+If conservative settings don't work:
+
+1. **Try Playwright backend**: Uses real browser automation
+   ```bash
+   python -m tools.m1f-scrape https://site.com -o ./output --scraper playwright
+   ```
+
+2. **Manual download**: Some sites require manual browsing
+3. **API access**: Check if the site offers an API
+4. **Contact site owner**: Request permission or access
 
 ## Troubleshooting
 

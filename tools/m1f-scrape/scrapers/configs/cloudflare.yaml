@@ -1,0 +1,40 @@
+# Conservative configuration for sites with Cloudflare protection
+# These settings help avoid triggering Cloudflare's bot detection
+
+scraper_backend: httrack
+scraper_config:
+  verify_ssl: true
+  
+crawler:
+  max_depth: 5  # Limit depth to reduce requests
+  max_pages: 100  # Start with fewer pages
+  
+  # Very conservative delays (30 seconds base + random delay)
+  request_delay: 30  # 30 seconds between requests
+  concurrent_requests: 1  # Only 1 connection at a time
+  
+  # Always respect robots.txt
+  respect_robots_txt: true
+  
+  # Use a realistic, current browser user agent
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+  
+  # HTTrack-specific settings for Cloudflare
+  allowed_domains: []  # Empty = same domain only
+  
+  # Common paths to exclude to reduce load
+  excluded_paths:
+    - "*/api/*"
+    - "*/admin/*"
+    - "*/login/*"
+    - "*/search/*"
+    - "*.pdf"
+    - "*.zip"
+    - "*.mp4"
+    - "*.mp3"
+    
+# Additional notes for extreme Cloudflare protection:
+# 1. Consider using request_delay: 45-60 seconds
+# 2. Add random delays by modifying the scraper code
+# 3. Use browser automation (Playwright) as last resort
+# 4. Some sites may require manual browsing or API access

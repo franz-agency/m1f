@@ -73,15 +73,15 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--request-delay",
         type=float,
-        default=0.5,
-        help="Delay between requests in seconds (default: 0.5)",
+        default=15.0,
+        help="Delay between requests in seconds (default: 15.0 for Cloudflare protection)",
     )
 
     parser.add_argument(
         "--concurrent-requests",
         type=int,
-        default=5,
-        help="Number of concurrent requests (default: 5)",
+        default=2,
+        help="Number of concurrent requests (default: 2 for Cloudflare protection)",
     )
 
     parser.add_argument("--user-agent", type=str, help="Custom user agent string")

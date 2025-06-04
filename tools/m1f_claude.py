@@ -46,10 +46,21 @@ class M1FClaude:
         """Initialize m1f-claude with project context."""
         self.project_path = project_path or Path.cwd()
         self.m1f_root = Path(__file__).parent.parent
-        self.m1f_docs_link = self.project_path / ".m1f" / "m1f-docs.txt"
         
-        # Check if m1f-link has been run
-        self.has_m1f_docs = self.m1f_docs_link.exists()
+        # Check for m1f documentation in various locations
+        self.m1f_docs_link = self.project_path / ".m1f" / "m1f-docs.txt"
+        self.m1f_docs_direct = self.project_path / ".m1f" / "m1f-doc" / "99_m1fdocs.txt"
+        
+        # Check if m1f-link has been run or docs exist directly
+        self.has_m1f_docs = self.m1f_docs_link.exists() or self.m1f_docs_direct.exists()
+        
+        # Use whichever path exists
+        if self.m1f_docs_link.exists():
+            self.m1f_docs_path = self.m1f_docs_link
+        elif self.m1f_docs_direct.exists():
+            self.m1f_docs_path = self.m1f_docs_direct
+        else:
+            self.m1f_docs_path = self.m1f_docs_link  # Default to expected symlink path
         
     def create_enhanced_prompt(self, user_prompt: str, context: Optional[Dict] = None) -> str:
         """Enhance user prompt with m1f context and best practices."""
@@ -66,7 +77,7 @@ class M1FClaude:
             enhanced.append(f"""
 m1f (Make One File) is installed and ready to use in this project.
 
-📚 Complete m1f documentation is available at: @{self.m1f_docs_link.relative_to(self.project_path)}
+📚 Complete m1f documentation is available at: @{self.m1f_docs_path.relative_to(self.project_path)}
 
 This documentation includes:
 - All m1f commands and parameters
@@ -371,9 +382,9 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
         print(f"📁 Working directory: {m1f_claude.project_path}")
         
         if m1f_claude.has_m1f_docs:
-            print(f"✅ m1f docs linked at: {m1f_claude.m1f_docs_link.relative_to(m1f_claude.project_path)}")
+            print(f"✅ m1f docs found at: {m1f_claude.m1f_docs_path.relative_to(m1f_claude.project_path)}")
         else:
-            print(f"⚠️  m1f docs not linked - run 'm1f-link' first!")
+            print(f"⚠️  m1f docs not found - run 'm1f-link' first!")
         
         # Check for Claude Code
         try:
