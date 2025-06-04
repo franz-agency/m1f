@@ -6,7 +6,6 @@ global:
   global_excludes:
     - "**/*.pyc"
     - "**/*.log"
-    - "**/htmlcov/**"
     - "**/tmp/**"
     - "**/dev/**"
     - "**/tests/**/source/**"  # Test input data
@@ -62,7 +61,6 @@ bundles:
     exclude_paths_file:
       - ".gitignore"
       - ".m1fignore"
-    preset: "presets/docs-bundle.m1f-presets.yml"
 
   m1f-docs:
     description: "m1f docs"
@@ -70,7 +68,6 @@ bundles:
     sources:
       - path: "docs/01_m1f"
         include_extensions: [".md"]
-    preset: "presets/docs-bundle.m1f-presets.yml"
 
   m1f-code:
     description: "m1f complete code"
@@ -103,7 +100,6 @@ bundles:
     sources:
       - path: "docs/03_html2md"
         include_extensions: [".md"]
-    preset: "presets/docs-bundle.m1f-presets.yml"
 
   html2md-code:
     description: "mf1-html2md complete code"
@@ -118,17 +114,16 @@ bundles:
           "__init__.py"
         ]
 
-  webscraper-docs:
+  scraper-docs:
     description: "m1f-scrape docs"
-    output: ".m1f/m1f/77_webscraper_docs.txt"
+    output: ".m1f/m1f/77_scraper_docs.txt"
     sources:
       - path: "docs/04_scrape"
         include_extensions: [".md"]
-    preset: "presets/docs-bundle.m1f-presets.yml"
 
-  webscraper-code:
+  scraper-code:
     description: "m1f-scrape complete code"
-    output: ".m1f/m1f/78_webscraper_tool_code.txt"
+    output: ".m1f/m1f/78_scraper_tool_code.txt"
     sources:
       - path: "tools/m1f-scrape"
         include_extensions: [".py"]
