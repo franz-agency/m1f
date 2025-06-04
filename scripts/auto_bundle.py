@@ -252,7 +252,7 @@ class AutoBundler:
             if exclude_files:
                 cmd_parts.append("--exclude-paths-file")
                 for file in exclude_files:
-                    cmd_parts.append(f'"{self.project_root / file}"')
+                    cmd_parts.append(str(self.project_root / file))
 
         # Include paths file(s)
         if "include_paths_file" in bundle_config:

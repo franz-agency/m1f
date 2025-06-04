@@ -657,34 +657,42 @@ class FileProcessor:
 
         # Apply exclude_paths_file from global settings
         if self.global_settings.exclude_paths_file and not self.config.filter.exclude_paths_file:
-            self.config = Config(
-                source_directory=self.config.source_directory,
-                input_file=self.config.input_file,
-                input_include_files=self.config.input_include_files,
-                output=self.config.output,
-                filter=FilterConfig(
-                    exclude_paths=self.config.filter.exclude_paths,
-                    exclude_patterns=self.config.filter.exclude_patterns,
-                    exclude_paths_file=self.global_settings.exclude_paths_file,
-                    include_paths_file=self.config.filter.include_paths_file,
-                    include_extensions=self.config.filter.include_extensions,
-                    exclude_extensions=self.config.filter.exclude_extensions,
-                    include_dot_paths=self.config.filter.include_dot_paths,
-                    include_binary_files=self.config.filter.include_binary_files,
-                    include_symlinks=self.config.filter.include_symlinks,
-                    no_default_excludes=self.config.filter.no_default_excludes,
-                    max_file_size=self.config.filter.max_file_size,
-                    remove_scraped_metadata=self.config.filter.remove_scraped_metadata,
-                ),
-                encoding=self.config.encoding,
-                security=self.config.security,
-                archive=self.config.archive,
-                logging=self.config.logging,
-                preset=self.config.preset,
+            self.config = self._update_config_with_file(
+                exclude_paths_file=self.global_settings.exclude_paths_file,
+                include_paths_file=self.config.filter.include_paths_file,
             )
-            self._load_exclude_patterns()
 
-        # Apply include_paths_file from global settings
+    def _update_config_with_file(
+        self,
+        exclude_paths_file: Optional[str],
+        include_paths_file: Optional[str],
+    ) -> Config:
+        """Helper to update the Config object with a new file."""
+        return Config(
+            source_directory=self.config.source_directory,
+            input_file=self.config.input_file,
+            input_include_files=self.config.input_include_files,
+            output=self.config.output,
+            filter=FilterConfig(
+                exclude_paths=self.config.filter.exclude_paths,
+                exclude_patterns=self.config.filter.exclude_patterns,
+                exclude_paths_file=exclude_paths_file,
+                include_paths_file=include_paths_file,
+                include_extensions=self.config.filter.include_extensions,
+                exclude_extensions=self.config.filter.exclude_extensions,
+                include_dot_paths=self.config.filter.include_dot_paths,
+                include_binary_files=self.config.filter.include_binary_files,
+                include_symlinks=self.config.filter.include_symlinks,
+                no_default_excludes=self.config.filter.no_default_excludes,
+                max_file_size=self.config.filter.max_file_size,
+                remove_scraped_metadata=self.config.filter.remove_scraped_metadata,
+            ),
+            encoding=self.config.encoding,
+            security=self.config.security,
+            archive=self.config.archive,
+            logging=self.config.logging,
+            preset=self.config.preset,
+        )
         if self.global_settings.include_paths_file and not self.config.filter.include_paths_file:
             self.config = Config(
                 source_directory=self.config.source_directory,
