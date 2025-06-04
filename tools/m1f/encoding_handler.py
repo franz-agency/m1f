@@ -114,6 +114,10 @@ class EncodingHandler:
             # Use chardet for detection
             result = chardet.detect(raw_data)
 
+            # If chardet returns None or empty encoding, default to utf-8
+            if not result or not result.get("encoding"):
+                return "utf-8"
+
             if result["confidence"] < 0.7:
                 self.logger.debug(
                     f"Low confidence encoding detection for {file_path}: "
@@ -127,7 +131,15 @@ class EncodingHandler:
             encoding_map = {
                 "iso-8859-8": "windows-1255",  # Hebrew
                 "ascii": "utf-8",  # Treat ASCII as UTF-8
+                "windows-1252": "utf-8",  # Prefer UTF-8 over Windows-1252 for better emoji support
             }
+
+            # Check if file extension suggests markdown or text files that should be UTF-8
+            if file_path.suffix.lower() in ['.md', '.markdown', '.txt', '.rst']:
+                # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
+                # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
+                if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:
+                    return "utf-8"
 
             return encoding_map.get(encoding.lower(), encoding.lower())
 
