@@ -286,7 +286,21 @@ global_settings:
   include_symlinks: false
   no_default_excludes: false
   max_file_size: "10MB"
+  
+  # Exclude/include file(s) - can be single file or list
   exclude_paths_file: ".gitignore"
+  # Or multiple files:
+  # exclude_paths_file:
+  #   - ".gitignore"
+  #   - ".m1f-exclude"
+  #   - "custom-excludes.txt"
+  
+  # Include file(s) for whitelist mode
+  # include_paths_file: "important-files.txt"
+  # Or multiple files:
+  # include_paths_file:
+  #   - "core-files.txt"
+  #   - "api-files.txt"
 
   # Processing options
   remove_scraped_metadata: true

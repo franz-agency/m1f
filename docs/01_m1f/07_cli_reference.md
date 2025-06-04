@@ -10,7 +10,8 @@ m1f [-h] [--version] [-s DIR] [-i FILE] -o FILE
     [--input-include-files [FILE ...]]
     [--separator-style {Standard,Detailed,Markdown,MachineReadable,None}]
     [--line-ending {lf,crlf}] [-t] [--filename-mtime-hash]
-    [--excludes [PATTERN ...]] [--exclude-paths-file FILE]
+    [--excludes [PATTERN ...]] [--exclude-paths-file FILE ...]
+    [--include-paths-file FILE ...]
     [--include-extensions [EXT ...]] [--exclude-extensions [EXT ...]]
     [--include-dot-paths] [--include-binary-files] [--include-symlinks]
     [--max-file-size SIZE] [--no-default-excludes]
@@ -91,10 +92,35 @@ Paths, directories, or glob patterns to exclude. Supports wildcards.
 
 Example: `--excludes "*/tests/*" "*.pyc" "node_modules/"`
 
-### `--exclude-paths-file FILE`
+### `--exclude-paths-file FILE ...`
 
-File containing paths to exclude (supports gitignore format). Each pattern on a
-new line.
+File(s) containing paths to exclude (supports gitignore format). Each pattern on a
+new line. Multiple files can be specified and will be merged. Non-existent files 
+are skipped gracefully.
+
+Examples:
+```bash
+# Single file
+m1f -s . -o output.txt --exclude-paths-file .gitignore
+
+# Multiple files
+m1f -s . -o output.txt --exclude-paths-file .gitignore .m1f-exclude custom-excludes.txt
+```
+
+### `--include-paths-file FILE ...`
+
+File(s) containing paths to include (supports gitignore format). When specified,
+only files matching these patterns will be included (whitelist mode). Multiple 
+files can be specified and will be merged. Non-existent files are skipped gracefully.
+
+Examples:
+```bash
+# Single file
+m1f -s . -o output.txt --include-paths-file important-files.txt
+
+# Multiple files  
+m1f -s . -o output.txt --include-paths-file core-files.txt api-files.txt
+```
 
 ### `--include-extensions [EXT ...]`
 
