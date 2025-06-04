@@ -120,7 +120,7 @@ def serve_page(page_name):
     if page_name in TEST_PAGES:
         template_file = f"{page_name}.html"
         file_path = TEST_PAGES_DIR / template_file
-        
+
         if file_path.exists():
             # Get absolute path for the test_pages directory
             test_pages_abs = str(TEST_PAGES_DIR.absolute())
@@ -146,13 +146,13 @@ def serve_page(page_name):
             </body>
             </html>
             """
-    
+
     # Check if it's a page that exists but isn't in metadata
     file_path = TEST_PAGES_DIR / f"{page_name}.html"
     if file_path.exists():
         test_pages_abs = str(TEST_PAGES_DIR.absolute())
         return send_from_directory(test_pages_abs, f"{page_name}.html")
-    
+
     return "Page not found", 404
 
 
@@ -179,7 +179,7 @@ if __name__ == "__main__":
     # Ensure TEST_PAGES is populated
     if not TEST_PAGES:
         logger.warning("No test pages found! Please check the test_pages directory.")
-    
+
     print(
         f"""
 ╔══════════════════════════════════════════════════════════════╗
@@ -190,17 +190,17 @@ if __name__ == "__main__":
 ║  Available test pages ({len(TEST_PAGES)} found):            ║
 """
     )
-    
+
     # Sort pages for consistent display
     for page in sorted(TEST_PAGES.keys()):
         info = TEST_PAGES[page]
         # Truncate title if too long
-        title = info['title'][:25]
+        title = info["title"][:25]
         print(f"║  • /page/{page:<20} - {title:<25} ║")
-    
+
     if not TEST_PAGES:
         print("║  No test pages found in test_pages directory!               ║")
-    
+
     print(
         """║                                                              ║
 ║  Press Ctrl+C to stop the server                            ║

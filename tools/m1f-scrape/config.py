@@ -41,10 +41,16 @@ class CrawlerConfig(BaseModel):
         default_factory=dict, description="Backend-specific configuration"
     )
     request_delay: float = Field(
-        default=15.0, ge=0, le=60, description="Delay between requests in seconds (default: 15s for Cloudflare)"
+        default=15.0,
+        ge=0,
+        le=60,
+        description="Delay between requests in seconds (default: 15s for Cloudflare)",
     )
     concurrent_requests: int = Field(
-        default=2, ge=1, le=20, description="Number of concurrent requests (default: 2 for Cloudflare)"
+        default=2,
+        ge=1,
+        le=20,
+        description="Number of concurrent requests (default: 2 for Cloudflare)",
     )
     user_agent: Optional[str] = Field(
         default=None, description="Custom user agent string"

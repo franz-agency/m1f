@@ -186,11 +186,11 @@ class HTTrackScraper(WebScraperBase):
 
         # Build HTTrack command with conservative settings for Cloudflare
         # Calculate connection rate (max 0.5 connections per second)
-        connection_rate = min(0.5, 1/self.config.request_delay)
-        
+        connection_rate = min(0.5, 1 / self.config.request_delay)
+
         # Limit concurrent connections (max 2 for Cloudflare sites)
         concurrent_connections = min(2, self.config.concurrent_requests)
-        
+
         cmd = [
             self.httrack_path,
             start_url,

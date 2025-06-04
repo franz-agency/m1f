@@ -33,34 +33,34 @@ logger = logging.getLogger(__name__)
 
 class AutoBundleConfig:
     """Configuration for auto-bundle functionality."""
-    
+
     def __init__(self, config_path: Path):
         self.config_path = config_path
         self.config_data: Dict[str, Any] = {}
         self.bundles: Dict[str, Dict[str, Any]] = {}
         self.global_config: Dict[str, Any] = {}
-        
+
     def load(self) -> bool:
         """Load configuration from YAML file."""
         if not self.config_path.exists():
             return False
-            
+
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 self.config_data = yaml.safe_load(f) or {}
-                
-            self.bundles = self.config_data.get('bundles', {})
-            self.global_config = self.config_data.get('global', {})
+
+            self.bundles = self.config_data.get("bundles", {})
+            self.global_config = self.config_data.get("global", {})
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to load config from {self.config_path}: {e}")
             return False
-            
+
     def get_bundle_names(self) -> List[str]:
         """Get list of available bundle names."""
         return list(self.bundles.keys())
-        
+
     def get_bundle_config(self, bundle_name: str) -> Optional[Dict[str, Any]]:
         """Get configuration for a specific bundle."""
         return self.bundles.get(bundle_name)
@@ -68,25 +68,25 @@ class AutoBundleConfig:
 
 class AutoBundler:
     """Handles auto-bundling functionality."""
-    
+
     def __init__(self, project_root: Path, verbose: bool = False, quiet: bool = False):
         self.project_root = project_root
         self.config_file = project_root / ".m1f.config.yml"
         self.m1f_dir = project_root / ".m1f"
         self.verbose = verbose
         self.quiet = quiet
-        
+
     def check_config_exists(self) -> bool:
         """Check if auto-bundle config exists."""
         return self.config_file.exists()
-        
+
     def load_config(self) -> Optional[AutoBundleConfig]:
         """Load auto-bundle configuration."""
         config = AutoBundleConfig(self.config_file)
         if config.load():
             return config
         return None
-        
+
     def print_info(self, msg: str):
         """Print info message."""
         if not self.quiet:
@@ -94,42 +94,48 @@ class AutoBundler:
                 print(f"{ANSI_COLORS['BLUE']}[INFO]{ANSI_COLORS['RESET']} {msg}")
             else:
                 print(msg)
-                
+
     def print_success(self, msg: str):
         """Print success message."""
         if not self.quiet:
             print(f"{ANSI_COLORS['GREEN']}[SUCCESS]{ANSI_COLORS['RESET']} {msg}")
-            
+
     def print_error(self, msg: str):
         """Print error message."""
-        print(f"{ANSI_COLORS['RED']}[ERROR]{ANSI_COLORS['RESET']} {msg}", file=sys.stderr)
-        
+        print(
+            f"{ANSI_COLORS['RED']}[ERROR]{ANSI_COLORS['RESET']} {msg}", file=sys.stderr
+        )
+
     def print_warning(self, msg: str):
         """Print warning message."""
         if not self.quiet:
             print(f"{ANSI_COLORS['YELLOW']}[WARNING]{ANSI_COLORS['RESET']} {msg}")
-            
+
     def setup_directories(self, config: AutoBundleConfig):
         """Create necessary directories based on config."""
         created_dirs = set()
-        
+
         for bundle_name, bundle_config in config.bundles.items():
-            output = bundle_config.get('output', '')
+            output = bundle_config.get("output", "")
             if output:
                 output_path = self.project_root / output
                 output_dir = output_path.parent
-                
+
                 if str(output_dir) not in created_dirs:
                     output_dir.mkdir(parents=True, exist_ok=True)
                     created_dirs.add(str(output_dir))
                     if self.verbose:
                         self.print_info(f"Created directory: {output_dir}")
-                        
-    def build_m1f_command(self, bundle_name: str, bundle_config: Dict[str, Any], 
-                         global_config: Dict[str, Any]) -> List[str]:
+
+    def build_m1f_command(
+        self,
+        bundle_name: str,
+        bundle_config: Dict[str, Any],
+        global_config: Dict[str, Any],
+    ) -> List[str]:
         """Build m1f command from bundle configuration."""
         cmd_parts = [sys.executable, "-m", "tools.m1f"]
-        
+
         # Handle bundle-level include_files
         if "include_files" in bundle_config:
             for file in bundle_config["include_files"]:
@@ -139,12 +145,12 @@ class AutoBundler:
                     if not test_path.exists():
                         file += ".py"
                 cmd_parts.extend(["-s", str(self.project_root / file)])
-                
+
         # Process sources
         sources = bundle_config.get("sources", [])
         for source in sources:
             path = source.get("path", ".")
-            
+
             # Handle include_files at source level
             if "include_files" in source:
                 for file in source["include_files"]:
@@ -156,7 +162,7 @@ class AutoBundler:
                             test_path = self.project_root / file
                         if not test_path.exists():
                             file += ".py"
-                            
+
                     # Create full path
                     if path != ".":
                         full_path = os.path.join(path, file)
@@ -166,41 +172,43 @@ class AutoBundler:
             else:
                 # Normal path processing
                 cmd_parts.extend(["-s", str(self.project_root / path)])
-                
+
                 # Include extensions
                 if "include_extensions" in source:
                     cmd_parts.append("--include-extensions")
                     cmd_parts.extend(source["include_extensions"])
-                    
+
             # Excludes from source
             if "excludes" in source:
                 cmd_parts.append("--excludes")
                 cmd_parts.extend(source["excludes"])
-                
+
         # Add global excludes if they exist
         global_excludes = global_config.get("global_excludes", [])
         if global_excludes and "--excludes" not in cmd_parts:
             cmd_parts.append("--excludes")
         for exclude in global_excludes:
             cmd_parts.append(exclude)
-            
+
         # Output file
         output = bundle_config.get("output", "")
         if output:
             cmd_parts.extend(["-o", str(self.project_root / output)])
-            
+
         # Separator style
         sep_style = bundle_config.get("separator_style", "Standard")
         cmd_parts.extend(["--separator-style", sep_style])
-        
+
         # Preset
         if "preset" in bundle_config:
-            cmd_parts.extend(["--preset", str(self.project_root / bundle_config["preset"])])
-            
+            cmd_parts.extend(
+                ["--preset", str(self.project_root / bundle_config["preset"])]
+            )
+
         # Preset group
         if "preset_group" in bundle_config:
             cmd_parts.extend(["--preset-group", bundle_config["preset_group"]])
-            
+
         # Exclude paths file(s)
         if "exclude_paths_file" in bundle_config:
             exclude_files = bundle_config["exclude_paths_file"]
@@ -210,7 +218,7 @@ class AutoBundler:
                 cmd_parts.append("--exclude-paths-file")
                 for file in exclude_files:
                     cmd_parts.append(str(self.project_root / file))
-                    
+
         # Include paths file(s)
         if "include_paths_file" in bundle_config:
             include_files = bundle_config["include_paths_file"]
@@ -220,43 +228,49 @@ class AutoBundler:
                 cmd_parts.append("--include-paths-file")
                 for file in include_files:
                     cmd_parts.append(str(self.project_root / file))
-                    
+
         # Other options
         if bundle_config.get("filename_mtime_hash"):
             cmd_parts.append("--filename-mtime-hash")
-            
+
         if bundle_config.get("minimal_output", True):
             cmd_parts.append("--minimal-output")
-            
+
         # Always add --quiet and -f
         cmd_parts.append("--quiet")
         cmd_parts.append("-f")
-        
+
         return cmd_parts
-        
-    def create_bundle(self, bundle_name: str, bundle_config: Dict[str, Any], 
-                     global_config: Dict[str, Any]) -> bool:
+
+    def create_bundle(
+        self,
+        bundle_name: str,
+        bundle_config: Dict[str, Any],
+        global_config: Dict[str, Any],
+    ) -> bool:
         """Create a single bundle."""
         # Check if enabled
         if not bundle_config.get("enabled", True):
             self.print_info(f"Skipping disabled bundle: {bundle_name}")
             return True
-            
+
         # Check conditional enabling
         enabled_if = bundle_config.get("enabled_if_exists", "")
         if enabled_if and not (self.project_root / enabled_if).exists():
-            self.print_info(f"Skipping bundle {bundle_name} (condition not met: {enabled_if})")
+            self.print_info(
+                f"Skipping bundle {bundle_name} (condition not met: {enabled_if})"
+            )
             return True
-            
+
         description = bundle_config.get("description", "")
         self.print_info(f"Creating bundle: {bundle_name} - {description}")
-        
+
         # Build and execute command
         cmd_parts = self.build_m1f_command(bundle_name, bundle_config, global_config)
-        
+
         if self.verbose:
             self.print_info(f"Executing: {' '.join(cmd_parts)}")
-            
+
         try:
             result = subprocess.run(cmd_parts, capture_output=True, text=True)
             if result.returncode != 0:
@@ -269,63 +283,69 @@ class AutoBundler:
         except Exception as e:
             self.print_error(f"Failed to execute command: {e}")
             return False
-            
+
     def list_bundles(self, config: AutoBundleConfig):
         """List available bundles."""
         if not config.bundles:
             self.print_warning("No bundles defined in configuration")
             return
-            
+
         print("\nAvailable bundles:")
         print("-" * 60)
-        
+
         for bundle_name, bundle_config in config.bundles.items():
             enabled = bundle_config.get("enabled", True)
             description = bundle_config.get("description", "No description")
             output = bundle_config.get("output", "No output specified")
-            
+
             status = "enabled" if enabled else "disabled"
             print(f"\n{bundle_name} ({status})")
             print(f"  Description: {description}")
             print(f"  Output: {output}")
-            
+
             # Show conditional enabling
             if "enabled_if_exists" in bundle_config:
                 print(f"  Enabled if exists: {bundle_config['enabled_if_exists']}")
-                
+
         print("-" * 60)
-        
+
     def run(self, bundle_name: Optional[str] = None, list_bundles: bool = False):
         """Run auto-bundle functionality."""
         # Check if config exists
         if not self.check_config_exists():
-            self.print_error(f"No auto-bundle configuration found at: {self.config_file}")
-            self.print_info("Create a .m1f.config.yml file to use auto-bundle functionality")
+            self.print_error(
+                f"No auto-bundle configuration found at: {self.config_file}"
+            )
+            self.print_info(
+                "Create a .m1f.config.yml file to use auto-bundle functionality"
+            )
             return False
-            
+
         # Load config
         config = self.load_config()
         if not config:
             self.print_error("Failed to load auto-bundle configuration")
             return False
-            
+
         # List bundles if requested
         if list_bundles:
             self.list_bundles(config)
             return True
-            
+
         # Setup directories
         self.setup_directories(config)
-        
+
         # Create bundles
         if bundle_name:
             # Create specific bundle
             bundle_config = config.get_bundle_config(bundle_name)
             if not bundle_config:
                 self.print_error(f"Bundle '{bundle_name}' not found in configuration")
-                self.print_info(f"Available bundles: {', '.join(config.get_bundle_names())}")
+                self.print_info(
+                    f"Available bundles: {', '.join(config.get_bundle_names())}"
+                )
                 return False
-                
+
             return self.create_bundle(bundle_name, bundle_config, config.global_config)
         else:
             # Create all bundles

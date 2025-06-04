@@ -46,7 +46,9 @@ logger = logging.getLogger("prepare_docs")
 BASE_DIR = Path(__file__).parent.parent
 HTML_DOCS_DIR = BASE_DIR / "tests" / "mf1-html2md" / "source" / "html"
 MD_DOCS_DIR = BASE_DIR / "tests" / "mf1-html2md" / "output" / "markdown"
-BUNDLE_OUTPUT = BASE_DIR / "tests" / "mf1-html2md" / "output" / "documentation-bundle.md"
+BUNDLE_OUTPUT = (
+    BASE_DIR / "tests" / "mf1-html2md" / "output" / "documentation-bundle.md"
+)
 
 
 def ensure_dir(directory: Path) -> None:

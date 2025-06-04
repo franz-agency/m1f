@@ -97,21 +97,21 @@ class HTMLParser:
         """
         # Parse base URL to check if it's a file:// URL
         parsed_base = urlparse(base_url)
-        is_file_url = parsed_base.scheme == 'file'
-        
+        is_file_url = parsed_base.scheme == "file"
+
         # Resolve links
         for tag in soup.find_all(["a", "link"]):
             if href := tag.get("href"):
                 # Skip javascript: and mailto: links
-                if href.startswith(('javascript:', 'mailto:', '#')):
+                if href.startswith(("javascript:", "mailto:", "#")):
                     continue
-                    
+
                 # For file:// base URLs, convert relative links to relative paths
                 if is_file_url:
-                    if not href.startswith(('http://', 'https://', '//')):
+                    if not href.startswith(("http://", "https://", "//")):
                         # Keep relative links as-is for file:// URLs
                         continue
-                    
+
                 tag["href"] = urljoin(base_url, href)
 
         # Resolve images and other resources
@@ -119,9 +119,9 @@ class HTMLParser:
             if src := tag.get("src"):
                 # For file:// base URLs, keep relative paths
                 if is_file_url:
-                    if not src.startswith(('http://', 'https://', '//')):
+                    if not src.startswith(("http://", "https://", "//")):
                         continue
-                        
+
                 tag["src"] = urljoin(base_url, src)
 
     def extract_metadata(self, soup: BeautifulSoup) -> Dict[str, str]:

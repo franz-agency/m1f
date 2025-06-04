@@ -105,7 +105,7 @@ class FileProcessor:
         # Load inclusions from file
         self.exact_includes = set()
         self.include_gitignore_spec = None
-        
+
         if self.config.filter.include_paths_file:
             self._load_include_patterns()
 
@@ -125,10 +125,10 @@ class FileProcessor:
             exclude_files = exclude_files_param
 
         all_gitignore_lines = []
-        
+
         for exclude_file_str in exclude_files:
             exclude_file = Path(exclude_file_str)
-            
+
             if not exclude_file.exists():
                 self.logger.info(f"Exclude file not found (skipping): {exclude_file}")
                 continue
@@ -180,10 +180,10 @@ class FileProcessor:
             include_files = include_files_param
 
         all_gitignore_lines = []
-        
+
         for include_file_str in include_files:
             include_file = Path(include_file_str)
-            
+
             if not include_file.exists():
                 self.logger.info(f"Include file not found (skipping): {include_file}")
                 continue
@@ -438,11 +438,11 @@ class FileProcessor:
         # Check if we have include patterns - if yes, file must match one
         if self.exact_includes or self.include_gitignore_spec:
             include_matched = False
-            
-            # Check exact includes  
+
+            # Check exact includes
             if str(file_path.resolve()) in self.exact_includes:
                 include_matched = True
-            
+
             # Check include gitignore patterns
             if not include_matched and self.include_gitignore_spec:
                 rel_path = get_relative_path(
@@ -450,7 +450,7 @@ class FileProcessor:
                 )
                 if self.include_gitignore_spec.match_file(rel_path):
                     include_matched = True
-            
+
             # If we have include patterns but file doesn't match any, exclude it
             if not include_matched:
                 return False

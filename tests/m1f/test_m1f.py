@@ -2274,4 +2274,3 @@ class TestM1F:
         shutil.rmtree(test_dir)
         intro_file.unlink()
         custom_include.unlink()
-

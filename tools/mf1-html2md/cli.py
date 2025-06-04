@@ -124,7 +124,7 @@ def add_convert_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--parallel", action="store_true", help="Enable parallel processing"
     )
-    
+
     parser.add_argument(
         "--extractor", type=Path, help="Path to custom extractor Python file"
     )
@@ -208,7 +208,7 @@ def handle_convert(args: argparse.Namespace) -> None:
     config.log_file = args.log_file
 
     # Create converter
-    extractor = args.extractor if hasattr(args, 'extractor') else None
+    extractor = args.extractor if hasattr(args, "extractor") else None
     converter = Html2mdConverter(config, extractor=extractor)
 
     # Convert based on source type

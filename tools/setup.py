@@ -23,7 +23,9 @@ from setuptools import setup, find_packages
 # Read version from _version.py
 version_file = os.path.join(os.path.dirname(__file__), "_version.py")
 with open(version_file, "r", encoding="utf-8") as f:
-    version_match = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE)
+    version_match = re.search(
+        r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE
+    )
     if version_match:
         version = version_match.group(1)
     else:

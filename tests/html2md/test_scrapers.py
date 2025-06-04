@@ -225,7 +225,7 @@ class TestHTTrackScraper:
                 output_dir.mkdir(parents=True)
                 output_file = output_dir / "index.html"
                 output_file.write_text(test_html)
-                
+
                 async with scraper:
                     page = await scraper.scrape_url("https://example.com")
 

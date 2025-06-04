@@ -26,38 +26,42 @@ logger = get_logger(__name__)
 
 class BaseExtractor:
     """Base class for custom extractors."""
-    
-    def extract(self, soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> BeautifulSoup:
+
+    def extract(
+        self, soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None
+    ) -> BeautifulSoup:
         """Extract content from HTML soup.
-        
+
         Args:
             soup: BeautifulSoup object
             config: Optional configuration dict
-            
+
         Returns:
             Processed BeautifulSoup object
         """
         raise NotImplementedError("Subclasses must implement extract()")
-        
+
     def preprocess(self, html: str, config: Optional[Dict[str, Any]] = None) -> str:
         """Optional preprocessing of raw HTML.
-        
+
         Args:
             html: Raw HTML string
             config: Optional configuration dict
-            
+
         Returns:
             Preprocessed HTML string
         """
         return html
-        
-    def postprocess(self, markdown: str, config: Optional[Dict[str, Any]] = None) -> str:
+
+    def postprocess(
+        self, markdown: str, config: Optional[Dict[str, Any]] = None
+    ) -> str:
         """Optional postprocessing of converted markdown.
-        
+
         Args:
             markdown: Converted markdown string
             config: Optional configuration dict
-            
+
         Returns:
             Postprocessed markdown string
         """
@@ -66,74 +70,89 @@ class BaseExtractor:
 
 def load_extractor(extractor_path: Path) -> BaseExtractor:
     """Load a custom extractor from a Python file.
-    
+
     Args:
         extractor_path: Path to the extractor Python file
-        
+
     Returns:
         Extractor instance
-        
+
     Raises:
         ValueError: If extractor cannot be loaded
     """
     if not extractor_path.exists():
         raise ValueError(f"Extractor file not found: {extractor_path}")
-        
+
     # Load the module dynamically
     spec = importlib.util.spec_from_file_location("custom_extractor", extractor_path)
     if spec is None or spec.loader is None:
         raise ValueError(f"Cannot load extractor from {extractor_path}")
-        
+
     module = importlib.util.module_from_spec(spec)
     sys.modules["custom_extractor"] = module
     spec.loader.exec_module(module)
-    
+
     # Look for extractor class or function
-    if hasattr(module, 'Extractor') and isinstance(module.Extractor, type):
+    if hasattr(module, "Extractor") and isinstance(module.Extractor, type):
         # Class-based extractor
         return module.Extractor()
-    elif hasattr(module, 'extract'):
+    elif hasattr(module, "extract"):
         # Function-based extractor - wrap in a class
         class FunctionExtractor(BaseExtractor):
-            def extract(self, soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> BeautifulSoup:
+            def extract(
+                self, soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None
+            ) -> BeautifulSoup:
                 return module.extract(soup, config)
-                
-            def preprocess(self, html: str, config: Optional[Dict[str, Any]] = None) -> str:
-                if hasattr(module, 'preprocess'):
+
+            def preprocess(
+                self, html: str, config: Optional[Dict[str, Any]] = None
+            ) -> str:
+                if hasattr(module, "preprocess"):
                     return module.preprocess(html, config)
                 return html
-                
-            def postprocess(self, markdown: str, config: Optional[Dict[str, Any]] = None) -> str:
-                if hasattr(module, 'postprocess'):
+
+            def postprocess(
+                self, markdown: str, config: Optional[Dict[str, Any]] = None
+            ) -> str:
+                if hasattr(module, "postprocess"):
                     return module.postprocess(markdown, config)
                 return markdown
-                
+
         return FunctionExtractor()
     else:
-        raise ValueError(f"Extractor must define either an 'Extractor' class or an 'extract' function")
+        raise ValueError(
+            f"Extractor must define either an 'Extractor' class or an 'extract' function"
+        )
 
 
 class DefaultExtractor(BaseExtractor):
     """Default extractor with basic cleaning."""
-    
-    def extract(self, soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> BeautifulSoup:
+
+    def extract(
+        self, soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None
+    ) -> BeautifulSoup:
         """Basic extraction that removes common navigation elements."""
         # Remove script and style tags
-        for tag in soup.find_all(['script', 'style', 'noscript']):
+        for tag in soup.find_all(["script", "style", "noscript"]):
             tag.decompose()
-            
+
         # Remove common navigation elements
         nav_selectors = [
-            'nav', '[role="navigation"]',
-            'header', '[role="banner"]', 
-            'footer', '[role="contentinfo"]',
-            '.sidebar', 'aside',
+            "nav",
+            '[role="navigation"]',
+            "header",
+            '[role="banner"]',
+            "footer",
+            '[role="contentinfo"]',
+            ".sidebar",
+            "aside",
             '[role="search"]',
-            '.menu', '.toolbar',
+            ".menu",
+            ".toolbar",
         ]
-        
+
         for selector in nav_selectors:
             for elem in soup.select(selector):
                 elem.decompose()
-                
+
         return soup

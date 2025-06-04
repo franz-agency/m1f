@@ -70,20 +70,31 @@ async def async_main() -> int:
         if len(sys.argv) > 1 and sys.argv[1] == "auto-bundle":
             # Handle auto-bundle subcommand
             import argparse
-            parser = argparse.ArgumentParser(prog="m1f auto-bundle", description="Auto-bundle functionality for m1f")
-            parser.add_argument("bundle_name", nargs="?", help="Name of specific bundle to create")
-            parser.add_argument("--list", action="store_true", help="List available bundles")
-            parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
-            parser.add_argument("-q", "--quiet", action="store_true", help="Suppress all console output")
-            
+
+            parser = argparse.ArgumentParser(
+                prog="m1f auto-bundle", description="Auto-bundle functionality for m1f"
+            )
+            parser.add_argument(
+                "bundle_name", nargs="?", help="Name of specific bundle to create"
+            )
+            parser.add_argument(
+                "--list", action="store_true", help="List available bundles"
+            )
+            parser.add_argument(
+                "-v", "--verbose", action="store_true", help="Enable verbose output"
+            )
+            parser.add_argument(
+                "-q", "--quiet", action="store_true", help="Suppress all console output"
+            )
+
             # Parse auto-bundle args
             args = parser.parse_args(sys.argv[2:])
-            
+
             # Create and run auto-bundler
             bundler = AutoBundler(Path.cwd(), verbose=args.verbose, quiet=args.quiet)
             success = bundler.run(bundle_name=args.bundle_name, list_bundles=args.list)
             return 0 if success else 1
-            
+
         # Regular m1f execution
         # Parse command line arguments
         parser = create_parser()

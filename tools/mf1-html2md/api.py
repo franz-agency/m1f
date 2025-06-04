@@ -40,8 +40,9 @@ class Html2mdConverter:
     """Main API class for HTML to Markdown conversion."""
 
     def __init__(
-        self, config: Union[Config, ConversionOptions, Dict, Path, str, None] = None,
-        extractor: Optional[Union[BaseExtractor, Path, str]] = None
+        self,
+        config: Union[Config, ConversionOptions, Dict, Path, str, None] = None,
+        extractor: Optional[Union[BaseExtractor, Path, str]] = None,
     ):
         """Initialize converter with configuration.
 
@@ -84,7 +85,7 @@ class Html2mdConverter:
             getattr(self.config, "processor", ProcessorConfig())
         )
         self._console = Console()
-        
+
         # Initialize extractor
         if extractor is None:
             self._extractor = DefaultExtractor()
@@ -113,7 +114,7 @@ class Html2mdConverter:
         """
         # Apply custom extractor preprocessing
         html_content = self._extractor.preprocess(html_content, self.config.__dict__)
-        
+
         # Apply preprocessing if configured
         if hasattr(self.config, "preprocessing") and self.config.preprocessing:
             from .preprocessors import preprocess_html
@@ -122,7 +123,7 @@ class Html2mdConverter:
 
         # Parse HTML
         parsed = self._parser.parse(html_content, base_url)
-        
+
         # Apply custom extractor
         parsed = self._extractor.extract(parsed, self.config.__dict__)
 
