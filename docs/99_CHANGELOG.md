@@ -36,6 +36,15 @@ and this project adheres to
   - Works consistently across all shells and platforms
   - Optional symlink creation in ~/.local/bin
 
+- **m1f-claude Command**: Smart prompt enhancement for Claude AI
+  - New `m1f-claude` command that enhances prompts with m1f knowledge
+  - Automatically injects m1f documentation context into prompts
+  - Interactive mode for continued conversations
+  - Project structure analysis for better suggestions
+  - Contextual hints based on user intent (bundling, config, WordPress, AI context)
+  - Integration with Claude Code CLI (if installed)
+  - Comprehensive workflow guide at docs/01_m1f/08_claude_workflows.md
+
 ### Changed
 
 - **Command Naming Standardization**: All tools now use m1f- prefix

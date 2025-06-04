@@ -6,7 +6,7 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 
 ### Core Tools
 
-- [m1f (Make One File)](01_m1f/01_m1f.md) - Documentation for the main tool that
+- [m1f (Make One File)](01_m1f/00_m1f.md) - Documentation for the main tool that
   combines multiple files into a single file with content deduplication and
   async I/O
 - [s1f (Split One File)](02_s1f/20_s1f.md) - Documentation for the tool that
@@ -29,6 +29,8 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 
 - [Auto Bundle Guide](01_m1f/06_auto_bundle_guide.md) - Automatic project
   bundling for AI/LLM consumption
+- [Claude + m1f Workflows](01_m1f/08_claude_workflows.md) - Turn Claude into your
+  personal m1f expert with smart prompt enhancement
 - [Claude Code Integration](01_m1f/05_claude_code_integration.md) - Optional
   AI-powered tool automation
 - [Preset System Guide](01_m1f/02_m1f_presets.md) - File-specific processing
@@ -61,11 +63,11 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 ### Key Concepts
 
 - **Separator Styles**: Different formats for separating files in the combined
-  output ([details](01_m1f/01_m1f.md#separator-styles))
+  output ([details](01_m1f/00_m1f.md#separator-styles))
 - **File Filtering**: Include/exclude specific files using patterns
-  ([details](01_m1f/01_m1f.md#command-line-options))
+  ([details](01_m1f/00_m1f.md#command-line-options))
 - **Security**: Scan for secrets before combining files
-  ([details](01_m1f/01_m1f.md#security-check))
+  ([details](01_m1f/00_m1f.md#security-check))
 - **Content Selection**: Extract specific content using CSS selectors
   ([details](03_html2md/30_html2md.md#content-selection))
 

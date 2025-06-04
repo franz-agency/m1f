@@ -503,7 +503,7 @@ To create an m1f bundle after conversion:
 python -m tools.html2md crawl https://docs.example.com -o ./docs/
 
 # Create m1f bundle
-python -m tools.m1f ./docs/ -o documentation.01_m1f.md
+python -m tools.m1f ./docs/ -o documentation.00_m1f.md
 ```
 
 Or do it in one step:

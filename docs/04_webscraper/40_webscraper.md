@@ -289,5 +289,5 @@ python -m tools.m1f -s ./react_md -o ./react_documentation.txt
 
 - [html2md Documentation](../03_html2md/30_html2md.md) - For converting
   downloaded HTML to Markdown
-- [m1f Documentation](../01_m1f/01_m1f.md) - For bundling converted content for
+- [m1f Documentation](../01_m1f/00_m1f.md) - For bundling converted content for
   LLMs

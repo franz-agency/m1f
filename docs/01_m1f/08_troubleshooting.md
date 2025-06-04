@@ -193,7 +193,7 @@ This will show:
 ## Getting Help
 
 1. Check the [CLI Reference](./07_cli_reference.md) for parameter details
-2. Review [examples in the main documentation](./01_m1f.md#common-use-cases)
+2. Review [examples in the main documentation](00_m1f.md#common-use-cases)
 3. Check the [preset documentation](./02_m1f_presets.md) for configuration
    issues
 4. Report issues at the project repository

@@ -61,6 +61,7 @@ After installation, these commands are available globally:
 - `m1f-token-counter` - Count tokens in files
 - `m1f-update` - Regenerate all m1f bundles
 - `m1f-link` - Link m1f documentation for AI tools (Claude Code, etc.)
+- `m1f-claude` - Enhance prompts with m1f knowledge for Claude
 - `m1f-help` - Show help for all commands
 
 ## Uninstall
