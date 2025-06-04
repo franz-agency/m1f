@@ -58,6 +58,19 @@ src/main.py          # Relative to source directory
 docs/**/*.md         # Glob patterns supported
 ```
 
+**Merging multiple file lists with Bash**:
+```bash
+# Create temporary merged file
+cat files1.txt files2.txt files3.txt > merged_files.txt
+m1f -s . -i merged_files.txt -o output.txt
+
+# Or use process substitution (Linux/Mac)
+m1f -s . -i <(cat files1.txt files2.txt files3.txt) -o output.txt
+
+# Remove duplicates while merging
+m1f -s . -i <(cat files1.txt files2.txt | sort -u) -o output.txt
+```
+
 ### `--output-file FILE`, `-o FILE` (REQUIRED)
 
 Path where the combined output file will be created. This is the only required

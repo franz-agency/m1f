@@ -137,6 +137,20 @@ python tools/m1f.py -s . -o api-bundle.txt \
     --exclude-paths-file .gitignore
 ```
 
+### Working with File Lists (-i)
+
+```bash
+# Single input file
+python tools/m1f.py -s . -i files.txt -o output.txt
+
+# Merge multiple file lists (Bash)
+python tools/m1f.py -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
+
+# Combine with filters (input files bypass filters)
+python tools/m1f.py -s . -i must-include.txt -o output.txt \
+    --exclude-paths-file .gitignore
+```
+
 ### CI/CD Integration
 
 ```bash
