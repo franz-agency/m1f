@@ -31,7 +31,17 @@ def create_argument_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(
         description="s1f - Split combined files back into original files",
-        epilog=f"Project home: {__project__}",
+        epilog=f"""Examples:
+  # Extract files from archive
+  s1f archive.m1f.txt ./output/
+  
+  # List files without extracting
+  s1f --list archive.m1f.txt
+  
+  # Extract with original encoding
+  s1f archive.m1f.txt ./output/ --respect-encoding
+  
+Project home: {__project__}""",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
@@ -81,6 +91,13 @@ def create_argument_parser() -> argparse.ArgumentParser:
         "--verbose",
         action="store_true",
         help="Enable verbose output for debugging",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        help="List files in the archive without extracting",
     )
 
     parser.add_argument(
@@ -134,7 +151,7 @@ def validate_args(args: argparse.Namespace) -> None:
     # Ensure required arguments are provided
     if not args.input_file:
         raise ConfigurationError("Missing required argument: input_file")
-    if not args.destination_directory:
+    if not args.list and not args.destination_directory:
         raise ConfigurationError("Missing required argument: destination_directory")
 
     # Check if input file exists
@@ -175,9 +192,14 @@ async def async_main(argv: Optional[Sequence[str]] = None) -> int:
         # Setup logging
         logger_manager = setup_logging(config)
 
-        # Create and run file splitter
+        # Create file splitter
         splitter = FileSplitter(config, logger_manager)
-        result, exit_code = await splitter.split_file()
+
+        # Run in list mode or extraction mode
+        if args.list:
+            result, exit_code = await splitter.list_files()
+        else:
+            result, exit_code = await splitter.split_file()
 
         # Cleanup
         await logger_manager.cleanup()
