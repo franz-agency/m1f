@@ -32,25 +32,25 @@ console = Console()
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser."""
     parser = argparse.ArgumentParser(
-        prog="html2md",
+        prog="mf1-html2md",
         description="Convert HTML files to Markdown format with advanced options",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Convert a single file
-  html2md convert file.html -o file.md
+  mf1-html2md convert file.html -o file.md
   
   # Convert entire directory
-  html2md convert ./docs/html/ -o ./docs/markdown/
+  mf1-html2md convert ./docs/html/ -o ./docs/markdown/
   
   # Convert a website
-  html2md crawl https://example.com -o ./example-docs/
+  mf1-html2md crawl https://example.com -o ./example-docs/
   
   # Use configuration file
-  html2md convert ./html/ -c config.yaml
+  mf1-html2md convert ./html/ -c config.yaml
   
   # Extract specific content
-  html2md convert ./html/ -o ./md/ --content-selector "article.post"
+  mf1-html2md convert ./html/ -o ./md/ --content-selector "article.post"
 """,
     )
 
@@ -456,7 +456,7 @@ def handle_config(args: argparse.Namespace) -> None:
 def create_simple_parser() -> argparse.ArgumentParser:
     """Create a simple parser for test compatibility."""
     parser = argparse.ArgumentParser(
-        prog="html2md", description="Convert HTML to Markdown"
+        prog="mf1-html2md", description="Convert HTML to Markdown"
     )
 
     parser.add_argument(

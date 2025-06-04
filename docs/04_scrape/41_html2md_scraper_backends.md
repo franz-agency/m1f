@@ -38,13 +38,13 @@ BeautifulSoup4 is the default backend, ideal for scraping static HTML websites.
 
 ```bash
 # Default backend (no need to specify)
-python -m tools.html2md crawl https://example.com -o output/
+python -m tools.mf1-html2md crawl https://example.com -o output/
 
 # Explicitly specify BeautifulSoup
-python -m tools.html2md crawl https://example.com -o output/ --scraper beautifulsoup
+python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper beautifulsoup
 
 # With custom options
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper beautifulsoup \
   --max-depth 3 \
   --max-pages 100 \
@@ -85,10 +85,10 @@ brew install httrack
 **Usage:**
 
 ```bash
-python -m tools.html2md crawl https://example.com -o output/ --scraper httrack
+python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper httrack
 
 # With HTTrack-specific options
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper httrack \
   --max-depth 5 \
   --concurrent-requests 8
@@ -133,7 +133,7 @@ crawler:
 Use with:
 
 ```bash
-python -m tools.html2md crawl https://example.com -o output/ -c config.yaml
+python -m tools.mf1-html2md crawl https://example.com -o output/ -c config.yaml
 ```
 
 ### Backend-Specific Configuration
@@ -173,7 +173,7 @@ scraper_config:
 For sites with mostly static HTML content:
 
 ```bash
-python -m tools.html2md crawl https://docs.example.com -o docs/ \
+python -m tools.mf1-html2md crawl https://docs.example.com -o docs/ \
   --scraper beautifulsoup \
   --max-depth 10 \
   --request-delay 0.2
@@ -184,7 +184,7 @@ python -m tools.html2md crawl https://docs.example.com -o docs/ \
 For creating a complete offline mirror:
 
 ```bash
-python -m tools.html2md crawl https://example.com -o backup/ \
+python -m tools.mf1-html2md crawl https://example.com -o backup/ \
   --scraper httrack \
   --max-pages 10000
 ```
@@ -194,7 +194,7 @@ python -m tools.html2md crawl https://example.com -o backup/ \
 For sites with strict rate limits:
 
 ```bash
-python -m tools.html2md crawl https://api.example.com/docs -o api-docs/ \
+python -m tools.mf1-html2md crawl https://api.example.com/docs -o api-docs/ \
   --scraper beautifulsoup \
   --request-delay 2.0 \
   --concurrent-requests 1
@@ -208,7 +208,7 @@ python -m tools.html2md crawl https://api.example.com/docs -o api-docs/ \
 
 ```bash
 # Force UTF-8 encoding
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper-config '{"encoding": "utf-8"}'
 ```
 
@@ -216,7 +216,7 @@ python -m tools.html2md crawl https://example.com -o output/ \
 
 ```bash
 # Try different parser
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper-config '{"parser": "html5lib"}'
 ```
 
@@ -226,7 +226,7 @@ python -m tools.html2md crawl https://example.com -o output/ \
 
 ```bash
 # Ignore SSL errors (use with caution)
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper httrack \
   --scraper-config '{"extra_args": ["--assume-insecure"]}'
 ```
@@ -274,16 +274,16 @@ pip install httpx selectolax
 
 ```bash
 # Basic usage
-python -m tools.html2md crawl https://example.com -o output/ --scraper selectolax
+python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper selectolax
 
 # With custom configuration
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper selectolax \
   --concurrent-requests 20 \
   --request-delay 0.1
 
 # Using httpx alias
-python -m tools.html2md crawl https://example.com -o output/ --scraper httpx
+python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper httpx
 ```
 
 ### Scrapy
@@ -315,15 +315,15 @@ pip install scrapy
 
 ```bash
 # Basic usage
-python -m tools.html2md crawl https://example.com -o output/ --scraper scrapy
+python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper scrapy
 
 # With auto-throttle and caching
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper scrapy \
   --scraper-config scrapy.yaml
 
 # Large-scale crawling
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper scrapy \
   --max-pages 10000 \
   --concurrent-requests 16
@@ -359,15 +359,15 @@ playwright install  # Install browser binaries
 
 ```bash
 # Basic usage
-python -m tools.html2md crawl https://example.com -o output/ --scraper playwright
+python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper playwright
 
 # With custom browser settings
-python -m tools.html2md crawl https://example.com -o output/ \
+python -m tools.mf1-html2md crawl https://example.com -o output/ \
   --scraper playwright \
   --scraper-config playwright.yaml
 
 # For SPA with wait conditions
-python -m tools.html2md crawl https://spa-example.com -o output/ \
+python -m tools.mf1-html2md crawl https://spa-example.com -o output/ \
   --scraper playwright \
   --request-delay 2.0 \
   --concurrent-requests 2

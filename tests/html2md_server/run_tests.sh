@@ -59,7 +59,7 @@ pytest tests/test_html2md_server.py \
     -v \
     --tb=short \
     --color=yes \
-    --cov=tools.html2md \
+    --cov=tools.mf1-html2md \
     --cov-report=term-missing \
     --cov-report=html:htmlcov \
     "$@"

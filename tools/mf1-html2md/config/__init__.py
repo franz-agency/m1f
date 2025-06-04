@@ -1,4 +1,4 @@
-"""Configuration system for html2md."""
+"""Configuration system for mf1-html2md."""
 
 from .loader import load_config, save_config
 from .models import (

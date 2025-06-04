@@ -69,7 +69,7 @@ pytest tests/test_html2md_server.py -v
 pytest tests/test_html2md_server.py::TestHTML2MDConversion::test_code_examples -v
 
 # Run with coverage
-pytest tests/test_html2md_server.py --cov=tools.html2md --cov-report=html
+pytest tests/test_html2md_server.py --cov=tools.mf1-html2md --cov-report=html
 ```
 
 ## Test Structure
@@ -106,19 +106,19 @@ tests/html2md_server/
 
    ```bash
    # Basic conversion
-   python tools/html2md.py \
+   python tools/mf1-html2md.py \
      --source-dir http://localhost:8080/page \
      --destination-dir ./output
 
    # With content selection
-   python tools/html2md.py \
+   python tools/mf1-html2md.py \
      --source-dir http://localhost:8080/page \
      --destination-dir ./output \
      --outermost-selector "article" \
      --ignore-selectors "nav" ".sidebar" "footer"
 
    # Specific page with options
-   python tools/html2md.py \
+   python tools/mf1-html2md.py \
      --source-dir http://localhost:8080/page/code-examples \
      --destination-dir ./output \
      --add-frontmatter \

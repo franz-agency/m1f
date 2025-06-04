@@ -2,7 +2,7 @@
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
 
-"""Module execution entry point for html2md."""
+"""Module execution entry point for mf1-html2md."""
 
 from .cli import main
 

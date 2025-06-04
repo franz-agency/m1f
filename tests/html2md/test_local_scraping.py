@@ -125,7 +125,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         print(f"   ✅ Converted to {len(markdown)} characters of Markdown")
 
         # Save to file
-        output_dir = Path("tests/html2md/scraped_examples")
+        output_dir = Path("tests/mf1-html2md/scraped_examples")
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"scraped_{page_name}.md"
 
@@ -169,7 +169,7 @@ def main():
             "ignore_selectors": ["nav", "footer"],
         },
         {
-            "name": "html2md-documentation",
+            "name": "mf1-html2md-documentation",
             "description": "HTML2MD Documentation (with code blocks)",
             "outermost_selector": "main",
             "ignore_selectors": ["nav", ".sidebar", "footer"],

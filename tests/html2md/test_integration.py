@@ -50,11 +50,11 @@ class TestIntegration(unittest.TestCase):
 
         # Find the tools directory
         self.tools_dir = Path(__file__).parents[2] / "tools"
-        self.html2md_script = self.tools_dir / "html2md.py"
+        self.html2md_script = self.tools_dir / "mf1-html2md.py"
         self.prepare_docs_script = self.tools_dir / "prepare_docs.py"
 
         if not self.html2md_script.exists():
-            self.skipTest(f"html2md.py script not found: {self.html2md_script}")
+            self.skipTest(f"mf1-html2md.py script not found: {self.html2md_script}")
 
         if not self.prepare_docs_script.exists():
             self.skipTest(
@@ -66,7 +66,7 @@ class TestIntegration(unittest.TestCase):
         shutil.rmtree(self.test_dir)
 
     def test_direct_conversion(self):
-        """Test direct conversion with html2md.py."""
+        """Test direct conversion with mf1-html2md.py."""
         cmd = [
             sys.executable,
             str(self.html2md_script),

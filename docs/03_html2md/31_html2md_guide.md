@@ -54,19 +54,19 @@ reliability, and standards compliance compared to Python-based alternatives.
 ### Convert a Single File
 
 ```bash
-python -m tools.html2md convert index.html -o index.md
+python -m tools.mf1-html2md convert index.html -o index.md
 ```
 
 ### Convert a Directory
 
 ```bash
-python -m tools.html2md convert ./html_docs/ -o ./markdown_docs/
+python -m tools.mf1-html2md convert ./html_docs/ -o ./markdown_docs/
 ```
 
 ### Convert a Website
 
 ```bash
-python -m tools.html2md crawl https://docs.example.com -o ./docs/
+python -m tools.mf1-html2md crawl https://docs.example.com -o ./docs/
 ```
 
 ## Command Line Usage
@@ -76,7 +76,7 @@ The tool provides three main commands:
 ### `convert` - Convert Files or Directories
 
 ```bash
-python -m tools.html2md convert [source] -o [output] [options]
+python -m tools.mf1-html2md convert [source] -o [output] [options]
 
 Options:
   -c, --config FILE         Configuration file (YAML/TOML)
@@ -90,7 +90,7 @@ Options:
 ### `crawl` - Convert Entire Websites
 
 ```bash
-python -m tools.html2md crawl [URL] -o [output] [options]
+python -m tools.mf1-html2md crawl [URL] -o [output] [options]
 
 Options:
   --max-depth N            Maximum crawl depth
@@ -100,7 +100,7 @@ Options:
 ### `config` - Generate Configuration File
 
 ```bash
-python -m tools.html2md config -o config.yaml [options]
+python -m tools.mf1-html2md config -o config.yaml [options]
 
 Options:
   --format FORMAT          Config format (yaml, toml, json)
@@ -370,7 +370,7 @@ crawler:
 EOF
 
 # Run conversion
-python -m tools.html2md crawl https://docs.python.org/3/ -c docs-config.yaml
+python -m tools.mf1-html2md crawl https://docs.python.org/3/ -c docs-config.yaml
 ```
 
 ### Example 2: Convert Blog with Specific Content
@@ -400,7 +400,7 @@ results = asyncio.run(converter.convert_directory(
 ### Example 3: Create m1f Bundle from Website
 
 ```bash
-python -m tools.html2md crawl https://docs.example.com \
+python -m tools.mf1-html2md crawl https://docs.example.com \
   -o ./output \
   --format m1f_bundle \
   --content-selector "main.content" \
@@ -453,7 +453,7 @@ python -m tools.html2md crawl https://docs.example.com \
 Enable verbose logging for debugging:
 
 ```bash
-python -m tools.html2md convert ./html -o ./md -v --log-file debug.log
+python -m tools.mf1-html2md convert ./html -o ./md -v --log-file debug.log
 ```
 
 Or in configuration:
@@ -500,7 +500,7 @@ To create an m1f bundle after conversion:
 
 ```bash
 # Convert website
-python -m tools.html2md crawl https://docs.example.com -o ./docs/
+python -m tools.mf1-html2md crawl https://docs.example.com -o ./docs/
 
 # Create m1f bundle
 python -m tools.m1f ./docs/ -o documentation.00_m1f.md
@@ -509,7 +509,7 @@ python -m tools.m1f ./docs/ -o documentation.00_m1f.md
 Or do it in one step:
 
 ```bash
-python -m tools.html2md crawl https://docs.example.com \
+python -m tools.mf1-html2md crawl https://docs.example.com \
   -o ./docs/ \
   --format m1f_bundle
 ```

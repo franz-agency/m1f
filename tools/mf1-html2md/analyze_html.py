@@ -259,7 +259,7 @@ def main():
     )
     print("Example usage in Python:")
     print("```python")
-    print("from tools.html2md.preprocessors import PreprocessingConfig")
+    print("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
     print("config = PreprocessingConfig(**<loaded_json>)")
     print("```")
 

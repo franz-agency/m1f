@@ -48,7 +48,7 @@ Create `.claude/settings.json` in the project root:
 ```json
 {
   "model": "claude-opus-4",
-  "customInstructions": "You are helping with the m1f tools project. Key tools available: m1f.py (file bundler), s1f.py (file splitter), html2md (HTML to Markdown converter), wp_export_md.py (WordPress exporter).",
+  "customInstructions": "You are helping with the m1f tools project. Key tools available: m1f.py (file bundler), s1f.py (file splitter), mf1-html2md (HTML to Markdown converter), wp_export_md.py (WordPress exporter).",
   "permissions": {
     "write": true,
     "execute": true
@@ -136,7 +136,7 @@ class ClaudeOrchestrator:
         self.tools = {
             'm1f': 'tools/m1f.py',
             's1f': 'tools/s1f.py',
-            'html2md': 'tools/html2md',
+            'mf1-html2md': 'tools/mf1-html2md',
             'wp_export': 'tools/wp_export_md.py'
         }
 

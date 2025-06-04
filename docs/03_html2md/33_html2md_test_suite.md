@@ -179,7 +179,7 @@ python tests/html2md_server/server.py
 pytest tests/test_html2md_server.py -v
 
 # Run with coverage
-pytest tests/test_html2md_server.py --cov=tools.html2md --cov-report=html
+pytest tests/test_html2md_server.py --cov=tools.mf1-html2md --cov-report=html
 ```
 
 ### Test Options

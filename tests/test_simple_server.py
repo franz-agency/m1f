@@ -15,7 +15,7 @@
 
 """
 Simple tests for the HTML2MD test server functionality.
-Tests the server endpoints without complex html2md integration.
+Tests the server endpoints without complex mf1-html2md integration.
 """
 
 import requests
@@ -62,7 +62,7 @@ class TestHTML2MDServer:
         # Check that expected pages are listed
         expected_pages = [
             "m1f-documentation",
-            "html2md-documentation",
+            "mf1-html2md-documentation",
             "complex-layout",
             "code-examples",
         ]
@@ -94,11 +94,11 @@ class TestHTML2MDServer:
 
     def test_html2md_documentation_page(self):
         """Test the HTML2MD documentation test page."""
-        response = requests.get(f"{TEST_SERVER_URL}/page/html2md-documentation")
+        response = requests.get(f"{TEST_SERVER_URL}/page/mf1-html2md-documentation")
         assert response.status_code == 200
 
         # Check content contains HTML2MD information
-        assert "HTML2MD" in response.text or "html2md" in response.text
+        assert "HTML2MD" in response.text or "mf1-html2md" in response.text
 
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -163,7 +163,7 @@ class TestHTML2MDServer:
 
     def test_page_structure_for_conversion(self):
         """Test that pages have structure suitable for HTML to Markdown conversion."""
-        test_pages = ["m1f-documentation", "html2md-documentation", "complex-layout"]
+        test_pages = ["m1f-documentation", "mf1-html2md-documentation", "complex-layout"]
 
         for page_name in test_pages:
             response = requests.get(f"{TEST_SERVER_URL}/page/{page_name}")

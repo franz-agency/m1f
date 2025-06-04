@@ -15,7 +15,7 @@
 
 """
 HTML2MD Test Server
-A modern Flask server for testing html2md conversion with challenging HTML pages.
+A modern Flask server for testing mf1-html2md conversion with challenging HTML pages.
 """
 
 import os
@@ -50,13 +50,13 @@ TEST_PAGES = {}
 PAGE_METADATA = {
     "index": {
         "title": "HTML2MD Test Suite",
-        "description": "Comprehensive test pages for html2md converter",
+        "description": "Comprehensive test pages for mf1-html2md converter",
     },
     "m1f-documentation": {
         "title": "M1F Documentation",
         "description": "Complete documentation for Make One File tool",
     },
-    "html2md-documentation": {
+    "mf1-html2md-documentation": {
         "title": "HTML2MD Documentation",
         "description": "Complete documentation for HTML to Markdown converter",
     },

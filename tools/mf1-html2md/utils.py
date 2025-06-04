@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utility functions for html2md."""
+"""Utility functions for mf1-html2md."""
 
 import logging
 import sys

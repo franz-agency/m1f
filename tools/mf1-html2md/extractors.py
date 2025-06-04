@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Custom extractor system for html2md."""
+"""Custom extractor system for mf1-html2md."""
 
 import importlib.util
 import sys

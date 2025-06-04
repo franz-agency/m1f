@@ -37,7 +37,7 @@ Transforms HTML into clean Markdown. Analyzes structure, suggests optimal select
 
 ```bash
 # Make it readable
-m1f-html2md convert ./html -o ./markdown --content-selector "article"
+m1f-mf1-html2md convert ./html -o ./markdown --content-selector "article"
 ```
 
 ### 🔢 **m1f-token-counter** - The Calculator
@@ -54,7 +54,7 @@ m1f-token-counter ./bundle.txt
 ```bash
 # Download → Convert → Bundle → Profit
 m1f-scrape https://react.dev -o ./react-html
-m1f-html2md convert ./react-html -o ./react-md
+m1f-mf1-html2md convert ./react-html -o ./react-md
 m1f -s ./react-md -o react-docs-for-claude.txt
 ```
 
@@ -132,10 +132,10 @@ m1f-scrape https://docs.anthropic.com -o ./claude-docs-html \
   --request-delay 1.0
 
 # 2. Analyze the HTML structure to find the best selectors
-html2md analyze ./claude-docs-html/*.html --suggest-selectors
+mf1-html2md analyze ./claude-docs-html/*.html --suggest-selectors
 
 # 3. Convert to clean Markdown (adjust selectors based on analysis)
-html2md convert ./claude-docs-html -o ./claude-docs-md \
+mf1-html2md convert ./claude-docs-html -o ./claude-docs-md \
   --content-selector "main.docs-content, article.documentation" \
   --ignore-selectors "nav" ".sidebar" ".footer" ".search-box"
 

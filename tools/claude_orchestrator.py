@@ -48,12 +48,12 @@ class ClaudeOrchestrator:
                 "path": "tools/s1f.py",
                 "description": "Split bundled files back to original structure",
             },
-            "html2md": {
-                "path": "tools/html2md",
+            "mf1-html2md": {
+                "path": "tools/mf1-html2md",
                 "description": "Convert HTML to Markdown with preprocessing",
             },
             "analyze_html": {
-                "path": "tools/html2md/analyze_html.py",
+                "path": "tools/mf1-html2md/analyze_html.py",
                 "description": "Analyze HTML files for preprocessing config",
             },
             "wp_export": {
@@ -133,7 +133,7 @@ User request: {user_prompt}
 Important rules:
 - Use absolute paths or paths relative to project root
 - For m1f, use appropriate separator styles (Standard, Detailed, Markdown, etc.)
-- For html2md, consider if preprocessing is needed
+- For mf1-html2md, consider if preprocessing is needed
 - Include proper flags and options
 
 Return only valid JSON, no other text.

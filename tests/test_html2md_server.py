@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Comprehensive test suite for html2md converter using the test server.
+Comprehensive test suite for mf1-html2md converter using the test server.
 Tests various HTML structures, edge cases, and conversion options.
 """
 
@@ -127,7 +127,7 @@ class TestHTML2MDConversion:
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/html2md-documentation"
+                f"{test_server.base_url}/page/mf1-html2md-documentation"
             ) as resp:
                 html_content = await resp.text()
 
@@ -417,7 +417,7 @@ class TestCLI:
     def test_cli_help(self):
         """Test CLI help output."""
         result = subprocess.run(
-            [sys.executable, "-m", "tools.html2md", "--help"],
+            [sys.executable, "-m", "tools.mf1-html2md", "--help"],
             capture_output=True,
             text=True,
         )
@@ -433,7 +433,7 @@ class TestCLI:
             [
                 sys.executable,
                 "-m",
-                "tools.html2md",
+                "tools.mf1-html2md",
                 "--source-dir",
                 f"{test_server.base_url}/page",
                 "--destination-dir",
@@ -459,7 +459,7 @@ class TestCLI:
             [
                 sys.executable,
                 "-m",
-                "tools.html2md",
+                "tools.mf1-html2md",
                 "--source-dir",
                 f"{test_server.base_url}/page",
                 "--destination-dir",
@@ -471,7 +471,7 @@ class TestCLI:
                 ".sidebar",
                 "footer",
                 "--include-patterns",
-                "html2md-documentation",
+                "mf1-html2md-documentation",
             ],
             capture_output=True,
             text=True,
@@ -480,7 +480,7 @@ class TestCLI:
         assert result.returncode == 0
 
         # Verify content
-        output_file = Path(temp_output_dir) / "html2md-documentation.md"
+        output_file = Path(temp_output_dir) / "mf1-html2md-documentation.md"
         assert output_file.exists()
 
         content = output_file.read_text()

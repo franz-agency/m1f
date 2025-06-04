@@ -98,7 +98,7 @@ bundles:
         include_extensions: [".py"]
 
   html2md-docs:
-    description: "html2md docs"
+    description: "mf1-html2md docs"
     output: ".m1f/m1f/66_html2md_docs.txt"
     sources:
       - path: "docs/03_html2md"
@@ -106,14 +106,14 @@ bundles:
     preset: "presets/docs-bundle.m1f-presets.yml"
 
   html2md-code:
-    description: "html2md complete code"
+    description: "mf1-html2md complete code"
     output: ".m1f/m1f/67_html2md_tool_code.txt"
     sources:
-      - path: "tools/html2md"
+      - path: "tools/mf1-html2md"
         include_extensions: [".py"]
       - path: "tools/"
         include_files: [
-          "html2md.py",
+          "mf1-html2md.py",
           "path_utils",
           "__init__.py"
         ]

@@ -57,12 +57,12 @@ Understand the HTML structure before creating extractors:
 
 ```bash
 # Analyze a few sample files
-python -m tools.html2md analyze \
+python -m tools.mf1-html2md analyze \
   .scrapes/my-docs/html/*.html \
   --suggest-selectors
 
 # Get detailed structure analysis
-python -m tools.html2md analyze \
+python -m tools.mf1-html2md analyze \
   .scrapes/my-docs/html/*.html \
   --show-structure \
   --common-patterns
@@ -131,20 +131,20 @@ Write the extractor to .scrapes/my-docs/extractors/custom_extractor.py" \
 #### With Custom Extractor
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md.py convert html -o md \
+python ../../tools/mf1-html2md.py convert html -o md \
   --extractor extractors/custom_extractor.py
 ```
 
 #### With Default Extractor
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md.py convert html -o md
+python ../../tools/mf1-html2md.py convert html -o md
 ```
 
 #### With CSS Selectors Only
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md.py convert html -o md \
+python ../../tools/mf1-html2md.py convert html -o md \
   --content-selector "main.content" \
   --ignore-selectors "nav" ".sidebar" ".ads"
 ```
@@ -172,7 +172,7 @@ python -m tools.m1f-scrape https://docs.example.com \
   --scraper playwright
 
 # 3. Analyze structure
-python -m tools.html2md analyze \
+python -m tools.mf1-html2md analyze \
   .scrapes/docs-site/html/*.html \
   --suggest-selectors
 
@@ -216,7 +216,7 @@ EOF
 
 # 5. Convert with custom extractor
 cd .scrapes/docs-site
-python ../../tools/html2md.py convert html -o md \
+python ../../tools/mf1-html2md.py convert html -o md \
   --extractor extractors/docs_extractor.py
 
 # 6. Create m1f bundle (optional)
@@ -293,14 +293,14 @@ print(result.prettify())
 
 2. **Use verbose mode**:
 ```bash
-python -m tools.html2md convert html -o md \
+python -m tools.mf1-html2md convert html -o md \
   --extractor extractors/custom_extractor.py \
   --verbose
 ```
 
 3. **Process single file**:
 ```bash
-python -m tools.html2md convert html/single-file.html \
+python -m tools.mf1-html2md convert html/single-file.html \
   -o test.md \
   --extractor extractors/custom_extractor.py
 ```

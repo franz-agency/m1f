@@ -201,5 +201,5 @@ CLAUDE.md
 
 /dev/
 
-# Scrapes directory for html2md workflow
+# Scrapes directory for mf1-html2md workflow
 .scrapes/

@@ -221,10 +221,10 @@ to LLMs:
 python -m tools.m1f-scrape https://docs.example.com -o ./html_files
 
 # Step 2: Analyze HTML structure
-python -m tools.html2md analyze ./html_files/*.html --suggest-selectors
+python -m tools.mf1-html2md analyze ./html_files/*.html --suggest-selectors
 
 # Step 3: Convert to Markdown
-python -m tools.html2md convert ./html_files -o ./markdown \
+python -m tools.mf1-html2md convert ./html_files -o ./markdown \
   --content-selector "main.content" \
   --ignore-selectors "nav" ".sidebar"
 
@@ -245,7 +245,7 @@ python -m tools.m1f-scrape https://react.dev/learn -o ./react_docs \
   --max-depth 3
 
 # Convert to clean Markdown
-python -m tools.html2md convert ./react_docs -o ./react_md \
+python -m tools.mf1-html2md convert ./react_docs -o ./react_md \
   --content-selector "article" \
   --ignore-selectors "nav" "footer" ".sidebar"
 
