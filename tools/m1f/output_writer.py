@@ -178,12 +178,18 @@ class OutputWriter:
             return content
 
         # Pattern to match scraped metadata at the end of the file
-        # Looks for a horizontal rule followed by scraped metadata
+        # More flexible pattern that handles variations in formatting
         pattern = (
-            r"\n\n---\n\n"
-            r"\*Scraped from:.*?\*\n\n"
-            r"\*Scraped at:.*?\*\n\n"
-            r"\*Source URL:.*?\*\s*$"
+            r"\n{1,3}"  # 1-3 newlines
+            r"(?:---|===|\*\*\*){1}\n{1,2}"  # Any horizontal rule style
+            r"(?:\*{1,2}|_)?"  # Optional emphasis markers
+            r"Scraped (?:from|URL):.*?"  # Scraped from or URL
+            r"(?:\*{1,2}|_)?\n{1,2}"  # Optional emphasis and newlines
+            r"(?:\*{1,2}|_)?"  # Optional emphasis markers
+            r"Scraped (?:at|date|time):.*?"  # Various date/time labels
+            r"(?:\*{1,2}|_)?\n{0,2}"  # Optional emphasis and newlines
+            r"(?:(?:\*{1,2}|_)?Source URL:.*?(?:\*{1,2}|_)?\n{0,2})?"  # Optional source URL
+            r"\s*$"  # Trailing whitespace at end
         )
 
         # Remove the metadata if found

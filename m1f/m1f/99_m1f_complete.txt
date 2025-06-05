@@ -1211,13 +1211,18 @@ and this project adheres to
   - Comprehensive documentation in `docs/01_m1f/06_auto_bundle_guide.md`
   - Examples for server-wide bundle management and automation
 
-- **Files werden jetzt parallel verarbeitet**: Deutliche
-  Performance-Verbesserung
-  - Bis zu 10 Dateien werden gleichzeitig verarbeitet
-  - Signifikant schneller bei Projekten mit vielen Dateien
-  - Thread-sichere Content-Deduplizierung
-  - Reihenfolge der Dateien im Output bleibt erhalten
-  - Automatischer Fallback auf sequenzielle Verarbeitung bei einzelnen Dateien
+- **Join Paragraphs Feature**: Markdown optimization for LLMs
+  - New `JOIN_PARAGRAPHS` processing action to compress markdown
+  - Intelligently joins multi-line paragraphs while preserving structure
+  - Preserves code blocks, tables, lists, and other markdown elements
+  - Helps maximize content in the first 200 lines that LLMs read intensively
+  - Available in presets for documentation bundles
+
+- **S1F List Command**: Display archive contents without extraction
+  - New `--list` flag to show files in m1f archives
+  - Displays file information including size, encoding, and type
+  - No longer shows SHA256 hashes for cleaner output
+  - Useful for previewing archive contents before extraction
 
 - **Configurable UTF-8 Preference**: Made UTF-8 encoding preference for text files configurable
   - Added `prefer_utf8_for_text_files` option to EncodingConfig (defaults to True)
@@ -1231,7 +1236,39 @@ and this project adheres to
   - Configurable via preset files through `enable_content_deduplication` setting
   - Useful when you need to preserve all files regardless of duplicate content
 
+### Fixed
+
+- **Security**: Comprehensive path traversal protection across all tools
+  - Added path validation to prevent directory traversal attacks
+  - Block paths with `../` or `..\` patterns
+  - Reject absolute paths in s1f extraction
+  - Validate all user-provided file paths including symlink targets
+  - Allow legitimate exceptions: home directory configs (~/.m1f/), output files
+
+- **Markdown Format**: Fixed separator and content formatting issues
+  - Content now properly starts on new line after code fence in markdown format
+  - Added blank line between separator and content in parallel processing mode
+  - Fixed S1F markdown parser to correctly handle language hint and newline
+  - Fixed closing ``` for markdown format in parallel processing
+
+- **S1F List Output**: Simplified file information display
+  - Removed SHA256 hash display from list output
+  - No longer shows "[Unknown]" for missing file sizes
+  - Only displays file size when available
+
+- **Standard Separator Format**: Removed checksum from display
+  - Standard format now shows only file path without SHA256
+  - Simplified output for better readability
+  - Parser ignores separators inside code blocks to prevent false positives
+
 ### Changed
+
+- **Parallel File Processing**: Enhanced performance for large projects
+  - Added optional `--parallel` flag for concurrent file processing
+  - Implemented asyncio-based batch handling with proper thread safety
+  - Added locks for thread-safe checksum operations
+  - Maintained file ordering in output despite parallel processing
+  - Automatic fallback to sequential processing for single files
 
 - **Auto-bundle config file** (`.m1f.config.yml`) updated with group
   categorization
@@ -1253,6 +1290,58 @@ and this project adheres to
   - Ensures reliable imports across different environments
   - Updated all documentation examples
 
+- **WebScraper Rate Limiting**: Conservative defaults for Cloudflare protection
+  - Changed default request delay from 0.5s to 15s
+  - Reduced concurrent requests from 5 to 2
+  - Added bandwidth limiting (100KB/s) and connection rate limits
+  - Created cloudflare.yaml config with ultra-conservative 30s delays
+
+- **Code Quality**: Comprehensive linting and formatting
+  - Applied Black formatting to all Python code
+  - Applied Prettier formatting to all Markdown files
+  - Added/updated license headers across all source files
+  - Removed deprecated test files and debug utilities
+
+### Security
+
+- **Path Traversal Protection**: Comprehensive validation across all tools
+  - Prevents attackers from using paths like `../../../etc/passwd`
+  - Validates resolved paths against project boundaries
+  - Allows legitimate exceptions for configs and output files
+  - Added extensive security tests
+
+- **Scraper Security**: Enhanced security measures
+  - Enforced robots.txt compliance with caching
+  - Added URL validation to prevent SSRF attacks
+  - Basic JavaScript validation to block dangerous scripts
+  - Sanitized command arguments in HTTrack to prevent injection
+
+### Improved
+
+- **HTML2MD Enhancement**: Better file path handling
+  - Improved source path logic for file inputs
+  - Enhanced relative path resolution for edge cases
+  - Consistent output path generation with fallback mechanisms
+  - Removed hardcoded Anthropic-specific navigation selectors
+
+- **Encoding Detection**: Enhanced fallback logic
+  - Default to UTF-8 if chardet fails or returns empty
+  - Prefer UTF-8 over Windows-1252 for markdown files
+  - Expanded encoding map for better emoji support
+  - Better handling of exotic encodings
+
+- **Async I/O Support**: Performance optimizations
+  - S1F now supports optional aiofiles for async file reading
+  - Better handling of deprecated asyncio methods
+  - Improved concurrent operation handling
+
+- **Testing Infrastructure**: Comprehensive test improvements
+  - Reorganized test structure for better clarity
+  - Added path traversal security tests
+  - Fixed all test failures (100% success rate)
+  - Added pytest markers for test categorization
+  - Improved test documentation
+
 ### Removed
 
 - Obsolete scripts replaced by integrated functionality:
@@ -1260,6 +1349,8 @@ and this project adheres to
   - `scripts/auto_bundle.sh` (now `m1f auto-bundle`)
   - `scripts/auto_bundle.ps1` (now `m1f auto-bundle`)
   - `scripts/update_m1f_files.sh` (now `m1f-update`)
+  - `setup_m1f_aliases.sh` (replaced by bin/ directory)
+  - Deprecated test files and debug utilities (~3000 lines removed)
 
 ## [3.1.0] - 2025-06-04
 
