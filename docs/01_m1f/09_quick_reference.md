@@ -15,6 +15,19 @@ python tools/m1f.py -s ./src -o bundle.txt
 python tools/m1f.py -s . -o output.txt -f
 ```
 
+### Using Presets (v3.2.0+)
+
+```bash
+# Use a preset file (can define ALL parameters)
+python tools/m1f.py --preset production.yml -o output.txt
+
+# Preset can even define source and output
+python tools/m1f.py --preset full-config.yml
+
+# Override preset values with CLI
+python tools/m1f.py --preset prod.yml -o custom-output.txt -v
+```
+
 ### File Type Filtering
 
 ```bash

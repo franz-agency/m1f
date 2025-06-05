@@ -6,9 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.2.0] - 2025-06-04
+## [3.2.0] - 2025-06-05
 
 ### Added
+
+- **Complete Preset Parameter Support**: ALL m1f parameters can now be configured via presets
+  - Input/Output settings: source_directory, input_file, output_file, input_include_files
+  - Output control: add_timestamp, filename_mtime_hash, force, minimal_output, skip_output_file
+  - Archive settings: create_archive, archive_type
+  - Runtime behavior: verbose, quiet
+  - CLI arguments always take precedence over preset values
+  - Enables simple commands like `m1f --preset production.yml`
+  - Updated template-all-settings.m1f-presets.yml with all new parameters
+  - Full documentation in docs/01_m1f/10_preset_reference.md
 
 - **Auto-Bundle Subcommand**: Integrated auto-bundle functionality directly into m1f
   - New `auto-bundle` subcommand for creating multiple bundles from YAML config
