@@ -202,6 +202,10 @@ class ScrapyScraper(WebScraperBase):
         import aiohttp
         import aiofiles
 
+        # Check robots.txt before scraping
+        if not await self.can_fetch(url):
+            raise ValueError(f"URL {url} is blocked by robots.txt")
+
         async with aiohttp.ClientSession() as session:
             headers = {"User-Agent": self.config.user_agent}
             timeout = aiohttp.ClientTimeout(total=self.config.timeout)

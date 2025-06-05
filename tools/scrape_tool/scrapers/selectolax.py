@@ -105,6 +105,10 @@ class SelectolaxScraper(WebScraperBase):
             raise RuntimeError("Scraper not initialized. Use async context manager.")
 
         try:
+            # Check robots.txt before scraping
+            if not await self.can_fetch(url):
+                raise ValueError(f"URL {url} is blocked by robots.txt")
+
             # Make HTTP request
             response = await self._client.get(url)
             response.raise_for_status()

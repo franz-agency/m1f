@@ -169,7 +169,12 @@ class BeautifulSoupScraper(WebScraperBase):
                     continue
 
                 # Validate URL
-                if not self.validate_url(url):
+                if not await self.validate_url(url):
+                    continue
+                
+                # Check robots.txt
+                if not await self.can_fetch(url):
+                    logger.info(f"Skipping {url} - blocked by robots.txt")
                     continue
 
                 # Check depth

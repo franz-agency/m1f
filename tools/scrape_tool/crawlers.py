@@ -180,11 +180,22 @@ class WebCrawler:
                 filename = "index.html"
                 subdirs = path_parts
 
-            # Create subdirectories
+            # Create subdirectories with path validation
             if subdirs:
-                subdir = output_dir / Path(*subdirs)
-                subdir.mkdir(parents=True, exist_ok=True)
-                file_path = subdir / filename
+                # Sanitize subdirectory names to prevent path traversal
+                safe_subdirs = []
+                for part in subdirs:
+                    # Remove any path traversal attempts
+                    safe_part = part.replace("..", "").replace("./", "").replace("\\", "")
+                    if safe_part and safe_part not in (".", ".."):
+                        safe_subdirs.append(safe_part)
+                
+                if safe_subdirs:
+                    subdir = output_dir / Path(*safe_subdirs)
+                    subdir.mkdir(parents=True, exist_ok=True)
+                    file_path = subdir / filename
+                else:
+                    file_path = output_dir / filename
             else:
                 file_path = output_dir / filename
         else:

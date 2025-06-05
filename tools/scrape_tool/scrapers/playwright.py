@@ -105,10 +105,13 @@ class PlaywrightScraper(WebScraperBase):
             )
 
         # Create browser context with custom user agent
+        # Add option to control SSL validation (default to secure)
+        ignore_https_errors = getattr(self.config, 'ignore_https_errors', False)
+        
         self._context = await self._browser.new_context(
             user_agent=self.config.user_agent,
             viewport=self._viewport,
-            ignore_https_errors=True,  # Handle self-signed certificates
+            ignore_https_errors=ignore_https_errors,  # Only ignore if explicitly configured
             accept_downloads=False,
         )
 
@@ -143,6 +146,10 @@ class PlaywrightScraper(WebScraperBase):
 
         page = None
         try:
+            # Check robots.txt before scraping
+            if not await self.can_fetch(url):
+                raise ValueError(f"URL {url} is blocked by robots.txt")
+
             # Create new page
             page = await self._context.new_page()
 
@@ -159,9 +166,29 @@ class PlaywrightScraper(WebScraperBase):
                     timeout=self._wait_timeout,
                 )
 
-            # Execute any custom JavaScript
+            # Execute any custom JavaScript (with security warning)
             if self._browser_config.get("execute_script"):
-                await page.evaluate(self._browser_config["execute_script"])
+                script = self._browser_config["execute_script"]
+                
+                # Basic validation to prevent obvious malicious scripts
+                dangerous_patterns = [
+                    "fetch", "XMLHttpRequest", "eval", "Function",
+                    "localStorage", "sessionStorage", "document.cookie",
+                    "window.location", "navigator", "WebSocket"
+                ]
+                
+                script_lower = script.lower()
+                for pattern in dangerous_patterns:
+                    if pattern.lower() in script_lower:
+                        logger.warning(f"Potentially dangerous JavaScript pattern '{pattern}' detected in script. Skipping execution.")
+                        break
+                else:
+                    # Only execute if no dangerous patterns found
+                    logger.warning("Executing custom JavaScript. This feature should only be used with trusted scripts.")
+                    try:
+                        await page.evaluate(script)
+                    except Exception as e:
+                        logger.error(f"Error executing custom JavaScript: {e}")
 
             # Get the final rendered HTML
             content = await page.content()
@@ -300,6 +327,11 @@ class PlaywrightScraper(WebScraperBase):
                     # Respect request delay
                     if self.config.request_delay > 0:
                         await asyncio.sleep(self.config.request_delay)
+
+                    # Check robots.txt before scraping
+                    if not await self.can_fetch(url):
+                        logger.info(f"Skipping {url} - blocked by robots.txt")
+                        return None
 
                     # Create new page
                     page = await self._context.new_page()

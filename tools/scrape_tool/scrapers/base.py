@@ -5,6 +5,10 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, AsyncGenerator, Set
 from pathlib import Path
 import logging
+from urllib.parse import urlparse, urljoin
+from urllib.robotparser import RobotFileParser
+import asyncio
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +73,8 @@ class WebScraperBase(ABC):
         """
         self.config = config
         self._visited_urls: Set[str] = set()
+        self._robots_parsers: Dict[str, RobotFileParser] = {}
+        self._robots_fetch_lock = asyncio.Lock()
 
     @abstractmethod
     async def scrape_url(self, url: str) -> ScrapedPage:
@@ -97,8 +103,51 @@ class WebScraperBase(ABC):
         """
         pass
 
-    def validate_url(self, url: str) -> bool:
-        """Validate if a URL should be scraped based on configuration.
+    def _is_private_ip(self, hostname: str) -> bool:
+        """Check if hostname resolves to a private IP address.
+        
+        Args:
+            hostname: Hostname or IP address to check
+            
+        Returns:
+            True if the hostname resolves to a private IP, False otherwise
+        """
+        import socket
+        import ipaddress
+        
+        try:
+            # Get IP address from hostname
+            ip = socket.gethostbyname(hostname)
+            ip_obj = ipaddress.ip_address(ip)
+            
+            # Check for private networks
+            if ip_obj.is_private:
+                return True
+            
+            # Check for loopback
+            if ip_obj.is_loopback:
+                return True
+            
+            # Check for link-local
+            if ip_obj.is_link_local:
+                return True
+            
+            # Check for multicast
+            if ip_obj.is_multicast:
+                return True
+            
+            # Check for cloud metadata endpoint
+            if str(ip_obj).startswith("169.254."):
+                return True
+                
+            return False
+            
+        except (socket.gaierror, ValueError):
+            # If we can't resolve the hostname, err on the side of caution
+            return True
+
+    async def validate_url(self, url: str) -> bool:
+        """Validate if a URL should be scraped based on configuration and robots.txt.
 
         Args:
             url: URL to validate
@@ -113,6 +162,14 @@ class WebScraperBase(ABC):
 
             # Check if URL has valid scheme
             if parsed.scheme not in ("http", "https"):
+                return False
+
+            # Extract hostname (remove port if present)
+            hostname = parsed.hostname or parsed.netloc.split(':')[0]
+            
+            # Check for SSRF - block private IPs
+            if self._is_private_ip(hostname):
+                logger.warning(f"Blocked URL {url} - private IP address detected")
                 return False
 
             # Check allowed domains
@@ -137,6 +194,67 @@ class WebScraperBase(ABC):
         except Exception as e:
             logger.error(f"Error validating URL {url}: {e}")
             return False
+
+    async def _fetch_robots_txt(self, base_url: str) -> Optional[RobotFileParser]:
+        """Fetch and parse robots.txt for a given base URL.
+        
+        Args:
+            base_url: Base URL of the website
+            
+        Returns:
+            RobotFileParser object or None if fetch fails
+        """
+        robots_url = urljoin(base_url, "/robots.txt")
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    robots_url,
+                    timeout=aiohttp.ClientTimeout(total=10),
+                    headers={"User-Agent": self.config.user_agent}
+                ) as response:
+                    if response.status == 200:
+                        content = await response.text()
+                        parser = RobotFileParser()
+                        parser.parse(content.splitlines())
+                        return parser
+                    else:
+                        logger.debug(f"No robots.txt found at {robots_url} (status: {response.status})")
+                        return None
+        except Exception as e:
+            logger.debug(f"Error fetching robots.txt from {robots_url}: {e}")
+            return None
+
+    async def can_fetch(self, url: str) -> bool:
+        """Check if URL can be fetched according to robots.txt.
+        
+        Args:
+            url: URL to check
+            
+        Returns:
+            True if URL can be fetched, False otherwise
+        """
+        if not self.config.respect_robots_txt:
+            return True
+            
+        parsed = urlparse(url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        
+        # Check if we already have the robots.txt for this domain
+        if base_url not in self._robots_parsers:
+            async with self._robots_fetch_lock:
+                # Double-check after acquiring lock
+                if base_url not in self._robots_parsers:
+                    parser = await self._fetch_robots_txt(base_url)
+                    self._robots_parsers[base_url] = parser
+        
+        parser = self._robots_parsers.get(base_url)
+        if parser is None:
+            # No robots.txt or fetch failed - allow by default
+            return True
+            
+        # Check if the URL is allowed for our user agent
+        return parser.can_fetch(self.config.user_agent, url)
 
     def is_visited(self, url: str) -> bool:
         """Check if URL has already been visited.

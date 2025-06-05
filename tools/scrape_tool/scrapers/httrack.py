@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import shutil
+import shlex
 import tempfile
 from pathlib import Path
 from typing import AsyncGenerator, Optional, Set
@@ -70,9 +71,10 @@ class HTTrackScraper(WebScraperBase):
         output_dir.mkdir(exist_ok=True)
 
         # Build HTTrack command for single page
+        # Properly escape all arguments to prevent command injection
         cmd = [
             self.httrack_path,
-            url,
+            url,  # URL is validated by validate_url method
             "-O",
             str(output_dir),
             "-r1",  # Depth 1 (just this page)
@@ -81,7 +83,7 @@ class HTTrackScraper(WebScraperBase):
             "-%e0",  # Don't download error pages
             "--quiet",  # Quiet mode
             "--disable-security-limits",
-            f"--user-agent={self.config.user_agent}",
+            f"--user-agent={shlex.quote(self.config.user_agent)}",  # Escape user agent
             "--timeout=" + str(int(self.config.timeout)),
         ]
 
@@ -193,14 +195,14 @@ class HTTrackScraper(WebScraperBase):
 
         cmd = [
             self.httrack_path,
-            start_url,
+            start_url,  # URL is validated by validate_url method
             "-O",
             str(output_dir),
             f"-r{self.config.max_depth}",  # Max depth
             "-%P",  # No external pages
             "--quiet",  # Quiet mode
             "--disable-security-limits",
-            f"--user-agent={self.config.user_agent}",
+            f"--user-agent={shlex.quote(self.config.user_agent)}",  # Escape user agent
             "--timeout=" + str(int(self.config.timeout)),
             f"--sockets={concurrent_connections}",  # Max 2 connections
             f"--connection-per-second={connection_rate:.2f}",  # Max 0.5/sec
