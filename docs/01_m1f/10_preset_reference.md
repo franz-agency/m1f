@@ -79,16 +79,6 @@ globals:
         actions: ["redact_secrets"]
 ```
 
-### Legacy Format (docs-bundle.yml style)
-
-```yaml
-# Simple processor definition
-name: "docs-bundle"
-description: "Optimizes markdown files"
-processors:
-  remove_empty_lines:
-    extensions: [".md", ".txt"]
-```
 
 ## All Available Settings
 
@@ -433,23 +423,6 @@ data_science:
 5. **Version Control** - Keep presets in your repository
 6. **Performance First** - Apply expensive actions only where needed
 
-## Migration from Legacy Format
-
-If you have old `processors` format presets:
-
-```yaml
-# Old format
-processors:
-  remove_empty_lines:
-    extensions: [".md"]
-
-# Convert to new format
-my_group:
-  presets:
-    markdown_files:
-      extensions: [".md"]
-      actions: ["remove_empty_lines"]
-```
 
 ## Complete Parameter Control via Presets (v3.2.0+)
 
