@@ -173,6 +173,12 @@ class Config:
                 "(either via CLI arguments or preset configuration)"
             )
         
+        # Validate output_file - it should not be the default dummy value
+        if config.output.output_file == Path("output.txt"):
+            raise ValueError(
+                "output_file must be provided (either via -o CLI argument or preset configuration)"
+            )
+        
         return config
     
     @classmethod
@@ -192,8 +198,9 @@ class Config:
             include_files = [Path(f).resolve() for f in args.input_include_files]
 
         # Create output configuration
+        output_file_path = Path(args.output_file).resolve() if args.output_file else None
         output_config = OutputConfig(
-            output_file=Path(args.output_file).resolve(),
+            output_file=output_file_path or Path("output.txt"),  # Default if not provided
             add_timestamp=args.add_timestamp,
             filename_mtime_hash=getattr(args, "filename_mtime_hash", False),
             force_overwrite=args.force,
@@ -306,7 +313,8 @@ class Config:
         if not args.input_file and global_settings.input_file:
             input_file = Path(global_settings.input_file).resolve()
         
-        if not getattr(args, "_output_file_from_cli", True) and global_settings.output_file:
+        # Only override output_file if not provided via CLI
+        if not args.output_file and global_settings.output_file:
             output_file = Path(global_settings.output_file).resolve()
         
         if not args.input_include_files and global_settings.input_include_files:
