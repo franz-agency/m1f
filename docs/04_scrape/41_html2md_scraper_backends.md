@@ -101,7 +101,7 @@ python -m tools.scrape_tool https://example.com -o output/ \
 Common options for all scrapers:
 
 ```bash
---scraper BACKEND           # Choose scraper backend (beautifulsoup, bs4, httrack, 
+--scraper BACKEND           # Choose scraper backend (beautifulsoup, bs4, httrack,
                            # selectolax, httpx, scrapy, playwright)
 --max-depth N               # Maximum crawl depth (default: 5)
 --max-pages N               # Maximum pages to crawl (default: 1000)
@@ -123,16 +123,16 @@ You can specify scraper-specific settings in a YAML or JSON configuration file:
 
 ```yaml
 # beautifulsoup-config.yaml
-parser: "html.parser"  # Options: "html.parser", "lxml", "html5lib"
+parser: "html.parser" # Options: "html.parser", "lxml", "html5lib"
 features: "lxml"
-encoding: "auto"  # Or specific encoding like "utf-8"
+encoding: "auto" # Or specific encoding like "utf-8"
 ```
 
 ```yaml
 # httrack-config.yaml
 mirror_options:
-  - "--assume-insecure"  # For HTTPS issues
-  - "--robots=3"  # Strict robots.txt compliance
+  - "--assume-insecure" # For HTTPS issues
+  - "--robots=3" # Strict robots.txt compliance
 extra_filters:
   - "+*.css"
   - "+*.js"

@@ -259,7 +259,8 @@ results = asyncio.run(convert_directory(
 
 ## Custom Extractors
 
-The custom extractor system allows you to create site-specific content extraction logic:
+The custom extractor system allows you to create site-specific content
+extraction logic:
 
 ### Function-based Extractor
 
@@ -429,6 +430,7 @@ python -m tools.html2md convert ./html \
    ```
 
    Solution: Use the analyze command to find the right selectors:
+
    ```bash
    python -m tools.html2md analyze ./html/*.html --suggest-selectors
    ```
@@ -439,12 +441,13 @@ python -m tools.html2md convert ./html \
    UnicodeDecodeError: 'utf-8' codec can't decode
    ```
 
-   Solution: The tool auto-detects encoding, but HTML files may have mixed encodings. 
-   All output is converted to UTF-8.
+   Solution: The tool auto-detects encoding, but HTML files may have mixed
+   encodings. All output is converted to UTF-8.
 
 3. **Large directories timing out**
 
    Solution: Use parallel processing:
+
    ```bash
    python -m tools.html2md convert ./html -o ./md --parallel
    ```
@@ -452,6 +455,7 @@ python -m tools.html2md convert ./html \
 4. **Missing content after conversion**
 
    Solution: Check your ignore selectors - they may be too broad:
+
    ```bash
    python -m tools.html2md convert ./html -o ./md \
      --content-selector "body" \
@@ -482,6 +486,7 @@ log_file: ./conversion-debug.log
    ```
 
 2. **Target specific content** to reduce processing:
+
    ```yaml
    extractor:
      content_selector: "article.documentation"

@@ -11,22 +11,30 @@ and this project adheres to
 ### Added
 
 - **Git Hooks Integration**: Automatic bundle generation on every commit
+
   - Pre-commit hook that runs `m1f auto-bundle` before each commit
-  - Installation script with remote download support: `curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash`
+  - Installation script with remote download support:
+    `curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash`
   - Auto-detection of m1f development repository vs. installed m1f
   - Automatic staging of generated bundles in `m1f/` directory
   - Comprehensive setup guide at `docs/01_m1f/12_git_hooks_setup.md`
 
-- **Bundle Directory Migration**: Moved from `.m1f/` to `m1f/` for better AI tool compatibility
+- **Bundle Directory Migration**: Moved from `.m1f/` to `m1f/` for better AI
+  tool compatibility
+
   - AI tools like Claude Code can now access bundled files directly
   - Generated bundles are included in version control by default
   - Automatic migration of configuration paths
   - Updated `m1f-link` command to create symlinks in `m1f/` directory
   - Added `m1f/README.md` explaining auto-generated files
 
-- **Complete Preset Parameter Support**: ALL m1f parameters can now be configured via presets
-  - Input/Output settings: source_directory, input_file, output_file, input_include_files
-  - Output control: add_timestamp, filename_mtime_hash, force, minimal_output, skip_output_file
+- **Complete Preset Parameter Support**: ALL m1f parameters can now be
+  configured via presets
+
+  - Input/Output settings: source_directory, input_file, output_file,
+    input_include_files
+  - Output control: add_timestamp, filename_mtime_hash, force, minimal_output,
+    skip_output_file
   - Archive settings: create_archive, archive_type
   - Runtime behavior: verbose, quiet
   - CLI arguments always take precedence over preset values
@@ -34,7 +42,9 @@ and this project adheres to
   - Updated template-all-settings.m1f-presets.yml with all new parameters
   - Full documentation in docs/01_m1f/10_preset_reference.md
 
-- **Auto-Bundle Subcommand**: Integrated auto-bundle functionality directly into m1f
+- **Auto-Bundle Subcommand**: Integrated auto-bundle functionality directly into
+  m1f
+
   - New `auto-bundle` subcommand for creating multiple bundles from YAML config
   - Reads `.m1f.config.yml` from project root
   - Supports creating all bundles or specific bundles by name
@@ -42,10 +52,13 @@ and this project adheres to
   - `--verbose` and `--quiet` options for output control
   - `m1f-update` command provides convenient access from anywhere
   - Full compatibility with existing `.m1f.config.yml` format
-  - Supports all m1f options: presets, exclude/include files, conditional bundles
+  - Supports all m1f options: presets, exclude/include files, conditional
+    bundles
   - Updated `watch_and_bundle.sh` to use new auto-bundle functionality
 
-- **Simplified Installation System**: Complete installer scripts for all platforms
+- **Simplified Installation System**: Complete installer scripts for all
+  platforms
+
   - New `install.sh` handles entire setup process (3 commands total!)
   - New `install.ps1` for Windows with full automation
   - Automatic Python 3.10+ version checking
@@ -55,30 +68,36 @@ and this project adheres to
   - `uninstall.sh` for clean removal
 
 - **PATH-based Command System**: Replaced aliases with executable wrappers
+
   - Created `bin/` directory with standalone executable scripts
   - Each wrapper activates venv and runs appropriate tool
   - Works consistently across all shells and platforms
   - Optional symlink creation in ~/.local/bin
 
 - **m1f-claude Command**: Smart prompt enhancement for Claude AI
+
   - New `m1f-claude` command that enhances prompts with m1f knowledge
   - Automatically injects m1f documentation context into prompts
   - Interactive mode for continued conversations
   - Project structure analysis for better suggestions
-  - Contextual hints based on user intent (bundling, config, WordPress, AI context)
+  - Contextual hints based on user intent (bundling, config, WordPress, AI
+    context)
   - Integration with Claude Code CLI (if installed)
   - Comprehensive workflow guide at docs/01_m1f/08_claude_workflows.md
 
 - **Enhanced Auto-Bundle Functionality**: Improved usability and flexibility
+
   - Config file search now traverses from current directory up to root
-  - New `--group` parameter to create bundles by group (e.g., `m1f auto-bundle --group documentation`)
+  - New `--group` parameter to create bundles by group (e.g.,
+    `m1f auto-bundle --group documentation`)
   - Bundle grouping support in `.m1f.config.yml` with `group: "name"` field
   - Improved error messages when config file is not found
   - Enhanced `--list` output showing bundles organized by groups
   - Comprehensive documentation in `docs/01_m1f/06_auto_bundle_guide.md`
   - Examples for server-wide bundle management and automation
 
-- **Files werden jetzt parallel verarbeitet**: Deutliche Performance-Verbesserung
+- **Files werden jetzt parallel verarbeitet**: Deutliche
+  Performance-Verbesserung
   - Bis zu 10 Dateien werden gleichzeitig verarbeitet
   - Signifikant schneller bei Projekten mit vielen Dateien
   - Thread-sichere Content-Deduplizierung
@@ -87,12 +106,15 @@ and this project adheres to
 
 ### Changed
 
-- **Auto-bundle config file** (`.m1f.config.yml`) updated with group categorization
+- **Auto-bundle config file** (`.m1f.config.yml`) updated with group
+  categorization
+
   - Documentation bundles grouped under "documentation"
   - Source code bundles grouped under "source"
   - Complete project bundle in "complete" group
 
 - **Command Naming Standardization**: All tools now use m1f- prefix
+
   - `s1f` → `m1f-s1f`
   - `html2md` → `m1f-html2md`
   - `webscraper` → `m1f-scrape`
@@ -137,7 +159,8 @@ and this project adheres to
 
 ### Added - m1f
 
-- **Multiple Exclude/Include Files Support**: Enhanced file filtering capabilities
+- **Multiple Exclude/Include Files Support**: Enhanced file filtering
+  capabilities
   - `exclude_paths_file` and `include_paths_file` now accept multiple files
   - Files are merged in order, non-existent files are gracefully skipped
   - Include files work as whitelists - only matching files are processed
@@ -173,7 +196,8 @@ and this project adheres to
   - Config-based directory setup
   - Refined source rules for s1f-code and all bundles
   - Improved path handling for m1f/s1f separation
-- **Depth-based Sorting**: Files and directories now sorted by depth for better organization
+- **Depth-based Sorting**: Files and directories now sorted by depth for better
+  organization
 - **Improved Documentation**: Comprehensive updates to m1f documentation
   - Added CLI reference and troubleshooting guides
   - Enhanced preset system documentation

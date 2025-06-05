@@ -1,7 +1,7 @@
 # html2md (HTML to Markdown Converter)
 
-A modern HTML to Markdown converter with HTML structure analysis, custom extractors,
-async I/O, and parallel processing capabilities.
+A modern HTML to Markdown converter with HTML structure analysis, custom
+extractors, async I/O, and parallel processing capabilities.
 
 ## Overview
 
@@ -10,7 +10,8 @@ to Markdown format, with fine-grained control over the conversion process. Built
 with Python 3.10+ and modern async architecture, it focuses on intelligent
 content extraction and conversion.
 
-**New in v3.1.0:** Custom extractor plugin system for site-specific content extraction.
+**New in v3.1.0:** Custom extractor plugin system for site-specific content
+extraction.
 
 **Note:** Web scraping functionality has been moved to the separate `webscraper`
 tool for better modularity. Use `webscraper` to download websites, then
@@ -18,14 +19,18 @@ tool for better modularity. Use `webscraper` to download websites, then
 
 ## Key Features
 
-- **Custom Extractor System**: Create site-specific extractors for optimal content extraction
-- **HTML Structure Analysis**: Analyze HTML files to find optimal content selectors
-- **Intelligent Content Extraction**: Use CSS selectors to extract specific content
+- **Custom Extractor System**: Create site-specific extractors for optimal
+  content extraction
+- **HTML Structure Analysis**: Analyze HTML files to find optimal content
+  selectors
+- **Intelligent Content Extraction**: Use CSS selectors to extract specific
+  content
 - **Async I/O**: High-performance concurrent file processing
 - **API Mode**: Programmatic access for integration with other tools
 - **Type Safety**: Full type annotations throughout the codebase
 - **Modern Architecture**: Clean modular design
-- **Workflow Integration**: .scrapes directory structure for organized processing
+- **Workflow Integration**: .scrapes directory structure for organized
+  processing
 - Recursive directory scanning for batch conversion
 - Smart internal link handling (HTML → Markdown)
 - Customizable element filtering and removal
@@ -97,22 +102,22 @@ Convert local HTML files to Markdown:
 python -m tools.html2md convert <source> -o <output> [options]
 ```
 
-| Option               | Description                                          |
-| -------------------- | ---------------------------------------------------- |
-| `source`             | Source file or directory                             |
-| `-o, --output`       | Output file or directory (required)                  |
-| `-c, --config`       | Configuration file path (YAML format)                |
+| Option               | Description                                                   |
+| -------------------- | ------------------------------------------------------------- |
+| `source`             | Source file or directory                                      |
+| `-o, --output`       | Output file or directory (required)                           |
+| `-c, --config`       | Configuration file path (YAML format)                         |
 | `--format`           | Output format: markdown, m1f_bundle, json (default: markdown) |
-| `--extractor`        | Path to custom extractor Python file                 |
-| `--content-selector` | CSS selector for main content                        |
-| `--ignore-selectors` | CSS selectors to ignore (space-separated)            |
-| `--heading-offset`   | Offset heading levels (default: 0)                   |
-| `--no-frontmatter`   | Don't add YAML frontmatter                           |
-| `--parallel`         | Enable parallel processing                           |
-| `--log-file`         | Log to file                                          |
-| `-v, --verbose`      | Enable verbose output                                |
-| `-q, --quiet`        | Suppress all output except errors                    |
-| `--version`          | Show version information and exit                    |
+| `--extractor`        | Path to custom extractor Python file                          |
+| `--content-selector` | CSS selector for main content                                 |
+| `--ignore-selectors` | CSS selectors to ignore (space-separated)                     |
+| `--heading-offset`   | Offset heading levels (default: 0)                            |
+| `--no-frontmatter`   | Don't add YAML frontmatter                                    |
+| `--parallel`         | Enable parallel processing                                    |
+| `--log-file`         | Log to file                                                   |
+| `-v, --verbose`      | Enable verbose output                                         |
+| `-q, --quiet`        | Suppress all output except errors                             |
+| `--version`          | Show version information and exit                             |
 
 ### Analyze Command
 
@@ -129,7 +134,7 @@ python -m tools.html2md analyze <files> [options]
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
 | `-v, --verbose`       | Enable verbose output                                                |
-| `-q, --quiet`        | Suppress all output except errors                                    |
+| `-q, --quiet`         | Suppress all output except errors                                    |
 | `--log-file`          | Log to file                                                          |
 
 ### Config Command
@@ -140,10 +145,10 @@ Generate a configuration file template:
 python -m tools.html2md config [options]
 ```
 
-| Option          | Description                                       |
-| --------------- | ------------------------------------------------- |
-| `-o, --output`  | Output configuration file (default: config.yaml)  |
-| `--format`      | Configuration format: yaml, toml, json (default: yaml) |
+| Option         | Description                                            |
+| -------------- | ------------------------------------------------------ |
+| `-o, --output` | Output configuration file (default: config.yaml)       |
+| `--format`     | Configuration format: yaml, toml, json (default: yaml) |
 
 ## Usage Examples
 
@@ -230,7 +235,9 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ## Custom Extractors
 
-The custom extractor system allows you to create site-specific content extraction logic for optimal results. Extractors can be simple functions or full classes.
+The custom extractor system allows you to create site-specific content
+extraction logic for optimal results. Extractors can be simple functions or full
+classes.
 
 ### Creating a Custom Extractor
 
@@ -246,14 +253,14 @@ def extract(soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> Bea
     # Remove navigation elements
     for nav in soup.find_all(['nav', 'header', 'footer']):
         nav.decompose()
-    
+
     # Find main content
     main = soup.find('main') or soup.find('article')
     if main:
         new_soup = BeautifulSoup('<html><body></body></html>', 'html.parser')
         new_soup.body.append(main)
         return new_soup
-    
+
     return soup
 
 def postprocess(markdown: str, config: Optional[Dict[str, Any]] = None) -> str:
@@ -273,17 +280,17 @@ from typing import Optional, Dict, Any
 
 class Extractor(BaseExtractor):
     """Custom extractor for specific website."""
-    
+
     def extract(self, soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> BeautifulSoup:
         """Extract content with site-specific logic."""
         # Custom extraction logic
         return soup
-    
+
     def preprocess(self, html: str, config: Optional[Dict[str, Any]] = None) -> str:
         """Preprocess raw HTML before parsing."""
         # Fix common HTML issues
         return html.replace('&nbsp;', ' ')
-    
+
     def postprocess(self, markdown: str, config: Optional[Dict[str, Any]] = None) -> str:
         """Post-process converted markdown."""
         # Clean up site-specific artifacts
@@ -309,7 +316,8 @@ converter = Html2mdConverter(
 
 ### .scrapes Directory Structure
 
-The recommended workflow uses a `.scrapes` directory (gitignored) for organizing scraping projects:
+The recommended workflow uses a `.scrapes` directory (gitignored) for organizing
+scraping projects:
 
 ```
 .scrapes/
@@ -320,13 +328,15 @@ The recommended workflow uses a `.scrapes` directory (gitignored) for organizing
         └── custom_extractor.py
 ```
 
-This structure keeps scraped content organized and separate from your main codebase.
+This structure keeps scraped content organized and separate from your main
+codebase.
 
 ## Advanced Features
 
 ### YAML Frontmatter
 
-By default, the converter adds YAML frontmatter to each Markdown file, including:
+By default, the converter adds YAML frontmatter to each Markdown file,
+including:
 
 - Title extracted from HTML title tag or first h1 element
 - Source filename
@@ -520,4 +530,5 @@ Install dependencies:
 pip install beautifulsoup4 markdownify chardet pyyaml aiofiles rich pydantic
 ```
 
-**Note**: For web scraping functionality, use the separate `webscraper` tool which provides multiple backend options including HTTrack.
+**Note**: For web scraping functionality, use the separate `webscraper` tool
+which provides multiple backend options including HTTrack.

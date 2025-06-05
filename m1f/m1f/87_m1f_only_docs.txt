@@ -9,8 +9,8 @@ Language Models (LLMs) and creating bundled documentation.
 
 ### Core Documentation
 
-- [**01_m1f.md**](00_m1f.md) - Main documentation with features, usage
-  examples, and architecture
+- [**01_m1f.md**](00_m1f.md) - Main documentation with features, usage examples,
+  and architecture
 - [**07_cli_reference.md**](./07_cli_reference.md) - Complete command-line
   parameter reference
 - [**08_troubleshooting.md**](./08_troubleshooting.md) - Common issues and
@@ -51,8 +51,8 @@ python tools/m1f.py -s ./src -o code.txt --include-extensions .py .js
 python tools/m1f.py -s . -o bundle.txt --preset wordpress.m1f-presets.yml
 ```
 
-For detailed information, start with the [main documentation](00_m1f.md) or
-jump to the [quick reference](./09_quick_reference.md) for common commands.
+For detailed information, start with the [main documentation](00_m1f.md) or jump
+to the [quick reference](./09_quick_reference.md) for common commands.
 
 ======= 00_m1f.md ======
 # m1f (Make One File)
@@ -503,7 +503,10 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 ======= 01_claude_workflows.md ======
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
 
-Ever wished you had an AI buddy who actually understands your project structure? That's what happens when you combine Claude with m1f. This guide shows you how to turn Claude into your personal project assistant who knows exactly how to bundle, organize, and process your code.
+Ever wished you had an AI buddy who actually understands your project structure?
+That's what happens when you combine Claude with m1f. This guide shows you how
+to turn Claude into your personal project assistant who knows exactly how to
+bundle, organize, and process your code.
 
 ## The Magic Setup ✨
 
@@ -516,26 +519,28 @@ cd /your/awesome/project
 m1f-link  # Creates .m1f/m1f-docs.txt
 ```
 
-Boom! 💥 Now you've got the complete m1f documentation sitting in your project. Claude can read this and instantly become an m1f expert.
+Boom! 💥 Now you've got the complete m1f documentation sitting in your project.
+Claude can read this and instantly become an m1f expert.
 
 ### Step 2: Start the Conversation
 
 Here's where it gets fun. Just tell Claude what you need:
 
 ```
-Hey Claude, I need help setting up m1f for my project. 
+Hey Claude, I need help setting up m1f for my project.
 Check out @.m1f/m1f-docs.txt to see what m1f can do.
 
 My project is a Python web app with:
 - Backend API in /api
-- Frontend React code in /frontend  
+- Frontend React code in /frontend
 - Tests scattered around
 - Some docs in /docs
 
 Can you create a .m1f.config.yml that bundles these intelligently?
 ```
 
-Claude will read the docs and create a perfect config for your project structure. No more guessing at parameters!
+Claude will read the docs and create a perfect config for your project
+structure. No more guessing at parameters!
 
 ## Real-World Workflows That Actually Work 🚀
 
@@ -543,7 +548,7 @@ Claude will read the docs and create a perfect config for your project structure
 
 ```
 Claude, I want to use Cursor/Windsurf to refactor my code.
-Based on @.m1f/m1f-docs.txt, create bundles that give 
+Based on @.m1f/m1f-docs.txt, create bundles that give
 the AI perfect context without overwhelming it.
 
 Focus on:
@@ -597,6 +602,7 @@ m1f-claude -i
 ### What Makes m1f-claude Special?
 
 When you use `m1f-claude`, it automatically:
+
 - Knows where to find m1f documentation
 - Understands your project structure
 - Suggests optimal parameters
@@ -609,7 +615,7 @@ When you use `m1f-claude`, it automatically:
 First time? Let Claude explore:
 
 ```
-Claude, analyze my project structure and suggest 
+Claude, analyze my project structure and suggest
 how to organize it with m1f bundles. Consider:
 - What files change together
 - Logical groupings for different use cases
@@ -654,12 +660,12 @@ bundles:
     sources:
       - path: "."
         include_extensions: [".py", ".js", ".md"]
-        excludes: 
+        excludes:
           - "**/test_*"
           - "**/node_modules/**"
           - "**/__pycache__/**"
-    separator_style: "Markdown"  # Best for AI readability
-    max_file_size: "100KB"       # Keep context focused
+    separator_style: "Markdown" # Best for AI readability
+    max_file_size: "100KB" # Keep context focused
 ```
 
 ### The "Documentation Bundle"
@@ -688,8 +694,8 @@ bundles:
     output: ".m1f/pr-review.txt"
     sources:
       - path: "."
-        include_files: ${CHANGED_FILES}  # From git diff
-    filename_mtime_hash: true  # Track changes
+        include_files: ${CHANGED_FILES} # From git diff
+    filename_mtime_hash: true # Track changes
 ```
 
 ## Troubleshooting Like a Pro 🔧
@@ -705,7 +711,7 @@ Claude, this is a Django project with:
 - Redis for caching
 - Celery for tasks
 
-Given this stack and @.m1f/m1f-docs.txt, 
+Given this stack and @.m1f/m1f-docs.txt,
 how should I bundle for deployment?
 ```
 
@@ -801,13 +807,15 @@ Now you're ready to turn Claude into your personal m1f expert. Remember:
 3. Let Claude suggest optimal configurations
 4. Iterate and refine based on results
 
-The best part? Claude remembers your conversations, so it gets better at understanding your project over time.
+The best part? Claude remembers your conversations, so it gets better at
+understanding your project over time.
 
 Happy bundling! 🚀
 
 ---
 
-*P.S. - If Claude suggests something that seems off, just ask "Are you sure about that? Check @.m1f/m1f-docs.txt again." Works every time! 😉*
+_P.S. - If Claude suggests something that seems off, just ask "Are you sure
+about that? Check @.m1f/m1f-docs.txt again." Works every time! 😉_
 
 ======= 02_m1f_presets.md ======
 # m1f Preset System Documentation
@@ -1098,7 +1106,7 @@ global_settings:
   include_symlinks: false
   no_default_excludes: false
   max_file_size: "10MB"
-  
+
   # Exclude/include file(s) - can be single file or list
   exclude_paths_file: ".gitignore"
   # Or multiple files:
@@ -1106,7 +1114,7 @@ global_settings:
   #   - ".gitignore"
   #   - ".m1fignore"
   #   - "custom-excludes.txt"
-  
+
   # Include file(s) for whitelist mode
   # include_paths_file: "important-files.txt"
   # Or multiple files:
@@ -1647,9 +1655,13 @@ m1f -s . -o combined.txt
 
 ### Method 2: Providing m1f Documentation to AI Tools (Claude Code, etc.)
 
-When you want to use m1f in a project with AI assistance (like Claude Code, Cursor, or other AI-powered development tools), the AI needs to understand how m1f works and what parameters are available. The `m1f-link` command solves this by creating a symlink to the complete m1f documentation.
+When you want to use m1f in a project with AI assistance (like Claude Code,
+Cursor, or other AI-powered development tools), the AI needs to understand how
+m1f works and what parameters are available. The `m1f-link` command solves this
+by creating a symlink to the complete m1f documentation.
 
 #### Why this is important:
+
 - AI tools need context to understand how to use m1f
 - The documentation contains all parameters, options, and examples
 - AI can help create custom configurations and commands
@@ -1675,19 +1687,20 @@ When you want to use m1f in a project with AI assistance (like Claude Code, Curs
    ```bash
    # For Claude Code, Cursor, or similar AI assistants:
    @.m1f/m1f-docs.txt
-   
+
    # Example prompts:
-   "Please read @.m1f/m1f-docs.txt and help me create a .m1f.config.yml 
+   "Please read @.m1f/m1f-docs.txt and help me create a .m1f.config.yml
    for bundling my Python project"
-   
-   "Based on @.m1f/m1f-docs.txt, what's the best way to exclude test 
+
+   "Based on @.m1f/m1f-docs.txt, what's the best way to exclude test
    files while keeping documentation?"
-   
-   "Using @.m1f/m1f-docs.txt as reference, help me set up auto-bundling 
+
+   "Using @.m1f/m1f-docs.txt as reference, help me set up auto-bundling
    for a WordPress theme"
    ```
 
 This single documentation file contains:
+
 - Complete m1f usage guide and all parameters
 - Examples and best practices
 - Preset system documentation
@@ -1695,6 +1708,7 @@ This single documentation file contains:
 - All tool documentation (m1f, s1f, html2md, webscraper)
 
 The AI can then:
+
 - Understand all m1f parameters and options
 - Help create custom `.m1f.config.yml` configurations
 - Suggest appropriate presets for your project type
@@ -1762,7 +1776,7 @@ The AI can then:
 m1f/
 ├── .m1f/                      # Pre-generated m1f bundles
 │   ├── m1f/                   # Tool bundles
-│   └── m1f-doc/              
+│   └── m1f-doc/
 │       └── 99_m1fdocs.txt    # Complete documentation
 ├── bin/                       # Executable commands
 │   ├── m1f
@@ -2092,11 +2106,16 @@ export CLAUDE_CODE_PROJECT_ROOT="/path/to/m1f"
 ======= 06_auto_bundle_guide.md ======
 # Auto-Bundle Guide
 
-The m1f auto-bundle feature allows you to automatically generate predefined bundles of files based on configuration. This is especially useful for maintaining consistent documentation bundles, creating project snapshots, and managing multiple projects on a server.
+The m1f auto-bundle feature allows you to automatically generate predefined
+bundles of files based on configuration. This is especially useful for
+maintaining consistent documentation bundles, creating project snapshots, and
+managing multiple projects on a server.
 
 ## Configuration File
 
-Auto-bundle looks for a `.m1f.config.yml` file in your project. The tool searches from the current directory upward to the root, allowing flexible project organization.
+Auto-bundle looks for a `.m1f.config.yml` file in your project. The tool
+searches from the current directory upward to the root, allowing flexible
+project organization.
 
 ### Basic Configuration Structure
 
@@ -2118,7 +2137,7 @@ bundles:
     sources:
       - path: "docs"
         include_extensions: [".md", ".txt"]
-    
+
   code:
     description: "Source code bundle"
     output: "m1f/src/code.txt"
@@ -2130,21 +2149,25 @@ bundles:
 ## Command Usage
 
 ### Create All Bundles
+
 ```bash
 m1f auto-bundle
 ```
 
 ### Create Specific Bundle
+
 ```bash
 m1f auto-bundle docs
 ```
 
 ### List Available Bundles
+
 ```bash
 m1f auto-bundle --list
 ```
 
 ### Create Bundles by Group
+
 ```bash
 m1f auto-bundle --group documentation
 ```
@@ -2178,6 +2201,7 @@ bundles:
 ```
 
 Then create all documentation bundles:
+
 ```bash
 m1f auto-bundle --group documentation
 ```
@@ -2186,7 +2210,8 @@ m1f auto-bundle --group documentation
 
 ### Managing Multiple Projects
 
-For server environments with multiple projects, you can create a management script:
+For server environments with multiple projects, you can create a management
+script:
 
 ```bash
 #!/bin/bash
@@ -2196,7 +2221,7 @@ For server environments with multiple projects, you can create a management scri
 for config in $(find /home/projects -name ".m1f.config.yml" -type f); do
     project_dir=$(dirname "$config")
     echo "Updating bundles in: $project_dir"
-    
+
     cd "$project_dir"
     m1f auto-bundle --quiet
 done
@@ -2218,6 +2243,7 @@ bundles:
 ```
 
 Then update only specific projects:
+
 ```bash
 cd /path/to/project-a
 m1f auto-bundle --group project-a
@@ -2298,7 +2324,8 @@ bundles:
 
 ## Automatic Bundle Generation with Git Hooks
 
-m1f provides a Git pre-commit hook that automatically runs auto-bundle before each commit. This ensures your bundles are always in sync with your source code.
+m1f provides a Git pre-commit hook that automatically runs auto-bundle before
+each commit. This ensures your bundles are always in sync with your source code.
 
 ### Installing the Git Hook
 
@@ -2308,35 +2335,43 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 ```
 
 The hook will:
+
 - Run `m1f auto-bundle` before each commit
 - Add generated bundles to the commit automatically
 - Block commits if bundle generation fails
 
-For detailed setup instructions, see the [Git Hooks Setup Guide](12_git_hooks_setup.md).
+For detailed setup instructions, see the
+[Git Hooks Setup Guide](12_git_hooks_setup.md).
 
 ## Best Practices
 
 1. **Organize with Groups**: Use groups to categorize bundles logically
 2. **Version Control**: Include `.m1f.config.yml` in version control
-3. **Include m1f/ Directory**: Keep generated bundles in version control for AI tool access
+3. **Include m1f/ Directory**: Keep generated bundles in version control for AI
+   tool access
 4. **Use Descriptive Names**: Make bundle names self-explanatory
-5. **Regular Updates**: Use Git hooks or schedule automatic updates for frequently changing projects
+5. **Regular Updates**: Use Git hooks or schedule automatic updates for
+   frequently changing projects
 6. **Review Bundle Changes**: Check generated bundle diffs before committing
 
 ## Troubleshooting
 
 ### Config Not Found
 
-If you see "No .m1f.config.yml configuration found!", the tool couldn't find a config file searching from the current directory up to the root. Create a `.m1f.config.yml` in your project root.
+If you see "No .m1f.config.yml configuration found!", the tool couldn't find a
+config file searching from the current directory up to the root. Create a
+`.m1f.config.yml` in your project root.
 
 ### Bundle Not Created
 
 Check the verbose output:
+
 ```bash
 m1f auto-bundle --verbose
 ```
 
 Common issues:
+
 - Incorrect file paths
 - Missing source directories
 - Invalid YAML syntax
@@ -2345,6 +2380,7 @@ Common issues:
 ### Group Not Found
 
 If using `--group` and no bundles are found:
+
 1. Check that bundles have the `group` field
 2. Verify the group name matches exactly
 3. Use `--list` to see available groups
@@ -2380,7 +2416,7 @@ bundles:
     sources:
       - path: "backend"
         include_extensions: [".py"]
-  
+
   javascript-code:
     description: "JavaScript frontend code"
     group: "frontend"
@@ -2388,7 +2424,7 @@ bundles:
     sources:
       - path: "frontend"
         include_extensions: [".js", ".jsx", ".ts", ".tsx"]
-  
+
   all-code:
     description: "All source code"
     output: "m1f/all-code.txt"
@@ -2469,6 +2505,7 @@ relative to the current working directory. When both `-s` and `-i` are used,
 relative paths in the input file are resolved relative to the source directory.
 
 Example input file:
+
 ```
 # Comments are supported
 src/main.py          # Relative to source directory
@@ -2477,6 +2514,7 @@ docs/**/*.md         # Glob patterns supported
 ```
 
 **Merging multiple file lists with Bash**:
+
 ```bash
 # Create temporary merged file
 cat files1.txt files2.txt files3.txt > merged_files.txt
@@ -2537,11 +2575,12 @@ Example: `--excludes "*/tests/*" "*.pyc" "node_modules/"`
 
 ### `--exclude-paths-file FILE ...`
 
-File(s) containing paths to exclude (supports gitignore format). Each pattern on a
-new line. Multiple files can be specified and will be merged. Non-existent files 
-are skipped gracefully.
+File(s) containing paths to exclude (supports gitignore format). Each pattern on
+a new line. Multiple files can be specified and will be merged. Non-existent
+files are skipped gracefully.
 
 Examples:
+
 ```bash
 # Single file
 m1f -s . -o output.txt --exclude-paths-file .gitignore
@@ -2552,19 +2591,22 @@ m1f -s . -o output.txt --exclude-paths-file .gitignore .m1fignore custom-exclude
 
 ### `--include-paths-file FILE ...`
 
-File(s) containing patterns to include (supports gitignore format). When specified,
-only files matching these patterns will be included (whitelist mode). Multiple 
-files can be specified and will be merged. Non-existent files are skipped gracefully.
+File(s) containing patterns to include (supports gitignore format). When
+specified, only files matching these patterns will be included (whitelist mode).
+Multiple files can be specified and will be merged. Non-existent files are
+skipped gracefully.
 
 **Processing Order**:
+
 1. Files from `-i` (input-file) are always included, bypassing all filters
 2. Files from `-s` (source directory) are filtered by include patterns first
 3. Then exclude patterns are applied
 
-**Path Resolution**: Same as `-i` - relative paths are resolved relative to the 
+**Path Resolution**: Same as `-i` - relative paths are resolved relative to the
 source directory (`-s`).
 
 Example include file:
+
 ```
 # Include all Python files
 *.py
@@ -2576,11 +2618,12 @@ api/**/*
 ```
 
 Examples:
+
 ```bash
 # Single file
 m1f -s . -o output.txt --include-paths-file important-files.txt
 
-# Multiple files  
+# Multiple files
 m1f -s . -o output.txt --include-paths-file core-files.txt api-files.txt
 
 # Combined with input file (input file takes precedence)
@@ -2718,8 +2761,8 @@ Disable all preset processing, even if preset files are specified.
 
 ## Environment Variables
 
-**Note**: The following environment variables are documented for future implementation
-but are not currently supported in v3.2.0:
+**Note**: The following environment variables are documented for future
+implementation but are not currently supported in v3.2.0:
 
 - `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
 - `M1F_SECURITY_CHECK` - Default security check mode (not implemented)
@@ -2729,7 +2772,8 @@ but are not currently supported in v3.2.0:
 
 ### `auto-bundle`
 
-Create multiple m1f bundles based on a YAML configuration file (`.m1f.config.yml`).
+Create multiple m1f bundles based on a YAML configuration file
+(`.m1f.config.yml`).
 
 ```bash
 # Create all bundles
@@ -2747,21 +2791,23 @@ m1f auto-bundle --quiet
 ```
 
 **Options:**
+
 - `BUNDLE_NAME`: Name of specific bundle to create (optional)
 - `--list`: List available bundles from configuration
 - `--verbose`, `-v`: Enable verbose output
 - `--quiet`, `-q`: Suppress all console output
 
-See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration instructions.
+See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration
+instructions.
 
 ## Notes
 
-1. **Module Invocation**: You can use either `python -m tools.m1f` or 
-   `python tools/m1f.py`, or set up the `m1f` alias as described in the 
+1. **Module Invocation**: You can use either `python -m tools.m1f` or
+   `python tools/m1f.py`, or set up the `m1f` alias as described in the
    development workflow.
 
-2. **Input Requirements**: At least one of `-s` (source directory) or `-i` 
-   (input file) must be specified. If neither is provided, m1f will show an 
+2. **Input Requirements**: At least one of `-s` (source directory) or `-i`
+   (input file) must be specified. If neither is provided, m1f will show an
    error message.
 
 3. **Gitignore**: m1f respects .gitignore files by default unless
@@ -3276,18 +3322,18 @@ globals:
     input_include_files:
       - "README.md"
       - "INTRO.txt"
-    
+
     # Output control (NEW in v3.2.0)
     add_timestamp: true
     filename_mtime_hash: false
     force: false
     minimal_output: false
     skip_output_file: false
-    
+
     # Archive settings (NEW in v3.2.0)
     create_archive: false
-    archive_type: "zip"  # zip or tar.gz
-    
+    archive_type: "zip" # zip or tar.gz
+
     # Runtime behavior (NEW in v3.2.0)
     verbose: false
     quiet: false
@@ -3306,7 +3352,6 @@ globals:
         actions: ["redact_secrets"]
 ```
 
-
 ## All Available Settings
 
 ### Group-Level Settings
@@ -3321,45 +3366,51 @@ globals:
 
 ### Global Settings (NEW in v3.2.0)
 
-These settings can be specified in the `global_settings` section and override CLI defaults:
+These settings can be specified in the `global_settings` section and override
+CLI defaults:
 
 #### Input/Output Settings
-| Setting               | Type        | Default | Description                                   |
-| --------------------- | ----------- | ------- | --------------------------------------------- |
-| `source_directory`    | string      | none    | Source directory path                         |
-| `input_file`          | string      | none    | Input file listing paths to process           |
-| `output_file`         | string      | none    | Output file path                              |
-| `input_include_files` | string/list | []      | Files to include at beginning (intro files)   |
+
+| Setting               | Type        | Default | Description                                 |
+| --------------------- | ----------- | ------- | ------------------------------------------- |
+| `source_directory`    | string      | none    | Source directory path                       |
+| `input_file`          | string      | none    | Input file listing paths to process         |
+| `output_file`         | string      | none    | Output file path                            |
+| `input_include_files` | string/list | []      | Files to include at beginning (intro files) |
 
 #### Output Control Settings
-| Setting              | Type    | Default | Description                               |
-| -------------------- | ------- | ------- | ----------------------------------------- |
-| `add_timestamp`      | boolean | false   | Add timestamp to output filename          |
-| `filename_mtime_hash`| boolean | false   | Add hash of file mtimes to filename       |
-| `force`              | boolean | false   | Force overwrite existing output file      |
-| `minimal_output`     | boolean | false   | Only create main output file              |
-| `skip_output_file`   | boolean | false   | Skip creating main output file            |
+
+| Setting               | Type    | Default | Description                          |
+| --------------------- | ------- | ------- | ------------------------------------ |
+| `add_timestamp`       | boolean | false   | Add timestamp to output filename     |
+| `filename_mtime_hash` | boolean | false   | Add hash of file mtimes to filename  |
+| `force`               | boolean | false   | Force overwrite existing output file |
+| `minimal_output`      | boolean | false   | Only create main output file         |
+| `skip_output_file`    | boolean | false   | Skip creating main output file       |
 
 #### Archive Settings
-| Setting          | Type    | Default | Description                           |
-| ---------------- | ------- | ------- | ------------------------------------- |
-| `create_archive` | boolean | false   | Create backup archive of files        |
-| `archive_type`   | string  | "zip"   | Archive format: "zip" or "tar.gz"     |
+
+| Setting          | Type    | Default | Description                       |
+| ---------------- | ------- | ------- | --------------------------------- |
+| `create_archive` | boolean | false   | Create backup archive of files    |
+| `archive_type`   | string  | "zip"   | Archive format: "zip" or "tar.gz" |
 
 #### Runtime Settings
-| Setting   | Type    | Default | Description                  |
-| --------- | ------- | ------- | ---------------------------- |
-| `verbose` | boolean | false   | Enable verbose output        |
-| `quiet`   | boolean | false   | Suppress all console output  |
+
+| Setting   | Type    | Default | Description                 |
+| --------- | ------- | ------- | --------------------------- |
+| `verbose` | boolean | false   | Enable verbose output       |
+| `quiet`   | boolean | false   | Suppress all console output |
 
 #### File Processing Settings (Existing)
-| Setting               | Type    | Default | Description                    |
-| --------------------- | ------- | ------- | ------------------------------ |
-| `encoding`            | string  | "utf-8" | Target encoding for all files  |
-| `separator_style`     | string  | none    | File separator style           |
-| `line_ending`         | string  | "lf"    | Line ending style (lf/crlf)    |
-| `security_check`      | string  | "warn"  | How to handle secrets          |
-| `max_file_size`       | string  | none    | Maximum file size to process   |
+
+| Setting           | Type   | Default | Description                   |
+| ----------------- | ------ | ------- | ----------------------------- |
+| `encoding`        | string | "utf-8" | Target encoding for all files |
+| `separator_style` | string | none    | File separator style          |
+| `line_ending`     | string | "lf"    | Line ending style (lf/crlf)   |
+| `security_check`  | string | "warn"  | How to handle secrets         |
+| `max_file_size`   | string | none    | Maximum file size to process  |
 
 ### Preset-Level Settings
 
@@ -3519,7 +3570,9 @@ globals:
 4. Global default settings
 5. m1f defaults (lowest priority)
 
-**Note**: CLI arguments ALWAYS override preset values. This allows presets to define defaults while still allowing users to override specific settings via command line.
+**Note**: CLI arguments ALWAYS override preset values. This allows presets to
+define defaults while still allowing users to override specific settings via
+command line.
 
 ## Advanced Features
 
@@ -3650,10 +3703,10 @@ data_science:
 5. **Version Control** - Keep presets in your repository
 6. **Performance First** - Apply expensive actions only where needed
 
-
 ## Complete Parameter Control via Presets (v3.2.0+)
 
-Starting with v3.2.0, ALL m1f parameters can be controlled via presets, eliminating the need for complex command lines:
+Starting with v3.2.0, ALL m1f parameters can be controlled via presets,
+eliminating the need for complex command lines:
 
 ### Example: Full Configuration Preset
 
@@ -3662,28 +3715,28 @@ Starting with v3.2.0, ALL m1f parameters can be controlled via presets, eliminat
 production:
   description: "Production build configuration"
   priority: 100
-  
+
   global_settings:
     # Define all inputs/outputs
     source_directory: "./src"
     output_file: "dist/bundle.txt"
     input_include_files: ["README.md", "LICENSE"]
-    
+
     # Enable production features
     add_timestamp: true
     create_archive: true
     archive_type: "tar.gz"
-    force: true  # Always overwrite
-    
+    force: true # Always overwrite
+
     # Production optimizations
     minimal_output: true
-    quiet: true  # No console output
-    
+    quiet: true # No console output
+
     # File processing
     separator_style: "MachineReadable"
     encoding: "utf-8"
     security_check: "abort"
-    
+
     # Only include necessary files
     include_extensions: [".js", ".jsx", ".ts", ".tsx", ".json"]
     exclude_patterns: ["*.test.*", "*.spec.*", "__tests__/**"]
@@ -3693,6 +3746,7 @@ production:
 ### Usage Comparison
 
 **Before v3.2.0** (long command line):
+
 ```bash
 python -m tools.m1f -s ./src -o dist/bundle.txt \
   --input-include-files README.md LICENSE \
@@ -3706,6 +3760,7 @@ python -m tools.m1f -s ./src -o dist/bundle.txt \
 ```
 
 **After v3.2.0** (simple command):
+
 ```bash
 python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
 ```
@@ -3738,7 +3793,7 @@ development:
 staging:
   priority: 20
   global_settings:
-    source_directory: "./src" 
+    source_directory: "./src"
     output_file: "stage-bundle.txt"
     create_archive: true
     security_check: "abort"
@@ -3755,11 +3810,12 @@ production:
 ```
 
 Use with `--preset-group`:
+
 ```bash
 # Development build
 python -m tools.m1f --preset environments.yml --preset-group development
 
-# Production build  
+# Production build
 python -m tools.m1f --preset environments.yml --preset-group production
 ```
 
@@ -3951,18 +4007,23 @@ This documentation is accurate as of m1f version 3.2.0.
 ======= 12_git_hooks_setup.md ======
 # m1f Git Hooks Setup Guide
 
-This guide explains how to set up Git hooks for automatic m1f bundle generation in your projects.
+This guide explains how to set up Git hooks for automatic m1f bundle generation
+in your projects.
 
 ## Overview
 
-The m1f Git pre-commit hook automatically runs `m1f auto-bundle` before each commit, ensuring that your bundled files are always up-to-date with your source code.
+The m1f Git pre-commit hook automatically runs `m1f auto-bundle` before each
+commit, ensuring that your bundled files are always up-to-date with your source
+code.
 
 ## Features
 
 - **Automatic bundle generation** - Bundles are regenerated on every commit
 - **Fail-safe commits** - Commits are blocked if bundle generation fails
-- **Auto-staging** - Generated bundles in the `m1f/` directory are automatically added to commits
-- **Conditional execution** - Only runs if `.m1f.config.yml` exists in your project
+- **Auto-staging** - Generated bundles in the `m1f/` directory are automatically
+  added to commits
+- **Conditional execution** - Only runs if `.m1f.config.yml` exists in your
+  project
 
 ## Installation
 
@@ -3980,6 +4041,7 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 ```
 
 The script will:
+
 - Check if you're in a Git repository
 - Install the pre-commit hook
 - Backup any existing pre-commit hook
@@ -4000,7 +4062,7 @@ if [ -f ".m1f.config.yml" ]; then
         echo "Please install m1f: pip install m1f"
         exit 1
     fi
-    
+
     echo "Running m1f auto-bundle..."
     if m1f auto-bundle; then
         echo "Auto-bundle completed successfully."
@@ -4053,6 +4115,7 @@ git commit --no-verify -m "wip: quick save"
 ### Hook not running
 
 1. Check if the hook is executable:
+
    ```bash
    ls -la .git/hooks/pre-commit
    ```
@@ -4065,6 +4128,7 @@ git commit --no-verify -m "wip: quick save"
 ### Bundle generation fails
 
 1. Run auto-bundle manually to see the error:
+
    ```bash
    m1f auto-bundle
    ```
@@ -4086,6 +4150,7 @@ pip install -e /path/to/m1f
 ### Disable the hook temporarily
 
 Use the `--no-verify` flag:
+
 ```bash
 git commit --no-verify -m "your message"
 ```
@@ -4093,28 +4158,35 @@ git commit --no-verify -m "your message"
 ### Remove the hook
 
 To uninstall the pre-commit hook:
+
 ```bash
 rm .git/hooks/pre-commit
 ```
 
 ## Best Practices
 
-1. **Include m1f/ in version control** - This ensures bundled files are available to all team members and AI tools
+1. **Include m1f/ in version control** - This ensures bundled files are
+   available to all team members and AI tools
 
-2. **Review bundle changes** - Check the generated bundles in your diffs before committing
+2. **Review bundle changes** - Check the generated bundles in your diffs before
+   committing
 
-3. **Keep bundles focused** - Configure smaller, specific bundles rather than one large bundle
+3. **Keep bundles focused** - Configure smaller, specific bundles rather than
+   one large bundle
 
-4. **Use bundle groups** - Organize related bundles into groups for better management
+4. **Use bundle groups** - Organize related bundles into groups for better
+   management
 
 ## Example Workflow
 
 1. Set up your project with m1f:
+
    ```bash
    m1f-link  # Create documentation symlink
    ```
 
 2. Create `.m1f.config.yml`:
+
    ```yaml
    bundles:
      project-docs:
@@ -4126,6 +4198,7 @@ rm .git/hooks/pre-commit
    ```
 
 3. Install the Git hook:
+
    ```bash
    bash /path/to/m1f/scripts/install-git-hooks.sh
    ```
@@ -4140,7 +4213,8 @@ rm .git/hooks/pre-commit
 
 ## Integration with CI/CD
 
-The pre-commit hook ensures local development stays in sync. For CI/CD pipelines, you can also run auto-bundle as a build step:
+The pre-commit hook ensures local development stays in sync. For CI/CD
+pipelines, you can also run auto-bundle as a build step:
 
 ```yaml
 # GitHub Actions example
@@ -4155,7 +4229,7 @@ The pre-commit hook ensures local development stays in sync. For CI/CD pipelines
 # GitLab CI example
 before_script:
   - pip install m1f
-  
+
 bundle:
   script:
     - m1f auto-bundle
@@ -4163,6 +4237,7 @@ bundle:
 
 ## See Also
 
-- [Auto-Bundle Guide](06_auto_bundle_guide.md) - Complete auto-bundle documentation
+- [Auto-Bundle Guide](06_auto_bundle_guide.md) - Complete auto-bundle
+  documentation
 - [m1f Configuration](02_m1f_presets.md) - Preset system documentation
 - [Quick Reference](09_quick_reference.md) - Common m1f commands

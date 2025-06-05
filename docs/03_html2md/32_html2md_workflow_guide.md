@@ -1,10 +1,12 @@
 # HTML2MD Workflow Guide
 
-This guide explains the recommended workflow for converting websites to Markdown using html2md with custom extractors.
+This guide explains the recommended workflow for converting websites to Markdown
+using html2md with custom extractors.
 
 ## Overview
 
 The html2md tool now supports a flexible workflow that separates concerns:
+
 1. HTML acquisition (scraping or external)
 2. Content analysis and extractor development
 3. Conversion with site-specific extraction
@@ -35,6 +37,7 @@ mkdir -p .scrapes/my-docs/{html,md,extractors}
 You have several options:
 
 #### Option A: Use webscraper tool
+
 ```bash
 python -m tools.m1f-scrape https://example.com \
   -o .scrapes/my-docs/html \
@@ -43,11 +46,13 @@ python -m tools.m1f-scrape https://example.com \
 ```
 
 #### Option B: Manual download
+
 - Save HTML files directly to `.scrapes/my-docs/html/`
 - Use browser "Save As" or wget/curl
 - Any method that gets HTML files
 
 #### Option C: External scraping
+
 - Use any scraping tool you prefer
 - Just ensure HTML files end up in the html/ directory
 
@@ -84,7 +89,7 @@ def extract(soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> Bea
     for selector in ['nav', '.sidebar', '#header', '#footer']:
         for elem in soup.select(selector):
             elem.decompose()
-    
+
     # Find main content area
     main = soup.find('main') or soup.find('article') or soup.find('.content')
     if main:
@@ -92,20 +97,20 @@ def extract(soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> Bea
         new_soup = BeautifulSoup('<html><body></body></html>', 'html.parser')
         new_soup.body.append(main)
         return new_soup
-    
+
     return soup
 
 def postprocess(markdown: str, config: Optional[Dict[str, Any]] = None) -> str:
     """Clean up converted markdown."""
     lines = markdown.split('\n')
     cleaned = []
-    
+
     for line in lines:
         # Remove "Copy" buttons before code blocks
         if line.strip() == 'Copy':
             continue
         cleaned.append(line)
-    
+
     return '\n'.join(cleaned)
 ```
 
@@ -129,6 +134,7 @@ Write the extractor to .scrapes/my-docs/extractors/custom_extractor.py" \
 ### Step 5: Convert HTML to Markdown
 
 #### With Custom Extractor
+
 ```bash
 cd .scrapes/my-docs
 python ../../tools/html2md_tool.py convert html -o md \
@@ -136,12 +142,14 @@ python ../../tools/html2md_tool.py convert html -o md \
 ```
 
 #### With Default Extractor
+
 ```bash
 cd .scrapes/my-docs
 python ../../tools/html2md_tool.py convert html -o md
 ```
 
 #### With CSS Selectors Only
+
 ```bash
 cd .scrapes/my-docs
 python ../../tools/html2md_tool.py convert html -o md \
@@ -184,33 +192,33 @@ from typing import Optional, Dict, Any
 def extract(soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> BeautifulSoup:
     # Remove docs-specific elements
     for selector in [
-        '.docs-nav', '.docs-sidebar', '.docs-header', 
+        '.docs-nav', '.docs-sidebar', '.docs-header',
         '.docs-footer', '.edit-page', '.feedback',
         '[class*="navigation"]', '[id*="toc"]'
     ]:
         for elem in soup.select(selector):
             elem.decompose()
-    
+
     # Extract article content
     article = soup.find('article') or soup.find('.docs-content')
     if article:
         new_soup = BeautifulSoup('<html><body></body></html>', 'html.parser')
         new_soup.body.append(article)
         return new_soup
-    
+
     return soup
 
 def postprocess(markdown: str, config: Optional[Dict[str, Any]] = None) -> str:
     # Clean up docs-specific patterns
     import re
-    
+
     # Remove "Copy" buttons
     markdown = re.sub(r'^Copy\s*\n', '', markdown, flags=re.MULTILINE)
-    
+
     # Remove "On this page" sections
-    markdown = re.sub(r'^On this page.*?(?=^#|\Z)', '', markdown, 
+    markdown = re.sub(r'^On this page.*?(?=^#|\Z)', '', markdown,
                       flags=re.MULTILINE | re.DOTALL)
-    
+
     return markdown.strip()
 EOF
 
@@ -226,10 +234,12 @@ python ../../tools/m1f.py -s md -o docs-bundle.txt
 ## Best Practices
 
 ### 1. Start Small
+
 - Test with a few HTML files first
 - Refine the extractor before processing everything
 
 ### 2. Iterative Development
+
 - Create basic extractor
 - Convert a sample
 - Identify issues
@@ -237,17 +247,20 @@ python ../../tools/m1f.py -s md -o docs-bundle.txt
 - Repeat until satisfied
 
 ### 3. Extractor Tips
+
 - Use specific CSS selectors for the site
 - Remove navigation early in extraction
 - Handle site-specific patterns in postprocess
 - Test with different page types
 
 ### 4. Organization
+
 - Keep each project in its own directory
 - Document site-specific quirks
 - Save working extractors for reuse
 
 ### 5. Performance
+
 - Use `--parallel` for large conversions
 - Process in batches if needed
 - Monitor memory usage
@@ -257,24 +270,29 @@ python ../../tools/m1f.py -s md -o docs-bundle.txt
 ### Common Issues
 
 **Issue**: Navigation elements still appear in Markdown
+
 - **Solution**: Add more specific selectors to the extractor
 - Check for dynamic class names or IDs
 
 **Issue**: Missing content
+
 - **Solution**: Verify content selector is correct
 - Check if content is loaded dynamically (use playwright scraper)
 
 **Issue**: Broken formatting
+
 - **Solution**: Adjust extraction logic
 - Use postprocess to fix patterns
 
 **Issue**: Encoding errors
+
 - **Solution**: Ensure HTML files are UTF-8
 - Use `--target-encoding utf-8` if needed
 
 ### Debug Tips
 
 1. **Test extractor standalone**:
+
 ```python
 from bs4 import BeautifulSoup
 from pathlib import Path
@@ -292,6 +310,7 @@ print(result.prettify())
 ```
 
 2. **Use verbose mode**:
+
 ```bash
 python -m tools.html2md_tool convert html -o md \
   --extractor extractors/custom_extractor.py \
@@ -299,6 +318,7 @@ python -m tools.html2md_tool convert html -o md \
 ```
 
 3. **Process single file**:
+
 ```bash
 python -m tools.html2md_tool convert html/single-file.html \
   -o test.md \
@@ -318,17 +338,17 @@ def extract(soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> Bea
     for selector in remove_selectors:
         for elem in soup.select(selector):
             elem.decompose()
-    
+
     # Stage 2: Find content container
     container = soup.select_one('.main-container') or soup.body
-    
+
     # Stage 3: Clean within container
     for elem in container.select('.ads, .social-share, .related'):
         elem.decompose()
-    
+
     # Stage 4: Extract final content
     content = container.select_one('article') or container
-    
+
     new_soup = BeautifulSoup('<html><body></body></html>', 'html.parser')
     new_soup.body.append(content)
     return new_soup
@@ -359,26 +379,28 @@ Keep important metadata:
 def extract(soup: BeautifulSoup, config: Optional[Dict[str, Any]] = None) -> BeautifulSoup:
     # Preserve title
     title = soup.find('title')
-    
+
     # Extract content
     content = soup.find('main')
-    
+
     # Create new soup with metadata
     new_soup = BeautifulSoup('<html><head></head><body></body></html>', 'html.parser')
     if title:
         new_soup.head.append(title)
     if content:
         new_soup.body.append(content)
-    
+
     return new_soup
 ```
 
 ## Conclusion
 
 The html2md workflow provides maximum flexibility:
+
 - Separate HTML acquisition from conversion
 - Site-specific extractors for optimal results
 - Iterative refinement process
 - Integration with other tools (webscraper, m1f)
 
-This approach ensures you can handle any website structure and produce clean, readable Markdown output.
+This approach ensures you can handle any website structure and produce clean,
+readable Markdown output.

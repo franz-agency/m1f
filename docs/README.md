@@ -29,8 +29,8 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 
 - [Auto Bundle Guide](01_m1f/06_auto_bundle_guide.md) - Automatic project
   bundling for AI/LLM consumption
-- [Claude + m1f Workflows](01_m1f/08_claude_workflows.md) - Turn Claude into your
-  personal m1f expert with smart prompt enhancement
+- [Claude + m1f Workflows](01_m1f/08_claude_workflows.md) - Turn Claude into
+  your personal m1f expert with smart prompt enhancement
 - [Claude Code Integration](01_m1f/05_claude_code_integration.md) - Optional
   AI-powered tool automation
 - [Preset System Guide](01_m1f/02_m1f_presets.md) - File-specific processing

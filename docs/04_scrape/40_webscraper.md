@@ -61,20 +61,20 @@ python -m tools.scrape_tool <url> -o <output> [options]
 
 ### Optional Arguments
 
-| Option                  | Description                                                            | Default       |
-| ----------------------- | ---------------------------------------------------------------------- | ------------- |
-| `--scraper`             | Scraper backend to use (choices: httrack, beautifulsoup, bs4,         | beautifulsoup |
-|                         | selectolax, httpx, scrapy, playwright)                                 |               |
-| `--scraper-config`      | Path to scraper-specific config file (YAML/JSON)                      | None          |
-| `--max-depth`           | Maximum crawl depth                                                    | 5             |
-| `--max-pages`           | Maximum pages to crawl                                                 | 1000          |
-| `--request-delay`       | Delay between requests in seconds (for Cloudflare protection)         | 15.0          |
-| `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)             | 2             |
-| `--user-agent`          | Custom user agent string                                               | Mozilla/5.0   |
-| `--list-files`          | List all downloaded files after completion                             | False         |
-| `-v, --verbose`         | Enable verbose output                                                  | False         |
-| `-q, --quiet`           | Suppress all output except errors                                      | False         |
-| `--version`             | Show version information and exit                                      | -             |
+| Option                  | Description                                                   | Default       |
+| ----------------------- | ------------------------------------------------------------- | ------------- |
+| `--scraper`             | Scraper backend to use (choices: httrack, beautifulsoup, bs4, | beautifulsoup |
+|                         | selectolax, httpx, scrapy, playwright)                        |               |
+| `--scraper-config`      | Path to scraper-specific config file (YAML/JSON)              | None          |
+| `--max-depth`           | Maximum crawl depth                                           | 5             |
+| `--max-pages`           | Maximum pages to crawl                                        | 1000          |
+| `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
+| `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
+| `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
+| `--list-files`          | List all downloaded files after completion                    | False         |
+| `-v, --verbose`         | Enable verbose output                                         | False         |
+| `-q, --quiet`           | Suppress all output except errors                             | False         |
+| `--version`             | Show version information and exit                             | -             |
 
 ## Scraper Backends
 
@@ -307,6 +307,7 @@ python -m tools.scrape_tool https://protected-site.com -o ./output \
 If conservative settings don't work:
 
 1. **Try Playwright backend**: Uses real browser automation
+
    ```bash
    python -m tools.scrape_tool https://site.com -o ./output --scraper playwright
    ```

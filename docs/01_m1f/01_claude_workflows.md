@@ -1,6 +1,9 @@
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
 
-Ever wished you had an AI buddy who actually understands your project structure? That's what happens when you combine Claude with m1f. This guide shows you how to turn Claude into your personal project assistant who knows exactly how to bundle, organize, and process your code.
+Ever wished you had an AI buddy who actually understands your project structure?
+That's what happens when you combine Claude with m1f. This guide shows you how
+to turn Claude into your personal project assistant who knows exactly how to
+bundle, organize, and process your code.
 
 ## The Magic Setup ✨
 
@@ -13,26 +16,28 @@ cd /your/awesome/project
 m1f-link  # Creates .m1f/m1f-docs.txt
 ```
 
-Boom! 💥 Now you've got the complete m1f documentation sitting in your project. Claude can read this and instantly become an m1f expert.
+Boom! 💥 Now you've got the complete m1f documentation sitting in your project.
+Claude can read this and instantly become an m1f expert.
 
 ### Step 2: Start the Conversation
 
 Here's where it gets fun. Just tell Claude what you need:
 
 ```
-Hey Claude, I need help setting up m1f for my project. 
+Hey Claude, I need help setting up m1f for my project.
 Check out @.m1f/m1f-docs.txt to see what m1f can do.
 
 My project is a Python web app with:
 - Backend API in /api
-- Frontend React code in /frontend  
+- Frontend React code in /frontend
 - Tests scattered around
 - Some docs in /docs
 
 Can you create a .m1f.config.yml that bundles these intelligently?
 ```
 
-Claude will read the docs and create a perfect config for your project structure. No more guessing at parameters!
+Claude will read the docs and create a perfect config for your project
+structure. No more guessing at parameters!
 
 ## Real-World Workflows That Actually Work 🚀
 
@@ -40,7 +45,7 @@ Claude will read the docs and create a perfect config for your project structure
 
 ```
 Claude, I want to use Cursor/Windsurf to refactor my code.
-Based on @.m1f/m1f-docs.txt, create bundles that give 
+Based on @.m1f/m1f-docs.txt, create bundles that give
 the AI perfect context without overwhelming it.
 
 Focus on:
@@ -94,6 +99,7 @@ m1f-claude -i
 ### What Makes m1f-claude Special?
 
 When you use `m1f-claude`, it automatically:
+
 - Knows where to find m1f documentation
 - Understands your project structure
 - Suggests optimal parameters
@@ -106,7 +112,7 @@ When you use `m1f-claude`, it automatically:
 First time? Let Claude explore:
 
 ```
-Claude, analyze my project structure and suggest 
+Claude, analyze my project structure and suggest
 how to organize it with m1f bundles. Consider:
 - What files change together
 - Logical groupings for different use cases
@@ -151,12 +157,12 @@ bundles:
     sources:
       - path: "."
         include_extensions: [".py", ".js", ".md"]
-        excludes: 
+        excludes:
           - "**/test_*"
           - "**/node_modules/**"
           - "**/__pycache__/**"
-    separator_style: "Markdown"  # Best for AI readability
-    max_file_size: "100KB"       # Keep context focused
+    separator_style: "Markdown" # Best for AI readability
+    max_file_size: "100KB" # Keep context focused
 ```
 
 ### The "Documentation Bundle"
@@ -185,8 +191,8 @@ bundles:
     output: ".m1f/pr-review.txt"
     sources:
       - path: "."
-        include_files: ${CHANGED_FILES}  # From git diff
-    filename_mtime_hash: true  # Track changes
+        include_files: ${CHANGED_FILES} # From git diff
+    filename_mtime_hash: true # Track changes
 ```
 
 ## Troubleshooting Like a Pro 🔧
@@ -202,7 +208,7 @@ Claude, this is a Django project with:
 - Redis for caching
 - Celery for tasks
 
-Given this stack and @.m1f/m1f-docs.txt, 
+Given this stack and @.m1f/m1f-docs.txt,
 how should I bundle for deployment?
 ```
 
@@ -298,10 +304,12 @@ Now you're ready to turn Claude into your personal m1f expert. Remember:
 3. Let Claude suggest optimal configurations
 4. Iterate and refine based on results
 
-The best part? Claude remembers your conversations, so it gets better at understanding your project over time.
+The best part? Claude remembers your conversations, so it gets better at
+understanding your project over time.
 
 Happy bundling! 🚀
 
 ---
 
-*P.S. - If Claude suggests something that seems off, just ask "Are you sure about that? Check @.m1f/m1f-docs.txt again." Works every time! 😉*
+_P.S. - If Claude suggests something that seems off, just ask "Are you sure
+about that? Check @.m1f/m1f-docs.txt again." Works every time! 😉_

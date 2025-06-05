@@ -286,7 +286,7 @@ global_settings:
   include_symlinks: false
   no_default_excludes: false
   max_file_size: "10MB"
-  
+
   # Exclude/include file(s) - can be single file or list
   exclude_paths_file: ".gitignore"
   # Or multiple files:
@@ -294,7 +294,7 @@ global_settings:
   #   - ".gitignore"
   #   - ".m1fignore"
   #   - "custom-excludes.txt"
-  
+
   # Include file(s) for whitelist mode
   # include_paths_file: "important-files.txt"
   # Or multiple files:

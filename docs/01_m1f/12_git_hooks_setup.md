@@ -1,17 +1,22 @@
 # m1f Git Hooks Setup Guide
 
-This guide explains how to set up Git hooks for automatic m1f bundle generation in your projects.
+This guide explains how to set up Git hooks for automatic m1f bundle generation
+in your projects.
 
 ## Overview
 
-The m1f Git pre-commit hook automatically runs `m1f auto-bundle` before each commit, ensuring that your bundled files are always up-to-date with your source code.
+The m1f Git pre-commit hook automatically runs `m1f auto-bundle` before each
+commit, ensuring that your bundled files are always up-to-date with your source
+code.
 
 ## Features
 
 - **Automatic bundle generation** - Bundles are regenerated on every commit
 - **Fail-safe commits** - Commits are blocked if bundle generation fails
-- **Auto-staging** - Generated bundles in the `m1f/` directory are automatically added to commits
-- **Conditional execution** - Only runs if `.m1f.config.yml` exists in your project
+- **Auto-staging** - Generated bundles in the `m1f/` directory are automatically
+  added to commits
+- **Conditional execution** - Only runs if `.m1f.config.yml` exists in your
+  project
 
 ## Installation
 
@@ -29,6 +34,7 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 ```
 
 The script will:
+
 - Check if you're in a Git repository
 - Install the pre-commit hook
 - Backup any existing pre-commit hook
@@ -49,7 +55,7 @@ if [ -f ".m1f.config.yml" ]; then
         echo "Please install m1f: pip install m1f"
         exit 1
     fi
-    
+
     echo "Running m1f auto-bundle..."
     if m1f auto-bundle; then
         echo "Auto-bundle completed successfully."
@@ -102,6 +108,7 @@ git commit --no-verify -m "wip: quick save"
 ### Hook not running
 
 1. Check if the hook is executable:
+
    ```bash
    ls -la .git/hooks/pre-commit
    ```
@@ -114,6 +121,7 @@ git commit --no-verify -m "wip: quick save"
 ### Bundle generation fails
 
 1. Run auto-bundle manually to see the error:
+
    ```bash
    m1f auto-bundle
    ```
@@ -135,6 +143,7 @@ pip install -e /path/to/m1f
 ### Disable the hook temporarily
 
 Use the `--no-verify` flag:
+
 ```bash
 git commit --no-verify -m "your message"
 ```
@@ -142,28 +151,35 @@ git commit --no-verify -m "your message"
 ### Remove the hook
 
 To uninstall the pre-commit hook:
+
 ```bash
 rm .git/hooks/pre-commit
 ```
 
 ## Best Practices
 
-1. **Include m1f/ in version control** - This ensures bundled files are available to all team members and AI tools
+1. **Include m1f/ in version control** - This ensures bundled files are
+   available to all team members and AI tools
 
-2. **Review bundle changes** - Check the generated bundles in your diffs before committing
+2. **Review bundle changes** - Check the generated bundles in your diffs before
+   committing
 
-3. **Keep bundles focused** - Configure smaller, specific bundles rather than one large bundle
+3. **Keep bundles focused** - Configure smaller, specific bundles rather than
+   one large bundle
 
-4. **Use bundle groups** - Organize related bundles into groups for better management
+4. **Use bundle groups** - Organize related bundles into groups for better
+   management
 
 ## Example Workflow
 
 1. Set up your project with m1f:
+
    ```bash
    m1f-link  # Create documentation symlink
    ```
 
 2. Create `.m1f.config.yml`:
+
    ```yaml
    bundles:
      project-docs:
@@ -175,6 +191,7 @@ rm .git/hooks/pre-commit
    ```
 
 3. Install the Git hook:
+
    ```bash
    bash /path/to/m1f/scripts/install-git-hooks.sh
    ```
@@ -189,7 +206,8 @@ rm .git/hooks/pre-commit
 
 ## Integration with CI/CD
 
-The pre-commit hook ensures local development stays in sync. For CI/CD pipelines, you can also run auto-bundle as a build step:
+The pre-commit hook ensures local development stays in sync. For CI/CD
+pipelines, you can also run auto-bundle as a build step:
 
 ```yaml
 # GitHub Actions example
@@ -204,7 +222,7 @@ The pre-commit hook ensures local development stays in sync. For CI/CD pipelines
 # GitLab CI example
 before_script:
   - pip install m1f
-  
+
 bundle:
   script:
     - m1f auto-bundle
@@ -212,6 +230,7 @@ bundle:
 
 ## See Also
 
-- [Auto-Bundle Guide](06_auto_bundle_guide.md) - Complete auto-bundle documentation
+- [Auto-Bundle Guide](06_auto_bundle_guide.md) - Complete auto-bundle
+  documentation
 - [m1f Configuration](02_m1f_presets.md) - Preset system documentation
 - [Quick Reference](09_quick_reference.md) - Common m1f commands

@@ -28,9 +28,13 @@ m1f -s . -o combined.txt
 
 ### Method 2: Providing m1f Documentation to AI Tools (Claude Code, etc.)
 
-When you want to use m1f in a project with AI assistance (like Claude Code, Cursor, or other AI-powered development tools), the AI needs to understand how m1f works and what parameters are available. The `m1f-link` command solves this by creating a symlink to the complete m1f documentation.
+When you want to use m1f in a project with AI assistance (like Claude Code,
+Cursor, or other AI-powered development tools), the AI needs to understand how
+m1f works and what parameters are available. The `m1f-link` command solves this
+by creating a symlink to the complete m1f documentation.
 
 #### Why this is important:
+
 - AI tools need context to understand how to use m1f
 - The documentation contains all parameters, options, and examples
 - AI can help create custom configurations and commands
@@ -56,19 +60,20 @@ When you want to use m1f in a project with AI assistance (like Claude Code, Curs
    ```bash
    # For Claude Code, Cursor, or similar AI assistants:
    @.m1f/m1f-docs.txt
-   
+
    # Example prompts:
-   "Please read @.m1f/m1f-docs.txt and help me create a .m1f.config.yml 
+   "Please read @.m1f/m1f-docs.txt and help me create a .m1f.config.yml
    for bundling my Python project"
-   
-   "Based on @.m1f/m1f-docs.txt, what's the best way to exclude test 
+
+   "Based on @.m1f/m1f-docs.txt, what's the best way to exclude test
    files while keeping documentation?"
-   
-   "Using @.m1f/m1f-docs.txt as reference, help me set up auto-bundling 
+
+   "Using @.m1f/m1f-docs.txt as reference, help me set up auto-bundling
    for a WordPress theme"
    ```
 
 This single documentation file contains:
+
 - Complete m1f usage guide and all parameters
 - Examples and best practices
 - Preset system documentation
@@ -76,6 +81,7 @@ This single documentation file contains:
 - All tool documentation (m1f, s1f, html2md, webscraper)
 
 The AI can then:
+
 - Understand all m1f parameters and options
 - Help create custom `.m1f.config.yml` configurations
 - Suggest appropriate presets for your project type
@@ -143,7 +149,7 @@ The AI can then:
 m1f/
 ├── .m1f/                      # Pre-generated m1f bundles
 │   ├── m1f/                   # Tool bundles
-│   └── m1f-doc/              
+│   └── m1f-doc/
 │       └── 99_m1fdocs.txt    # Complete documentation
 ├── bin/                       # Executable commands
 │   ├── m1f

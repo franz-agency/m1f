@@ -1,10 +1,15 @@
 # Auto-Bundle Guide
 
-The m1f auto-bundle feature allows you to automatically generate predefined bundles of files based on configuration. This is especially useful for maintaining consistent documentation bundles, creating project snapshots, and managing multiple projects on a server.
+The m1f auto-bundle feature allows you to automatically generate predefined
+bundles of files based on configuration. This is especially useful for
+maintaining consistent documentation bundles, creating project snapshots, and
+managing multiple projects on a server.
 
 ## Configuration File
 
-Auto-bundle looks for a `.m1f.config.yml` file in your project. The tool searches from the current directory upward to the root, allowing flexible project organization.
+Auto-bundle looks for a `.m1f.config.yml` file in your project. The tool
+searches from the current directory upward to the root, allowing flexible
+project organization.
 
 ### Basic Configuration Structure
 
@@ -26,7 +31,7 @@ bundles:
     sources:
       - path: "docs"
         include_extensions: [".md", ".txt"]
-    
+
   code:
     description: "Source code bundle"
     output: "m1f/src/code.txt"
@@ -38,21 +43,25 @@ bundles:
 ## Command Usage
 
 ### Create All Bundles
+
 ```bash
 m1f auto-bundle
 ```
 
 ### Create Specific Bundle
+
 ```bash
 m1f auto-bundle docs
 ```
 
 ### List Available Bundles
+
 ```bash
 m1f auto-bundle --list
 ```
 
 ### Create Bundles by Group
+
 ```bash
 m1f auto-bundle --group documentation
 ```
@@ -86,6 +95,7 @@ bundles:
 ```
 
 Then create all documentation bundles:
+
 ```bash
 m1f auto-bundle --group documentation
 ```
@@ -94,7 +104,8 @@ m1f auto-bundle --group documentation
 
 ### Managing Multiple Projects
 
-For server environments with multiple projects, you can create a management script:
+For server environments with multiple projects, you can create a management
+script:
 
 ```bash
 #!/bin/bash
@@ -104,7 +115,7 @@ For server environments with multiple projects, you can create a management scri
 for config in $(find /home/projects -name ".m1f.config.yml" -type f); do
     project_dir=$(dirname "$config")
     echo "Updating bundles in: $project_dir"
-    
+
     cd "$project_dir"
     m1f auto-bundle --quiet
 done
@@ -126,6 +137,7 @@ bundles:
 ```
 
 Then update only specific projects:
+
 ```bash
 cd /path/to/project-a
 m1f auto-bundle --group project-a
@@ -206,7 +218,8 @@ bundles:
 
 ## Automatic Bundle Generation with Git Hooks
 
-m1f provides a Git pre-commit hook that automatically runs auto-bundle before each commit. This ensures your bundles are always in sync with your source code.
+m1f provides a Git pre-commit hook that automatically runs auto-bundle before
+each commit. This ensures your bundles are always in sync with your source code.
 
 ### Installing the Git Hook
 
@@ -216,35 +229,43 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 ```
 
 The hook will:
+
 - Run `m1f auto-bundle` before each commit
 - Add generated bundles to the commit automatically
 - Block commits if bundle generation fails
 
-For detailed setup instructions, see the [Git Hooks Setup Guide](12_git_hooks_setup.md).
+For detailed setup instructions, see the
+[Git Hooks Setup Guide](12_git_hooks_setup.md).
 
 ## Best Practices
 
 1. **Organize with Groups**: Use groups to categorize bundles logically
 2. **Version Control**: Include `.m1f.config.yml` in version control
-3. **Include m1f/ Directory**: Keep generated bundles in version control for AI tool access
+3. **Include m1f/ Directory**: Keep generated bundles in version control for AI
+   tool access
 4. **Use Descriptive Names**: Make bundle names self-explanatory
-5. **Regular Updates**: Use Git hooks or schedule automatic updates for frequently changing projects
+5. **Regular Updates**: Use Git hooks or schedule automatic updates for
+   frequently changing projects
 6. **Review Bundle Changes**: Check generated bundle diffs before committing
 
 ## Troubleshooting
 
 ### Config Not Found
 
-If you see "No .m1f.config.yml configuration found!", the tool couldn't find a config file searching from the current directory up to the root. Create a `.m1f.config.yml` in your project root.
+If you see "No .m1f.config.yml configuration found!", the tool couldn't find a
+config file searching from the current directory up to the root. Create a
+`.m1f.config.yml` in your project root.
 
 ### Bundle Not Created
 
 Check the verbose output:
+
 ```bash
 m1f auto-bundle --verbose
 ```
 
 Common issues:
+
 - Incorrect file paths
 - Missing source directories
 - Invalid YAML syntax
@@ -253,6 +274,7 @@ Common issues:
 ### Group Not Found
 
 If using `--group` and no bundles are found:
+
 1. Check that bundles have the `group` field
 2. Verify the group name matches exactly
 3. Use `--list` to see available groups
@@ -288,7 +310,7 @@ bundles:
     sources:
       - path: "backend"
         include_extensions: [".py"]
-  
+
   javascript-code:
     description: "JavaScript frontend code"
     group: "frontend"
@@ -296,7 +318,7 @@ bundles:
     sources:
       - path: "frontend"
         include_extensions: [".js", ".jsx", ".ts", ".tsx"]
-  
+
   all-code:
     description: "All source code"
     output: "m1f/all-code.txt"

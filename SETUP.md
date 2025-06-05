@@ -3,6 +3,7 @@
 ## Prerequisites
 
 You only need:
+
 - **Python 3.10+** (check with `python --version` or `python3 --version`)
 - **Git** (to clone the repository)
 
@@ -18,7 +19,8 @@ cd m1f
 source ./scripts/install.sh
 ```
 
-**Important**: Use `source` (not just `./scripts/install.sh`) to activate commands immediately!
+**Important**: Use `source` (not just `./scripts/install.sh`) to activate
+commands immediately!
 
 ### Windows
 
@@ -29,12 +31,14 @@ cd m1f
 ```
 
 Then either:
+
 - Restart PowerShell (recommended), or
 - Reload profile: `. $PROFILE`
 
 ## What the Installer Does
 
 The installation script automatically:
+
 - ✅ Checks Python version (3.10+ required)
 - ✅ Creates virtual environment
 - ✅ Installs all dependencies
@@ -55,7 +59,7 @@ m1f-update
 After installation, these commands are available globally:
 
 - `m1f` - Main tool for combining files
-- `m1f-s1f` - Split combined files back to original structure  
+- `m1f-s1f` - Split combined files back to original structure
 - `m1f-html2md` - Convert HTML to Markdown
 - `scrape_tool` - Download websites for offline viewing
 - `m1f-token-counter` - Count tokens in files
@@ -67,12 +71,14 @@ After installation, these commands are available globally:
 ## Uninstall
 
 ### Linux/macOS
+
 ```bash
 cd /path/to/m1f
 ./scripts/uninstall.sh
 ```
 
 ### Windows
+
 ```powershell
 cd C:\path\to\m1f
 .\scripts\setup_m1f_aliases.ps1 -Remove
@@ -128,6 +134,7 @@ export PATH="/path/to/m1f/bin:$PATH"  # m1f tools
 ```
 
 Then reload:
+
 ```bash
 source ~/.bashrc  # or ~/.zshrc
 ```
@@ -137,6 +144,7 @@ source ~/.bashrc  # or ~/.zshrc
 **Option A: PowerShell Functions**
 
 Run the setup script:
+
 ```powershell
 .\scripts\setup_m1f_aliases.ps1
 . $PROFILE
@@ -151,6 +159,7 @@ Run the setup script:
    - Add your batch directory path
 
 Example batch file (`m1f.bat`):
+
 ```batch
 @echo off
 cd /d "C:\path\to\m1f"
@@ -159,6 +168,7 @@ python -m tools.m1f %*
 ```
 
 Create similar batch files for:
+
 - `m1f-s1f.bat` → `python -m tools.s1f %*`
 - `m1f-html2md.bat` → `python -m tools.html2md %*`
 - `scrape_tool.bat` → `python -m tools.webscraper %*`
@@ -168,32 +178,36 @@ Create similar batch files for:
 
 ### Quick Setup for AI-Assisted Development
 
-When using AI tools like Claude Code, Cursor, or GitHub Copilot in your project, they need to understand how m1f works to help you effectively. The `m1f-link` command provides this context:
+When using AI tools like Claude Code, Cursor, or GitHub Copilot in your project,
+they need to understand how m1f works to help you effectively. The `m1f-link`
+command provides this context:
 
 ```bash
 cd /your/project
 m1f-link
 ```
 
-This creates `.m1f/m1f-docs.txt` - a symlink to the complete m1f documentation that AI tools can read.
+This creates `.m1f/m1f-docs.txt` - a symlink to the complete m1f documentation
+that AI tools can read.
 
 #### Example AI Prompts:
 
 ```bash
 # Ask Claude Code to create a configuration
-"Please read @.m1f/m1f-docs.txt and create a .m1f.config.yml 
+"Please read @.m1f/m1f-docs.txt and create a .m1f.config.yml
 for my Python web project"
 
 # Get help with specific use cases
-"Based on @.m1f/m1f-docs.txt, how do I exclude all test 
+"Based on @.m1f/m1f-docs.txt, how do I exclude all test
 files but include fixture data?"
 
 # Troubleshoot issues
-"I'm getting this error: [error message]. Can you check 
+"I'm getting this error: [error message]. Can you check
 @.m1f/m1f-docs.txt to help me fix it?"
 ```
 
 The AI will understand:
+
 - All m1f commands and parameters
 - How to create `.m1f.config.yml` files
 - Preset system and file processing options
@@ -202,18 +216,21 @@ The AI will understand:
 Or manually:
 
 ### Linux/macOS
+
 ```bash
 mkdir -p .m1f
 ln -s /path/to/m1f/.m1f .m1f/m1f
 ```
 
 ### Windows (with Developer Mode)
+
 ```powershell
 New-Item -ItemType Directory -Force -Path .m1f
 New-Item -ItemType SymbolicLink -Path ".m1f\m1f" -Target "C:\path\to\m1f\.m1f"
 ```
 
 ### Windows (without Developer Mode - Junction)
+
 ```powershell
 New-Item -ItemType Directory -Force -Path .m1f
 cmd /c mklink /J ".m1f\m1f" "C:\path\to\m1f\.m1f"
@@ -222,23 +239,28 @@ cmd /c mklink /J ".m1f\m1f" "C:\path\to\m1f\.m1f"
 ## Troubleshooting
 
 ### Python Version Error
+
 Install Python 3.10+ from [python.org](https://python.org)
 
 ### PowerShell Execution Policy (Windows)
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ### Command Not Found
+
 - Linux/macOS: Make sure you've run `source ~/.bashrc` (or `~/.zshrc`)
 - Windows: Restart PowerShell or Command Prompt
 
 ### Permission Errors
+
 - Linux/macOS: Make sure scripts are executable: `chmod +x scripts/*.sh`
 - Windows: Run PowerShell as Administrator if needed
 
 ## Next Steps
 
-- Read the [M1F Development Workflow](docs/01_m1f/04_m1f_development_workflow.md)
+- Read the
+  [M1F Development Workflow](docs/01_m1f/04_m1f_development_workflow.md)
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options

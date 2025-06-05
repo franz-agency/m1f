@@ -1,23 +1,31 @@
 # m1f - Make One File 🚀
 
-**Feed your AI the whole story.** A powerful toolkit that turns messy codebases into AI-ready context bundles.
+**Feed your AI the whole story.** A powerful toolkit that turns messy codebases
+into AI-ready context bundles.
 
 ## What's This?
 
-Ever tried explaining your entire project to Claude or ChatGPT? Yeah, that's what we thought. m1f makes it stupid simple to bundle your code, docs, and whatever else into perfectly digestible chunks for LLMs.
+Ever tried explaining your entire project to Claude or ChatGPT? Yeah, that's
+what we thought. m1f makes it stupid simple to bundle your code, docs, and
+whatever else into perfectly digestible chunks for LLMs.
 
 ## The Squad
 
 ### 🎯 **m1f** - The Bundler
-Combines multiple files into a single, AI-friendly mega-file. Smart enough to deduplicate content, handle any encoding, and even scan for secrets. Because nobody wants their API keys in a ChatGPT conversation.
+
+Combines multiple files into a single, AI-friendly mega-file. Smart enough to
+deduplicate content, handle any encoding, and even scan for secrets. Because
+nobody wants their API keys in a ChatGPT conversation.
 
 ```bash
 # Bundle your entire project (but smart about it)
 m1f -s ./your-project -o context.txt --preset wordpress
 ```
 
-### ✂️ **m1f-s1f** - The Splitter  
-Extracts files back from bundles. Perfect for when your AI assistant generates that perfect codebase and you need it back in actual files.
+### ✂️ **m1f-s1f** - The Splitter
+
+Extracts files back from bundles. Perfect for when your AI assistant generates
+that perfect codebase and you need it back in actual files.
 
 ```bash
 # Unbundle that AI-generated masterpiece
@@ -25,7 +33,9 @@ m1f-s1f -i bundle.txt -d ./extracted
 ```
 
 ### 🌐 **m1f-scrape** - The Collector
-Downloads entire websites for offline processing. Multiple backends for different scenarios - from simple HTML to JavaScript-heavy SPAs.
+
+Downloads entire websites for offline processing. Multiple backends for
+different scenarios - from simple HTML to JavaScript-heavy SPAs.
 
 ```bash
 # Grab those docs
@@ -33,7 +43,9 @@ m1f-scrape https://docs.example.com -o ./html --scraper playwright
 ```
 
 ### 📝 **m1f-html2md** - The Converter
-Transforms HTML into clean Markdown. Analyzes structure, suggests optimal selectors, and handles even the messiest enterprise documentation.
+
+Transforms HTML into clean Markdown. Analyzes structure, suggests optimal
+selectors, and handles even the messiest enterprise documentation.
 
 ```bash
 # Make it readable
@@ -41,7 +53,9 @@ m1f-mf1-html2md convert ./html -o ./markdown --content-selector "article"
 ```
 
 ### 🔢 **m1f-token-counter** - The Calculator
-Counts tokens before you hit those pesky context limits. Support for all major LLM encodings.
+
+Counts tokens before you hit those pesky context limits. Support for all major
+LLM encodings.
 
 ```bash
 # Will it fit?
@@ -51,6 +65,7 @@ m1f-token-counter ./bundle.txt
 ## Real-World Magic
 
 ### Feed Documentation to Your AI Assistant
+
 ```bash
 # Download → Convert → Bundle → Profit
 m1f-scrape https://react.dev -o ./react-html
@@ -59,6 +74,7 @@ m1f -s ./react-md -o react-docs-for-claude.txt
 ```
 
 ### Smart WordPress Development
+
 ```bash
 # Bundle your theme with intelligent filtering
 m1f -s ./wp-content/themes/mytheme -o theme-context.txt \
@@ -66,6 +82,7 @@ m1f -s ./wp-content/themes/mytheme -o theme-context.txt \
 ```
 
 ### Auto-Bundle Your Project
+
 ```bash
 # Set it and forget it
 m1f-update
@@ -84,6 +101,7 @@ m1f-update
 ## Quick Start
 
 ### Linux/macOS (3 commands)
+
 ```bash
 git clone https://github.com/franzundfriends/m1f.git
 cd m1f
@@ -91,6 +109,7 @@ source ./scripts/install.sh
 ```
 
 ### Windows (3 commands + restart)
+
 ```powershell
 git clone https://github.com/franzundfriends/m1f.git
 cd m1f
@@ -99,6 +118,7 @@ cd m1f
 ```
 
 That's it! ✨ The installer handles everything:
+
 - ✅ Checks Python 3.10+
 - ✅ Creates virtual environment
 - ✅ Installs all dependencies
@@ -106,6 +126,7 @@ That's it! ✨ The installer handles everything:
 - ✅ Sets up global commands
 
 Test it:
+
 ```bash
 m1f --help
 m1f-update
@@ -120,7 +141,8 @@ m1f-update
 
 ## Real Example: Scraping Claude's Documentation 🤖
 
-Want to give Claude its own documentation? Here's how to scrape, process, and bundle the Anthropic docs:
+Want to give Claude its own documentation? Here's how to scrape, process, and
+bundle the Anthropic docs:
 
 ### The Full Pipeline
 
@@ -170,7 +192,8 @@ EOF
 
 ### The Result?
 
-Now you can literally tell Claude: "Hey, here's your complete documentation" and paste the entire context. Perfect for:
+Now you can literally tell Claude: "Hey, here's your complete documentation" and
+paste the entire context. Perfect for:
 
 - Building Claude-powered tools with accurate API knowledge
 - Creating Claude integration guides
@@ -200,4 +223,5 @@ Apache 2.0 - Go wild, just don't blame us.
 
 ---
 
-Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to robots.
+Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to
+robots.

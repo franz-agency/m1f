@@ -52,6 +52,7 @@ relative to the current working directory. When both `-s` and `-i` are used,
 relative paths in the input file are resolved relative to the source directory.
 
 Example input file:
+
 ```
 # Comments are supported
 src/main.py          # Relative to source directory
@@ -60,6 +61,7 @@ docs/**/*.md         # Glob patterns supported
 ```
 
 **Merging multiple file lists with Bash**:
+
 ```bash
 # Create temporary merged file
 cat files1.txt files2.txt files3.txt > merged_files.txt
@@ -120,11 +122,12 @@ Example: `--excludes "*/tests/*" "*.pyc" "node_modules/"`
 
 ### `--exclude-paths-file FILE ...`
 
-File(s) containing paths to exclude (supports gitignore format). Each pattern on a
-new line. Multiple files can be specified and will be merged. Non-existent files 
-are skipped gracefully.
+File(s) containing paths to exclude (supports gitignore format). Each pattern on
+a new line. Multiple files can be specified and will be merged. Non-existent
+files are skipped gracefully.
 
 Examples:
+
 ```bash
 # Single file
 m1f -s . -o output.txt --exclude-paths-file .gitignore
@@ -135,19 +138,22 @@ m1f -s . -o output.txt --exclude-paths-file .gitignore .m1fignore custom-exclude
 
 ### `--include-paths-file FILE ...`
 
-File(s) containing patterns to include (supports gitignore format). When specified,
-only files matching these patterns will be included (whitelist mode). Multiple 
-files can be specified and will be merged. Non-existent files are skipped gracefully.
+File(s) containing patterns to include (supports gitignore format). When
+specified, only files matching these patterns will be included (whitelist mode).
+Multiple files can be specified and will be merged. Non-existent files are
+skipped gracefully.
 
 **Processing Order**:
+
 1. Files from `-i` (input-file) are always included, bypassing all filters
 2. Files from `-s` (source directory) are filtered by include patterns first
 3. Then exclude patterns are applied
 
-**Path Resolution**: Same as `-i` - relative paths are resolved relative to the 
+**Path Resolution**: Same as `-i` - relative paths are resolved relative to the
 source directory (`-s`).
 
 Example include file:
+
 ```
 # Include all Python files
 *.py
@@ -159,11 +165,12 @@ api/**/*
 ```
 
 Examples:
+
 ```bash
 # Single file
 m1f -s . -o output.txt --include-paths-file important-files.txt
 
-# Multiple files  
+# Multiple files
 m1f -s . -o output.txt --include-paths-file core-files.txt api-files.txt
 
 # Combined with input file (input file takes precedence)
@@ -301,8 +308,8 @@ Disable all preset processing, even if preset files are specified.
 
 ## Environment Variables
 
-**Note**: The following environment variables are documented for future implementation
-but are not currently supported in v3.2.0:
+**Note**: The following environment variables are documented for future
+implementation but are not currently supported in v3.2.0:
 
 - `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
 - `M1F_SECURITY_CHECK` - Default security check mode (not implemented)
@@ -312,7 +319,8 @@ but are not currently supported in v3.2.0:
 
 ### `auto-bundle`
 
-Create multiple m1f bundles based on a YAML configuration file (`.m1f.config.yml`).
+Create multiple m1f bundles based on a YAML configuration file
+(`.m1f.config.yml`).
 
 ```bash
 # Create all bundles
@@ -330,21 +338,23 @@ m1f auto-bundle --quiet
 ```
 
 **Options:**
+
 - `BUNDLE_NAME`: Name of specific bundle to create (optional)
 - `--list`: List available bundles from configuration
 - `--verbose`, `-v`: Enable verbose output
 - `--quiet`, `-q`: Suppress all console output
 
-See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration instructions.
+See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration
+instructions.
 
 ## Notes
 
-1. **Module Invocation**: You can use either `python -m tools.m1f` or 
-   `python tools/m1f.py`, or set up the `m1f` alias as described in the 
+1. **Module Invocation**: You can use either `python -m tools.m1f` or
+   `python tools/m1f.py`, or set up the `m1f` alias as described in the
    development workflow.
 
-2. **Input Requirements**: At least one of `-s` (source directory) or `-i` 
-   (input file) must be specified. If neither is provided, m1f will show an 
+2. **Input Requirements**: At least one of `-s` (source directory) or `-i`
+   (input file) must be specified. If neither is provided, m1f will show an
    error message.
 
 3. **Gitignore**: m1f respects .gitignore files by default unless

@@ -269,6 +269,7 @@ pytest tests/html2md/test_local_scraping.py
 ```
 
 The test server provides:
+
 - Static HTML pages for testing various HTML structures
 - Realistic website scenarios
 - Controlled environment for scraper testing
@@ -306,6 +307,7 @@ pytest --pdb
 The test suite provides comprehensive coverage for:
 
 ### m1f Tool
+
 - File combination with various separators
 - Encoding detection and conversion
 - Preset system and file-specific processing
@@ -314,6 +316,7 @@ The test suite provides comprehensive coverage for:
 - Edge cases and error handling
 
 ### s1f Tool
+
 - File extraction from combined files
 - Format detection (Standard, Detailed, Markdown, etc.)
 - Encoding preservation
@@ -321,6 +324,7 @@ The test suite provides comprehensive coverage for:
 - Checksum validation
 
 ### html2md Tool
+
 - HTML to Markdown conversion
 - URL scraping and fetching
 - Multiple scraper backends (BeautifulSoup, Playwright, etc.)
@@ -328,6 +332,7 @@ The test suite provides comprehensive coverage for:
 - Metadata preservation
 
 ### m1f-scrape Tool
+
 - Website scraping with multiple backends
 - Crawling and link following
 - Rate limiting and politeness
@@ -336,6 +341,7 @@ The test suite provides comprehensive coverage for:
 ## Contributing
 
 When adding new tests:
+
 1. Follow the existing test structure
 2. Add appropriate markers (@pytest.mark.unit, etc.)
 3. Update this README if adding new test categories

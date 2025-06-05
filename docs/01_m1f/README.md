@@ -8,8 +8,8 @@ Language Models (LLMs) and creating bundled documentation.
 
 ### Core Documentation
 
-- [**01_m1f.md**](00_m1f.md) - Main documentation with features, usage
-  examples, and architecture
+- [**01_m1f.md**](00_m1f.md) - Main documentation with features, usage examples,
+  and architecture
 - [**07_cli_reference.md**](./07_cli_reference.md) - Complete command-line
   parameter reference
 - [**08_troubleshooting.md**](./08_troubleshooting.md) - Common issues and
@@ -50,5 +50,5 @@ python tools/m1f.py -s ./src -o code.txt --include-extensions .py .js
 python tools/m1f.py -s . -o bundle.txt --preset wordpress.m1f-presets.yml
 ```
 
-For detailed information, start with the [main documentation](00_m1f.md) or
-jump to the [quick reference](./09_quick_reference.md) for common commands.
+For detailed information, start with the [main documentation](00_m1f.md) or jump
+to the [quick reference](./09_quick_reference.md) for common commands.

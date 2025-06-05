@@ -1,6 +1,7 @@
 # m1f Test Suite
 
-Comprehensive test suite for the m1f (Make One File) tool, organized by functionality and test scenarios.
+Comprehensive test suite for the m1f (Make One File) tool, organized by
+functionality and test scenarios.
 
 ## 📁 Test Structure
 
@@ -45,6 +46,7 @@ tests/m1f/
 ## 🧪 Test Categories
 
 ### 1. **Core Functionality** (`test_m1f_basic.py`)
+
 Tests fundamental m1f operations and command-line options.
 
 - ✅ Basic file combination
@@ -58,6 +60,7 @@ Tests fundamental m1f operations and command-line options.
 - ✅ Help and version display
 
 ### 2. **Advanced Features** (`test_m1f_advanced.py`)
+
 Tests complex features and workflows.
 
 - 📦 Archive creation (ZIP, TAR.GZ)
@@ -70,6 +73,7 @@ Tests complex features and workflows.
 - 🔢 Binary file inclusion
 
 ### 3. **Integration Tests** (`test_m1f_integration.py`)
+
 End-to-end testing of complete workflows.
 
 - 🔗 Command-line execution via subprocess
@@ -80,6 +84,7 @@ End-to-end testing of complete workflows.
 - 🏗️ Archive creation with filters
 
 ### 4. **Edge Cases** (`test_m1f_edge_cases.py`)
+
 Tests unusual scenarios and boundary conditions.
 
 - 🌍 Unicode character handling
@@ -92,6 +97,7 @@ Tests unusual scenarios and boundary conditions.
 - ⚡ Concurrent file modifications
 
 ### 5. **Encoding Tests** (`test_m1f_encoding.py`)
+
 Comprehensive character encoding support.
 
 - 🔤 Encoding conversion to UTF-8
@@ -108,6 +114,7 @@ Comprehensive character encoding support.
   - Windows-1256 (Arabic)
 
 ### 6. **File Hash Feature** (`test_m1f_file_hash.py`)
+
 Tests the filename mtime hash functionality.
 
 - #️⃣ Hash generation from modification times
@@ -119,14 +126,17 @@ Tests the filename mtime hash functionality.
 - 📁 Empty directory handling
 
 ### 7. **Preset System** (`test_m1f_presets_*.py`)
+
 Tests the flexible preset configuration system.
 
 **Basic Presets:**
+
 - 🎨 Global preset settings
 - 📝 File-specific processors
 - 🧹 Content cleaning (strip_tags, remove_empty_lines)
 
 **Advanced Presets:**
+
 - 🔗 Preset inheritance and merging
 - 🌍 Environment-based presets
 - 🎯 Conditional presets
@@ -134,6 +144,7 @@ Tests the flexible preset configuration system.
 - ⚠️ Error handling
 
 **v3.2 Features:**
+
 - 📁 Source/output configuration via preset
 - 📋 Input include files via preset
 - ⚙️ Runtime behavior settings
@@ -141,6 +152,7 @@ Tests the flexible preset configuration system.
 - 🔤 Encoding settings via preset
 
 ### 8. **Security Scanning** (`test_security_check.py`)
+
 Tests for sensitive information detection.
 
 - 🔍 Password and API key detection
@@ -149,6 +161,7 @@ Tests for sensitive information detection.
 - 📝 Security warning logs
 
 ### 9. **Performance Tests** (`test_large_file.py`)
+
 Tests handling of large files.
 
 - 📊 Various file sizes (0.5MB - 10MB)
@@ -158,6 +171,7 @@ Tests handling of large files.
 - ✅ Content integrity
 
 ### 10. **Symbolic Links** (`test_symlinks.py`)
+
 Tests symbolic link handling.
 
 - 🔄 Symlink cycle detection
@@ -166,6 +180,7 @@ Tests symbolic link handling.
 - 📝 File deduplication
 
 ### 11. **File Filtering** (`test_multiple_exclude_include_files.py`)
+
 Tests complex filtering scenarios.
 
 - 📋 Multiple exclude files
@@ -179,20 +194,24 @@ Tests complex filtering scenarios.
 The `source/` directory contains carefully organized test fixtures:
 
 ### Pattern Testing
+
 - `glob_*` directories: Various glob pattern scenarios
 - `file_extensions_test/`: Extension filtering tests
 - `special_chars/`: Filename edge cases
 
 ### Encoding Testing
+
 - `exotic_encodings/`: Files in various character encodings
 - International filenames (German, Spanish, Russian, Chinese)
 
 ### Structure Testing
+
 - `advanced_glob_test/`: Complex directory hierarchies
 - Deep nesting scenarios
 - Mixed file types
 
 ### Content Testing
+
 - `code/`: Programming language files
 - `docs/`: Documentation files
 - `config/`: Configuration files
@@ -200,11 +219,13 @@ The `source/` directory contains carefully organized test fixtures:
 ## 🚀 Running Tests
 
 ### Run All Tests
+
 ```bash
 pytest tests/m1f/ -v
 ```
 
 ### Run Specific Test Categories
+
 ```bash
 # Using pytest markers
 pytest tests/m1f/ -m unit
@@ -219,12 +240,14 @@ python tests/m1f/run_tests.py --encoding --presets
 ```
 
 ### Run Individual Test Files
+
 ```bash
 pytest tests/m1f/test_m1f_basic.py -v
 pytest tests/m1f/test_m1f_encoding.py::TestM1FEncoding::test_encoding_conversion -v
 ```
 
 ### Analyze Test Failures
+
 ```bash
 python tests/m1f/check_failures.py
 ```
@@ -242,7 +265,9 @@ python tests/m1f/check_failures.py
 ## 🛠️ Test Utilities
 
 ### `run_tests.py`
+
 Convenient test runner with category selection:
+
 - `--all`: Run all tests
 - `--basic`: Basic functionality tests
 - `--advanced`: Advanced feature tests
@@ -251,7 +276,9 @@ Convenient test runner with category selection:
 - `--verbose`: Verbose output
 
 ### `check_failures.py`
+
 Analyzes test failures and provides summaries:
+
 - Groups failures by type
 - Suggests potential fixes
 - Identifies flaky tests
@@ -261,7 +288,8 @@ Analyzes test failures and provides summaries:
 When adding new tests:
 
 1. **Choose the right file**: Add to existing test files when possible
-2. **Use appropriate markers**: `@pytest.mark.unit`, `@pytest.mark.integration`, etc.
+2. **Use appropriate markers**: `@pytest.mark.unit`, `@pytest.mark.integration`,
+   etc.
 3. **Follow naming conventions**: `test_<feature>_<scenario>`
 4. **Add test data**: Place fixtures in appropriate `source/` subdirectories
 5. **Document complex tests**: Add docstrings explaining the test purpose
