@@ -265,6 +265,15 @@ class PresetManager:
         # Reset cached merged settings when loading new files
         self._merged_global_settings = None
         
+        # Check file size limit (10MB max for preset files)
+        MAX_PRESET_SIZE = 10 * 1024 * 1024  # 10MB
+        if preset_path.stat().st_size > MAX_PRESET_SIZE:
+            raise ValueError(
+                f"Preset file {preset_path} is too large "
+                f"({preset_path.stat().st_size / 1024 / 1024:.1f}MB). "
+                f"Maximum size is {MAX_PRESET_SIZE / 1024 / 1024}MB"
+            )
+        
         try:
             with open(preset_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)

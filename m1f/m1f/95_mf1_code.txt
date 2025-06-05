@@ -2057,9 +2057,12 @@ class Html2mdConverter:
             if file_path.is_relative_to(self.config.source):
                 rel_path = file_path.relative_to(self.config.source)
             else:
-                rel_path = file_path.name
+                # Handle case where file_path might be "." or have empty name
+                rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
+                if not rel_path or str(rel_path) == '.':
+                    rel_path = Path(file_path).resolve().name
 
-            output_path = self.config.destination / rel_path.with_suffix(".md")
+            output_path = self.config.destination / Path(rel_path).with_suffix(".md")
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(markdown, encoding=self.config.target_encoding)
 
