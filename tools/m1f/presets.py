@@ -301,7 +301,13 @@ class PresetManager:
 
         # Parse base path
         if "base_path" in data:
-            group.base_path = Path(data["base_path"])
+            from .utils import validate_path_traversal
+            base_path = Path(data["base_path"])
+            # Validate base path from preset files
+            try:
+                group.base_path = validate_path_traversal(base_path, from_preset=True)
+            except ValueError as e:
+                raise ValueError(f"Invalid base_path in preset: {e}")
 
         # Parse global settings
         if "global_settings" in data:

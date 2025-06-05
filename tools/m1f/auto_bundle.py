@@ -136,7 +136,14 @@ class AutoBundler:
         for bundle_name, bundle_config in config.bundles.items():
             output = bundle_config.get("output", "")
             if output:
+                from .utils import validate_path_traversal
                 output_path = self.project_root / output
+                # Validate output path doesn't use malicious traversal
+                try:
+                    output_path = validate_path_traversal(output_path, base_path=self.project_root, allow_outside=True)
+                except ValueError as e:
+                    self.print_error(f"Invalid output path for bundle '{bundle_name}': {e}")
+                    continue
                 output_dir = output_path.parent
 
                 if str(output_dir) not in created_dirs:
@@ -215,7 +222,13 @@ class AutoBundler:
         # Output file
         output = bundle_config.get("output", "")
         if output:
-            cmd_parts.extend(["-o", str(self.project_root / output)])
+            from .utils import validate_path_traversal
+            try:
+                output_path = validate_path_traversal(self.project_root / output, base_path=self.project_root, allow_outside=True)
+                cmd_parts.extend(["-o", str(output_path)])
+            except ValueError as e:
+                self.print_error(f"Invalid output path: {e}")
+                return []
 
         # Separator style
         sep_style = bundle_config.get("separator_style", "Standard")
@@ -223,9 +236,13 @@ class AutoBundler:
 
         # Preset
         if "preset" in bundle_config:
-            cmd_parts.extend(
-                ["--preset", str(self.project_root / bundle_config["preset"])]
-            )
+            from .utils import validate_path_traversal
+            try:
+                preset_path = validate_path_traversal(self.project_root / bundle_config["preset"], base_path=self.project_root, from_preset=True)
+                cmd_parts.extend(["--preset", str(preset_path)])
+            except ValueError as e:
+                self.print_error(f"Invalid preset path: {e}")
+                return []
 
         # Preset group
         if "preset_group" in bundle_config:

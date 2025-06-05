@@ -637,6 +637,14 @@ class FileProcessor:
                 if not target.is_absolute():
                     target = current.parent / target
                 target = target.resolve(strict=False)
+                
+                # Validate symlink target doesn't traverse outside allowed directories
+                try:
+                    from .utils import validate_path_traversal
+                    validate_path_traversal(target, allow_outside=self.config.filter.include_symlinks)
+                except ValueError as e:
+                    self.logger.warning(f"Symlink target validation failed for {current}: {e}")
+                    return False
 
                 target_str = str(target)
                 if target_str in visited:
