@@ -235,10 +235,10 @@ class Html2mdConverter:
                     html_content = f.read()
 
         # Convert using the convert_html method which includes preprocessing
-        # Ensure we have an absolute path for the URI
-        abs_file_path = file_path.resolve()
+        # Use a relative base URL to avoid exposing absolute paths
+        base_url = file_path.name if file_path else None
         markdown = self.convert_html(
-            html_content, base_url=abs_file_path.as_uri(), source_file=str(file_path)
+            html_content, base_url=base_url, source_file=str(file_path.name if file_path else "input")
         )
 
         # Determine output path

@@ -30,7 +30,7 @@ from .config import Config, FilterConfig
 from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, MAX_SYMLINK_DEPTH
 from .exceptions import FileNotFoundError, ValidationError
 from .logging import LoggerManager
-from .utils import is_binary_file, is_hidden_path, get_relative_path, format_file_size
+from .utils import is_binary_file, is_hidden_path, get_relative_path, format_file_size, validate_path_traversal
 
 
 class FileProcessor:
@@ -156,7 +156,11 @@ class FileProcessor:
                         path = Path(line)
                         if not path.is_absolute() and self.config.source_directory:
                             path = self.config.source_directory / path
-                        self.exact_excludes.add(str(path.resolve()))
+                        try:
+                            validated_path = validate_path_traversal(path.resolve())
+                            self.exact_excludes.add(str(validated_path))
+                        except ValueError as e:
+                            self.logger.warning(f"Skipping invalid exclude path '{line}': {e}")
 
             except Exception as e:
                 self.logger.warning(f"Error reading exclude file {exclude_file}: {e}")
@@ -211,7 +215,11 @@ class FileProcessor:
                         path = Path(line)
                         if not path.is_absolute() and self.config.source_directory:
                             path = self.config.source_directory / path
-                        self.exact_includes.add(str(path.resolve()))
+                        try:
+                            validated_path = validate_path_traversal(path.resolve())
+                            self.exact_includes.add(str(validated_path))
+                        except ValueError as e:
+                            self.logger.warning(f"Skipping invalid include path '{line}': {e}")
 
             except Exception as e:
                 self.logger.warning(f"Error reading include file {include_file}: {e}")
@@ -292,12 +300,21 @@ class FileProcessor:
                             pattern_path = base_dir / pattern_path
 
                         matches = glob.glob(str(pattern_path), recursive=True)
-                        paths.extend(Path(m).resolve() for m in matches)
+                        for m in matches:
+                            try:
+                                validated_path = validate_path_traversal(Path(m).resolve())
+                                paths.append(validated_path)
+                            except ValueError as e:
+                                self.logger.warning(f"Skipping invalid glob match '{m}': {e}")
                     else:
                         path = Path(line)
                         if not path.is_absolute():
                             path = base_dir / path
-                        paths.append(path.resolve())
+                        try:
+                            validated_path = validate_path_traversal(path.resolve())
+                            paths.append(validated_path)
+                        except ValueError as e:
+                            self.logger.warning(f"Skipping invalid path '{line}': {e}")
 
             # Deduplicate paths
             paths = self._deduplicate_paths(paths)
