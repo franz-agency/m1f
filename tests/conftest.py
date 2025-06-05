@@ -48,8 +48,26 @@ def test_data_dir() -> Path:
 @pytest.fixture
 def temp_dir() -> Iterator[Path]:
     """Create a temporary directory for test files."""
-    with tempfile.TemporaryDirectory() as tmp:
-        yield Path(tmp)
+    # Use project's tmp directory instead of system temp
+    project_tmp = Path(__file__).parent.parent / "tmp" / "test_temp"
+    
+    # Ensure the directory exists
+    try:
+        project_tmp.mkdir(parents=True, exist_ok=True)
+    except (OSError, PermissionError) as e:
+        pytest.skip(f"Cannot create test directory in project tmp: {e}")
+    
+    # Create a unique subdirectory for this test
+    import uuid
+    test_dir = project_tmp / f"test_{uuid.uuid4().hex[:8]}"
+    test_dir.mkdir(exist_ok=True)
+    
+    try:
+        yield test_dir
+    finally:
+        # Clean up
+        if test_dir.exists():
+            shutil.rmtree(test_dir)
 
 
 @pytest.fixture
@@ -60,18 +78,32 @@ def isolated_filesystem() -> Iterator[Path]:
     This ensures tests don't interfere with each other by providing
     a clean temporary directory that's automatically cleaned up.
     """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        original_cwd = Path.cwd()
-        try:
-            # Change to the temporary directory
-            import os
-
-            os.chdir(tmp_path)
-            yield tmp_path
-        finally:
-            # Restore original working directory
-            os.chdir(original_cwd)
+    # Use project's tmp directory instead of system temp
+    project_tmp = Path(__file__).parent.parent / "tmp" / "test_isolated"
+    
+    # Ensure the directory exists
+    try:
+        project_tmp.mkdir(parents=True, exist_ok=True)
+    except (OSError, PermissionError) as e:
+        pytest.skip(f"Cannot create test directory in project tmp: {e}")
+    
+    # Create a unique subdirectory for this test
+    import uuid
+    test_dir = project_tmp / f"test_{uuid.uuid4().hex[:8]}"
+    test_dir.mkdir(exist_ok=True)
+    
+    original_cwd = Path.cwd()
+    try:
+        # Change to the temporary directory
+        import os
+        os.chdir(test_dir)
+        yield test_dir
+    finally:
+        # Restore original working directory
+        os.chdir(original_cwd)
+        # Clean up
+        if test_dir.exists():
+            shutil.rmtree(test_dir)
 
 
 @pytest.fixture

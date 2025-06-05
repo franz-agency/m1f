@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Optional, Set, List, Union
 import argparse
 
-from .utils import parse_file_size
+from .utils import parse_file_size, validate_path_traversal
 
 
 class SeparatorStyle(Enum):
@@ -184,21 +184,32 @@ class Config:
     @classmethod
     def _create_from_cli_args(cls, args: argparse.Namespace) -> Config:
         """Create initial configuration from CLI arguments."""
-        # Process source directory
-        source_dir = (
-            Path(args.source_directory).resolve() if args.source_directory else None
-        )
+        # Process source directory with path traversal validation
+        source_dir = None
+        if args.source_directory:
+            resolved_path = Path(args.source_directory).resolve()
+            source_dir = validate_path_traversal(resolved_path)
 
-        # Process input file
-        input_file = Path(args.input_file).resolve() if args.input_file else None
+        # Process input file with path traversal validation
+        input_file = None
+        if args.input_file:
+            resolved_path = Path(args.input_file).resolve()
+            input_file = validate_path_traversal(resolved_path)
 
-        # Process include files
+        # Process include files with path traversal validation
         include_files = []
         if hasattr(args, "input_include_files") and args.input_include_files:
-            include_files = [Path(f).resolve() for f in args.input_include_files]
+            for f in args.input_include_files:
+                resolved_path = Path(f).resolve()
+                validated_path = validate_path_traversal(resolved_path)
+                include_files.append(validated_path)
 
-        # Create output configuration
-        output_file_path = Path(args.output_file).resolve() if args.output_file else None
+        # Create output configuration with path traversal validation
+        # Output paths are allowed to be outside the base directory
+        output_file_path = None
+        if args.output_file:
+            resolved_path = Path(args.output_file).resolve()
+            output_file_path = validate_path_traversal(resolved_path, allow_outside=True)
         output_config = OutputConfig(
             output_file=output_file_path or Path("output.txt"),  # Default if not provided
             add_timestamp=args.add_timestamp,
@@ -262,10 +273,13 @@ class Config:
             verbose=args.verbose, quiet=getattr(args, "quiet", False)
         )
 
-        # Create preset configuration
+        # Create preset configuration with path traversal validation
         preset_files = []
         if hasattr(args, "preset_files") and args.preset_files:
-            preset_files = [Path(f).resolve() for f in args.preset_files]
+            for f in args.preset_files:
+                resolved_path = Path(f).resolve()
+                validated_path = validate_path_traversal(resolved_path)
+                preset_files.append(validated_path)
 
         preset_config = PresetConfig(
             preset_files=preset_files,
@@ -306,22 +320,31 @@ class Config:
         output_file = config.output.output_file
         input_include_files = config.input_include_files
         
-        # Only override if not provided via CLI
+        # Only override if not provided via CLI (with path traversal validation)
         if not args.source_directory and global_settings.source_directory:
-            source_dir = Path(global_settings.source_directory).resolve()
+            resolved_path = Path(global_settings.source_directory).resolve()
+            source_dir = validate_path_traversal(resolved_path)
         
         if not args.input_file and global_settings.input_file:
-            input_file = Path(global_settings.input_file).resolve()
+            resolved_path = Path(global_settings.input_file).resolve()
+            input_file = validate_path_traversal(resolved_path)
         
         # Only override output_file if not provided via CLI
         if not args.output_file and global_settings.output_file:
-            output_file = Path(global_settings.output_file).resolve()
+            resolved_path = Path(global_settings.output_file).resolve()
+            output_file = validate_path_traversal(resolved_path, allow_outside=True)
         
         if not args.input_include_files and global_settings.input_include_files:
             if isinstance(global_settings.input_include_files, str):
-                input_include_files = [Path(global_settings.input_include_files).resolve()]
+                resolved_path = Path(global_settings.input_include_files).resolve()
+                validated_path = validate_path_traversal(resolved_path)
+                input_include_files = [validated_path]
             else:
-                input_include_files = [Path(f).resolve() for f in global_settings.input_include_files]
+                input_include_files = []
+                for f in global_settings.input_include_files:
+                    resolved_path = Path(f).resolve()
+                    validated_path = validate_path_traversal(resolved_path)
+                    input_include_files.append(validated_path)
         
         # Create new OutputConfig with overrides
         output_config = OutputConfig(
