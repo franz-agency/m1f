@@ -57,7 +57,7 @@ class FilePreset:
     preserve_tags: List[str] = field(default_factory=list)  # Tags to preserve
 
     # Output options
-    separator_style: Optional[str] = None  # Override default separator
+    separator_style: Optional[str] = None  # DEPRECATED - use global_settings.separator_style instead
     include_metadata: bool = True
     max_lines: Optional[int] = None  # Truncate after N lines
 
@@ -262,6 +262,9 @@ class PresetManager:
 
     def load_preset_file(self, preset_path: Path) -> None:
         """Load presets from a YAML file."""
+        # Reset cached merged settings when loading new files
+        self._merged_global_settings = None
+        
         try:
             with open(preset_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
@@ -279,7 +282,7 @@ class PresetManager:
 
                 group = self._parse_group(group_name, group_data)
                 self.groups[group_name] = group
-                logger.info(
+                logger.debug(
                     f"Loaded preset group '{group_name}' with {len(group.file_presets)} presets"
                 )
 
@@ -457,28 +460,28 @@ class PresetManager:
         # Merge global settings from all groups
         merged = GlobalSettings()
 
-        for group in reversed(sorted_groups):  # Process lower priority first
+        for group in sorted_groups:  # Process higher priority first
             if not group.enabled or not group.global_settings:
                 continue
 
             gs = group.global_settings
 
-            # Merge general settings (higher priority overrides)
-            if gs.encoding and not merged.encoding:
+            # Merge general settings (first non-None value wins due to priority order)
+            if gs.encoding and merged.encoding is None:
                 merged.encoding = gs.encoding
-            if gs.separator_style and not merged.separator_style:
+            if gs.separator_style and merged.separator_style is None:
                 merged.separator_style = gs.separator_style
-            if gs.line_ending and not merged.line_ending:
+            if gs.line_ending and merged.line_ending is None:
                 merged.line_ending = gs.line_ending
             
             # Merge input/output settings
-            if gs.source_directory and not merged.source_directory:
+            if gs.source_directory and merged.source_directory is None:
                 merged.source_directory = gs.source_directory
-            if gs.input_file and not merged.input_file:
+            if gs.input_file and merged.input_file is None:
                 merged.input_file = gs.input_file
-            if gs.output_file and not merged.output_file:
+            if gs.output_file and merged.output_file is None:
                 merged.output_file = gs.output_file
-            if gs.input_include_files and not merged.input_include_files:
+            if gs.input_include_files and merged.input_include_files is None:
                 merged.input_include_files = gs.input_include_files
             
             # Merge output control settings
@@ -496,7 +499,7 @@ class PresetManager:
             # Merge archive settings
             if gs.create_archive is not None and merged.create_archive is None:
                 merged.create_archive = gs.create_archive
-            if gs.archive_type and not merged.archive_type:
+            if gs.archive_type and merged.archive_type is None:
                 merged.archive_type = gs.archive_type
             
             # Merge runtime behavior
@@ -514,39 +517,27 @@ class PresetManager:
             # Merge file filtering options (higher priority overrides)
             if gs.include_dot_paths is not None and merged.include_dot_paths is None:
                 merged.include_dot_paths = gs.include_dot_paths
-            if (
-                gs.include_binary_files is not None
-                and merged.include_binary_files is None
-            ):
+            if gs.include_binary_files is not None and merged.include_binary_files is None:
                 merged.include_binary_files = gs.include_binary_files
             if gs.include_symlinks is not None and merged.include_symlinks is None:
                 merged.include_symlinks = gs.include_symlinks
-            if (
-                gs.no_default_excludes is not None
-                and merged.no_default_excludes is None
-            ):
+            if gs.no_default_excludes is not None and merged.no_default_excludes is None:
                 merged.no_default_excludes = gs.no_default_excludes
-            if gs.max_file_size and not merged.max_file_size:
+            if gs.max_file_size and merged.max_file_size is None:
                 merged.max_file_size = gs.max_file_size
-            if gs.exclude_paths_file and not merged.exclude_paths_file:
+            if gs.exclude_paths_file and merged.exclude_paths_file is None:
                 merged.exclude_paths_file = gs.exclude_paths_file
-            if gs.include_paths_file and not merged.include_paths_file:
+            if gs.include_paths_file and merged.include_paths_file is None:
                 merged.include_paths_file = gs.include_paths_file
 
             # Merge processing options
-            if (
-                gs.remove_scraped_metadata is not None
-                and merged.remove_scraped_metadata is None
-            ):
+            if gs.remove_scraped_metadata is not None and merged.remove_scraped_metadata is None:
                 merged.remove_scraped_metadata = gs.remove_scraped_metadata
-            if (
-                gs.abort_on_encoding_error is not None
-                and merged.abort_on_encoding_error is None
-            ):
+            if gs.abort_on_encoding_error is not None and merged.abort_on_encoding_error is None:
                 merged.abort_on_encoding_error = gs.abort_on_encoding_error
 
             # Merge security options
-            if gs.security_check and not merged.security_check:
+            if gs.security_check and merged.security_check is None:
                 merged.security_check = gs.security_check
 
             # Merge extension settings (higher priority overrides)
@@ -1020,7 +1011,7 @@ def load_presets(
     for path in all_preset_files:
         if path.exists():
             manager.load_preset_file(path)
-            logger.info(f"Loaded preset file: {path}")
+            logger.debug(f"Loaded preset file: {path}")
         else:
             logger.warning(f"Preset file not found: {path}")
 

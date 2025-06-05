@@ -141,9 +141,9 @@ Perfect for:
         "-o",
         "--output-file",
         type=str,
-        required=True,
+        required=False,  # Made optional to allow preset override
         metavar="FILE",
-        help="Path where the combined output file will be created",
+        help="Path where the combined output file will be created (can be set via preset)",
     )
 
     io_group.add_argument(
