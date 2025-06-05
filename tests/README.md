@@ -1,7 +1,8 @@
 # Test Suite Documentation
 
-This directory contains the modernized test suite for the m1f and s1f tools,
-using Python 3.10+ features and modern testing practices.
+This directory contains the modernized test suite for the m1f tool suite,
+including m1f, s1f, html2md, and m1f-scrape tools, using Python 3.10+ features
+and modern testing practices.
 
 ## Test Structure
 
@@ -10,6 +11,8 @@ tests/
 ├── conftest.py              # Global fixtures and test configuration
 ├── base_test.py             # Base test classes with common utilities
 ├── pytest.ini               # Test-specific pytest configuration
+├── test_html2md_server.py   # HTML2MD server tests
+├── test_simple_server.py    # Simple server tests
 ├── m1f/                     # m1f-specific tests
 │   ├── conftest.py          # m1f-specific fixtures
 │   ├── test_m1f_basic.py    # Basic functionality tests
@@ -18,13 +21,29 @@ tests/
 │   ├── test_m1f_edge_cases.py # Edge cases and special scenarios
 │   ├── test_m1f_file_hash.py # Filename mtime hash functionality
 │   ├── test_m1f_integration.py # Integration and CLI tests
+│   ├── test_m1f_presets_basic.py # Basic preset tests
+│   ├── test_m1f_presets_integration.py # Advanced preset tests
+│   ├── test_m1f_presets_v3_2.py # V3.2 preset features
+│   └── source/              # Test data and resources
+├── s1f/                     # s1f-specific tests
+│   ├── conftest.py          # s1f-specific fixtures
+│   ├── test_s1f_basic.py    # Basic functionality tests
+│   ├── test_s1f_encoding.py # Encoding-related tests
+│   ├── test_s1f_async.py    # Async functionality tests
 │   └── ...                  # Other test files and resources
-└── s1f/                     # s1f-specific tests
-    ├── conftest.py          # s1f-specific fixtures
-    ├── test_s1f_basic.py    # Basic functionality tests
-    ├── test_s1f_encoding.py # Encoding-related tests
-    ├── test_s1f_async.py    # Async functionality tests
-    └── ...                  # Other test files and resources
+├── html2md/                 # html2md-specific tests
+│   ├── __init__.py          # Package marker
+│   ├── test_html2md.py      # Core HTML2MD functionality tests
+│   ├── test_integration.py  # Integration tests
+│   ├── test_local_scraping.py # Local scraping tests
+│   ├── test_scrapers.py     # Scraper backend tests
+│   ├── source/              # Test HTML files
+│   ├── expected/            # Expected output files
+│   └── scraped_examples/    # Real-world scraping test cases
+└── html2md_server/          # Test server for HTML2MD
+    ├── server.py            # Test server implementation
+    ├── manage_server.py     # Server management utilities
+    └── test_pages/          # Test HTML pages
 ```
 
 ## Key Features
@@ -69,6 +88,19 @@ tests/
 - `create_combined_file`: Creates combined files in different formats
 - `create_m1f_output`: Uses m1f to create realistic test files
 
+#### HTML2MD-Specific Fixtures (html2md/conftest.py)
+
+- `html2md_runner`: Runs html2md with specified arguments
+- `create_test_html`: Creates test HTML files with various structures
+- `test_server`: Manages test HTTP server for scraping tests
+- `mock_url_fetcher`: Mocks URL fetching for unit tests
+
+#### Scraper Test Utilities
+
+- Test server in `html2md_server/` for realistic scraping scenarios
+- Pre-scraped examples for regression testing
+- Multiple scraper backend configurations
+
 ## Running Tests
 
 ### Run All Tests
@@ -101,6 +133,15 @@ pytest tests/m1f/
 
 # Run only s1f tests
 pytest tests/s1f/
+
+# Run only html2md tests
+pytest tests/html2md/
+
+# Run scraper tests
+pytest tests/html2md/test_scrapers.py
+
+# Run preset tests
+pytest tests/m1f/test_m1f_presets*.py
 ```
 
 ### Run Specific Test Files
@@ -210,6 +251,27 @@ def test_multiple_cases(self, input, expected):
 6. **Mark Tests**: Use appropriate markers for test categorization
 7. **Isolated Tests**: Each test should be independent and not rely on others
 
+## Test Server for HTML2MD
+
+The test suite includes a test server for HTML2MD scraping tests:
+
+```bash
+# Start the test server
+cd tests/html2md_server
+python server.py
+
+# Or use the management script
+python manage_server.py start
+
+# Run scraping tests with the server
+pytest tests/html2md/test_local_scraping.py
+```
+
+The test server provides:
+- Static HTML pages for testing various HTML structures
+- Realistic website scenarios
+- Controlled environment for scraper testing
+
 ## Troubleshooting
 
 ### Common Issues
@@ -219,6 +281,8 @@ def test_multiple_cases(self, input, expected):
 3. **Encoding Errors**: Some encoding tests may fail on systems without specific
    encodings
 4. **Permission Errors**: Ensure proper cleanup of temporary files
+5. **Test Server Issues**: Ensure port 8080 is available for the test server
+6. **Scraper Timeouts**: Some scraper tests may timeout on slow connections
 
 ### Debug Options
 
@@ -235,3 +299,45 @@ pytest -x
 # Drop into debugger on failure
 pytest --pdb
 ```
+
+## Test Coverage
+
+The test suite provides comprehensive coverage for:
+
+### m1f Tool
+- File combination with various separators
+- Encoding detection and conversion
+- Preset system and file-specific processing
+- Security scanning
+- Archive creation
+- Edge cases and error handling
+
+### s1f Tool
+- File extraction from combined files
+- Format detection (Standard, Detailed, Markdown, etc.)
+- Encoding preservation
+- Async file processing
+- Checksum validation
+
+### html2md Tool
+- HTML to Markdown conversion
+- URL scraping and fetching
+- Multiple scraper backends (BeautifulSoup, Playwright, etc.)
+- Content extraction and cleaning
+- Metadata preservation
+
+### m1f-scrape Tool
+- Website scraping with multiple backends
+- Crawling and link following
+- Rate limiting and politeness
+- Content downloading and organization
+
+## Contributing
+
+When adding new tests:
+1. Follow the existing test structure
+2. Add appropriate markers (@pytest.mark.unit, etc.)
+3. Update this README if adding new test categories
+4. Ensure tests are independent and reproducible
+5. Add fixtures to appropriate conftest.py files
+6. Document any special test requirements

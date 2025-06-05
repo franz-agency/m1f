@@ -1,0 +1,349 @@
+======= scrapers/README.md ======
+# HTML2MD Web Scrapers
+
+This module provides a pluggable architecture for web scraping backends in the
+HTML2MD tool.
+
+## Architecture
+
+The scraper system is built around:
+
+- `WebScraperBase`: Abstract base class defining the scraper interface
+- `ScraperConfig`: Configuration dataclass for all scrapers
+- `create_scraper()`: Factory function to instantiate scrapers
+- `SCRAPER_REGISTRY`: Registry of available backends
+
+## Available Scrapers
+
+### BeautifulSoup (`beautifulsoup`, `bs4`)
+
+- **Purpose**: General-purpose web scraping for static sites
+- **Features**: Async support, encoding detection, metadata extraction
+- **Best for**: Most websites without JavaScript requirements
+
+### HTTrack (`httrack`)
+
+- **Purpose**: Complete website mirroring
+- **Features**: Professional mirroring, preserves structure
+- **Best for**: Creating offline copies of entire websites
+- **Requires**: System installation of HTTrack
+
+## Usage
+
+```python
+from tools.html2md.scrapers import create_scraper, ScraperConfig
+
+# Configure scraper
+config = ScraperConfig(
+    max_depth=5,
+    max_pages=100,
+    request_delay=0.5,
+    user_agent="Mozilla/5.0 ..."
+)
+
+# Create scraper instance
+scraper = create_scraper('beautifulsoup', config)
+
+# Use scraper
+async with scraper:
+    # Scrape single page
+    page = await scraper.scrape_url('https://example.com')
+
+    # Scrape entire site
+    async for page in scraper.scrape_site('https://example.com'):
+        print(f"Scraped: {page.url}")
+```
+
+## Adding New Scrapers
+
+To add a new scraper backend:
+
+1. Create a new file in this directory (e.g., `playwright.py`)
+2. Create a class inheriting from `WebScraperBase`
+3. Implement required methods:
+   - `scrape_url()`: Scrape a single URL
+   - `scrape_site()`: Scrape an entire website
+4. Register in `__init__.py`:
+
+   ```python
+   from .playwright import PlaywrightScraper
+
+   SCRAPER_REGISTRY['playwright'] = PlaywrightScraper
+   ```
+
+## Configuration
+
+All scrapers share common configuration options through `ScraperConfig`:
+
+- `max_depth`: Maximum crawl depth
+- `max_pages`: Maximum pages to scrape
+- `allowed_domains`: List of allowed domains
+- `exclude_patterns`: URL patterns to exclude
+- `request_delay`: Delay between requests
+- `concurrent_requests`: Number of concurrent requests
+- `user_agent`: User agent string
+- `timeout`: Request timeout in seconds
+
+Backend-specific options can be added as needed in the scraper implementation.
+
+======= scrapers/configs/beautifulsoup.yaml ======
+# BeautifulSoup scraper configuration example
+scraper_backend: beautifulsoup
+scraper_config:
+  parser: "html.parser"  # Options: "html.parser", "lxml", "html5lib"
+  
+crawler:
+  max_depth: 5
+  max_pages: 100
+  request_delay: 0.5
+  concurrent_requests: 5
+  respect_robots_txt: true
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+======= scrapers/configs/cloudflare.yaml ======
+# Conservative configuration for sites with Cloudflare protection
+# These settings help avoid triggering Cloudflare's bot detection
+
+scraper_backend: httrack
+scraper_config:
+  verify_ssl: true
+  
+crawler:
+  max_depth: 5  # Limit depth to reduce requests
+  max_pages: 100  # Start with fewer pages
+  
+  # Very conservative delays (30 seconds base + random delay)
+  request_delay: 30  # 30 seconds between requests
+  concurrent_requests: 1  # Only 1 connection at a time
+  
+  # Always respect robots.txt
+  respect_robots_txt: true
+  
+  # Use a realistic, current browser user agent
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+  
+  # HTTrack-specific settings for Cloudflare
+  allowed_domains: []  # Empty = same domain only
+  
+  # Common paths to exclude to reduce load
+  excluded_paths:
+    - "*/api/*"
+    - "*/admin/*"
+    - "*/login/*"
+    - "*/search/*"
+    - "*.pdf"
+    - "*.zip"
+    - "*.mp4"
+    - "*.mp3"
+    
+# Additional notes for extreme Cloudflare protection:
+# 1. Consider using request_delay: 45-60 seconds
+# 2. Add random delays by modifying the scraper code
+# 3. Use browser automation (Playwright) as last resort
+# 4. Some sites may require manual browsing or API access
+
+======= scrapers/configs/httrack.yaml ======
+# HTTrack scraper configuration - Conservative settings for Cloudflare protection
+scraper_backend: httrack
+scraper_config:
+  verify_ssl: true
+  
+crawler:
+  max_depth: 10
+  max_pages: 1000
+  # Conservative delays to avoid Cloudflare detection
+  request_delay: 20  # 20 seconds between requests (0.05 requests/sec)
+  concurrent_requests: 2  # Max 2 simultaneous connections
+  respect_robots_txt: true
+  # Use a realistic browser user agent
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+  
+  # HTTrack-specific settings
+  allowed_domains: []  # Empty = same domain only
+  excluded_paths:
+    - "*/api/*"
+    - "*/admin/*"
+    - "*.pdf"
+    - "*.zip"
+
+======= scrapers/configs/playwright.yaml ======
+# Playwright scraper configuration
+# Browser-based scraping for JavaScript-heavy sites
+
+# Basic scraper settings
+max_depth: 5  # Lower depth for resource-intensive browser scraping
+max_pages: 100  # Lower limit due to browser overhead
+request_delay: 1.0  # Higher delay to be respectful
+concurrent_requests: 3  # Limited concurrent browser pages
+respect_robots_txt: true
+timeout: 30.0
+
+# Browser configuration
+browser_config:
+  # Browser type: chromium, firefox, or webkit
+  browser: chromium
+  
+  # Run in headless mode (no UI)
+  headless: true
+  
+  # Viewport size
+  viewport:
+    width: 1920
+    height: 1080
+  
+  # Wait strategies
+  # Options: load, domcontentloaded, networkidle, commit
+  wait_until: networkidle
+  
+  # Timeout for wait operations (milliseconds)
+  wait_timeout: 30000
+  
+  # Optional: Wait for specific selector before considering page loaded
+  # wait_for_selector: "div.main-content"
+  
+  # Optional: Execute custom JavaScript after page load
+  # execute_script: |
+  #   window.scrollTo(0, document.body.scrollHeight);
+  #   await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  # Screenshot options
+  screenshot: false
+  screenshot_path: "screenshots/"
+  
+  # Browser launch options
+  launch_options:
+    # Chromium-specific options
+    args:
+      - "--disable-dev-shm-usage"
+      - "--no-sandbox"  # Required in some Docker environments
+      - "--disable-setuid-sandbox"
+      - "--disable-gpu"  # Disable GPU in headless mode
+    
+    # Ignore HTTPS errors
+    ignoreHTTPSErrors: true
+    
+    # Slow down operations by specified milliseconds (for debugging)
+    # slowMo: 100
+    
+    # Enable devtools (chromium/firefox only)
+    # devtools: true
+
+# Mobile emulation example (uncomment to use)
+# browser_config:
+#   browser: chromium
+#   headless: true
+#   viewport:
+#     width: 375
+#     height: 667
+#     isMobile: true
+#     hasTouch: true
+#   user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) ..."
+
+# Example usage:
+# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+#   --scraper playwright --scraper-config playwright.yaml
+
+======= scrapers/configs/scrapy.yaml ======
+# Scrapy scraper configuration
+# Industrial-strength web scraping framework
+
+# Basic scraper settings
+max_depth: 10
+max_pages: 5000
+request_delay: 0.5
+concurrent_requests: 16  # Scrapy default
+respect_robots_txt: true
+timeout: 180.0
+
+# Scrapy-specific settings
+scrapy_config:
+  # Download settings
+  DOWNLOAD_DELAY: 0.5
+  RANDOMIZE_DOWNLOAD_DELAY: true
+  DOWNLOAD_TIMEOUT: 30
+  
+  # Concurrent requests
+  CONCURRENT_REQUESTS: 16
+  CONCURRENT_REQUESTS_PER_DOMAIN: 8
+  
+  # Auto-throttle settings
+  AUTOTHROTTLE_ENABLED: true
+  AUTOTHROTTLE_START_DELAY: 0.5
+  AUTOTHROTTLE_MAX_DELAY: 10.0
+  AUTOTHROTTLE_TARGET_CONCURRENCY: 8.0
+  AUTOTHROTTLE_DEBUG: false
+  
+  # Retry settings
+  RETRY_ENABLED: true
+  RETRY_TIMES: 3
+  RETRY_HTTP_CODES: [500, 502, 503, 504, 408, 429]
+  
+  # Cache settings
+  HTTPCACHE_ENABLED: true
+  HTTPCACHE_EXPIRATION_SECS: 3600
+  HTTPCACHE_IGNORE_HTTP_CODES: [503, 504, 400, 403, 404]
+  
+  # Middleware settings
+  COOKIES_ENABLED: true
+  REDIRECT_ENABLED: true
+  REDIRECT_MAX_TIMES: 5
+  
+  # DNS settings
+  DNSCACHE_ENABLED: true
+  DNSCACHE_SIZE: 10000
+  DNS_TIMEOUT: 60
+  
+  # Memory usage control
+  MEMUSAGE_ENABLED: true
+  MEMUSAGE_LIMIT_MB: 2048
+  MEMUSAGE_WARNING_MB: 1536
+  
+  # Depth control
+  DEPTH_PRIORITY: 1
+  SCHEDULER_DISK_QUEUE: 'scrapy.squeues.PickleFifoDiskQueue'
+  SCHEDULER_MEMORY_QUEUE: 'scrapy.squeues.FifoMemoryQueue'
+
+# Example usage:
+# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+#   --scraper scrapy --scraper-config scrapy.yaml
+
+======= scrapers/configs/selectolax.yaml ======
+# Selectolax scraper configuration
+# High-performance HTML parsing with httpx + selectolax
+
+# Basic scraper settings
+max_depth: 10
+max_pages: 1000
+request_delay: 0.1  # Minimal delay for high performance
+concurrent_requests: 20  # Higher concurrency for speed
+respect_robots_txt: true
+timeout: 10.0
+
+# httpx client settings
+httpx_config:
+  # Connection pool settings
+  max_keepalive_connections: 50
+  max_connections: 100
+  keepalive_expiry: 30.0
+  
+  # Timeout settings (in seconds)
+  connect_timeout: 5.0
+  read_timeout: 10.0
+  write_timeout: 5.0
+  pool_timeout: 5.0
+  
+  # HTTP/2 support
+  http2: true
+  
+  # Retry configuration
+  max_retries: 3
+  retry_backoff_factor: 0.5
+
+# Selectolax parser settings
+parser_config:
+  # Parser options
+  strict: false  # Lenient parsing for malformed HTML
+  
+# Example usage:
+# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+#   --scraper selectolax --scraper-config selectolax.yaml
