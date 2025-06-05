@@ -42,6 +42,29 @@ group_name:
 # Global settings (apply to all groups)
 globals:
   global_settings:
+    # Input/Output settings (NEW in v3.2.0)
+    source_directory: "./src"
+    input_file: "files_to_process.txt"
+    output_file: "bundle.txt"
+    input_include_files:
+      - "README.md"
+      - "INTRO.txt"
+    
+    # Output control (NEW in v3.2.0)
+    add_timestamp: true
+    filename_mtime_hash: false
+    force: false
+    minimal_output: false
+    skip_output_file: false
+    
+    # Archive settings (NEW in v3.2.0)
+    create_archive: false
+    archive_type: "zip"  # zip or tar.gz
+    
+    # Runtime behavior (NEW in v3.2.0)
+    verbose: false
+    quiet: false
+
     # Default file processing
     security_check: "warn"
     max_file_size: "1MB"
@@ -78,6 +101,48 @@ processors:
 | `priority`          | integer | 0       | Processing order (higher first) |
 | `base_path`         | string  | none    | Base path for pattern matching  |
 | `enabled_if_exists` | string  | none    | Only enable if this path exists |
+
+### Global Settings (NEW in v3.2.0)
+
+These settings can be specified in the `global_settings` section and override CLI defaults:
+
+#### Input/Output Settings
+| Setting               | Type        | Default | Description                                   |
+| --------------------- | ----------- | ------- | --------------------------------------------- |
+| `source_directory`    | string      | none    | Source directory path                         |
+| `input_file`          | string      | none    | Input file listing paths to process           |
+| `output_file`         | string      | none    | Output file path                              |
+| `input_include_files` | string/list | []      | Files to include at beginning (intro files)   |
+
+#### Output Control Settings
+| Setting              | Type    | Default | Description                               |
+| -------------------- | ------- | ------- | ----------------------------------------- |
+| `add_timestamp`      | boolean | false   | Add timestamp to output filename          |
+| `filename_mtime_hash`| boolean | false   | Add hash of file mtimes to filename       |
+| `force`              | boolean | false   | Force overwrite existing output file      |
+| `minimal_output`     | boolean | false   | Only create main output file              |
+| `skip_output_file`   | boolean | false   | Skip creating main output file            |
+
+#### Archive Settings
+| Setting          | Type    | Default | Description                           |
+| ---------------- | ------- | ------- | ------------------------------------- |
+| `create_archive` | boolean | false   | Create backup archive of files        |
+| `archive_type`   | string  | "zip"   | Archive format: "zip" or "tar.gz"     |
+
+#### Runtime Settings
+| Setting   | Type    | Default | Description                  |
+| --------- | ------- | ------- | ---------------------------- |
+| `verbose` | boolean | false   | Enable verbose output        |
+| `quiet`   | boolean | false   | Suppress all console output  |
+
+#### File Processing Settings (Existing)
+| Setting               | Type    | Default | Description                    |
+| --------------------- | ------- | ------- | ------------------------------ |
+| `encoding`            | string  | "utf-8" | Target encoding for all files  |
+| `separator_style`     | string  | none    | File separator style           |
+| `line_ending`         | string  | "lf"    | Line ending style (lf/crlf)    |
+| `security_check`      | string  | "warn"  | How to handle secrets          |
+| `max_file_size`       | string  | none    | Maximum file size to process   |
 
 ### Preset-Level Settings
 
@@ -237,6 +302,8 @@ globals:
 4. Global default settings
 5. m1f defaults (lowest priority)
 
+**Note**: CLI arguments ALWAYS override preset values. This allows presets to define defaults while still allowing users to override specific settings via command line.
+
 ## Advanced Features
 
 ### Conditional Presets
@@ -382,4 +449,116 @@ my_group:
     markdown_files:
       extensions: [".md"]
       actions: ["remove_empty_lines"]
+```
+
+## Complete Parameter Control via Presets (v3.2.0+)
+
+Starting with v3.2.0, ALL m1f parameters can be controlled via presets, eliminating the need for complex command lines:
+
+### Example: Full Configuration Preset
+
+```yaml
+# production.m1f-presets.yml
+production:
+  description: "Production build configuration"
+  priority: 100
+  
+  global_settings:
+    # Define all inputs/outputs
+    source_directory: "./src"
+    output_file: "dist/bundle.txt"
+    input_include_files: ["README.md", "LICENSE"]
+    
+    # Enable production features
+    add_timestamp: true
+    create_archive: true
+    archive_type: "tar.gz"
+    force: true  # Always overwrite
+    
+    # Production optimizations
+    minimal_output: true
+    quiet: true  # No console output
+    
+    # File processing
+    separator_style: "MachineReadable"
+    encoding: "utf-8"
+    security_check: "abort"
+    
+    # Only include necessary files
+    include_extensions: [".js", ".jsx", ".ts", ".tsx", ".json"]
+    exclude_patterns: ["*.test.*", "*.spec.*", "__tests__/**"]
+    max_file_size: "1MB"
+```
+
+### Usage Comparison
+
+**Before v3.2.0** (long command line):
+```bash
+python -m tools.m1f -s ./src -o dist/bundle.txt \
+  --input-include-files README.md LICENSE \
+  --add-timestamp --create-archive --archive-type tar.gz \
+  --force --minimal-output --quiet \
+  --separator-style MachineReadable \
+  --convert-to-charset utf-8 --security-check abort \
+  --include-extensions .js .jsx .ts .tsx .json \
+  --excludes "*.test.*" "*.spec.*" "__tests__/**" \
+  --max-file-size 1MB
+```
+
+**After v3.2.0** (simple command):
+```bash
+python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
+```
+
+### Command Line Override
+
+CLI parameters still take precedence, allowing quick overrides:
+
+```bash
+# Use production preset but enable verbose output for debugging
+python -m tools.m1f --preset production.m1f-presets.yml -o output.txt -v
+
+# Use production preset but change archive type
+python -m tools.m1f --preset production.m1f-presets.yml -o output.txt --archive-type zip
+```
+
+### Multiple Environment Presets
+
+```yaml
+# environments.m1f-presets.yml
+development:
+  priority: 10
+  global_settings:
+    source_directory: "./src"
+    output_file: "dev-bundle.txt"
+    verbose: true
+    include_dot_paths: true
+    security_check: "warn"
+
+staging:
+  priority: 20
+  global_settings:
+    source_directory: "./src" 
+    output_file: "stage-bundle.txt"
+    create_archive: true
+    security_check: "abort"
+
+production:
+  priority: 30
+  global_settings:
+    source_directory: "./dist"
+    output_file: "prod-bundle.txt"
+    minimal_output: true
+    quiet: true
+    create_archive: true
+    archive_type: "tar.gz"
+```
+
+Use with `--preset-group`:
+```bash
+# Development build
+python -m tools.m1f --preset environments.yml --preset-group development
+
+# Production build  
+python -m tools.m1f --preset environments.yml --preset-group production
 ```

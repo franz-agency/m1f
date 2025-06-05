@@ -37,6 +37,59 @@ example_group_name:
     # Options: lf, crlf
     line_ending: "lf"
     
+    # === INPUT/OUTPUT SETTINGS ===
+    
+    # Source directory path (overrides CLI -s/--source-directory)
+    # source_directory: "/path/to/source"
+    
+    # Input file path (overrides CLI -i/--input-file)
+    # input_file: "/path/to/input-list.txt"
+    
+    # Output file path (overrides CLI -o/--output-file)
+    # output_file: "/path/to/output.txt"
+    
+    # Intro files to include at beginning (single file or list)
+    # Single file:
+    # input_include_files: "README.md"
+    # Multiple files:
+    # input_include_files:
+    #   - "README.md"
+    #   - "intro.txt"
+    
+    # === OUTPUT CONTROL ===
+    
+    # Add timestamp to output filename (default: false)
+    add_timestamp: false
+    
+    # Add hash of file modification times to filename (default: false)
+    filename_mtime_hash: false
+    
+    # Force overwrite existing output file (default: false)
+    force: false
+    
+    # Only create main output file, skip auxiliary files (default: false)
+    minimal_output: false
+    
+    # Skip creating main output file (default: false)
+    skip_output_file: false
+    
+    # === ARCHIVE SETTINGS ===
+    
+    # Create backup archive of processed files (default: false)
+    create_archive: false
+    
+    # Archive format when create_archive is true
+    # Options: zip, tar.gz
+    archive_type: "zip"
+    
+    # === RUNTIME BEHAVIOR ===
+    
+    # Enable verbose output (default: false)
+    verbose: false
+    
+    # Suppress all output (default: false)
+    quiet: false
+    
     # === INCLUDE/EXCLUDE PATTERNS ===
     
     # Patterns to include (gitignore-style patterns)

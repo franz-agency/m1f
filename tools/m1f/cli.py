@@ -378,11 +378,13 @@ def parse_args(
     """Parse command-line arguments."""
     parsed_args = parser.parse_args(args)
 
-    # Validate that at least one input source is provided
-    if not parsed_args.source_directory and not parsed_args.input_file:
-        parser.error(
-            "At least one of -s/--source-directory or -i/--input-file is required"
-        )
+    # Skip validation if presets are being used - they may provide required values
+    if not parsed_args.preset_files or parsed_args.disable_presets:
+        # Validate that at least one input source is provided
+        if not parsed_args.source_directory and not parsed_args.input_file:
+            parser.error(
+                "At least one of -s/--source-directory or -i/--input-file is required"
+            )
 
     # Validate conflicting options
     if parsed_args.quiet and parsed_args.verbose:

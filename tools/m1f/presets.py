@@ -93,6 +93,27 @@ class GlobalSettings:
     separator_style: Optional[str] = None  # Default separator style
     line_ending: Optional[str] = None  # 'lf' or 'crlf'
 
+    # Input/Output settings
+    source_directory: Optional[str] = None  # Source directory path
+    input_file: Optional[str] = None  # Input file path
+    output_file: Optional[str] = None  # Output file path
+    input_include_files: Optional[Union[str, List[str]]] = None  # Intro files
+
+    # Output control settings
+    add_timestamp: Optional[bool] = None  # Add timestamp to filename
+    filename_mtime_hash: Optional[bool] = None  # Add hash to filename
+    force: Optional[bool] = None  # Force overwrite existing files
+    minimal_output: Optional[bool] = None  # Only create main output file
+    skip_output_file: Optional[bool] = None  # Skip creating main output file
+
+    # Archive settings
+    create_archive: Optional[bool] = None  # Create backup archive
+    archive_type: Optional[str] = None  # 'zip' or 'tar.gz'
+
+    # Runtime behavior
+    verbose: Optional[bool] = None  # Enable verbose output
+    quiet: Optional[bool] = None  # Suppress all output
+
     # Global include/exclude patterns
     include_patterns: List[str] = field(default_factory=list)
     exclude_patterns: List[str] = field(default_factory=list)
@@ -291,6 +312,40 @@ class PresetManager:
                 group.global_settings.separator_style = global_data["separator_style"]
             if "line_ending" in global_data:
                 group.global_settings.line_ending = global_data["line_ending"]
+            
+            # Parse input/output settings
+            if "source_directory" in global_data:
+                group.global_settings.source_directory = global_data["source_directory"]
+            if "input_file" in global_data:
+                group.global_settings.input_file = global_data["input_file"]
+            if "output_file" in global_data:
+                group.global_settings.output_file = global_data["output_file"]
+            if "input_include_files" in global_data:
+                group.global_settings.input_include_files = global_data["input_include_files"]
+            
+            # Parse output control settings
+            if "add_timestamp" in global_data:
+                group.global_settings.add_timestamp = global_data["add_timestamp"]
+            if "filename_mtime_hash" in global_data:
+                group.global_settings.filename_mtime_hash = global_data["filename_mtime_hash"]
+            if "force" in global_data:
+                group.global_settings.force = global_data["force"]
+            if "minimal_output" in global_data:
+                group.global_settings.minimal_output = global_data["minimal_output"]
+            if "skip_output_file" in global_data:
+                group.global_settings.skip_output_file = global_data["skip_output_file"]
+            
+            # Parse archive settings
+            if "create_archive" in global_data:
+                group.global_settings.create_archive = global_data["create_archive"]
+            if "archive_type" in global_data:
+                group.global_settings.archive_type = global_data["archive_type"]
+            
+            # Parse runtime behavior
+            if "verbose" in global_data:
+                group.global_settings.verbose = global_data["verbose"]
+            if "quiet" in global_data:
+                group.global_settings.quiet = global_data["quiet"]
 
             # Parse include/exclude patterns
             if "include_patterns" in global_data:
@@ -326,6 +381,10 @@ class PresetManager:
             if "exclude_paths_file" in global_data:
                 group.global_settings.exclude_paths_file = global_data[
                     "exclude_paths_file"
+                ]
+            if "include_paths_file" in global_data:
+                group.global_settings.include_paths_file = global_data[
+                    "include_paths_file"
                 ]
 
             # Parse processing options
@@ -411,6 +470,40 @@ class PresetManager:
                 merged.separator_style = gs.separator_style
             if gs.line_ending and not merged.line_ending:
                 merged.line_ending = gs.line_ending
+            
+            # Merge input/output settings
+            if gs.source_directory and not merged.source_directory:
+                merged.source_directory = gs.source_directory
+            if gs.input_file and not merged.input_file:
+                merged.input_file = gs.input_file
+            if gs.output_file and not merged.output_file:
+                merged.output_file = gs.output_file
+            if gs.input_include_files and not merged.input_include_files:
+                merged.input_include_files = gs.input_include_files
+            
+            # Merge output control settings
+            if gs.add_timestamp is not None and merged.add_timestamp is None:
+                merged.add_timestamp = gs.add_timestamp
+            if gs.filename_mtime_hash is not None and merged.filename_mtime_hash is None:
+                merged.filename_mtime_hash = gs.filename_mtime_hash
+            if gs.force is not None and merged.force is None:
+                merged.force = gs.force
+            if gs.minimal_output is not None and merged.minimal_output is None:
+                merged.minimal_output = gs.minimal_output
+            if gs.skip_output_file is not None and merged.skip_output_file is None:
+                merged.skip_output_file = gs.skip_output_file
+            
+            # Merge archive settings
+            if gs.create_archive is not None and merged.create_archive is None:
+                merged.create_archive = gs.create_archive
+            if gs.archive_type and not merged.archive_type:
+                merged.archive_type = gs.archive_type
+            
+            # Merge runtime behavior
+            if gs.verbose is not None and merged.verbose is None:
+                merged.verbose = gs.verbose
+            if gs.quiet is not None and merged.quiet is None:
+                merged.quiet = gs.quiet
 
             # Merge patterns (combine lists)
             merged.include_patterns.extend(gs.include_patterns)
@@ -437,6 +530,8 @@ class PresetManager:
                 merged.max_file_size = gs.max_file_size
             if gs.exclude_paths_file and not merged.exclude_paths_file:
                 merged.exclude_paths_file = gs.exclude_paths_file
+            if gs.include_paths_file and not merged.include_paths_file:
+                merged.include_paths_file = gs.include_paths_file
 
             # Merge processing options
             if (
