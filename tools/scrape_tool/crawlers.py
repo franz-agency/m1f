@@ -56,23 +56,35 @@ class WebCrawler:
         )
 
         # Create scraper config
-        scraper_config = ScraperConfig(
-            max_depth=self.config.max_depth,
-            max_pages=self.config.max_pages,
-            allowed_domains=allowed_domains,
-            exclude_patterns=exclude_patterns,
-            respect_robots_txt=self.config.respect_robots_txt,
-            concurrent_requests=self.config.concurrent_requests,
-            request_delay=self.config.request_delay,
-            user_agent=self.config.user_agent,
-            timeout=float(self.config.timeout),
-            follow_redirects=True,  # Always follow redirects
-        )
+        scraper_kwargs = {
+            "max_depth": self.config.max_depth,
+            "max_pages": self.config.max_pages,
+            "allowed_domains": allowed_domains,
+            "exclude_patterns": exclude_patterns,
+            "respect_robots_txt": self.config.respect_robots_txt,
+            "concurrent_requests": self.config.concurrent_requests,
+            "request_delay": self.config.request_delay,
+            "timeout": float(self.config.timeout),
+            "follow_redirects": True,  # Always follow redirects
+        }
+        
+        # Only add user_agent if it's not None
+        if self.config.user_agent is not None:
+            scraper_kwargs["user_agent"] = self.config.user_agent
+            
+        scraper_config = ScraperConfig(**scraper_kwargs)
 
         # Apply any backend-specific configuration
         if self.config.scraper_config:
             for key, value in self.config.scraper_config.items():
                 if hasattr(scraper_config, key):
+                    # Special handling for custom_headers to ensure it's a dict
+                    if key == 'custom_headers':
+                        if value is None:
+                            value = {}
+                        elif not isinstance(value, dict):
+                            logger.warning(f"Invalid custom_headers type: {type(value)}, using empty dict")
+                            value = {}
                     setattr(scraper_config, key, value)
 
         return scraper_config

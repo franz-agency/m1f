@@ -28,9 +28,20 @@ class BeautifulSoupScraper(WebScraperBase):
 
     async def __aenter__(self):
         """Create aiohttp session on entry."""
-        headers = {"User-Agent": self.config.user_agent}
+        headers = {}
+        
+        # Only add User-Agent if it's not None
+        if self.config.user_agent:
+            headers["User-Agent"] = self.config.user_agent
+            
         if self.config.custom_headers:
-            headers.update(self.config.custom_headers)
+            # Filter out None keys when updating headers
+            for k, v in self.config.custom_headers.items():
+                if k is not None and v is not None:
+                    headers[k] = v
+        
+        # Final validation to ensure no None values
+        headers = {k: v for k, v in headers.items() if k is not None and v is not None}
 
         timeout = aiohttp.ClientTimeout(total=self.config.timeout)
         connector = aiohttp.TCPConnector(
@@ -44,10 +55,10 @@ class BeautifulSoupScraper(WebScraperBase):
 
     async def __aexit__(self, *args):
         """Close aiohttp session on exit."""
-        if self.session:
+        if self.session and not self.session.closed:
             await self.session.close()
             # Small delay to allow connections to close properly
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.25)
 
     async def scrape_url(self, url: str) -> ScrapedPage:
         """Scrape a single URL using BeautifulSoup.
@@ -73,8 +84,11 @@ class BeautifulSoupScraper(WebScraperBase):
                 ) as response:
                     # Get response info
                     status_code = response.status
-                    # Convert headers to dict with string keys
-                    headers = {str(k): str(v) for k, v in response.headers.items()}
+                    # Convert headers to dict with string keys, skip None keys
+                    headers = {}
+                    for k, v in response.headers.items():
+                        if k is not None:
+                            headers[str(k)] = str(v)
 
                     # Handle encoding
                     content_bytes = await response.read()
@@ -216,7 +230,7 @@ class BeautifulSoupScraper(WebScraperBase):
             name = meta.get("name") or meta.get("property") or meta.get("http-equiv")
             content = meta.get("content", "")
 
-            if name and content:
+            if name is not None and content:
                 # Ensure name is a string
                 metadata[str(name)] = content
 

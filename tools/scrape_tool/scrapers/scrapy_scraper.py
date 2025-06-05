@@ -234,8 +234,10 @@ class ScrapyScraper(WebScraperBase):
                 for og_tag in soup.find_all(
                     "meta", attrs={"property": lambda x: x and x.startswith("og:")}
                 ):
-                    if og_tag.get("content"):
-                        metadata[og_tag["property"]] = og_tag["content"]
+                    prop = og_tag.get("property")
+                    content = og_tag.get("content")
+                    if prop and content:
+                        metadata[prop] = content
 
                 return ScrapedPage(
                     url=str(response.url),

@@ -224,12 +224,18 @@ class PlaywrightScraper(WebScraperBase):
                 
                 // Get Open Graph tags
                 document.querySelectorAll('meta[property^="og:"]').forEach(tag => {
-                    metadata[tag.getAttribute('property')] = tag.content;
+                    const prop = tag.getAttribute('property');
+                    if (prop && tag.content) {
+                        metadata[prop] = tag.content;
+                    }
                 });
                 
                 // Get Twitter Card tags
                 document.querySelectorAll('meta[name^="twitter:"]').forEach(tag => {
-                    metadata[tag.getAttribute('name')] = tag.content;
+                    const name = tag.getAttribute('name');
+                    if (name && tag.content) {
+                        metadata[name] = tag.content;
+                    }
                 });
                 
                 // Get canonical URL

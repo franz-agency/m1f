@@ -6347,23 +6347,35 @@ class WebCrawler:
         )
 
         # Create scraper config
-        scraper_config = ScraperConfig(
-            max_depth=self.config.max_depth,
-            max_pages=self.config.max_pages,
-            allowed_domains=allowed_domains,
-            exclude_patterns=exclude_patterns,
-            respect_robots_txt=self.config.respect_robots_txt,
-            concurrent_requests=self.config.concurrent_requests,
-            request_delay=self.config.request_delay,
-            user_agent=self.config.user_agent,
-            timeout=float(self.config.timeout),
-            follow_redirects=True,  # Always follow redirects
-        )
+        scraper_kwargs = {
+            "max_depth": self.config.max_depth,
+            "max_pages": self.config.max_pages,
+            "allowed_domains": allowed_domains,
+            "exclude_patterns": exclude_patterns,
+            "respect_robots_txt": self.config.respect_robots_txt,
+            "concurrent_requests": self.config.concurrent_requests,
+            "request_delay": self.config.request_delay,
+            "timeout": float(self.config.timeout),
+            "follow_redirects": True,  # Always follow redirects
+        }
+        
+        # Only add user_agent if it's not None
+        if self.config.user_agent is not None:
+            scraper_kwargs["user_agent"] = self.config.user_agent
+            
+        scraper_config = ScraperConfig(**scraper_kwargs)
 
         # Apply any backend-specific configuration
         if self.config.scraper_config:
             for key, value in self.config.scraper_config.items():
                 if hasattr(scraper_config, key):
+                    # Special handling for custom_headers to ensure it's a dict
+                    if key == 'custom_headers':
+                        if value is None:
+                            value = {}
+                        elif not isinstance(value, dict):
+                            logger.warning(f"Invalid custom_headers type: {type(value)}, using empty dict")
+                            value = {}
                     setattr(scraper_config, key, value)
 
         return scraper_config
@@ -7207,9 +7219,20 @@ class BeautifulSoupScraper(WebScraperBase):
 
     async def __aenter__(self):
         """Create aiohttp session on entry."""
-        headers = {"User-Agent": self.config.user_agent}
+        headers = {}
+        
+        # Only add User-Agent if it's not None
+        if self.config.user_agent:
+            headers["User-Agent"] = self.config.user_agent
+            
         if self.config.custom_headers:
-            headers.update(self.config.custom_headers)
+            # Filter out None keys when updating headers
+            for k, v in self.config.custom_headers.items():
+                if k is not None and v is not None:
+                    headers[k] = v
+        
+        # Final validation to ensure no None values
+        headers = {k: v for k, v in headers.items() if k is not None and v is not None}
 
         timeout = aiohttp.ClientTimeout(total=self.config.timeout)
         connector = aiohttp.TCPConnector(
@@ -7223,10 +7246,10 @@ class BeautifulSoupScraper(WebScraperBase):
 
     async def __aexit__(self, *args):
         """Close aiohttp session on exit."""
-        if self.session:
+        if self.session and not self.session.closed:
             await self.session.close()
             # Small delay to allow connections to close properly
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.25)
 
     async def scrape_url(self, url: str) -> ScrapedPage:
         """Scrape a single URL using BeautifulSoup.
@@ -7252,8 +7275,11 @@ class BeautifulSoupScraper(WebScraperBase):
                 ) as response:
                     # Get response info
                     status_code = response.status
-                    # Convert headers to dict with string keys
-                    headers = {str(k): str(v) for k, v in response.headers.items()}
+                    # Convert headers to dict with string keys, skip None keys
+                    headers = {}
+                    for k, v in response.headers.items():
+                        if k is not None:
+                            headers[str(k)] = str(v)
 
                     # Handle encoding
                     content_bytes = await response.read()
@@ -7395,7 +7421,7 @@ class BeautifulSoupScraper(WebScraperBase):
             name = meta.get("name") or meta.get("property") or meta.get("http-equiv")
             content = meta.get("content", "")
 
-            if name and content:
+            if name is not None and content:
                 # Ensure name is a string
                 metadata[str(name)] = content
 
@@ -7994,12 +8020,18 @@ class PlaywrightScraper(WebScraperBase):
                 
                 // Get Open Graph tags
                 document.querySelectorAll('meta[property^="og:"]').forEach(tag => {
-                    metadata[tag.getAttribute('property')] = tag.content;
+                    const prop = tag.getAttribute('property');
+                    if (prop && tag.content) {
+                        metadata[prop] = tag.content;
+                    }
                 });
                 
                 // Get Twitter Card tags
                 document.querySelectorAll('meta[name^="twitter:"]').forEach(tag => {
-                    metadata[tag.getAttribute('name')] = tag.content;
+                    const name = tag.getAttribute('name');
+                    if (name && tag.content) {
+                        metadata[name] = tag.content;
+                    }
                 });
                 
                 // Get canonical URL
@@ -8424,8 +8456,10 @@ class ScrapyScraper(WebScraperBase):
                 for og_tag in soup.find_all(
                     "meta", attrs={"property": lambda x: x and x.startswith("og:")}
                 ):
-                    if og_tag.get("content"):
-                        metadata[og_tag["property"]] = og_tag["content"]
+                    prop = og_tag.get("property")
+                    content = og_tag.get("content")
+                    if prop and content:
+                        metadata[prop] = content
 
                 return ScrapedPage(
                     url=str(response.url),
