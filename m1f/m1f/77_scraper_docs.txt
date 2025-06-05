@@ -1,0 +1,783 @@
+======= 40_webscraper.md | CHECKSUM_SHA256: 3ba7ff5b3603e4e6e222ef935aa95ef621afafe1656d572147aa9792bbad94d2 ======
+# webscraper (Website Downloader)
+
+A modern web scraping tool for downloading websites with multiple backend
+options, async I/O, and intelligent crawling capabilities.
+
+## Overview
+
+The webscraper tool provides a robust solution for downloading websites for
+offline viewing and analysis. Built with Python 3.10+ and modern async
+architecture, it features pluggable scraper backends for different use cases.
+
+**Primary Use Case**: Download online documentation to make it available to LLMs
+(like Claude) for analysis and reference. The downloaded HTML files can be
+converted to Markdown with html2md, then bundled into a single file with m1f for
+optimal LLM context usage.
+
+## Key Features
+
+- **Multiple Scraper Backends**: Choose from BeautifulSoup (default), HTTrack,
+  Scrapy, Playwright, or Selectolax
+- **Async I/O**: High-performance concurrent downloading
+- **Intelligent Crawling**: Respects robots.txt, follows redirects, handles
+  encoding
+- **Metadata Preservation**: Saves HTTP headers and metadata alongside HTML
+  files
+- **Domain Restriction**: Automatically restricts crawling to the starting
+  domain
+- **Rate Limiting**: Configurable delays between requests
+- **Progress Tracking**: Real-time download progress with file listing
+
+## Quick Start
+
+```bash
+# Basic website download
+python -m tools.scrape_tool https://example.com -o ./downloaded_html
+
+# Download with specific depth and page limits
+python -m tools.scrape_tool https://example.com -o ./html \
+  --max-pages 50 \
+  --max-depth 3
+
+# Use different scraper backend
+python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
+
+# List downloaded files after completion
+python -m tools.scrape_tool https://example.com -o ./html --list-files
+```
+
+## Command Line Interface
+
+```bash
+python -m tools.scrape_tool <url> -o <output> [options]
+```
+
+### Required Arguments
+
+| Option         | Description                |
+| -------------- | -------------------------- |
+| `url`          | URL to start scraping from |
+| `-o, --output` | Output directory           |
+
+### Optional Arguments
+
+| Option                  | Description                                                            | Default       |
+| ----------------------- | ---------------------------------------------------------------------- | ------------- |
+| `--scraper`             | Scraper backend to use (choices: httrack, beautifulsoup, bs4,         | beautifulsoup |
+|                         | selectolax, httpx, scrapy, playwright)                                 |               |
+| `--scraper-config`      | Path to scraper-specific config file (YAML/JSON)                      | None          |
+| `--max-depth`           | Maximum crawl depth                                                    | 5             |
+| `--max-pages`           | Maximum pages to crawl                                                 | 1000          |
+| `--request-delay`       | Delay between requests in seconds (for Cloudflare protection)         | 15.0          |
+| `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)             | 2             |
+| `--user-agent`          | Custom user agent string                                               | Mozilla/5.0   |
+| `--list-files`          | List all downloaded files after completion                             | False         |
+| `-v, --verbose`         | Enable verbose output                                                  | False         |
+| `-q, --quiet`           | Suppress all output except errors                                      | False         |
+| `--version`             | Show version information and exit                                      | -             |
+
+## Scraper Backends
+
+### BeautifulSoup (default)
+
+- **Best for**: General purpose scraping, simple websites
+- **Features**: Fast HTML parsing, good encoding detection
+- **Limitations**: No JavaScript support
+
+```bash
+python -m tools.scrape_tool https://example.com -o ./html --scraper beautifulsoup
+```
+
+### HTTrack
+
+- **Best for**: Complete website mirroring, preserving structure
+- **Features**: External links handling, advanced mirroring options
+- **Limitations**: Requires HTTrack to be installed separately
+
+```bash
+python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
+```
+
+### Scrapy
+
+- **Best for**: Large-scale crawling, complex scraping rules
+- **Features**: Advanced crawling settings, middleware support
+- **Limitations**: More complex configuration
+
+```bash
+python -m tools.scrape_tool https://example.com -o ./html --scraper scrapy
+```
+
+### Playwright
+
+- **Best for**: JavaScript-heavy sites, SPAs
+- **Features**: Full browser automation, JavaScript execution
+- **Limitations**: Slower, requires more resources
+
+```bash
+python -m tools.scrape_tool https://example.com -o ./html --scraper playwright
+```
+
+### Selectolax
+
+- **Best for**: Speed-critical applications
+- **Features**: Fastest HTML parsing, minimal overhead
+- **Limitations**: Basic feature set
+
+```bash
+python -m tools.scrape_tool https://example.com -o ./html --scraper selectolax
+```
+
+## Usage Examples
+
+### Basic Website Download
+
+```bash
+# Download a simple website
+python -m tools.scrape_tool https://docs.example.com -o ./docs_html
+
+# Download with verbose output
+python -m tools.scrape_tool https://docs.example.com -o ./docs_html -v
+```
+
+### Controlled Crawling
+
+```bash
+# Limit crawl depth for shallow scraping
+python -m tools.scrape_tool https://blog.example.com -o ./blog \
+  --max-depth 2 \
+  --max-pages 20
+
+# Slow crawling to be respectful
+python -m tools.scrape_tool https://example.com -o ./html \
+  --request-delay 2.0 \
+  --concurrent-requests 2
+```
+
+### Custom Configuration
+
+```bash
+# Use custom user agent
+python -m tools.scrape_tool https://example.com -o ./html \
+  --user-agent "MyBot/1.0 (Compatible)"
+
+# Use scraper-specific configuration
+python -m tools.scrape_tool https://example.com -o ./html \
+  --scraper scrapy \
+  --scraper-config ./scrapy-settings.yaml
+```
+
+## Output Structure
+
+Downloaded files are organized to mirror the website structure:
+
+```
+output_directory/
+├── example.com/
+│   ├── index.html
+│   ├── index.meta.json
+│   ├── about/
+│   │   ├── index.html
+│   │   └── index.meta.json
+│   ├── blog/
+│   │   ├── post1/
+│   │   │   ├── index.html
+│   │   │   └── index.meta.json
+│   │   └── post2/
+│   │       ├── index.html
+│   │       └── index.meta.json
+│   └── contact/
+│       ├── index.html
+│       └── index.meta.json
+```
+
+### Metadata Files
+
+Each HTML file has an accompanying `.meta.json` file containing:
+
+```json
+{
+  "url": "https://example.com/about/",
+  "title": "About Us - Example",
+  "encoding": "utf-8",
+  "status_code": 200,
+  "headers": {
+    "Content-Type": "text/html; charset=utf-8",
+    "Last-Modified": "2024-01-15T10:30:00Z"
+  },
+  "metadata": {
+    "description": "Learn more about Example company",
+    "og:title": "About Us",
+    "canonical": "https://example.com/about/"
+  }
+}
+```
+
+## Integration with m1f Workflow
+
+webscraper is designed as the first step in a workflow to provide documentation
+to LLMs:
+
+```bash
+# Step 1: Download documentation website
+python -m tools.scrape_tool https://docs.example.com -o ./html_files
+
+# Step 2: Analyze HTML structure
+python -m tools.html2md analyze ./html_files/*.html --suggest-selectors
+
+# Step 3: Convert to Markdown
+python -m tools.html2md convert ./html_files -o ./markdown \
+  --content-selector "main.content" \
+  --ignore-selectors "nav" ".sidebar"
+
+# Step 4: Bundle for LLM consumption
+python -m tools.m1f -s ./markdown -o ./docs_bundle.txt \
+  --remove-scraped-metadata
+
+# Now docs_bundle.txt contains all documentation in a single file
+# that can be provided to Claude or other LLMs for analysis
+```
+
+### Complete Documentation Download Example
+
+```bash
+# Download React documentation for LLM analysis
+python -m tools.scrape_tool https://react.dev/learn -o ./react_docs \
+  --max-pages 100 \
+  --max-depth 3
+
+# Convert to clean Markdown
+python -m tools.html2md convert ./react_docs -o ./react_md \
+  --content-selector "article" \
+  --ignore-selectors "nav" "footer" ".sidebar"
+
+# Create single file for LLM
+python -m tools.m1f -s ./react_md -o ./react_documentation.txt
+
+# Now you can provide react_documentation.txt to Claude:
+# "Here is the React documentation: <contents of react_documentation.txt>"
+```
+
+## Best Practices
+
+1. **Respect robots.txt**: The tool automatically respects robots.txt files
+2. **Use appropriate delays**: Set `--request-delay` to avoid overwhelming
+   servers (default: 15 seconds)
+3. **Limit concurrent requests**: Use `--concurrent-requests` responsibly
+   (default: 2 connections)
+4. **Test with small crawls**: Start with `--max-pages 10` to test your settings
+5. **Check output**: Use `--list-files` to verify what was downloaded
+
+## Dealing with Cloudflare Protection
+
+Many websites use Cloudflare or similar services to protect against bots. The
+scraper now includes conservative defaults to help avoid detection:
+
+### Default Conservative Settings
+
+- **Request delay**: 15 seconds between requests
+- **Concurrent requests**: 2 simultaneous connections
+- **HTTrack backend**: Limited to 0.5 connections/second max
+- **Bandwidth limiting**: 100KB/s for HTTrack backend
+- **Robots.txt**: Always respected (cannot be disabled)
+
+### For Heavy Cloudflare Protection
+
+For heavily protected sites, manually set very conservative values:
+
+```bash
+python -m tools.scrape_tool https://protected-site.com -o ./output \
+  --request-delay 30 \
+  --concurrent-requests 1 \
+  --max-pages 50 \
+  --scraper httrack
+```
+
+### Cloudflare Avoidance Tips
+
+1. **Start conservative**: Begin with 30-60 second delays
+2. **Use realistic user agents**: The default is a current Chrome browser
+3. **Limit scope**: Download only what you need with `--max-pages`
+4. **Single connection**: Use `--concurrent-requests 1` for sensitive sites
+5. **Respect robots.txt**: Always enabled by default
+6. **Add randomness**: Consider adding random delays in custom scripts
+
+### When Cloudflare Still Blocks
+
+If conservative settings don't work:
+
+1. **Try Playwright backend**: Uses real browser automation
+   ```bash
+   python -m tools.scrape_tool https://site.com -o ./output --scraper playwright
+   ```
+
+2. **Manual download**: Some sites require manual browsing
+3. **API access**: Check if the site offers an API
+4. **Contact site owner**: Request permission or access
+
+## Troubleshooting
+
+### No files downloaded
+
+- Check if the website blocks automated access
+- Try a different scraper backend
+- Verify the URL is accessible
+
+### Incomplete downloads
+
+- Increase `--max-depth` if pages are deeply nested
+- Increase `--max-pages` if hitting the limit
+- Check for JavaScript-rendered content (use Playwright)
+
+### Encoding issues
+
+- The tool automatically detects encoding
+- Check `.meta.json` files for encoding information
+- Use html2md with proper encoding settings for conversion
+
+## See Also
+
+- [html2md Documentation](../03_html2md/30_html2md.md) - For converting
+  downloaded HTML to Markdown
+- [m1f Documentation](../01_m1f/00_m1f.md) - For bundling converted content for
+  LLMs
+
+======= 41_html2md_scraper_backends.md | CHECKSUM_SHA256: 94144b961d1546ad7ca268862e7064df2ce55a1eb67e30735a130ccb151551f2 ======
+# Web Scraper Backends
+
+The HTML2MD tool supports multiple web scraping backends, each optimized for
+different use cases. Choose the right backend based on your specific needs for
+optimal results.
+
+## Overview
+
+The HTML2MD scraper backend system provides flexibility to choose the most
+appropriate tool for your web scraping needs:
+
+- **Static websites**: BeautifulSoup4 (default) - Fast and lightweight
+- **Complete mirroring**: HTTrack - Professional website copying
+- **JavaScript-heavy sites**: Playwright (coming soon)
+- **Large-scale scraping**: Scrapy (coming soon)
+- **Performance-critical**: httpx + selectolax (coming soon)
+
+## Available Backends
+
+### BeautifulSoup4 (Default)
+
+BeautifulSoup4 is the default backend, ideal for scraping static HTML websites.
+
+**Pros:**
+
+- Easy to use and lightweight
+- Fast for simple websites
+- Good encoding detection
+- Excellent HTML parsing capabilities
+
+**Cons:**
+
+- No JavaScript support
+- Basic crawling capabilities
+- Single-threaded by default
+
+**Usage:**
+
+```bash
+# Default backend (no need to specify)
+python -m tools.scrape_tool https://example.com -o output/
+
+# Explicitly specify BeautifulSoup
+python -m tools.scrape_tool https://example.com -o output/ --scraper beautifulsoup
+
+# With custom options
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper beautifulsoup \
+  --max-depth 3 \
+  --max-pages 100 \
+  --request-delay 1.0
+```
+
+### HTTrack
+
+HTTrack is a professional website copier that creates complete offline mirrors.
+
+**Pros:**
+
+- Complete website mirroring
+- Preserves directory structure
+- Handles complex websites well
+- Resume interrupted downloads
+- Built-in robots.txt support
+
+**Cons:**
+
+- Requires system installation
+- Less flexible for custom parsing
+- Larger resource footprint
+
+**Installation:**
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install httrack
+
+# macOS
+brew install httrack
+
+# Windows
+# Download from https://www.httrack.com/
+```
+
+**Usage:**
+
+```bash
+python -m tools.scrape_tool https://example.com -o output/ --scraper httrack
+
+# With HTTrack-specific options
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper httrack \
+  --max-depth 5 \
+  --concurrent-requests 8
+```
+
+## Configuration Options
+
+### Command Line Options
+
+Common options for all scrapers:
+
+```bash
+--scraper BACKEND           # Choose scraper backend (beautifulsoup, bs4, httrack, 
+                           # selectolax, httpx, scrapy, playwright)
+--max-depth N               # Maximum crawl depth (default: 5)
+--max-pages N               # Maximum pages to crawl (default: 1000)
+--request-delay SECONDS     # Delay between requests (default: 15.0)
+--concurrent-requests N     # Number of concurrent requests (default: 2)
+--user-agent STRING         # Custom user agent
+--scraper-config PATH       # Path to scraper-specific config file (YAML/JSON)
+--list-files                # List all downloaded files after completion
+-v, --verbose               # Enable verbose output
+-q, --quiet                 # Suppress all output except errors
+--version                   # Show version information
+```
+
+Note: robots.txt is always respected and cannot be disabled.
+
+### Configuration File
+
+You can specify scraper-specific settings in a YAML or JSON configuration file:
+
+```yaml
+# beautifulsoup-config.yaml
+parser: "html.parser"  # Options: "html.parser", "lxml", "html5lib"
+features: "lxml"
+encoding: "auto"  # Or specific encoding like "utf-8"
+```
+
+```yaml
+# httrack-config.yaml
+mirror_options:
+  - "--assume-insecure"  # For HTTPS issues
+  - "--robots=3"  # Strict robots.txt compliance
+extra_filters:
+  - "+*.css"
+  - "+*.js"
+  - "-*.zip"
+```
+
+Use with:
+
+```bash
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper beautifulsoup \
+  --scraper-config beautifulsoup-config.yaml
+```
+
+### Backend-Specific Configuration
+
+Each backend can have specific configuration options:
+
+#### BeautifulSoup Configuration
+
+Create a `beautifulsoup.yaml`:
+
+```yaml
+scraper_config:
+  parser: "lxml" # Options: "html.parser", "lxml", "html5lib"
+  features: "lxml"
+  encoding: "auto" # Or specific encoding like "utf-8"
+```
+
+#### HTTrack Configuration
+
+Create a `httrack.yaml`:
+
+```yaml
+scraper_config:
+  mirror_options:
+    - "--assume-insecure" # For HTTPS issues
+    - "--robots=3" # Strict robots.txt compliance
+  extra_filters:
+    - "+*.css"
+    - "+*.js"
+    - "-*.zip"
+```
+
+## Use Cases and Recommendations
+
+### Static Documentation Sites
+
+For sites with mostly static HTML content:
+
+```bash
+python -m tools.scrape_tool https://docs.example.com -o docs/ \
+  --scraper beautifulsoup \
+  --max-depth 10 \
+  --request-delay 0.2
+```
+
+### Complete Website Backup
+
+For creating a complete offline mirror:
+
+```bash
+python -m tools.scrape_tool https://example.com -o backup/ \
+  --scraper httrack \
+  --max-pages 10000
+```
+
+### Rate-Limited APIs
+
+For sites with strict rate limits:
+
+```bash
+python -m tools.scrape_tool https://api.example.com/docs -o api-docs/ \
+  --scraper beautifulsoup \
+  --request-delay 2.0 \
+  --concurrent-requests 1
+```
+
+## Troubleshooting
+
+### BeautifulSoup Issues
+
+**Encoding Problems:**
+
+```bash
+# Create a config file with UTF-8 encoding
+echo 'encoding: utf-8' > bs-config.yaml
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper beautifulsoup \
+  --scraper-config bs-config.yaml
+```
+
+**Parser Issues:**
+
+```bash
+# Create a config file with different parser
+echo 'parser: html5lib' > bs-config.yaml
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper beautifulsoup \
+  --scraper-config bs-config.yaml
+```
+
+### HTTrack Issues
+
+**SSL Certificate Problems:**
+
+```bash
+# Create a config file to ignore SSL errors (use with caution)
+echo 'mirror_options: ["--assume-insecure"]' > httrack-config.yaml
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper httrack \
+  --scraper-config httrack-config.yaml
+```
+
+**Incomplete Downloads:** HTTrack creates a cache that allows resuming. Check
+the `.httrack` directory in your output folder.
+
+## Performance Comparison
+
+| Backend       | Speed     | Memory Usage | JavaScript | Accuracy  |
+| ------------- | --------- | ------------ | ---------- | --------- |
+| BeautifulSoup | Fast      | Low          | No         | High      |
+| HTTrack       | Medium    | Medium       | No         | Very High |
+| Selectolax    | Fastest   | Very Low     | No         | Medium    |
+| Scrapy        | Very Fast | Low-Medium   | No         | High      |
+| Playwright    | Slow      | High         | Yes        | Very High |
+
+## Additional Backends
+
+### Selectolax (httpx + selectolax)
+
+The fastest HTML parsing solution using httpx for networking and selectolax for
+parsing.
+
+**Pros:**
+
+- Blazing fast performance (C-based parser)
+- Minimal memory footprint
+- Excellent for large-scale simple scraping
+- Modern async HTTP/2 support
+
+**Cons:**
+
+- No JavaScript support
+- Limited parsing features compared to BeautifulSoup
+- Less mature ecosystem
+
+**Installation:**
+
+```bash
+pip install httpx selectolax
+```
+
+**Usage:**
+
+```bash
+# Basic usage
+python -m tools.scrape_tool https://example.com -o output/ --scraper selectolax
+
+# With custom configuration
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper selectolax \
+  --concurrent-requests 20 \
+  --request-delay 0.1
+
+# Using httpx alias
+python -m tools.scrape_tool https://example.com -o output/ --scraper httpx
+```
+
+### Scrapy
+
+Industrial-strength web scraping framework with advanced features.
+
+**Pros:**
+
+- Battle-tested in production
+- Built-in retry logic and error handling
+- Auto-throttle based on server response
+- Extensive middleware system
+- Distributed crawling support
+- Advanced caching and queuing
+
+**Cons:**
+
+- Steeper learning curve
+- Heavier than simple scrapers
+- Twisted-based (different async model)
+
+**Installation:**
+
+```bash
+pip install scrapy
+```
+
+**Usage:**
+
+```bash
+# Basic usage
+python -m tools.scrape_tool https://example.com -o output/ --scraper scrapy
+
+# With auto-throttle and caching
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper scrapy \
+  --scraper-config scrapy.yaml
+
+# Large-scale crawling
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper scrapy \
+  --max-pages 10000 \
+  --concurrent-requests 16
+```
+
+### Playwright
+
+Browser automation for JavaScript-heavy websites and SPAs.
+
+**Pros:**
+
+- Full JavaScript execution
+- Handles SPAs and dynamic content
+- Multiple browser engines (Chromium, Firefox, WebKit)
+- Screenshot and PDF generation
+- Mobile device emulation
+- Network interception
+
+**Cons:**
+
+- High resource usage
+- Slower than HTML-only scrapers
+- Requires browser installation
+
+**Installation:**
+
+```bash
+pip install playwright
+playwright install  # Install browser binaries
+```
+
+**Usage:**
+
+```bash
+# Basic usage
+python -m tools.scrape_tool https://example.com -o output/ --scraper playwright
+
+# With custom browser settings
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper playwright \
+  --scraper-config playwright.yaml
+
+# For SPA with wait conditions
+python -m tools.scrape_tool https://spa-example.com -o output/ \
+  --scraper playwright \
+  --request-delay 2.0 \
+  --concurrent-requests 2
+```
+
+## API Usage
+
+You can also use the scraper backends programmatically:
+
+```python
+import asyncio
+from tools.html2md.scrapers import create_scraper, ScraperConfig
+
+async def scrape_example():
+    # Configure scraper
+    config = ScraperConfig(
+        max_depth=5,
+        max_pages=100,
+        request_delay=0.5
+    )
+
+    # Create scraper instance
+    scraper = create_scraper('beautifulsoup', config)
+
+    # Scrape single page
+    async with scraper:
+        page = await scraper.scrape_url('https://example.com')
+        print(f"Title: {page.title}")
+        print(f"Content length: {len(page.content)}")
+
+    # Scrape entire site
+    async with scraper:
+        async for page in scraper.scrape_site('https://example.com'):
+            print(f"Scraped: {page.url}")
+
+# Run the example
+asyncio.run(scrape_example())
+```
+
+## Contributing
+
+To add a new scraper backend:
+
+1. Create a new file in `tools/html2md/scrapers/`
+2. Inherit from `WebScraperBase`
+3. Implement required methods: `scrape_url()` and `scrape_site()`
+4. Register in `SCRAPER_REGISTRY` in `__init__.py`
+5. Add tests in `tests/html2md/test_scrapers.py`
+6. Update this documentation
+
+See the BeautifulSoup implementation for a complete example.

@@ -193,7 +193,6 @@ tmp/
 # Exclude local Cloudflare Workers development files
 workers-site/
 .mf/
-.m1f/
 .1f/
 
 .claude

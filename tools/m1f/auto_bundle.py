@@ -74,7 +74,7 @@ class AutoBundler:
         self.verbose = verbose
         self.quiet = quiet
         self.config_file = self._find_config_file(project_root)
-        self.m1f_dir = project_root / ".m1f"
+        self.m1f_dir = project_root / "m1f"
 
     def _find_config_file(self, start_path: Path) -> Path:
         """Find .m1f.config.yml by searching from current directory up to root."""
