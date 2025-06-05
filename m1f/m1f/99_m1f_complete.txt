@@ -31136,7 +31136,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Optional, Set
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .config import Config, SeparatorStyle
 from .exceptions import (
@@ -31322,7 +31322,7 @@ class FileCombiner:
 
         # Add timestamp if requested
         if self.config.output.add_timestamp:
-            timestamp = datetime.now().strftime("_%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("_%Y%m%d_%H%M%S")
             output_path = output_path.with_name(
                 f"{output_path.stem}{timestamp}{output_path.suffix}"
             )
@@ -33088,12 +33088,18 @@ class OutputWriter:
             return content
 
         # Pattern to match scraped metadata at the end of the file
-        # Looks for a horizontal rule followed by scraped metadata
+        # More flexible pattern that handles variations in formatting
         pattern = (
-            r"\n\n---\n\n"
-            r"\*Scraped from:.*?\*\n\n"
-            r"\*Scraped at:.*?\*\n\n"
-            r"\*Source URL:.*?\*\s*$"
+            r"\n{1,3}"  # 1-3 newlines
+            r"(?:---|===|\*\*\*){1}\n{1,2}"  # Any horizontal rule style
+            r"(?:\*{1,2}|_)?"  # Optional emphasis markers
+            r"Scraped (?:from|URL):.*?"  # Scraped from or URL
+            r"(?:\*{1,2}|_)?\n{1,2}"  # Optional emphasis and newlines
+            r"(?:\*{1,2}|_)?"  # Optional emphasis markers
+            r"Scraped (?:at|date|time):.*?"  # Various date/time labels
+            r"(?:\*{1,2}|_)?\n{0,2}"  # Optional emphasis and newlines
+            r"(?:(?:\*{1,2}|_)?Source URL:.*?(?:\*{1,2}|_)?\n{0,2})?"  # Optional source URL
+            r"\s*$"  # Trailing whitespace at end
         )
 
         # Remove the metadata if found
@@ -34487,6 +34493,16 @@ class PresetManager:
         self, content: str, processor_name: str, args: Dict[str, Any], file_path: Path
     ) -> str:
         """Apply a custom processor."""
+        # Validate processor name to prevent injection attacks
+        if not processor_name or not isinstance(processor_name, str):
+            logger.warning(f"Invalid processor name: {processor_name}")
+            return content
+        
+        # Only allow alphanumeric and underscore in processor names
+        if not processor_name.replace("_", "").isalnum():
+            logger.warning(f"Invalid processor name format: {processor_name}")
+            return content
+        
         if processor_name in self._builtin_processors:
             return self._builtin_processors[processor_name](content, args, file_path)
         else:
@@ -34923,7 +34939,7 @@ class SeparatorGenerator:
         """Gather metadata about the file."""
         try:
             stat_info = file_path.stat()
-            mod_time = datetime.fromtimestamp(stat_info.st_mtime)
+            mod_time = datetime.fromtimestamp(stat_info.st_mtime, tz=timezone.utc)
 
             return {
                 "relative_path": rel_path,

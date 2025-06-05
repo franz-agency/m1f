@@ -24,7 +24,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Optional, Set
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .config import Config, SeparatorStyle
 from .exceptions import (
@@ -210,7 +210,7 @@ class FileCombiner:
 
         # Add timestamp if requested
         if self.config.output.add_timestamp:
-            timestamp = datetime.now().strftime("_%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("_%Y%m%d_%H%M%S")
             output_path = output_path.with_name(
                 f"{output_path.stem}{timestamp}{output_path.suffix}"
             )

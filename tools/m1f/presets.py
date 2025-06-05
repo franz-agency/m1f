@@ -960,6 +960,16 @@ class PresetManager:
         self, content: str, processor_name: str, args: Dict[str, Any], file_path: Path
     ) -> str:
         """Apply a custom processor."""
+        # Validate processor name to prevent injection attacks
+        if not processor_name or not isinstance(processor_name, str):
+            logger.warning(f"Invalid processor name: {processor_name}")
+            return content
+        
+        # Only allow alphanumeric and underscore in processor names
+        if not processor_name.replace("_", "").isalnum():
+            logger.warning(f"Invalid processor name format: {processor_name}")
+            return content
+        
         if processor_name in self._builtin_processors:
             return self._builtin_processors[processor_name](content, args, file_path)
         else:

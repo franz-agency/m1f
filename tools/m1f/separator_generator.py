@@ -97,7 +97,7 @@ class SeparatorGenerator:
         """Gather metadata about the file."""
         try:
             stat_info = file_path.stat()
-            mod_time = datetime.fromtimestamp(stat_info.st_mtime)
+            mod_time = datetime.fromtimestamp(stat_info.st_mtime, tz=timezone.utc)
 
             return {
                 "relative_path": rel_path,
