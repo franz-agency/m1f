@@ -67,11 +67,11 @@ class WebCrawler:
             "timeout": float(self.config.timeout),
             "follow_redirects": True,  # Always follow redirects
         }
-        
+
         # Only add user_agent if it's not None
         if self.config.user_agent is not None:
             scraper_kwargs["user_agent"] = self.config.user_agent
-            
+
         scraper_config = ScraperConfig(**scraper_kwargs)
 
         # Apply any backend-specific configuration
@@ -79,11 +79,13 @@ class WebCrawler:
             for key, value in self.config.scraper_config.items():
                 if hasattr(scraper_config, key):
                     # Special handling for custom_headers to ensure it's a dict
-                    if key == 'custom_headers':
+                    if key == "custom_headers":
                         if value is None:
                             value = {}
                         elif not isinstance(value, dict):
-                            logger.warning(f"Invalid custom_headers type: {type(value)}, using empty dict")
+                            logger.warning(
+                                f"Invalid custom_headers type: {type(value)}, using empty dict"
+                            )
                             value = {}
                     setattr(scraper_config, key, value)
 
@@ -186,10 +188,12 @@ class WebCrawler:
                 safe_subdirs = []
                 for part in subdirs:
                     # Remove any path traversal attempts
-                    safe_part = part.replace("..", "").replace("./", "").replace("\\", "")
+                    safe_part = (
+                        part.replace("..", "").replace("./", "").replace("\\", "")
+                    )
                     if safe_part and safe_part not in (".", ".."):
                         safe_subdirs.append(safe_part)
-                
+
                 if safe_subdirs:
                     subdir = output_dir / Path(*safe_subdirs)
                     subdir.mkdir(parents=True, exist_ok=True)

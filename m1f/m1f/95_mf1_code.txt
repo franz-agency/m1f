@@ -144,9 +144,10 @@ async def async_main() -> int:
                 "--list", action="store_true", help="List available bundles"
             )
             parser.add_argument(
-                "--group", "-g", 
-                type=str, 
-                help="Only create bundles from specified group"
+                "--group",
+                "-g",
+                type=str,
+                help="Only create bundles from specified group",
             )
             parser.add_argument(
                 "-v", "--verbose", action="store_true", help="Enable verbose output"
@@ -161,9 +162,9 @@ async def async_main() -> int:
             # Create and run auto-bundler
             bundler = AutoBundler(Path.cwd(), verbose=args.verbose, quiet=args.quiet)
             success = bundler.run(
-                bundle_name=args.bundle_name, 
+                bundle_name=args.bundle_name,
                 list_bundles=args.list,
-                bundle_group=args.group
+                bundle_group=args.group,
             )
             return 0 if success else 1
 
@@ -1859,10 +1860,16 @@ class Html2mdConverter:
 
         # Convert using the convert_html method which includes preprocessing
         # Use a relative base URL to avoid exposing absolute paths
-        file_name = file_path.name if file_path and file_path.name else (Path(file_path).resolve().name if file_path else None)
+        file_name = (
+            file_path.name
+            if file_path and file_path.name
+            else (Path(file_path).resolve().name if file_path else None)
+        )
         base_url = file_name
         markdown = self.convert_html(
-            html_content, base_url=base_url, source_file=str(file_name if file_name else "input")
+            html_content,
+            base_url=base_url,
+            source_file=str(file_name if file_name else "input"),
         )
 
         # Determine output path
@@ -1870,8 +1877,12 @@ class Html2mdConverter:
             rel_path = file_path.relative_to(self.config.source)
         else:
             # Handle case where file_path might be "." or have empty name
-            rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
-            if not rel_path or str(rel_path) == '.':
+            rel_path = (
+                Path(file_path.name)
+                if file_path.name
+                else Path(file_path).resolve().name
+            )
+            if not rel_path or str(rel_path) == ".":
                 rel_path = Path(file_path).resolve().name
 
         output_path = self.config.destination / Path(rel_path).with_suffix(".md")
@@ -2058,8 +2069,12 @@ class Html2mdConverter:
                 rel_path = file_path.relative_to(self.config.source)
             else:
                 # Handle case where file_path might be "." or have empty name
-                rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
-                if not rel_path or str(rel_path) == '.':
+                rel_path = (
+                    Path(file_path.name)
+                    if file_path.name
+                    else Path(file_path).resolve().name
+                )
+                if not rel_path or str(rel_path) == ".":
                     rel_path = Path(file_path).resolve().name
 
             output_path = self.config.destination / Path(rel_path).with_suffix(".md")
@@ -4042,6 +4057,7 @@ import logging
 
 try:
     import aiofiles
+
     AIOFILES_AVAILABLE = True
 except ImportError:
     AIOFILES_AVAILABLE = False
@@ -4095,7 +4111,7 @@ class FileSplitter:
                 meta = file.metadata
                 # Build info line
                 info_parts = [f"{i:4d}. {meta.path}"]
-                
+
                 # Only add size if available
                 if meta.size_bytes:
                     size_str = format_size(meta.size_bytes)
@@ -4211,9 +4227,9 @@ class FileSplitter:
             if AIOFILES_AVAILABLE:
                 # Use async I/O
                 # First, try to detect if the file is binary
-                async with aiofiles.open(self.config.input_file, 'rb') as f:
+                async with aiofiles.open(self.config.input_file, "rb") as f:
                     sample_bytes = await f.read(8192)
-                    
+
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
                         f"Input file '{self.config.input_file}' appears to be binary.",
@@ -4222,7 +4238,9 @@ class FileSplitter:
 
                 # Try to read with UTF-8 first
                 try:
-                    async with aiofiles.open(self.config.input_file, 'r', encoding='utf-8') as f:
+                    async with aiofiles.open(
+                        self.config.input_file, "r", encoding="utf-8"
+                    ) as f:
                         content = await f.read()
                 except UnicodeDecodeError:
                     # Try with latin-1 as fallback (can decode any byte sequence)
@@ -4230,7 +4248,9 @@ class FileSplitter:
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    async with aiofiles.open(self.config.input_file, 'r', encoding='latin-1') as f:
+                    async with aiofiles.open(
+                        self.config.input_file, "r", encoding="latin-1"
+                    ) as f:
                         content = await f.read()
             else:
                 # Fallback to sync I/O
@@ -5141,15 +5161,17 @@ class CombinedFileParser:
     def _find_code_blocks(self, content: str) -> List[Tuple[int, int]]:
         """Find all code block regions in the content."""
         code_blocks = []
-        
+
         # Find triple backtick code blocks
-        pattern = re.compile(r'```[\s\S]*?```', re.MULTILINE)
+        pattern = re.compile(r"```[\s\S]*?```", re.MULTILINE)
         for match in pattern.finditer(content):
             code_blocks.append((match.start(), match.end()))
-        
+
         return code_blocks
 
-    def _is_in_code_block(self, position: int, code_blocks: List[Tuple[int, int]]) -> bool:
+    def _is_in_code_block(
+        self, position: int, code_blocks: List[Tuple[int, int]]
+    ) -> bool:
         """Check if a position is inside a code block."""
         for start, end in code_blocks:
             if start <= position < end:
@@ -5160,7 +5182,7 @@ class CombinedFileParser:
         """Parse the combined file content and extract individual files."""
         # Find all code blocks first
         code_blocks = self._find_code_blocks(content)
-        
+
         # Find all matches from all parsers
         matches: List[SeparatorMatch] = []
 
@@ -5168,9 +5190,11 @@ class CombinedFileParser:
             for match in parser.pattern.finditer(content):
                 # Skip matches inside code blocks
                 if self._is_in_code_block(match.start(), code_blocks):
-                    self.logger.debug(f"Skipping separator inside code block at position {match.start()}")
+                    self.logger.debug(
+                        f"Skipping separator inside code block at position {match.start()}"
+                    )
                     continue
-                    
+
                 separator_match = parser.parse_match(match, content, len(matches))
                 if separator_match:
                     matches.append(separator_match)
@@ -5323,19 +5347,19 @@ def validate_file_path(path: Path, base_dir: Path) -> bool:
     try:
         # Convert path to string to check for suspicious patterns
         path_str = str(path)
-        
+
         # Check for Windows-style path traversal
         if "\\..\\" in path_str or path_str.startswith("..\\"):
             return False
-            
+
         # Check for Unix-style path traversal
         if "/../" in path_str or path_str.startswith("../"):
             return False
-        
+
         # Check for absolute paths
         if path.is_absolute():
             return False
-        
+
         # Resolve the path (but don't require it to exist)
         resolved_path = (base_dir / path).resolve()
 
@@ -5445,7 +5469,9 @@ class FileWriter:
         self.config = config
         self.logger = logger
         self._counter_lock = asyncio.Lock()  # For thread-safe counter updates
-        self._write_semaphore = asyncio.Semaphore(10)  # Limit concurrent writes to prevent "too many open files"
+        self._write_semaphore = asyncio.Semaphore(
+            10
+        )  # Limit concurrent writes to prevent "too many open files"
 
     async def write_files(
         self, extracted_files: List[ExtractedFile]
@@ -5465,7 +5491,7 @@ class FileWriter:
             ]
             # Gather results and handle exceptions properly
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             # Check for exceptions in results
             for i, result_or_exc in enumerate(results):
                 if isinstance(result_or_exc, Exception):
@@ -5527,7 +5553,10 @@ class FileWriter:
                 await self._set_file_timestamp(output_path, file_data)
 
                 # Verify checksum if needed
-                if not self.config.ignore_checksum and file_data.metadata.checksum_sha256:
+                if (
+                    not self.config.ignore_checksum
+                    and file_data.metadata.checksum_sha256
+                ):
                     await self._verify_checksum_async(output_path, file_data)
 
             except Exception as e:
@@ -5692,12 +5721,13 @@ class FileWriter:
         try:
             # Calculate checksum using chunks to avoid loading entire file into memory
             import hashlib
+
             sha256_hash = hashlib.sha256()
-            
+
             async with aiofiles.open(path, "rb") as f:
                 while chunk := await f.read(8192):  # Read in 8KB chunks
                     sha256_hash.update(chunk)
-            
+
             calculated_checksum = sha256_hash.hexdigest()
             expected_checksum = file_data.metadata.checksum_sha256
 
@@ -6103,11 +6133,11 @@ class WebCrawler:
             "timeout": float(self.config.timeout),
             "follow_redirects": True,  # Always follow redirects
         }
-        
+
         # Only add user_agent if it's not None
         if self.config.user_agent is not None:
             scraper_kwargs["user_agent"] = self.config.user_agent
-            
+
         scraper_config = ScraperConfig(**scraper_kwargs)
 
         # Apply any backend-specific configuration
@@ -6115,11 +6145,13 @@ class WebCrawler:
             for key, value in self.config.scraper_config.items():
                 if hasattr(scraper_config, key):
                     # Special handling for custom_headers to ensure it's a dict
-                    if key == 'custom_headers':
+                    if key == "custom_headers":
                         if value is None:
                             value = {}
                         elif not isinstance(value, dict):
-                            logger.warning(f"Invalid custom_headers type: {type(value)}, using empty dict")
+                            logger.warning(
+                                f"Invalid custom_headers type: {type(value)}, using empty dict"
+                            )
                             value = {}
                     setattr(scraper_config, key, value)
 
@@ -6222,10 +6254,12 @@ class WebCrawler:
                 safe_subdirs = []
                 for part in subdirs:
                     # Remove any path traversal attempts
-                    safe_part = part.replace("..", "").replace("./", "").replace("\\", "")
+                    safe_part = (
+                        part.replace("..", "").replace("./", "").replace("\\", "")
+                    )
                     if safe_part and safe_part not in (".", ".."):
                         safe_subdirs.append(safe_part)
-                
+
                 if safe_subdirs:
                     subdir = output_dir / Path(*safe_subdirs)
                     subdir.mkdir(parents=True, exist_ok=True)
@@ -6879,43 +6913,43 @@ class WebScraperBase(ABC):
 
     def _is_private_ip(self, hostname: str) -> bool:
         """Check if hostname resolves to a private IP address.
-        
+
         Args:
             hostname: Hostname or IP address to check
-            
+
         Returns:
             True if the hostname resolves to a private IP, False otherwise
         """
         import socket
         import ipaddress
-        
+
         try:
             # Get IP address from hostname
             ip = socket.gethostbyname(hostname)
             ip_obj = ipaddress.ip_address(ip)
-            
+
             # Check for private networks
             if ip_obj.is_private:
                 return True
-            
+
             # Check for loopback
             if ip_obj.is_loopback:
                 return True
-            
+
             # Check for link-local
             if ip_obj.is_link_local:
                 return True
-            
+
             # Check for multicast
             if ip_obj.is_multicast:
                 return True
-            
+
             # Check for cloud metadata endpoint
             if str(ip_obj).startswith("169.254."):
                 return True
-                
+
             return False
-            
+
         except (socket.gaierror, ValueError):
             # If we can't resolve the hostname, err on the side of caution
             return True
@@ -6939,8 +6973,8 @@ class WebScraperBase(ABC):
                 return False
 
             # Extract hostname (remove port if present)
-            hostname = parsed.hostname or parsed.netloc.split(':')[0]
-            
+            hostname = parsed.hostname or parsed.netloc.split(":")[0]
+
             # Check for SSRF - block private IPs
             if self._is_private_ip(hostname):
                 logger.warning(f"Blocked URL {url} - private IP address detected")
@@ -6971,21 +7005,21 @@ class WebScraperBase(ABC):
 
     async def _fetch_robots_txt(self, base_url: str) -> Optional[RobotFileParser]:
         """Fetch and parse robots.txt for a given base URL.
-        
+
         Args:
             base_url: Base URL of the website
-            
+
         Returns:
             RobotFileParser object or None if fetch fails
         """
         robots_url = urljoin(base_url, "/robots.txt")
-        
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     robots_url,
                     timeout=aiohttp.ClientTimeout(total=10),
-                    headers={"User-Agent": self.config.user_agent}
+                    headers={"User-Agent": self.config.user_agent},
                 ) as response:
                     if response.status == 200:
                         content = await response.text()
@@ -6993,7 +7027,9 @@ class WebScraperBase(ABC):
                         parser.parse(content.splitlines())
                         return parser
                     else:
-                        logger.debug(f"No robots.txt found at {robots_url} (status: {response.status})")
+                        logger.debug(
+                            f"No robots.txt found at {robots_url} (status: {response.status})"
+                        )
                         return None
         except Exception as e:
             logger.debug(f"Error fetching robots.txt from {robots_url}: {e}")
@@ -7001,19 +7037,19 @@ class WebScraperBase(ABC):
 
     async def can_fetch(self, url: str) -> bool:
         """Check if URL can be fetched according to robots.txt.
-        
+
         Args:
             url: URL to check
-            
+
         Returns:
             True if URL can be fetched, False otherwise
         """
         if not self.config.respect_robots_txt:
             return True
-            
+
         parsed = urlparse(url)
         base_url = f"{parsed.scheme}://{parsed.netloc}"
-        
+
         # Check if we already have the robots.txt for this domain
         if base_url not in self._robots_parsers:
             async with self._robots_fetch_lock:
@@ -7021,12 +7057,12 @@ class WebScraperBase(ABC):
                 if base_url not in self._robots_parsers:
                     parser = await self._fetch_robots_txt(base_url)
                     self._robots_parsers[base_url] = parser
-        
+
         parser = self._robots_parsers.get(base_url)
         if parser is None:
             # No robots.txt or fetch failed - allow by default
             return True
-            
+
         # Check if the URL is allowed for our user agent
         return parser.can_fetch(self.config.user_agent, url)
 
@@ -7089,17 +7125,17 @@ class BeautifulSoupScraper(WebScraperBase):
     async def __aenter__(self):
         """Create aiohttp session on entry."""
         headers = {}
-        
+
         # Only add User-Agent if it's not None
         if self.config.user_agent:
             headers["User-Agent"] = self.config.user_agent
-            
+
         if self.config.custom_headers:
             # Filter out None keys when updating headers
             for k, v in self.config.custom_headers.items():
                 if k is not None and v is not None:
                     headers[k] = v
-        
+
         # Final validation to ensure no None values
         headers = {k: v for k, v in headers.items() if k is not None and v is not None}
 
@@ -7231,7 +7267,7 @@ class BeautifulSoupScraper(WebScraperBase):
                 # Validate URL
                 if not await self.validate_url(url):
                     continue
-                
+
                 # Check robots.txt
                 if not await self.can_fetch(url):
                     logger.info(f"Skipping {url} - blocked by robots.txt")
@@ -7778,8 +7814,8 @@ class PlaywrightScraper(WebScraperBase):
 
         # Create browser context with custom user agent
         # Add option to control SSL validation (default to secure)
-        ignore_https_errors = getattr(self.config, 'ignore_https_errors', False)
-        
+        ignore_https_errors = getattr(self.config, "ignore_https_errors", False)
+
         self._context = await self._browser.new_context(
             user_agent=self.config.user_agent,
             viewport=self._viewport,
@@ -7841,22 +7877,33 @@ class PlaywrightScraper(WebScraperBase):
             # Execute any custom JavaScript (with security warning)
             if self._browser_config.get("execute_script"):
                 script = self._browser_config["execute_script"]
-                
+
                 # Basic validation to prevent obvious malicious scripts
                 dangerous_patterns = [
-                    "fetch", "XMLHttpRequest", "eval", "Function",
-                    "localStorage", "sessionStorage", "document.cookie",
-                    "window.location", "navigator", "WebSocket"
+                    "fetch",
+                    "XMLHttpRequest",
+                    "eval",
+                    "Function",
+                    "localStorage",
+                    "sessionStorage",
+                    "document.cookie",
+                    "window.location",
+                    "navigator",
+                    "WebSocket",
                 ]
-                
+
                 script_lower = script.lower()
                 for pattern in dangerous_patterns:
                     if pattern.lower() in script_lower:
-                        logger.warning(f"Potentially dangerous JavaScript pattern '{pattern}' detected in script. Skipping execution.")
+                        logger.warning(
+                            f"Potentially dangerous JavaScript pattern '{pattern}' detected in script. Skipping execution."
+                        )
                         break
                 else:
                     # Only execute if no dangerous patterns found
-                    logger.warning("Executing custom JavaScript. This feature should only be used with trusted scripts.")
+                    logger.warning(
+                        "Executing custom JavaScript. This feature should only be used with trusted scripts."
+                    )
                     try:
                         await page.evaluate(script)
                     except Exception as e:

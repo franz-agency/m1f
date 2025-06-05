@@ -29,17 +29,17 @@ class BeautifulSoupScraper(WebScraperBase):
     async def __aenter__(self):
         """Create aiohttp session on entry."""
         headers = {}
-        
+
         # Only add User-Agent if it's not None
         if self.config.user_agent:
             headers["User-Agent"] = self.config.user_agent
-            
+
         if self.config.custom_headers:
             # Filter out None keys when updating headers
             for k, v in self.config.custom_headers.items():
                 if k is not None and v is not None:
                     headers[k] = v
-        
+
         # Final validation to ensure no None values
         headers = {k: v for k, v in headers.items() if k is not None and v is not None}
 
@@ -171,7 +171,7 @@ class BeautifulSoupScraper(WebScraperBase):
                 # Validate URL
                 if not await self.validate_url(url):
                     continue
-                
+
                 # Check robots.txt
                 if not await self.can_fetch(url):
                     logger.info(f"Skipping {url} - blocked by robots.txt")

@@ -106,8 +106,8 @@ class PlaywrightScraper(WebScraperBase):
 
         # Create browser context with custom user agent
         # Add option to control SSL validation (default to secure)
-        ignore_https_errors = getattr(self.config, 'ignore_https_errors', False)
-        
+        ignore_https_errors = getattr(self.config, "ignore_https_errors", False)
+
         self._context = await self._browser.new_context(
             user_agent=self.config.user_agent,
             viewport=self._viewport,
@@ -169,22 +169,33 @@ class PlaywrightScraper(WebScraperBase):
             # Execute any custom JavaScript (with security warning)
             if self._browser_config.get("execute_script"):
                 script = self._browser_config["execute_script"]
-                
+
                 # Basic validation to prevent obvious malicious scripts
                 dangerous_patterns = [
-                    "fetch", "XMLHttpRequest", "eval", "Function",
-                    "localStorage", "sessionStorage", "document.cookie",
-                    "window.location", "navigator", "WebSocket"
+                    "fetch",
+                    "XMLHttpRequest",
+                    "eval",
+                    "Function",
+                    "localStorage",
+                    "sessionStorage",
+                    "document.cookie",
+                    "window.location",
+                    "navigator",
+                    "WebSocket",
                 ]
-                
+
                 script_lower = script.lower()
                 for pattern in dangerous_patterns:
                     if pattern.lower() in script_lower:
-                        logger.warning(f"Potentially dangerous JavaScript pattern '{pattern}' detected in script. Skipping execution.")
+                        logger.warning(
+                            f"Potentially dangerous JavaScript pattern '{pattern}' detected in script. Skipping execution."
+                        )
                         break
                 else:
                     # Only execute if no dangerous patterns found
-                    logger.warning("Executing custom JavaScript. This feature should only be used with trusted scripts.")
+                    logger.warning(
+                        "Executing custom JavaScript. This feature should only be used with trusted scripts."
+                    )
                     try:
                         await page.evaluate(script)
                     except Exception as e:

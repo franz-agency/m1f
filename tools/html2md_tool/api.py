@@ -236,10 +236,16 @@ class Html2mdConverter:
 
         # Convert using the convert_html method which includes preprocessing
         # Use a relative base URL to avoid exposing absolute paths
-        file_name = file_path.name if file_path and file_path.name else (Path(file_path).resolve().name if file_path else None)
+        file_name = (
+            file_path.name
+            if file_path and file_path.name
+            else (Path(file_path).resolve().name if file_path else None)
+        )
         base_url = file_name
         markdown = self.convert_html(
-            html_content, base_url=base_url, source_file=str(file_name if file_name else "input")
+            html_content,
+            base_url=base_url,
+            source_file=str(file_name if file_name else "input"),
         )
 
         # Determine output path
@@ -247,8 +253,12 @@ class Html2mdConverter:
             rel_path = file_path.relative_to(self.config.source)
         else:
             # Handle case where file_path might be "." or have empty name
-            rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
-            if not rel_path or str(rel_path) == '.':
+            rel_path = (
+                Path(file_path.name)
+                if file_path.name
+                else Path(file_path).resolve().name
+            )
+            if not rel_path or str(rel_path) == ".":
                 rel_path = Path(file_path).resolve().name
 
         output_path = self.config.destination / Path(rel_path).with_suffix(".md")
@@ -435,8 +445,12 @@ class Html2mdConverter:
                 rel_path = file_path.relative_to(self.config.source)
             else:
                 # Handle case where file_path might be "." or have empty name
-                rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
-                if not rel_path or str(rel_path) == '.':
+                rel_path = (
+                    Path(file_path.name)
+                    if file_path.name
+                    else Path(file_path).resolve().name
+                )
+                if not rel_path or str(rel_path) == ".":
                     rel_path = Path(file_path).resolve().name
 
             output_path = self.config.destination / Path(rel_path).with_suffix(".md")

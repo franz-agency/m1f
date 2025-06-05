@@ -69,7 +69,7 @@ class TestPathTraversalSecurity:
             base_path = Path(tmpdir)
             # Valid path within base directory
             valid_path = base_path / "subdir" / "file.txt"
-            
+
             result = validate_path_traversal(valid_path, base_path)
             assert result == valid_path.resolve()
 
@@ -79,30 +79,30 @@ class TestPathTraversalSecurity:
             base_path = Path(tmpdir)
             # Try to traverse outside
             malicious_path = base_path / ".." / ".." / "etc" / "passwd"
-            
+
             with pytest.raises(ValueError) as exc_info:
                 validate_path_traversal(malicious_path, base_path)
-            
+
             assert "Path traversal detected" in str(exc_info.value)
 
     def test_config_blocks_traversal_source_dir(self):
         """Test that Config blocks path traversal in source directory."""
         # Create mock args with path traversal attempt
         args = self._create_test_args(source_directory="../../../etc")
-        
+
         # This should raise ValueError for path traversal
         with pytest.raises(ValueError) as exc_info:
             Config.from_args(args)
-        
+
         assert "Path traversal detected" in str(exc_info.value)
 
     def test_config_builder_blocks_traversal_input_file(self):
         """Test that Config blocks path traversal in input file."""
         args = self._create_test_args(input_file="../../sensitive/data.txt")
-        
+
         with pytest.raises(ValueError) as exc_info:
             Config.from_args(args)
-        
+
         assert "Path traversal detected" in str(exc_info.value)
 
     def test_config_allows_output_file_outside_cwd(self):
@@ -110,10 +110,9 @@ class TestPathTraversalSecurity:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Output paths should be allowed outside the base directory
             args = self._create_test_args(
-                source_directory=".",
-                output_file=f"{tmpdir}/output.txt"
+                source_directory=".", output_file=f"{tmpdir}/output.txt"
             )
-            
+
             # This should NOT raise an error
             config = Config.from_args(args)
             assert str(config.output.output_file) == f"{tmpdir}/output.txt"
@@ -123,10 +122,10 @@ class TestPathTraversalSecurity:
         args = self._create_test_args(
             input_include_files=["../../../etc/shadow", "../../private/keys.txt"]
         )
-        
+
         with pytest.raises(ValueError) as exc_info:
             Config.from_args(args)
-        
+
         assert "Path traversal detected" in str(exc_info.value)
 
     def test_config_builder_blocks_traversal_preset_files(self):
@@ -134,29 +133,29 @@ class TestPathTraversalSecurity:
         args = self._create_test_args(
             preset_files=["../../../../home/user/.ssh/id_rsa"]
         )
-        
+
         with pytest.raises(ValueError) as exc_info:
             Config.from_args(args)
-        
+
         assert "Path traversal detected" in str(exc_info.value)
 
     def test_symbolic_link_traversal_blocked(self):
         """Test that symbolic links cannot be used for path traversal."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_path = Path(tmpdir)
-            
+
             # Create a symbolic link that points outside
             link_path = base_path / "evil_link"
             target_path = Path("/etc/passwd")
-            
+
             # Only create symlink if we can (might fail on some systems)
             try:
                 link_path.symlink_to(target_path)
-                
+
                 # The resolved path should be blocked
                 with pytest.raises(ValueError) as exc_info:
                     validate_path_traversal(link_path, base_path)
-                
+
                 assert "Path traversal detected" in str(exc_info.value)
             except OSError:
                 # Skip test if we can't create symlinks

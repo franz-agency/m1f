@@ -243,18 +243,18 @@ class OutputWriter:
     ) -> int:
         """Write all files using parallel processing for reading."""
         self.logger.info("Using parallel processing for file reading...")
-        
+
         try:
             # Process files in batches to avoid too many concurrent operations
             batch_size = 10  # Process 10 files concurrently
-            
+
             # First, read and process all files in parallel
             processed_files = []
-            
+
             for batch_start in range(0, len(all_files), batch_size):
                 batch_end = min(batch_start + batch_size, len(all_files))
                 batch = all_files[batch_start:batch_end]
-                
+
                 # Create tasks for parallel processing
                 tasks = []
                 for i, (file_path, rel_path) in enumerate(batch, batch_start + 1):
@@ -262,15 +262,15 @@ class OutputWriter:
                     if file_path.resolve() == output_path.resolve():
                         self.logger.warning(f"Skipping output file itself: {file_path}")
                         continue
-                    
+
                     task = self._process_single_file_parallel(
                         file_path, rel_path, i, len(all_files)
                     )
                     tasks.append(task)
-                
+
                 # Process batch concurrently
                 batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-                
+
                 # Collect successful results
                 for j, result in enumerate(batch_results):
                     if isinstance(result, Exception):
@@ -279,10 +279,10 @@ class OutputWriter:
                         self.logger.error(f"Failed to process {file_path}: {result}")
                     elif result is not None:
                         processed_files.append((batch[j], result))
-            
+
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
-            
+
             with open(
                 output_path,
                 "w",
@@ -290,15 +290,17 @@ class OutputWriter:
                 newline=self.config.output.line_ending.value,
             ) as outfile:
                 files_written = 0
-                
-                for i, ((file_path, rel_path), processed_data) in enumerate(processed_files):
+
+                for i, ((file_path, rel_path), processed_data) in enumerate(
+                    processed_files
+                ):
                     if processed_data:
                         # Write the pre-processed content
                         separator, content, separator_style = processed_data
-                        
+
                         # Write separator
                         outfile.write(separator)
-                        
+
                         # Add blank line for some styles (between separator and content)
                         if separator_style in [
                             SeparatorStyle.STANDARD,
@@ -306,25 +308,25 @@ class OutputWriter:
                             SeparatorStyle.MARKDOWN,
                         ]:
                             outfile.write(self.config.output.line_ending.value)
-                        
+
                         # Write content
                         outfile.write(content)
-                        
+
                         # Ensure newline at end if needed
                         if content and not content.endswith(("\n", "\r")):
                             outfile.write(self.config.output.line_ending.value)
-                        
+
                         # Write closing separator for Markdown
                         if separator_style == SeparatorStyle.MARKDOWN:
                             outfile.write("```")
                             outfile.write(self.config.output.line_ending.value)
-                        
+
                         # Add inter-file spacing if not last file
                         if i < len(processed_files) - 1:
                             outfile.write(self.config.output.line_ending.value)
-                        
+
                         files_written += 1
-            
+
             return files_written
 
         except IOError as e:
@@ -371,11 +373,13 @@ class OutputWriter:
 
             # Check for content deduplication
             # Skip deduplication for symlinks when include_symlinks is enabled
-            skip_dedupe = (
-                self.config.filter.include_symlinks and file_path.is_symlink()
-            )
-            
-            if self._content_dedupe and not rel_path.startswith(("intro:", "include:")) and not skip_dedupe:
+            skip_dedupe = self.config.filter.include_symlinks and file_path.is_symlink()
+
+            if (
+                self._content_dedupe
+                and not rel_path.startswith(("intro:", "include:"))
+                and not skip_dedupe
+            ):
                 content_checksum = calculate_checksum(content)
 
                 async with self._checksum_lock:
@@ -491,11 +495,13 @@ class OutputWriter:
 
             # Check for content deduplication
             # Skip deduplication for symlinks when include_symlinks is enabled
-            skip_dedupe = (
-                self.config.filter.include_symlinks and file_path.is_symlink()
-            )
-            
-            if self._content_dedupe and not rel_path.startswith(("intro:", "include:")) and not skip_dedupe:
+            skip_dedupe = self.config.filter.include_symlinks and file_path.is_symlink()
+
+            if (
+                self._content_dedupe
+                and not rel_path.startswith(("intro:", "include:"))
+                and not skip_dedupe
+            ):
                 content_checksum = calculate_checksum(content)
 
                 async with self._checksum_lock:
@@ -545,10 +551,10 @@ class OutputWriter:
             # Write separator
             if separator:
                 outfile.write(separator)
-                
+
                 # For Markdown, ensure separator ends with newline before adding blank line
                 if self.config.output.separator_style == SeparatorStyle.MARKDOWN:
-                    if not separator.endswith(('\n', '\r\n', '\r')):
+                    if not separator.endswith(("\n", "\r\n", "\r")):
                         outfile.write(self.config.output.line_ending.value)
 
                 # Add blank line for some styles

@@ -30,7 +30,13 @@ from .config import Config, FilterConfig
 from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, MAX_SYMLINK_DEPTH
 from .exceptions import FileNotFoundError, ValidationError
 from .logging import LoggerManager
-from .utils import is_binary_file, is_hidden_path, get_relative_path, format_file_size, validate_path_traversal
+from .utils import (
+    is_binary_file,
+    is_hidden_path,
+    get_relative_path,
+    format_file_size,
+    validate_path_traversal,
+)
 
 
 class FileProcessor:
@@ -160,7 +166,9 @@ class FileProcessor:
                             validated_path = validate_path_traversal(path.resolve())
                             self.exact_excludes.add(str(validated_path))
                         except ValueError as e:
-                            self.logger.warning(f"Skipping invalid exclude path '{line}': {e}")
+                            self.logger.warning(
+                                f"Skipping invalid exclude path '{line}': {e}"
+                            )
 
             except Exception as e:
                 self.logger.warning(f"Error reading exclude file {exclude_file}: {e}")
@@ -219,7 +227,9 @@ class FileProcessor:
                             validated_path = validate_path_traversal(path.resolve())
                             self.exact_includes.add(str(validated_path))
                         except ValueError as e:
-                            self.logger.warning(f"Skipping invalid include path '{line}': {e}")
+                            self.logger.warning(
+                                f"Skipping invalid include path '{line}': {e}"
+                            )
 
             except Exception as e:
                 self.logger.warning(f"Error reading include file {include_file}: {e}")
@@ -302,10 +312,14 @@ class FileProcessor:
                         matches = glob.glob(str(pattern_path), recursive=True)
                         for m in matches:
                             try:
-                                validated_path = validate_path_traversal(Path(m).resolve())
+                                validated_path = validate_path_traversal(
+                                    Path(m).resolve()
+                                )
                                 paths.append(validated_path)
                             except ValueError as e:
-                                self.logger.warning(f"Skipping invalid glob match '{m}': {e}")
+                                self.logger.warning(
+                                    f"Skipping invalid glob match '{m}': {e}"
+                                )
                     else:
                         path = Path(line)
                         if not path.is_absolute():
@@ -403,12 +417,14 @@ class FileProcessor:
                         dedup_key = str(file_path)
                     else:
                         dedup_key = str(file_path.resolve())
-                    
+
                     if dedup_key not in self._processed_files:
                         files.append((file_path, rel_path))
                         self._processed_files.add(dedup_key)
                     else:
-                        self.logger.debug(f"Skipping duplicate: {file_path} (key: {dedup_key})")
+                        self.logger.debug(
+                            f"Skipping duplicate: {file_path} (key: {dedup_key})"
+                        )
                 else:
                     self.logger.debug(f"File excluded by filter: {file_path}")
 
@@ -460,10 +476,10 @@ class FileProcessor:
                 and self._global_include_binary_files is not None
             ):
                 include_binary = include_binary or self._global_include_binary_files
-            
+
             if not include_binary and is_binary_file(file_path):
                 return False
-            
+
             return True
 
         # Get file-specific settings from presets
@@ -574,7 +590,9 @@ class FileProcessor:
                 include_symlinks = include_symlinks or self._global_include_symlinks
 
             if not include_symlinks:
-                self.logger.debug(f"Excluding symlink {file_path} (include_symlinks=False)")
+                self.logger.debug(
+                    f"Excluding symlink {file_path} (include_symlinks=False)"
+                )
                 return False
 
             # For file symlinks, we only need to check for cycles if it's a directory symlink
@@ -582,7 +600,7 @@ class FileProcessor:
             if file_path.is_dir() and self._detect_symlink_cycle(file_path):
                 self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
                 return False
-            
+
             self.logger.debug(f"Including symlink {file_path} (include_symlinks=True)")
 
         # Check file size limit
@@ -637,13 +655,18 @@ class FileProcessor:
                 if not target.is_absolute():
                     target = current.parent / target
                 target = target.resolve(strict=False)
-                
+
                 # Validate symlink target doesn't traverse outside allowed directories
                 try:
                     from .utils import validate_path_traversal
-                    validate_path_traversal(target, allow_outside=self.config.filter.include_symlinks)
+
+                    validate_path_traversal(
+                        target, allow_outside=self.config.filter.include_symlinks
+                    )
                 except ValueError as e:
-                    self.logger.warning(f"Symlink target validation failed for {current}: {e}")
+                    self.logger.warning(
+                        f"Symlink target validation failed for {current}: {e}"
+                    )
                     return False
 
                 target_str = str(target)

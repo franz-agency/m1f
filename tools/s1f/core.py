@@ -21,6 +21,7 @@ import logging
 
 try:
     import aiofiles
+
     AIOFILES_AVAILABLE = True
 except ImportError:
     AIOFILES_AVAILABLE = False
@@ -74,7 +75,7 @@ class FileSplitter:
                 meta = file.metadata
                 # Build info line
                 info_parts = [f"{i:4d}. {meta.path}"]
-                
+
                 # Only add size if available
                 if meta.size_bytes:
                     size_str = format_size(meta.size_bytes)
@@ -190,9 +191,9 @@ class FileSplitter:
             if AIOFILES_AVAILABLE:
                 # Use async I/O
                 # First, try to detect if the file is binary
-                async with aiofiles.open(self.config.input_file, 'rb') as f:
+                async with aiofiles.open(self.config.input_file, "rb") as f:
                     sample_bytes = await f.read(8192)
-                    
+
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
                         f"Input file '{self.config.input_file}' appears to be binary.",
@@ -201,7 +202,9 @@ class FileSplitter:
 
                 # Try to read with UTF-8 first
                 try:
-                    async with aiofiles.open(self.config.input_file, 'r', encoding='utf-8') as f:
+                    async with aiofiles.open(
+                        self.config.input_file, "r", encoding="utf-8"
+                    ) as f:
                         content = await f.read()
                 except UnicodeDecodeError:
                     # Try with latin-1 as fallback (can decode any byte sequence)
@@ -209,7 +212,9 @@ class FileSplitter:
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    async with aiofiles.open(self.config.input_file, 'r', encoding='latin-1') as f:
+                    async with aiofiles.open(
+                        self.config.input_file, "r", encoding="latin-1"
+                    ) as f:
                         content = await f.read()
             else:
                 # Fallback to sync I/O

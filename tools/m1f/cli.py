@@ -344,7 +344,6 @@ Perfect for:
         "-q", "--quiet", action="store_true", help="Suppress all console output"
     )
 
-
     # Preset configuration group
     preset_group = parser.add_argument_group("Preset Configuration")
 

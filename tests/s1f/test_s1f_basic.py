@@ -23,6 +23,7 @@ import pytest
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from base_test import BaseS1FTest
 
@@ -182,7 +183,7 @@ class TestS1FBasic(BaseS1FTest):
         )
 
         assert exit_code == 0
-        
+
         # The log_output from run_s1f should contain the verbose output
         # If not, just check that the command succeeded - the stdout capture
         # shows the verbose output is being printed
@@ -288,6 +289,6 @@ class TestS1FBasic(BaseS1FTest):
                 actual_content = extracted_file.read_text()
                 # Allow for trailing newline differences
                 assert (
-                    actual_content == expected_content or 
-                    actual_content.rstrip() == expected_content.rstrip()
+                    actual_content == expected_content
+                    or actual_content.rstrip() == expected_content.rstrip()
                 ), f"Content mismatch for {filepath} in {style} format"

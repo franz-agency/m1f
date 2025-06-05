@@ -101,19 +101,19 @@ def validate_file_path(path: Path, base_dir: Path) -> bool:
     try:
         # Convert path to string to check for suspicious patterns
         path_str = str(path)
-        
+
         # Check for Windows-style path traversal
         if "\\..\\" in path_str or path_str.startswith("..\\"):
             return False
-            
+
         # Check for Unix-style path traversal
         if "/../" in path_str or path_str.startswith("../"):
             return False
-        
+
         # Check for absolute paths
         if path.is_absolute():
             return False
-        
+
         # Resolve the path (but don't require it to exist)
         resolved_path = (base_dir / path).resolve()
 

@@ -109,10 +109,14 @@ class TestHTML2MDConversion:
         markdown = converter.convert_html(html_content)
 
         # Verify conversion (check for both possible formats)
-        assert ("# M1F - Make One File" in markdown or 
-                "# M1F Documentation" in markdown or
-                "M1F - Make One File Documentation" in markdown)
-        assert "```" in markdown or "python" in markdown.lower()  # Code blocks or python mentioned
+        assert (
+            "# M1F - Make One File" in markdown
+            or "# M1F Documentation" in markdown
+            or "M1F - Make One File Documentation" in markdown
+        )
+        assert (
+            "```" in markdown or "python" in markdown.lower()
+        )  # Code blocks or python mentioned
         # Links might not always be converted perfectly, so just check for some content
         assert len(markdown) > 100  # At least some content was converted
 

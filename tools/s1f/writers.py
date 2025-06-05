@@ -48,7 +48,9 @@ class FileWriter:
         self.config = config
         self.logger = logger
         self._counter_lock = asyncio.Lock()  # For thread-safe counter updates
-        self._write_semaphore = asyncio.Semaphore(10)  # Limit concurrent writes to prevent "too many open files"
+        self._write_semaphore = asyncio.Semaphore(
+            10
+        )  # Limit concurrent writes to prevent "too many open files"
 
     async def write_files(
         self, extracted_files: List[ExtractedFile]
@@ -68,7 +70,7 @@ class FileWriter:
             ]
             # Gather results and handle exceptions properly
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             # Check for exceptions in results
             for i, result_or_exc in enumerate(results):
                 if isinstance(result_or_exc, Exception):
@@ -130,7 +132,10 @@ class FileWriter:
                 await self._set_file_timestamp(output_path, file_data)
 
                 # Verify checksum if needed
-                if not self.config.ignore_checksum and file_data.metadata.checksum_sha256:
+                if (
+                    not self.config.ignore_checksum
+                    and file_data.metadata.checksum_sha256
+                ):
                     await self._verify_checksum_async(output_path, file_data)
 
             except Exception as e:
@@ -295,12 +300,13 @@ class FileWriter:
         try:
             # Calculate checksum using chunks to avoid loading entire file into memory
             import hashlib
+
             sha256_hash = hashlib.sha256()
-            
+
             async with aiofiles.open(path, "rb") as f:
                 while chunk := await f.read(8192):  # Read in 8KB chunks
                     sha256_hash.update(chunk)
-            
+
             calculated_checksum = sha256_hash.hexdigest()
             expected_checksum = file_data.metadata.checksum_sha256
 

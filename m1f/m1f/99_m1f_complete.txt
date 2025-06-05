@@ -6495,18 +6495,19 @@ def temp_dir() -> Iterator[Path]:
     """Create a temporary directory for test files."""
     # Use project's tmp directory instead of system temp
     project_tmp = Path(__file__).parent.parent / "tmp" / "test_temp"
-    
+
     # Ensure the directory exists
     try:
         project_tmp.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directory in project tmp: {e}")
-    
+
     # Create a unique subdirectory for this test
     import uuid
+
     test_dir = project_tmp / f"test_{uuid.uuid4().hex[:8]}"
     test_dir.mkdir(exist_ok=True)
-    
+
     try:
         yield test_dir
     finally:
@@ -6525,22 +6526,24 @@ def isolated_filesystem() -> Iterator[Path]:
     """
     # Use project's tmp directory instead of system temp
     project_tmp = Path(__file__).parent.parent / "tmp" / "test_isolated"
-    
+
     # Ensure the directory exists
     try:
         project_tmp.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directory in project tmp: {e}")
-    
+
     # Create a unique subdirectory for this test
     import uuid
+
     test_dir = project_tmp / f"test_{uuid.uuid4().hex[:8]}"
     test_dir.mkdir(exist_ok=True)
-    
+
     original_cwd = Path.cwd()
     try:
         # Change to the temporary directory
         import os
+
         os.chdir(test_dir)
         yield test_dir
     finally:
@@ -6830,10 +6833,14 @@ class TestHTML2MDConversion:
         markdown = converter.convert_html(html_content)
 
         # Verify conversion (check for both possible formats)
-        assert ("# M1F - Make One File" in markdown or 
-                "# M1F Documentation" in markdown or
-                "M1F - Make One File Documentation" in markdown)
-        assert "```" in markdown or "python" in markdown.lower()  # Code blocks or python mentioned
+        assert (
+            "# M1F - Make One File" in markdown
+            or "# M1F Documentation" in markdown
+            or "M1F - Make One File Documentation" in markdown
+        )
+        assert (
+            "```" in markdown or "python" in markdown.lower()
+        )  # Code blocks or python mentioned
         # Links might not always be converted perfectly, so just check for some content
         assert len(markdown) > 100  # At least some content was converted
 
@@ -7557,9 +7564,10 @@ async def async_main() -> int:
                 "--list", action="store_true", help="List available bundles"
             )
             parser.add_argument(
-                "--group", "-g", 
-                type=str, 
-                help="Only create bundles from specified group"
+                "--group",
+                "-g",
+                type=str,
+                help="Only create bundles from specified group",
             )
             parser.add_argument(
                 "-v", "--verbose", action="store_true", help="Enable verbose output"
@@ -7574,9 +7582,9 @@ async def async_main() -> int:
             # Create and run auto-bundler
             bundler = AutoBundler(Path.cwd(), verbose=args.verbose, quiet=args.quiet)
             success = bundler.run(
-                bundle_name=args.bundle_name, 
+                bundle_name=args.bundle_name,
                 list_bundles=args.list,
-                bundle_group=args.group
+                bundle_group=args.group,
             )
             return 0 if success else 1
 
@@ -21699,7 +21707,7 @@ base:
     exclude_patterns: ["*.tmp"]
 """
         base_file = self.create_test_preset(temp_dir, "base.yml", base_content)
-        
+
         # Create override preset
         override_content = """
 override:
@@ -21710,16 +21718,18 @@ override:
     include_extensions: [".js"]   # Add to base
     verbose: true                 # New setting
 """
-        override_file = self.create_test_preset(temp_dir, "override.yml", override_content)
-        
+        override_file = self.create_test_preset(
+            temp_dir, "override.yml", override_content
+        )
+
         # Create test files
         (temp_dir / "test.txt").write_text("Text file")
         (temp_dir / "test.md").write_text("# Markdown")
         (temp_dir / "test.js").write_text("console.log();")
         (temp_dir / "test.tmp").write_text("Temp file")
-        
+
         output_file = temp_dir / "output.txt"
-        
+
         # Run with both presets
         exit_code, log_output = run_m1f(
             [
@@ -21733,14 +21743,14 @@ override:
                 "-f",
             ]
         )
-        
+
         assert exit_code == 0
-        
+
         # Check merged behavior
         content = output_file.read_text()
         assert "test.txt" in content  # From base
-        assert "test.md" in content   # From base
-        assert "test.js" in content   # From override
+        assert "test.md" in content  # From base
+        assert "test.js" in content  # From override
         assert "test.tmp" not in content  # Excluded by base
         assert "```" in content  # Markdown separator from override
         assert "DEBUG" in log_output  # Verbose from override
@@ -21753,11 +21763,11 @@ override:
         src_dir.mkdir()
         dist_dir = temp_dir / "dist"
         dist_dir.mkdir()
-        
+
         (src_dir / "app.js").write_text("// Source code")
         (src_dir / "app.test.js").write_text("// Test code")
         (dist_dir / "app.min.js").write_text("// Minified")
-        
+
         # Create development preset
         dev_content = f"""
 development:
@@ -21771,7 +21781,7 @@ development:
     create_archive: false
 """
         dev_file = self.create_test_preset(temp_dir, "dev.yml", dev_content)
-        
+
         # Create production preset
         prod_content = f"""
 production:
@@ -21787,7 +21797,7 @@ production:
     exclude_patterns: ["*.map", "*.test.*"]
 """
         prod_file = self.create_test_preset(temp_dir, "prod.yml", prod_content)
-        
+
         # Test development environment
         exit_code, log_output = run_m1f(
             [
@@ -21796,14 +21806,14 @@ production:
                 "-f",  # Force overwrite
             ]
         )
-        
+
         assert exit_code == 0
         assert (temp_dir / "dev-bundle.txt").exists()
         dev_content = (temp_dir / "dev-bundle.txt").read_text()
         assert "// Source code" in dev_content
         assert "// Test code" in dev_content
         assert "DEBUG" in log_output
-        
+
         # Test production environment
         exit_code, log_output = run_m1f(
             [
@@ -21812,7 +21822,7 @@ production:
                 "-f",  # Force overwrite
             ]
         )
-        
+
         assert exit_code == 0
         assert (temp_dir / "prod-bundle.txt").exists()
         prod_content = (temp_dir / "prod-bundle.txt").read_text()
@@ -21833,7 +21843,7 @@ production:
         (src_dir / "main.py").write_text("def main(): pass")
         (src_dir / "__pycache__").mkdir()
         (src_dir / "__pycache__" / "main.cpython-39.pyc").write_text("bytecode")
-        
+
         # Create adaptive preset
         preset_content = f"""
 python_project:
@@ -21862,7 +21872,7 @@ python_project:
 """
         preset_file = self.create_test_preset(temp_dir, "adaptive.yml", preset_content)
         output_file = temp_dir / "output.txt"
-        
+
         # Run m1f
         exit_code, log_output = run_m1f(
             [
@@ -21873,9 +21883,9 @@ python_project:
                 "-f",
             ]
         )
-        
+
         assert exit_code == 0
-        
+
         # Check Python-specific behavior
         content = output_file.read_text()
         assert "main.py" in content
@@ -21891,25 +21901,25 @@ python_project:
         # Create web project structure
         project_dir = temp_dir / "web-project"
         project_dir.mkdir()
-        
+
         # Source files
         src_dir = project_dir / "src"
         src_dir.mkdir()
         (src_dir / "App.jsx").write_text("export default function App() {}")
         (src_dir / "App.test.jsx").write_text("test('App', () => {})")
         (src_dir / "styles.css").write_text(".app { color: blue; }")
-        
+
         # Docs
         docs_dir = project_dir / "docs"
         docs_dir.mkdir()
         (docs_dir / "README.md").write_text("# Project Documentation")
         (docs_dir / "API.md").write_text("# API Reference")
-        
+
         # Config files
         (project_dir / "package.json").write_text('{"name": "test"}')
         (project_dir / ".env").write_text("API_KEY=secret123")
         (project_dir / ".env.example").write_text("API_KEY=your_key_here")
-        
+
         # Create workflow preset
         preset_content = f"""
 web_workflow:
@@ -21976,7 +21986,7 @@ web_workflow:
         - compress_whitespace
 """
         preset_file = self.create_test_preset(temp_dir, "workflow.yml", preset_content)
-        
+
         # Run the workflow
         exit_code, log_output = run_m1f(
             [
@@ -21984,36 +21994,40 @@ web_workflow:
                 str(preset_file),
             ]
         )
-        
+
         assert exit_code == 0
-        
+
         # Find output file with timestamp (exclude filelist and dirlist)
-        output_files = [f for f in temp_dir.glob("web-bundle_*.txt") 
-                       if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")]
+        output_files = [
+            f
+            for f in temp_dir.glob("web-bundle_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
+        ]
         assert len(output_files) == 1
-        
+
         content = output_files[0].read_text()
-        
+
         # Check intro files came first
         readme_pos = content.find("# Project Documentation")
         api_pos = content.find("# API Reference")
         app_pos = content.find("App.jsx")
-        
+
         assert readme_pos < app_pos
         assert api_pos < app_pos
-        
+
         # Check files were processed
         assert "App.jsx" in content
         assert "styles.css" in content
         assert "package.json" in content
-        
+
         # Check exclusions
         assert "App.test.jsx" not in content
         assert "node_modules" not in content
-        
+
         # Check secret redaction (if implemented)
         # This would require the redact_secrets processor to be implemented
-        
+
         # Check archive created
         archives = list(temp_dir.glob("*.zip"))
         assert len(archives) == 1
@@ -22029,7 +22043,7 @@ test_group:
 """
         preset_file = self.create_test_preset(temp_dir, "invalid.yml", preset_content)
         output_file = temp_dir / "output.txt"
-        
+
         exit_code, log_output = run_m1f(
             [
                 "-o",
@@ -22038,18 +22052,18 @@ test_group:
                 str(preset_file),
             ]
         )
-        
+
         assert exit_code != 0
         # The error should be exit code 2 (FileNotFoundError)
         assert exit_code == 2
 
-    @pytest.mark.integration  
+    @pytest.mark.integration
     def test_preset_with_auto_bundle_compatibility(self, run_m1f, temp_dir):
         """Test that presets work well with auto-bundle configs."""
         # Create project files
         (temp_dir / "main.py").write_text("print('main')")
         (temp_dir / "README.md").write_text("# Project")
-        
+
         # Create auto-bundle config that uses presets
         config_content = f"""
 bundles:
@@ -22067,7 +22081,7 @@ bundles:
 """
         config_file = temp_dir / ".m1f.config.yml"
         config_file.write_text(config_content)
-        
+
         # Create bundle-specific presets
         docs_preset = """
 docs:
@@ -22077,7 +22091,7 @@ docs:
       - remove_empty_lines
 """
         self.create_test_preset(temp_dir, "docs-preset.yml", docs_preset)
-        
+
         code_preset = """
 code:
   global_settings:
@@ -22085,7 +22099,7 @@ code:
     security_check: "abort"
 """
         self.create_test_preset(temp_dir, "code-preset.yml", code_preset)
-        
+
         # This test demonstrates the structure - actual auto-bundle integration
         # would require running the auto-bundle command
 
@@ -22132,7 +22146,7 @@ class TestM1FPresetsV32(BaseM1FTest):
         source_dir.mkdir()
         (source_dir / "file1.txt").write_text("File 1 content")
         (source_dir / "file2.txt").write_text("File 2 content")
-        
+
         # Create preset with source_directory
         preset_content = f"""
 test_group:
@@ -22156,7 +22170,7 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that files from preset source_directory were processed
         content = output_file.read_text()
         assert "file1.txt" in content
@@ -22169,7 +22183,7 @@ test_group:
         """Test that output_file can be set via preset."""
         # Create test file
         (temp_dir / "test.txt").write_text("Test content")
-        
+
         # Create preset with output_file
         output_path = temp_dir / "preset_output.txt"
         preset_content = f"""
@@ -22192,7 +22206,7 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that preset output file was used
         assert output_path.exists()
         content = output_path.read_text()
@@ -22205,7 +22219,7 @@ test_group:
         (temp_dir / "intro.md").write_text("# Introduction\nThis is the intro")
         (temp_dir / "license.txt").write_text("MIT License")
         (temp_dir / "main.txt").write_text("Main content")
-        
+
         # Create preset with input_include_files
         preset_content = f"""
 test_group:
@@ -22232,13 +22246,13 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that intro files appear first
         content = output_file.read_text()
         intro_pos = content.find("# Introduction")
         license_pos = content.find("MIT License")
         main_pos = content.find("Main content")
-        
+
         assert intro_pos < main_pos, "Intro should appear before main content"
         assert license_pos < main_pos, "License should appear before main content"
 
@@ -22247,7 +22261,7 @@ test_group:
         """Test output control settings via preset."""
         # Create test file
         (temp_dir / "test.txt").write_text("Test content")
-        
+
         # Create preset with output control settings
         preset_content = """
 test_group:
@@ -22273,12 +22287,12 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that timestamp was added
         output_files = list(temp_dir.glob("output_*.txt"))
         assert len(output_files) == 1, "Should have one output file with timestamp"
         assert "output_" in output_files[0].name
-        
+
         # Check minimal output (no list files)
         assert not (temp_dir / "output_filelist.txt").exists()
         assert not (temp_dir / "output_dirlist.txt").exists()
@@ -22289,7 +22303,7 @@ test_group:
         # Create test files
         (temp_dir / "file1.txt").write_text("File 1")
         (temp_dir / "file2.txt").write_text("File 2")
-        
+
         # Create preset with archive settings
         preset_content = """
 test_group:
@@ -22315,7 +22329,7 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that tar.gz archive was created
         archives = list(temp_dir.glob("*.tar.gz"))
         assert len(archives) == 1, "Should have created one tar.gz archive"
@@ -22325,7 +22339,7 @@ test_group:
         """Test runtime behavior settings via preset."""
         # Create test file
         (temp_dir / "test.txt").write_text("Test content")
-        
+
         # Test verbose mode
         preset_content = """
 test_group:
@@ -22387,11 +22401,11 @@ test_group:
         preset_dir = temp_dir / "preset_source"
         preset_dir.mkdir()
         (preset_dir / "preset_file.txt").write_text("From preset dir")
-        
+
         cli_dir = temp_dir / "cli_source"
         cli_dir.mkdir()
         (cli_dir / "cli_file.txt").write_text("From CLI dir")
-        
+
         # Create preset pointing to preset_dir
         preset_content = f"""
 test_group:
@@ -22413,14 +22427,15 @@ test_group:
                 str(output_file),
                 "--preset",
                 str(preset_file),
-                "--separator-style", "Standard",  # Override separator
+                "--separator-style",
+                "Standard",  # Override separator
                 "-q",  # Override verbose with quiet
                 "-f",
             ]
         )
 
         assert exit_code == 0
-        
+
         # Check that CLI values were used
         content = output_file.read_text()
         assert "From CLI dir" in content
@@ -22439,7 +22454,7 @@ test_group:
         (src_dir / "main.js").write_text("console.log('main');")
         (src_dir / "test.spec.js").write_text("test('test');")
         (src_dir / "readme.md").write_text("# README")
-        
+
         # Create full config preset
         output_path = temp_dir / "bundle.txt"
         preset_content = f"""
@@ -22482,7 +22497,7 @@ production:
         )
 
         assert exit_code == 0
-        
+
         # Verify everything worked
         assert output_path.exists()
         content = output_path.read_text()
@@ -22490,7 +22505,7 @@ production:
         assert "test.spec.js" not in content  # Excluded
         assert "README" in content  # Included as intro
         assert "PYMK1F_BEGIN_FILE_METADATA_BLOCK" in content  # MachineReadable format
-        
+
         # Check archive created
         archives = list(temp_dir.glob("*.zip"))
         assert len(archives) == 1
@@ -22500,7 +22515,7 @@ production:
         """Test encoding-related settings via preset."""
         # Create test file with UTF-8 content
         (temp_dir / "test.txt").write_text("Test with émojis 🎉", encoding="utf-8")
-        
+
         # Create preset with encoding settings
         preset_content = """
 test_group:
@@ -22526,7 +22541,7 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that file was processed (encoding errors handled)
         content = output_file.read_text()
         assert "test.txt" in content
@@ -22536,7 +22551,7 @@ test_group:
         """Test using --preset-group to select specific group."""
         # Create test file
         (temp_dir / "test.txt").write_text("Test content")
-        
+
         # Create preset with multiple groups
         preset_content = """
 development:
@@ -22573,7 +22588,7 @@ production:
         )
 
         assert exit_code == 0
-        
+
         # Check production settings were applied
         content = output_file.read_text()
         # The preset group selection may not be working as expected
@@ -22876,7 +22891,18 @@ from pathlib import Path
 import tempfile
 import pytest
 
-from tools.m1f.config import Config, OutputConfig, FilterConfig, EncodingConfig, SecurityConfig, ArchiveConfig, LoggingConfig, PresetConfig, SeparatorStyle, LineEnding
+from tools.m1f.config import (
+    Config,
+    OutputConfig,
+    FilterConfig,
+    EncodingConfig,
+    SecurityConfig,
+    ArchiveConfig,
+    LoggingConfig,
+    PresetConfig,
+    SeparatorStyle,
+    LineEnding,
+)
 from tools.m1f.core import FileCombiner
 from tools.m1f.output_writer import OutputWriter
 from tools.m1f.logging import LoggerManager
@@ -22895,7 +22921,7 @@ class TestParallelProcessing:
     def create_test_files(self, temp_dir):
         """Create multiple test files for parallel processing tests."""
         test_files = []
-        
+
         # Create 20 test files with varying content sizes
         for i in range(20):
             file_path = temp_dir / f"test_file_{i:02d}.txt"
@@ -22903,7 +22929,7 @@ class TestParallelProcessing:
             content = f"File {i} content\n" * (100 + i * 50)  # Varying sizes
             file_path.write_text(content)
             test_files.append(file_path)
-        
+
         return test_files
 
     @pytest.fixture
@@ -22922,46 +22948,50 @@ class TestParallelProcessing:
                 skip_output_file=False,
                 separator_style=SeparatorStyle.STANDARD,
                 line_ending=LineEnding.LF,
-                parallel=True  # Parallel enabled
+                parallel=True,  # Parallel enabled
             ),
             filter=FilterConfig(),
             encoding=EncodingConfig(),
             security=SecurityConfig(),
             archive=ArchiveConfig(),
             logging=LoggingConfig(verbose=True),
-            preset=PresetConfig()
+            preset=PresetConfig(),
         )
 
     @pytest.mark.asyncio
-    async def test_parallel_processing_enabled(self, config_parallel, create_test_files):
+    async def test_parallel_processing_enabled(
+        self, config_parallel, create_test_files
+    ):
         """Test that parallel processing is working correctly."""
         # Create file combiner
         logger_manager = LoggerManager(config_parallel.logging)
         combiner = FileCombiner(config_parallel, logger_manager)
-        
+
         # Track if parallel processing was used
         output_writer = combiner.output_writer
         original_write_method = output_writer._write_combined_file_parallel
         parallel_called = False
-        
+
         async def mock_parallel_write(*args, **kwargs):
             nonlocal parallel_called
             parallel_called = True
             return await original_write_method(*args, **kwargs)
-        
+
         output_writer._write_combined_file_parallel = mock_parallel_write
-        
+
         # Run the combiner
         result = await combiner.run()
-        
+
         # Verify parallel processing was used
         assert parallel_called, "Parallel processing was not used"
         # Should be 20 test files (output.log is excluded)
-        assert result.files_processed >= 20, f"Expected at least 20 files, got {result.files_processed}"
-        
+        assert (
+            result.files_processed >= 20
+        ), f"Expected at least 20 files, got {result.files_processed}"
+
         # Verify output file was created
         assert config_parallel.output.output_file.exists()
-        
+
         # Verify all files are in the output in correct order
         output_content = config_parallel.output.output_file.read_text()
         for i in range(20):
@@ -22969,34 +22999,38 @@ class TestParallelProcessing:
             assert f"File {i} content" in output_content
 
     @pytest.mark.asyncio
-    async def test_parallel_maintains_file_order(self, config_parallel, create_test_files):
+    async def test_parallel_maintains_file_order(
+        self, config_parallel, create_test_files
+    ):
         """Test that parallel processing maintains correct file order."""
         logger_manager = LoggerManager(config_parallel.logging)
         combiner = FileCombiner(config_parallel, logger_manager)
-        
+
         # Run the combiner
         await combiner.run()
-        
+
         # Read output and verify all test files are present
         output_content = config_parallel.output.output_file.read_text()
-        
+
         # Verify all test files are in the output
         for i in range(20):
             filename = f"test_file_{i:02d}.txt"
             assert filename in output_content, f"Missing file: {filename}"
-            
+
         # Check that files appear in order by looking at their positions
         positions = []
         for i in range(20):
             filename = f"test_file_{i:02d}.txt"
             pos = output_content.find(filename)
             positions.append((pos, filename))
-        
+
         # Sort by position and verify order
         positions.sort()
         for i, (pos, filename) in enumerate(positions):
             expected_filename = f"test_file_{i:02d}.txt"
-            assert filename == expected_filename, f"File order mismatch at position {i}: expected {expected_filename}, got {filename}"
+            assert (
+                filename == expected_filename
+            ), f"File order mismatch at position {i}: expected {expected_filename}, got {filename}"
 
     @pytest.mark.asyncio
     async def test_parallel_performance_improvement(self, temp_dir, create_test_files):
@@ -23007,7 +23041,7 @@ class TestParallelProcessing:
             # Create 1MB files
             content = "x" * (1024 * 1024)
             file_path.write_text(content)
-        
+
         # Test with parallel disabled (sequential)
         config_seq = Config(
             source_directory=temp_dir,
@@ -23015,63 +23049,62 @@ class TestParallelProcessing:
             input_include_files=[],
             output=OutputConfig(
                 output_file=temp_dir / "output_seq.txt",
-                parallel=False  # Force sequential for comparison
+                parallel=False,  # Force sequential for comparison
             ),
-            filter=FilterConfig(
-                include_extensions={".txt"}
-            ),
+            filter=FilterConfig(include_extensions={".txt"}),
             encoding=EncodingConfig(),
             security=SecurityConfig(),
             archive=ArchiveConfig(),
             logging=LoggingConfig(quiet=True),
-            preset=PresetConfig()
+            preset=PresetConfig(),
         )
-        
+
         # For this test, we need to temporarily modify the config to disable parallel
         # Since parallel is now always True, we'll mock the behavior
         logger_manager_seq = LoggerManager(config_seq.logging)
         writer_seq = OutputWriter(config_seq, logger_manager_seq)
-        
+
         # Force sequential processing
         start_seq = time.time()
-        files_to_process = [(temp_dir / f"large_file_{i}.txt", f"large_file_{i}.txt") for i in range(10)]
-        await writer_seq._write_combined_file_sequential(config_seq.output.output_file, files_to_process)
+        files_to_process = [
+            (temp_dir / f"large_file_{i}.txt", f"large_file_{i}.txt") for i in range(10)
+        ]
+        await writer_seq._write_combined_file_sequential(
+            config_seq.output.output_file, files_to_process
+        )
         time_seq = time.time() - start_seq
-        
+
         # Test with parallel enabled
         config_par = Config(
             source_directory=temp_dir,
             input_file=None,
             input_include_files=[],
-            output=OutputConfig(
-                output_file=temp_dir / "output_par.txt",
-                parallel=True
-            ),
-            filter=FilterConfig(
-                include_extensions={".txt"}
-            ),
+            output=OutputConfig(output_file=temp_dir / "output_par.txt", parallel=True),
+            filter=FilterConfig(include_extensions={".txt"}),
             encoding=EncodingConfig(),
             security=SecurityConfig(),
             archive=ArchiveConfig(),
             logging=LoggingConfig(quiet=True),
-            preset=PresetConfig()
+            preset=PresetConfig(),
         )
-        
+
         logger_manager_par = LoggerManager(config_par.logging)
         writer_par = OutputWriter(config_par, logger_manager_par)
-        
+
         start_par = time.time()
-        await writer_par._write_combined_file_parallel(config_par.output.output_file, files_to_process)
+        await writer_par._write_combined_file_parallel(
+            config_par.output.output_file, files_to_process
+        )
         time_par = time.time() - start_par
-        
+
         # Parallel should be faster (or at least not significantly slower)
         # We can't guarantee it's always faster due to overhead, but it shouldn't be much slower
         print(f"Sequential time: {time_seq:.3f}s, Parallel time: {time_par:.3f}s")
-        
+
         # Both files should have approximately the same size (small differences due to timestamps/processing)
         seq_size = config_seq.output.output_file.stat().st_size
         par_size = config_par.output.output_file.stat().st_size
-        
+
         # Allow small difference (< 1KB) due to timestamp differences
         size_diff = abs(seq_size - par_size)
         assert size_diff < 1024, f"File size difference too large: {size_diff} bytes"
@@ -23080,30 +23113,38 @@ class TestParallelProcessing:
     async def test_parallel_thread_safety(self, config_parallel, temp_dir):
         """Test thread safety of parallel processing with duplicate content."""
         # Create files with duplicate content
-        duplicate_content = "This is duplicate content for testing deduplication\n" * 100
-        
+        duplicate_content = (
+            "This is duplicate content for testing deduplication\n" * 100
+        )
+
         for i in range(10):
             file_path = temp_dir / f"duplicate_{i}.txt"
             file_path.write_text(duplicate_content)
-        
+
         logger_manager = LoggerManager(config_parallel.logging)
         combiner = FileCombiner(config_parallel, logger_manager)
-        
+
         # Run the combiner
         result = await combiner.run()
-        
+
         # With deduplication, only one file with duplicate content should be included
         output_content = config_parallel.output.output_file.read_text()
-        
+
         # Count occurrences of the duplicate content
-        content_count = output_content.count("This is duplicate content for testing deduplication")
-        
+        content_count = output_content.count(
+            "This is duplicate content for testing deduplication"
+        )
+
         # Should only appear once due to deduplication
-        assert content_count == 100, f"Duplicate content appeared {content_count} times, expected 100 (once)"
-        
+        assert (
+            content_count == 100
+        ), f"Duplicate content appeared {content_count} times, expected 100 (once)"
+
         # But we should see at least one separator for duplicate files
         # Due to deduplication, only the first file's content is included
-        assert "duplicate_0.txt" in output_content or "duplicate_1.txt" in output_content
+        assert (
+            "duplicate_0.txt" in output_content or "duplicate_1.txt" in output_content
+        )
 
     @pytest.mark.asyncio
     async def test_parallel_error_handling(self, config_parallel, temp_dir):
@@ -23112,22 +23153,22 @@ class TestParallelProcessing:
         for i in range(5):
             file_path = temp_dir / f"good_file_{i}.txt"
             file_path.write_text(f"Good content {i}")
-        
+
         # Create a file that will cause an error (we'll make it unreadable)
         bad_file = temp_dir / "bad_file.txt"
         bad_file.write_text("This will be made unreadable")
         bad_file.chmod(0o000)  # Remove all permissions
-        
+
         try:
             logger_manager = LoggerManager(config_parallel.logging)
             combiner = FileCombiner(config_parallel, logger_manager)
-            
+
             # Run should complete despite the error
             result = await combiner.run()
-            
+
             # Should process the good files
             assert result.files_processed >= 5
-            
+
         finally:
             # Restore permissions for cleanup
             bad_file.chmod(0o644)
@@ -23138,34 +23179,36 @@ class TestParallelProcessing:
         # Create just one file
         single_file = temp_dir / "single_file.txt"
         single_file.write_text("Single file content")
-        
+
         logger_manager = LoggerManager(config_parallel.logging)
         output_writer = OutputWriter(config_parallel, logger_manager)
-        
+
         # Track which method was called
         sequential_called = False
         parallel_called = False
-        
+
         original_seq = output_writer._write_combined_file_sequential
         original_par = output_writer._write_combined_file_parallel
-        
+
         async def mock_sequential(*args, **kwargs):
             nonlocal sequential_called
             sequential_called = True
             return await original_seq(*args, **kwargs)
-        
+
         async def mock_parallel(*args, **kwargs):
             nonlocal parallel_called
             parallel_called = True
             return await original_par(*args, **kwargs)
-        
+
         output_writer._write_combined_file_sequential = mock_sequential
         output_writer._write_combined_file_parallel = mock_parallel
-        
+
         # Process single file
         files = [(single_file, "single_file.txt")]
-        await output_writer.write_combined_file(config_parallel.output.output_file, files)
-        
+        await output_writer.write_combined_file(
+            config_parallel.output.output_file, files
+        )
+
         # With only one file, it should use sequential mode
         assert sequential_called, "Sequential processing was not used for single file"
         assert not parallel_called, "Parallel processing was used for single file"
@@ -23246,7 +23289,7 @@ class TestPathTraversalSecurity:
             base_path = Path(tmpdir)
             # Valid path within base directory
             valid_path = base_path / "subdir" / "file.txt"
-            
+
             result = validate_path_traversal(valid_path, base_path)
             assert result == valid_path.resolve()
 
@@ -23256,30 +23299,30 @@ class TestPathTraversalSecurity:
             base_path = Path(tmpdir)
             # Try to traverse outside
             malicious_path = base_path / ".." / ".." / "etc" / "passwd"
-            
+
             with pytest.raises(ValueError) as exc_info:
                 validate_path_traversal(malicious_path, base_path)
-            
+
             assert "Path traversal detected" in str(exc_info.value)
 
     def test_config_blocks_traversal_source_dir(self):
         """Test that Config blocks path traversal in source directory."""
         # Create mock args with path traversal attempt
         args = self._create_test_args(source_directory="../../../etc")
-        
+
         # This should raise ValueError for path traversal
         with pytest.raises(ValueError) as exc_info:
             Config.from_args(args)
-        
+
         assert "Path traversal detected" in str(exc_info.value)
 
     def test_config_builder_blocks_traversal_input_file(self):
         """Test that Config blocks path traversal in input file."""
         args = self._create_test_args(input_file="../../sensitive/data.txt")
-        
+
         with pytest.raises(ValueError) as exc_info:
             Config.from_args(args)
-        
+
         assert "Path traversal detected" in str(exc_info.value)
 
     def test_config_allows_output_file_outside_cwd(self):
@@ -23287,10 +23330,9 @@ class TestPathTraversalSecurity:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Output paths should be allowed outside the base directory
             args = self._create_test_args(
-                source_directory=".",
-                output_file=f"{tmpdir}/output.txt"
+                source_directory=".", output_file=f"{tmpdir}/output.txt"
             )
-            
+
             # This should NOT raise an error
             config = Config.from_args(args)
             assert str(config.output.output_file) == f"{tmpdir}/output.txt"
@@ -23300,10 +23342,10 @@ class TestPathTraversalSecurity:
         args = self._create_test_args(
             input_include_files=["../../../etc/shadow", "../../private/keys.txt"]
         )
-        
+
         with pytest.raises(ValueError) as exc_info:
             Config.from_args(args)
-        
+
         assert "Path traversal detected" in str(exc_info.value)
 
     def test_config_builder_blocks_traversal_preset_files(self):
@@ -23311,29 +23353,29 @@ class TestPathTraversalSecurity:
         args = self._create_test_args(
             preset_files=["../../../../home/user/.ssh/id_rsa"]
         )
-        
+
         with pytest.raises(ValueError) as exc_info:
             Config.from_args(args)
-        
+
         assert "Path traversal detected" in str(exc_info.value)
 
     def test_symbolic_link_traversal_blocked(self):
         """Test that symbolic links cannot be used for path traversal."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_path = Path(tmpdir)
-            
+
             # Create a symbolic link that points outside
             link_path = base_path / "evil_link"
             target_path = Path("/etc/passwd")
-            
+
             # Only create symlink if we can (might fail on some systems)
             try:
                 link_path.symlink_to(target_path)
-                
+
                 # The resolved path should be blocked
                 with pytest.raises(ValueError) as exc_info:
                     validate_path_traversal(link_path, base_path)
-                
+
                 assert "Path traversal detected" in str(exc_info.value)
             except OSError:
                 # Skip test if we can't create symlinks
@@ -23373,10 +23415,12 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 SOURCE_DIR = PROJECT_ROOT / "tmp" / "m1f_test_source"
 OUTPUT_DIR = PROJECT_ROOT / "tmp" / "m1f_test_output"
 
+
 def _create_test_file(path: Path, content: str) -> None:
     """Create a test file with given content."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding='utf-8')
+    path.write_text(content, encoding="utf-8")
+
 
 def run_m1f(args):
     """Run m1f with given arguments."""
@@ -23384,22 +23428,29 @@ def run_m1f(args):
     result = subprocess.run(cmd, capture_output=True, text=True)
     return result
 
+
 # Import the security scan function directly for isolated testing
 import asyncio
 from tools.m1f.security_scanner import SecurityScanner
 from tools.m1f.config import Config, SecurityConfig, SecurityCheckMode
 from tools.m1f.logging import LoggerManager
 
+
 def _scan_files_for_sensitive_info(files):
     """Helper function to scan files for sensitive info."""
     # Create a minimal config with security enabled
-    security_config = SecurityConfig(
-        security_check=SecurityCheckMode.WARN
-    )
-    
+    security_config = SecurityConfig(security_check=SecurityCheckMode.WARN)
+
     # Need to import other config classes
-    from tools.m1f.config import OutputConfig, FilterConfig, EncodingConfig, ArchiveConfig, LoggingConfig, PresetConfig
-    
+    from tools.m1f.config import (
+        OutputConfig,
+        FilterConfig,
+        EncodingConfig,
+        ArchiveConfig,
+        LoggingConfig,
+        PresetConfig,
+    )
+
     # Create a minimal config
     config = Config(
         source_directory=None,
@@ -23411,13 +23462,13 @@ def _scan_files_for_sensitive_info(files):
         security=security_config,
         archive=ArchiveConfig(),
         logging=LoggingConfig(),
-        preset=PresetConfig()
+        preset=PresetConfig(),
     )
-    
+
     # Create logger manager
     logging_config = LoggingConfig(verbose=False, quiet=True)
     logger_manager = LoggerManager(config=logging_config)
-    
+
     # Create scanner and run async scan
     scanner = SecurityScanner(config, logger_manager)
     return asyncio.run(scanner.scan_files(files))
@@ -23431,7 +23482,7 @@ def test_security_detection():
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
-    
+
     # Create a test directory with clean and sensitive files
     test_dir = SOURCE_DIR / "security_detection_test"
     test_dir.mkdir(parents=True, exist_ok=True)
@@ -23518,11 +23569,11 @@ def test_security_check_skip():
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
-    
+
     # Create a test file with SECRET_KEY
     test_file = SOURCE_DIR / "test_with_secret.py"
     _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
-    
+
     try:
         output_file = OUTPUT_DIR / "security_skip.txt"
         result = run_m1f(
@@ -23538,8 +23589,10 @@ def test_security_check_skip():
             ]
         )
         # With skip mode, the output should be created regardless of security findings
-        assert output_file.exists(), f"Output file missing when skipping. stderr: {result.stderr}"
-        
+        assert (
+            output_file.exists()
+        ), f"Output file missing when skipping. stderr: {result.stderr}"
+
         # Clean up
         if output_file.exists():
             output_file.unlink()
@@ -23556,11 +23609,11 @@ def test_security_check_warn():
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
-    
+
     # Create a test file with SECRET_KEY
     test_file = SOURCE_DIR / "test_with_secret.py"
     _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
-    
+
     try:
         output_file = OUTPUT_DIR / "security_warn.txt"
         result = run_m1f(
@@ -23575,11 +23628,13 @@ def test_security_check_warn():
                 "--force",
             ]
         )
-        assert output_file.exists(), f"Output file missing when warning. stderr: {result.stderr}"
+        assert (
+            output_file.exists()
+        ), f"Output file missing when warning. stderr: {result.stderr}"
         with open(output_file, "r", encoding="utf-8") as f:
             content = f.read()
             assert "SECRET_KEY" in content
-        
+
         # Clean up
         if output_file.exists():
             output_file.unlink()
@@ -24432,7 +24487,7 @@ class TestS1FPathTraversalSecurity:
         """Test that validate_file_path blocks parent directory traversal."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_dir = Path(tmpdir)
-            
+
             # Test various malicious paths
             malicious_paths = [
                 Path("../../../etc/passwd"),
@@ -24440,16 +24495,17 @@ class TestS1FPathTraversalSecurity:
                 Path("subdir/../../etc/passwd"),
                 Path("./../../sensitive/data"),
             ]
-            
+
             for malicious_path in malicious_paths:
-                assert not validate_file_path(malicious_path, base_dir), \
-                    f"Path {malicious_path} should be blocked"
+                assert not validate_file_path(
+                    malicious_path, base_dir
+                ), f"Path {malicious_path} should be blocked"
 
     def test_validate_file_path_allows_valid_paths(self):
         """Test that validate_file_path allows legitimate paths."""
         with tempfile.TemporaryDirectory() as tmpdir:
             base_dir = Path(tmpdir)
-            
+
             # Test valid paths
             valid_paths = [
                 Path("file.txt"),
@@ -24457,21 +24513,22 @@ class TestS1FPathTraversalSecurity:
                 Path("deep/nested/path/file.txt"),
                 Path("./current/file.txt"),
             ]
-            
+
             for valid_path in valid_paths:
-                assert validate_file_path(valid_path, base_dir), \
-                    f"Path {valid_path} should be allowed"
+                assert validate_file_path(
+                    valid_path, base_dir
+                ), f"Path {valid_path} should be allowed"
 
     def test_s1f_blocks_absolute_paths_in_combined_file(self):
         """Test that s1f blocks extraction of absolute paths."""
         project_root = Path(__file__).parent.parent.parent
         test_dir = project_root / "tmp" / "s1f_security_test"
-        
+
         try:
             test_dir.mkdir(parents=True, exist_ok=True)
         except (OSError, PermissionError) as e:
             pytest.skip(f"Cannot create test directory: {e}")
-        
+
         try:
             # Create a malicious combined file with absolute path
             combined_file = test_dir / "malicious_combined.txt"
@@ -24480,40 +24537,48 @@ root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
 """
             combined_file.write_text(combined_content)
-            
+
             # Create output directory
             output_dir = test_dir / "extracted"
             output_dir.mkdir(exist_ok=True)
-            
+
             # Run s1f
             import subprocess
             import sys
-            
+
             s1f_script = project_root / "tools" / "s1f.py"
             result = subprocess.run(
-                [sys.executable, str(s1f_script), 
-                 "-i", str(combined_file),
-                 "-d", str(output_dir),
-                 "-f"],
+                [
+                    sys.executable,
+                    str(s1f_script),
+                    "-i",
+                    str(combined_file),
+                    "-d",
+                    str(output_dir),
+                    "-f",
+                ],
                 capture_output=True,
-                text=True
+                text=True,
             )
-            
+
             # Check that extraction failed or file was not created in /etc/
-            assert not Path("/etc/passwd").exists() or \
-                   Path("/etc/passwd").stat().st_mtime < combined_file.stat().st_mtime, \
-                   "s1f should not overwrite system files!"
-            
+            assert (
+                not Path("/etc/passwd").exists()
+                or Path("/etc/passwd").stat().st_mtime < combined_file.stat().st_mtime
+            ), "s1f should not overwrite system files!"
+
             # The extracted file should not exist outside the output directory
             extracted_file = output_dir / "etc" / "passwd"
             if extracted_file.exists():
                 # If it was extracted, it should be in the output dir, not at the absolute path
-                assert extracted_file.is_relative_to(output_dir), \
-                    "Extracted file should be within output directory"
-        
+                assert extracted_file.is_relative_to(
+                    output_dir
+                ), "Extracted file should be within output directory"
+
         finally:
             # Clean up
             import shutil
+
             if test_dir.exists():
                 shutil.rmtree(test_dir)
 
@@ -24521,12 +24586,12 @@ daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
         """Test that s1f blocks relative path traversal in combined files."""
         project_root = Path(__file__).parent.parent.parent
         test_dir = project_root / "tmp" / "s1f_traversal_test"
-        
+
         try:
             test_dir.mkdir(parents=True, exist_ok=True)
         except (OSError, PermissionError) as e:
             pytest.skip(f"Cannot create test directory: {e}")
-        
+
         try:
             # Create a malicious combined file with path traversal
             combined_file = test_dir / "traversal_combined.txt"
@@ -24536,39 +24601,47 @@ malicious content
 sensitive information
 """
             combined_file.write_text(combined_content)
-            
+
             # Create output directory
             output_dir = test_dir / "extracted"
             output_dir.mkdir(exist_ok=True)
-            
+
             # Run s1f
             import subprocess
             import sys
-            
+
             s1f_script = project_root / "tools" / "s1f.py"
             result = subprocess.run(
-                [sys.executable, str(s1f_script), 
-                 "-i", str(combined_file),
-                 "-d", str(output_dir),
-                 "-f"],
+                [
+                    sys.executable,
+                    str(s1f_script),
+                    "-i",
+                    str(combined_file),
+                    "-d",
+                    str(output_dir),
+                    "-f",
+                ],
                 capture_output=True,
-                text=True
+                text=True,
             )
-            
+
             # Check that files were not created outside output directory
             parent_dir = output_dir.parent
-            assert not (parent_dir / "sensitive_data.txt").exists(), \
-                "s1f should not create files outside output directory"
-            
+            assert not (
+                parent_dir / "sensitive_data.txt"
+            ).exists(), "s1f should not create files outside output directory"
+
             # Check stderr for security warnings
             if result.stderr:
-                assert "invalid path" in result.stderr.lower() or \
-                       "skipping" in result.stderr.lower(), \
-                       "s1f should warn about invalid paths"
-        
+                assert (
+                    "invalid path" in result.stderr.lower()
+                    or "skipping" in result.stderr.lower()
+                ), "s1f should warn about invalid paths"
+
         finally:
             # Clean up
             import shutil
+
             if test_dir.exists():
                 shutil.rmtree(test_dir)
 
@@ -25357,6 +25430,7 @@ import pytest
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from base_test import BaseS1FTest
 
@@ -25516,7 +25590,7 @@ class TestS1FBasic(BaseS1FTest):
         )
 
         assert exit_code == 0
-        
+
         # The log_output from run_s1f should contain the verbose output
         # If not, just check that the command succeeded - the stdout capture
         # shows the verbose output is being printed
@@ -25622,8 +25696,8 @@ class TestS1FBasic(BaseS1FTest):
                 actual_content = extracted_file.read_text()
                 # Allow for trailing newline differences
                 assert (
-                    actual_content == expected_content or 
-                    actual_content.rstrip() == expected_content.rstrip()
+                    actual_content == expected_content
+                    or actual_content.rstrip() == expected_content.rstrip()
                 ), f"Content mismatch for {filepath} in {style} format"
 
 ======= tests/s1f/test_s1f_encoding.py ======
@@ -25652,6 +25726,7 @@ import pytest
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from base_test import BaseS1FTest
 
@@ -26749,10 +26824,16 @@ class Html2mdConverter:
 
         # Convert using the convert_html method which includes preprocessing
         # Use a relative base URL to avoid exposing absolute paths
-        file_name = file_path.name if file_path and file_path.name else (Path(file_path).resolve().name if file_path else None)
+        file_name = (
+            file_path.name
+            if file_path and file_path.name
+            else (Path(file_path).resolve().name if file_path else None)
+        )
         base_url = file_name
         markdown = self.convert_html(
-            html_content, base_url=base_url, source_file=str(file_name if file_name else "input")
+            html_content,
+            base_url=base_url,
+            source_file=str(file_name if file_name else "input"),
         )
 
         # Determine output path
@@ -26760,8 +26841,12 @@ class Html2mdConverter:
             rel_path = file_path.relative_to(self.config.source)
         else:
             # Handle case where file_path might be "." or have empty name
-            rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
-            if not rel_path or str(rel_path) == '.':
+            rel_path = (
+                Path(file_path.name)
+                if file_path.name
+                else Path(file_path).resolve().name
+            )
+            if not rel_path or str(rel_path) == ".":
                 rel_path = Path(file_path).resolve().name
 
         output_path = self.config.destination / Path(rel_path).with_suffix(".md")
@@ -26948,8 +27033,12 @@ class Html2mdConverter:
                 rel_path = file_path.relative_to(self.config.source)
             else:
                 # Handle case where file_path might be "." or have empty name
-                rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
-                if not rel_path or str(rel_path) == '.':
+                rel_path = (
+                    Path(file_path.name)
+                    if file_path.name
+                    else Path(file_path).resolve().name
+                )
+                if not rel_path or str(rel_path) == ".":
                     rel_path = Path(file_path).resolve().name
 
             output_path = self.config.destination / Path(rel_path).with_suffix(".md")
@@ -28972,14 +29061,14 @@ class AutoBundler:
     def _find_config_file(self, start_path: Path) -> Path:
         """Find .m1f.config.yml by searching from current directory up to root."""
         current = start_path.resolve()
-        
+
         while True:
             config_path = current / ".m1f.config.yml"
             if config_path.exists():
                 if self.verbose:
                     self.print_info(f"Found config at: {config_path}")
                 return config_path
-            
+
             # Check if we've reached the root
             parent = current.parent
             if parent == current:
@@ -29030,12 +29119,17 @@ class AutoBundler:
             output = bundle_config.get("output", "")
             if output:
                 from .utils import validate_path_traversal
+
                 output_path = self.project_root / output
                 # Validate output path doesn't use malicious traversal
                 try:
-                    output_path = validate_path_traversal(output_path, base_path=self.project_root, allow_outside=True)
+                    output_path = validate_path_traversal(
+                        output_path, base_path=self.project_root, allow_outside=True
+                    )
                 except ValueError as e:
-                    self.print_error(f"Invalid output path for bundle '{bundle_name}': {e}")
+                    self.print_error(
+                        f"Invalid output path for bundle '{bundle_name}': {e}"
+                    )
                     continue
                 output_dir = output_path.parent
 
@@ -29067,7 +29161,7 @@ class AutoBundler:
         # Process sources
         sources = bundle_config.get("sources", [])
         all_excludes = []  # Collect all excludes
-        
+
         for source in sources:
             path = source.get("path", ".")
 
@@ -29116,8 +29210,13 @@ class AutoBundler:
         output = bundle_config.get("output", "")
         if output:
             from .utils import validate_path_traversal
+
             try:
-                output_path = validate_path_traversal(self.project_root / output, base_path=self.project_root, allow_outside=True)
+                output_path = validate_path_traversal(
+                    self.project_root / output,
+                    base_path=self.project_root,
+                    allow_outside=True,
+                )
                 cmd_parts.extend(["-o", str(output_path)])
             except ValueError as e:
                 self.print_error(f"Invalid output path: {e}")
@@ -29130,8 +29229,13 @@ class AutoBundler:
         # Preset
         if "preset" in bundle_config:
             from .utils import validate_path_traversal
+
             try:
-                preset_path = validate_path_traversal(self.project_root / bundle_config["preset"], base_path=self.project_root, from_preset=True)
+                preset_path = validate_path_traversal(
+                    self.project_root / bundle_config["preset"],
+                    base_path=self.project_root,
+                    from_preset=True,
+                )
                 cmd_parts.extend(["--preset", str(preset_path)])
             except ValueError as e:
                 self.print_error(f"Invalid preset path: {e}")
@@ -29225,7 +29329,7 @@ class AutoBundler:
         # Group bundles by their group
         grouped_bundles = {}
         ungrouped_bundles = {}
-        
+
         for bundle_name, bundle_config in config.bundles.items():
             group = bundle_config.get("group", None)
             if group:
@@ -29237,14 +29341,14 @@ class AutoBundler:
 
         print("\nAvailable bundles:")
         print("-" * 60)
-        
+
         # Show grouped bundles first
         for group_name in sorted(grouped_bundles.keys()):
             print(f"\nGroup: {group_name}")
             print("=" * 40)
             for bundle_name, bundle_config in grouped_bundles[group_name].items():
                 self._print_bundle_info(bundle_name, bundle_config)
-        
+
         # Show ungrouped bundles
         if ungrouped_bundles:
             if grouped_bundles:
@@ -29254,14 +29358,14 @@ class AutoBundler:
                 self._print_bundle_info(bundle_name, bundle_config)
 
         print("-" * 60)
-        
+
         # Show available groups
         if grouped_bundles:
             print("\nAvailable groups:")
             for group in sorted(grouped_bundles.keys()):
                 count = len(grouped_bundles[group])
                 print(f"  - {group} ({count} bundles)")
-    
+
     def _print_bundle_info(self, bundle_name: str, bundle_config: Dict[str, Any]):
         """Print information about a single bundle."""
         enabled = bundle_config.get("enabled", True)
@@ -29277,7 +29381,12 @@ class AutoBundler:
         if "enabled_if_exists" in bundle_config:
             print(f"    Enabled if exists: {bundle_config['enabled_if_exists']}")
 
-    def run(self, bundle_name: Optional[str] = None, list_bundles: bool = False, bundle_group: Optional[str] = None):
+    def run(
+        self,
+        bundle_name: Optional[str] = None,
+        list_bundles: bool = False,
+        bundle_group: Optional[str] = None,
+    ):
         """Run auto-bundle functionality."""
         # Check if config exists
         if not self.check_config_exists():
@@ -29288,9 +29397,7 @@ class AutoBundler:
             self.print_info(
                 "Create a .m1f.config.yml file in your project root to use auto-bundle functionality."
             )
-            self.print_info(
-                "See documentation: docs/01_m1f/06_auto_bundle_guide.md"
-            )
+            self.print_info("See documentation: docs/01_m1f/06_auto_bundle_guide.md")
             return False
 
         # Load config
@@ -29309,13 +29416,13 @@ class AutoBundler:
 
         # Filter bundles by group if specified
         bundles_to_create = {}
-        
+
         if bundle_group:
             # Filter bundles by group
             for name, bundle_config in config.bundles.items():
                 if bundle_config.get("group") == bundle_group:
                     bundles_to_create[name] = bundle_config
-                    
+
             if not bundles_to_create:
                 self.print_error(f"No bundles found in group '{bundle_group}'")
                 available_groups = set()
@@ -29323,7 +29430,9 @@ class AutoBundler:
                     if "group" in bundle_config:
                         available_groups.add(bundle_config["group"])
                 if available_groups:
-                    self.print_info(f"Available groups: {', '.join(sorted(available_groups))}")
+                    self.print_info(
+                        f"Available groups: {', '.join(sorted(available_groups))}"
+                    )
                 else:
                     self.print_info("No bundle groups defined in configuration")
                 return False
@@ -29695,7 +29804,6 @@ Perfect for:
         "-q", "--quiet", action="store_true", help="Suppress all console output"
     )
 
-
     # Preset configuration group
     preset_group = parser.add_argument_group("Preset Configuration")
 
@@ -29909,26 +30017,26 @@ class Config:
         """Create configuration from parsed arguments."""
         # First create the basic config from CLI args
         config = cls._create_from_cli_args(args)
-        
+
         # Then apply preset overrides if presets are enabled
         if not config.preset.disable_presets and config.preset.preset_files:
             config = cls._apply_preset_overrides(config, args)
-        
+
         # Validate that we have required inputs after preset application
         if not config.source_directory and not config.input_file:
             raise ValueError(
                 "At least one of source_directory or input_file must be provided "
                 "(either via CLI arguments or preset configuration)"
             )
-        
+
         # Validate output_file - it should not be the default dummy value
         if config.output.output_file == Path("output.txt"):
             raise ValueError(
                 "output_file must be provided (either via -o CLI argument or preset configuration)"
             )
-        
+
         return config
-    
+
     @classmethod
     def _create_from_cli_args(cls, args: argparse.Namespace) -> Config:
         """Create initial configuration from CLI arguments."""
@@ -29957,9 +30065,12 @@ class Config:
         output_file_path = None
         if args.output_file:
             resolved_path = Path(args.output_file).resolve()
-            output_file_path = validate_path_traversal(resolved_path, allow_outside=True)
+            output_file_path = validate_path_traversal(
+                resolved_path, allow_outside=True
+            )
         output_config = OutputConfig(
-            output_file=output_file_path or Path("output.txt"),  # Default if not provided
+            output_file=output_file_path
+            or Path("output.txt"),  # Default if not provided
             add_timestamp=args.add_timestamp,
             filename_mtime_hash=getattr(args, "filename_mtime_hash", False),
             force_overwrite=args.force,
@@ -30047,84 +30158,120 @@ class Config:
             logging=logging_config,
             preset=preset_config,
         )
-    
+
     @classmethod
-    def _apply_preset_overrides(cls, config: Config, args: argparse.Namespace) -> Config:
+    def _apply_preset_overrides(
+        cls, config: Config, args: argparse.Namespace
+    ) -> Config:
         """Apply preset overrides to configuration."""
         from .presets import load_presets
-        
+
         # Load presets
         preset_manager = load_presets(config.preset.preset_files)
         global_settings = preset_manager.get_global_settings()
-        
+
         if not global_settings:
             return config
-        
+
         # Apply overrides - CLI arguments take precedence over presets
-        
+
         # Input/Output overrides
         source_dir = config.source_directory
         input_file = config.input_file
         output_file = config.output.output_file
         input_include_files = config.input_include_files
-        
+
         # Only override if not provided via CLI (with path traversal validation)
         # Paths from presets are trusted
         if not args.source_directory and global_settings.source_directory:
             resolved_path = Path(global_settings.source_directory).resolve()
             source_dir = validate_path_traversal(resolved_path, from_preset=True)
-        
+
         if not args.input_file and global_settings.input_file:
             resolved_path = Path(global_settings.input_file).resolve()
             input_file = validate_path_traversal(resolved_path, from_preset=True)
-        
+
         # Only override output_file if not provided via CLI
         if not args.output_file and global_settings.output_file:
             resolved_path = Path(global_settings.output_file).resolve()
             output_file = validate_path_traversal(resolved_path, allow_outside=True)
-        
+
         if not args.input_include_files and global_settings.input_include_files:
             if isinstance(global_settings.input_include_files, str):
                 resolved_path = Path(global_settings.input_include_files).resolve()
-                validated_path = validate_path_traversal(resolved_path, from_preset=True)
+                validated_path = validate_path_traversal(
+                    resolved_path, from_preset=True
+                )
                 input_include_files = [validated_path]
             else:
                 input_include_files = []
                 for f in global_settings.input_include_files:
                     resolved_path = Path(f).resolve()
-                    validated_path = validate_path_traversal(resolved_path, from_preset=True)
+                    validated_path = validate_path_traversal(
+                        resolved_path, from_preset=True
+                    )
                     input_include_files.append(validated_path)
-        
+
         # Create new OutputConfig with overrides
         output_config = OutputConfig(
             output_file=output_file,
-            add_timestamp=args.add_timestamp if args.add_timestamp else (global_settings.add_timestamp or False),
-            filename_mtime_hash=getattr(args, "filename_mtime_hash", False) or (global_settings.filename_mtime_hash or False),
-            force_overwrite=args.force if args.force else (global_settings.force or False),
-            minimal_output=getattr(args, "minimal_output", False) or (global_settings.minimal_output or False),
-            skip_output_file=getattr(args, "skip_output_file", False) or (global_settings.skip_output_file or False),
-            separator_style=SeparatorStyle(args.separator_style) if args.separator_style != "Detailed" else (
-                SeparatorStyle(global_settings.separator_style) if global_settings.separator_style else SeparatorStyle.DETAILED
+            add_timestamp=(
+                args.add_timestamp
+                if args.add_timestamp
+                else (global_settings.add_timestamp or False)
             ),
-            line_ending=LineEnding.from_str(args.line_ending) if args.line_ending != "lf" else (
-                LineEnding.from_str(global_settings.line_ending) if global_settings.line_ending else LineEnding.LF
+            filename_mtime_hash=getattr(args, "filename_mtime_hash", False)
+            or (global_settings.filename_mtime_hash or False),
+            force_overwrite=(
+                args.force if args.force else (global_settings.force or False)
+            ),
+            minimal_output=getattr(args, "minimal_output", False)
+            or (global_settings.minimal_output or False),
+            skip_output_file=getattr(args, "skip_output_file", False)
+            or (global_settings.skip_output_file or False),
+            separator_style=(
+                SeparatorStyle(args.separator_style)
+                if args.separator_style != "Detailed"
+                else (
+                    SeparatorStyle(global_settings.separator_style)
+                    if global_settings.separator_style
+                    else SeparatorStyle.DETAILED
+                )
+            ),
+            line_ending=(
+                LineEnding.from_str(args.line_ending)
+                if args.line_ending != "lf"
+                else (
+                    LineEnding.from_str(global_settings.line_ending)
+                    if global_settings.line_ending
+                    else LineEnding.LF
+                )
             ),
         )
-        
+
         # Create new ArchiveConfig with overrides
         archive_config = ArchiveConfig(
-            create_archive=getattr(args, "create_archive", False) or (global_settings.create_archive or False),
-            archive_type=ArchiveType(getattr(args, "archive_type", "zip")) if getattr(args, "archive_type", "zip") != "zip" else (
-                ArchiveType(global_settings.archive_type) if global_settings.archive_type else ArchiveType.ZIP
+            create_archive=getattr(args, "create_archive", False)
+            or (global_settings.create_archive or False),
+            archive_type=(
+                ArchiveType(getattr(args, "archive_type", "zip"))
+                if getattr(args, "archive_type", "zip") != "zip"
+                else (
+                    ArchiveType(global_settings.archive_type)
+                    if global_settings.archive_type
+                    else ArchiveType.ZIP
+                )
             ),
         )
-        
+
         # Create new LoggingConfig with overrides
         logging_config = LoggingConfig(
-            verbose=args.verbose if args.verbose else (global_settings.verbose or False),
+            verbose=(
+                args.verbose if args.verbose else (global_settings.verbose or False)
+            ),
             quiet=getattr(args, "quiet", False) or (global_settings.quiet or False),
         )
-        
+
         # Return new config with overrides applied
         return cls(
             source_directory=source_dir,
@@ -31110,7 +31257,7 @@ class EncodingHandler:
             }
 
             # Check if file extension suggests markdown or text files that should be UTF-8
-            if file_path.suffix.lower() in ['.md', '.markdown', '.txt', '.rst']:
+            if file_path.suffix.lower() in [".md", ".markdown", ".txt", ".rst"]:
                 # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
                 # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
                 if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:
@@ -31329,7 +31476,13 @@ from .config import Config, FilterConfig
 from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, MAX_SYMLINK_DEPTH
 from .exceptions import FileNotFoundError, ValidationError
 from .logging import LoggerManager
-from .utils import is_binary_file, is_hidden_path, get_relative_path, format_file_size, validate_path_traversal
+from .utils import (
+    is_binary_file,
+    is_hidden_path,
+    get_relative_path,
+    format_file_size,
+    validate_path_traversal,
+)
 
 
 class FileProcessor:
@@ -31459,7 +31612,9 @@ class FileProcessor:
                             validated_path = validate_path_traversal(path.resolve())
                             self.exact_excludes.add(str(validated_path))
                         except ValueError as e:
-                            self.logger.warning(f"Skipping invalid exclude path '{line}': {e}")
+                            self.logger.warning(
+                                f"Skipping invalid exclude path '{line}': {e}"
+                            )
 
             except Exception as e:
                 self.logger.warning(f"Error reading exclude file {exclude_file}: {e}")
@@ -31518,7 +31673,9 @@ class FileProcessor:
                             validated_path = validate_path_traversal(path.resolve())
                             self.exact_includes.add(str(validated_path))
                         except ValueError as e:
-                            self.logger.warning(f"Skipping invalid include path '{line}': {e}")
+                            self.logger.warning(
+                                f"Skipping invalid include path '{line}': {e}"
+                            )
 
             except Exception as e:
                 self.logger.warning(f"Error reading include file {include_file}: {e}")
@@ -31601,10 +31758,14 @@ class FileProcessor:
                         matches = glob.glob(str(pattern_path), recursive=True)
                         for m in matches:
                             try:
-                                validated_path = validate_path_traversal(Path(m).resolve())
+                                validated_path = validate_path_traversal(
+                                    Path(m).resolve()
+                                )
                                 paths.append(validated_path)
                             except ValueError as e:
-                                self.logger.warning(f"Skipping invalid glob match '{m}': {e}")
+                                self.logger.warning(
+                                    f"Skipping invalid glob match '{m}': {e}"
+                                )
                     else:
                         path = Path(line)
                         if not path.is_absolute():
@@ -31702,12 +31863,14 @@ class FileProcessor:
                         dedup_key = str(file_path)
                     else:
                         dedup_key = str(file_path.resolve())
-                    
+
                     if dedup_key not in self._processed_files:
                         files.append((file_path, rel_path))
                         self._processed_files.add(dedup_key)
                     else:
-                        self.logger.debug(f"Skipping duplicate: {file_path} (key: {dedup_key})")
+                        self.logger.debug(
+                            f"Skipping duplicate: {file_path} (key: {dedup_key})"
+                        )
                 else:
                     self.logger.debug(f"File excluded by filter: {file_path}")
 
@@ -31759,10 +31922,10 @@ class FileProcessor:
                 and self._global_include_binary_files is not None
             ):
                 include_binary = include_binary or self._global_include_binary_files
-            
+
             if not include_binary and is_binary_file(file_path):
                 return False
-            
+
             return True
 
         # Get file-specific settings from presets
@@ -31873,7 +32036,9 @@ class FileProcessor:
                 include_symlinks = include_symlinks or self._global_include_symlinks
 
             if not include_symlinks:
-                self.logger.debug(f"Excluding symlink {file_path} (include_symlinks=False)")
+                self.logger.debug(
+                    f"Excluding symlink {file_path} (include_symlinks=False)"
+                )
                 return False
 
             # For file symlinks, we only need to check for cycles if it's a directory symlink
@@ -31881,7 +32046,7 @@ class FileProcessor:
             if file_path.is_dir() and self._detect_symlink_cycle(file_path):
                 self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
                 return False
-            
+
             self.logger.debug(f"Including symlink {file_path} (include_symlinks=True)")
 
         # Check file size limit
@@ -31936,13 +32101,18 @@ class FileProcessor:
                 if not target.is_absolute():
                     target = current.parent / target
                 target = target.resolve(strict=False)
-                
+
                 # Validate symlink target doesn't traverse outside allowed directories
                 try:
                     from .utils import validate_path_traversal
-                    validate_path_traversal(target, allow_outside=self.config.filter.include_symlinks)
+
+                    validate_path_traversal(
+                        target, allow_outside=self.config.filter.include_symlinks
+                    )
                 except ValueError as e:
-                    self.logger.warning(f"Symlink target validation failed for {current}: {e}")
+                    self.logger.warning(
+                        f"Symlink target validation failed for {current}: {e}"
+                    )
                     return False
 
                 target_str = str(target)
@@ -32517,18 +32687,18 @@ class OutputWriter:
     ) -> int:
         """Write all files using parallel processing for reading."""
         self.logger.info("Using parallel processing for file reading...")
-        
+
         try:
             # Process files in batches to avoid too many concurrent operations
             batch_size = 10  # Process 10 files concurrently
-            
+
             # First, read and process all files in parallel
             processed_files = []
-            
+
             for batch_start in range(0, len(all_files), batch_size):
                 batch_end = min(batch_start + batch_size, len(all_files))
                 batch = all_files[batch_start:batch_end]
-                
+
                 # Create tasks for parallel processing
                 tasks = []
                 for i, (file_path, rel_path) in enumerate(batch, batch_start + 1):
@@ -32536,15 +32706,15 @@ class OutputWriter:
                     if file_path.resolve() == output_path.resolve():
                         self.logger.warning(f"Skipping output file itself: {file_path}")
                         continue
-                    
+
                     task = self._process_single_file_parallel(
                         file_path, rel_path, i, len(all_files)
                     )
                     tasks.append(task)
-                
+
                 # Process batch concurrently
                 batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-                
+
                 # Collect successful results
                 for j, result in enumerate(batch_results):
                     if isinstance(result, Exception):
@@ -32553,10 +32723,10 @@ class OutputWriter:
                         self.logger.error(f"Failed to process {file_path}: {result}")
                     elif result is not None:
                         processed_files.append((batch[j], result))
-            
+
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
-            
+
             with open(
                 output_path,
                 "w",
@@ -32564,15 +32734,17 @@ class OutputWriter:
                 newline=self.config.output.line_ending.value,
             ) as outfile:
                 files_written = 0
-                
-                for i, ((file_path, rel_path), processed_data) in enumerate(processed_files):
+
+                for i, ((file_path, rel_path), processed_data) in enumerate(
+                    processed_files
+                ):
                     if processed_data:
                         # Write the pre-processed content
                         separator, content, separator_style = processed_data
-                        
+
                         # Write separator
                         outfile.write(separator)
-                        
+
                         # Add blank line for some styles (between separator and content)
                         if separator_style in [
                             SeparatorStyle.STANDARD,
@@ -32580,25 +32752,25 @@ class OutputWriter:
                             SeparatorStyle.MARKDOWN,
                         ]:
                             outfile.write(self.config.output.line_ending.value)
-                        
+
                         # Write content
                         outfile.write(content)
-                        
+
                         # Ensure newline at end if needed
                         if content and not content.endswith(("\n", "\r")):
                             outfile.write(self.config.output.line_ending.value)
-                        
+
                         # Write closing separator for Markdown
                         if separator_style == SeparatorStyle.MARKDOWN:
                             outfile.write("```")
                             outfile.write(self.config.output.line_ending.value)
-                        
+
                         # Add inter-file spacing if not last file
                         if i < len(processed_files) - 1:
                             outfile.write(self.config.output.line_ending.value)
-                        
+
                         files_written += 1
-            
+
             return files_written
 
         except IOError as e:
@@ -32645,11 +32817,13 @@ class OutputWriter:
 
             # Check for content deduplication
             # Skip deduplication for symlinks when include_symlinks is enabled
-            skip_dedupe = (
-                self.config.filter.include_symlinks and file_path.is_symlink()
-            )
-            
-            if self._content_dedupe and not rel_path.startswith(("intro:", "include:")) and not skip_dedupe:
+            skip_dedupe = self.config.filter.include_symlinks and file_path.is_symlink()
+
+            if (
+                self._content_dedupe
+                and not rel_path.startswith(("intro:", "include:"))
+                and not skip_dedupe
+            ):
                 content_checksum = calculate_checksum(content)
 
                 async with self._checksum_lock:
@@ -32765,11 +32939,13 @@ class OutputWriter:
 
             # Check for content deduplication
             # Skip deduplication for symlinks when include_symlinks is enabled
-            skip_dedupe = (
-                self.config.filter.include_symlinks and file_path.is_symlink()
-            )
-            
-            if self._content_dedupe and not rel_path.startswith(("intro:", "include:")) and not skip_dedupe:
+            skip_dedupe = self.config.filter.include_symlinks and file_path.is_symlink()
+
+            if (
+                self._content_dedupe
+                and not rel_path.startswith(("intro:", "include:"))
+                and not skip_dedupe
+            ):
                 content_checksum = calculate_checksum(content)
 
                 async with self._checksum_lock:
@@ -32819,10 +32995,10 @@ class OutputWriter:
             # Write separator
             if separator:
                 outfile.write(separator)
-                
+
                 # For Markdown, ensure separator ends with newline before adding blank line
                 if self.config.output.separator_style == SeparatorStyle.MARKDOWN:
-                    if not separator.endswith(('\n', '\r\n', '\r')):
+                    if not separator.endswith(("\n", "\r\n", "\r")):
                         outfile.write(self.config.output.line_ending.value)
 
                 # Add blank line for some styles
@@ -32933,7 +33109,9 @@ class FilePreset:
     preserve_tags: List[str] = field(default_factory=list)  # Tags to preserve
 
     # Output options
-    separator_style: Optional[str] = None  # DEPRECATED - use global_settings.separator_style instead
+    separator_style: Optional[str] = (
+        None  # DEPRECATED - use global_settings.separator_style instead
+    )
     include_metadata: bool = True
     max_lines: Optional[int] = None  # Truncate after N lines
 
@@ -33140,7 +33318,7 @@ class PresetManager:
         """Load presets from a YAML file."""
         # Reset cached merged settings when loading new files
         self._merged_global_settings = None
-        
+
         # Check file size limit (10MB max for preset files)
         MAX_PRESET_SIZE = 10 * 1024 * 1024  # 10MB
         if preset_path.stat().st_size > MAX_PRESET_SIZE:
@@ -33149,7 +33327,7 @@ class PresetManager:
                 f"({preset_path.stat().st_size / 1024 / 1024:.1f}MB). "
                 f"Maximum size is {MAX_PRESET_SIZE / 1024 / 1024}MB"
             )
-        
+
         try:
             with open(preset_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
@@ -33187,6 +33365,7 @@ class PresetManager:
         # Parse base path
         if "base_path" in data:
             from .utils import validate_path_traversal
+
             base_path = Path(data["base_path"])
             # Validate base path from preset files
             try:
@@ -33206,7 +33385,7 @@ class PresetManager:
                 group.global_settings.separator_style = global_data["separator_style"]
             if "line_ending" in global_data:
                 group.global_settings.line_ending = global_data["line_ending"]
-            
+
             # Parse input/output settings
             if "source_directory" in global_data:
                 group.global_settings.source_directory = global_data["source_directory"]
@@ -33215,26 +33394,30 @@ class PresetManager:
             if "output_file" in global_data:
                 group.global_settings.output_file = global_data["output_file"]
             if "input_include_files" in global_data:
-                group.global_settings.input_include_files = global_data["input_include_files"]
-            
+                group.global_settings.input_include_files = global_data[
+                    "input_include_files"
+                ]
+
             # Parse output control settings
             if "add_timestamp" in global_data:
                 group.global_settings.add_timestamp = global_data["add_timestamp"]
             if "filename_mtime_hash" in global_data:
-                group.global_settings.filename_mtime_hash = global_data["filename_mtime_hash"]
+                group.global_settings.filename_mtime_hash = global_data[
+                    "filename_mtime_hash"
+                ]
             if "force" in global_data:
                 group.global_settings.force = global_data["force"]
             if "minimal_output" in global_data:
                 group.global_settings.minimal_output = global_data["minimal_output"]
             if "skip_output_file" in global_data:
                 group.global_settings.skip_output_file = global_data["skip_output_file"]
-            
+
             # Parse archive settings
             if "create_archive" in global_data:
                 group.global_settings.create_archive = global_data["create_archive"]
             if "archive_type" in global_data:
                 group.global_settings.archive_type = global_data["archive_type"]
-            
+
             # Parse runtime behavior
             if "verbose" in global_data:
                 group.global_settings.verbose = global_data["verbose"]
@@ -33364,7 +33547,7 @@ class PresetManager:
                 merged.separator_style = gs.separator_style
             if gs.line_ending and merged.line_ending is None:
                 merged.line_ending = gs.line_ending
-            
+
             # Merge input/output settings
             if gs.source_directory and merged.source_directory is None:
                 merged.source_directory = gs.source_directory
@@ -33374,11 +33557,14 @@ class PresetManager:
                 merged.output_file = gs.output_file
             if gs.input_include_files and merged.input_include_files is None:
                 merged.input_include_files = gs.input_include_files
-            
+
             # Merge output control settings
             if gs.add_timestamp is not None and merged.add_timestamp is None:
                 merged.add_timestamp = gs.add_timestamp
-            if gs.filename_mtime_hash is not None and merged.filename_mtime_hash is None:
+            if (
+                gs.filename_mtime_hash is not None
+                and merged.filename_mtime_hash is None
+            ):
                 merged.filename_mtime_hash = gs.filename_mtime_hash
             if gs.force is not None and merged.force is None:
                 merged.force = gs.force
@@ -33386,13 +33572,13 @@ class PresetManager:
                 merged.minimal_output = gs.minimal_output
             if gs.skip_output_file is not None and merged.skip_output_file is None:
                 merged.skip_output_file = gs.skip_output_file
-            
+
             # Merge archive settings
             if gs.create_archive is not None and merged.create_archive is None:
                 merged.create_archive = gs.create_archive
             if gs.archive_type and merged.archive_type is None:
                 merged.archive_type = gs.archive_type
-            
+
             # Merge runtime behavior
             if gs.verbose is not None and merged.verbose is None:
                 merged.verbose = gs.verbose
@@ -33408,11 +33594,17 @@ class PresetManager:
             # Merge file filtering options (higher priority overrides)
             if gs.include_dot_paths is not None and merged.include_dot_paths is None:
                 merged.include_dot_paths = gs.include_dot_paths
-            if gs.include_binary_files is not None and merged.include_binary_files is None:
+            if (
+                gs.include_binary_files is not None
+                and merged.include_binary_files is None
+            ):
                 merged.include_binary_files = gs.include_binary_files
             if gs.include_symlinks is not None and merged.include_symlinks is None:
                 merged.include_symlinks = gs.include_symlinks
-            if gs.no_default_excludes is not None and merged.no_default_excludes is None:
+            if (
+                gs.no_default_excludes is not None
+                and merged.no_default_excludes is None
+            ):
                 merged.no_default_excludes = gs.no_default_excludes
             if gs.max_file_size and merged.max_file_size is None:
                 merged.max_file_size = gs.max_file_size
@@ -33422,9 +33614,15 @@ class PresetManager:
                 merged.include_paths_file = gs.include_paths_file
 
             # Merge processing options
-            if gs.remove_scraped_metadata is not None and merged.remove_scraped_metadata is None:
+            if (
+                gs.remove_scraped_metadata is not None
+                and merged.remove_scraped_metadata is None
+            ):
                 merged.remove_scraped_metadata = gs.remove_scraped_metadata
-            if gs.abort_on_encoding_error is not None and merged.abort_on_encoding_error is None:
+            if (
+                gs.abort_on_encoding_error is not None
+                and merged.abort_on_encoding_error is None
+            ):
                 merged.abort_on_encoding_error = gs.abort_on_encoding_error
 
             # Merge security options
@@ -33647,161 +33845,166 @@ class PresetManager:
         in_code_block = False
         in_list = False
         list_indent = 0
-        
+
         i = 0
         while i < len(lines):
             line = lines[i]
             stripped = line.strip()
-            
+
             # Check for code blocks
-            if stripped.startswith('```'):
+            if stripped.startswith("```"):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
-                
+
                 # Add code block as-is
                 result.append(line)
                 in_code_block = not in_code_block
                 i += 1
                 continue
-            
+
             # If in code block, add line as-is
             if in_code_block:
                 result.append(line)
                 i += 1
                 continue
-            
+
             # Check for indented code block (4 spaces or tab)
-            if line.startswith('    ') or line.startswith('\t'):
+            if line.startswith("    ") or line.startswith("\t"):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 result.append(line)
                 i += 1
                 continue
-            
+
             # Check for tables
-            if '|' in line and (i == 0 or i > 0 and '|' in lines[i-1]):
+            if "|" in line and (i == 0 or i > 0 and "|" in lines[i - 1]):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 result.append(line)
                 i += 1
                 continue
-            
+
             # Check for horizontal rules
-            if stripped in ['---', '***', '___'] or (
-                len(stripped) >= 3 and 
-                all(c in '-*_' for c in stripped) and 
-                len(set(stripped)) == 1
+            if stripped in ["---", "***", "___"] or (
+                len(stripped) >= 3
+                and all(c in "-*_" for c in stripped)
+                and len(set(stripped)) == 1
             ):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 result.append(line)
                 i += 1
                 continue
-            
+
             # Check for headings
-            if stripped.startswith('#'):
+            if stripped.startswith("#"):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 # Add heading on single line
                 result.append(stripped)
                 i += 1
                 continue
-            
+
             # Check for blockquotes
-            if stripped.startswith('>'):
+            if stripped.startswith(">"):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
-                
+
                 # Collect all consecutive blockquote lines
                 blockquote_lines = []
-                while i < len(lines) and lines[i].strip().startswith('>'):
+                while i < len(lines) and lines[i].strip().startswith(">"):
                     # Remove the > prefix and join
                     content = lines[i].strip()[1:].strip()
                     if content:
                         blockquote_lines.append(content)
                     i += 1
-                
+
                 if blockquote_lines:
-                    result.append('> ' + ' '.join(blockquote_lines))
+                    result.append("> " + " ".join(blockquote_lines))
                 continue
-            
+
             # Check for list items
             import re
-            list_pattern = re.match(r'^(\s*)([-*+]|\d+\.)\s+(.*)$', line)
+
+            list_pattern = re.match(r"^(\s*)([-*+]|\d+\.)\s+(.*)$", line)
             if list_pattern:
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
-                
+
                 indent = list_pattern.group(1)
                 marker = list_pattern.group(2)
                 content = list_pattern.group(3)
-                
+
                 # Collect multi-line list item
                 list_item_lines = [content] if content else []
                 i += 1
-                
+
                 # Look for continuation lines
                 while i < len(lines):
                     next_line = lines[i]
                     next_stripped = next_line.strip()
-                    
+
                     # Check if it's a new list item or other block element
-                    if (re.match(r'^\s*[-*+]\s+', next_line) or 
-                        re.match(r'^\s*\d+\.\s+', next_line) or
-                        next_stripped.startswith('#') or
-                        next_stripped.startswith('>') or
-                        next_stripped.startswith('```') or
-                        next_stripped in ['---', '***', '___'] or
-                        not next_stripped):
+                    if (
+                        re.match(r"^\s*[-*+]\s+", next_line)
+                        or re.match(r"^\s*\d+\.\s+", next_line)
+                        or next_stripped.startswith("#")
+                        or next_stripped.startswith(">")
+                        or next_stripped.startswith("```")
+                        or next_stripped in ["---", "***", "___"]
+                        or not next_stripped
+                    ):
                         break
-                    
+
                     # It's a continuation of the current list item
-                    if next_line.startswith(' ' * (len(indent) + 2)) or next_line.startswith('\t'):
+                    if next_line.startswith(
+                        " " * (len(indent) + 2)
+                    ) or next_line.startswith("\t"):
                         # Remove the indentation and add to current item
-                        continuation = next_line[len(indent) + 2:].strip()
+                        continuation = next_line[len(indent) + 2 :].strip()
                         if continuation:
                             list_item_lines.append(continuation)
                         i += 1
                     else:
                         break
-                
+
                 # Join the list item content
-                joined_content = ' '.join(list_item_lines) if list_item_lines else ''
+                joined_content = " ".join(list_item_lines) if list_item_lines else ""
                 result.append(f"{indent}{marker} {joined_content}")
                 continue
-            
+
             # Empty line - flush current paragraph
             if not stripped:
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 # Don't add empty lines
                 i += 1
                 continue
-            
+
             # Regular paragraph line
             current_paragraph.append(stripped)
             i += 1
-        
+
         # Flush any remaining paragraph
         if current_paragraph:
-            result.append(' '.join(current_paragraph))
-        
-        return '\n'.join(result)
+            result.append(" ".join(current_paragraph))
+
+        return "\n".join(result)
 
     def _apply_custom_processor(
         self, content: str, processor_name: str, args: Dict[str, Any], file_path: Path
@@ -34744,9 +34947,14 @@ def sort_files_by_depth_and_name(
     return sorted(file_paths, key=sort_key)
 
 
-def validate_path_traversal(path: Path, base_path: Path = None, allow_outside: bool = False, from_preset: bool = False) -> Path:
+def validate_path_traversal(
+    path: Path,
+    base_path: Path = None,
+    allow_outside: bool = False,
+    from_preset: bool = False,
+) -> Path:
     """Validate that a resolved path does not traverse outside allowed directories.
-    
+
     Args:
         path: The resolved path to validate
         base_path: Optional base directory that the path must be within.
@@ -34754,23 +34962,23 @@ def validate_path_traversal(path: Path, base_path: Path = None, allow_outside: b
         allow_outside: If True, allows paths outside the base directory but
                       still validates against malicious traversal patterns
         from_preset: If True, this path comes from a preset file
-    
+
     Returns:
         The validated path
-        
+
     Raises:
         ValueError: If the path attempts malicious directory traversal
     """
     # Ensure path is resolved
     resolved_path = path.resolve()
-    
+
     # Check for suspicious traversal patterns in the original path
     path_str = str(path)
-    
+
     # Allow home directory config files (e.g., ~/.m1f/)
     if path_str.startswith("~"):
         return resolved_path
-    
+
     # Check for excessive parent directory traversals
     parent_traversals = path_str.count("../")
     if parent_traversals >= 3 and not (allow_outside or from_preset):
@@ -34778,27 +34986,27 @@ def validate_path_traversal(path: Path, base_path: Path = None, allow_outside: b
         raise ValueError(
             f"Path traversal detected: '{path}' contains suspicious '..' patterns"
         )
-    
+
     if allow_outside or from_preset:
         # For output paths or preset paths, just return the resolved path
         return resolved_path
-    
+
     # For input paths, allow certain exceptions
     if base_path is None:
         base_path = Path.cwd()
-    
+
     resolved_base = base_path.resolve()
-    
+
     # Allow access to home directory for config files
     home_dir = Path.home()
     if resolved_path.is_relative_to(home_dir / ".m1f"):
         return resolved_path
-    
+
     # Allow access to project's tmp directory for tests
     project_root = resolved_base
     if resolved_path.is_relative_to(project_root / "tmp"):
         return resolved_path
-    
+
     # Check if the resolved path is within the base directory
     try:
         # This will raise ValueError if path is not relative to base
@@ -34806,10 +35014,13 @@ def validate_path_traversal(path: Path, base_path: Path = None, allow_outside: b
         return resolved_path
     except ValueError:
         # Check if we're in a test environment
-        if any(part in str(resolved_path) for part in ['/tmp/', '/var/folders/', 'pytest-', 'test_']):
+        if any(
+            part in str(resolved_path)
+            for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
+        ):
             # Allow temporary test directories
             return resolved_path
-        
+
         # Path is outside the base directory
         raise ValueError(
             f"Path traversal detected: '{path}' resolves to '{resolved_path}' "
@@ -35184,6 +35395,7 @@ import logging
 
 try:
     import aiofiles
+
     AIOFILES_AVAILABLE = True
 except ImportError:
     AIOFILES_AVAILABLE = False
@@ -35237,7 +35449,7 @@ class FileSplitter:
                 meta = file.metadata
                 # Build info line
                 info_parts = [f"{i:4d}. {meta.path}"]
-                
+
                 # Only add size if available
                 if meta.size_bytes:
                     size_str = format_size(meta.size_bytes)
@@ -35353,9 +35565,9 @@ class FileSplitter:
             if AIOFILES_AVAILABLE:
                 # Use async I/O
                 # First, try to detect if the file is binary
-                async with aiofiles.open(self.config.input_file, 'rb') as f:
+                async with aiofiles.open(self.config.input_file, "rb") as f:
                     sample_bytes = await f.read(8192)
-                    
+
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
                         f"Input file '{self.config.input_file}' appears to be binary.",
@@ -35364,7 +35576,9 @@ class FileSplitter:
 
                 # Try to read with UTF-8 first
                 try:
-                    async with aiofiles.open(self.config.input_file, 'r', encoding='utf-8') as f:
+                    async with aiofiles.open(
+                        self.config.input_file, "r", encoding="utf-8"
+                    ) as f:
                         content = await f.read()
                 except UnicodeDecodeError:
                     # Try with latin-1 as fallback (can decode any byte sequence)
@@ -35372,7 +35586,9 @@ class FileSplitter:
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    async with aiofiles.open(self.config.input_file, 'r', encoding='latin-1') as f:
+                    async with aiofiles.open(
+                        self.config.input_file, "r", encoding="latin-1"
+                    ) as f:
                         content = await f.read()
             else:
                 # Fallback to sync I/O
@@ -36283,15 +36499,17 @@ class CombinedFileParser:
     def _find_code_blocks(self, content: str) -> List[Tuple[int, int]]:
         """Find all code block regions in the content."""
         code_blocks = []
-        
+
         # Find triple backtick code blocks
-        pattern = re.compile(r'```[\s\S]*?```', re.MULTILINE)
+        pattern = re.compile(r"```[\s\S]*?```", re.MULTILINE)
         for match in pattern.finditer(content):
             code_blocks.append((match.start(), match.end()))
-        
+
         return code_blocks
 
-    def _is_in_code_block(self, position: int, code_blocks: List[Tuple[int, int]]) -> bool:
+    def _is_in_code_block(
+        self, position: int, code_blocks: List[Tuple[int, int]]
+    ) -> bool:
         """Check if a position is inside a code block."""
         for start, end in code_blocks:
             if start <= position < end:
@@ -36302,7 +36520,7 @@ class CombinedFileParser:
         """Parse the combined file content and extract individual files."""
         # Find all code blocks first
         code_blocks = self._find_code_blocks(content)
-        
+
         # Find all matches from all parsers
         matches: List[SeparatorMatch] = []
 
@@ -36310,9 +36528,11 @@ class CombinedFileParser:
             for match in parser.pattern.finditer(content):
                 # Skip matches inside code blocks
                 if self._is_in_code_block(match.start(), code_blocks):
-                    self.logger.debug(f"Skipping separator inside code block at position {match.start()}")
+                    self.logger.debug(
+                        f"Skipping separator inside code block at position {match.start()}"
+                    )
                     continue
-                    
+
                 separator_match = parser.parse_match(match, content, len(matches))
                 if separator_match:
                     matches.append(separator_match)
@@ -36465,19 +36685,19 @@ def validate_file_path(path: Path, base_dir: Path) -> bool:
     try:
         # Convert path to string to check for suspicious patterns
         path_str = str(path)
-        
+
         # Check for Windows-style path traversal
         if "\\..\\" in path_str or path_str.startswith("..\\"):
             return False
-            
+
         # Check for Unix-style path traversal
         if "/../" in path_str or path_str.startswith("../"):
             return False
-        
+
         # Check for absolute paths
         if path.is_absolute():
             return False
-        
+
         # Resolve the path (but don't require it to exist)
         resolved_path = (base_dir / path).resolve()
 
@@ -36587,7 +36807,9 @@ class FileWriter:
         self.config = config
         self.logger = logger
         self._counter_lock = asyncio.Lock()  # For thread-safe counter updates
-        self._write_semaphore = asyncio.Semaphore(10)  # Limit concurrent writes to prevent "too many open files"
+        self._write_semaphore = asyncio.Semaphore(
+            10
+        )  # Limit concurrent writes to prevent "too many open files"
 
     async def write_files(
         self, extracted_files: List[ExtractedFile]
@@ -36607,7 +36829,7 @@ class FileWriter:
             ]
             # Gather results and handle exceptions properly
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             # Check for exceptions in results
             for i, result_or_exc in enumerate(results):
                 if isinstance(result_or_exc, Exception):
@@ -36669,7 +36891,10 @@ class FileWriter:
                 await self._set_file_timestamp(output_path, file_data)
 
                 # Verify checksum if needed
-                if not self.config.ignore_checksum and file_data.metadata.checksum_sha256:
+                if (
+                    not self.config.ignore_checksum
+                    and file_data.metadata.checksum_sha256
+                ):
                     await self._verify_checksum_async(output_path, file_data)
 
             except Exception as e:
@@ -36834,12 +37059,13 @@ class FileWriter:
         try:
             # Calculate checksum using chunks to avoid loading entire file into memory
             import hashlib
+
             sha256_hash = hashlib.sha256()
-            
+
             async with aiofiles.open(path, "rb") as f:
                 while chunk := await f.read(8192):  # Read in 8KB chunks
                     sha256_hash.update(chunk)
-            
+
             calculated_checksum = sha256_hash.hexdigest()
             expected_checksum = file_data.metadata.checksum_sha256
 
@@ -37245,11 +37471,11 @@ class WebCrawler:
             "timeout": float(self.config.timeout),
             "follow_redirects": True,  # Always follow redirects
         }
-        
+
         # Only add user_agent if it's not None
         if self.config.user_agent is not None:
             scraper_kwargs["user_agent"] = self.config.user_agent
-            
+
         scraper_config = ScraperConfig(**scraper_kwargs)
 
         # Apply any backend-specific configuration
@@ -37257,11 +37483,13 @@ class WebCrawler:
             for key, value in self.config.scraper_config.items():
                 if hasattr(scraper_config, key):
                     # Special handling for custom_headers to ensure it's a dict
-                    if key == 'custom_headers':
+                    if key == "custom_headers":
                         if value is None:
                             value = {}
                         elif not isinstance(value, dict):
-                            logger.warning(f"Invalid custom_headers type: {type(value)}, using empty dict")
+                            logger.warning(
+                                f"Invalid custom_headers type: {type(value)}, using empty dict"
+                            )
                             value = {}
                     setattr(scraper_config, key, value)
 
@@ -37364,10 +37592,12 @@ class WebCrawler:
                 safe_subdirs = []
                 for part in subdirs:
                     # Remove any path traversal attempts
-                    safe_part = part.replace("..", "").replace("./", "").replace("\\", "")
+                    safe_part = (
+                        part.replace("..", "").replace("./", "").replace("\\", "")
+                    )
                     if safe_part and safe_part not in (".", ".."):
                         safe_subdirs.append(safe_part)
-                
+
                 if safe_subdirs:
                     subdir = output_dir / Path(*safe_subdirs)
                     subdir.mkdir(parents=True, exist_ok=True)
@@ -40706,43 +40936,43 @@ class WebScraperBase(ABC):
 
     def _is_private_ip(self, hostname: str) -> bool:
         """Check if hostname resolves to a private IP address.
-        
+
         Args:
             hostname: Hostname or IP address to check
-            
+
         Returns:
             True if the hostname resolves to a private IP, False otherwise
         """
         import socket
         import ipaddress
-        
+
         try:
             # Get IP address from hostname
             ip = socket.gethostbyname(hostname)
             ip_obj = ipaddress.ip_address(ip)
-            
+
             # Check for private networks
             if ip_obj.is_private:
                 return True
-            
+
             # Check for loopback
             if ip_obj.is_loopback:
                 return True
-            
+
             # Check for link-local
             if ip_obj.is_link_local:
                 return True
-            
+
             # Check for multicast
             if ip_obj.is_multicast:
                 return True
-            
+
             # Check for cloud metadata endpoint
             if str(ip_obj).startswith("169.254."):
                 return True
-                
+
             return False
-            
+
         except (socket.gaierror, ValueError):
             # If we can't resolve the hostname, err on the side of caution
             return True
@@ -40766,8 +40996,8 @@ class WebScraperBase(ABC):
                 return False
 
             # Extract hostname (remove port if present)
-            hostname = parsed.hostname or parsed.netloc.split(':')[0]
-            
+            hostname = parsed.hostname or parsed.netloc.split(":")[0]
+
             # Check for SSRF - block private IPs
             if self._is_private_ip(hostname):
                 logger.warning(f"Blocked URL {url} - private IP address detected")
@@ -40798,21 +41028,21 @@ class WebScraperBase(ABC):
 
     async def _fetch_robots_txt(self, base_url: str) -> Optional[RobotFileParser]:
         """Fetch and parse robots.txt for a given base URL.
-        
+
         Args:
             base_url: Base URL of the website
-            
+
         Returns:
             RobotFileParser object or None if fetch fails
         """
         robots_url = urljoin(base_url, "/robots.txt")
-        
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     robots_url,
                     timeout=aiohttp.ClientTimeout(total=10),
-                    headers={"User-Agent": self.config.user_agent}
+                    headers={"User-Agent": self.config.user_agent},
                 ) as response:
                     if response.status == 200:
                         content = await response.text()
@@ -40820,7 +41050,9 @@ class WebScraperBase(ABC):
                         parser.parse(content.splitlines())
                         return parser
                     else:
-                        logger.debug(f"No robots.txt found at {robots_url} (status: {response.status})")
+                        logger.debug(
+                            f"No robots.txt found at {robots_url} (status: {response.status})"
+                        )
                         return None
         except Exception as e:
             logger.debug(f"Error fetching robots.txt from {robots_url}: {e}")
@@ -40828,19 +41060,19 @@ class WebScraperBase(ABC):
 
     async def can_fetch(self, url: str) -> bool:
         """Check if URL can be fetched according to robots.txt.
-        
+
         Args:
             url: URL to check
-            
+
         Returns:
             True if URL can be fetched, False otherwise
         """
         if not self.config.respect_robots_txt:
             return True
-            
+
         parsed = urlparse(url)
         base_url = f"{parsed.scheme}://{parsed.netloc}"
-        
+
         # Check if we already have the robots.txt for this domain
         if base_url not in self._robots_parsers:
             async with self._robots_fetch_lock:
@@ -40848,12 +41080,12 @@ class WebScraperBase(ABC):
                 if base_url not in self._robots_parsers:
                     parser = await self._fetch_robots_txt(base_url)
                     self._robots_parsers[base_url] = parser
-        
+
         parser = self._robots_parsers.get(base_url)
         if parser is None:
             # No robots.txt or fetch failed - allow by default
             return True
-            
+
         # Check if the URL is allowed for our user agent
         return parser.can_fetch(self.config.user_agent, url)
 
@@ -40916,17 +41148,17 @@ class BeautifulSoupScraper(WebScraperBase):
     async def __aenter__(self):
         """Create aiohttp session on entry."""
         headers = {}
-        
+
         # Only add User-Agent if it's not None
         if self.config.user_agent:
             headers["User-Agent"] = self.config.user_agent
-            
+
         if self.config.custom_headers:
             # Filter out None keys when updating headers
             for k, v in self.config.custom_headers.items():
                 if k is not None and v is not None:
                     headers[k] = v
-        
+
         # Final validation to ensure no None values
         headers = {k: v for k, v in headers.items() if k is not None and v is not None}
 
@@ -41058,7 +41290,7 @@ class BeautifulSoupScraper(WebScraperBase):
                 # Validate URL
                 if not await self.validate_url(url):
                     continue
-                
+
                 # Check robots.txt
                 if not await self.can_fetch(url):
                     logger.info(f"Skipping {url} - blocked by robots.txt")
@@ -41605,8 +41837,8 @@ class PlaywrightScraper(WebScraperBase):
 
         # Create browser context with custom user agent
         # Add option to control SSL validation (default to secure)
-        ignore_https_errors = getattr(self.config, 'ignore_https_errors', False)
-        
+        ignore_https_errors = getattr(self.config, "ignore_https_errors", False)
+
         self._context = await self._browser.new_context(
             user_agent=self.config.user_agent,
             viewport=self._viewport,
@@ -41668,22 +41900,33 @@ class PlaywrightScraper(WebScraperBase):
             # Execute any custom JavaScript (with security warning)
             if self._browser_config.get("execute_script"):
                 script = self._browser_config["execute_script"]
-                
+
                 # Basic validation to prevent obvious malicious scripts
                 dangerous_patterns = [
-                    "fetch", "XMLHttpRequest", "eval", "Function",
-                    "localStorage", "sessionStorage", "document.cookie",
-                    "window.location", "navigator", "WebSocket"
+                    "fetch",
+                    "XMLHttpRequest",
+                    "eval",
+                    "Function",
+                    "localStorage",
+                    "sessionStorage",
+                    "document.cookie",
+                    "window.location",
+                    "navigator",
+                    "WebSocket",
                 ]
-                
+
                 script_lower = script.lower()
                 for pattern in dangerous_patterns:
                     if pattern.lower() in script_lower:
-                        logger.warning(f"Potentially dangerous JavaScript pattern '{pattern}' detected in script. Skipping execution.")
+                        logger.warning(
+                            f"Potentially dangerous JavaScript pattern '{pattern}' detected in script. Skipping execution."
+                        )
                         break
                 else:
                     # Only execute if no dangerous patterns found
-                    logger.warning("Executing custom JavaScript. This feature should only be used with trusted scripts.")
+                    logger.warning(
+                        "Executing custom JavaScript. This feature should only be used with trusted scripts."
+                    )
                     try:
                         await page.evaluate(script)
                     except Exception as e:

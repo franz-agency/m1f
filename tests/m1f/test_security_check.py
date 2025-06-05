@@ -31,10 +31,12 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 SOURCE_DIR = PROJECT_ROOT / "tmp" / "m1f_test_source"
 OUTPUT_DIR = PROJECT_ROOT / "tmp" / "m1f_test_output"
 
+
 def _create_test_file(path: Path, content: str) -> None:
     """Create a test file with given content."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding='utf-8')
+    path.write_text(content, encoding="utf-8")
+
 
 def run_m1f(args):
     """Run m1f with given arguments."""
@@ -42,22 +44,29 @@ def run_m1f(args):
     result = subprocess.run(cmd, capture_output=True, text=True)
     return result
 
+
 # Import the security scan function directly for isolated testing
 import asyncio
 from tools.m1f.security_scanner import SecurityScanner
 from tools.m1f.config import Config, SecurityConfig, SecurityCheckMode
 from tools.m1f.logging import LoggerManager
 
+
 def _scan_files_for_sensitive_info(files):
     """Helper function to scan files for sensitive info."""
     # Create a minimal config with security enabled
-    security_config = SecurityConfig(
-        security_check=SecurityCheckMode.WARN
-    )
-    
+    security_config = SecurityConfig(security_check=SecurityCheckMode.WARN)
+
     # Need to import other config classes
-    from tools.m1f.config import OutputConfig, FilterConfig, EncodingConfig, ArchiveConfig, LoggingConfig, PresetConfig
-    
+    from tools.m1f.config import (
+        OutputConfig,
+        FilterConfig,
+        EncodingConfig,
+        ArchiveConfig,
+        LoggingConfig,
+        PresetConfig,
+    )
+
     # Create a minimal config
     config = Config(
         source_directory=None,
@@ -69,13 +78,13 @@ def _scan_files_for_sensitive_info(files):
         security=security_config,
         archive=ArchiveConfig(),
         logging=LoggingConfig(),
-        preset=PresetConfig()
+        preset=PresetConfig(),
     )
-    
+
     # Create logger manager
     logging_config = LoggingConfig(verbose=False, quiet=True)
     logger_manager = LoggerManager(config=logging_config)
-    
+
     # Create scanner and run async scan
     scanner = SecurityScanner(config, logger_manager)
     return asyncio.run(scanner.scan_files(files))
@@ -89,7 +98,7 @@ def test_security_detection():
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
-    
+
     # Create a test directory with clean and sensitive files
     test_dir = SOURCE_DIR / "security_detection_test"
     test_dir.mkdir(parents=True, exist_ok=True)
@@ -176,11 +185,11 @@ def test_security_check_skip():
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
-    
+
     # Create a test file with SECRET_KEY
     test_file = SOURCE_DIR / "test_with_secret.py"
     _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
-    
+
     try:
         output_file = OUTPUT_DIR / "security_skip.txt"
         result = run_m1f(
@@ -196,8 +205,10 @@ def test_security_check_skip():
             ]
         )
         # With skip mode, the output should be created regardless of security findings
-        assert output_file.exists(), f"Output file missing when skipping. stderr: {result.stderr}"
-        
+        assert (
+            output_file.exists()
+        ), f"Output file missing when skipping. stderr: {result.stderr}"
+
         # Clean up
         if output_file.exists():
             output_file.unlink()
@@ -214,11 +225,11 @@ def test_security_check_warn():
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
-    
+
     # Create a test file with SECRET_KEY
     test_file = SOURCE_DIR / "test_with_secret.py"
     _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
-    
+
     try:
         output_file = OUTPUT_DIR / "security_warn.txt"
         result = run_m1f(
@@ -233,11 +244,13 @@ def test_security_check_warn():
                 "--force",
             ]
         )
-        assert output_file.exists(), f"Output file missing when warning. stderr: {result.stderr}"
+        assert (
+            output_file.exists()
+        ), f"Output file missing when warning. stderr: {result.stderr}"
         with open(output_file, "r", encoding="utf-8") as f:
             content = f.read()
             assert "SECRET_KEY" in content
-        
+
         # Clean up
         if output_file.exists():
             output_file.unlink()

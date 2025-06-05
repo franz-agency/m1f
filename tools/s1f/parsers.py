@@ -556,15 +556,17 @@ class CombinedFileParser:
     def _find_code_blocks(self, content: str) -> List[Tuple[int, int]]:
         """Find all code block regions in the content."""
         code_blocks = []
-        
+
         # Find triple backtick code blocks
-        pattern = re.compile(r'```[\s\S]*?```', re.MULTILINE)
+        pattern = re.compile(r"```[\s\S]*?```", re.MULTILINE)
         for match in pattern.finditer(content):
             code_blocks.append((match.start(), match.end()))
-        
+
         return code_blocks
 
-    def _is_in_code_block(self, position: int, code_blocks: List[Tuple[int, int]]) -> bool:
+    def _is_in_code_block(
+        self, position: int, code_blocks: List[Tuple[int, int]]
+    ) -> bool:
         """Check if a position is inside a code block."""
         for start, end in code_blocks:
             if start <= position < end:
@@ -575,7 +577,7 @@ class CombinedFileParser:
         """Parse the combined file content and extract individual files."""
         # Find all code blocks first
         code_blocks = self._find_code_blocks(content)
-        
+
         # Find all matches from all parsers
         matches: List[SeparatorMatch] = []
 
@@ -583,9 +585,11 @@ class CombinedFileParser:
             for match in parser.pattern.finditer(content):
                 # Skip matches inside code blocks
                 if self._is_in_code_block(match.start(), code_blocks):
-                    self.logger.debug(f"Skipping separator inside code block at position {match.start()}")
+                    self.logger.debug(
+                        f"Skipping separator inside code block at position {match.start()}"
+                    )
                     continue
-                    
+
                 separator_match = parser.parse_match(match, content, len(matches))
                 if separator_match:
                     matches.append(separator_match)

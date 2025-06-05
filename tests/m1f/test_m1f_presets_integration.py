@@ -47,7 +47,7 @@ base:
     exclude_patterns: ["*.tmp"]
 """
         base_file = self.create_test_preset(temp_dir, "base.yml", base_content)
-        
+
         # Create override preset
         override_content = """
 override:
@@ -58,16 +58,18 @@ override:
     include_extensions: [".js"]   # Add to base
     verbose: true                 # New setting
 """
-        override_file = self.create_test_preset(temp_dir, "override.yml", override_content)
-        
+        override_file = self.create_test_preset(
+            temp_dir, "override.yml", override_content
+        )
+
         # Create test files
         (temp_dir / "test.txt").write_text("Text file")
         (temp_dir / "test.md").write_text("# Markdown")
         (temp_dir / "test.js").write_text("console.log();")
         (temp_dir / "test.tmp").write_text("Temp file")
-        
+
         output_file = temp_dir / "output.txt"
-        
+
         # Run with both presets
         exit_code, log_output = run_m1f(
             [
@@ -81,14 +83,14 @@ override:
                 "-f",
             ]
         )
-        
+
         assert exit_code == 0
-        
+
         # Check merged behavior
         content = output_file.read_text()
         assert "test.txt" in content  # From base
-        assert "test.md" in content   # From base
-        assert "test.js" in content   # From override
+        assert "test.md" in content  # From base
+        assert "test.js" in content  # From override
         assert "test.tmp" not in content  # Excluded by base
         assert "```" in content  # Markdown separator from override
         assert "DEBUG" in log_output  # Verbose from override
@@ -101,11 +103,11 @@ override:
         src_dir.mkdir()
         dist_dir = temp_dir / "dist"
         dist_dir.mkdir()
-        
+
         (src_dir / "app.js").write_text("// Source code")
         (src_dir / "app.test.js").write_text("// Test code")
         (dist_dir / "app.min.js").write_text("// Minified")
-        
+
         # Create development preset
         dev_content = f"""
 development:
@@ -119,7 +121,7 @@ development:
     create_archive: false
 """
         dev_file = self.create_test_preset(temp_dir, "dev.yml", dev_content)
-        
+
         # Create production preset
         prod_content = f"""
 production:
@@ -135,7 +137,7 @@ production:
     exclude_patterns: ["*.map", "*.test.*"]
 """
         prod_file = self.create_test_preset(temp_dir, "prod.yml", prod_content)
-        
+
         # Test development environment
         exit_code, log_output = run_m1f(
             [
@@ -144,14 +146,14 @@ production:
                 "-f",  # Force overwrite
             ]
         )
-        
+
         assert exit_code == 0
         assert (temp_dir / "dev-bundle.txt").exists()
         dev_content = (temp_dir / "dev-bundle.txt").read_text()
         assert "// Source code" in dev_content
         assert "// Test code" in dev_content
         assert "DEBUG" in log_output
-        
+
         # Test production environment
         exit_code, log_output = run_m1f(
             [
@@ -160,7 +162,7 @@ production:
                 "-f",  # Force overwrite
             ]
         )
-        
+
         assert exit_code == 0
         assert (temp_dir / "prod-bundle.txt").exists()
         prod_content = (temp_dir / "prod-bundle.txt").read_text()
@@ -181,7 +183,7 @@ production:
         (src_dir / "main.py").write_text("def main(): pass")
         (src_dir / "__pycache__").mkdir()
         (src_dir / "__pycache__" / "main.cpython-39.pyc").write_text("bytecode")
-        
+
         # Create adaptive preset
         preset_content = f"""
 python_project:
@@ -210,7 +212,7 @@ python_project:
 """
         preset_file = self.create_test_preset(temp_dir, "adaptive.yml", preset_content)
         output_file = temp_dir / "output.txt"
-        
+
         # Run m1f
         exit_code, log_output = run_m1f(
             [
@@ -221,9 +223,9 @@ python_project:
                 "-f",
             ]
         )
-        
+
         assert exit_code == 0
-        
+
         # Check Python-specific behavior
         content = output_file.read_text()
         assert "main.py" in content
@@ -239,25 +241,25 @@ python_project:
         # Create web project structure
         project_dir = temp_dir / "web-project"
         project_dir.mkdir()
-        
+
         # Source files
         src_dir = project_dir / "src"
         src_dir.mkdir()
         (src_dir / "App.jsx").write_text("export default function App() {}")
         (src_dir / "App.test.jsx").write_text("test('App', () => {})")
         (src_dir / "styles.css").write_text(".app { color: blue; }")
-        
+
         # Docs
         docs_dir = project_dir / "docs"
         docs_dir.mkdir()
         (docs_dir / "README.md").write_text("# Project Documentation")
         (docs_dir / "API.md").write_text("# API Reference")
-        
+
         # Config files
         (project_dir / "package.json").write_text('{"name": "test"}')
         (project_dir / ".env").write_text("API_KEY=secret123")
         (project_dir / ".env.example").write_text("API_KEY=your_key_here")
-        
+
         # Create workflow preset
         preset_content = f"""
 web_workflow:
@@ -324,7 +326,7 @@ web_workflow:
         - compress_whitespace
 """
         preset_file = self.create_test_preset(temp_dir, "workflow.yml", preset_content)
-        
+
         # Run the workflow
         exit_code, log_output = run_m1f(
             [
@@ -332,36 +334,40 @@ web_workflow:
                 str(preset_file),
             ]
         )
-        
+
         assert exit_code == 0
-        
+
         # Find output file with timestamp (exclude filelist and dirlist)
-        output_files = [f for f in temp_dir.glob("web-bundle_*.txt") 
-                       if not f.name.endswith("_filelist.txt") and not f.name.endswith("_dirlist.txt")]
+        output_files = [
+            f
+            for f in temp_dir.glob("web-bundle_*.txt")
+            if not f.name.endswith("_filelist.txt")
+            and not f.name.endswith("_dirlist.txt")
+        ]
         assert len(output_files) == 1
-        
+
         content = output_files[0].read_text()
-        
+
         # Check intro files came first
         readme_pos = content.find("# Project Documentation")
         api_pos = content.find("# API Reference")
         app_pos = content.find("App.jsx")
-        
+
         assert readme_pos < app_pos
         assert api_pos < app_pos
-        
+
         # Check files were processed
         assert "App.jsx" in content
         assert "styles.css" in content
         assert "package.json" in content
-        
+
         # Check exclusions
         assert "App.test.jsx" not in content
         assert "node_modules" not in content
-        
+
         # Check secret redaction (if implemented)
         # This would require the redact_secrets processor to be implemented
-        
+
         # Check archive created
         archives = list(temp_dir.glob("*.zip"))
         assert len(archives) == 1
@@ -377,7 +383,7 @@ test_group:
 """
         preset_file = self.create_test_preset(temp_dir, "invalid.yml", preset_content)
         output_file = temp_dir / "output.txt"
-        
+
         exit_code, log_output = run_m1f(
             [
                 "-o",
@@ -386,18 +392,18 @@ test_group:
                 str(preset_file),
             ]
         )
-        
+
         assert exit_code != 0
         # The error should be exit code 2 (FileNotFoundError)
         assert exit_code == 2
 
-    @pytest.mark.integration  
+    @pytest.mark.integration
     def test_preset_with_auto_bundle_compatibility(self, run_m1f, temp_dir):
         """Test that presets work well with auto-bundle configs."""
         # Create project files
         (temp_dir / "main.py").write_text("print('main')")
         (temp_dir / "README.md").write_text("# Project")
-        
+
         # Create auto-bundle config that uses presets
         config_content = f"""
 bundles:
@@ -415,7 +421,7 @@ bundles:
 """
         config_file = temp_dir / ".m1f.config.yml"
         config_file.write_text(config_content)
-        
+
         # Create bundle-specific presets
         docs_preset = """
 docs:
@@ -425,7 +431,7 @@ docs:
       - remove_empty_lines
 """
         self.create_test_preset(temp_dir, "docs-preset.yml", docs_preset)
-        
+
         code_preset = """
 code:
   global_settings:
@@ -433,6 +439,6 @@ code:
     security_check: "abort"
 """
         self.create_test_preset(temp_dir, "code-preset.yml", code_preset)
-        
+
         # This test demonstrates the structure - actual auto-bundle integration
         # would require running the auto-bundle command

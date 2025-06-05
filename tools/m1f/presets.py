@@ -57,7 +57,9 @@ class FilePreset:
     preserve_tags: List[str] = field(default_factory=list)  # Tags to preserve
 
     # Output options
-    separator_style: Optional[str] = None  # DEPRECATED - use global_settings.separator_style instead
+    separator_style: Optional[str] = (
+        None  # DEPRECATED - use global_settings.separator_style instead
+    )
     include_metadata: bool = True
     max_lines: Optional[int] = None  # Truncate after N lines
 
@@ -264,7 +266,7 @@ class PresetManager:
         """Load presets from a YAML file."""
         # Reset cached merged settings when loading new files
         self._merged_global_settings = None
-        
+
         # Check file size limit (10MB max for preset files)
         MAX_PRESET_SIZE = 10 * 1024 * 1024  # 10MB
         if preset_path.stat().st_size > MAX_PRESET_SIZE:
@@ -273,7 +275,7 @@ class PresetManager:
                 f"({preset_path.stat().st_size / 1024 / 1024:.1f}MB). "
                 f"Maximum size is {MAX_PRESET_SIZE / 1024 / 1024}MB"
             )
-        
+
         try:
             with open(preset_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
@@ -311,6 +313,7 @@ class PresetManager:
         # Parse base path
         if "base_path" in data:
             from .utils import validate_path_traversal
+
             base_path = Path(data["base_path"])
             # Validate base path from preset files
             try:
@@ -330,7 +333,7 @@ class PresetManager:
                 group.global_settings.separator_style = global_data["separator_style"]
             if "line_ending" in global_data:
                 group.global_settings.line_ending = global_data["line_ending"]
-            
+
             # Parse input/output settings
             if "source_directory" in global_data:
                 group.global_settings.source_directory = global_data["source_directory"]
@@ -339,26 +342,30 @@ class PresetManager:
             if "output_file" in global_data:
                 group.global_settings.output_file = global_data["output_file"]
             if "input_include_files" in global_data:
-                group.global_settings.input_include_files = global_data["input_include_files"]
-            
+                group.global_settings.input_include_files = global_data[
+                    "input_include_files"
+                ]
+
             # Parse output control settings
             if "add_timestamp" in global_data:
                 group.global_settings.add_timestamp = global_data["add_timestamp"]
             if "filename_mtime_hash" in global_data:
-                group.global_settings.filename_mtime_hash = global_data["filename_mtime_hash"]
+                group.global_settings.filename_mtime_hash = global_data[
+                    "filename_mtime_hash"
+                ]
             if "force" in global_data:
                 group.global_settings.force = global_data["force"]
             if "minimal_output" in global_data:
                 group.global_settings.minimal_output = global_data["minimal_output"]
             if "skip_output_file" in global_data:
                 group.global_settings.skip_output_file = global_data["skip_output_file"]
-            
+
             # Parse archive settings
             if "create_archive" in global_data:
                 group.global_settings.create_archive = global_data["create_archive"]
             if "archive_type" in global_data:
                 group.global_settings.archive_type = global_data["archive_type"]
-            
+
             # Parse runtime behavior
             if "verbose" in global_data:
                 group.global_settings.verbose = global_data["verbose"]
@@ -488,7 +495,7 @@ class PresetManager:
                 merged.separator_style = gs.separator_style
             if gs.line_ending and merged.line_ending is None:
                 merged.line_ending = gs.line_ending
-            
+
             # Merge input/output settings
             if gs.source_directory and merged.source_directory is None:
                 merged.source_directory = gs.source_directory
@@ -498,11 +505,14 @@ class PresetManager:
                 merged.output_file = gs.output_file
             if gs.input_include_files and merged.input_include_files is None:
                 merged.input_include_files = gs.input_include_files
-            
+
             # Merge output control settings
             if gs.add_timestamp is not None and merged.add_timestamp is None:
                 merged.add_timestamp = gs.add_timestamp
-            if gs.filename_mtime_hash is not None and merged.filename_mtime_hash is None:
+            if (
+                gs.filename_mtime_hash is not None
+                and merged.filename_mtime_hash is None
+            ):
                 merged.filename_mtime_hash = gs.filename_mtime_hash
             if gs.force is not None and merged.force is None:
                 merged.force = gs.force
@@ -510,13 +520,13 @@ class PresetManager:
                 merged.minimal_output = gs.minimal_output
             if gs.skip_output_file is not None and merged.skip_output_file is None:
                 merged.skip_output_file = gs.skip_output_file
-            
+
             # Merge archive settings
             if gs.create_archive is not None and merged.create_archive is None:
                 merged.create_archive = gs.create_archive
             if gs.archive_type and merged.archive_type is None:
                 merged.archive_type = gs.archive_type
-            
+
             # Merge runtime behavior
             if gs.verbose is not None and merged.verbose is None:
                 merged.verbose = gs.verbose
@@ -532,11 +542,17 @@ class PresetManager:
             # Merge file filtering options (higher priority overrides)
             if gs.include_dot_paths is not None and merged.include_dot_paths is None:
                 merged.include_dot_paths = gs.include_dot_paths
-            if gs.include_binary_files is not None and merged.include_binary_files is None:
+            if (
+                gs.include_binary_files is not None
+                and merged.include_binary_files is None
+            ):
                 merged.include_binary_files = gs.include_binary_files
             if gs.include_symlinks is not None and merged.include_symlinks is None:
                 merged.include_symlinks = gs.include_symlinks
-            if gs.no_default_excludes is not None and merged.no_default_excludes is None:
+            if (
+                gs.no_default_excludes is not None
+                and merged.no_default_excludes is None
+            ):
                 merged.no_default_excludes = gs.no_default_excludes
             if gs.max_file_size and merged.max_file_size is None:
                 merged.max_file_size = gs.max_file_size
@@ -546,9 +562,15 @@ class PresetManager:
                 merged.include_paths_file = gs.include_paths_file
 
             # Merge processing options
-            if gs.remove_scraped_metadata is not None and merged.remove_scraped_metadata is None:
+            if (
+                gs.remove_scraped_metadata is not None
+                and merged.remove_scraped_metadata is None
+            ):
                 merged.remove_scraped_metadata = gs.remove_scraped_metadata
-            if gs.abort_on_encoding_error is not None and merged.abort_on_encoding_error is None:
+            if (
+                gs.abort_on_encoding_error is not None
+                and merged.abort_on_encoding_error is None
+            ):
                 merged.abort_on_encoding_error = gs.abort_on_encoding_error
 
             # Merge security options
@@ -771,161 +793,166 @@ class PresetManager:
         in_code_block = False
         in_list = False
         list_indent = 0
-        
+
         i = 0
         while i < len(lines):
             line = lines[i]
             stripped = line.strip()
-            
+
             # Check for code blocks
-            if stripped.startswith('```'):
+            if stripped.startswith("```"):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
-                
+
                 # Add code block as-is
                 result.append(line)
                 in_code_block = not in_code_block
                 i += 1
                 continue
-            
+
             # If in code block, add line as-is
             if in_code_block:
                 result.append(line)
                 i += 1
                 continue
-            
+
             # Check for indented code block (4 spaces or tab)
-            if line.startswith('    ') or line.startswith('\t'):
+            if line.startswith("    ") or line.startswith("\t"):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 result.append(line)
                 i += 1
                 continue
-            
+
             # Check for tables
-            if '|' in line and (i == 0 or i > 0 and '|' in lines[i-1]):
+            if "|" in line and (i == 0 or i > 0 and "|" in lines[i - 1]):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 result.append(line)
                 i += 1
                 continue
-            
+
             # Check for horizontal rules
-            if stripped in ['---', '***', '___'] or (
-                len(stripped) >= 3 and 
-                all(c in '-*_' for c in stripped) and 
-                len(set(stripped)) == 1
+            if stripped in ["---", "***", "___"] or (
+                len(stripped) >= 3
+                and all(c in "-*_" for c in stripped)
+                and len(set(stripped)) == 1
             ):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 result.append(line)
                 i += 1
                 continue
-            
+
             # Check for headings
-            if stripped.startswith('#'):
+            if stripped.startswith("#"):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 # Add heading on single line
                 result.append(stripped)
                 i += 1
                 continue
-            
+
             # Check for blockquotes
-            if stripped.startswith('>'):
+            if stripped.startswith(">"):
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
-                
+
                 # Collect all consecutive blockquote lines
                 blockquote_lines = []
-                while i < len(lines) and lines[i].strip().startswith('>'):
+                while i < len(lines) and lines[i].strip().startswith(">"):
                     # Remove the > prefix and join
                     content = lines[i].strip()[1:].strip()
                     if content:
                         blockquote_lines.append(content)
                     i += 1
-                
+
                 if blockquote_lines:
-                    result.append('> ' + ' '.join(blockquote_lines))
+                    result.append("> " + " ".join(blockquote_lines))
                 continue
-            
+
             # Check for list items
             import re
-            list_pattern = re.match(r'^(\s*)([-*+]|\d+\.)\s+(.*)$', line)
+
+            list_pattern = re.match(r"^(\s*)([-*+]|\d+\.)\s+(.*)$", line)
             if list_pattern:
                 # Flush current paragraph
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
-                
+
                 indent = list_pattern.group(1)
                 marker = list_pattern.group(2)
                 content = list_pattern.group(3)
-                
+
                 # Collect multi-line list item
                 list_item_lines = [content] if content else []
                 i += 1
-                
+
                 # Look for continuation lines
                 while i < len(lines):
                     next_line = lines[i]
                     next_stripped = next_line.strip()
-                    
+
                     # Check if it's a new list item or other block element
-                    if (re.match(r'^\s*[-*+]\s+', next_line) or 
-                        re.match(r'^\s*\d+\.\s+', next_line) or
-                        next_stripped.startswith('#') or
-                        next_stripped.startswith('>') or
-                        next_stripped.startswith('```') or
-                        next_stripped in ['---', '***', '___'] or
-                        not next_stripped):
+                    if (
+                        re.match(r"^\s*[-*+]\s+", next_line)
+                        or re.match(r"^\s*\d+\.\s+", next_line)
+                        or next_stripped.startswith("#")
+                        or next_stripped.startswith(">")
+                        or next_stripped.startswith("```")
+                        or next_stripped in ["---", "***", "___"]
+                        or not next_stripped
+                    ):
                         break
-                    
+
                     # It's a continuation of the current list item
-                    if next_line.startswith(' ' * (len(indent) + 2)) or next_line.startswith('\t'):
+                    if next_line.startswith(
+                        " " * (len(indent) + 2)
+                    ) or next_line.startswith("\t"):
                         # Remove the indentation and add to current item
-                        continuation = next_line[len(indent) + 2:].strip()
+                        continuation = next_line[len(indent) + 2 :].strip()
                         if continuation:
                             list_item_lines.append(continuation)
                         i += 1
                     else:
                         break
-                
+
                 # Join the list item content
-                joined_content = ' '.join(list_item_lines) if list_item_lines else ''
+                joined_content = " ".join(list_item_lines) if list_item_lines else ""
                 result.append(f"{indent}{marker} {joined_content}")
                 continue
-            
+
             # Empty line - flush current paragraph
             if not stripped:
                 if current_paragraph:
-                    result.append(' '.join(current_paragraph))
+                    result.append(" ".join(current_paragraph))
                     current_paragraph = []
                 # Don't add empty lines
                 i += 1
                 continue
-            
+
             # Regular paragraph line
             current_paragraph.append(stripped)
             i += 1
-        
+
         # Flush any remaining paragraph
         if current_paragraph:
-            result.append(' '.join(current_paragraph))
-        
-        return '\n'.join(result)
+            result.append(" ".join(current_paragraph))
+
+        return "\n".join(result)
 
     def _apply_custom_processor(
         self, content: str, processor_name: str, args: Dict[str, Any], file_path: Path

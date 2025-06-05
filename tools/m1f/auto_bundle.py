@@ -79,14 +79,14 @@ class AutoBundler:
     def _find_config_file(self, start_path: Path) -> Path:
         """Find .m1f.config.yml by searching from current directory up to root."""
         current = start_path.resolve()
-        
+
         while True:
             config_path = current / ".m1f.config.yml"
             if config_path.exists():
                 if self.verbose:
                     self.print_info(f"Found config at: {config_path}")
                 return config_path
-            
+
             # Check if we've reached the root
             parent = current.parent
             if parent == current:
@@ -137,12 +137,17 @@ class AutoBundler:
             output = bundle_config.get("output", "")
             if output:
                 from .utils import validate_path_traversal
+
                 output_path = self.project_root / output
                 # Validate output path doesn't use malicious traversal
                 try:
-                    output_path = validate_path_traversal(output_path, base_path=self.project_root, allow_outside=True)
+                    output_path = validate_path_traversal(
+                        output_path, base_path=self.project_root, allow_outside=True
+                    )
                 except ValueError as e:
-                    self.print_error(f"Invalid output path for bundle '{bundle_name}': {e}")
+                    self.print_error(
+                        f"Invalid output path for bundle '{bundle_name}': {e}"
+                    )
                     continue
                 output_dir = output_path.parent
 
@@ -174,7 +179,7 @@ class AutoBundler:
         # Process sources
         sources = bundle_config.get("sources", [])
         all_excludes = []  # Collect all excludes
-        
+
         for source in sources:
             path = source.get("path", ".")
 
@@ -223,8 +228,13 @@ class AutoBundler:
         output = bundle_config.get("output", "")
         if output:
             from .utils import validate_path_traversal
+
             try:
-                output_path = validate_path_traversal(self.project_root / output, base_path=self.project_root, allow_outside=True)
+                output_path = validate_path_traversal(
+                    self.project_root / output,
+                    base_path=self.project_root,
+                    allow_outside=True,
+                )
                 cmd_parts.extend(["-o", str(output_path)])
             except ValueError as e:
                 self.print_error(f"Invalid output path: {e}")
@@ -237,8 +247,13 @@ class AutoBundler:
         # Preset
         if "preset" in bundle_config:
             from .utils import validate_path_traversal
+
             try:
-                preset_path = validate_path_traversal(self.project_root / bundle_config["preset"], base_path=self.project_root, from_preset=True)
+                preset_path = validate_path_traversal(
+                    self.project_root / bundle_config["preset"],
+                    base_path=self.project_root,
+                    from_preset=True,
+                )
                 cmd_parts.extend(["--preset", str(preset_path)])
             except ValueError as e:
                 self.print_error(f"Invalid preset path: {e}")
@@ -332,7 +347,7 @@ class AutoBundler:
         # Group bundles by their group
         grouped_bundles = {}
         ungrouped_bundles = {}
-        
+
         for bundle_name, bundle_config in config.bundles.items():
             group = bundle_config.get("group", None)
             if group:
@@ -344,14 +359,14 @@ class AutoBundler:
 
         print("\nAvailable bundles:")
         print("-" * 60)
-        
+
         # Show grouped bundles first
         for group_name in sorted(grouped_bundles.keys()):
             print(f"\nGroup: {group_name}")
             print("=" * 40)
             for bundle_name, bundle_config in grouped_bundles[group_name].items():
                 self._print_bundle_info(bundle_name, bundle_config)
-        
+
         # Show ungrouped bundles
         if ungrouped_bundles:
             if grouped_bundles:
@@ -361,14 +376,14 @@ class AutoBundler:
                 self._print_bundle_info(bundle_name, bundle_config)
 
         print("-" * 60)
-        
+
         # Show available groups
         if grouped_bundles:
             print("\nAvailable groups:")
             for group in sorted(grouped_bundles.keys()):
                 count = len(grouped_bundles[group])
                 print(f"  - {group} ({count} bundles)")
-    
+
     def _print_bundle_info(self, bundle_name: str, bundle_config: Dict[str, Any]):
         """Print information about a single bundle."""
         enabled = bundle_config.get("enabled", True)
@@ -384,7 +399,12 @@ class AutoBundler:
         if "enabled_if_exists" in bundle_config:
             print(f"    Enabled if exists: {bundle_config['enabled_if_exists']}")
 
-    def run(self, bundle_name: Optional[str] = None, list_bundles: bool = False, bundle_group: Optional[str] = None):
+    def run(
+        self,
+        bundle_name: Optional[str] = None,
+        list_bundles: bool = False,
+        bundle_group: Optional[str] = None,
+    ):
         """Run auto-bundle functionality."""
         # Check if config exists
         if not self.check_config_exists():
@@ -395,9 +415,7 @@ class AutoBundler:
             self.print_info(
                 "Create a .m1f.config.yml file in your project root to use auto-bundle functionality."
             )
-            self.print_info(
-                "See documentation: docs/01_m1f/06_auto_bundle_guide.md"
-            )
+            self.print_info("See documentation: docs/01_m1f/06_auto_bundle_guide.md")
             return False
 
         # Load config
@@ -416,13 +434,13 @@ class AutoBundler:
 
         # Filter bundles by group if specified
         bundles_to_create = {}
-        
+
         if bundle_group:
             # Filter bundles by group
             for name, bundle_config in config.bundles.items():
                 if bundle_config.get("group") == bundle_group:
                     bundles_to_create[name] = bundle_config
-                    
+
             if not bundles_to_create:
                 self.print_error(f"No bundles found in group '{bundle_group}'")
                 available_groups = set()
@@ -430,7 +448,9 @@ class AutoBundler:
                     if "group" in bundle_config:
                         available_groups.add(bundle_config["group"])
                 if available_groups:
-                    self.print_info(f"Available groups: {', '.join(sorted(available_groups))}")
+                    self.print_info(
+                        f"Available groups: {', '.join(sorted(available_groups))}"
+                    )
                 else:
                     self.print_info("No bundle groups defined in configuration")
                 return False

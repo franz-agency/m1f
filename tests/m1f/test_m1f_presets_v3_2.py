@@ -40,7 +40,7 @@ class TestM1FPresetsV32(BaseM1FTest):
         source_dir.mkdir()
         (source_dir / "file1.txt").write_text("File 1 content")
         (source_dir / "file2.txt").write_text("File 2 content")
-        
+
         # Create preset with source_directory
         preset_content = f"""
 test_group:
@@ -64,7 +64,7 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that files from preset source_directory were processed
         content = output_file.read_text()
         assert "file1.txt" in content
@@ -77,7 +77,7 @@ test_group:
         """Test that output_file can be set via preset."""
         # Create test file
         (temp_dir / "test.txt").write_text("Test content")
-        
+
         # Create preset with output_file
         output_path = temp_dir / "preset_output.txt"
         preset_content = f"""
@@ -100,7 +100,7 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that preset output file was used
         assert output_path.exists()
         content = output_path.read_text()
@@ -113,7 +113,7 @@ test_group:
         (temp_dir / "intro.md").write_text("# Introduction\nThis is the intro")
         (temp_dir / "license.txt").write_text("MIT License")
         (temp_dir / "main.txt").write_text("Main content")
-        
+
         # Create preset with input_include_files
         preset_content = f"""
 test_group:
@@ -140,13 +140,13 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that intro files appear first
         content = output_file.read_text()
         intro_pos = content.find("# Introduction")
         license_pos = content.find("MIT License")
         main_pos = content.find("Main content")
-        
+
         assert intro_pos < main_pos, "Intro should appear before main content"
         assert license_pos < main_pos, "License should appear before main content"
 
@@ -155,7 +155,7 @@ test_group:
         """Test output control settings via preset."""
         # Create test file
         (temp_dir / "test.txt").write_text("Test content")
-        
+
         # Create preset with output control settings
         preset_content = """
 test_group:
@@ -181,12 +181,12 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that timestamp was added
         output_files = list(temp_dir.glob("output_*.txt"))
         assert len(output_files) == 1, "Should have one output file with timestamp"
         assert "output_" in output_files[0].name
-        
+
         # Check minimal output (no list files)
         assert not (temp_dir / "output_filelist.txt").exists()
         assert not (temp_dir / "output_dirlist.txt").exists()
@@ -197,7 +197,7 @@ test_group:
         # Create test files
         (temp_dir / "file1.txt").write_text("File 1")
         (temp_dir / "file2.txt").write_text("File 2")
-        
+
         # Create preset with archive settings
         preset_content = """
 test_group:
@@ -223,7 +223,7 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that tar.gz archive was created
         archives = list(temp_dir.glob("*.tar.gz"))
         assert len(archives) == 1, "Should have created one tar.gz archive"
@@ -233,7 +233,7 @@ test_group:
         """Test runtime behavior settings via preset."""
         # Create test file
         (temp_dir / "test.txt").write_text("Test content")
-        
+
         # Test verbose mode
         preset_content = """
 test_group:
@@ -295,11 +295,11 @@ test_group:
         preset_dir = temp_dir / "preset_source"
         preset_dir.mkdir()
         (preset_dir / "preset_file.txt").write_text("From preset dir")
-        
+
         cli_dir = temp_dir / "cli_source"
         cli_dir.mkdir()
         (cli_dir / "cli_file.txt").write_text("From CLI dir")
-        
+
         # Create preset pointing to preset_dir
         preset_content = f"""
 test_group:
@@ -321,14 +321,15 @@ test_group:
                 str(output_file),
                 "--preset",
                 str(preset_file),
-                "--separator-style", "Standard",  # Override separator
+                "--separator-style",
+                "Standard",  # Override separator
                 "-q",  # Override verbose with quiet
                 "-f",
             ]
         )
 
         assert exit_code == 0
-        
+
         # Check that CLI values were used
         content = output_file.read_text()
         assert "From CLI dir" in content
@@ -347,7 +348,7 @@ test_group:
         (src_dir / "main.js").write_text("console.log('main');")
         (src_dir / "test.spec.js").write_text("test('test');")
         (src_dir / "readme.md").write_text("# README")
-        
+
         # Create full config preset
         output_path = temp_dir / "bundle.txt"
         preset_content = f"""
@@ -390,7 +391,7 @@ production:
         )
 
         assert exit_code == 0
-        
+
         # Verify everything worked
         assert output_path.exists()
         content = output_path.read_text()
@@ -398,7 +399,7 @@ production:
         assert "test.spec.js" not in content  # Excluded
         assert "README" in content  # Included as intro
         assert "PYMK1F_BEGIN_FILE_METADATA_BLOCK" in content  # MachineReadable format
-        
+
         # Check archive created
         archives = list(temp_dir.glob("*.zip"))
         assert len(archives) == 1
@@ -408,7 +409,7 @@ production:
         """Test encoding-related settings via preset."""
         # Create test file with UTF-8 content
         (temp_dir / "test.txt").write_text("Test with émojis 🎉", encoding="utf-8")
-        
+
         # Create preset with encoding settings
         preset_content = """
 test_group:
@@ -434,7 +435,7 @@ test_group:
         )
 
         assert exit_code == 0, f"m1f failed: {log_output}"
-        
+
         # Check that file was processed (encoding errors handled)
         content = output_file.read_text()
         assert "test.txt" in content
@@ -444,7 +445,7 @@ test_group:
         """Test using --preset-group to select specific group."""
         # Create test file
         (temp_dir / "test.txt").write_text("Test content")
-        
+
         # Create preset with multiple groups
         preset_content = """
 development:
@@ -481,7 +482,7 @@ production:
         )
 
         assert exit_code == 0
-        
+
         # Check production settings were applied
         content = output_file.read_text()
         # The preset group selection may not be working as expected

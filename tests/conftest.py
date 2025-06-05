@@ -50,18 +50,19 @@ def temp_dir() -> Iterator[Path]:
     """Create a temporary directory for test files."""
     # Use project's tmp directory instead of system temp
     project_tmp = Path(__file__).parent.parent / "tmp" / "test_temp"
-    
+
     # Ensure the directory exists
     try:
         project_tmp.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directory in project tmp: {e}")
-    
+
     # Create a unique subdirectory for this test
     import uuid
+
     test_dir = project_tmp / f"test_{uuid.uuid4().hex[:8]}"
     test_dir.mkdir(exist_ok=True)
-    
+
     try:
         yield test_dir
     finally:
@@ -80,22 +81,24 @@ def isolated_filesystem() -> Iterator[Path]:
     """
     # Use project's tmp directory instead of system temp
     project_tmp = Path(__file__).parent.parent / "tmp" / "test_isolated"
-    
+
     # Ensure the directory exists
     try:
         project_tmp.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         pytest.skip(f"Cannot create test directory in project tmp: {e}")
-    
+
     # Create a unique subdirectory for this test
     import uuid
+
     test_dir = project_tmp / f"test_{uuid.uuid4().hex[:8]}"
     test_dir.mkdir(exist_ok=True)
-    
+
     original_cwd = Path.cwd()
     try:
         # Change to the temporary directory
         import os
+
         os.chdir(test_dir)
         yield test_dir
     finally:
