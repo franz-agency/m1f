@@ -22833,18 +22833,44 @@ import pytest
 
 pytest.importorskip("detect_secrets")
 
-# Reuse helper from main test suite
-from .test_m1f import run_m1f, SOURCE_DIR, OUTPUT_DIR, _create_test_file
+# Import helpers from conftest
+from pathlib import Path
+import subprocess
+import tempfile
+
+# Define test directories
+SOURCE_DIR = Path(tempfile.gettempdir()) / "m1f_test_source"
+OUTPUT_DIR = Path(tempfile.gettempdir()) / "m1f_test_output"
+
+def _create_test_file(path: Path, content: str) -> None:
+    """Create a test file with given content."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding='utf-8')
+
+def run_m1f(args):
+    """Run m1f with given arguments."""
+    cmd = [sys.executable, "-m", "tools.m1f"] + args
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return result
 
 # Import the security scan function directly for isolated testing
-from tools.m1f import _scan_files_for_sensitive_info
+try:
+    from tools.m1f.security_scanner import SecurityScanner
+    _scan_files_for_sensitive_info = lambda files, level: SecurityScanner(level).scan_files(files)
+except ImportError:
+    # Fallback for older code structure
+    from tools.m1f import _scan_files_for_sensitive_info
 
 
 def test_security_detection():
     """Test that security scanning correctly identifies files with/without sensitive information."""
+    # Ensure base directories exist
+    SOURCE_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    
     # Create a test directory with clean and sensitive files
     test_dir = SOURCE_DIR / "security_detection_test"
-    test_dir.mkdir(exist_ok=True)
+    test_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         # Create a file with no sensitive information

@@ -10497,35 +10497,13 @@ file_extensions_test\test.py
 file_extensions_test\test.txt
 
 ======= s1f/output/encoding_test.txt ======
---- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-111111111111 ---
-METADATA_JSON:
-{
-    "original_filepath": "encoding_test/utf8_file.txt",
-    "original_filename": "utf8_file.txt",
-    "timestamp_utc_iso": "2023-01-01T12:00:00Z",
-    "type": ".txt",
-    "size_bytes": 50,
-    "encoding": "utf-8"
-}
---- PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-111111111111 ---
---- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-111111111111 ---
-UTF-8 file with special characters: áéíóú ñçß
---- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-111111111111 ---
+========================================================================================
+== FILE: test_file.txt
+== DATE: 2023-06-15 14:30:21 | SIZE: 2.50 KB | TYPE: .txt
+== ENCODING: latin-1 (with conversion errors)
+========================================================================================
 
---- PYMK1F_BEGIN_FILE_METADATA_BLOCK_12345678-1234-1234-1234-222222222222 ---
-METADATA_JSON:
-{
-    "original_filepath": "encoding_test/latin1_file.txt",
-    "original_filename": "latin1_file.txt",
-    "timestamp_utc_iso": "2023-01-01T12:00:00Z",
-    "type": ".txt",
-    "size_bytes": 52,
-    "encoding": "latin-1"
-}
---- PYMK1F_END_FILE_METADATA_BLOCK_12345678-1234-1234-1234-222222222222 ---
---- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-222222222222 ---
-Latin-1 file with special characters: áéíóú ñçß
---- PYMK1F_END_FILE_CONTENT_BLOCK_12345678-1234-1234-1234-222222222222 ---
+Hello with special chars: äöüß привет こんにちは 你好
 
 ======= s1f/output/machinereadable.txt ======
 --- PYMK1F_BEGIN_FILE_METADATA_BLOCK_84f5279b-3632-468e-99fb-503b653a5816 ---
