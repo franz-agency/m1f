@@ -166,6 +166,8 @@ class AutoBundler:
 
         # Process sources
         sources = bundle_config.get("sources", [])
+        all_excludes = []  # Collect all excludes
+        
         for source in sources:
             path = source.get("path", ".")
 
@@ -196,17 +198,19 @@ class AutoBundler:
                     cmd_parts.append("--include-extensions")
                     cmd_parts.extend(source["include_extensions"])
 
-            # Excludes from source
+            # Collect excludes from source
             if "excludes" in source:
-                cmd_parts.append("--excludes")
-                cmd_parts.extend(source["excludes"])
+                all_excludes.extend(source["excludes"])
 
-        # Add global excludes if they exist
+        # Add global excludes
         global_excludes = global_config.get("global_excludes", [])
-        if global_excludes and "--excludes" not in cmd_parts:
+        if global_excludes:
+            all_excludes.extend(global_excludes)
+
+        # Add all excludes with a single --excludes flag
+        if all_excludes:
             cmd_parts.append("--excludes")
-        for exclude in global_excludes:
-            cmd_parts.append(exclude)
+            cmd_parts.extend(all_excludes)
 
         # Output file
         output = bundle_config.get("output", "")
