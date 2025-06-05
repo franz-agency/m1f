@@ -881,6 +881,13 @@ and this project adheres to
   - Comprehensive documentation in `docs/01_m1f/06_auto_bundle_guide.md`
   - Examples for server-wide bundle management and automation
 
+- **Files werden jetzt parallel verarbeitet**: Deutliche Performance-Verbesserung
+  - Bis zu 10 Dateien werden gleichzeitig verarbeitet
+  - Signifikant schneller bei Projekten mit vielen Dateien
+  - Thread-sichere Content-Deduplizierung
+  - Reihenfolge der Dateien im Output bleibt erhalten
+  - Automatischer Fallback auf sequenzielle Verarbeitung bei einzelnen Dateien
+
 ### Changed
 
 - **Auto-bundle config file** (`.m1f.config.yml`) updated with group categorization

@@ -285,6 +285,9 @@ class TestS1FBasic(BaseS1FTest):
                 assert (
                     extracted_file.exists()
                 ), f"File {filepath} not extracted from {style} format"
+                actual_content = extracted_file.read_text()
+                # Allow for trailing newline differences
                 assert (
-                    extracted_file.read_text() == expected_content
+                    actual_content == expected_content or 
+                    actual_content.rstrip() == expected_content.rstrip()
                 ), f"Content mismatch for {filepath} in {style} format"

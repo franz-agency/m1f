@@ -160,33 +160,36 @@ class TestBeautifulSoupScraper:
             assert page.encoding == "utf-8"
             assert page.status_code == 200
 
-    def test_validate_url(self, scraper):
+    @pytest.mark.asyncio
+    async def test_validate_url(self, scraper):
         """Test URL validation."""
         # Valid URLs
-        assert scraper.validate_url("https://example.com") is True
-        assert scraper.validate_url("http://example.com/page") is True
+        assert await scraper.validate_url("https://example.com") is True
+        assert await scraper.validate_url("http://example.com/page") is True
 
         # Invalid URLs
-        assert scraper.validate_url("ftp://example.com") is False
-        assert scraper.validate_url("javascript:alert()") is False
-        assert scraper.validate_url("mailto:test@example.com") is False
+        assert await scraper.validate_url("ftp://example.com") is False
+        assert await scraper.validate_url("javascript:alert()") is False
+        assert await scraper.validate_url("mailto:test@example.com") is False
 
-    def test_validate_url_with_allowed_domains(self, scraper):
+    @pytest.mark.asyncio
+    async def test_validate_url_with_allowed_domains(self, scraper):
         """Test URL validation with allowed domains."""
         scraper.config.allowed_domains = ["example.com", "test.com"]
 
-        assert scraper.validate_url("https://example.com/page") is True
-        assert scraper.validate_url("https://test.com/page") is True
-        assert scraper.validate_url("https://other.com/page") is False
+        assert await scraper.validate_url("https://example.com/page") is True
+        assert await scraper.validate_url("https://test.com/page") is True
+        assert await scraper.validate_url("https://other.com/page") is False
 
-    def test_validate_url_with_exclude_patterns(self, scraper):
+    @pytest.mark.asyncio
+    async def test_validate_url_with_exclude_patterns(self, scraper):
         """Test URL validation with exclude patterns."""
         scraper.config.exclude_patterns = ["/admin/", ".pdf", "private"]
 
-        assert scraper.validate_url("https://example.com/page") is True
-        assert scraper.validate_url("https://example.com/admin/page") is False
-        assert scraper.validate_url("https://example.com/file.pdf") is False
-        assert scraper.validate_url("https://example.com/private/data") is False
+        assert await scraper.validate_url("https://example.com/page") is True
+        assert await scraper.validate_url("https://example.com/admin/page") is False
+        assert await scraper.validate_url("https://example.com/file.pdf") is False
+        assert await scraper.validate_url("https://example.com/private/data") is False
 
 
 class TestHTTrackScraper:

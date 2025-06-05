@@ -346,7 +346,7 @@ class MarkdownParser(SeparatorParser):
         r"(?:\*\*Date Modified:\*\* .*? \| \*\*Size:\*\* .*? \| \*\*Type:\*\* .*?"
         r"(?:\s\|\s\*\*Encoding:\*\*\s(.*?)(?:\s\(with conversion errors\))?)?"
         r"(?:\s\|\s\*\*Checksum \(SHA256\):\*\*\s([0-9a-fA-F]{64}))?)$\r?\n\r?\n"
-        r"```(?:.*?)$\r?\n)",
+        r"```(?:.*?)\r?\n)",
         re.MULTILINE,
     )
 
@@ -423,12 +423,12 @@ class DetailedParser(SeparatorParser):
     """Parser for Detailed format."""
 
     PATTERN = re.compile(
-        r"^(========================================================================================$\r?\n"
-        r"== FILE: (.*?)$\r?\n"
-        r"== DATE: .*? \| SIZE: .*? \| TYPE: .*?$\r?\n"
-        r"(?:== ENCODING: (.*?)(?:\s\(with conversion errors\))?$\r?\n)?"
-        r"(?:== CHECKSUM_SHA256: ([0-9a-fA-F]{64})$\r?\n)?"
-        r"========================================================================================$\r?\n?)",
+        r"^(={88}\r?\n"
+        r"== FILE: (.*?)\r?\n"
+        r"== DATE: .*? \| SIZE: .*? \| TYPE: .*?\r?\n"
+        r"(?:== ENCODING: (.*?)(?:\s\(with conversion errors\))?\r?\n)?"
+        r"(?:== CHECKSUM_SHA256: ([0-9a-fA-F]{64})\r?\n)?"
+        r"={88}\r?\n)",
         re.MULTILINE,
     )
 

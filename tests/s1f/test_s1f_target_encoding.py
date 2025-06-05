@@ -38,9 +38,8 @@ def test_target_encoding():
 == DATE: 2023-06-15 14:30:21 | SIZE: 2.50 KB | TYPE: .txt
 == ENCODING: latin-1 (with conversion errors)
 ========================================================================================
-
 """
-        f.write(separator + test_content)
+        f.write(separator + "\n" + test_content)
 
     # Use s1f to extract with various encoding options
     extract_base_dir = script_dir / "extracted" / "encoding_test"

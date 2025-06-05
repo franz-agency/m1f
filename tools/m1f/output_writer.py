@@ -291,19 +291,37 @@ class OutputWriter:
             ) as outfile:
                 files_written = 0
                 
-                for (file_path, rel_path), processed_data in processed_files:
+                for i, ((file_path, rel_path), processed_data) in enumerate(processed_files):
                     if processed_data:
                         # Write the pre-processed content
-                        separator, content = processed_data
+                        separator, content, separator_style = processed_data
                         
                         # Write separator
                         outfile.write(separator)
                         
+                        # Add blank line for some styles (between separator and content)
+                        if separator_style in [
+                            SeparatorStyle.STANDARD,
+                            SeparatorStyle.DETAILED,
+                            SeparatorStyle.MARKDOWN,
+                        ]:
+                            outfile.write(self.config.output.line_ending.value)
+                        
                         # Write content
                         outfile.write(content)
                         
-                        # Add blank line after file
-                        outfile.write("\n\n")
+                        # Ensure newline at end if needed
+                        if content and not content.endswith(("\n", "\r")):
+                            outfile.write(self.config.output.line_ending.value)
+                        
+                        # Write closing separator for Markdown
+                        if separator_style == SeparatorStyle.MARKDOWN:
+                            outfile.write("```")
+                            outfile.write(self.config.output.line_ending.value)
+                        
+                        # Add inter-file spacing if not last file
+                        if i < len(processed_files) - 1:
+                            outfile.write(self.config.output.line_ending.value)
                         
                         files_written += 1
             
@@ -404,7 +422,7 @@ class OutputWriter:
             if separator_style != original_style:
                 self.separator_generator.config = self.config
 
-            return (separator, content)
+            return (separator, content, separator_style)
 
         except Exception as e:
             self.logger.error(f"Error processing file {file_path}: {e}")
@@ -527,6 +545,11 @@ class OutputWriter:
             # Write separator
             if separator:
                 outfile.write(separator)
+                
+                # For Markdown, ensure separator ends with newline before adding blank line
+                if self.config.output.separator_style == SeparatorStyle.MARKDOWN:
+                    if not separator.endswith(('\n', '\r\n', '\r')):
+                        outfile.write(self.config.output.line_ending.value)
 
                 # Add blank line for some styles
                 if self.config.output.separator_style in [
