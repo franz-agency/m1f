@@ -75,6 +75,7 @@ class EncodingConfig:
 
     target_charset: Optional[str] = None
     abort_on_error: bool = False
+    prefer_utf8_for_text_files: bool = True
 
 
 @dataclass(frozen=True)
@@ -90,6 +91,7 @@ class OutputConfig:
     separator_style: SeparatorStyle = SeparatorStyle.DETAILED
     line_ending: LineEnding = LineEnding.LF
     parallel: bool = True  # Default to parallel processing for better performance
+    enable_content_deduplication: bool = True  # Enable content deduplication by default
 
 
 @dataclass(frozen=True)
@@ -223,6 +225,7 @@ class Config:
             skip_output_file=getattr(args, "skip_output_file", False),
             separator_style=SeparatorStyle(args.separator_style),
             line_ending=LineEnding.from_str(args.line_ending),
+            enable_content_deduplication=not getattr(args, "allow_duplicate_files", False),
         )
 
         # Parse max file size if provided
@@ -257,6 +260,7 @@ class Config:
         encoding_config = EncodingConfig(
             target_charset=getattr(args, "convert_to_charset", None),
             abort_on_error=getattr(args, "abort_on_encoding_error", False),
+            prefer_utf8_for_text_files=not getattr(args, "no_prefer_utf8_for_text_files", False),
         )
 
         # Create security configuration
@@ -390,6 +394,16 @@ class Config:
                     LineEnding.from_str(global_settings.line_ending)
                     if global_settings.line_ending
                     else LineEnding.LF
+                )
+            ),
+            parallel=config.output.parallel,  # Keep existing value
+            enable_content_deduplication=(
+                not getattr(args, "allow_duplicate_files", False)
+                if hasattr(args, "allow_duplicate_files") and getattr(args, "allow_duplicate_files", False)
+                else (
+                    global_settings.enable_content_deduplication
+                    if global_settings.enable_content_deduplication is not None
+                    else config.output.enable_content_deduplication
                 )
             ),
         )

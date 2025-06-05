@@ -1219,6 +1219,18 @@ and this project adheres to
   - Reihenfolge der Dateien im Output bleibt erhalten
   - Automatischer Fallback auf sequenzielle Verarbeitung bei einzelnen Dateien
 
+- **Configurable UTF-8 Preference**: Made UTF-8 encoding preference for text files configurable
+  - Added `prefer_utf8_for_text_files` option to EncodingConfig (defaults to True)
+  - New CLI flag `--no-prefer-utf8-for-text-files` to disable UTF-8 preference
+  - Configurable via preset files through `prefer_utf8_for_text_files` setting
+  - Affects only text files (.md, .markdown, .txt, .rst) when encoding detection is ambiguous
+
+- **Configurable Content Deduplication**: Made content deduplication optional
+  - Added `enable_content_deduplication` option to OutputConfig (defaults to True)
+  - New CLI flag `--allow-duplicate-files` to include files with identical content
+  - Configurable via preset files through `enable_content_deduplication` setting
+  - Useful when you need to preserve all files regardless of duplicate content
+
 ### Changed
 
 - **Auto-bundle config file** (`.m1f.config.yml`) updated with group
@@ -11469,6 +11481,13 @@ preserve original encoding.
 Abort if encoding conversion fails. By default, files with encoding errors are
 skipped with a warning.
 
+### `--no-prefer-utf8-for-text-files`
+
+Disable UTF-8 preference for text files (.md, .txt, .rst) when encoding is ambiguous.
+By default, m1f prefers UTF-8 encoding for these file types when chardet detects
+windows-1252 with less than 95% confidence, as these files often contain UTF-8
+emojis or special characters.
+
 ## Security Options
 
 ### `--security-check {abort,skip,warn}`
@@ -11503,6 +11522,12 @@ structure).
 ### `--skip-output-file`
 
 Skip creating the main output file. Useful when only creating an archive.
+
+### `--allow-duplicate-files`
+
+Allow files with identical content to be included in the output. By default,
+m1f deduplicates files based on their content checksum to save space and tokens.
+With this flag, all files are included even if they have identical content.
 
 ### `--verbose`, `-v`
 
@@ -18487,6 +18512,108 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
+======= tests/m1f/test_content_deduplication.py ======
+"""Test content deduplication functionality."""
+
+import pytest
+from pathlib import Path
+import subprocess
+import sys
+
+from tools.m1f.cli import create_parser, parse_args
+from tools.m1f.config import Config
+
+
+def test_cli_help_includes_deduplication_option():
+    """Test that the CLI help includes the deduplication option."""
+    parser = create_parser()
+    help_text = parser.format_help()
+    assert "--allow-duplicate-files" in help_text
+    assert "Allow files with identical content" in help_text
+
+
+def test_deduplication_enabled_by_default():
+    """Test that content deduplication is enabled by default."""
+    parser = create_parser()
+    args = parser.parse_args(["-s", ".", "-o", "test.txt"])
+    config = Config.from_args(args)
+    assert config.output.enable_content_deduplication is True
+
+
+def test_allow_duplicate_files_cli_argument():
+    """Test that --allow-duplicate-files disables deduplication."""
+    parser = create_parser()
+    args = parser.parse_args(["-s", ".", "-o", "test.txt", "--allow-duplicate-files"])
+    config = Config.from_args(args)
+    assert config.output.enable_content_deduplication is False
+
+
+def test_deduplication_behavior(tmp_path):
+    """Test that deduplication actually works."""
+    # Create test files with duplicate content
+    file1 = tmp_path / "file1.txt"
+    file2 = tmp_path / "file2.txt"
+    file3 = tmp_path / "file3.txt"
+    
+    duplicate_content = "This is duplicate content"
+    unique_content = "This is unique content"
+    
+    file1.write_text(duplicate_content)
+    file2.write_text(duplicate_content)
+    file3.write_text(unique_content)
+    
+    output_file = tmp_path / "output.txt"
+    
+    # Test with deduplication enabled (default)
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "tools.m1f",
+            "-s",
+            str(tmp_path),
+            "-o",
+            str(output_file),
+            "--include-extensions", ".txt",
+            "--excludes", "output*.txt", "*.log",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    
+    assert result.returncode == 0
+    output_content = output_file.read_text()
+    
+    # Should only have one instance of duplicate content
+    assert output_content.count(duplicate_content) == 1
+    assert output_content.count(unique_content) == 1
+    
+    # Test with deduplication disabled
+    output_file2 = tmp_path / "output2.txt"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "tools.m1f",
+            "-s",
+            str(tmp_path),
+            "-o",
+            str(output_file2),
+            "--include-extensions", ".txt",
+            "--excludes", "output*.txt", "*.log",
+            "--allow-duplicate-files",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    
+    assert result.returncode == 0
+    output_content2 = output_file2.read_text()
+    
+    # Should have two instances of duplicate content
+    assert output_content2.count(duplicate_content) == 2
+    assert output_content2.count(unique_content) == 1
+
 ======= tests/m1f/test_large_file.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
@@ -23629,6 +23756,70 @@ class TestPathTraversalSecurity:
             except OSError:
                 # Skip test if we can't create symlinks
                 pytest.skip("Cannot create symbolic links on this system")
+
+======= tests/m1f/test_prefer_utf8_cli_arg.py ======
+"""Test for prefer_utf8_for_text_files CLI argument."""
+
+import pytest
+from pathlib import Path
+import sys
+import subprocess
+
+from tools.m1f.cli import create_parser, parse_args
+from tools.m1f.config import Config
+
+
+def test_cli_help_includes_prefer_utf8_option():
+    """Test that the CLI help includes the new option."""
+    parser = create_parser()
+    help_text = parser.format_help()
+    assert "--no-prefer-utf8-for-text-files" in help_text
+    assert "Disable UTF-8 preference for text files" in help_text
+
+
+def test_prefer_utf8_default_value():
+    """Test that prefer_utf8_for_text_files defaults to True."""
+    parser = create_parser()
+    args = parser.parse_args(["-s", ".", "-o", "test.txt"])
+    config = Config.from_args(args)
+    assert config.encoding.prefer_utf8_for_text_files is True
+
+
+def test_no_prefer_utf8_cli_argument():
+    """Test that --no-prefer-utf8-for-text-files sets the value to False."""
+    parser = create_parser()
+    args = parser.parse_args(["-s", ".", "-o", "test.txt", "--no-prefer-utf8-for-text-files"])
+    config = Config.from_args(args)
+    assert config.encoding.prefer_utf8_for_text_files is False
+
+
+def test_m1f_runs_with_no_prefer_utf8_flag(tmp_path):
+    """Test that m1f runs successfully with the new flag."""
+    # Create a test file
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("Hello, world!")
+    
+    output_file = tmp_path / "output.txt"
+    
+    # Run m1f with the new flag
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "tools.m1f",
+            "-s",
+            str(tmp_path),
+            "-o",
+            str(output_file),
+            "--no-prefer-utf8-for-text-files",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    
+    # Check that it ran successfully
+    assert result.returncode == 0
+    assert output_file.exists()
 
 ======= tests/m1f/test_security_check.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -29998,6 +30189,12 @@ Perfect for:
         help="Abort if encoding conversion fails",
     )
 
+    encoding_group.add_argument(
+        "--no-prefer-utf8-for-text-files",
+        action="store_true",
+        help="Disable UTF-8 preference for text files (.md, .txt, .rst) when encoding is ambiguous",
+    )
+
     # Security group
     security_group = parser.add_argument_group("Security Options")
 
@@ -30043,6 +30240,12 @@ Perfect for:
         "--skip-output-file",
         action="store_true",
         help="Skip creating the main output file",
+    )
+
+    control_group.add_argument(
+        "--allow-duplicate-files",
+        action="store_true",
+        help="Allow files with identical content (disable deduplication)",
     )
 
     control_group.add_argument(
@@ -30179,6 +30382,7 @@ class EncodingConfig:
 
     target_charset: Optional[str] = None
     abort_on_error: bool = False
+    prefer_utf8_for_text_files: bool = True
 
 
 @dataclass(frozen=True)
@@ -30194,6 +30398,7 @@ class OutputConfig:
     separator_style: SeparatorStyle = SeparatorStyle.DETAILED
     line_ending: LineEnding = LineEnding.LF
     parallel: bool = True  # Default to parallel processing for better performance
+    enable_content_deduplication: bool = True  # Enable content deduplication by default
 
 
 @dataclass(frozen=True)
@@ -30327,6 +30532,7 @@ class Config:
             skip_output_file=getattr(args, "skip_output_file", False),
             separator_style=SeparatorStyle(args.separator_style),
             line_ending=LineEnding.from_str(args.line_ending),
+            enable_content_deduplication=not getattr(args, "allow_duplicate_files", False),
         )
 
         # Parse max file size if provided
@@ -30361,6 +30567,7 @@ class Config:
         encoding_config = EncodingConfig(
             target_charset=getattr(args, "convert_to_charset", None),
             abort_on_error=getattr(args, "abort_on_encoding_error", False),
+            prefer_utf8_for_text_files=not getattr(args, "no_prefer_utf8_for_text_files", False),
         )
 
         # Create security configuration
@@ -30494,6 +30701,16 @@ class Config:
                     LineEnding.from_str(global_settings.line_ending)
                     if global_settings.line_ending
                     else LineEnding.LF
+                )
+            ),
+            parallel=config.output.parallel,  # Keep existing value
+            enable_content_deduplication=(
+                not getattr(args, "allow_duplicate_files", False)
+                if hasattr(args, "allow_duplicate_files") and getattr(args, "allow_duplicate_files", False)
+                else (
+                    global_settings.enable_content_deduplication
+                    if global_settings.enable_content_deduplication is not None
+                    else config.output.enable_content_deduplication
                 )
             ),
         )
@@ -31506,7 +31723,7 @@ class EncodingHandler:
             }
 
             # Check if file extension suggests markdown or text files that should be UTF-8
-            if file_path.suffix.lower() in [".md", ".markdown", ".txt", ".rst"]:
+            if self.config.encoding.prefer_utf8_for_text_files and file_path.suffix.lower() in [".md", ".markdown", ".txt", ".rst"]:
                 # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
                 # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
                 if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:
@@ -32755,7 +32972,7 @@ class OutputWriter:
         self.encoding_handler = EncodingHandler(config, logger_manager)
         self.separator_generator = SeparatorGenerator(config, logger_manager)
         self._processed_checksums: Set[str] = set()
-        self._content_dedupe: bool = True  # Enable content deduplication by default
+        self._content_dedupe: bool = config.output.enable_content_deduplication
         self._checksum_lock = asyncio.Lock()  # Lock for thread-safe checksum operations
 
     def _apply_global_settings(self, config: Config) -> Config:
@@ -32796,6 +33013,15 @@ class OutputWriter:
             )
             self.logger.debug(
                 f"Applied global abort_on_encoding_error: {self.global_settings.abort_on_encoding_error}"
+            )
+        
+        if self.global_settings.prefer_utf8_for_text_files is not None:
+            encoding_config = replace(
+                encoding_config,
+                prefer_utf8_for_text_files=self.global_settings.prefer_utf8_for_text_files,
+            )
+            self.logger.debug(
+                f"Applied global prefer_utf8_for_text_files: {self.global_settings.prefer_utf8_for_text_files}"
             )
 
         # Apply separator style if global setting exists
@@ -33435,6 +33661,8 @@ class GlobalSettings:
     # Processing options
     remove_scraped_metadata: Optional[bool] = None
     abort_on_encoding_error: Optional[bool] = None
+    prefer_utf8_for_text_files: Optional[bool] = None
+    enable_content_deduplication: Optional[bool] = None
 
     # Security options
     security_check: Optional[str] = None  # 'abort', 'skip', 'warn'

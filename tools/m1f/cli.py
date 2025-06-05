@@ -289,6 +289,12 @@ Perfect for:
         help="Abort if encoding conversion fails",
     )
 
+    encoding_group.add_argument(
+        "--no-prefer-utf8-for-text-files",
+        action="store_true",
+        help="Disable UTF-8 preference for text files (.md, .txt, .rst) when encoding is ambiguous",
+    )
+
     # Security group
     security_group = parser.add_argument_group("Security Options")
 
@@ -334,6 +340,12 @@ Perfect for:
         "--skip-output-file",
         action="store_true",
         help="Skip creating the main output file",
+    )
+
+    control_group.add_argument(
+        "--allow-duplicate-files",
+        action="store_true",
+        help="Allow files with identical content (disable deduplication)",
     )
 
     control_group.add_argument(

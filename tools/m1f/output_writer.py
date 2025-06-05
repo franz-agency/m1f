@@ -62,7 +62,7 @@ class OutputWriter:
         self.encoding_handler = EncodingHandler(config, logger_manager)
         self.separator_generator = SeparatorGenerator(config, logger_manager)
         self._processed_checksums: Set[str] = set()
-        self._content_dedupe: bool = True  # Enable content deduplication by default
+        self._content_dedupe: bool = config.output.enable_content_deduplication
         self._checksum_lock = asyncio.Lock()  # Lock for thread-safe checksum operations
 
     def _apply_global_settings(self, config: Config) -> Config:
@@ -103,6 +103,15 @@ class OutputWriter:
             )
             self.logger.debug(
                 f"Applied global abort_on_encoding_error: {self.global_settings.abort_on_encoding_error}"
+            )
+        
+        if self.global_settings.prefer_utf8_for_text_files is not None:
+            encoding_config = replace(
+                encoding_config,
+                prefer_utf8_for_text_files=self.global_settings.prefer_utf8_for_text_files,
+            )
+            self.logger.debug(
+                f"Applied global prefer_utf8_for_text_files: {self.global_settings.prefer_utf8_for_text_files}"
             )
 
         # Apply separator style if global setting exists

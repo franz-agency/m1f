@@ -134,6 +134,8 @@ class GlobalSettings:
     # Processing options
     remove_scraped_metadata: Optional[bool] = None
     abort_on_encoding_error: Optional[bool] = None
+    prefer_utf8_for_text_files: Optional[bool] = None
+    enable_content_deduplication: Optional[bool] = None
 
     # Security options
     security_check: Optional[str] = None  # 'abort', 'skip', 'warn'

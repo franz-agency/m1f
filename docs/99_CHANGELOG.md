@@ -104,6 +104,18 @@ and this project adheres to
   - Reihenfolge der Dateien im Output bleibt erhalten
   - Automatischer Fallback auf sequenzielle Verarbeitung bei einzelnen Dateien
 
+- **Configurable UTF-8 Preference**: Made UTF-8 encoding preference for text files configurable
+  - Added `prefer_utf8_for_text_files` option to EncodingConfig (defaults to True)
+  - New CLI flag `--no-prefer-utf8-for-text-files` to disable UTF-8 preference
+  - Configurable via preset files through `prefer_utf8_for_text_files` setting
+  - Affects only text files (.md, .markdown, .txt, .rst) when encoding detection is ambiguous
+
+- **Configurable Content Deduplication**: Made content deduplication optional
+  - Added `enable_content_deduplication` option to OutputConfig (defaults to True)
+  - New CLI flag `--allow-duplicate-files` to include files with identical content
+  - Configurable via preset files through `enable_content_deduplication` setting
+  - Useful when you need to preserve all files regardless of duplicate content
+
 ### Changed
 
 - **Auto-bundle config file** (`.m1f.config.yml`) updated with group
