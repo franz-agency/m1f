@@ -89,6 +89,7 @@ class OutputConfig:
     skip_output_file: bool = False
     separator_style: SeparatorStyle = SeparatorStyle.DETAILED
     line_ending: LineEnding = LineEnding.LF
+    parallel: bool = False
 
 
 @dataclass(frozen=True)
@@ -219,6 +220,7 @@ class Config:
             skip_output_file=getattr(args, "skip_output_file", False),
             separator_style=SeparatorStyle(args.separator_style),
             line_ending=LineEnding.from_str(args.line_ending),
+            parallel=getattr(args, "parallel", False),
         )
 
         # Parse max file size if provided
@@ -361,6 +363,7 @@ class Config:
             line_ending=LineEnding.from_str(args.line_ending) if args.line_ending != "lf" else (
                 LineEnding.from_str(global_settings.line_ending) if global_settings.line_ending else LineEnding.LF
             ),
+            parallel=getattr(args, "parallel", False),
         )
         
         # Create new ArchiveConfig with overrides
