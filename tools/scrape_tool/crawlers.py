@@ -285,11 +285,6 @@ class WebCrawler:
         Returns:
             Path to site directory
         """
-        # Run async crawl in new event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            result = loop.run_until_complete(self.crawl(start_url, output_dir))
-            return result["output_dir"]
-        finally:
-            loop.close()
+        # Run async crawl using asyncio.run()
+        result = asyncio.run(self.crawl(start_url, output_dir))
+        return result["output_dir"]

@@ -36267,7 +36267,7 @@ class FileWriter:
                 access_time = mod_time
 
                 # Use asyncio to run in executor for non-blocking
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 await loop.run_in_executor(
                     None, os.utime, path, (access_time, mod_time)
                 )
@@ -36915,14 +36915,9 @@ class WebCrawler:
         Returns:
             Path to site directory
         """
-        # Run async crawl in new event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            result = loop.run_until_complete(self.crawl(start_url, output_dir))
-            return result["output_dir"]
-        finally:
-            loop.close()
+        # Run async crawl using asyncio.run()
+        result = asyncio.run(self.crawl(start_url, output_dir))
+        return result["output_dir"]
 
 ======= tests/html2md_server/templates/404.html ======
 <!DOCTYPE html>
