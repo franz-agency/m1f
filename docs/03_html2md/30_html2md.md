@@ -39,25 +39,28 @@ tool for better modularity. Use `webscraper` to download websites, then
 
 ```bash
 # Basic conversion of all HTML files in a directory
-python -m tools.html2md_tool convert ./website -o ./docs
+python -m tools.html2md convert ./website -o ./docs
 
 # Use a custom extractor for site-specific conversion
-python -m tools.html2md_tool convert ./website -o ./docs \
+python -m tools.html2md convert ./website -o ./docs \
   --extractor ./extractors/custom_extractor.py
 
 # Extract only main content from HTML files
-python -m tools.html2md_tool convert ./website -o ./docs \
-  --content-selector "main.content" --ignore-selectors "nav" ".sidebar" "footer"
+python -m tools.html2md convert ./website -o ./docs \
+  --content-selector "main.content" --ignore-selectors nav .sidebar footer
 
-# Add YAML frontmatter and adjust heading levels
-python -m tools.html2md_tool convert ./website -o ./docs \
+# Skip YAML frontmatter and adjust heading levels
+python -m tools.html2md convert ./website -o ./docs \
   --no-frontmatter --heading-offset 1
 
 # Analyze HTML structure to find best selectors
-python -m tools.html2md_tool analyze ./html/*.html --suggest-selectors
+python -m tools.html2md analyze ./html/*.html --suggest-selectors
 
 # Analyze with detailed structure output
-python -m tools.html2md_tool analyze ./html/*.html --show-structure --common-patterns
+python -m tools.html2md analyze ./html/*.html --show-structure --common-patterns
+
+# Generate a configuration file
+python -m tools.html2md config -o config.yaml
 ```
 
 ### Complete Workflow Example with .scrapes Directory
@@ -66,11 +69,11 @@ python -m tools.html2md_tool analyze ./html/*.html --show-structure --common-pat
 # Step 1: Create project structure
 mkdir -p .scrapes/my-project/{html,md,extractors}
 
-# Step 2: Download website using m1f-scrape
-python -m tools.m1f-scrape https://example.com -o .scrapes/my-project/html
+# Step 2: Download website using webscraper
+python -m tools.scrape_tool https://example.com -o .scrapes/my-project/html
 
 # Step 3: Analyze HTML structure (optional)
-python -m tools.html2md_tool analyze .scrapes/my-project/html/*.html --suggest-selectors
+python -m tools.html2md analyze .scrapes/my-project/html/*.html --suggest-selectors
 
 # Step 4: Create custom extractor (optional)
 # Use Claude to analyze and create site-specific extractor:
@@ -78,7 +81,7 @@ claude -p "Analyze these HTML files and create a custom extractor for html2md" \
   --files .scrapes/my-project/html/*.html
 
 # Step 5: Convert with custom extractor
-python -m tools.html2md_tool convert .scrapes/my-project/html -o .scrapes/my-project/md \
+python -m tools.html2md convert .scrapes/my-project/html -o .scrapes/my-project/md \
   --extractor .scrapes/my-project/extractors/custom_extractor.py
 ```
 
@@ -91,29 +94,32 @@ The html2md tool uses subcommands for different operations:
 Convert local HTML files to Markdown:
 
 ```bash
-python -m tools.html2md_tool convert <source> -o <output> [options]
+python -m tools.html2md convert <source> -o <output> [options]
 ```
 
-| Option               | Description                               |
-| -------------------- | ----------------------------------------- |
-| `source`             | Source file or directory                  |
-| `-o, --output`       | Output file or directory (required)       |
-| `-c, --config`       | Configuration file path                   |
-| `--extractor`        | Path to custom extractor Python file      |
-| `--content-selector` | CSS selector for main content             |
-| `--ignore-selectors` | CSS selectors to ignore (space-separated) |
-| `--heading-offset`   | Offset heading levels                     |
-| `--no-frontmatter`   | Don't add YAML frontmatter                |
-| `--parallel`         | Enable parallel processing                |
-| `-v, --verbose`      | Enable verbose output                     |
-| `-q, --quiet`        | Suppress all output except errors         |
+| Option               | Description                                          |
+| -------------------- | ---------------------------------------------------- |
+| `source`             | Source file or directory                             |
+| `-o, --output`       | Output file or directory (required)                  |
+| `-c, --config`       | Configuration file path (YAML format)                |
+| `--format`           | Output format: markdown, m1f_bundle, json (default: markdown) |
+| `--extractor`        | Path to custom extractor Python file                 |
+| `--content-selector` | CSS selector for main content                        |
+| `--ignore-selectors` | CSS selectors to ignore (space-separated)            |
+| `--heading-offset`   | Offset heading levels (default: 0)                   |
+| `--no-frontmatter`   | Don't add YAML frontmatter                           |
+| `--parallel`         | Enable parallel processing                           |
+| `--log-file`         | Log to file                                          |
+| `-v, --verbose`      | Enable verbose output                                |
+| `-q, --quiet`        | Suppress all output except errors                    |
+| `--version`          | Show version information and exit                    |
 
 ### Analyze Command
 
 Analyze HTML structure for optimal content extraction:
 
 ```bash
-python -m tools.html2md_tool analyze <files> [options]
+python -m tools.html2md analyze <files> [options]
 ```
 
 | Option                | Description                                                          |
@@ -122,6 +128,22 @@ python -m tools.html2md_tool analyze <files> [options]
 | `--show-structure`    | Show detailed HTML structure                                         |
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
+| `-v, --verbose`       | Enable verbose output                                                |
+| `-q, --quiet`        | Suppress all output except errors                                    |
+| `--log-file`          | Log to file                                                          |
+
+### Config Command
+
+Generate a configuration file template:
+
+```bash
+python -m tools.html2md config [options]
+```
+
+| Option          | Description                                       |
+| --------------- | ------------------------------------------------- |
+| `-o, --output`  | Output configuration file (default: config.yaml)  |
+| `--format`      | Configuration format: yaml, toml, json (default: yaml) |
 
 ## Usage Examples
 
@@ -129,39 +151,45 @@ python -m tools.html2md_tool analyze <files> [options]
 
 ```bash
 # Simple conversion of all HTML files in a directory
-python -m tools.html2md_tool convert ./website -o ./docs
+python -m tools.html2md convert ./website -o ./docs
 
 # Convert files with verbose logging
-python -m tools.html2md_tool convert ./website -o ./docs --verbose
+python -m tools.html2md convert ./website -o ./docs --verbose
+
+# Convert to m1f bundle format
+python -m tools.html2md convert ./website -o ./docs.m1f --format m1f_bundle
+
+# Convert to JSON format for processing
+python -m tools.html2md convert ./website -o ./data.json --format json
 ```
 
 ### Content Selection
 
 ```bash
 # Extract only the main content and ignore navigation elements
-python -m tools.html2md_tool convert ./website -o ./docs \
-  --content-selector "main" --ignore-selectors "nav" ".sidebar" "footer"
+python -m tools.html2md convert ./website -o ./docs \
+  --content-selector "main" --ignore-selectors nav .sidebar footer
 
 # Extract article content from specific selectors
-python -m tools.html2md_tool convert ./website -o ./docs \
+python -m tools.html2md convert ./website -o ./docs \
   --content-selector "article.content" \
-  --ignore-selectors ".author-bio" ".share-buttons" ".related-articles"
+  --ignore-selectors .author-bio .share-buttons .related-articles
 ```
 
 ### HTML Analysis
 
 ```bash
 # Analyze HTML files to find optimal selectors
-python -m tools.html2md_tool analyze ./html/*.html
+python -m tools.html2md analyze ./html/*.html
 
 # Show detailed structure of HTML files
-python -m tools.html2md_tool analyze ./html/*.html --show-structure
+python -m tools.html2md analyze ./html/*.html --show-structure
 
 # Find common patterns across multiple files
-python -m tools.html2md_tool analyze ./html/*.html --common-patterns
+python -m tools.html2md analyze ./html/*.html --common-patterns
 
 # Get all analysis options
-python -m tools.html2md_tool analyze ./html/*.html \
+python -m tools.html2md analyze ./html/*.html \
   --show-structure --common-patterns --suggest-selectors
 ```
 
@@ -169,7 +197,7 @@ python -m tools.html2md_tool analyze ./html/*.html \
 
 ```bash
 # Process only specific file types
-python -m tools.html2md_tool convert ./website -o ./docs \
+python -m tools.html2md convert ./website -o ./docs \
   -c config.yaml  # Use a configuration file for file filtering
 ```
 
@@ -177,22 +205,26 @@ python -m tools.html2md_tool convert ./website -o ./docs \
 
 ```bash
 # Adjust heading levels (e.g., h1 → h2, h2 → h3)
-python -m tools.html2md_tool convert ./website -o ./docs \
+python -m tools.html2md convert ./website -o ./docs \
   --heading-offset 1
 
 # Skip frontmatter generation
-python -m tools.html2md_tool convert ./website -o ./docs \
+python -m tools.html2md convert ./website -o ./docs \
   --no-frontmatter
 
 # Use configuration file for advanced formatting options
-python -m tools.html2md_tool convert ./website -o ./docs -c config.yaml
+python -m tools.html2md convert ./website -o ./docs -c config.yaml
+
+# Log conversion process to file
+python -m tools.html2md convert ./website -o ./docs \
+  --log-file conversion.log
 ```
 
 ### Performance Optimization
 
 ```bash
 # Use parallel processing for faster conversion of large sites
-python -m tools.html2md_tool convert ./website -o ./docs \
+python -m tools.html2md convert ./website -o ./docs \
   --parallel
 ```
 
@@ -262,11 +294,11 @@ class Extractor(BaseExtractor):
 
 ```bash
 # Use with CLI
-python -m tools.html2md_tool convert ./html -o ./markdown \
+python -m tools.html2md convert ./html -o ./markdown \
   --extractor ./extractors/my_extractor.py
 
 # Use with API
-from tools.html2md_tool.api import Html2mdConverter
+from tools.html2md.api import Html2mdConverter
 from pathlib import Path
 
 converter = Html2mdConverter(
@@ -294,22 +326,20 @@ This structure keeps scraped content organized and separate from your main codeb
 
 ### YAML Frontmatter
 
-When using the `--add-frontmatter` option, the converter will automatically
-generate YAML frontmatter for each Markdown file, including:
+By default, the converter adds YAML frontmatter to each Markdown file, including:
 
 - Title extracted from HTML title tag or first h1 element
 - Source filename
 - Conversion date
 - Original file modification date
 
-Custom frontmatter fields can be added using the `--frontmatter-fields` option:
+To disable frontmatter generation, use the `--no-frontmatter` option:
 
 ```bash
-python -m tools.html2md_tool --source-dir ./website --destination-dir ./docs \
-  --add-frontmatter --frontmatter-fields "layout=post" "author=John Doe" "category=tutorial"
+python -m tools.html2md convert ./website -o ./docs --no-frontmatter
 ```
 
-This will add the following YAML frontmatter to each converted file:
+The generated frontmatter looks like:
 
 ```yaml
 ---
@@ -317,9 +347,6 @@ title: Extracted from HTML
 source_file: original.html
 date_converted: 2023-06-15T14:30:21
 date_modified: 2023-06-12T10:15:33
-layout: post
-author: John Doe
-category: tutorial
 ---
 ```
 
@@ -363,7 +390,7 @@ The converter provides robust character encoding detection and conversion:
 
 1. Automatically detects the encoding of source HTML files
 2. Properly handles UTF-8, UTF-16, and other encodings
-3. Can convert all files to a specified encoding using `--target-encoding`
+3. All output files are written in UTF-8 encoding
 4. Handles BOM (Byte Order Mark) detection for Unicode files
 
 ## Architecture
@@ -410,13 +437,13 @@ documentation handling:
 1. First convert HTML files to Markdown:
 
    ```bash
-   python -m tools.html2md_tool convert ./html-docs -o ./markdown-docs
+   python -m tools.html2md convert ./html-docs -o ./markdown-docs
    ```
 
 2. Then use m1f to combine the Markdown files:
    ```bash
-   python -m tools.m1f --source-directory ./markdown-docs \
-     --output-file ./combined-docs.m1f.txt --separator-style Markdown
+   python -m tools.m1f -s ./markdown-docs -o ./combined-docs.m1f.txt \
+     --separator-style Markdown
    ```
 
 This workflow is ideal for:
@@ -430,9 +457,8 @@ This workflow is ideal for:
 
 - For large websites with many HTML files, use the `--parallel` option
 - Conversion speed depends on file size, complexity, and number of files
-- The `--max-workers` option can be used to control the number of parallel
-  processes
-- Memory usage scales with the number of worker processes and file sizes
+- Memory usage scales with file sizes when parallel processing is enabled
+- The tool uses async I/O for efficient file operations
 
 ## Programmatic API
 
@@ -481,30 +507,17 @@ print(f"Converted {len(results)} files")
   - beautifulsoup4: For HTML parsing
   - markdownify: For HTML to Markdown conversion
   - aiofiles: For async file operations
-  - httpx: For async HTTP requests
+  - rich: For console output
+  - pydantic: For configuration models
 - Optional packages:
   - chardet: For encoding detection
-  - pyyaml: For frontmatter generation
-  - httrack: For website downloading (system package)
+  - pyyaml: For YAML configuration files
+  - toml: For TOML configuration files
 
 Install dependencies:
 
 ```bash
-pip install beautifulsoup4 markdownify chardet pyyaml aiofiles httpx
+pip install beautifulsoup4 markdownify chardet pyyaml aiofiles rich pydantic
 ```
 
-For HTTrack support (required for website crawling):
-
-```bash
-# Ubuntu/Debian
-sudo apt-get install httrack
-
-# macOS
-brew install httrack
-
-# Windows (use WSL)
-sudo apt-get install httrack
-```
-
-**Note**: The tool uses the native HTTrack command-line utility, not a Python
-module, for professional-grade website mirroring.
+**Note**: For web scraping functionality, use the separate `webscraper` tool which provides multiple backend options including HTTrack.

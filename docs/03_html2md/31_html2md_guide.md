@@ -1,9 +1,12 @@
 # HTML to Markdown Converter Guide
 
-The `html2md` tool (v2.0.0) is a modern, async converter designed to transform
+The `html2md` tool (v3.1.0) is a modern, async converter designed to transform
 HTML content into clean Markdown format. Built with Python 3.10+ and modern
-async architecture, it's particularly powerful for converting entire websites
-and integrates seamlessly with m1f for creating documentation bundles.
+async architecture, it focuses on intelligent content extraction and conversion.
+
+**Note:** Web scraping functionality has been moved to the separate `webscraper`
+tool. Use `webscraper` to download websites, then `html2md` to convert the
+downloaded HTML files.
 
 ## Table of Contents
 
@@ -12,7 +15,7 @@ and integrates seamlessly with m1f for creating documentation bundles.
 - [Command Line Usage](#command-line-usage)
 - [Configuration](#configuration)
 - [Python API](#python-api)
-- [HTTrack Integration](#httrack-integration)
+- [Custom Extractors](#custom-extractors)
 - [Advanced Features](#advanced-features)
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
@@ -28,45 +31,39 @@ pip install beautifulsoup4 markdownify pydantic rich httpx chardet pyyaml aiofil
 pip install toml      # For TOML configuration files
 ```
 
-### HTTrack Installation
-
-HTTrack is required for website mirroring functionality. The tool uses the real
-Linux HTTrack command-line tool, not a Python module:
+### Installation
 
 ```bash
-# Ubuntu/Debian
-sudo apt-get install httrack
+pip install beautifulsoup4 markdownify pydantic rich chardet pyyaml aiofiles
 
-# macOS
-brew install httrack
-
-# Windows (WSL recommended)
-# Use Windows Subsystem for Linux and install httrack there
-# Or download installer from https://www.httrack.com/
+# Optional dependencies
+pip install toml      # For TOML configuration files
 ```
-
-**Note**: The tool uses the native HTTrack command-line utility for
-professional-grade website mirroring. This provides better performance,
-reliability, and standards compliance compared to Python-based alternatives.
 
 ## Quick Start
 
 ### Convert a Single File
 
 ```bash
-python -m tools.html2md_tool convert index.html -o index.md
+python -m tools.html2md convert index.html -o index.md
 ```
 
 ### Convert a Directory
 
 ```bash
-python -m tools.html2md_tool convert ./html_docs/ -o ./markdown_docs/
+python -m tools.html2md convert ./html_docs/ -o ./markdown_docs/
 ```
 
-### Convert a Website
+### Analyze HTML Structure
 
 ```bash
-python -m tools.html2md_tool crawl https://docs.example.com -o ./docs/
+python -m tools.html2md analyze ./html/*.html --suggest-selectors
+```
+
+### Generate Configuration
+
+```bash
+python -m tools.html2md config -o config.yaml
 ```
 
 ## Command Line Usage
@@ -76,33 +73,41 @@ The tool provides three main commands:
 ### `convert` - Convert Files or Directories
 
 ```bash
-python -m tools.html2md_tool convert [source] -o [output] [options]
+python -m tools.html2md convert [source] -o [output] [options]
 
 Options:
-  -c, --config FILE         Configuration file (YAML/TOML)
+  -c, --config FILE         Configuration file (YAML format)
+  --format FORMAT          Output format (markdown, m1f_bundle, json)
   --content-selector SEL    CSS selector for main content
-  --ignore-selectors SEL    CSS selectors to ignore (multiple allowed)
+  --ignore-selectors SEL    CSS selectors to ignore (space-separated)
   --heading-offset N        Offset heading levels by N
   --no-frontmatter         Don't add YAML frontmatter
-  --format FORMAT          Output format (markdown, m1f_bundle)
+  --parallel               Enable parallel processing
+  --extractor FILE         Path to custom extractor Python file
+  --log-file FILE          Log to file
+  -v, --verbose            Enable verbose output
+  -q, --quiet              Suppress all output except errors
 ```
 
-### `crawl` - Convert Entire Websites
+### `analyze` - Analyze HTML Structure
 
 ```bash
-python -m tools.html2md_tool crawl [URL] -o [output] [options]
+python -m tools.html2md analyze [files] [options]
 
 Options:
-  --max-depth N            Maximum crawl depth
-  --max-pages N            Maximum pages to crawl
+  --show-structure         Show detailed HTML structure
+  --common-patterns        Find common patterns across files
+  --suggest-selectors      Suggest CSS selectors (default)
+  -v, --verbose            Enable verbose output
 ```
 
 ### `config` - Generate Configuration File
 
 ```bash
-python -m tools.html2md_tool config -o config.yaml [options]
+python -m tools.html2md config [options]
 
 Options:
+  -o, --output FILE        Output file (default: config.yaml)
   --format FORMAT          Config format (yaml, toml, json)
 ```
 
@@ -113,7 +118,7 @@ Options:
 Create a `config.yaml` file:
 
 ```yaml
-# Basic settings (v2.0.0 format)
+# Basic settings (v3.1.0 format)
 source: ./html_docs
 destination: ./markdown_docs
 output_format: markdown
@@ -138,6 +143,7 @@ extractor:
 # Markdown processing
 processor:
   heading_offset: 0
+  add_frontmatter: true
   heading_style: atx
   link_handling: convert
   link_extensions:
@@ -146,24 +152,8 @@ processor:
   normalize_whitespace: true
   fix_encoding: true
 
-# Web crawling (HTTrack)
-crawler:
-  max_depth: 10
-  max_pages: 5000
-  allowed_domains:
-    - docs.example.com
-    - api.example.com
-  exclude_patterns:
-    - "*.pdf"
-    - "*.zip"
-    - "*/download/*"
-  respect_robots_txt: true
-  concurrent_requests: 5
-  request_delay: 0.5
-
 # Parallel processing
 parallel: true
-max_workers: 4
 
 # Logging
 verbose: false
@@ -189,13 +179,12 @@ log_file: ./conversion.log
 - `normalize_whitespace`: Clean up extra whitespace
 - `fix_encoding`: Fix common encoding issues
 
-#### Crawler Configuration
+#### Processing Configuration
 
-- `max_depth`: How deep to crawl from start page
-- `max_pages`: Maximum number of pages to download
-- `allowed_domains`: Restrict crawling to specific domains
-- `exclude_patterns`: URL patterns to skip
-- `respect_robots_txt`: Honor robots.txt rules
+- `parallel`: Enable parallel processing for multiple files
+- `verbose`: Enable verbose logging
+- `quiet`: Suppress all output except errors
+- `log_file`: Path to log file
 
 ## Python API
 
@@ -218,9 +207,15 @@ results = asyncio.run(converter.convert_directory("./html", "./markdown"))
 # Convert a single file (async)
 result = asyncio.run(converter.convert_file("index.html"))
 
-# Convert URLs (async)
-urls = ["https://example.com/page1", "https://example.com/page2"]
-results = asyncio.run(converter.convert_directory_from_urls(urls))
+# Convert with custom extractor
+from pathlib import Path
+
+converter = HTML2MDConverter(
+    outermost_selector="main",
+    extractor=Path("./extractors/custom_extractor.py")
+)
+
+result = asyncio.run(converter.convert_file("index.html"))
 ```
 
 ### Advanced Configuration
@@ -228,7 +223,7 @@ results = asyncio.run(converter.convert_directory_from_urls(urls))
 ```python
 from tools.html2md.config.models import HTML2MDConfig
 
-# Create configuration with v2.0.0 models
+# Create configuration with v3.1.0 models
 config = HTML2MDConfig(
     source_dir="./html",
     destination_dir="./output",
@@ -262,25 +257,38 @@ results = asyncio.run(convert_directory(
 ))
 ```
 
-## HTTrack Integration
+## Custom Extractors
 
-The tool uses HTTrack for reliable website mirroring. HTTrack provides:
+The custom extractor system allows you to create site-specific content extraction logic:
 
-- **Professional mirroring**: Complete website downloads
-- **Link preservation**: Maintains site structure
-- **Bandwidth control**: Configurable delays and connections
-- **Standards compliance**: Respects robots.txt
-- **Resume support**: Can continue interrupted downloads
+### Function-based Extractor
 
-### HTTrack Options Mapping
+```python
+# extractors/my_extractor.py
+from bs4 import BeautifulSoup
 
-| Config Option       | HTTrack Flag | Description                 |
-| ------------------- | ------------ | --------------------------- |
-| max_depth           | -r           | Maximum mirror depth        |
-| max_pages           | -m           | Maximum file size (kb)      |
-| concurrent_requests | -c           | Number of connections       |
-| request_delay       | -E           | Delay between requests (ms) |
-| respect_robots_txt  | -s0/-s2      | robots.txt handling         |
+def extract(soup: BeautifulSoup, config=None):
+    """Extract main content."""
+    # Custom extraction logic
+    main = soup.find('main')
+    if main:
+        new_soup = BeautifulSoup('<html><body></body></html>', 'html.parser')
+        new_soup.body.append(main)
+        return new_soup
+    return soup
+
+def postprocess(markdown: str, config=None):
+    """Clean up converted markdown."""
+    import re
+    return re.sub(r'\n{3,}', '\n\n', markdown)
+```
+
+### Using Custom Extractors
+
+```bash
+python -m tools.html2md convert ./html -o ./markdown \
+  --extractor ./extractors/my_extractor.py
+```
 
 ## Advanced Features
 
@@ -355,6 +363,7 @@ m1f:
 ```bash
 # Create configuration
 cat > docs-config.yaml << EOF
+source: ./python-docs-html
 destination: ./python-docs-md
 extractor:
   content_selector: "div.document"
@@ -363,14 +372,12 @@ extractor:
     - ".related"
 processor:
   heading_offset: 1
-crawler:
-  max_depth: 10
-  allowed_domains:
-    - docs.python.org
+  add_frontmatter: true
+parallel: true
 EOF
 
 # Run conversion
-python -m tools.html2md_tool crawl https://docs.python.org/3/ -c docs-config.yaml
+python -m tools.html2md convert ./python-docs-html -o ./python-docs-md -c docs-config.yaml
 ```
 
 ### Example 2: Convert Blog with Specific Content
@@ -397,55 +404,58 @@ results = asyncio.run(converter.convert_directory(
 ))
 ```
 
-### Example 3: Create m1f Bundle from Website
+### Example 3: Create m1f Bundle from HTML
 
 ```bash
-python -m tools.html2md_tool crawl https://docs.example.com \
-  -o ./output \
+# First download the website using webscraper
+python -m tools.scrape_tool https://docs.example.com -o ./html
+
+# Then convert to m1f bundle
+python -m tools.html2md convert ./html \
+  -o ./output.m1f \
   --format m1f_bundle \
   --content-selector "main.content" \
-  --ignore-selectors "nav" "footer"
+  --ignore-selectors nav footer
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **HTTrack not found**
-
-   ```
-   RuntimeError: HTTrack is not installed
-   ```
-
-   Solution: Install HTTrack using your package manager
-
-2. **Content selector not matching**
+1. **Content selector not matching**
 
    ```
    WARNING: Content selector 'article' not found
    ```
 
-   Solution: Inspect the HTML and adjust your selector
+   Solution: Use the analyze command to find the right selectors:
+   ```bash
+   python -m tools.html2md analyze ./html/*.html --suggest-selectors
+   ```
 
-3. **Encoding issues**
+2. **Encoding issues**
 
    ```
    UnicodeDecodeError: 'utf-8' codec can't decode
    ```
 
-   Solution: The tool auto-detects encoding, but you can force it:
+   Solution: The tool auto-detects encoding, but HTML files may have mixed encodings. 
+   All output is converted to UTF-8.
 
-   ```yaml
-   source_encoding: iso-8859-1
-   target_encoding: utf-8
+3. **Large directories timing out**
+
+   Solution: Use parallel processing:
+   ```bash
+   python -m tools.html2md convert ./html -o ./md --parallel
    ```
 
-4. **Large websites timing out** Solution: Adjust crawler settings:
-   ```yaml
-   crawler:
-     timeout: 60.0
-     max_pages: 1000
-     concurrent_requests: 2
+4. **Missing content after conversion**
+
+   Solution: Check your ignore selectors - they may be too broad:
+   ```bash
+   python -m tools.html2md convert ./html -o ./md \
+     --content-selector "body" \
+     --ignore-selectors .ads .cookie-notice
    ```
 
 ### Debug Mode
@@ -453,7 +463,7 @@ python -m tools.html2md_tool crawl https://docs.example.com \
 Enable verbose logging for debugging:
 
 ```bash
-python -m tools.html2md_tool convert ./html -o ./md -v --log-file debug.log
+python -m tools.html2md convert ./html -o ./md -v --log-file debug.log
 ```
 
 Or in configuration:
@@ -469,23 +479,15 @@ log_file: ./conversion-debug.log
 
    ```yaml
    parallel: true
-   max_workers: 8
    ```
 
-2. **Limit crawl scope** for large websites:
-
-   ```yaml
-   crawler:
-     max_depth: 3
-     max_pages: 500
-     allowed_domains: [docs.example.com]
-   ```
-
-3. **Target specific content** to reduce processing:
+2. **Target specific content** to reduce processing:
    ```yaml
    extractor:
      content_selector: "article.documentation"
    ```
+
+3. **Use custom extractors** for complex sites to optimize extraction
 
 ## Integration with m1f
 
@@ -499,17 +501,20 @@ The converted Markdown files are optimized for m1f bundling:
 To create an m1f bundle after conversion:
 
 ```bash
-# Convert website
-python -m tools.html2md_tool crawl https://docs.example.com -o ./docs/
+# Download website first
+python -m tools.scrape_tool https://docs.example.com -o ./html/
+
+# Convert to Markdown
+python -m tools.html2md convert ./html/ -o ./docs/
 
 # Create m1f bundle
-python -m tools.m1f ./docs/ -o documentation.00_m1f.md
+python -m tools.m1f -s ./docs/ -o documentation.m1f.txt
 ```
 
-Or do it in one step:
+Or convert directly to m1f bundle format:
 
 ```bash
-python -m tools.html2md_tool crawl https://docs.example.com \
-  -o ./docs/ \
+python -m tools.html2md convert ./html/ \
+  -o ./docs.m1f \
   --format m1f_bundle
 ```
