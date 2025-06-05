@@ -7,4 +7,4 @@ BIN_DIR="$(dirname "$SCRIPT_PATH")"
 PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Activate virtual environment and run m1f-scrape
-cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python -m tools.webscraper "$@"
+cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python -m tools.scrape_tool "$@"
