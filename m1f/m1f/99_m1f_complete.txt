@@ -7508,18 +7508,7 @@ __all__ = ["__version__", "__version_info__"]
 
 ======= tools/_version.py ======
 # Copyright 2025 Franz und Franz GmbH
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 """
 Single source of truth for m1f version information.
@@ -7534,18 +7523,7 @@ __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 ======= tools/html2md.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 """
 HTML to Markdown converter - wrapper script.
@@ -8528,6 +8506,9 @@ if __name__ == "__main__":
 
 ======= tools/scrape.py ======
 #!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
 """Wrapper script for m1f-scrape module."""
 
 from scrape_tool.cli import main
@@ -16677,6 +16658,20 @@ if __name__ == "__main__":
     main()
 
 ======= tests/html2md/test_scrapers.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Tests for web scraper backends."""
 
 import asyncio
@@ -17377,6 +17372,20 @@ Part of the M1F project. See main project license.
 
 ======= tests/html2md_server/manage_server.py ======
 #!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Manage the HTML2MD test server."""
 
 import subprocess
@@ -22823,6 +22832,20 @@ production:
         assert exit_code == 0
 
 ======= tests/m1f/test_multiple_exclude_include_files.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Test multiple exclude and include files functionality.
 """
@@ -37372,6 +37395,9 @@ class FileWriter:
 from .._version import __version__, __version_info__
 
 ======= tools/scrape_tool/__main__.py ======
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
 """Entry point for m1f-scrape module."""
 
 from .cli import main
@@ -37380,6 +37406,20 @@ if __name__ == "__main__":
     main()
 
 ======= tools/scrape_tool/cli.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Command-line interface for m1f-scrape."""
 
 import argparse
@@ -37550,6 +37590,20 @@ if __name__ == "__main__":
     main()
 
 ======= tools/scrape_tool/config.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Configuration models for m1f-scrape."""
 
 from enum import Enum
@@ -41055,6 +41109,20 @@ def create_scraper(
     return scraper_class(config)
 
 ======= tools/scrape_tool/scrapers/base.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Abstract base class for web scrapers."""
 
 from abc import ABC, abstractmethod
@@ -41343,6 +41411,20 @@ class WebScraperBase(ABC):
         pass
 
 ======= tools/scrape_tool/scrapers/beautifulsoup.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """BeautifulSoup4-based web scraper implementation."""
 
 import asyncio
@@ -41652,6 +41734,20 @@ class BeautifulSoupScraper(WebScraperBase):
         return links
 
 ======= tools/scrape_tool/scrapers/httrack.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """HTTrack-based web scraper implementation."""
 
 import asyncio

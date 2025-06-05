@@ -1,5 +1,4 @@
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
 
-# Test for component 1
 print("Test for component 1")
