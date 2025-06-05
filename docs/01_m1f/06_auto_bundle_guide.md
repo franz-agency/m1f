@@ -22,14 +22,14 @@ global:
 bundles:
   docs:
     description: "Project documentation"
-    output: ".m1f/docs/manual.txt"
+    output: "m1f/docs/manual.txt"
     sources:
       - path: "docs"
         include_extensions: [".md", ".txt"]
     
   code:
     description: "Source code bundle"
-    output: ".m1f/src/code.txt"
+    output: "m1f/src/code.txt"
     sources:
       - path: "src"
         include_extensions: [".py", ".js", ".ts"]
@@ -66,21 +66,21 @@ bundles:
   user-docs:
     description: "User documentation"
     group: "documentation"
-    output: ".m1f/docs/user.txt"
+    output: "m1f/docs/user.txt"
     sources:
       - path: "docs/user"
 
   api-docs:
     description: "API documentation"
     group: "documentation"
-    output: ".m1f/docs/api.txt"
+    output: "m1f/docs/api.txt"
     sources:
       - path: "docs/api"
 
   frontend-code:
     description: "Frontend source code"
     group: "source"
-    output: ".m1f/src/frontend.txt"
+    output: "m1f/src/frontend.txt"
     sources:
       - path: "frontend"
 ```
@@ -120,7 +120,7 @@ bundles:
   all:
     description: "Complete project bundle"
     group: "project-a"
-    output: ".m1f/project-a-complete.txt"
+    output: "m1f/project-a-complete.txt"
     sources:
       - path: "."
 ```
@@ -164,7 +164,7 @@ bundles:
   python-docs:
     description: "Python documentation"
     enabled_if_exists: "setup.py"
-    output: ".m1f/python-docs.txt"
+    output: "m1f/python-docs.txt"
     sources:
       - path: "."
         include_extensions: [".py"]
@@ -178,7 +178,7 @@ Combine files from different locations with different settings:
 bundles:
   complete:
     description: "Complete project documentation"
-    output: ".m1f/complete.txt"
+    output: "m1f/complete.txt"
     sources:
       - path: "docs"
         include_extensions: [".md"]
@@ -197,20 +197,39 @@ Apply presets for advanced file processing:
 bundles:
   web-bundle:
     description: "Web project bundle"
-    output: ".m1f/web.txt"
+    output: "m1f/web.txt"
     preset: "presets/web-project.m1f-presets.yml"
     preset_group: "production"
     sources:
       - path: "."
 ```
 
+## Automatic Bundle Generation with Git Hooks
+
+m1f provides a Git pre-commit hook that automatically runs auto-bundle before each commit. This ensures your bundles are always in sync with your source code.
+
+### Installing the Git Hook
+
+```bash
+# Run from your project root (where .m1f.config.yml is located)
+bash /path/to/m1f/scripts/install-git-hooks.sh
+```
+
+The hook will:
+- Run `m1f auto-bundle` before each commit
+- Add generated bundles to the commit automatically
+- Block commits if bundle generation fails
+
+For detailed setup instructions, see the [Git Hooks Setup Guide](12_git_hooks_setup.md).
+
 ## Best Practices
 
 1. **Organize with Groups**: Use groups to categorize bundles logically
 2. **Version Control**: Include `.m1f.config.yml` in version control
-3. **Exclude Generated Files**: Don't include `.m1f/` directory in bundles
+3. **Include m1f/ Directory**: Keep generated bundles in version control for AI tool access
 4. **Use Descriptive Names**: Make bundle names self-explanatory
-5. **Regular Updates**: Schedule automatic updates for frequently changing projects
+5. **Regular Updates**: Use Git hooks or schedule automatic updates for frequently changing projects
+6. **Review Bundle Changes**: Check generated bundle diffs before committing
 
 ## Troubleshooting
 
@@ -247,7 +266,7 @@ bundles:
   docs-site:
     description: "Documentation site content"
     group: "documentation"
-    output: ".m1f/docs-site.txt"
+    output: "m1f/docs-site.txt"
     sources:
       - path: "content"
         include_extensions: [".md", ".mdx"]
@@ -265,7 +284,7 @@ bundles:
   python-code:
     description: "Python backend code"
     group: "backend"
-    output: ".m1f/backend/python.txt"
+    output: "m1f/backend/python.txt"
     sources:
       - path: "backend"
         include_extensions: [".py"]
@@ -273,14 +292,14 @@ bundles:
   javascript-code:
     description: "JavaScript frontend code"
     group: "frontend"
-    output: ".m1f/frontend/javascript.txt"
+    output: "m1f/frontend/javascript.txt"
     sources:
       - path: "frontend"
         include_extensions: [".js", ".jsx", ".ts", ".tsx"]
   
   all-code:
     description: "All source code"
-    output: ".m1f/all-code.txt"
+    output: "m1f/all-code.txt"
     sources:
       - path: "."
         include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
@@ -293,7 +312,7 @@ bundles:
   wp-plugin:
     description: "WordPress plugin files"
     group: "wordpress"
-    output: ".m1f/wp-plugin.txt"
+    output: "m1f/wp-plugin.txt"
     preset: "presets/wordpress.m1f-presets.yml"
     sources:
       - path: "."

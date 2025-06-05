@@ -10,6 +10,20 @@ and this project adheres to
 
 ### Added
 
+- **Git Hooks Integration**: Automatic bundle generation on every commit
+  - Pre-commit hook that runs `m1f auto-bundle` before each commit
+  - Installation script with remote download support: `curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash`
+  - Auto-detection of m1f development repository vs. installed m1f
+  - Automatic staging of generated bundles in `m1f/` directory
+  - Comprehensive setup guide at `docs/01_m1f/12_git_hooks_setup.md`
+
+- **Bundle Directory Migration**: Moved from `.m1f/` to `m1f/` for better AI tool compatibility
+  - AI tools like Claude Code can now access bundled files directly
+  - Generated bundles are included in version control by default
+  - Automatic migration of configuration paths
+  - Updated `m1f-link` command to create symlinks in `m1f/` directory
+  - Added `m1f/README.md` explaining auto-generated files
+
 - **Complete Preset Parameter Support**: ALL m1f parameters can now be configured via presets
   - Input/Output settings: source_directory, input_file, output_file, input_include_files
   - Output control: add_timestamp, filename_mtime_hash, force, minimal_output, skip_output_file
