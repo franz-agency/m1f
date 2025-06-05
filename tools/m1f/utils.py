@@ -21,7 +21,7 @@ from __future__ import annotations
 import hashlib
 import re
 from pathlib import Path
-from typing import Union, List, Tuple
+from typing import List, Tuple
 
 
 def format_duration(seconds: float) -> str:
@@ -168,7 +168,7 @@ def is_binary_file(file_path: Path) -> bool:
         return True
 
 
-def normalize_path(path: Union[str, Path]) -> Path:
+def normalize_path(path: str | Path) -> Path:
     """Normalize a path to use forward slashes and resolve it."""
     return Path(path).resolve()
 
