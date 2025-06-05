@@ -23,7 +23,7 @@ This project uses centralized version management to ensure consistency across al
 3. **NPM Package**:
    - `package.json` - synced using `sync_version.py`
 
-4. **Legacy Script**:
+4. **Main Script**:
    - `tools/m1f.py` - imports with fallback for standalone usage
 
 ## Updating Version
