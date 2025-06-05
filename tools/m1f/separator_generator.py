@@ -134,8 +134,7 @@ class SeparatorGenerator:
 
     def _generate_standard(self, metadata: dict, checksum: str) -> str:
         """Generate Standard style separator."""
-        if checksum:
-            return f"======= {metadata['relative_path']} | CHECKSUM_SHA256: {checksum} ======"
+        # Standard format now only shows file path without checksum
         return f"======= {metadata['relative_path']} ======"
 
     def _generate_detailed(self, metadata: dict, checksum: str, linesep: str) -> str:
