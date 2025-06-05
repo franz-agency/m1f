@@ -61,18 +61,20 @@ python -m tools.scrape_tool <url> -o <output> [options]
 
 ### Optional Arguments
 
-| Option                  | Description                                      | Default       |
-| ----------------------- | ------------------------------------------------ | ------------- |
-| `--scraper`             | Scraper backend to use                           | beautifulsoup |
-| `--scraper-config`      | Path to scraper-specific config file (YAML/JSON) | None          |
-| `--max-depth`           | Maximum crawl depth                              | 5             |
-| `--max-pages`           | Maximum pages to crawl                           | 1000          |
-| `--request-delay`       | Delay between requests in seconds                | 0.5           |
-| `--concurrent-requests` | Number of concurrent requests                    | 5             |
-| `--user-agent`          | Custom user agent string                         | Mozilla/5.0   |
-| `--list-files`          | List all downloaded files after completion       | False         |
-| `-v, --verbose`         | Enable verbose output                            | False         |
-| `-q, --quiet`           | Suppress all output except errors                | False         |
+| Option                  | Description                                                            | Default       |
+| ----------------------- | ---------------------------------------------------------------------- | ------------- |
+| `--scraper`             | Scraper backend to use (choices: httrack, beautifulsoup, bs4,         | beautifulsoup |
+|                         | selectolax, httpx, scrapy, playwright)                                 |               |
+| `--scraper-config`      | Path to scraper-specific config file (YAML/JSON)                      | None          |
+| `--max-depth`           | Maximum crawl depth                                                    | 5             |
+| `--max-pages`           | Maximum pages to crawl                                                 | 1000          |
+| `--request-delay`       | Delay between requests in seconds (for Cloudflare protection)         | 15.0          |
+| `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)             | 2             |
+| `--user-agent`          | Custom user agent string                                               | Mozilla/5.0   |
+| `--list-files`          | List all downloaded files after completion                             | False         |
+| `-v, --verbose`         | Enable verbose output                                                  | False         |
+| `-q, --quiet`           | Suppress all output except errors                                      | False         |
+| `--version`             | Show version information and exit                                      | -             |
 
 ## Scraper Backends
 
@@ -221,10 +223,10 @@ to LLMs:
 python -m tools.scrape_tool https://docs.example.com -o ./html_files
 
 # Step 2: Analyze HTML structure
-python -m tools.mf1-html2md analyze ./html_files/*.html --suggest-selectors
+python -m tools.html2md analyze ./html_files/*.html --suggest-selectors
 
 # Step 3: Convert to Markdown
-python -m tools.mf1-html2md convert ./html_files -o ./markdown \
+python -m tools.html2md convert ./html_files -o ./markdown \
   --content-selector "main.content" \
   --ignore-selectors "nav" ".sidebar"
 
@@ -245,7 +247,7 @@ python -m tools.scrape_tool https://react.dev/learn -o ./react_docs \
   --max-depth 3
 
 # Convert to clean Markdown
-python -m tools.mf1-html2md convert ./react_docs -o ./react_md \
+python -m tools.html2md convert ./react_docs -o ./react_md \
   --content-selector "article" \
   --ignore-selectors "nav" "footer" ".sidebar"
 
@@ -273,22 +275,15 @@ scraper now includes conservative defaults to help avoid detection:
 
 ### Default Conservative Settings
 
-- **Request delay**: 15 seconds between requests (previously 0.5s)
-- **Concurrent requests**: 2 simultaneous connections (previously 5)
+- **Request delay**: 15 seconds between requests
+- **Concurrent requests**: 2 simultaneous connections
 - **HTTrack backend**: Limited to 0.5 connections/second max
 - **Bandwidth limiting**: 100KB/s for HTTrack backend
+- **Robots.txt**: Always respected (cannot be disabled)
 
 ### For Heavy Cloudflare Protection
 
-Use the provided Cloudflare configuration:
-
-```bash
-# Use ultra-conservative Cloudflare config
-python -m tools.scrape_tool https://protected-site.com -o ./output \
-  --config tools/scrape_tool/scrapers/configs/cloudflare.yaml
-```
-
-Or manually set very conservative values:
+For heavily protected sites, manually set very conservative values:
 
 ```bash
 python -m tools.scrape_tool https://protected-site.com -o ./output \

@@ -38,13 +38,13 @@ BeautifulSoup4 is the default backend, ideal for scraping static HTML websites.
 
 ```bash
 # Default backend (no need to specify)
-python -m tools.mf1-html2md crawl https://example.com -o output/
+python -m tools.scrape_tool https://example.com -o output/
 
 # Explicitly specify BeautifulSoup
-python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper beautifulsoup
+python -m tools.scrape_tool https://example.com -o output/ --scraper beautifulsoup
 
 # With custom options
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
+python -m tools.scrape_tool https://example.com -o output/ \
   --scraper beautifulsoup \
   --max-depth 3 \
   --max-pages 100 \
@@ -85,10 +85,10 @@ brew install httrack
 **Usage:**
 
 ```bash
-python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper httrack
+python -m tools.scrape_tool https://example.com -o output/ --scraper httrack
 
 # With HTTrack-specific options
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
+python -m tools.scrape_tool https://example.com -o output/ \
   --scraper httrack \
   --max-depth 5 \
   --concurrent-requests 8
@@ -101,39 +101,50 @@ python -m tools.mf1-html2md crawl https://example.com -o output/ \
 Common options for all scrapers:
 
 ```bash
---scraper BACKEND           # Choose scraper backend
+--scraper BACKEND           # Choose scraper backend (beautifulsoup, bs4, httrack, 
+                           # selectolax, httpx, scrapy, playwright)
 --max-depth N               # Maximum crawl depth (default: 5)
 --max-pages N               # Maximum pages to crawl (default: 1000)
---request-delay SECONDS     # Delay between requests (default: 0.5)
---concurrent-requests N     # Number of concurrent requests (default: 5)
+--request-delay SECONDS     # Delay between requests (default: 15.0)
+--concurrent-requests N     # Number of concurrent requests (default: 2)
 --user-agent STRING         # Custom user agent
---no-robots                 # Ignore robots.txt
+--scraper-config PATH       # Path to scraper-specific config file (YAML/JSON)
+--list-files                # List all downloaded files after completion
+-v, --verbose               # Enable verbose output
+-q, --quiet                 # Suppress all output except errors
+--version                   # Show version information
 ```
+
+Note: robots.txt is always respected and cannot be disabled.
 
 ### Configuration File
 
-You can specify scraper settings in a YAML configuration file:
+You can specify scraper-specific settings in a YAML or JSON configuration file:
 
 ```yaml
-# config.yaml
-crawler:
-  scraper_backend: beautifulsoup
-  max_depth: 10
-  max_pages: 500
-  request_delay: 0.5
-  concurrent_requests: 5
-  respect_robots_txt: true
-  user_agent: "MyBot/1.0"
+# beautifulsoup-config.yaml
+parser: "html.parser"  # Options: "html.parser", "lxml", "html5lib"
+features: "lxml"
+encoding: "auto"  # Or specific encoding like "utf-8"
+```
 
-  # Backend-specific configuration
-  scraper_config:
-    parser: "html.parser" # For BeautifulSoup
+```yaml
+# httrack-config.yaml
+mirror_options:
+  - "--assume-insecure"  # For HTTPS issues
+  - "--robots=3"  # Strict robots.txt compliance
+extra_filters:
+  - "+*.css"
+  - "+*.js"
+  - "-*.zip"
 ```
 
 Use with:
 
 ```bash
-python -m tools.mf1-html2md crawl https://example.com -o output/ -c config.yaml
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper beautifulsoup \
+  --scraper-config beautifulsoup-config.yaml
 ```
 
 ### Backend-Specific Configuration
@@ -173,7 +184,7 @@ scraper_config:
 For sites with mostly static HTML content:
 
 ```bash
-python -m tools.mf1-html2md crawl https://docs.example.com -o docs/ \
+python -m tools.scrape_tool https://docs.example.com -o docs/ \
   --scraper beautifulsoup \
   --max-depth 10 \
   --request-delay 0.2
@@ -184,7 +195,7 @@ python -m tools.mf1-html2md crawl https://docs.example.com -o docs/ \
 For creating a complete offline mirror:
 
 ```bash
-python -m tools.mf1-html2md crawl https://example.com -o backup/ \
+python -m tools.scrape_tool https://example.com -o backup/ \
   --scraper httrack \
   --max-pages 10000
 ```
@@ -194,7 +205,7 @@ python -m tools.mf1-html2md crawl https://example.com -o backup/ \
 For sites with strict rate limits:
 
 ```bash
-python -m tools.mf1-html2md crawl https://api.example.com/docs -o api-docs/ \
+python -m tools.scrape_tool https://api.example.com/docs -o api-docs/ \
   --scraper beautifulsoup \
   --request-delay 2.0 \
   --concurrent-requests 1
@@ -207,17 +218,21 @@ python -m tools.mf1-html2md crawl https://api.example.com/docs -o api-docs/ \
 **Encoding Problems:**
 
 ```bash
-# Force UTF-8 encoding
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
-  --scraper-config '{"encoding": "utf-8"}'
+# Create a config file with UTF-8 encoding
+echo 'encoding: utf-8' > bs-config.yaml
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper beautifulsoup \
+  --scraper-config bs-config.yaml
 ```
 
 **Parser Issues:**
 
 ```bash
-# Try different parser
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
-  --scraper-config '{"parser": "html5lib"}'
+# Create a config file with different parser
+echo 'parser: html5lib' > bs-config.yaml
+python -m tools.scrape_tool https://example.com -o output/ \
+  --scraper beautifulsoup \
+  --scraper-config bs-config.yaml
 ```
 
 ### HTTrack Issues
@@ -225,10 +240,11 @@ python -m tools.mf1-html2md crawl https://example.com -o output/ \
 **SSL Certificate Problems:**
 
 ```bash
-# Ignore SSL errors (use with caution)
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
+# Create a config file to ignore SSL errors (use with caution)
+echo 'mirror_options: ["--assume-insecure"]' > httrack-config.yaml
+python -m tools.scrape_tool https://example.com -o output/ \
   --scraper httrack \
-  --scraper-config '{"extra_args": ["--assume-insecure"]}'
+  --scraper-config httrack-config.yaml
 ```
 
 **Incomplete Downloads:** HTTrack creates a cache that allows resuming. Check
@@ -274,16 +290,16 @@ pip install httpx selectolax
 
 ```bash
 # Basic usage
-python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper selectolax
+python -m tools.scrape_tool https://example.com -o output/ --scraper selectolax
 
 # With custom configuration
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
+python -m tools.scrape_tool https://example.com -o output/ \
   --scraper selectolax \
   --concurrent-requests 20 \
   --request-delay 0.1
 
 # Using httpx alias
-python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper httpx
+python -m tools.scrape_tool https://example.com -o output/ --scraper httpx
 ```
 
 ### Scrapy
@@ -315,15 +331,15 @@ pip install scrapy
 
 ```bash
 # Basic usage
-python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper scrapy
+python -m tools.scrape_tool https://example.com -o output/ --scraper scrapy
 
 # With auto-throttle and caching
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
+python -m tools.scrape_tool https://example.com -o output/ \
   --scraper scrapy \
   --scraper-config scrapy.yaml
 
 # Large-scale crawling
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
+python -m tools.scrape_tool https://example.com -o output/ \
   --scraper scrapy \
   --max-pages 10000 \
   --concurrent-requests 16
@@ -359,15 +375,15 @@ playwright install  # Install browser binaries
 
 ```bash
 # Basic usage
-python -m tools.mf1-html2md crawl https://example.com -o output/ --scraper playwright
+python -m tools.scrape_tool https://example.com -o output/ --scraper playwright
 
 # With custom browser settings
-python -m tools.mf1-html2md crawl https://example.com -o output/ \
+python -m tools.scrape_tool https://example.com -o output/ \
   --scraper playwright \
   --scraper-config playwright.yaml
 
 # For SPA with wait conditions
-python -m tools.mf1-html2md crawl https://spa-example.com -o output/ \
+python -m tools.scrape_tool https://spa-example.com -o output/ \
   --scraper playwright \
   --request-delay 2.0 \
   --concurrent-requests 2
