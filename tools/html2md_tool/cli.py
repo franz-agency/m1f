@@ -182,7 +182,9 @@ def handle_convert(args: argparse.Namespace) -> None:
 
         config = load_config(args.config)
     else:
-        config = Config(source=args.source, destination=args.output)
+        # When source is a file, use its parent directory as the source
+        source_path = args.source.parent if args.source.is_file() else args.source
+        config = Config(source=source_path, destination=args.output)
 
     # Update config with CLI arguments
     if args.content_selector:

@@ -26416,9 +26416,10 @@ class Html2mdConverter:
 
         # Convert using the convert_html method which includes preprocessing
         # Use a relative base URL to avoid exposing absolute paths
-        base_url = file_path.name if file_path else None
+        file_name = file_path.name if file_path and file_path.name else (Path(file_path).resolve().name if file_path else None)
+        base_url = file_name
         markdown = self.convert_html(
-            html_content, base_url=base_url, source_file=str(file_path.name if file_path else "input")
+            html_content, base_url=base_url, source_file=str(file_name if file_name else "input")
         )
 
         # Determine output path
@@ -26923,7 +26924,9 @@ def handle_convert(args: argparse.Namespace) -> None:
 
         config = load_config(args.config)
     else:
-        config = Config(source=args.source, destination=args.output)
+        # When source is a file, use its parent directory as the source
+        source_path = args.source.parent if args.source.is_file() else args.source
+        config = Config(source=source_path, destination=args.output)
 
     # Update config with CLI arguments
     if args.content_selector:

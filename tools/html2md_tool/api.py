@@ -236,18 +236,22 @@ class Html2mdConverter:
 
         # Convert using the convert_html method which includes preprocessing
         # Use a relative base URL to avoid exposing absolute paths
-        base_url = file_path.name if file_path else None
+        file_name = file_path.name if file_path and file_path.name else (Path(file_path).resolve().name if file_path else None)
+        base_url = file_name
         markdown = self.convert_html(
-            html_content, base_url=base_url, source_file=str(file_path.name if file_path else "input")
+            html_content, base_url=base_url, source_file=str(file_name if file_name else "input")
         )
 
         # Determine output path
         if file_path.is_relative_to(self.config.source):
             rel_path = file_path.relative_to(self.config.source)
         else:
-            rel_path = file_path.name
+            # Handle case where file_path might be "." or have empty name
+            rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
+            if not rel_path or str(rel_path) == '.':
+                rel_path = Path(file_path).resolve().name
 
-        output_path = self.config.destination / rel_path.with_suffix(".md")
+        output_path = self.config.destination / Path(rel_path).with_suffix(".md")
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write file
@@ -430,9 +434,12 @@ class Html2mdConverter:
             if file_path.is_relative_to(self.config.source):
                 rel_path = file_path.relative_to(self.config.source)
             else:
-                rel_path = file_path.name
+                # Handle case where file_path might be "." or have empty name
+                rel_path = Path(file_path.name) if file_path.name else Path(file_path).resolve().name
+                if not rel_path or str(rel_path) == '.':
+                    rel_path = Path(file_path).resolve().name
 
-            output_path = self.config.destination / rel_path.with_suffix(".md")
+            output_path = self.config.destination / Path(rel_path).with_suffix(".md")
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(markdown, encoding=self.config.target_encoding)
 
