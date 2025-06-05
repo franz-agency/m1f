@@ -4346,7 +4346,7 @@ class Config:
             return self.target_encoding
         return "utf-8"
 
-======= s1f/core.py | CHECKSUM_SHA256: ae1122b33a79bbfe97d2d228a4b8946f86221ad5660ca7fe10e4c1836e82a873 ======
+======= s1f/core.py | CHECKSUM_SHA256: 3c6ff59d26a285a6485824601172f221a71d63e6ec1876676dcee0d79fcd88f3 ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4415,16 +4415,13 @@ class FileSplitter:
             total_size = 0
             for i, file in enumerate(extracted_files, 1):
                 meta = file.metadata
-                size_str = (
-                    format_size(meta.size_bytes) if meta.size_bytes else "Unknown"
-                )
-
                 # Build info line
                 info_parts = [f"{i:4d}. {meta.path}"]
-                info_parts.append(f"[{size_str}]")
-
-                if meta.checksum_sha256:
-                    info_parts.append(f"SHA256: {meta.checksum_sha256[:16]}...")
+                
+                # Only add size if available
+                if meta.size_bytes:
+                    size_str = format_size(meta.size_bytes)
+                    info_parts.append(f"[{size_str}]")
 
                 if meta.encoding:
                     info_parts.append(f"Encoding: {meta.encoding}")

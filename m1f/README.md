@@ -32,10 +32,28 @@ However, note that this will make the bundles unavailable to AI tools that canno
 
 To manually regenerate all bundles:
 ```bash
-python -m tools.m1f --auto-bundle
+m1f auto-bundle
+# or
+python -m tools.m1f auto-bundle
 ```
 
 To regenerate a specific bundle:
 ```bash
-python -m tools.m1f --auto-bundle --bundle-name <bundle-name>
+m1f auto-bundle <bundle-name>
+# or
+python -m tools.m1f auto-bundle <bundle-name>
+```
+
+To list all available bundles:
+```bash
+m1f auto-bundle --list
+# or
+python -m tools.m1f auto-bundle --list
+```
+
+To regenerate bundles by group:
+```bash
+m1f auto-bundle --group <group-name>
+# or
+python -m tools.m1f auto-bundle --group <group-name>
 ```

@@ -66,16 +66,13 @@ class FileSplitter:
             total_size = 0
             for i, file in enumerate(extracted_files, 1):
                 meta = file.metadata
-                size_str = (
-                    format_size(meta.size_bytes) if meta.size_bytes else "Unknown"
-                )
-
                 # Build info line
                 info_parts = [f"{i:4d}. {meta.path}"]
-                info_parts.append(f"[{size_str}]")
-
-                if meta.checksum_sha256:
-                    info_parts.append(f"SHA256: {meta.checksum_sha256[:16]}...")
+                
+                # Only add size if available
+                if meta.size_bytes:
+                    size_str = format_size(meta.size_bytes)
+                    info_parts.append(f"[{size_str}]")
 
                 if meta.encoding:
                     info_parts.append(f"Encoding: {meta.encoding}")
