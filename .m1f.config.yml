@@ -4,6 +4,7 @@
 global:
   # Exclusions that apply to all bundles
   global_excludes:
+    - "/m1f/**"
     - "**/*.pyc"
     - "**/*.log"
     - "**/tmp/**"
