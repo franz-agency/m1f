@@ -1,4 +1,4 @@
-======= README.md | CHECKSUM_SHA256: 6221ad52a432076fb1c9e67f4a94a3bdaee1d3b1090df4029b2072061dfe342c ======
+======= README.md ======
 # m1f Documentation
 
 Welcome to the m1f (Make One File) documentation. This tool combines multiple
@@ -54,7 +54,7 @@ python tools/m1f.py -s . -o bundle.txt --preset wordpress.m1f-presets.yml
 For detailed information, start with the [main documentation](00_m1f.md) or
 jump to the [quick reference](./09_quick_reference.md) for common commands.
 
-======= 00_m1f.md | CHECKSUM_SHA256: ad6e7f24cde7b610952f3cf7f251c45fbf46062e127d56da06f3c5c654bfa738 ======
+======= 00_m1f.md ======
 # m1f (Make One File)
 
 A modern, high-performance tool that combines multiple files into a single file
@@ -308,10 +308,10 @@ human readability to automated parsing.
 
 ### Standard Style
 
-A simple, concise separator that shows the file path and optional checksum:
+A simple, concise separator that shows only the file path:
 
 ```
-======= path/to/file.py | CHECKSUM_SHA256: abcdef1234567890... ======
+======= path/to/file.py ======
 ```
 
 ### Detailed Style (Default)
@@ -500,7 +500,7 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
   development
 - [Auto Bundle Guide](./06_auto_bundle_guide.md) - Automated bundling
 
-======= 01_claude_workflows.md | CHECKSUM_SHA256: bade52e3268acbc3b43ab69b84fb6ab9db813a3a144919a009c23e387ca4622e ======
+======= 01_claude_workflows.md ======
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
 
 Ever wished you had an AI buddy who actually understands your project structure? That's what happens when you combine Claude with m1f. This guide shows you how to turn Claude into your personal project assistant who knows exactly how to bundle, organize, and process your code.
@@ -809,7 +809,7 @@ Happy bundling! 🚀
 
 *P.S. - If Claude suggests something that seems off, just ask "Are you sure about that? Check @.m1f/m1f-docs.txt again." Works every time! 😉*
 
-======= 02_m1f_presets.md | CHECKSUM_SHA256: c5c372627bb673e34489670cdb16fbe2ad0ea747e96e8204cd8f6faff193952e ======
+======= 02_m1f_presets.md ======
 # m1f Preset System Documentation
 
 The m1f preset system allows you to define file-specific processing rules,
@@ -1353,7 +1353,7 @@ bundling system.
 - [**Auto Bundle Guide**](./06_auto_bundle_guide.md) - Automated bundling with
   presets
 
-======= 03_m1f_preset_per_file_settings.md | CHECKSUM_SHA256: de8f674acb18d499a5001ec9d3d7d8d815e9e2efb558599b82f8d290c5bde6a4 ======
+======= 03_m1f_preset_per_file_settings.md ======
 # Per-File-Type Settings in m1f Presets
 
 The m1f preset system supports fine-grained control over processing settings on
@@ -1616,7 +1616,7 @@ my_project:
 - [Use Case Examples](../../presets/example-use-cases.m1f-presets.yml) -
   Real-world scenarios
 
-======= 04_m1f_development_workflow.md | CHECKSUM_SHA256: c4e0d405feeb164eeacdea9a5bd0b71716d053f3f3c7a060bed2e19b10e5456b ======
+======= 04_m1f_development_workflow.md ======
 # m1f Development Workflow
 
 This document describes the recommended workflow for developing with m1f and
@@ -1852,7 +1852,7 @@ Add m1f to your CI pipeline:
     path: docs-bundle.txt
 ```
 
-======= 05_claude_code_integration.md | CHECKSUM_SHA256: 1d85a7d29dc6473c6459b411a4d31cf7d95ca0df6f384d2fd431592d28689512 ======
+======= 05_claude_code_integration.md ======
 # Claude Code Integration Guide
 
 This guide explains how to integrate Claude Code as an optional AI assistant for
@@ -2089,7 +2089,7 @@ export CLAUDE_CODE_PROJECT_ROOT="/path/to/m1f"
 - [m1f Tools Documentation](00_m1f.md)
 - [html2md Documentation](../03_html2md/30_html2md.md)
 
-======= 06_auto_bundle_guide.md | CHECKSUM_SHA256: 157974582d06108a3e6d18b435d481f7f569a7951eb02165bb21d72bb3d1aff7 ======
+======= 06_auto_bundle_guide.md ======
 # Auto-Bundle Guide
 
 The m1f auto-bundle feature allows you to automatically generate predefined bundles of files based on configuration. This is especially useful for maintaining consistent documentation bundles, creating project snapshots, and managing multiple projects on a server.
@@ -2414,7 +2414,7 @@ bundles:
       - "**/node_modules/**"
 ```
 
-======= 07_cli_reference.md | CHECKSUM_SHA256: ee07ac4dc3e883cd0b69d6d4c79390df944e42f9a4199483b6ba27f68e54e772 ======
+======= 07_cli_reference.md ======
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
@@ -2770,7 +2770,7 @@ See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration 
 4. **Performance**: For large projects, use `--include-extensions` to limit
    processing to specific file types.
 
-======= 08_troubleshooting.md | CHECKSUM_SHA256: 930debd50129fb8775865c6b4e6f3cf7a0e830553045757967e23fc9d19abfc7 ======
+======= 08_troubleshooting.md ======
 # Troubleshooting Guide
 
 This guide covers common issues and error messages you might encounter when
@@ -2992,7 +2992,7 @@ else
 fi
 ```
 
-======= 09_quick_reference.md | CHECKSUM_SHA256: 4a1916c4160779f4a9119de51312a9ef7c2d5bab2bca6730c22a106ec552a9f9 ======
+======= 09_quick_reference.md ======
 # m1f Quick Reference
 
 ## Most Common Commands
@@ -3224,7 +3224,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 - [Troubleshooting Guide](./08_troubleshooting.md)
 - [Preset Documentation](./02_m1f_presets.md)
 
-======= 10_preset_reference.md | CHECKSUM_SHA256: 9754d23b11b63cd8786949b6e0caa96075ea7656c8ea7a9af7c722d08e6753ce ======
+======= 10_preset_reference.md ======
 # m1f Preset System Complete Reference
 
 This document provides a comprehensive reference for the m1f preset system,
@@ -3763,7 +3763,7 @@ python -m tools.m1f --preset environments.yml --preset-group development
 python -m tools.m1f --preset environments.yml --preset-group production
 ```
 
-======= 11_preset_system_clarifications.md | CHECKSUM_SHA256: 7b0684e55150cf71ab8b35bb13b36a06d580aafbb24c123b9c758f5272943445 ======
+======= 11_preset_system_clarifications.md ======
 # Preset System Clarifications and Notes
 
 This document clarifies important aspects of the m1f preset system that may not
@@ -3948,7 +3948,7 @@ running on large codebases.
 
 This documentation is accurate as of m1f version 3.2.0.
 
-======= 12_git_hooks_setup.md | CHECKSUM_SHA256: f8f1b9cf627fdaccb2861e2415852a53455235801d011e4ffd7a1cf171ecefb9 ======
+======= 12_git_hooks_setup.md ======
 # m1f Git Hooks Setup Guide
 
 This guide explains how to set up Git hooks for automatic m1f bundle generation in your projects.

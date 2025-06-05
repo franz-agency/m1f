@@ -1,4 +1,4 @@
-======= __init__.py | CHECKSUM_SHA256: bfcd862db57c7a677a07f3a38bd8285f36bf234a8071edf9205f25279ccad83d ======
+======= __init__.py ======
 """
 s1f - Split One File
 ====================
@@ -28,7 +28,7 @@ __all__ = [
     "__project__",
 ]
 
-======= __main__.py | CHECKSUM_SHA256: b8052cea2bc539ef7bb546956bf356316945943571fe80164a8c727568694fec ======
+======= __main__.py ======
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
 
@@ -40,7 +40,7 @@ from .cli import main
 if __name__ == "__main__":
     sys.exit(main())
 
-======= cli.py | CHECKSUM_SHA256: c87cc0b4fc6476628d7007ca16ac5756f92e3ece8868a78cd62145d1ecb099d8 ======
+======= cli.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -272,7 +272,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 if __name__ == "__main__":
     sys.exit(main())
 
-======= config.py | CHECKSUM_SHA256: d5583a46700a646adcbb7b21b2cf24f81442d5efa500a2bcf7b0ac9fbaa9b04f ======
+======= config.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -342,7 +342,7 @@ class Config:
             return self.target_encoding
         return "utf-8"
 
-======= core.py | CHECKSUM_SHA256: 3c6ff59d26a285a6485824601172f221a71d63e6ec1876676dcee0d79fcd88f3 ======
+======= core.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -595,7 +595,7 @@ class FileSplitter:
 # Alias for backward compatibility with tests
 S1FExtractor = FileSplitter
 
-======= exceptions.py | CHECKSUM_SHA256: b9c6419f88cc54a73c827859125e7f5829359caaa108eca01016881f8a729276 ======
+======= exceptions.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -658,7 +658,7 @@ class ChecksumMismatchError(S1FError):
         self.expected_checksum = expected
         self.actual_checksum = actual
 
-======= logging.py | CHECKSUM_SHA256: 9b507eddbc3de36bc6ef44c1f698d42ae71bfd55abf138982aeaeb5ddf065822 ======
+======= logging.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -781,7 +781,7 @@ def get_logger(name: str) -> logging.Logger:
     """Get a logger instance."""
     return logging.getLogger(name)
 
-======= models.py | CHECKSUM_SHA256: 18629e7a454bd5250b72f24120d95cc84682ea799e07acfbb8de776e533711df ======
+======= models.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -874,7 +874,7 @@ class SeparatorMatch:
     header_length: int = 0
     uuid: Optional[str] = None
 
-======= parsers.py | CHECKSUM_SHA256: f06494843bc57df7eb546df2d5093ca9a17b647b48f16c3c46c873c1d181ade1 ======
+======= parsers.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -894,7 +894,7 @@ class SeparatorMatch:
 import json
 import re
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any, Pattern
+from typing import List, Optional, Dict, Any, Pattern, Tuple
 from datetime import datetime
 import logging
 
@@ -1430,13 +1430,39 @@ class CombinedFileParser:
             StandardParser(logger),
         ]
 
+    def _find_code_blocks(self, content: str) -> List[Tuple[int, int]]:
+        """Find all code block regions in the content."""
+        code_blocks = []
+        
+        # Find triple backtick code blocks
+        pattern = re.compile(r'```[\s\S]*?```', re.MULTILINE)
+        for match in pattern.finditer(content):
+            code_blocks.append((match.start(), match.end()))
+        
+        return code_blocks
+
+    def _is_in_code_block(self, position: int, code_blocks: List[Tuple[int, int]]) -> bool:
+        """Check if a position is inside a code block."""
+        for start, end in code_blocks:
+            if start <= position < end:
+                return True
+        return False
+
     def parse(self, content: str) -> List[ExtractedFile]:
         """Parse the combined file content and extract individual files."""
+        # Find all code blocks first
+        code_blocks = self._find_code_blocks(content)
+        
         # Find all matches from all parsers
         matches: List[SeparatorMatch] = []
 
         for parser in self.parsers:
             for match in parser.pattern.finditer(content):
+                # Skip matches inside code blocks
+                if self._is_in_code_block(match.start(), code_blocks):
+                    self.logger.debug(f"Skipping separator inside code block at position {match.start()}")
+                    continue
+                    
                 separator_match = parser.parse_match(match, content, len(matches))
                 if separator_match:
                     matches.append(separator_match)
@@ -1485,7 +1511,7 @@ class CombinedFileParser:
 
         return extracted_files
 
-======= utils.py | CHECKSUM_SHA256: fc0c09d935d7778e6edd8da2e3ebaf0323db37244b438cd1f08d75f5924b8845 ======
+======= utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1645,7 +1671,7 @@ def is_binary_content(content: bytes, sample_size: int = 8192) -> bool:
 
     return False
 
-======= writers.py | CHECKSUM_SHA256: 6b3674a219dbc95d59f3ea9061e63c56c0161e2a71f24eeaa6f0afb1f1eb5a51 ======
+======= writers.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

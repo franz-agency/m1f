@@ -1,4 +1,4 @@
-======= 40_webscraper.md | CHECKSUM_SHA256: 3ba7ff5b3603e4e6e222ef935aa95ef621afafe1656d572147aa9792bbad94d2 ======
+======= 40_webscraper.md ======
 # webscraper (Website Downloader)
 
 A modern web scraping tool for downloading websites with multiple backend
@@ -343,7 +343,7 @@ If conservative settings don't work:
 - [m1f Documentation](../01_m1f/00_m1f.md) - For bundling converted content for
   LLMs
 
-======= 41_html2md_scraper_backends.md | CHECKSUM_SHA256: 94144b961d1546ad7ca268862e7064df2ce55a1eb67e30735a130ccb151551f2 ======
+======= 41_html2md_scraper_backends.md ======
 # Web Scraper Backends
 
 The HTML2MD tool supports multiple web scraping backends, each optimized for

@@ -1,4 +1,4 @@
-======= 30_html2md.md | CHECKSUM_SHA256: 478d01fef82bb7d6c11addadde0142c21f0a791e44d921ab958dbb78d1be0ca2 ======
+======= 30_html2md.md ======
 # html2md (HTML to Markdown Converter)
 
 A modern HTML to Markdown converter with HTML structure analysis, custom extractors,
@@ -523,7 +523,7 @@ pip install beautifulsoup4 markdownify chardet pyyaml aiofiles rich pydantic
 
 **Note**: For web scraping functionality, use the separate `webscraper` tool which provides multiple backend options including HTTrack.
 
-======= 31_html2md_guide.md | CHECKSUM_SHA256: 0bf6368221ec1747a9f7e1d1b377c255f6cea3a735cd92f7eda7c99f8c5b81fb ======
+======= 31_html2md_guide.md ======
 # HTML to Markdown Converter Guide
 
 The `html2md` tool (v3.1.0) is a modern, async converter designed to transform
@@ -1045,7 +1045,7 @@ python -m tools.html2md convert ./html/ \
   --format m1f_bundle
 ```
 
-======= 32_html2md_workflow_guide.md | CHECKSUM_SHA256: d4d4625dc5a9c0b7ad828e0705994a32d1b3b9c40d1248dc663c404217010fa8 ======
+======= 32_html2md_workflow_guide.md ======
 # HTML2MD Workflow Guide
 
 This guide explains the recommended workflow for converting websites to Markdown using html2md with custom extractors.
@@ -1431,7 +1431,7 @@ The html2md workflow provides maximum flexibility:
 
 This approach ensures you can handle any website structure and produce clean, readable Markdown output.
 
-======= 33_html2md_test_suite.md | CHECKSUM_SHA256: 67676a577e975b7335d9f64127572d5cac1996919e3907ec044d0f708a175b4e ======
+======= 33_html2md_test_suite.md ======
 # HTML2MD Test Suite Documentation
 
 A comprehensive test suite for validating the html2md converter (v2.0.0) with

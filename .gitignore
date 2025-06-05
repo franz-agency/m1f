@@ -172,9 +172,6 @@ node_modules/
 # Output directory for m1f tests
 tests/m1f/output/
 
-# Legacy output directory for makeonefile tests (keep until removed)
-tests/makeonefile/output/
-
 # Test output directories
 tests/splitfiles/output/
 tests/s1f/output/
@@ -185,15 +182,12 @@ tmp/
 
 # Cloudflare configuration
 .wrangler/
-.cloudflare/
 .dev.vars
 .env.local
 .dev.vars.local
 .wrangler.toml
 # Exclude local Cloudflare Workers development files
 workers-site/
-.mf/
-.1f/
 
 .claude
 CLAUDE.md

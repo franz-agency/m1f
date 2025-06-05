@@ -1,4 +1,4 @@
-======= README.md | CHECKSUM_SHA256: 88986baf65b226d02fb22fefc6a3ed84a6a4be2a06823b119684346b82a699c2 ======
+======= README.md ======
 # m1f - Make One File 🚀
 
 **Feed your AI the whole story.** A powerful toolkit that turns messy codebases into AI-ready context bundles.
@@ -203,7 +203,7 @@ Apache 2.0 - Go wild, just don't blame us.
 
 Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to robots.
 
-======= package.json | CHECKSUM_SHA256: 046f9066f212389c8ef2f6fdf7df7f475206d2a9d9ee886a2057e9089bfaa281 ======
+======= package.json ======
 {
   "devDependencies": {
     "prettier": "3.5.3"
@@ -221,7 +221,7 @@ Built with ❤️ by [Franz Agency](https://franz.agency) for developers who tal
   "license": "Apache-2.0"
 }
 
-======= SETUP.md | CHECKSUM_SHA256: 4aa9cf955fd860682da43f7508f0cbc2bf0429c4c712775bdbe5f384fd8bf3c8 ======
+======= SETUP.md ======
 # m1f Setup Guide
 
 ## Prerequisites
@@ -467,7 +467,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options
 
-======= docs/README.md | CHECKSUM_SHA256: 2ccb3b9eb498bde867d572697d31bb5b593325029a5a598efccf480c75648b1c ======
+======= docs/README.md ======
 # m1f Documentation
 
 This directory contains detailed documentation for the m1f project v3.2.0.
@@ -572,7 +572,7 @@ assistants.
 - Remove scraped metadata for clean documentation bundles
 - Estimate token usage for optimal LLM context planning
 
-======= docs/99_CHANGELOG.md | CHECKSUM_SHA256: 7d1e76131d5d7c95e67fd554d8e503ceb8ff1999e29f070567f75b57680e3c1f ======
+======= docs/99_CHANGELOG.md ======
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -1105,7 +1105,7 @@ improvements and new features.
 - Multiple output formats
 - Cross-platform compatibility
 
-======= presets/docs-bundle.m1f-presets.yml | CHECKSUM_SHA256: b7b645392071b096e207bfd20456805ab4719962a0be34bd8a9cc5373401362f ======
+======= presets/docs-bundle.m1f-presets.yml ======
 # Documentation bundle preset group
 # Claude prefers valid markdown. However, there are LLMs that only read the first 200 lines of a file and then
 # decide whether to continue. This means you need to fit a lot of information into those first 200 lines.
@@ -1123,7 +1123,7 @@ docs_bundle:
         - "join_paragraphs"
         - "remove_empty_lines"
 
-======= presets/documentation.m1f-presets.yml | CHECKSUM_SHA256: d74799ddaced742f9ce9dcd00001a1e12256c28d5298ace0a20a816b46f97ecb ======
+======= presets/documentation.m1f-presets.yml ======
 # Documentation Project Preset Configuration for m1f
 # Optimized for documentation and knowledge base projects
 
@@ -1264,7 +1264,7 @@ technical_writing:
       actions: []
       include_metadata: true
 
-======= presets/example-globals.m1f-presets.yml | CHECKSUM_SHA256: b6a245ca910819036a63761ba24569be235ed2daef4bac9fd7e0540005ff4cd6 ======
+======= presets/example-globals.m1f-presets.yml ======
 # Example preset with global settings
 # Shows how global defaults can be overridden locally
 
@@ -1397,7 +1397,7 @@ m1f_project:
         - "examples/**/*.html"
       # Uses global (only compress_whitespace)
 
-======= presets/example-use-cases.m1f-presets.yml | CHECKSUM_SHA256: d1c1f9086e2e842a3591d6289344eb68af08793d4f4f919e93f4f8ec57d185af ======
+======= presets/example-use-cases.m1f-presets.yml ======
 # Example Use Cases for m1f Presets
 # This file demonstrates the specific use cases mentioned
 
@@ -1577,7 +1577,7 @@ web_project_complete:
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
 
-======= presets/template-all-settings.m1f-presets.yml | CHECKSUM_SHA256: 402f6bbde458e86519488814373f7a40939b39e9d2258e5f3608a83cdc17784d ======
+======= presets/template-all-settings.m1f-presets.yml ======
 # Complete m1f Preset Template
 # This file contains ALL available preset settings with explanations
 # Copy and modify this template for your own projects
@@ -1999,7 +1999,7 @@ development:
 # python -m tools.m1f -s . -o prod.txt --preset this-file.yml --preset-group production
 # python -m tools.m1f -s . -o dev.txt --preset this-file.yml --preset-group development
 
-======= presets/web-project.m1f-presets.yml | CHECKSUM_SHA256: c0a368d01579f699d5155f2f0cdb94be9851f762dd15ec38039586b33ef5e242 ======
+======= presets/web-project.m1f-presets.yml ======
 # Web Project Preset Configuration for m1f
 # General web development project processing rules
 
@@ -2153,7 +2153,7 @@ backend:
         - remove_empty_lines
       include_metadata: true
 
-======= presets/wordpress.m1f-presets.yml | CHECKSUM_SHA256: 3aa29da819de8e9824a412c817d6a558475c52a69faec59d32c9840645368328 ======
+======= presets/wordpress.m1f-presets.yml ======
 # WordPress Project Preset Configuration for m1f
 # This preset defines how different file types should be processed when bundling
 
@@ -2307,7 +2307,7 @@ wordpress:
       include_metadata: true
       separator_style: "Standard"
 
-======= tasks/README.md | CHECKSUM_SHA256: 7443f52fd546b1a02cf59ab2a6b4e1dabc91983a57800211dba82e2b9ce11406 ======
+======= tasks/README.md ======
 # AI Context File Generator & Auto-Bundling System
 
 ## Overview
@@ -2870,7 +2870,7 @@ are modified.
 Remember to add `.m1f/` (and `.1f/` if used) to your `.gitignore` so these
 helper files stay out of version control.
 
-======= tasks/ai_context_files.txt | CHECKSUM_SHA256: bab0ab696d58620f5936ac778057f3e3e2995094cbe9cf53c343e6fc8ea26049 ======
+======= tasks/ai_context_files.txt ======
 # This is an example file list for AI context bundling
 # Group related files by feature/functionality with comments
 
@@ -2909,7 +2909,7 @@ helper files stay out of version control.
 
 # Add task-specific files here as needed
 
-======= tasks/auto_bundle.json | CHECKSUM_SHA256: 76122c0571af0ce50a5b9eee4d412466ccc5a6fc12ead08068408e97a9fcc93c ======
+======= tasks/auto_bundle.json ======
 {
     "version": "2.0.0",
     "tasks": [
@@ -3215,7 +3215,7 @@ helper files stay out of version control.
     ]
 }
 
-======= tasks/example.tasks.json | CHECKSUM_SHA256: 1210b0a5851ccdeebf7a3e1876f8929f160d9ec6bc60343759f28c8f0448239e ======
+======= tasks/example.tasks.json ======
 {
     "version": "2.0.0",
     "tasks": [
@@ -3279,7 +3279,7 @@ helper files stay out of version control.
     ]
 }
 
-======= tasks/linting.json | CHECKSUM_SHA256: 0750538dd65acda4cac3264f27f08a656caa13360eb2def780125b7819e7fe6c ======
+======= tasks/linting.json ======
 {
     "version": "2.0.0",
     "tasks": [
@@ -3310,7 +3310,7 @@ helper files stay out of version control.
     ]
 } 
 
-======= tasks/m1f.json | CHECKSUM_SHA256: b968422d0444193d33c27d01a6248e6c6ae0db4eee91cbdf53dd70dce7def027 ======
+======= tasks/m1f.json ======
 {
     "version": "2.0.0",
     "tasks": [
@@ -3543,7 +3543,7 @@ helper files stay out of version control.
     ]
 }
 
-======= tasks/wp_excludes.txt | CHECKSUM_SHA256: d4b9b1453885caaf73a5e25c806b74803b54d03ab0300615604dbea8c5e3abd0 ======
+======= tasks/wp_excludes.txt ======
 # WordPress Paths to Exclude
 
 # Core WordPress system files
@@ -3610,7 +3610,7 @@ Thumbs.db
 *.min.js
 *.min.css 
 
-======= tasks/wp_plugin_includes.txt | CHECKSUM_SHA256: 3db0d19bb8b64886009ffec57c208278093d46ccbf5023bbfa46b55920a5d6c5 ======
+======= tasks/wp_plugin_includes.txt ======
 # WordPress Plugin Files to Include
 
 # Main plugin file
@@ -3654,7 +3654,7 @@ wp-content/plugins/myplugin/languages/*.mo
 wp-content/plugins/myplugin/config/*.php
 wp-content/plugins/myplugin/uninstall.php 
 
-======= tasks/wp_theme_includes.txt | CHECKSUM_SHA256: 7b4d3fc6407562505842c13e2b33f309b8e50d862380a5928671f0808f5dae87 ======
+======= tasks/wp_theme_includes.txt ======
 # WordPress Theme Files to Include
 
 # Core theme files
@@ -3694,7 +3694,7 @@ wp-content/themes/mytheme/block-template-parts/*.html
 # Configuration files
 wp-content/themes/mytheme/theme.json 
 
-======= tasks/wp_theme_plugin_includes.txt | CHECKSUM_SHA256: b069f8804b392ae44ed2af1ea6d73d5b42113f61b66c5ccf7df3f4305df046ef ======
+======= tasks/wp_theme_plugin_includes.txt ======
 # WordPress Theme Files to Include
 
 # Core theme files
@@ -3776,7 +3776,7 @@ wp-content/plugins/myplugin/languages/*.mo
 wp-content/plugins/myplugin/config/*.php
 wp-content/plugins/myplugin/uninstall.php
 
-======= docs/01_m1f/README.md | CHECKSUM_SHA256: 6221ad52a432076fb1c9e67f4a94a3bdaee1d3b1090df4029b2072061dfe342c ======
+======= docs/01_m1f/README.md ======
 # m1f Documentation
 
 Welcome to the m1f (Make One File) documentation. This tool combines multiple
@@ -3832,7 +3832,7 @@ python tools/m1f.py -s . -o bundle.txt --preset wordpress.m1f-presets.yml
 For detailed information, start with the [main documentation](00_m1f.md) or
 jump to the [quick reference](./09_quick_reference.md) for common commands.
 
-======= docs/01_m1f/00_m1f.md | CHECKSUM_SHA256: ad6e7f24cde7b610952f3cf7f251c45fbf46062e127d56da06f3c5c654bfa738 ======
+======= docs/01_m1f/00_m1f.md ======
 # m1f (Make One File)
 
 A modern, high-performance tool that combines multiple files into a single file
@@ -4086,10 +4086,10 @@ human readability to automated parsing.
 
 ### Standard Style
 
-A simple, concise separator that shows the file path and optional checksum:
+A simple, concise separator that shows only the file path:
 
 ```
-======= path/to/file.py | CHECKSUM_SHA256: abcdef1234567890... ======
+======= path/to/file.py ======
 ```
 
 ### Detailed Style (Default)
@@ -4278,7 +4278,7 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
   development
 - [Auto Bundle Guide](./06_auto_bundle_guide.md) - Automated bundling
 
-======= docs/01_m1f/01_claude_workflows.md | CHECKSUM_SHA256: bade52e3268acbc3b43ab69b84fb6ab9db813a3a144919a009c23e387ca4622e ======
+======= docs/01_m1f/01_claude_workflows.md ======
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
 
 Ever wished you had an AI buddy who actually understands your project structure? That's what happens when you combine Claude with m1f. This guide shows you how to turn Claude into your personal project assistant who knows exactly how to bundle, organize, and process your code.
@@ -4587,7 +4587,7 @@ Happy bundling! 🚀
 
 *P.S. - If Claude suggests something that seems off, just ask "Are you sure about that? Check @.m1f/m1f-docs.txt again." Works every time! 😉*
 
-======= docs/01_m1f/02_m1f_presets.md | CHECKSUM_SHA256: c5c372627bb673e34489670cdb16fbe2ad0ea747e96e8204cd8f6faff193952e ======
+======= docs/01_m1f/02_m1f_presets.md ======
 # m1f Preset System Documentation
 
 The m1f preset system allows you to define file-specific processing rules,
@@ -5131,7 +5131,7 @@ bundling system.
 - [**Auto Bundle Guide**](./06_auto_bundle_guide.md) - Automated bundling with
   presets
 
-======= docs/01_m1f/03_m1f_preset_per_file_settings.md | CHECKSUM_SHA256: de8f674acb18d499a5001ec9d3d7d8d815e9e2efb558599b82f8d290c5bde6a4 ======
+======= docs/01_m1f/03_m1f_preset_per_file_settings.md ======
 # Per-File-Type Settings in m1f Presets
 
 The m1f preset system supports fine-grained control over processing settings on
@@ -5394,7 +5394,7 @@ my_project:
 - [Use Case Examples](../../presets/example-use-cases.m1f-presets.yml) -
   Real-world scenarios
 
-======= docs/01_m1f/04_m1f_development_workflow.md | CHECKSUM_SHA256: c4e0d405feeb164eeacdea9a5bd0b71716d053f3f3c7a060bed2e19b10e5456b ======
+======= docs/01_m1f/04_m1f_development_workflow.md ======
 # m1f Development Workflow
 
 This document describes the recommended workflow for developing with m1f and
@@ -5630,7 +5630,7 @@ Add m1f to your CI pipeline:
     path: docs-bundle.txt
 ```
 
-======= docs/01_m1f/05_claude_code_integration.md | CHECKSUM_SHA256: 1d85a7d29dc6473c6459b411a4d31cf7d95ca0df6f384d2fd431592d28689512 ======
+======= docs/01_m1f/05_claude_code_integration.md ======
 # Claude Code Integration Guide
 
 This guide explains how to integrate Claude Code as an optional AI assistant for
@@ -5867,7 +5867,7 @@ export CLAUDE_CODE_PROJECT_ROOT="/path/to/m1f"
 - [m1f Tools Documentation](00_m1f.md)
 - [html2md Documentation](../03_html2md/30_html2md.md)
 
-======= docs/01_m1f/06_auto_bundle_guide.md | CHECKSUM_SHA256: 157974582d06108a3e6d18b435d481f7f569a7951eb02165bb21d72bb3d1aff7 ======
+======= docs/01_m1f/06_auto_bundle_guide.md ======
 # Auto-Bundle Guide
 
 The m1f auto-bundle feature allows you to automatically generate predefined bundles of files based on configuration. This is especially useful for maintaining consistent documentation bundles, creating project snapshots, and managing multiple projects on a server.
@@ -6192,7 +6192,7 @@ bundles:
       - "**/node_modules/**"
 ```
 
-======= docs/01_m1f/07_cli_reference.md | CHECKSUM_SHA256: ee07ac4dc3e883cd0b69d6d4c79390df944e42f9a4199483b6ba27f68e54e772 ======
+======= docs/01_m1f/07_cli_reference.md ======
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
@@ -6548,7 +6548,7 @@ See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration 
 4. **Performance**: For large projects, use `--include-extensions` to limit
    processing to specific file types.
 
-======= docs/01_m1f/08_troubleshooting.md | CHECKSUM_SHA256: 930debd50129fb8775865c6b4e6f3cf7a0e830553045757967e23fc9d19abfc7 ======
+======= docs/01_m1f/08_troubleshooting.md ======
 # Troubleshooting Guide
 
 This guide covers common issues and error messages you might encounter when
@@ -6770,7 +6770,7 @@ else
 fi
 ```
 
-======= docs/01_m1f/09_quick_reference.md | CHECKSUM_SHA256: 4a1916c4160779f4a9119de51312a9ef7c2d5bab2bca6730c22a106ec552a9f9 ======
+======= docs/01_m1f/09_quick_reference.md ======
 # m1f Quick Reference
 
 ## Most Common Commands
@@ -7002,7 +7002,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 - [Troubleshooting Guide](./08_troubleshooting.md)
 - [Preset Documentation](./02_m1f_presets.md)
 
-======= docs/01_m1f/10_preset_reference.md | CHECKSUM_SHA256: 9754d23b11b63cd8786949b6e0caa96075ea7656c8ea7a9af7c722d08e6753ce ======
+======= docs/01_m1f/10_preset_reference.md ======
 # m1f Preset System Complete Reference
 
 This document provides a comprehensive reference for the m1f preset system,
@@ -7541,7 +7541,7 @@ python -m tools.m1f --preset environments.yml --preset-group development
 python -m tools.m1f --preset environments.yml --preset-group production
 ```
 
-======= docs/01_m1f/11_preset_system_clarifications.md | CHECKSUM_SHA256: 7b0684e55150cf71ab8b35bb13b36a06d580aafbb24c123b9c758f5272943445 ======
+======= docs/01_m1f/11_preset_system_clarifications.md ======
 # Preset System Clarifications and Notes
 
 This document clarifies important aspects of the m1f preset system that may not
@@ -7726,7 +7726,7 @@ running on large codebases.
 
 This documentation is accurate as of m1f version 3.2.0.
 
-======= docs/01_m1f/12_git_hooks_setup.md | CHECKSUM_SHA256: f8f1b9cf627fdaccb2861e2415852a53455235801d011e4ffd7a1cf171ecefb9 ======
+======= docs/01_m1f/12_git_hooks_setup.md ======
 # m1f Git Hooks Setup Guide
 
 This guide explains how to set up Git hooks for automatic m1f bundle generation in your projects.
@@ -7945,7 +7945,7 @@ bundle:
 - [m1f Configuration](02_m1f_presets.md) - Preset system documentation
 - [Quick Reference](09_quick_reference.md) - Common m1f commands
 
-======= docs/02_s1f/20_s1f.md | CHECKSUM_SHA256: f8f1e648cd0bb9a811e1622921edc903afe1545a3a8a3ca2e6bdecad4b2336a4 ======
+======= docs/02_s1f/20_s1f.md ======
 # s1f (Split One File)
 
 A modern file extraction tool with async I/O that reconstructs original files
@@ -8153,7 +8153,7 @@ The tool provides comprehensive error handling:
 - **Permission Errors**: Clear reporting of file system permission issues
 - **Partial Recovery**: Continue extraction even if individual files fail
 
-======= docs/03_html2md/30_html2md.md | CHECKSUM_SHA256: 478d01fef82bb7d6c11addadde0142c21f0a791e44d921ab958dbb78d1be0ca2 ======
+======= docs/03_html2md/30_html2md.md ======
 # html2md (HTML to Markdown Converter)
 
 A modern HTML to Markdown converter with HTML structure analysis, custom extractors,
@@ -8678,7 +8678,7 @@ pip install beautifulsoup4 markdownify chardet pyyaml aiofiles rich pydantic
 
 **Note**: For web scraping functionality, use the separate `webscraper` tool which provides multiple backend options including HTTrack.
 
-======= docs/03_html2md/31_html2md_guide.md | CHECKSUM_SHA256: 0bf6368221ec1747a9f7e1d1b377c255f6cea3a735cd92f7eda7c99f8c5b81fb ======
+======= docs/03_html2md/31_html2md_guide.md ======
 # HTML to Markdown Converter Guide
 
 The `html2md` tool (v3.1.0) is a modern, async converter designed to transform
@@ -9200,7 +9200,7 @@ python -m tools.html2md convert ./html/ \
   --format m1f_bundle
 ```
 
-======= docs/03_html2md/32_html2md_workflow_guide.md | CHECKSUM_SHA256: d4d4625dc5a9c0b7ad828e0705994a32d1b3b9c40d1248dc663c404217010fa8 ======
+======= docs/03_html2md/32_html2md_workflow_guide.md ======
 # HTML2MD Workflow Guide
 
 This guide explains the recommended workflow for converting websites to Markdown using html2md with custom extractors.
@@ -9586,7 +9586,7 @@ The html2md workflow provides maximum flexibility:
 
 This approach ensures you can handle any website structure and produce clean, readable Markdown output.
 
-======= docs/03_html2md/33_html2md_test_suite.md | CHECKSUM_SHA256: 67676a577e975b7335d9f64127572d5cac1996919e3907ec044d0f708a175b4e ======
+======= docs/03_html2md/33_html2md_test_suite.md ======
 # HTML2MD Test Suite Documentation
 
 A comprehensive test suite for validating the html2md converter (v2.0.0) with
@@ -9934,7 +9934,7 @@ To contribute to the test suite:
 The test suite aims to cover all real-world HTML conversion scenarios to ensure
 robust and reliable Markdown output.
 
-======= docs/04_scrape/40_webscraper.md | CHECKSUM_SHA256: 3ba7ff5b3603e4e6e222ef935aa95ef621afafe1656d572147aa9792bbad94d2 ======
+======= docs/04_scrape/40_webscraper.md ======
 # webscraper (Website Downloader)
 
 A modern web scraping tool for downloading websites with multiple backend
@@ -10279,7 +10279,7 @@ If conservative settings don't work:
 - [m1f Documentation](../01_m1f/00_m1f.md) - For bundling converted content for
   LLMs
 
-======= docs/04_scrape/41_html2md_scraper_backends.md | CHECKSUM_SHA256: 94144b961d1546ad7ca268862e7064df2ce55a1eb67e30735a130ccb151551f2 ======
+======= docs/04_scrape/41_html2md_scraper_backends.md ======
 # Web Scraper Backends
 
 The HTML2MD tool supports multiple web scraping backends, each optimized for
@@ -10718,7 +10718,7 @@ To add a new scraper backend:
 
 See the BeautifulSoup implementation for a complete example.
 
-======= docs/05_development/55_version_management.md | CHECKSUM_SHA256: 039cfef08570ed50f64f27bfa6720af2a49d1b35b7989acadaa61a172b62b88e ======
+======= docs/05_development/55_version_management.md ======
 # Version Management
 
 This project uses centralized version management to ensure consistency across all components.
@@ -10800,7 +10800,7 @@ When adding a new tool or module that needs version info:
 - `__version__`: String format (e.g., "3.1.0")
 - `__version_info__`: Tuple format (e.g., (3, 1, 0))
 
-======= docs/99_misc/98_token_counter.md | CHECKSUM_SHA256: 3812c2cc10e08dee2abb0bea3485bf27b0acb08b375c4e5c80927b0e5f27a312 ======
+======= docs/99_misc/98_token_counter.md ======
 # token_counter - Token Estimation Tool
 
 The token_counter tool (v2.0.0) estimates token usage for LLM context planning,
@@ -10935,7 +10935,7 @@ This dependency is included in the project's requirements.txt file.
 3. **Buffer Space**: Leave 10-20% buffer for model responses
 4. **Regular Checks**: Re-check token counts after file modifications
 
-======= tools/scrape_tool/scrapers/README.md | CHECKSUM_SHA256: 254c57ed9247905430ae6111a67c0025efbaaac2583338a82598b7eab32b027a ======
+======= tools/scrape_tool/scrapers/README.md ======
 # HTML2MD Web Scrapers
 
 This module provides a pluggable architecture for web scraping backends in the
@@ -11023,7 +11023,7 @@ All scrapers share common configuration options through `ScraperConfig`:
 
 Backend-specific options can be added as needed in the scraper implementation.
 
-======= tools/scrape_tool/scrapers/configs/beautifulsoup.yaml | CHECKSUM_SHA256: b698bcdc62d93670226a1ed8cf8051eed6c5ced9d8f0cd679bf814d8808bca53 ======
+======= tools/scrape_tool/scrapers/configs/beautifulsoup.yaml ======
 # BeautifulSoup scraper configuration example
 scraper_backend: beautifulsoup
 scraper_config:
@@ -11037,7 +11037,7 @@ crawler:
   respect_robots_txt: true
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-======= tools/scrape_tool/scrapers/configs/cloudflare.yaml | CHECKSUM_SHA256: ee4f50f102364b7e3efa838ef11281769f4f4c114f8db1cda7fe3958a79b87f3 ======
+======= tools/scrape_tool/scrapers/configs/cloudflare.yaml ======
 # Conservative configuration for sites with Cloudflare protection
 # These settings help avoid triggering Cloudflare's bot detection
 
@@ -11079,7 +11079,7 @@ crawler:
 # 3. Use browser automation (Playwright) as last resort
 # 4. Some sites may require manual browsing or API access
 
-======= tools/scrape_tool/scrapers/configs/httrack.yaml | CHECKSUM_SHA256: 9887c37155539bbaaeb5fa3edebcf58cfdfb51e2fa0ae17aa6a764fb68d1e982 ======
+======= tools/scrape_tool/scrapers/configs/httrack.yaml ======
 # HTTrack scraper configuration - Conservative settings for Cloudflare protection
 scraper_backend: httrack
 scraper_config:
@@ -11103,7 +11103,7 @@ crawler:
     - "*.pdf"
     - "*.zip"
 
-======= tools/scrape_tool/scrapers/configs/playwright.yaml | CHECKSUM_SHA256: a9619765a75cb5c21810c9971fbfce23794693717d8b0ddcb427772b7fd81150 ======
+======= tools/scrape_tool/scrapers/configs/playwright.yaml ======
 # Playwright scraper configuration
 # Browser-based scraping for JavaScript-heavy sites
 
@@ -11180,7 +11180,7 @@ browser_config:
 # python -m tools.mf1-html2md crawl https://example.com -o output/ \
 #   --scraper playwright --scraper-config playwright.yaml
 
-======= tools/scrape_tool/scrapers/configs/scrapy.yaml | CHECKSUM_SHA256: 2e74c4d85625c257b47d06ac1c507380a3375f439d8cc937d8186de5cec23d91 ======
+======= tools/scrape_tool/scrapers/configs/scrapy.yaml ======
 # Scrapy scraper configuration
 # Industrial-strength web scraping framework
 
@@ -11244,7 +11244,7 @@ scrapy_config:
 # python -m tools.mf1-html2md crawl https://example.com -o output/ \
 #   --scraper scrapy --scraper-config scrapy.yaml
 
-======= tools/scrape_tool/scrapers/configs/selectolax.yaml | CHECKSUM_SHA256: 024319280d39989b808547a0ef948166d75658f808865a2522f3f227408765d6 ======
+======= tools/scrape_tool/scrapers/configs/selectolax.yaml ======
 # Selectolax scraper configuration
 # High-performance HTML parsing with httpx + selectolax
 

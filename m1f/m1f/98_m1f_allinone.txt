@@ -1,4 +1,4 @@
-======= README.md | CHECKSUM_SHA256: 88986baf65b226d02fb22fefc6a3ed84a6a4be2a06823b119684346b82a699c2 ======
+======= README.md ======
 # m1f - Make One File 🚀
 
 **Feed your AI the whole story.** A powerful toolkit that turns messy codebases into AI-ready context bundles.
@@ -203,7 +203,7 @@ Apache 2.0 - Go wild, just don't blame us.
 
 Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to robots.
 
-======= package.json | CHECKSUM_SHA256: 046f9066f212389c8ef2f6fdf7df7f475206d2a9d9ee886a2057e9089bfaa281 ======
+======= package.json ======
 {
   "devDependencies": {
     "prettier": "3.5.3"
@@ -221,7 +221,7 @@ Built with ❤️ by [Franz Agency](https://franz.agency) for developers who tal
   "license": "Apache-2.0"
 }
 
-======= SETUP.md | CHECKSUM_SHA256: 4aa9cf955fd860682da43f7508f0cbc2bf0429c4c712775bdbe5f384fd8bf3c8 ======
+======= SETUP.md ======
 # m1f Setup Guide
 
 ## Prerequisites
@@ -467,7 +467,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options
 
-======= bin/m1f | CHECKSUM_SHA256: 2c2ed6504e22ec74b31ac2e64e5da24ad28d940e2db265301d2fbcd5c9d68b79 ======
+======= bin/m1f ======
 #!/usr/bin/env bash
 # m1f - Make One File
 
@@ -479,7 +479,7 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment and run m1f
 cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python -m tools.m1f "$@"
 
-======= bin/m1f-claude | CHECKSUM_SHA256: 6492ac19f815646ffab4c04d2f1f12294a8d2fb235b4b75e5b1c0fcb7e55dcd5 ======
+======= bin/m1f-claude ======
 #!/usr/bin/env bash
 # m1f-claude - Enhance Claude prompts with m1f knowledge
 
@@ -491,7 +491,7 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment and run m1f-claude
 cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python tools/m1f_claude.py "$@"
 
-======= bin/m1f-help | CHECKSUM_SHA256: 37fb74c862dbf4c8f20fca249f4fed421d09d03bbdc9bddf2debb2b585d2a906 ======
+======= bin/m1f-help ======
 #!/usr/bin/env bash
 # m1f-help - Show m1f help
 
@@ -508,7 +508,7 @@ echo "  m1f-help          - Show this help message"
 echo ""
 echo "For detailed help on each tool, use: <tool> --help"
 
-======= bin/m1f-html2md | CHECKSUM_SHA256: 93b8bf73f10d112897592a60fc4d1dc4e177c8859c16cba4b3d121ce7d178cdc ======
+======= bin/m1f-html2md ======
 #!/usr/bin/env bash
 # mf1-html2md - HTML to Markdown converter
 
@@ -520,7 +520,7 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment and run mf1-html2md
 cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python -m tools.html2md "$@"
 
-======= bin/m1f-link | CHECKSUM_SHA256: 4e1c793779857e00e821bb979677d4f98df3858ec333ad66b8e974b4ca959af4 ======
+======= bin/m1f-link ======
 #!/usr/bin/env bash
 # m1f-link - Create symlink to m1f documentation
 
@@ -551,7 +551,7 @@ else
     echo "  'Please read @m1f/m1f-docs.txt and help me set up m1f for this project'"
 fi
 
-======= bin/m1f-s1f | CHECKSUM_SHA256: 15dd93ebd997c855a55417a3fe4a67997ee8172d47118d9403698abef1f47f49 ======
+======= bin/m1f-s1f ======
 #!/usr/bin/env bash
 # s1f - Split One File
 
@@ -563,7 +563,7 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment and run s1f
 cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python -m tools.s1f "$@"
 
-======= bin/m1f-scrape | CHECKSUM_SHA256: 2b32653059f4d8f478ad4dfae71af19aa3a6b21d47bfd20b9b593d8738baa9f0 ======
+======= bin/m1f-scrape ======
 #!/usr/bin/env bash
 # m1f-scrape - Website downloader
 
@@ -575,7 +575,7 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment and run m1f-scrape
 cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python -m tools.webscraper "$@"
 
-======= bin/m1f-token-counter | CHECKSUM_SHA256: bb3f2b4e9e45d9b26ed942d74b8c80d3e582fa7b0a21e58f0bd178056d7ce2a2 ======
+======= bin/m1f-token-counter ======
 #!/usr/bin/env bash
 # token-counter - Count tokens in files
 
@@ -587,7 +587,7 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment and run token-counter
 cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python "$PROJECT_ROOT/tools/token_counter.py" "$@"
 
-======= bin/m1f-update | CHECKSUM_SHA256: 9b61eb39e3eef83924fafdae13f59bff055038c7566d058c2103ca8838fc4ae3 ======
+======= bin/m1f-update ======
 #!/usr/bin/env bash
 # m1f-update - Update m1f bundles
 
@@ -599,7 +599,7 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment and run auto-bundle
 cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python -m tools.m1f auto-bundle "$@"
 
-======= docs/README.md | CHECKSUM_SHA256: 2ccb3b9eb498bde867d572697d31bb5b593325029a5a598efccf480c75648b1c ======
+======= docs/README.md ======
 # m1f Documentation
 
 This directory contains detailed documentation for the m1f project v3.2.0.
@@ -704,7 +704,7 @@ assistants.
 - Remove scraped metadata for clean documentation bundles
 - Estimate token usage for optimal LLM context planning
 
-======= docs/99_CHANGELOG.md | CHECKSUM_SHA256: 7d1e76131d5d7c95e67fd554d8e503ceb8ff1999e29f070567f75b57680e3c1f ======
+======= docs/99_CHANGELOG.md ======
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -1237,7 +1237,7 @@ improvements and new features.
 - Multiple output formats
 - Cross-platform compatibility
 
-======= presets/docs-bundle.m1f-presets.yml | CHECKSUM_SHA256: b7b645392071b096e207bfd20456805ab4719962a0be34bd8a9cc5373401362f ======
+======= presets/docs-bundle.m1f-presets.yml ======
 # Documentation bundle preset group
 # Claude prefers valid markdown. However, there are LLMs that only read the first 200 lines of a file and then
 # decide whether to continue. This means you need to fit a lot of information into those first 200 lines.
@@ -1255,7 +1255,7 @@ docs_bundle:
         - "join_paragraphs"
         - "remove_empty_lines"
 
-======= presets/documentation.m1f-presets.yml | CHECKSUM_SHA256: d74799ddaced742f9ce9dcd00001a1e12256c28d5298ace0a20a816b46f97ecb ======
+======= presets/documentation.m1f-presets.yml ======
 # Documentation Project Preset Configuration for m1f
 # Optimized for documentation and knowledge base projects
 
@@ -1396,7 +1396,7 @@ technical_writing:
       actions: []
       include_metadata: true
 
-======= presets/example-globals.m1f-presets.yml | CHECKSUM_SHA256: b6a245ca910819036a63761ba24569be235ed2daef4bac9fd7e0540005ff4cd6 ======
+======= presets/example-globals.m1f-presets.yml ======
 # Example preset with global settings
 # Shows how global defaults can be overridden locally
 
@@ -1529,7 +1529,7 @@ m1f_project:
         - "examples/**/*.html"
       # Uses global (only compress_whitespace)
 
-======= presets/example-use-cases.m1f-presets.yml | CHECKSUM_SHA256: d1c1f9086e2e842a3591d6289344eb68af08793d4f4f919e93f4f8ec57d185af ======
+======= presets/example-use-cases.m1f-presets.yml ======
 # Example Use Cases for m1f Presets
 # This file demonstrates the specific use cases mentioned
 
@@ -1709,7 +1709,7 @@ web_project_complete:
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
 
-======= presets/template-all-settings.m1f-presets.yml | CHECKSUM_SHA256: 402f6bbde458e86519488814373f7a40939b39e9d2258e5f3608a83cdc17784d ======
+======= presets/template-all-settings.m1f-presets.yml ======
 # Complete m1f Preset Template
 # This file contains ALL available preset settings with explanations
 # Copy and modify this template for your own projects
@@ -2131,7 +2131,7 @@ development:
 # python -m tools.m1f -s . -o prod.txt --preset this-file.yml --preset-group production
 # python -m tools.m1f -s . -o dev.txt --preset this-file.yml --preset-group development
 
-======= presets/web-project.m1f-presets.yml | CHECKSUM_SHA256: c0a368d01579f699d5155f2f0cdb94be9851f762dd15ec38039586b33ef5e242 ======
+======= presets/web-project.m1f-presets.yml ======
 # Web Project Preset Configuration for m1f
 # General web development project processing rules
 
@@ -2285,7 +2285,7 @@ backend:
         - remove_empty_lines
       include_metadata: true
 
-======= presets/wordpress.m1f-presets.yml | CHECKSUM_SHA256: 3aa29da819de8e9824a412c817d6a558475c52a69faec59d32c9840645368328 ======
+======= presets/wordpress.m1f-presets.yml ======
 # WordPress Project Preset Configuration for m1f
 # This preset defines how different file types should be processed when bundling
 
@@ -2439,7 +2439,7 @@ wordpress:
       include_metadata: true
       separator_style: "Standard"
 
-======= scripts/auto_bundle_preset.sh | CHECKSUM_SHA256: b496b3d44fc8efee778c514cb48791af5d72d598a4461da1878cd15769f3e9ec ======
+======= scripts/auto_bundle_preset.sh ======
 #!/usr/bin/env bash
 # Auto-bundle with preset support
 # This script is used by VS Code tasks for preset-based bundling
@@ -2508,7 +2508,7 @@ else
     cd "$PROJECT_ROOT" && source .venv/bin/activate && python -m tools.m1f auto-bundle
 fi
 
-======= scripts/bump_version.py | CHECKSUM_SHA256: 7e626d9dd823b0c3a243622d286665066f675c3596abaf2e3fa41e2817d7eb06 ======
+======= scripts/bump_version.py ======
 #!/usr/bin/env python3
 """
 Bump version in _version.py and sync across the project.
@@ -2660,7 +2660,7 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
-======= scripts/get_watcher_ignores.py | CHECKSUM_SHA256: 78445494befdf760ebfef41ef3c966b6cd0df30b905429d1fb721ff6fea725c2 ======
+======= scripts/get_watcher_ignores.py ======
 #!/usr/bin/env python3
 """
 Helper script to extract watcher ignore paths from .m1f.config.yml
@@ -2735,7 +2735,7 @@ if __name__ == "__main__":
         for pattern in patterns:
             print(pattern)
 
-======= scripts/install-git-hooks.sh | CHECKSUM_SHA256: 237041c4ae26cbf1da4d962cd3fdac920809cab954b9b3a3220d7d745af932e5 ======
+======= scripts/install-git-hooks.sh ======
 #!/bin/bash
 # Install m1f Git Hooks
 # This script installs the m1f git hooks into your project
@@ -2838,7 +2838,7 @@ echo ""
 echo "To uninstall, remove the hook file:"
 echo "  rm $GIT_DIR/hooks/pre-commit"
 
-======= scripts/install.ps1 | CHECKSUM_SHA256: 919a96e0d93535484508579e573c9b27657e15d6cf451bcffbffb4110730e6fb ======
+======= scripts/install.ps1 ======
 # Complete installation script for m1f tools
 # This script handles the entire setup process after git clone
 
@@ -3065,7 +3065,7 @@ Write-Host
 Write-ColorOutput "To uninstall:" -Color $colors.Yellow
 Write-ColorOutput "  .\scripts\setup_m1f_aliases.ps1 -Remove" -Color $colors.Blue
 
-======= scripts/install.sh | CHECKSUM_SHA256: f3671ea9e78635f453def5de87ee61a57f1154cbd752b255c19c6e4237bf6005 ======
+======= scripts/install.sh ======
 #!/usr/bin/env bash
 # Complete installation script for m1f tools
 # This script handles the entire setup process after git clone
@@ -3234,7 +3234,7 @@ echo
 echo -e "${YELLOW}To uninstall:${NC}"
 echo -e "  ${BLUE}$SCRIPT_DIR/uninstall.sh${NC}"
 
-======= scripts/setup_m1f_aliases.ps1 | CHECKSUM_SHA256: e57ba29460ac54c4d65478dc919c3659771cebcb078fbcd65f84cfab502b1695 ======
+======= scripts/setup_m1f_aliases.ps1 ======
 #!/usr/bin/env pwsh
 # Setup script for m1f aliases in PowerShell
 # This script creates convenient aliases and functions to use m1f from anywhere
@@ -3394,7 +3394,7 @@ Write-Host "1. Run: ${Blue}.\scripts\setup_m1f_aliases.ps1 -Remove${Reset}"
 Write-Host "2. Or manually edit `$PROFILE and remove the m1f section"
 Write-Host "3. Optionally remove: $scriptsDir"
 
-======= scripts/sync_version.py | CHECKSUM_SHA256: a2f45bcee24af04f1ac55988528c1d5cc1c335dd33f256dba322f53e0689da7c ======
+======= scripts/sync_version.py ======
 #!/usr/bin/env python3
 """
 Sync version between Python and package.json.
@@ -3470,7 +3470,7 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
-======= scripts/uninstall.sh | CHECKSUM_SHA256: d4ce10a7ef8440e0a5161206ecb28358e33b7eec6a91550f868a0efc31cdf88e ======
+======= scripts/uninstall.sh ======
 #!/usr/bin/env bash
 # Uninstall script for m1f tools
 # This removes m1f from your PATH and cleans up symlinks
@@ -3601,7 +3601,7 @@ if [ "$OLD_STYLE_FOUND" = true ]; then
     echo -e "  ${BLUE}$SCRIPT_DIR/setup_m1f_aliases.sh${NC} (and follow removal instructions)"
 fi
 
-======= scripts/watch_and_bundle.sh | CHECKSUM_SHA256: 6aebcafeb4bd7323c0c6309f8dc5eaaabbdb36587642f25f5d58073fb12cfc61 ======
+======= scripts/watch_and_bundle.sh ======
 #!/bin/bash
 # File Watcher for Auto Bundle
 # Watches for file changes and automatically updates m1f bundles
@@ -3918,7 +3918,7 @@ fi
 # Run main
 main
 
-======= tasks/README.md | CHECKSUM_SHA256: 7443f52fd546b1a02cf59ab2a6b4e1dabc91983a57800211dba82e2b9ce11406 ======
+======= tasks/README.md ======
 # AI Context File Generator & Auto-Bundling System
 
 ## Overview
@@ -4481,7 +4481,7 @@ are modified.
 Remember to add `.m1f/` (and `.1f/` if used) to your `.gitignore` so these
 helper files stay out of version control.
 
-======= tasks/ai_context_files.txt | CHECKSUM_SHA256: bab0ab696d58620f5936ac778057f3e3e2995094cbe9cf53c343e6fc8ea26049 ======
+======= tasks/ai_context_files.txt ======
 # This is an example file list for AI context bundling
 # Group related files by feature/functionality with comments
 
@@ -4520,7 +4520,7 @@ helper files stay out of version control.
 
 # Add task-specific files here as needed
 
-======= tasks/auto_bundle.json | CHECKSUM_SHA256: 76122c0571af0ce50a5b9eee4d412466ccc5a6fc12ead08068408e97a9fcc93c ======
+======= tasks/auto_bundle.json ======
 {
     "version": "2.0.0",
     "tasks": [
@@ -4826,7 +4826,7 @@ helper files stay out of version control.
     ]
 }
 
-======= tasks/example.tasks.json | CHECKSUM_SHA256: 1210b0a5851ccdeebf7a3e1876f8929f160d9ec6bc60343759f28c8f0448239e ======
+======= tasks/example.tasks.json ======
 {
     "version": "2.0.0",
     "tasks": [
@@ -4890,7 +4890,7 @@ helper files stay out of version control.
     ]
 }
 
-======= tasks/linting.json | CHECKSUM_SHA256: 0750538dd65acda4cac3264f27f08a656caa13360eb2def780125b7819e7fe6c ======
+======= tasks/linting.json ======
 {
     "version": "2.0.0",
     "tasks": [
@@ -4921,7 +4921,7 @@ helper files stay out of version control.
     ]
 } 
 
-======= tasks/m1f.json | CHECKSUM_SHA256: b968422d0444193d33c27d01a6248e6c6ae0db4eee91cbdf53dd70dce7def027 ======
+======= tasks/m1f.json ======
 {
     "version": "2.0.0",
     "tasks": [
@@ -5154,7 +5154,7 @@ helper files stay out of version control.
     ]
 }
 
-======= tasks/wp_excludes.txt | CHECKSUM_SHA256: d4b9b1453885caaf73a5e25c806b74803b54d03ab0300615604dbea8c5e3abd0 ======
+======= tasks/wp_excludes.txt ======
 # WordPress Paths to Exclude
 
 # Core WordPress system files
@@ -5221,7 +5221,7 @@ Thumbs.db
 *.min.js
 *.min.css 
 
-======= tasks/wp_plugin_includes.txt | CHECKSUM_SHA256: 3db0d19bb8b64886009ffec57c208278093d46ccbf5023bbfa46b55920a5d6c5 ======
+======= tasks/wp_plugin_includes.txt ======
 # WordPress Plugin Files to Include
 
 # Main plugin file
@@ -5265,7 +5265,7 @@ wp-content/plugins/myplugin/languages/*.mo
 wp-content/plugins/myplugin/config/*.php
 wp-content/plugins/myplugin/uninstall.php 
 
-======= tasks/wp_theme_includes.txt | CHECKSUM_SHA256: 7b4d3fc6407562505842c13e2b33f309b8e50d862380a5928671f0808f5dae87 ======
+======= tasks/wp_theme_includes.txt ======
 # WordPress Theme Files to Include
 
 # Core theme files
@@ -5305,7 +5305,7 @@ wp-content/themes/mytheme/block-template-parts/*.html
 # Configuration files
 wp-content/themes/mytheme/theme.json 
 
-======= tasks/wp_theme_plugin_includes.txt | CHECKSUM_SHA256: b069f8804b392ae44ed2af1ea6d73d5b42113f61b66c5ccf7df3f4305df046ef ======
+======= tasks/wp_theme_plugin_includes.txt ======
 # WordPress Theme Files to Include
 
 # Core theme files
@@ -5387,7 +5387,7 @@ wp-content/plugins/myplugin/languages/*.mo
 wp-content/plugins/myplugin/config/*.php
 wp-content/plugins/myplugin/uninstall.php
 
-======= tests/README.md | CHECKSUM_SHA256: b803a52e58d2a02365fd16ce3ed2ca421a07de731afd6033a9f6c4340434773d ======
+======= tests/README.md ======
 # Test Suite Documentation
 
 This directory contains the modernized test suite for the m1f and s1f tools,
@@ -5626,10 +5626,10 @@ pytest -x
 pytest --pdb
 ```
 
-======= tests/__init__.py | CHECKSUM_SHA256: 17318401866d84e460155ffc8ccf9248700aa25b128907e38a37a348fe45ef00 ======
+======= tests/__init__.py ======
 """Test package for m1f and s1f tools."""
 
-======= tests/base_test.py | CHECKSUM_SHA256: ce13026a2814249c85a61f362f6926cb253ded3cb0482f1e3a5de951b4a4069f ======
+======= tests/base_test.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -5967,7 +5967,7 @@ class BaseS1FTest(BaseToolTest):
 
         return matching, missing, different
 
-======= tests/conftest.py | CHECKSUM_SHA256: 04628c9b225af367d78e97c2449edf2d9636e303e2138e7215add736cd4a71c0 ======
+======= tests/conftest.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -6211,7 +6211,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "requires_git: Tests that require git")
     config.addinivalue_line("markers", "encoding: Encoding-related tests")
 
-======= tests/test_html2md_server.py | CHECKSUM_SHA256: 5fe98ac8adc42f73e9eb43888552b4cd63873bbf849fe62eb1f4bf987f5d4368 ======
+======= tests/test_html2md_server.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -6709,7 +6709,7 @@ if __name__ == "__main__":
     # Run tests
     pytest.main([__file__, "-v", "--tb=short"])
 
-======= tests/test_simple_server.py | CHECKSUM_SHA256: 020a2f5a49319f679db6e612cad9dbe0e6ae35d28fe0d03fcc121bacebeb82d4 ======
+======= tests/test_simple_server.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -6904,7 +6904,7 @@ class TestHTML2MDServer:
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
-======= tools/__init__.py | CHECKSUM_SHA256: 02be5f461b2695ebd550b5e24aeabfe87cc7d7163b139d0718b6cb769f67775f ======
+======= tools/__init__.py ======
 """
 Package containing the m1f suite of tools for file operations.
 
@@ -6916,7 +6916,7 @@ from ._version import __version__, __version_info__
 
 __all__ = ["__version__", "__version_info__"]
 
-======= tools/_version.py | CHECKSUM_SHA256: b012dabf4e15b3e5e4ba95201d0abf798058d0280dec4d1305e14a1ae0d13d4e ======
+======= tools/_version.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -6941,7 +6941,7 @@ All other files should import from here.
 __version__ = "3.2.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
-======= tools/claude_orchestrator.py | CHECKSUM_SHA256: e01c9869161a3416d31fbcf9a7e7daee53d04000a354e4e272ec8da7a2170be1 ======
+======= tools/claude_orchestrator.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -7277,7 +7277,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-======= tools/html2md.py | CHECKSUM_SHA256: accf1d394c28c79e81ee44aa57c9d01e2544abb7f95275f287cb01db5e8468fc ======
+======= tools/html2md.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -7302,7 +7302,7 @@ if __name__ == "__main__":
 
     main()
 
-======= tools/m1f.py | CHECKSUM_SHA256: ed4118edf5a5f76bd5fa88ae9515552c38312b1d757c19d745aec2544566a5de ======
+======= tools/m1f.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -7462,7 +7462,7 @@ def main() -> NoReturn:
 if __name__ == "__main__":
     main()
 
-======= tools/m1f_claude.py | CHECKSUM_SHA256: 2747f30b0d1d612f9fe51c19e7a9924400345f5fa7c51d9ee4ade4686d8c983e ======
+======= tools/m1f_claude.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -7916,7 +7916,7 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
 if __name__ == "__main__":
     main()
 
-======= tools/path_utils.py | CHECKSUM_SHA256: c054c621de1a9579eaf06829334e7b58fa072cdfd023bc7306ef902c2a281b0a ======
+======= tools/path_utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7933,7 +7933,7 @@ def normalize_path(path: Union[Path, str]) -> str:
     """Normalize a Path or path-like object to POSIX style."""
     return PureWindowsPath(str(path)).as_posix()
 
-======= tools/prepare_docs.py | CHECKSUM_SHA256: 171bb130b2843a628ef57e15ecd893c12f8fc1e3e3692d5616306b4155cbb3f5 ======
+======= tools/prepare_docs.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -8253,7 +8253,7 @@ if __name__ == "__main__":
         logger.critical(f"An unexpected error occurred: {e}", exc_info=True)
         sys.exit(1)
 
-======= tools/s1f.py | CHECKSUM_SHA256: 886ec889cb8cb9f7ec32c40738b0da2ae0aa73bb35a3bde395555ec2f9b365a9 ======
+======= tools/s1f.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
@@ -8272,7 +8272,7 @@ except ImportError:
 if __name__ == "__main__":
     sys.exit(main())
 
-======= tools/scrape.py | CHECKSUM_SHA256: f292122f0eacc9122824d8e0f2856c3f505eb318817a69524b98eac4b852ea49 ======
+======= tools/scrape.py ======
 #!/usr/bin/env python3
 """Wrapper script for m1f-scrape module."""
 
@@ -8281,7 +8281,7 @@ from scrape_tool.cli import main
 if __name__ == "__main__":
     main()
 
-======= tools/setup.py | CHECKSUM_SHA256: 3f50b4e986d5c78e67b7642082a56f896f21055e9122d7cc4dadae520f02b98b ======
+======= tools/setup.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -8351,7 +8351,7 @@ setup(
     ],
 )
 
-======= tools/token_counter.py | CHECKSUM_SHA256: 0913ce3f978ecbcc5da76ef01f9fd3e33c062c10f2960018bcdb9fab03beff12 ======
+======= tools/token_counter.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -8449,7 +8449,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-======= tools/wp_export_md.py | CHECKSUM_SHA256: deeb016926138aa6e0571a358822e144b8eb63a1a237b94c0c68539d451d4ef0 ======
+======= tools/wp_export_md.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -8544,7 +8544,7 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-======= docs/01_m1f/README.md | CHECKSUM_SHA256: 6221ad52a432076fb1c9e67f4a94a3bdaee1d3b1090df4029b2072061dfe342c ======
+======= docs/01_m1f/README.md ======
 # m1f Documentation
 
 Welcome to the m1f (Make One File) documentation. This tool combines multiple
@@ -8600,7 +8600,7 @@ python tools/m1f.py -s . -o bundle.txt --preset wordpress.m1f-presets.yml
 For detailed information, start with the [main documentation](00_m1f.md) or
 jump to the [quick reference](./09_quick_reference.md) for common commands.
 
-======= docs/01_m1f/00_m1f.md | CHECKSUM_SHA256: ad6e7f24cde7b610952f3cf7f251c45fbf46062e127d56da06f3c5c654bfa738 ======
+======= docs/01_m1f/00_m1f.md ======
 # m1f (Make One File)
 
 A modern, high-performance tool that combines multiple files into a single file
@@ -8854,10 +8854,10 @@ human readability to automated parsing.
 
 ### Standard Style
 
-A simple, concise separator that shows the file path and optional checksum:
+A simple, concise separator that shows only the file path:
 
 ```
-======= path/to/file.py | CHECKSUM_SHA256: abcdef1234567890... ======
+======= path/to/file.py ======
 ```
 
 ### Detailed Style (Default)
@@ -9046,7 +9046,7 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
   development
 - [Auto Bundle Guide](./06_auto_bundle_guide.md) - Automated bundling
 
-======= docs/01_m1f/01_claude_workflows.md | CHECKSUM_SHA256: bade52e3268acbc3b43ab69b84fb6ab9db813a3a144919a009c23e387ca4622e ======
+======= docs/01_m1f/01_claude_workflows.md ======
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
 
 Ever wished you had an AI buddy who actually understands your project structure? That's what happens when you combine Claude with m1f. This guide shows you how to turn Claude into your personal project assistant who knows exactly how to bundle, organize, and process your code.
@@ -9355,7 +9355,7 @@ Happy bundling! 🚀
 
 *P.S. - If Claude suggests something that seems off, just ask "Are you sure about that? Check @.m1f/m1f-docs.txt again." Works every time! 😉*
 
-======= docs/01_m1f/02_m1f_presets.md | CHECKSUM_SHA256: c5c372627bb673e34489670cdb16fbe2ad0ea747e96e8204cd8f6faff193952e ======
+======= docs/01_m1f/02_m1f_presets.md ======
 # m1f Preset System Documentation
 
 The m1f preset system allows you to define file-specific processing rules,
@@ -9899,7 +9899,7 @@ bundling system.
 - [**Auto Bundle Guide**](./06_auto_bundle_guide.md) - Automated bundling with
   presets
 
-======= docs/01_m1f/03_m1f_preset_per_file_settings.md | CHECKSUM_SHA256: de8f674acb18d499a5001ec9d3d7d8d815e9e2efb558599b82f8d290c5bde6a4 ======
+======= docs/01_m1f/03_m1f_preset_per_file_settings.md ======
 # Per-File-Type Settings in m1f Presets
 
 The m1f preset system supports fine-grained control over processing settings on
@@ -10162,7 +10162,7 @@ my_project:
 - [Use Case Examples](../../presets/example-use-cases.m1f-presets.yml) -
   Real-world scenarios
 
-======= docs/01_m1f/04_m1f_development_workflow.md | CHECKSUM_SHA256: c4e0d405feeb164eeacdea9a5bd0b71716d053f3f3c7a060bed2e19b10e5456b ======
+======= docs/01_m1f/04_m1f_development_workflow.md ======
 # m1f Development Workflow
 
 This document describes the recommended workflow for developing with m1f and
@@ -10398,7 +10398,7 @@ Add m1f to your CI pipeline:
     path: docs-bundle.txt
 ```
 
-======= docs/01_m1f/05_claude_code_integration.md | CHECKSUM_SHA256: 1d85a7d29dc6473c6459b411a4d31cf7d95ca0df6f384d2fd431592d28689512 ======
+======= docs/01_m1f/05_claude_code_integration.md ======
 # Claude Code Integration Guide
 
 This guide explains how to integrate Claude Code as an optional AI assistant for
@@ -10635,7 +10635,7 @@ export CLAUDE_CODE_PROJECT_ROOT="/path/to/m1f"
 - [m1f Tools Documentation](00_m1f.md)
 - [html2md Documentation](../03_html2md/30_html2md.md)
 
-======= docs/01_m1f/06_auto_bundle_guide.md | CHECKSUM_SHA256: 157974582d06108a3e6d18b435d481f7f569a7951eb02165bb21d72bb3d1aff7 ======
+======= docs/01_m1f/06_auto_bundle_guide.md ======
 # Auto-Bundle Guide
 
 The m1f auto-bundle feature allows you to automatically generate predefined bundles of files based on configuration. This is especially useful for maintaining consistent documentation bundles, creating project snapshots, and managing multiple projects on a server.
@@ -10960,7 +10960,7 @@ bundles:
       - "**/node_modules/**"
 ```
 
-======= docs/01_m1f/07_cli_reference.md | CHECKSUM_SHA256: ee07ac4dc3e883cd0b69d6d4c79390df944e42f9a4199483b6ba27f68e54e772 ======
+======= docs/01_m1f/07_cli_reference.md ======
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
@@ -11316,7 +11316,7 @@ See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration 
 4. **Performance**: For large projects, use `--include-extensions` to limit
    processing to specific file types.
 
-======= docs/01_m1f/08_troubleshooting.md | CHECKSUM_SHA256: 930debd50129fb8775865c6b4e6f3cf7a0e830553045757967e23fc9d19abfc7 ======
+======= docs/01_m1f/08_troubleshooting.md ======
 # Troubleshooting Guide
 
 This guide covers common issues and error messages you might encounter when
@@ -11538,7 +11538,7 @@ else
 fi
 ```
 
-======= docs/01_m1f/09_quick_reference.md | CHECKSUM_SHA256: 4a1916c4160779f4a9119de51312a9ef7c2d5bab2bca6730c22a106ec552a9f9 ======
+======= docs/01_m1f/09_quick_reference.md ======
 # m1f Quick Reference
 
 ## Most Common Commands
@@ -11770,7 +11770,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 - [Troubleshooting Guide](./08_troubleshooting.md)
 - [Preset Documentation](./02_m1f_presets.md)
 
-======= docs/01_m1f/10_preset_reference.md | CHECKSUM_SHA256: 9754d23b11b63cd8786949b6e0caa96075ea7656c8ea7a9af7c722d08e6753ce ======
+======= docs/01_m1f/10_preset_reference.md ======
 # m1f Preset System Complete Reference
 
 This document provides a comprehensive reference for the m1f preset system,
@@ -12309,7 +12309,7 @@ python -m tools.m1f --preset environments.yml --preset-group development
 python -m tools.m1f --preset environments.yml --preset-group production
 ```
 
-======= docs/01_m1f/11_preset_system_clarifications.md | CHECKSUM_SHA256: 7b0684e55150cf71ab8b35bb13b36a06d580aafbb24c123b9c758f5272943445 ======
+======= docs/01_m1f/11_preset_system_clarifications.md ======
 # Preset System Clarifications and Notes
 
 This document clarifies important aspects of the m1f preset system that may not
@@ -12494,7 +12494,7 @@ running on large codebases.
 
 This documentation is accurate as of m1f version 3.2.0.
 
-======= docs/01_m1f/12_git_hooks_setup.md | CHECKSUM_SHA256: f8f1b9cf627fdaccb2861e2415852a53455235801d011e4ffd7a1cf171ecefb9 ======
+======= docs/01_m1f/12_git_hooks_setup.md ======
 # m1f Git Hooks Setup Guide
 
 This guide explains how to set up Git hooks for automatic m1f bundle generation in your projects.
@@ -12713,7 +12713,7 @@ bundle:
 - [m1f Configuration](02_m1f_presets.md) - Preset system documentation
 - [Quick Reference](09_quick_reference.md) - Common m1f commands
 
-======= docs/02_s1f/20_s1f.md | CHECKSUM_SHA256: f8f1e648cd0bb9a811e1622921edc903afe1545a3a8a3ca2e6bdecad4b2336a4 ======
+======= docs/02_s1f/20_s1f.md ======
 # s1f (Split One File)
 
 A modern file extraction tool with async I/O that reconstructs original files
@@ -12921,7 +12921,7 @@ The tool provides comprehensive error handling:
 - **Permission Errors**: Clear reporting of file system permission issues
 - **Partial Recovery**: Continue extraction even if individual files fail
 
-======= docs/03_html2md/30_html2md.md | CHECKSUM_SHA256: 478d01fef82bb7d6c11addadde0142c21f0a791e44d921ab958dbb78d1be0ca2 ======
+======= docs/03_html2md/30_html2md.md ======
 # html2md (HTML to Markdown Converter)
 
 A modern HTML to Markdown converter with HTML structure analysis, custom extractors,
@@ -13446,7 +13446,7 @@ pip install beautifulsoup4 markdownify chardet pyyaml aiofiles rich pydantic
 
 **Note**: For web scraping functionality, use the separate `webscraper` tool which provides multiple backend options including HTTrack.
 
-======= docs/03_html2md/31_html2md_guide.md | CHECKSUM_SHA256: 0bf6368221ec1747a9f7e1d1b377c255f6cea3a735cd92f7eda7c99f8c5b81fb ======
+======= docs/03_html2md/31_html2md_guide.md ======
 # HTML to Markdown Converter Guide
 
 The `html2md` tool (v3.1.0) is a modern, async converter designed to transform
@@ -13968,7 +13968,7 @@ python -m tools.html2md convert ./html/ \
   --format m1f_bundle
 ```
 
-======= docs/03_html2md/32_html2md_workflow_guide.md | CHECKSUM_SHA256: d4d4625dc5a9c0b7ad828e0705994a32d1b3b9c40d1248dc663c404217010fa8 ======
+======= docs/03_html2md/32_html2md_workflow_guide.md ======
 # HTML2MD Workflow Guide
 
 This guide explains the recommended workflow for converting websites to Markdown using html2md with custom extractors.
@@ -14354,7 +14354,7 @@ The html2md workflow provides maximum flexibility:
 
 This approach ensures you can handle any website structure and produce clean, readable Markdown output.
 
-======= docs/03_html2md/33_html2md_test_suite.md | CHECKSUM_SHA256: 67676a577e975b7335d9f64127572d5cac1996919e3907ec044d0f708a175b4e ======
+======= docs/03_html2md/33_html2md_test_suite.md ======
 # HTML2MD Test Suite Documentation
 
 A comprehensive test suite for validating the html2md converter (v2.0.0) with
@@ -14702,7 +14702,7 @@ To contribute to the test suite:
 The test suite aims to cover all real-world HTML conversion scenarios to ensure
 robust and reliable Markdown output.
 
-======= docs/04_scrape/40_webscraper.md | CHECKSUM_SHA256: 3ba7ff5b3603e4e6e222ef935aa95ef621afafe1656d572147aa9792bbad94d2 ======
+======= docs/04_scrape/40_webscraper.md ======
 # webscraper (Website Downloader)
 
 A modern web scraping tool for downloading websites with multiple backend
@@ -15047,7 +15047,7 @@ If conservative settings don't work:
 - [m1f Documentation](../01_m1f/00_m1f.md) - For bundling converted content for
   LLMs
 
-======= docs/04_scrape/41_html2md_scraper_backends.md | CHECKSUM_SHA256: 94144b961d1546ad7ca268862e7064df2ce55a1eb67e30735a130ccb151551f2 ======
+======= docs/04_scrape/41_html2md_scraper_backends.md ======
 # Web Scraper Backends
 
 The HTML2MD tool supports multiple web scraping backends, each optimized for
@@ -15486,7 +15486,7 @@ To add a new scraper backend:
 
 See the BeautifulSoup implementation for a complete example.
 
-======= docs/05_development/55_version_management.md | CHECKSUM_SHA256: 039cfef08570ed50f64f27bfa6720af2a49d1b35b7989acadaa61a172b62b88e ======
+======= docs/05_development/55_version_management.md ======
 # Version Management
 
 This project uses centralized version management to ensure consistency across all components.
@@ -15568,7 +15568,7 @@ When adding a new tool or module that needs version info:
 - `__version__`: String format (e.g., "3.1.0")
 - `__version_info__`: Tuple format (e.g., (3, 1, 0))
 
-======= docs/99_misc/98_token_counter.md | CHECKSUM_SHA256: 3812c2cc10e08dee2abb0bea3485bf27b0acb08b375c4e5c80927b0e5f27a312 ======
+======= docs/99_misc/98_token_counter.md ======
 # token_counter - Token Estimation Tool
 
 The token_counter tool (v2.0.0) estimates token usage for LLM context planning,
@@ -15703,7 +15703,7 @@ This dependency is included in the project's requirements.txt file.
 3. **Buffer Space**: Leave 10-20% buffer for model responses
 4. **Regular Checks**: Re-check token counts after file modifications
 
-======= scripts/hooks/pre-commit | CHECKSUM_SHA256: 609cfe9eedcaac2075898090c9ce96f6109261955ad6357c4161b51838571889 ======
+======= scripts/hooks/pre-commit ======
 #!/bin/bash
 # m1f Auto-Bundle Git Pre-Commit Hook
 # This hook automatically runs m1f auto-bundle before each commit
@@ -15744,10 +15744,10 @@ fi
 
 exit 0
 
-======= tests/html2md/__init__.py | CHECKSUM_SHA256: 26558985c99540dfc3434b2d1f770a05205c252faad3e1c6c42b023f3e06680b ======
+======= tests/html2md/__init__.py ======
 """HTML to Markdown conversion tests."""
 
-======= tests/html2md/test_html2md.py | CHECKSUM_SHA256: 1e6770cf6fe50d0091524c25cc0835c777aab0db029316ebe6a821ddad8537d7 ======
+======= tests/html2md/test_html2md.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -15884,7 +15884,7 @@ class TestFrontmatterAndHeadings(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
-======= tests/html2md/test_integration.py | CHECKSUM_SHA256: 2cdc09efb078d2feeac7ea2966eef948fa6067801be5aa5f459d35b0d9401b1e ======
+======= tests/html2md/test_integration.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -16064,7 +16064,7 @@ class TestIntegration(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
-======= tests/html2md/test_local_scraping.py | CHECKSUM_SHA256: c367a12254fe0ed61b1608a4f1186110f293847ec0bd5104cea081db69cf59ed ======
+======= tests/html2md/test_local_scraping.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -16298,7 +16298,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-======= tests/html2md/test_scrapers.py | CHECKSUM_SHA256: 97eb6e53d351f64a04051c40acbbc763c8625a98986994ebd2dbade624e083c2 ======
+======= tests/html2md/test_scrapers.py ======
 """Tests for web scraper backends."""
 
 import asyncio
@@ -16784,7 +16784,7 @@ class TestNewScraperRegistry:
         scraper = create_scraper("playwright", config)
         assert isinstance(scraper, PlaywrightScraper)
 
-======= tests/html2md_server/README.md | CHECKSUM_SHA256: 2db7a0bd29a3864e680c41f8f76964813d48f071cd2dd1a2b640b107d35e4d9e ======
+======= tests/html2md_server/README.md ======
 # HTML2MD Test Suite
 
 A comprehensive test suite for the html2md converter featuring a local web
@@ -16994,7 +16994,7 @@ To add new test cases:
 
 Part of the M1F project. See main project license.
 
-======= tests/html2md_server/manage_server.py | CHECKSUM_SHA256: 7d585c9a52d238afdc921affc3b939d52d5a22830d2c7228369a300e2d849667 ======
+======= tests/html2md_server/manage_server.py ======
 #!/usr/bin/env python3
 """Manage the HTML2MD test server."""
 
@@ -17091,7 +17091,7 @@ if __name__ == "__main__":
     elif command == "status":
         status_server()
 
-======= tests/html2md_server/run_tests.sh | CHECKSUM_SHA256: 058dd96b9bfb7d9d9150f890d5ae2f7baa1c6eba23a1774b8b774125db661283 ======
+======= tests/html2md_server/run_tests.sh ======
 #!/bin/bash
 # Run HTML2MD Test Suite
 
@@ -17180,7 +17180,7 @@ fi
 
 exit $TEST_EXIT_CODE 
 
-======= tests/html2md_server/server.py | CHECKSUM_SHA256: d36c7d2389fbfa7c231f29810cf307239416b457f44231a82d27522b1b556fee ======
+======= tests/html2md_server/server.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -17393,7 +17393,7 @@ if __name__ == "__main__":
 
     app.run(host="0.0.0.0", port=8080, debug=True)
 
-======= tests/m1f/README.md | CHECKSUM_SHA256: b7c9387dcbea8fb9568e1920dd6fea1215694f5bc8a44669cc5dd42f58afdc13 ======
+======= tests/m1f/README.md ======
 # m1f (Make One File) Tests
 
 This directory contains comprehensive tests for the `m1f.py` script (the m1f
@@ -17488,10 +17488,10 @@ The tests cover all major functionality of the m1f tool (`m1f.py`):
 - Project: https://m1f.dev
 - License: See project LICENSE file
 
-======= tests/m1f/__init__.py | CHECKSUM_SHA256: ce50aee781564d56716b1dfe34f0fd1233acfb054cd89835c953a81d268ac1b5 ======
+======= tests/m1f/__init__.py ======
 """M1F test package."""
 
-======= tests/m1f/check_failures.py | CHECKSUM_SHA256: cf8d566d8b2943b0a704df26100081051aea8d1de83350124f707b0d7cbc6a5f ======
+======= tests/m1f/check_failures.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -17559,7 +17559,7 @@ print(
 )
 print("4. Encoding conversion - May have issues with character encoding detection")
 
-======= tests/m1f/conftest.py | CHECKSUM_SHA256: 785ab1b924a4eced267382276d237e84c5acaa7f6ed8fb12bb88e087f9287992 ======
+======= tests/m1f/conftest.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17729,7 +17729,7 @@ def m1f_cli_runner():
 
     return _run_cli
 
-======= tests/m1f/debug_simple_test.py | CHECKSUM_SHA256: abc716c5e1d0c6c066c86c805efa079329f35f02b0309e3950c70e311e87f977 ======
+======= tests/m1f/debug_simple_test.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -17811,7 +17811,7 @@ if result2.returncode == 0 and output2.exists():
 else:
     print(f"Error: {result2.stderr}")
 
-======= tests/m1f/debug_test.py | CHECKSUM_SHA256: 6e998d244c70a35736f96d70b7ce98c19250fcf71621d37d52b345d041789790 ======
+======= tests/m1f/debug_test.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -17890,7 +17890,7 @@ def test_no_default_excludes():
 if __name__ == "__main__":
     test_no_default_excludes()
 
-======= tests/m1f/exclude_paths.txt | CHECKSUM_SHA256: 00ec5ff689acab5d9c356081a682237aebcf64660aff2c5ae125596c500e4e08 ======
+======= tests/m1f/exclude_paths.txt ======
 # Paths to exclude from processing
 # One path per line
 code/index.php
@@ -17899,13 +17899,13 @@ docs/png.png
 
 # This is a comment line
 
-======= tests/m1f/input_paths.txt | CHECKSUM_SHA256: fb056b7c350480056ac76874a07e936cf40b352afc43c39d9171d86c909a9c06 ======
+======= tests/m1f/input_paths.txt ======
 # Input paths for testing
 source/code/python/hello.py
 source/code/python/utils.py
 source/docs/README.md
 
-======= tests/m1f/run_tests.py | CHECKSUM_SHA256: 7b2e0697e69bfdce8d71e38769f4163a0567cad927da6c1d6eb5e8981cbc46cc ======
+======= tests/m1f/run_tests.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -18017,7 +18017,7 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
-======= tests/m1f/test_encoding_conversion_main.py | CHECKSUM_SHA256: 3e533f74518e8cb06ccb1a799b279255193f801ac2b95b45ff13c67e06aa0c93 ======
+======= tests/m1f/test_encoding_conversion_main.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -18220,7 +18220,7 @@ def test_utf16le_is_recommended_encoding():
     assert "UTF-16-LE is a better intermediate format" in documentation
     assert "--convert-to-charset utf-16-le" in documentation
 
-======= tests/m1f/test_large_file.py | CHECKSUM_SHA256: 30ced94e65bedf10f5e6b6f36c4aec5fd321c4be7b63e7ac49ed5457513c7414 ======
+======= tests/m1f/test_large_file.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -18845,7 +18845,7 @@ if __name__ == "__main__":
 
     print("\nTest run complete.")
 
-======= tests/m1f/test_m1f.py | CHECKSUM_SHA256: ddfc28bf4bd67a909d4af2006b418fb976a2480b47c20a1c950d8a35eaa52a3c ======
+======= tests/m1f/test_m1f.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -21123,7 +21123,7 @@ class TestM1F:
         intro_file.unlink()
         custom_include.unlink()
 
-======= tests/m1f/test_m1f_advanced.py | CHECKSUM_SHA256: a4af251ee91f62c188ca912a3789c642181264a542eee30b8b0279b4daef0354 ======
+======= tests/m1f/test_m1f_advanced.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21765,7 +21765,7 @@ class TestM1FAdvanced(BaseM1FTest):
         # The exact format depends on the separator style
         assert output_with_binary.stat().st_size > output_no_binary.stat().st_size
 
-======= tests/m1f/test_m1f_basic.py | CHECKSUM_SHA256: f8a2c82ce5a902b74cd64571d601bc8ff0d3ab12b01100ae3bf0a729cab5e510 ======
+======= tests/m1f/test_m1f_basic.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22083,7 +22083,7 @@ class TestM1FBasic(BaseM1FTest):
             r"\d+\.\d+", result.stdout
         ), "Version number not found in output"
 
-======= tests/m1f/test_m1f_edge_cases.py | CHECKSUM_SHA256: 7a3f50bf9661e18f262a2654d075967c85223d5ff573ff4614ddcd000dc2aaf1 ======
+======= tests/m1f/test_m1f_edge_cases.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22536,7 +22536,7 @@ test_*.py
         assert "test.txt" in content
         assert "Test content" in content
 
-======= tests/m1f/test_m1f_encoding.py | CHECKSUM_SHA256: e107a2c3868a08aa7fda964a1a9341b08cf10618d49736ea5b73e53bf446bad2 ======
+======= tests/m1f/test_m1f_encoding.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22890,7 +22890,7 @@ class TestM1FEncoding(BaseM1FTest):
         assert "#!/usr/bin/env python3" in content
         assert "print('Hello')" in content
 
-======= tests/m1f/test_m1f_file_hash.py | CHECKSUM_SHA256: 99382dd2c07c8efd97eee3546c4dbddc78e967570feee83d7202a7ede366b9b1 ======
+======= tests/m1f/test_m1f_file_hash.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23319,7 +23319,7 @@ class TestM1FFileHash(BaseM1FTest):
         ]
         assert len(output_files) == 1, "Should create output despite mtime errors"
 
-======= tests/m1f/test_m1f_integration.py | CHECKSUM_SHA256: 15c3f3370d6b551d8f9e6ce64ce9d313e42cb28e2aedf6a5a7e23c6ed79d2fe4 ======
+======= tests/m1f/test_m1f_integration.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23759,7 +23759,7 @@ temp/
             assert any("README.md" in name for name in names)
             assert not any(".py" in name for name in names)
 
-======= tests/m1f/test_m1f_presets_basic.py | CHECKSUM_SHA256: af817f5d29275cc227a2a6bd4c744f40464b4874a5ae96e62c2370e17f789649 ======
+======= tests/m1f/test_m1f_presets_basic.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23903,7 +23903,7 @@ globals:
         # MD should have empty lines removed
         assert "# Test\nMultiple empty lines" in content
 
-======= tests/m1f/test_m1f_presets_integration.py | CHECKSUM_SHA256: 6576d755108802840ca0af4517648d1a0eaec9d8acb6ebd165bc52f01e829816 ======
+======= tests/m1f/test_m1f_presets_integration.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24343,7 +24343,7 @@ code:
         # This test demonstrates the structure - actual auto-bundle integration
         # would require running the auto-bundle command
 
-======= tests/m1f/test_m1f_presets_v3_2.py | CHECKSUM_SHA256: 5c61094d8ba1033e9a592b6ca67b90a066565c41b0b5d2cbab50a071b5aed07b ======
+======= tests/m1f/test_m1f_presets_v3_2.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24835,7 +24835,7 @@ production:
         assert "test.txt" in content
         assert exit_code == 0
 
-======= tests/m1f/test_multiple_exclude_include_files.py | CHECKSUM_SHA256: e96140527c51d06b80610e30571cf38f6eb23d2c119c7048634ed1d1f7b0800b ======
+======= tests/m1f/test_multiple_exclude_include_files.py ======
 """
 Test multiple exclude and include files functionality.
 """
@@ -25106,7 +25106,7 @@ class TestMultipleExcludeIncludeFiles:
         assert "secret.key" not in file_names
         assert "exclude_me.py" not in file_names
 
-======= tests/m1f/test_s1f_target_encoding.py | CHECKSUM_SHA256: 4f84510f33feb79fbdae837fc6fe33df0610bbc60a07f9bfe5d93cd4c39a034b ======
+======= tests/m1f/test_s1f_target_encoding.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
@@ -25294,7 +25294,7 @@ def test_target_encoding():
 if __name__ == "__main__":
     test_target_encoding()
 
-======= tests/m1f/test_security_check.py | CHECKSUM_SHA256: 6558f258b1f24529836c384bdf5465b01a8ea1d091f3b6766ff9c741a39a7e43 ======
+======= tests/m1f/test_security_check.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25454,7 +25454,7 @@ def test_security_check_warn():
                 or "SECURITY WARNING" in log_content
             )
 
-======= tests/m1f/test_summary.md | CHECKSUM_SHA256: 861505f064196d066cce31500aecdec71690132965273fc6f8dca02387c3aac6 ======
+======= tests/m1f/test_summary.md ======
 # M1F Test Failure Summary
 
 ## Fixed Issues
@@ -25526,7 +25526,7 @@ def test_security_check_warn():
    - Fixing the exclude logic when combined with `--no-default-excludes`
    - Verifying filename format for hash+timestamp combination
 
-======= tests/m1f/test_symlinks.py | CHECKSUM_SHA256: 2e4b4667ee2df343ab5fd6bb8d11d36fc8a5bc915cd16de9d5e4056a7822843c ======
+======= tests/m1f/test_symlinks.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -25755,7 +25755,7 @@ class TestSymlinkHandling(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
-======= tests/s1f/README.md | CHECKSUM_SHA256: 7e57cd348f9213130648e3a4570be12ff418b988b19ce7b9b3190bca5cde8a0e ======
+======= tests/s1f/README.md ======
 # s1f (Split One File) Test Suite
 
 This directory contains tests for the `s1f.py` utility (the s1f tool). The test
@@ -25872,10 +25872,10 @@ The tests verify that:
 - pytest
 - Access to the original source files in `tests/m1f/source/`
 
-======= tests/s1f/__init__.py | CHECKSUM_SHA256: 2579862d8add78f5eab31c56a2aa04f989c7e474bda817b6327307ada315e57b ======
+======= tests/s1f/__init__.py ======
 """S1F test package."""
 
-======= tests/s1f/conftest.py | CHECKSUM_SHA256: bf0f74082cc872420df1df3c59156624e4aac621c71f5501fc74b026875473eb ======
+======= tests/s1f/conftest.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26189,7 +26189,7 @@ def create_m1f_output(temp_dir) -> Callable[[dict[str, str], str], Path]:
 
     return _create_output
 
-======= tests/s1f/run_tests.py | CHECKSUM_SHA256: ec059a31cae69edf7b2f040d6a5bcfebc98ecd735a99df3da6e9926fb3b7bf46 ======
+======= tests/s1f/run_tests.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -26264,7 +26264,7 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
-======= tests/s1f/test_s1f.py | CHECKSUM_SHA256: cc1d6c0e3c6cc6a9e946c72aa2333e1e47930c28f4092646ef460c8e179ebefd ======
+======= tests/s1f/test_s1f.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -26819,7 +26819,7 @@ class TestS1F:
 if __name__ == "__main__":
     pytest.main(["-xvs", __file__])
 
-======= tests/s1f/test_s1f_async.py | CHECKSUM_SHA256: 114d206a40ca69c90b2da78b9a9c724571c26fafac9ca2d75065537d233efbde ======
+======= tests/s1f/test_s1f_async.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27023,7 +27023,7 @@ class TestS1FAsync(BaseS1FTest):
         assert output_path.exists()
         assert output_path.read_text() == "Test content"
 
-======= tests/s1f/test_s1f_basic.py | CHECKSUM_SHA256: cc30dad1d239101e54cff1d09bbddcbf1b17efd9e50bd715ad7b1013652b1f71 ======
+======= tests/s1f/test_s1f_basic.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27315,7 +27315,7 @@ class TestS1FBasic(BaseS1FTest):
                     extracted_file.read_text() == expected_content
                 ), f"Content mismatch for {filepath} in {style} format"
 
-======= tests/s1f/test_s1f_encoding.py | CHECKSUM_SHA256: 382a6240fb91a32f7de041a027c2cbfd6a3d9cc4386f87c7428cbb28ab954a28 ======
+======= tests/s1f/test_s1f_encoding.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27693,7 +27693,7 @@ class TestS1FEncoding(BaseS1FTest):
             content = extracted.read_text(encoding="utf-8")
             assert expected_content in content
 
-======= tools/html2md_tool/__init__.py | CHECKSUM_SHA256: c1ed0a807b2922fa280777a578d27a83ad8518cb2bbfeb7168ff97a3f46f0f73 ======
+======= tools/html2md_tool/__init__.py ======
 """
 HTML to Markdown Converter - Modern Web Content Extraction Tool
 
@@ -27730,7 +27730,7 @@ __all__ = [
     "extract_title_from_html",
 ]
 
-======= tools/html2md_tool/__main__.py | CHECKSUM_SHA256: 1dfc79852e3bea6d920a63682ca7a847ecf66f4e756f0aa112d8f726acfbf443 ======
+======= tools/html2md_tool/__main__.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
@@ -27742,7 +27742,7 @@ from .cli import main
 if __name__ == "__main__":
     main()
 
-======= tools/html2md_tool/analyze_html.py | CHECKSUM_SHA256: fc6c8891d160a582a34390cb7e3bd671fa98c82f34eab04fcfca99cc56debe43 ======
+======= tools/html2md_tool/analyze_html.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -28012,7 +28012,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-======= tools/html2md_tool/api.py | CHECKSUM_SHA256: eb79a069b366fd5d7b4a37af37af2712d7a777b5382a7ac64f4c317945c43b1d ======
+======= tools/html2md_tool/api.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28567,7 +28567,7 @@ def convert_html(html_content: str, **kwargs) -> str:
     converter = Html2mdConverter(config)
     return converter.convert_html(html_content)
 
-======= tools/html2md_tool/cli.py | CHECKSUM_SHA256: 26aa3eb75a7848aa244b8a9fb59bf11bacc3a3ef564cd23af96d6550c66825c5 ======
+======= tools/html2md_tool/cli.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -29127,7 +29127,7 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-======= tools/html2md_tool/core.py | CHECKSUM_SHA256: f13ec4618b5df779ee5cf2ccd87f9620cb58dfd8c6439047297b93aaebf3f17f ======
+======= tools/html2md_tool/core.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29410,7 +29410,7 @@ class MarkdownConverter:
 
         return markdown
 
-======= tools/html2md_tool/extractors.py | CHECKSUM_SHA256: 3a8e05da2a774bf7af6650e177737bab37edce4aba75cc1d7f3dd7df7d416031 ======
+======= tools/html2md_tool/extractors.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29570,7 +29570,7 @@ class DefaultExtractor(BaseExtractor):
 
         return soup
 
-======= tools/html2md_tool/preprocessors.py | CHECKSUM_SHA256: 313172cf5bca29e65de9cd4eb83f8bf60afd19990fdf5e47a84c8ad92b060c70 ======
+======= tools/html2md_tool/preprocessors.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29718,7 +29718,7 @@ def preprocess_html(html_content: str, config: PreprocessingConfig) -> str:
 
     return str(soup)
 
-======= tools/html2md_tool/utils.py | CHECKSUM_SHA256: ff11fabe1dcb7a651afa00b5d01346445de8ec141cc100df8cf4c2b7003a6cf1 ======
+======= tools/html2md_tool/utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30057,7 +30057,7 @@ def create_progress_bar() -> "Progress":
         transient=True,
     )
 
-======= tools/m1f/__init__.py | CHECKSUM_SHA256: f03e03048a6c9ce17562df6a1a2f0d1e57afdc56e8bbb54c258be07d33672cf7 ======
+======= tools/m1f/__init__.py ======
 """
 m1f - Make One File
 
@@ -30232,7 +30232,7 @@ __all__ = [
     "main",
 ]
 
-======= tools/m1f/__main__.py | CHECKSUM_SHA256: 5f806b72a975d3721b7ffc7df61dcc5db8598867a2fa5ee43c71c56b51f8da2c ======
+======= tools/m1f/__main__.py ======
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
 
@@ -30251,7 +30251,7 @@ from tools.m1f import main
 if __name__ == "__main__":
     sys.exit(main())
 
-======= tools/m1f/archive_creator.py | CHECKSUM_SHA256: dd4827239f0b5d047f82e5af7bf8001b54a6de94dbd04912335b5b0dfb06d212 ======
+======= tools/m1f/archive_creator.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30383,7 +30383,7 @@ class ArchiveCreator:
         # Run in thread pool to avoid blocking
         await asyncio.to_thread(_write_tar)
 
-======= tools/m1f/auto_bundle.py | CHECKSUM_SHA256: 9430e349dc221b913ec64da54c9f940aeae39da7b2a8f89efd7c907940ffc164 ======
+======= tools/m1f/auto_bundle.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30824,7 +30824,7 @@ class AutoBundler:
                 success = False
         return success
 
-======= tools/m1f/cli.py | CHECKSUM_SHA256: 338b520fc83de9676f732d9735627fbeea5b9202944357a687db1b0e87e022b3 ======
+======= tools/m1f/cli.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31219,7 +31219,7 @@ def parse_args(
 
     return parsed_args
 
-======= tools/m1f/config.py | CHECKSUM_SHA256: 6ea72c4cb3e3fa1ef016b8f9cb9f5c46d5af6e473da42c6cded0cc6a4b95160b ======
+======= tools/m1f/config.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31604,7 +31604,7 @@ def normalize_extensions(extensions: List[str]) -> List[str]:
 
     return normalized
 
-======= tools/m1f/config_loader.py | CHECKSUM_SHA256: c1247d6c59d8f2f8f67001c2cce69240f0897f6361b4ea945252b8ab94bb5fd5 ======
+======= tools/m1f/config_loader.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31871,7 +31871,7 @@ my_project:
             readme.write_text(readme_content)
             logger.info(f"Created README: {readme}")
 
-======= tools/m1f/constants.py | CHECKSUM_SHA256: b8ccf0300f7ea6dda5ab7d292bed94a224e0edc05f0eacf06c547df5c83a8a10 ======
+======= tools/m1f/constants.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31946,7 +31946,7 @@ ANSI_COLORS = {
     "BOLD": "\033[1m",
 }
 
-======= tools/m1f/core.py | CHECKSUM_SHA256: 388307802e8ea5a081cde8d0e92561b594639284b20787a8602b9cc05c14dc68 ======
+======= tools/m1f/core.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32422,7 +32422,7 @@ class FileCombiner:
 
         self.logger.warning(message)
 
-======= tools/m1f/encoding_handler.py | CHECKSUM_SHA256: 6a79a5469a0ba466322214ef25bcea6a9e7d5d31af5719b1286b6abb855e552f ======
+======= tools/m1f/encoding_handler.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32672,7 +32672,7 @@ class EncodingHandler:
             error_content = f"[ERROR: Unable to read file. Reason: {e}]"
             return error_content, True
 
-======= tools/m1f/exceptions.py | CHECKSUM_SHA256: 3c7252f9187b44c46f9c31281535add0760ee08ab7f4271f0abe51fd6de57fb7 ======
+======= tools/m1f/exceptions.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32746,7 +32746,7 @@ class ArchiveError(M1FError):
 
     exit_code = 8
 
-======= tools/m1f/file_processor.py | CHECKSUM_SHA256: 5114c44843a4ed323222bd0cc56c515fcac837eb46bd254f118e6fadeb43424a ======
+======= tools/m1f/file_processor.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33476,7 +33476,7 @@ class FileProcessor:
                 f"Error loading exclude patterns from {exclude_file}: {e}"
             )
 
-======= tools/m1f/logging.py | CHECKSUM_SHA256: 4f0ea3738c29fd412ea7baa6cfdbf6a59588d5d32388f592797c7e8848b46b23 ======
+======= tools/m1f/logging.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33696,7 +33696,7 @@ async def logging_context(config: Config, output_path: Optional[Path] = None):
     finally:
         await manager.cleanup()
 
-======= tools/m1f/output_writer.py | CHECKSUM_SHA256: a8e500fe1cd9bc72012f9f33f41379dc017c692611f414e9215aaaef49f49aaa ======
+======= tools/m1f/output_writer.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34091,7 +34091,7 @@ class OutputWriter:
 
             return True
 
-======= tools/m1f/presets.py | CHECKSUM_SHA256: 82088476064f8cfa6fdd5fcaca013d7eadf40876b2db4cca92a7ebdd51efad86 ======
+======= tools/m1f/presets.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -35147,7 +35147,7 @@ def list_loaded_presets(manager: PresetManager) -> str:
 
     return "\n".join(lines)
 
-======= tools/m1f/security_scanner.py | CHECKSUM_SHA256: fdb0bbea4b75ffa1f3146dbc2ea91e1de1e3bb3bf361f302fbbedc40fe95978f ======
+======= tools/m1f/security_scanner.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -35346,7 +35346,7 @@ class SecurityScanner:
         else:
             return "Secret"
 
-======= tools/m1f/separator_generator.py | CHECKSUM_SHA256: 005e68b9a84ad29af973785f196dd568b0e231cae9144167ca07104990b590ff ======
+======= tools/m1f/separator_generator.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -35483,8 +35483,7 @@ class SeparatorGenerator:
 
     def _generate_standard(self, metadata: dict, checksum: str) -> str:
         """Generate Standard style separator."""
-        if checksum:
-            return f"======= {metadata['relative_path']} | CHECKSUM_SHA256: {checksum} ======"
+        # Standard format now only shows file path without checksum
         return f"======= {metadata['relative_path']} ======"
 
     def _generate_detailed(self, metadata: dict, checksum: str, linesep: str) -> str:
@@ -35632,7 +35631,7 @@ class SeparatorGenerator:
 
         return encoding_map.get(enc_lower, encoding_name)
 
-======= tools/m1f/utils.py | CHECKSUM_SHA256: 8a47743ea0a409cbec53d96a94781512b896dee92e1545857bf16e3ea401c441 ======
+======= tools/m1f/utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -35947,7 +35946,7 @@ def sort_files_by_depth_and_name(
 
     return sorted(file_paths, key=sort_key)
 
-======= tools/s1f/__init__.py | CHECKSUM_SHA256: bfcd862db57c7a677a07f3a38bd8285f36bf234a8071edf9205f25279ccad83d ======
+======= tools/s1f/__init__.py ======
 """
 s1f - Split One File
 ====================
@@ -35977,7 +35976,7 @@ __all__ = [
     "__project__",
 ]
 
-======= tools/s1f/__main__.py | CHECKSUM_SHA256: b8052cea2bc539ef7bb546956bf356316945943571fe80164a8c727568694fec ======
+======= tools/s1f/__main__.py ======
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
 
@@ -35989,7 +35988,7 @@ from .cli import main
 if __name__ == "__main__":
     sys.exit(main())
 
-======= tools/s1f/cli.py | CHECKSUM_SHA256: c87cc0b4fc6476628d7007ca16ac5756f92e3ece8868a78cd62145d1ecb099d8 ======
+======= tools/s1f/cli.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36221,7 +36220,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 if __name__ == "__main__":
     sys.exit(main())
 
-======= tools/s1f/config.py | CHECKSUM_SHA256: d5583a46700a646adcbb7b21b2cf24f81442d5efa500a2bcf7b0ac9fbaa9b04f ======
+======= tools/s1f/config.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36291,7 +36290,7 @@ class Config:
             return self.target_encoding
         return "utf-8"
 
-======= tools/s1f/core.py | CHECKSUM_SHA256: 3c6ff59d26a285a6485824601172f221a71d63e6ec1876676dcee0d79fcd88f3 ======
+======= tools/s1f/core.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36544,7 +36543,7 @@ class FileSplitter:
 # Alias for backward compatibility with tests
 S1FExtractor = FileSplitter
 
-======= tools/s1f/exceptions.py | CHECKSUM_SHA256: b9c6419f88cc54a73c827859125e7f5829359caaa108eca01016881f8a729276 ======
+======= tools/s1f/exceptions.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36607,7 +36606,7 @@ class ChecksumMismatchError(S1FError):
         self.expected_checksum = expected
         self.actual_checksum = actual
 
-======= tools/s1f/logging.py | CHECKSUM_SHA256: 9b507eddbc3de36bc6ef44c1f698d42ae71bfd55abf138982aeaeb5ddf065822 ======
+======= tools/s1f/logging.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36730,7 +36729,7 @@ def get_logger(name: str) -> logging.Logger:
     """Get a logger instance."""
     return logging.getLogger(name)
 
-======= tools/s1f/models.py | CHECKSUM_SHA256: 18629e7a454bd5250b72f24120d95cc84682ea799e07acfbb8de776e533711df ======
+======= tools/s1f/models.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36823,7 +36822,7 @@ class SeparatorMatch:
     header_length: int = 0
     uuid: Optional[str] = None
 
-======= tools/s1f/parsers.py | CHECKSUM_SHA256: f06494843bc57df7eb546df2d5093ca9a17b647b48f16c3c46c873c1d181ade1 ======
+======= tools/s1f/parsers.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36843,7 +36842,7 @@ class SeparatorMatch:
 import json
 import re
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any, Pattern
+from typing import List, Optional, Dict, Any, Pattern, Tuple
 from datetime import datetime
 import logging
 
@@ -37379,13 +37378,39 @@ class CombinedFileParser:
             StandardParser(logger),
         ]
 
+    def _find_code_blocks(self, content: str) -> List[Tuple[int, int]]:
+        """Find all code block regions in the content."""
+        code_blocks = []
+        
+        # Find triple backtick code blocks
+        pattern = re.compile(r'```[\s\S]*?```', re.MULTILINE)
+        for match in pattern.finditer(content):
+            code_blocks.append((match.start(), match.end()))
+        
+        return code_blocks
+
+    def _is_in_code_block(self, position: int, code_blocks: List[Tuple[int, int]]) -> bool:
+        """Check if a position is inside a code block."""
+        for start, end in code_blocks:
+            if start <= position < end:
+                return True
+        return False
+
     def parse(self, content: str) -> List[ExtractedFile]:
         """Parse the combined file content and extract individual files."""
+        # Find all code blocks first
+        code_blocks = self._find_code_blocks(content)
+        
         # Find all matches from all parsers
         matches: List[SeparatorMatch] = []
 
         for parser in self.parsers:
             for match in parser.pattern.finditer(content):
+                # Skip matches inside code blocks
+                if self._is_in_code_block(match.start(), code_blocks):
+                    self.logger.debug(f"Skipping separator inside code block at position {match.start()}")
+                    continue
+                    
                 separator_match = parser.parse_match(match, content, len(matches))
                 if separator_match:
                     matches.append(separator_match)
@@ -37434,7 +37459,7 @@ class CombinedFileParser:
 
         return extracted_files
 
-======= tools/s1f/utils.py | CHECKSUM_SHA256: fc0c09d935d7778e6edd8da2e3ebaf0323db37244b438cd1f08d75f5924b8845 ======
+======= tools/s1f/utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -37594,7 +37619,7 @@ def is_binary_content(content: bytes, sample_size: int = 8192) -> bool:
 
     return False
 
-======= tools/s1f/writers.py | CHECKSUM_SHA256: 6b3674a219dbc95d59f3ea9061e63c56c0161e2a71f24eeaa6f0afb1f1eb5a51 ======
+======= tools/s1f/writers.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -37946,12 +37971,12 @@ class FileWriter:
                 f"The file content may be corrupted or was altered."
             )
 
-======= tools/scrape_tool/__init__.py | CHECKSUM_SHA256: 2e2cf8ee716b2e5909ff39267ec7c47fb4db666f7f89a3ee71d8b16941fd2337 ======
+======= tools/scrape_tool/__init__.py ======
 """Web scraper tool for downloading websites."""
 
 from .._version import __version__, __version_info__
 
-======= tools/scrape_tool/__main__.py | CHECKSUM_SHA256: 38906b635a3c0519e4110e6688cd4fddce144bc7e9177282cee24a347c6e6eaa ======
+======= tools/scrape_tool/__main__.py ======
 """Entry point for m1f-scrape module."""
 
 from .cli import main
@@ -37959,7 +37984,7 @@ from .cli import main
 if __name__ == "__main__":
     main()
 
-======= tools/scrape_tool/cli.py | CHECKSUM_SHA256: 8bc639bd16285c70a22f88d70a7225577f6ef4f7cca29de32dc404cd89479ae5 ======
+======= tools/scrape_tool/cli.py ======
 """Command-line interface for m1f-scrape."""
 
 import argparse
@@ -38129,7 +38154,7 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-======= tools/scrape_tool/config.py | CHECKSUM_SHA256: c63389a1e1c41e039f7ef0b59d32165ad7fad8660574329f76ef8fc86fdd206a ======
+======= tools/scrape_tool/config.py ======
 """Configuration models for m1f-scrape."""
 
 from enum import Enum
@@ -38207,7 +38232,7 @@ class Config(BaseModel):
     verbose: bool = Field(default=False, description="Enable verbose output")
     quiet: bool = Field(default=False, description="Suppress output except errors")
 
-======= tools/scrape_tool/crawlers.py | CHECKSUM_SHA256: fefa182f0fbbfee034e760c6f5b3ca42c677ea1d79b68edf1642d08fb3672cc9 ======
+======= tools/scrape_tool/crawlers.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -38481,7 +38506,7 @@ class WebCrawler:
         finally:
             loop.close()
 
-======= tests/html2md_server/templates/404.html | CHECKSUM_SHA256: d9214efa9dd75562983beebb2b5a771cd878cb1a40a81e59375c429a28456ac0 ======
+======= tests/html2md_server/templates/404.html ======
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38513,7 +38538,7 @@ class WebCrawler:
 </body>
 </html> 
 
-======= tests/html2md_server/test_pages/code-examples.html | CHECKSUM_SHA256: 2275dedb469888de9f1c45fe76c397d6d9fc395587a6f821004d5ba4e949e4bb ======
+======= tests/html2md_server/test_pages/code-examples.html ======
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39551,7 +39576,7 @@ def print_unicode():
 </body>
 </html> 
 
-======= tests/html2md_server/test_pages/complex-layout.html | CHECKSUM_SHA256: 697ffc1b488d36c5db15eff496301dc2034034096dffedfa616b769869410106 ======
+======= tests/html2md_server/test_pages/complex-layout.html ======
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39958,7 +39983,7 @@ function deeplyNested() {
 </body>
 </html> 
 
-======= tests/html2md_server/test_pages/html2md-documentation.html | CHECKSUM_SHA256: 5c4313712c002cbd0ea2ad09eb88a117610444ae48022957ca8d10a9b13d247b ======
+======= tests/html2md_server/test_pages/html2md-documentation.html ======
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40463,7 +40488,7 @@ python tools/html2md.py \
 </body>
 </html> 
 
-======= tests/html2md_server/test_pages/index.html | CHECKSUM_SHA256: f3b5734dbe0555a65f1e8852ad394ce8a77dba7a154b0c13580d28d3d052dd7b ======
+======= tests/html2md_server/test_pages/index.html ======
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40626,7 +40651,7 @@ $ python tools/html2md.py \
 </body>
 </html> 
 
-======= tests/html2md_server/test_pages/m1f-documentation.html | CHECKSUM_SHA256: 78fb5f7bccf936f854231ae131461a439dd39788cc4f98d0ce8df4a7c5671962 ======
+======= tests/html2md_server/test_pages/m1f-documentation.html ======
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41078,7 +41103,7 @@ with open("context.txt", "r") as f:
 </body>
 </html> 
 
-======= tools/html2md_tool/config/__init__.py | CHECKSUM_SHA256: 25abe55da0e3290c9cff56101eb5059207b1d20ad3fa1afe5da78dc64c146bc2 ======
+======= tools/html2md_tool/config/__init__.py ======
 """Configuration system for mf1-html2md."""
 
 from .loader import load_config, save_config
@@ -41106,7 +41131,7 @@ __all__ = [
     "save_config",
 ]
 
-======= tools/html2md_tool/config/loader.py | CHECKSUM_SHA256: 86382993f15fc837386e5969c9208333bfb3c88617259d8736ac63fceff244e1 ======
+======= tools/html2md_tool/config/loader.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -41213,7 +41238,7 @@ def _config_to_dict(config: Config) -> Dict[str, Any]:
 
     return convert_paths(data)
 
-======= tools/html2md_tool/config/models.py | CHECKSUM_SHA256: 5bef144cffe55814a93d0a54308dd7d897c0f033494bce1842727c30568cb95e ======
+======= tools/html2md_tool/config/models.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -41432,7 +41457,7 @@ class Config:
                 remove_empty_elements=True,
             )
 
-======= tools/scrape_tool/scrapers/README.md | CHECKSUM_SHA256: 254c57ed9247905430ae6111a67c0025efbaaac2583338a82598b7eab32b027a ======
+======= tools/scrape_tool/scrapers/README.md ======
 # HTML2MD Web Scrapers
 
 This module provides a pluggable architecture for web scraping backends in the
@@ -41520,7 +41545,7 @@ All scrapers share common configuration options through `ScraperConfig`:
 
 Backend-specific options can be added as needed in the scraper implementation.
 
-======= tools/scrape_tool/scrapers/__init__.py | CHECKSUM_SHA256: 8e90215fdfdd945f0be7e61e951a8057e1006304bd16ee9d0483ee263189161c ======
+======= tools/scrape_tool/scrapers/__init__.py ======
 """Web scraper backends for HTML2MD."""
 
 from typing import Dict, Type, Optional
@@ -41612,7 +41637,7 @@ def create_scraper(
     scraper_class = SCRAPER_REGISTRY[backend]
     return scraper_class(config)
 
-======= tools/scrape_tool/scrapers/base.py | CHECKSUM_SHA256: 16ed668b50cb09dfb4c3dcf3a23eb5b192800748d6df9539bf3f2bb56589291b ======
+======= tools/scrape_tool/scrapers/base.py ======
 """Abstract base class for web scrapers."""
 
 from abc import ABC, abstractmethod
@@ -41780,7 +41805,7 @@ class WebScraperBase(ABC):
         """Async context manager exit."""
         pass
 
-======= tools/scrape_tool/scrapers/beautifulsoup.py | CHECKSUM_SHA256: 0fc4dff25b2a3db379e56cd0321dbbdeb40670b23d2b22376fde5667fdf2bdab ======
+======= tools/scrape_tool/scrapers/beautifulsoup.py ======
 """BeautifulSoup4-based web scraper implementation."""
 
 import asyncio
@@ -42070,7 +42095,7 @@ class BeautifulSoupScraper(WebScraperBase):
 
         return links
 
-======= tools/scrape_tool/scrapers/httrack.py | CHECKSUM_SHA256: 3dc83d400b6f00a82cba11206953e46709cde74a7d1b19ed0db12110973b1a8d ======
+======= tools/scrape_tool/scrapers/httrack.py ======
 """HTTrack-based web scraper implementation."""
 
 import asyncio
@@ -42371,7 +42396,7 @@ class HTTrackScraper(WebScraperBase):
                 logger.error(f"Error processing {html_file}: {e}")
                 continue
 
-======= tools/scrape_tool/scrapers/playwright.py | CHECKSUM_SHA256: 696893fd8100ce57b7578b81c902b537f4d2f0952f303209c15ca365f447a787 ======
+======= tools/scrape_tool/scrapers/playwright.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -42791,7 +42816,7 @@ class PlaywrightScraper(WebScraperBase):
 
         logger.info(f"Playwright scraping complete. Scraped {pages_scraped} pages")
 
-======= tools/scrape_tool/scrapers/scrapy_scraper.py | CHECKSUM_SHA256: 332c697704db363b69e05f5b0b62d075b2bd7227ba340910c60bc47c0dd0e20a ======
+======= tools/scrape_tool/scrapers/scrapy_scraper.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -43167,7 +43192,7 @@ class ScrapyScraper(WebScraperBase):
 
         logger.info(f"Scrapy scraping complete. Scraped {pages_yielded} pages")
 
-======= tools/scrape_tool/scrapers/selectolax.py | CHECKSUM_SHA256: e82a9017ce04f44b71845e5b22d83b4bb2488e72589a2b2b1f43db621b5eb8c8 ======
+======= tools/scrape_tool/scrapers/selectolax.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -43471,7 +43496,7 @@ class SelectolaxScraper(WebScraperBase):
 
         logger.info(f"Scraping complete. Scraped {pages_scraped} pages")
 
-======= tests/html2md_server/static/css/modern.css | CHECKSUM_SHA256: ff4c7508694e8c6de21fd9998379fc79fa407008f436b80692240dcd544ab6eb ======
+======= tests/html2md_server/static/css/modern.css ======
 :root {
   --primary-color: #3b82f6;
   --secondary-color: #8b5cf6;
@@ -43862,7 +43887,7 @@ details[open] summary {
   margin-bottom: 1rem;
 } 
 
-======= tests/html2md_server/static/js/main.js | CHECKSUM_SHA256: 79558d81167efeb3db6f96c5d8e52b11e5fb474f9914859605be2fe57b429700 ======
+======= tests/html2md_server/static/js/main.js ======
 // Dark mode toggle
 function initDarkMode() {
   const theme = localStorage.getItem('theme') || 'light';
@@ -44006,7 +44031,7 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 } 
 
-======= tools/scrape_tool/scrapers/configs/beautifulsoup.yaml | CHECKSUM_SHA256: b698bcdc62d93670226a1ed8cf8051eed6c5ced9d8f0cd679bf814d8808bca53 ======
+======= tools/scrape_tool/scrapers/configs/beautifulsoup.yaml ======
 # BeautifulSoup scraper configuration example
 scraper_backend: beautifulsoup
 scraper_config:
@@ -44020,7 +44045,7 @@ crawler:
   respect_robots_txt: true
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-======= tools/scrape_tool/scrapers/configs/cloudflare.yaml | CHECKSUM_SHA256: ee4f50f102364b7e3efa838ef11281769f4f4c114f8db1cda7fe3958a79b87f3 ======
+======= tools/scrape_tool/scrapers/configs/cloudflare.yaml ======
 # Conservative configuration for sites with Cloudflare protection
 # These settings help avoid triggering Cloudflare's bot detection
 
@@ -44062,7 +44087,7 @@ crawler:
 # 3. Use browser automation (Playwright) as last resort
 # 4. Some sites may require manual browsing or API access
 
-======= tools/scrape_tool/scrapers/configs/httrack.yaml | CHECKSUM_SHA256: 9887c37155539bbaaeb5fa3edebcf58cfdfb51e2fa0ae17aa6a764fb68d1e982 ======
+======= tools/scrape_tool/scrapers/configs/httrack.yaml ======
 # HTTrack scraper configuration - Conservative settings for Cloudflare protection
 scraper_backend: httrack
 scraper_config:
@@ -44086,7 +44111,7 @@ crawler:
     - "*.pdf"
     - "*.zip"
 
-======= tools/scrape_tool/scrapers/configs/playwright.yaml | CHECKSUM_SHA256: a9619765a75cb5c21810c9971fbfce23794693717d8b0ddcb427772b7fd81150 ======
+======= tools/scrape_tool/scrapers/configs/playwright.yaml ======
 # Playwright scraper configuration
 # Browser-based scraping for JavaScript-heavy sites
 
@@ -44163,7 +44188,7 @@ browser_config:
 # python -m tools.mf1-html2md crawl https://example.com -o output/ \
 #   --scraper playwright --scraper-config playwright.yaml
 
-======= tools/scrape_tool/scrapers/configs/scrapy.yaml | CHECKSUM_SHA256: 2e74c4d85625c257b47d06ac1c507380a3375f439d8cc937d8186de5cec23d91 ======
+======= tools/scrape_tool/scrapers/configs/scrapy.yaml ======
 # Scrapy scraper configuration
 # Industrial-strength web scraping framework
 
@@ -44227,7 +44252,7 @@ scrapy_config:
 # python -m tools.mf1-html2md crawl https://example.com -o output/ \
 #   --scraper scrapy --scraper-config scrapy.yaml
 
-======= tools/scrape_tool/scrapers/configs/selectolax.yaml | CHECKSUM_SHA256: 024319280d39989b808547a0ef948166d75658f808865a2522f3f227408765d6 ======
+======= tools/scrape_tool/scrapers/configs/selectolax.yaml ======
 # Selectolax scraper configuration
 # High-performance HTML parsing with httpx + selectolax
 

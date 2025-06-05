@@ -1,4 +1,4 @@
-======= __init__.py | CHECKSUM_SHA256: 02be5f461b2695ebd550b5e24aeabfe87cc7d7163b139d0718b6cb769f67775f ======
+======= __init__.py ======
 """
 Package containing the m1f suite of tools for file operations.
 
@@ -10,7 +10,7 @@ from ._version import __version__, __version_info__
 
 __all__ = ["__version__", "__version_info__"]
 
-======= _version.py | CHECKSUM_SHA256: b012dabf4e15b3e5e4ba95201d0abf798058d0280dec4d1305e14a1ae0d13d4e ======
+======= _version.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@ All other files should import from here.
 __version__ = "3.2.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
-======= claude_orchestrator.py | CHECKSUM_SHA256: e01c9869161a3416d31fbcf9a7e7daee53d04000a354e4e272ec8da7a2170be1 ======
+======= claude_orchestrator.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -371,7 +371,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-======= html2md.py | CHECKSUM_SHA256: accf1d394c28c79e81ee44aa57c9d01e2544abb7f95275f287cb01db5e8468fc ======
+======= html2md.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -396,7 +396,7 @@ if __name__ == "__main__":
 
     main()
 
-======= m1f.py | CHECKSUM_SHA256: ed4118edf5a5f76bd5fa88ae9515552c38312b1d757c19d745aec2544566a5de ======
+======= m1f.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -556,7 +556,7 @@ def main() -> NoReturn:
 if __name__ == "__main__":
     main()
 
-======= m1f_claude.py | CHECKSUM_SHA256: 2747f30b0d1d612f9fe51c19e7a9924400345f5fa7c51d9ee4ade4686d8c983e ======
+======= m1f_claude.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -1010,7 +1010,7 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
 if __name__ == "__main__":
     main()
 
-======= path_utils.py | CHECKSUM_SHA256: c054c621de1a9579eaf06829334e7b58fa072cdfd023bc7306ef902c2a281b0a ======
+======= path_utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
 
@@ -1027,7 +1027,7 @@ def normalize_path(path: Union[Path, str]) -> str:
     """Normalize a Path or path-like object to POSIX style."""
     return PureWindowsPath(str(path)).as_posix()
 
-======= prepare_docs.py | CHECKSUM_SHA256: 171bb130b2843a628ef57e15ecd893c12f8fc1e3e3692d5616306b4155cbb3f5 ======
+======= prepare_docs.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -1347,7 +1347,7 @@ if __name__ == "__main__":
         logger.critical(f"An unexpected error occurred: {e}", exc_info=True)
         sys.exit(1)
 
-======= s1f.py | CHECKSUM_SHA256: 886ec889cb8cb9f7ec32c40738b0da2ae0aa73bb35a3bde395555ec2f9b365a9 ======
+======= s1f.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
@@ -1366,7 +1366,7 @@ except ImportError:
 if __name__ == "__main__":
     sys.exit(main())
 
-======= scrape.py | CHECKSUM_SHA256: f292122f0eacc9122824d8e0f2856c3f505eb318817a69524b98eac4b852ea49 ======
+======= scrape.py ======
 #!/usr/bin/env python3
 """Wrapper script for m1f-scrape module."""
 
@@ -1375,7 +1375,7 @@ from scrape_tool.cli import main
 if __name__ == "__main__":
     main()
 
-======= setup.py | CHECKSUM_SHA256: 3f50b4e986d5c78e67b7642082a56f896f21055e9122d7cc4dadae520f02b98b ======
+======= setup.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1445,7 +1445,7 @@ setup(
     ],
 )
 
-======= token_counter.py | CHECKSUM_SHA256: 0913ce3f978ecbcc5da76ef01f9fd3e33c062c10f2960018bcdb9fab03beff12 ======
+======= token_counter.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1543,7 +1543,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-======= wp_export_md.py | CHECKSUM_SHA256: deeb016926138aa6e0571a358822e144b8eb63a1a237b94c0c68539d451d4ef0 ======
+======= wp_export_md.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -1638,7 +1638,7 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-======= html2md_tool/__init__.py | CHECKSUM_SHA256: c1ed0a807b2922fa280777a578d27a83ad8518cb2bbfeb7168ff97a3f46f0f73 ======
+======= html2md_tool/__init__.py ======
 """
 HTML to Markdown Converter - Modern Web Content Extraction Tool
 
@@ -1675,7 +1675,7 @@ __all__ = [
     "extract_title_from_html",
 ]
 
-======= html2md_tool/__main__.py | CHECKSUM_SHA256: 1dfc79852e3bea6d920a63682ca7a847ecf66f4e756f0aa112d8f726acfbf443 ======
+======= html2md_tool/__main__.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
@@ -1687,7 +1687,7 @@ from .cli import main
 if __name__ == "__main__":
     main()
 
-======= html2md_tool/analyze_html.py | CHECKSUM_SHA256: fc6c8891d160a582a34390cb7e3bd671fa98c82f34eab04fcfca99cc56debe43 ======
+======= html2md_tool/analyze_html.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -1957,7 +1957,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-======= html2md_tool/api.py | CHECKSUM_SHA256: eb79a069b366fd5d7b4a37af37af2712d7a777b5382a7ac64f4c317945c43b1d ======
+======= html2md_tool/api.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -2512,7 +2512,7 @@ def convert_html(html_content: str, **kwargs) -> str:
     converter = Html2mdConverter(config)
     return converter.convert_html(html_content)
 
-======= html2md_tool/cli.py | CHECKSUM_SHA256: 26aa3eb75a7848aa244b8a9fb59bf11bacc3a3ef564cd23af96d6550c66825c5 ======
+======= html2md_tool/cli.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -3072,7 +3072,7 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-======= html2md_tool/core.py | CHECKSUM_SHA256: f13ec4618b5df779ee5cf2ccd87f9620cb58dfd8c6439047297b93aaebf3f17f ======
+======= html2md_tool/core.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -3355,7 +3355,7 @@ class MarkdownConverter:
 
         return markdown
 
-======= html2md_tool/extractors.py | CHECKSUM_SHA256: 3a8e05da2a774bf7af6650e177737bab37edce4aba75cc1d7f3dd7df7d416031 ======
+======= html2md_tool/extractors.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -3515,7 +3515,7 @@ class DefaultExtractor(BaseExtractor):
 
         return soup
 
-======= html2md_tool/preprocessors.py | CHECKSUM_SHA256: 313172cf5bca29e65de9cd4eb83f8bf60afd19990fdf5e47a84c8ad92b060c70 ======
+======= html2md_tool/preprocessors.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -3663,7 +3663,7 @@ def preprocess_html(html_content: str, config: PreprocessingConfig) -> str:
 
     return str(soup)
 
-======= html2md_tool/utils.py | CHECKSUM_SHA256: ff11fabe1dcb7a651afa00b5d01346445de8ec141cc100df8cf4c2b7003a6cf1 ======
+======= html2md_tool/utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4002,7 +4002,7 @@ def create_progress_bar() -> "Progress":
         transient=True,
     )
 
-======= s1f/__init__.py | CHECKSUM_SHA256: bfcd862db57c7a677a07f3a38bd8285f36bf234a8071edf9205f25279ccad83d ======
+======= s1f/__init__.py ======
 """
 s1f - Split One File
 ====================
@@ -4032,7 +4032,7 @@ __all__ = [
     "__project__",
 ]
 
-======= s1f/__main__.py | CHECKSUM_SHA256: b8052cea2bc539ef7bb546956bf356316945943571fe80164a8c727568694fec ======
+======= s1f/__main__.py ======
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
 
@@ -4044,7 +4044,7 @@ from .cli import main
 if __name__ == "__main__":
     sys.exit(main())
 
-======= s1f/cli.py | CHECKSUM_SHA256: c87cc0b4fc6476628d7007ca16ac5756f92e3ece8868a78cd62145d1ecb099d8 ======
+======= s1f/cli.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4276,7 +4276,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 if __name__ == "__main__":
     sys.exit(main())
 
-======= s1f/config.py | CHECKSUM_SHA256: d5583a46700a646adcbb7b21b2cf24f81442d5efa500a2bcf7b0ac9fbaa9b04f ======
+======= s1f/config.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4346,7 +4346,7 @@ class Config:
             return self.target_encoding
         return "utf-8"
 
-======= s1f/core.py | CHECKSUM_SHA256: 3c6ff59d26a285a6485824601172f221a71d63e6ec1876676dcee0d79fcd88f3 ======
+======= s1f/core.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4599,7 +4599,7 @@ class FileSplitter:
 # Alias for backward compatibility with tests
 S1FExtractor = FileSplitter
 
-======= s1f/exceptions.py | CHECKSUM_SHA256: b9c6419f88cc54a73c827859125e7f5829359caaa108eca01016881f8a729276 ======
+======= s1f/exceptions.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4662,7 +4662,7 @@ class ChecksumMismatchError(S1FError):
         self.expected_checksum = expected
         self.actual_checksum = actual
 
-======= s1f/logging.py | CHECKSUM_SHA256: 9b507eddbc3de36bc6ef44c1f698d42ae71bfd55abf138982aeaeb5ddf065822 ======
+======= s1f/logging.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4785,7 +4785,7 @@ def get_logger(name: str) -> logging.Logger:
     """Get a logger instance."""
     return logging.getLogger(name)
 
-======= s1f/models.py | CHECKSUM_SHA256: 18629e7a454bd5250b72f24120d95cc84682ea799e07acfbb8de776e533711df ======
+======= s1f/models.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4878,7 +4878,7 @@ class SeparatorMatch:
     header_length: int = 0
     uuid: Optional[str] = None
 
-======= s1f/parsers.py | CHECKSUM_SHA256: f06494843bc57df7eb546df2d5093ca9a17b647b48f16c3c46c873c1d181ade1 ======
+======= s1f/parsers.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -4898,7 +4898,7 @@ class SeparatorMatch:
 import json
 import re
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any, Pattern
+from typing import List, Optional, Dict, Any, Pattern, Tuple
 from datetime import datetime
 import logging
 
@@ -5434,13 +5434,39 @@ class CombinedFileParser:
             StandardParser(logger),
         ]
 
+    def _find_code_blocks(self, content: str) -> List[Tuple[int, int]]:
+        """Find all code block regions in the content."""
+        code_blocks = []
+        
+        # Find triple backtick code blocks
+        pattern = re.compile(r'```[\s\S]*?```', re.MULTILINE)
+        for match in pattern.finditer(content):
+            code_blocks.append((match.start(), match.end()))
+        
+        return code_blocks
+
+    def _is_in_code_block(self, position: int, code_blocks: List[Tuple[int, int]]) -> bool:
+        """Check if a position is inside a code block."""
+        for start, end in code_blocks:
+            if start <= position < end:
+                return True
+        return False
+
     def parse(self, content: str) -> List[ExtractedFile]:
         """Parse the combined file content and extract individual files."""
+        # Find all code blocks first
+        code_blocks = self._find_code_blocks(content)
+        
         # Find all matches from all parsers
         matches: List[SeparatorMatch] = []
 
         for parser in self.parsers:
             for match in parser.pattern.finditer(content):
+                # Skip matches inside code blocks
+                if self._is_in_code_block(match.start(), code_blocks):
+                    self.logger.debug(f"Skipping separator inside code block at position {match.start()}")
+                    continue
+                    
                 separator_match = parser.parse_match(match, content, len(matches))
                 if separator_match:
                     matches.append(separator_match)
@@ -5489,7 +5515,7 @@ class CombinedFileParser:
 
         return extracted_files
 
-======= s1f/utils.py | CHECKSUM_SHA256: fc0c09d935d7778e6edd8da2e3ebaf0323db37244b438cd1f08d75f5924b8845 ======
+======= s1f/utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -5649,7 +5675,7 @@ def is_binary_content(content: bytes, sample_size: int = 8192) -> bool:
 
     return False
 
-======= s1f/writers.py | CHECKSUM_SHA256: 6b3674a219dbc95d59f3ea9061e63c56c0161e2a71f24eeaa6f0afb1f1eb5a51 ======
+======= s1f/writers.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -6001,12 +6027,12 @@ class FileWriter:
                 f"The file content may be corrupted or was altered."
             )
 
-======= scrape_tool/__init__.py | CHECKSUM_SHA256: 2e2cf8ee716b2e5909ff39267ec7c47fb4db666f7f89a3ee71d8b16941fd2337 ======
+======= scrape_tool/__init__.py ======
 """Web scraper tool for downloading websites."""
 
 from .._version import __version__, __version_info__
 
-======= scrape_tool/__main__.py | CHECKSUM_SHA256: 38906b635a3c0519e4110e6688cd4fddce144bc7e9177282cee24a347c6e6eaa ======
+======= scrape_tool/__main__.py ======
 """Entry point for m1f-scrape module."""
 
 from .cli import main
@@ -6014,7 +6040,7 @@ from .cli import main
 if __name__ == "__main__":
     main()
 
-======= scrape_tool/cli.py | CHECKSUM_SHA256: 8bc639bd16285c70a22f88d70a7225577f6ef4f7cca29de32dc404cd89479ae5 ======
+======= scrape_tool/cli.py ======
 """Command-line interface for m1f-scrape."""
 
 import argparse
@@ -6184,7 +6210,7 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-======= scrape_tool/config.py | CHECKSUM_SHA256: c63389a1e1c41e039f7ef0b59d32165ad7fad8660574329f76ef8fc86fdd206a ======
+======= scrape_tool/config.py ======
 """Configuration models for m1f-scrape."""
 
 from enum import Enum
@@ -6262,7 +6288,7 @@ class Config(BaseModel):
     verbose: bool = Field(default=False, description="Enable verbose output")
     quiet: bool = Field(default=False, description="Suppress output except errors")
 
-======= scrape_tool/crawlers.py | CHECKSUM_SHA256: fefa182f0fbbfee034e760c6f5b3ca42c677ea1d79b68edf1642d08fb3672cc9 ======
+======= scrape_tool/crawlers.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -6536,7 +6562,7 @@ class WebCrawler:
         finally:
             loop.close()
 
-======= html2md_tool/config/__init__.py | CHECKSUM_SHA256: 25abe55da0e3290c9cff56101eb5059207b1d20ad3fa1afe5da78dc64c146bc2 ======
+======= html2md_tool/config/__init__.py ======
 """Configuration system for mf1-html2md."""
 
 from .loader import load_config, save_config
@@ -6564,7 +6590,7 @@ __all__ = [
     "save_config",
 ]
 
-======= html2md_tool/config/loader.py | CHECKSUM_SHA256: 86382993f15fc837386e5969c9208333bfb3c88617259d8736ac63fceff244e1 ======
+======= html2md_tool/config/loader.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -6671,7 +6697,7 @@ def _config_to_dict(config: Config) -> Dict[str, Any]:
 
     return convert_paths(data)
 
-======= html2md_tool/config/models.py | CHECKSUM_SHA256: 5bef144cffe55814a93d0a54308dd7d897c0f033494bce1842727c30568cb95e ======
+======= html2md_tool/config/models.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -6890,7 +6916,7 @@ class Config:
                 remove_empty_elements=True,
             )
 
-======= scrape_tool/scrapers/__init__.py | CHECKSUM_SHA256: 8e90215fdfdd945f0be7e61e951a8057e1006304bd16ee9d0483ee263189161c ======
+======= scrape_tool/scrapers/__init__.py ======
 """Web scraper backends for HTML2MD."""
 
 from typing import Dict, Type, Optional
@@ -6982,7 +7008,7 @@ def create_scraper(
     scraper_class = SCRAPER_REGISTRY[backend]
     return scraper_class(config)
 
-======= scrape_tool/scrapers/base.py | CHECKSUM_SHA256: 16ed668b50cb09dfb4c3dcf3a23eb5b192800748d6df9539bf3f2bb56589291b ======
+======= scrape_tool/scrapers/base.py ======
 """Abstract base class for web scrapers."""
 
 from abc import ABC, abstractmethod
@@ -7150,7 +7176,7 @@ class WebScraperBase(ABC):
         """Async context manager exit."""
         pass
 
-======= scrape_tool/scrapers/beautifulsoup.py | CHECKSUM_SHA256: 0fc4dff25b2a3db379e56cd0321dbbdeb40670b23d2b22376fde5667fdf2bdab ======
+======= scrape_tool/scrapers/beautifulsoup.py ======
 """BeautifulSoup4-based web scraper implementation."""
 
 import asyncio
@@ -7440,7 +7466,7 @@ class BeautifulSoupScraper(WebScraperBase):
 
         return links
 
-======= scrape_tool/scrapers/httrack.py | CHECKSUM_SHA256: 3dc83d400b6f00a82cba11206953e46709cde74a7d1b19ed0db12110973b1a8d ======
+======= scrape_tool/scrapers/httrack.py ======
 """HTTrack-based web scraper implementation."""
 
 import asyncio
@@ -7741,7 +7767,7 @@ class HTTrackScraper(WebScraperBase):
                 logger.error(f"Error processing {html_file}: {e}")
                 continue
 
-======= scrape_tool/scrapers/playwright.py | CHECKSUM_SHA256: 696893fd8100ce57b7578b81c902b537f4d2f0952f303209c15ca365f447a787 ======
+======= scrape_tool/scrapers/playwright.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -8161,7 +8187,7 @@ class PlaywrightScraper(WebScraperBase):
 
         logger.info(f"Playwright scraping complete. Scraped {pages_scraped} pages")
 
-======= scrape_tool/scrapers/scrapy_scraper.py | CHECKSUM_SHA256: 332c697704db363b69e05f5b0b62d075b2bd7227ba340910c60bc47c0dd0e20a ======
+======= scrape_tool/scrapers/scrapy_scraper.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -8537,7 +8563,7 @@ class ScrapyScraper(WebScraperBase):
 
         logger.info(f"Scrapy scraping complete. Scraped {pages_yielded} pages")
 
-======= scrape_tool/scrapers/selectolax.py | CHECKSUM_SHA256: e82a9017ce04f44b71845e5b22d83b4bb2488e72589a2b2b1f43db621b5eb8c8 ======
+======= scrape_tool/scrapers/selectolax.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
 #
