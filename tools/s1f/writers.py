@@ -276,7 +276,7 @@ class FileWriter:
                 access_time = mod_time
 
                 # Use asyncio to run in executor for non-blocking
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 await loop.run_in_executor(
                     None, os.utime, path, (access_time, mod_time)
                 )
