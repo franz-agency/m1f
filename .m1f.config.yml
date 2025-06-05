@@ -50,9 +50,10 @@ global:
 
 # Bundle definitions
 bundles:
-  # Documentation bundle
+  # Documentation bundles
   all-docs:
     description: "m1f documentation"
+    group: "documentation"
     output: ".m1f/m1f-doc/99_m1fdocs.txt"
     sources:
       - path: "."
@@ -64,13 +65,32 @@ bundles:
 
   m1f-docs:
     description: "m1f docs"
+    group: "documentation"
     output: ".m1f/m1f/55_m1f_docs.txt"
     sources:
       - path: "docs/01_m1f"
         include_extensions: [".md"]
 
+  html2md-docs:
+    description: "html2md docs"
+    group: "documentation"
+    output: ".m1f/m1f/66_html2md_docs.txt"
+    sources:
+      - path: "docs/03_html2md"
+        include_extensions: [".md"]
+
+  scraper-docs:
+    description: "m1f-scrape docs"
+    group: "documentation"
+    output: ".m1f/m1f/77_scraper_docs.txt"
+    sources:
+      - path: "docs/04_scrape"
+        include_extensions: [".md"]
+
+  # Source code bundles
   m1f-code:
     description: "m1f complete code"
+    group: "source"
     output: ".m1f/m1f/96_m1f_complete_tool_code.txt"
     sources:
       - path: "tools/m1f"
@@ -83,7 +103,8 @@ bundles:
         ]
 
   s1f-code:
-    description: "m1f complete code"
+    description: "s1f complete code"
+    group: "source"
     output: ".m1f/m1f/96_s1f_complete_tool_code.txt"
     sources:
       - path: "tools/s1f"
@@ -94,47 +115,37 @@ bundles:
       - path: "tools/s1f"
         include_extensions: [".py"]
 
-  html2md-docs:
-    description: "mf1-html2md docs"
-    output: ".m1f/m1f/66_html2md_docs.txt"
-    sources:
-      - path: "docs/03_html2md"
-        include_extensions: [".md"]
-
   html2md-code:
-    description: "mf1-html2md complete code"
+    description: "html2md complete code"
+    group: "source"
     output: ".m1f/m1f/67_html2md_tool_code.txt"
     sources:
-      - path: "tools/mf1-html2md"
+      - path: "tools/html2md_tool"
         include_extensions: [".py"]
       - path: "tools/"
         include_files: [
-          "mf1-html2md.py",
+          "html2md.py",
           "path_utils",
           "__init__.py"
         ]
-
-  scraper-docs:
-    description: "m1f-scrape docs"
-    output: ".m1f/m1f/77_scraper_docs.txt"
-    sources:
-      - path: "docs/04_scrape"
-        include_extensions: [".md"]
 
   scraper-code:
     description: "m1f-scrape complete code"
+    group: "source"
     output: ".m1f/m1f/78_scraper_tool_code.txt"
     sources:
-      - path: "tools/m1f-scrape"
+      - path: "tools/scrape_tool"
         include_extensions: [".py"]
       - path: "tools/"
         include_files: [
-          "m1f-scrape.py",
+          "scrape.py",
           "path_utils",
           "__init__.py"
         ]
+        
   tool-code:
     description: "m1f complete tool code"
+    group: "source"
     output: ".m1f/m1f/97_m1f_complete_tool_code.txt"
     sources:
       - path: "tools/"
@@ -143,9 +154,10 @@ bundles:
       - ".gitignore"
       - ".m1fignore"
     
-  # All non-binary files excluding tests
+  # Complete project bundle
   all:
     description: "All non-binary files"
+    group: "complete"
     output: ".m1f/m1f/98_m1f_allinone.txt"
     sources:
       - path: "."

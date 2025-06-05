@@ -71,10 +71,28 @@ class AutoBundler:
 
     def __init__(self, project_root: Path, verbose: bool = False, quiet: bool = False):
         self.project_root = project_root
-        self.config_file = project_root / ".m1f.config.yml"
-        self.m1f_dir = project_root / ".m1f"
         self.verbose = verbose
         self.quiet = quiet
+        self.config_file = self._find_config_file(project_root)
+        self.m1f_dir = project_root / ".m1f"
+
+    def _find_config_file(self, start_path: Path) -> Path:
+        """Find .m1f.config.yml by searching from current directory up to root."""
+        current = start_path.resolve()
+        
+        while True:
+            config_path = current / ".m1f.config.yml"
+            if config_path.exists():
+                if self.verbose:
+                    self.print_info(f"Found config at: {config_path}")
+                return config_path
+            
+            # Check if we've reached the root
+            parent = current.parent
+            if parent == current:
+                # Return the original path's config file location (even if it doesn't exist)
+                return start_path / ".m1f.config.yml"
+            current = parent
 
     def check_config_exists(self) -> bool:
         """Check if auto-bundle config exists."""
@@ -290,34 +308,74 @@ class AutoBundler:
             self.print_warning("No bundles defined in configuration")
             return
 
+        # Group bundles by their group
+        grouped_bundles = {}
+        ungrouped_bundles = {}
+        
+        for bundle_name, bundle_config in config.bundles.items():
+            group = bundle_config.get("group", None)
+            if group:
+                if group not in grouped_bundles:
+                    grouped_bundles[group] = {}
+                grouped_bundles[group][bundle_name] = bundle_config
+            else:
+                ungrouped_bundles[bundle_name] = bundle_config
+
         print("\nAvailable bundles:")
         print("-" * 60)
-
-        for bundle_name, bundle_config in config.bundles.items():
-            enabled = bundle_config.get("enabled", True)
-            description = bundle_config.get("description", "No description")
-            output = bundle_config.get("output", "No output specified")
-
-            status = "enabled" if enabled else "disabled"
-            print(f"\n{bundle_name} ({status})")
-            print(f"  Description: {description}")
-            print(f"  Output: {output}")
-
-            # Show conditional enabling
-            if "enabled_if_exists" in bundle_config:
-                print(f"  Enabled if exists: {bundle_config['enabled_if_exists']}")
+        
+        # Show grouped bundles first
+        for group_name in sorted(grouped_bundles.keys()):
+            print(f"\nGroup: {group_name}")
+            print("=" * 40)
+            for bundle_name, bundle_config in grouped_bundles[group_name].items():
+                self._print_bundle_info(bundle_name, bundle_config)
+        
+        # Show ungrouped bundles
+        if ungrouped_bundles:
+            if grouped_bundles:
+                print("\nUngrouped bundles:")
+                print("=" * 40)
+            for bundle_name, bundle_config in ungrouped_bundles.items():
+                self._print_bundle_info(bundle_name, bundle_config)
 
         print("-" * 60)
+        
+        # Show available groups
+        if grouped_bundles:
+            print("\nAvailable groups:")
+            for group in sorted(grouped_bundles.keys()):
+                count = len(grouped_bundles[group])
+                print(f"  - {group} ({count} bundles)")
+    
+    def _print_bundle_info(self, bundle_name: str, bundle_config: Dict[str, Any]):
+        """Print information about a single bundle."""
+        enabled = bundle_config.get("enabled", True)
+        description = bundle_config.get("description", "No description")
+        output = bundle_config.get("output", "No output specified")
 
-    def run(self, bundle_name: Optional[str] = None, list_bundles: bool = False):
+        status = "enabled" if enabled else "disabled"
+        print(f"\n  {bundle_name} ({status})")
+        print(f"    Description: {description}")
+        print(f"    Output: {output}")
+
+        # Show conditional enabling
+        if "enabled_if_exists" in bundle_config:
+            print(f"    Enabled if exists: {bundle_config['enabled_if_exists']}")
+
+    def run(self, bundle_name: Optional[str] = None, list_bundles: bool = False, bundle_group: Optional[str] = None):
         """Run auto-bundle functionality."""
         # Check if config exists
         if not self.check_config_exists():
-            self.print_error(
-                f"No auto-bundle configuration found at: {self.config_file}"
+            self.print_error("No .m1f.config.yml configuration found!")
+            self.print_info(
+                "Searched from current directory up to root. No config file was found."
             )
             self.print_info(
-                "Create a .m1f.config.yml file to use auto-bundle functionality"
+                "Create a .m1f.config.yml file in your project root to use auto-bundle functionality."
+            )
+            self.print_info(
+                "See documentation: docs/01_m1f/06_auto_bundle_guide.md"
             )
             return False
 
@@ -335,8 +393,27 @@ class AutoBundler:
         # Setup directories
         self.setup_directories(config)
 
-        # Create bundles
-        if bundle_name:
+        # Filter bundles by group if specified
+        bundles_to_create = {}
+        
+        if bundle_group:
+            # Filter bundles by group
+            for name, bundle_config in config.bundles.items():
+                if bundle_config.get("group") == bundle_group:
+                    bundles_to_create[name] = bundle_config
+                    
+            if not bundles_to_create:
+                self.print_error(f"No bundles found in group '{bundle_group}'")
+                available_groups = set()
+                for bundle_config in config.bundles.values():
+                    if "group" in bundle_config:
+                        available_groups.add(bundle_config["group"])
+                if available_groups:
+                    self.print_info(f"Available groups: {', '.join(sorted(available_groups))}")
+                else:
+                    self.print_info("No bundle groups defined in configuration")
+                return False
+        elif bundle_name:
             # Create specific bundle
             bundle_config = config.get_bundle_config(bundle_name)
             if not bundle_config:
@@ -345,12 +422,14 @@ class AutoBundler:
                     f"Available bundles: {', '.join(config.get_bundle_names())}"
                 )
                 return False
-
-            return self.create_bundle(bundle_name, bundle_config, config.global_config)
+            bundles_to_create[bundle_name] = bundle_config
         else:
             # Create all bundles
-            success = True
-            for name, bundle_config in config.bundles.items():
-                if not self.create_bundle(name, bundle_config, config.global_config):
-                    success = False
-            return success
+            bundles_to_create = config.bundles
+
+        # Create the selected bundles
+        success = True
+        for name, bundle_config in bundles_to_create.items():
+            if not self.create_bundle(name, bundle_config, config.global_config):
+                success = False
+        return success

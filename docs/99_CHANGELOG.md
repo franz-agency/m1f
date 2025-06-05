@@ -55,7 +55,21 @@ and this project adheres to
   - Integration with Claude Code CLI (if installed)
   - Comprehensive workflow guide at docs/01_m1f/08_claude_workflows.md
 
+- **Enhanced Auto-Bundle Functionality**: Improved usability and flexibility
+  - Config file search now traverses from current directory up to root
+  - New `--group` parameter to create bundles by group (e.g., `m1f auto-bundle --group documentation`)
+  - Bundle grouping support in `.m1f.config.yml` with `group: "name"` field
+  - Improved error messages when config file is not found
+  - Enhanced `--list` output showing bundles organized by groups
+  - Comprehensive documentation in `docs/01_m1f/06_auto_bundle_guide.md`
+  - Examples for server-wide bundle management and automation
+
 ### Changed
+
+- **Auto-bundle config file** (`.m1f.config.yml`) updated with group categorization
+  - Documentation bundles grouped under "documentation"
+  - Source code bundles grouped under "source"
+  - Complete project bundle in "complete" group
 
 - **Command Naming Standardization**: All tools now use m1f- prefix
   - `s1f` → `m1f-s1f`

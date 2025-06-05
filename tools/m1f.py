@@ -81,6 +81,11 @@ async def async_main() -> int:
                 "--list", action="store_true", help="List available bundles"
             )
             parser.add_argument(
+                "--group", "-g", 
+                type=str, 
+                help="Only create bundles from specified group"
+            )
+            parser.add_argument(
                 "-v", "--verbose", action="store_true", help="Enable verbose output"
             )
             parser.add_argument(
@@ -92,7 +97,11 @@ async def async_main() -> int:
 
             # Create and run auto-bundler
             bundler = AutoBundler(Path.cwd(), verbose=args.verbose, quiet=args.quiet)
-            success = bundler.run(bundle_name=args.bundle_name, list_bundles=args.list)
+            success = bundler.run(
+                bundle_name=args.bundle_name, 
+                list_bundles=args.list,
+                bundle_group=args.group
+            )
             return 0 if success else 1
 
         # Regular m1f execution

@@ -1,379 +1,304 @@
-# Auto Bundle Guide
+# Auto-Bundle Guide
 
-The m1f auto-bundle feature allows you to automatically create and manage multiple m1f bundles through a YAML configuration file. This is perfect for projects that need different bundle configurations for various purposes (documentation, source code, tests, etc.).
+The m1f auto-bundle feature allows you to automatically generate predefined bundles of files based on configuration. This is especially useful for maintaining consistent documentation bundles, creating project snapshots, and managing multiple projects on a server.
 
-## Overview
+## Configuration File
 
-Auto-bundle is a built-in m1f subcommand that reads a `.m1f.config.yml` file from your project root and creates multiple bundles based on the configuration. It supports:
+Auto-bundle looks for a `.m1f.config.yml` file in your project. The tool searches from the current directory upward to the root, allowing flexible project organization.
 
-- Multiple bundle definitions in a single configuration
-- Conditional bundle creation based on file/directory existence
-- Global settings and exclusions
-- Custom output paths and processing options
-- Integration with m1f presets
-
-## Usage
-
-### Basic Commands
-
-```bash
-# Create all bundles defined in .m1f.config.yml
-python -m tools.m1f auto-bundle
-
-# Create a specific bundle
-python -m tools.m1f auto-bundle docs
-
-# List available bundles
-python -m tools.m1f auto-bundle --list
-
-# Verbose output
-python -m tools.m1f auto-bundle --verbose
-
-# Quiet mode (suppress output)
-python -m tools.m1f auto-bundle --quiet
-```
-
-### Using the m1f-update Alias
-
-If you have set up the m1f aliases (see [Development Workflow](04_m1f_development_workflow.md)), you can use the convenient `m1f-update` command from anywhere:
-
-```bash
-# Create all bundles
-m1f-update
-
-# Create specific bundle
-m1f-update docs
-
-# List available bundles
-m1f-update --list
-```
-
-The `m1f-update` alias automatically handles virtual environment activation and runs the auto-bundle command.
-
-## Configuration File Format
-
-The auto-bundle feature requires a `.m1f.config.yml` file in your project root. Here's the structure:
+### Basic Configuration Structure
 
 ```yaml
+# .m1f.config.yml
+
 # Global settings that apply to all bundles
 global:
-  # Global exclusions applied to all bundles
   global_excludes:
     - "**/*.pyc"
-    - "**/__pycache__/**"
-    - "**/node_modules/**"
-    - "**/.git/**"
-    
-  # Default settings for all bundles
-  defaults:
-    minimal_output: true
-    force_overwrite: true
-    max_file_size: "10MB"
+    - "**/*.log"
+    - "**/tmp/**"
 
 # Bundle definitions
 bundles:
-  # Each bundle has a unique name
-  bundle_name:
-    # Required fields
-    description: "Description of this bundle"
-    output: "path/to/output.txt"
-    
-    # Sources configuration
-    sources:
-      - path: "source/directory"
-        include_extensions: [".py", ".js"]
-        excludes: ["test_*.py"]
-        
-    # Optional fields
-    enabled: true                    # Enable/disable bundle
-    enabled_if_exists: "some/path"   # Only create if path exists
-    separator_style: "Detailed"      # Output format
-    preset: "presets/custom.yml"     # Custom preset file
-    preset_group: "development"      # Preset group to use
-    exclude_paths_file: ".gitignore" # Additional exclude file
-    include_paths_file: "includes.txt" # Include patterns file
-    filename_mtime_hash: true        # Add file hash to output
-    minimal_output: false            # Override global setting
-```
-
-## Bundle Configuration Options
-
-### Basic Options
-
-- **description**: Human-readable description of the bundle
-- **output**: Output file path (relative to project root)
-- **sources**: List of source configurations
-
-### Source Configuration
-
-Each source in the `sources` list can have:
-
-```yaml
-sources:
-  - path: "."                        # Directory to process
-    include_extensions: [".py"]      # Only include these extensions
-    excludes: ["**/test_*"]         # Exclude patterns
-    include_files: ["README.md"]     # Specific files to include
-```
-
-### Control Options
-
-- **enabled**: Boolean to enable/disable the bundle (default: true)
-- **enabled_if_exists**: Only create bundle if this path exists
-- **separator_style**: One of "Standard", "Detailed", "Markdown", "MachineReadable", "None"
-- **preset**: Path to m1f preset file for custom processing
-- **preset_group**: Specific preset group to use from the preset file
-
-### File Filtering
-
-- **exclude_paths_file**: File(s) containing exclude patterns (can be string or list)
-- **include_paths_file**: File(s) containing include patterns (can be string or list)
-- **global_excludes**: Patterns to exclude from all bundles (defined in global section)
-
-## Examples
-
-### Basic Documentation Bundle
-
-```yaml
-bundles:
   docs:
-    description: "All documentation files"
-    output: ".m1f/docs/documentation.txt"
+    description: "Project documentation"
+    output: ".m1f/docs/manual.txt"
     sources:
-      - path: "."
-        include_extensions: [".md", ".rst", ".txt"]
-        excludes: ["**/node_modules/**", "**/tests/**"]
-    separator_style: "Markdown"
-```
-
-### Source Code Bundle with Multiple Paths
-
-```yaml
-bundles:
-  source-code:
-    description: "Application source code"
+      - path: "docs"
+        include_extensions: [".md", ".txt"]
+    
+  code:
+    description: "Source code bundle"
     output: ".m1f/src/code.txt"
     sources:
       - path: "src"
         include_extensions: [".py", ".js", ".ts"]
-      - path: "lib"
-        include_extensions: [".py"]
-        excludes: ["**/test_*.py"]
-      - path: "scripts"
-        include_files: ["deploy.sh", "build.sh"]
 ```
 
-### Conditional Bundle
+## Command Usage
+
+### Create All Bundles
+```bash
+m1f auto-bundle
+```
+
+### Create Specific Bundle
+```bash
+m1f auto-bundle docs
+```
+
+### List Available Bundles
+```bash
+m1f auto-bundle --list
+```
+
+### Create Bundles by Group
+```bash
+m1f auto-bundle --group documentation
+```
+
+## Bundle Groups
+
+You can organize bundles into groups for easier management:
 
 ```yaml
 bundles:
-  mobile-app:
-    description: "Mobile application code"
-    output: ".m1f/mobile/app.txt"
-    enabled_if_exists: "mobile/"  # Only create if mobile/ directory exists
+  user-docs:
+    description: "User documentation"
+    group: "documentation"
+    output: ".m1f/docs/user.txt"
     sources:
-      - path: "mobile"
-        include_extensions: [".swift", ".kt", ".java"]
-```
+      - path: "docs/user"
 
-### Bundle with Presets
+  api-docs:
+    description: "API documentation"
+    group: "documentation"
+    output: ".m1f/docs/api.txt"
+    sources:
+      - path: "docs/api"
 
-```yaml
-bundles:
-  web-frontend:
-    description: "Frontend code with minification"
-    output: ".m1f/frontend/bundle.txt"
+  frontend-code:
+    description: "Frontend source code"
+    group: "source"
+    output: ".m1f/src/frontend.txt"
     sources:
       - path: "frontend"
-        include_extensions: [".js", ".jsx", ".css", ".scss"]
-    preset: "presets/web-project.m1f-presets.yml"
-    preset_group: "production"
 ```
 
-### Using Multiple Exclude Files
+Then create all documentation bundles:
+```bash
+m1f auto-bundle --group documentation
+```
+
+## Server-Wide Usage
+
+### Managing Multiple Projects
+
+For server environments with multiple projects, you can create a management script:
+
+```bash
+#!/bin/bash
+# update-all-bundles.sh
+
+# Find all projects with .m1f.config.yml
+for config in $(find /home/projects -name ".m1f.config.yml" -type f); do
+    project_dir=$(dirname "$config")
+    echo "Updating bundles in: $project_dir"
+    
+    cd "$project_dir"
+    m1f auto-bundle --quiet
+done
+```
+
+### Project-Specific Bundles
+
+Create project-specific configurations by using groups:
 
 ```yaml
-global:
-  global_excludes:
-    - "**/*.log"
-    - "**/*.tmp"
-    
+# Project A - .m1f.config.yml
 bundles:
-  clean-project:
-    description: "Project without generated files"
-    output: ".m1f/clean/project.txt"
+  all:
+    description: "Complete project bundle"
+    group: "project-a"
+    output: ".m1f/project-a-complete.txt"
     sources:
       - path: "."
-    exclude_paths_file:
-      - ".gitignore"
-      - ".m1fignore"
-      - "custom-excludes.txt"
+```
+
+Then update only specific projects:
+```bash
+cd /path/to/project-a
+m1f auto-bundle --group project-a
+```
+
+### Automated Bundle Updates
+
+Set up a cron job for automatic updates:
+
+```bash
+# Update all project bundles daily at 2 AM
+0 2 * * * /usr/local/bin/update-all-bundles.sh
+```
+
+### Centralized Bundle Storage
+
+Configure bundles to output to a central location:
+
+```yaml
+bundles:
+  project-bundle:
+    description: "Project bundle for central storage"
+    output: "/var/m1f-bundles/myproject/latest.txt"
+    sources:
+      - path: "."
+```
+
+## Advanced Features
+
+### Conditional Bundles
+
+Enable bundles only when specific files exist:
+
+```yaml
+bundles:
+  python-docs:
+    description: "Python documentation"
+    enabled_if_exists: "setup.py"
+    output: ".m1f/python-docs.txt"
+    sources:
+      - path: "."
+        include_extensions: [".py"]
+```
+
+### Multiple Source Configurations
+
+Combine files from different locations with different settings:
+
+```yaml
+bundles:
+  complete:
+    description: "Complete project documentation"
+    output: ".m1f/complete.txt"
+    sources:
+      - path: "docs"
+        include_extensions: [".md"]
+      - path: "src"
+        include_extensions: [".py"]
+        excludes: ["**/test_*.py"]
+      - path: "."
+        include_files: ["README.md", "CHANGELOG.md"]
+```
+
+### Using Presets
+
+Apply presets for advanced file processing:
+
+```yaml
+bundles:
+  web-bundle:
+    description: "Web project bundle"
+    output: ".m1f/web.txt"
+    preset: "presets/web-project.m1f-presets.yml"
+    preset_group: "production"
+    sources:
+      - path: "."
 ```
 
 ## Best Practices
 
-### 1. Organize Bundles by Purpose
-
-Create focused bundles for specific use cases:
-
-```yaml
-bundles:
-  # For understanding the project
-  overview:
-    description: "Project overview and documentation"
-    output: ".m1f/overview.txt"
-    sources:
-      - path: "."
-        include_files: ["README.md", "CONTRIBUTING.md", "LICENSE"]
-      - path: "docs"
-        include_extensions: [".md"]
-        
-  # For development work
-  dev-code:
-    description: "Development source code"
-    output: ".m1f/dev-code.txt"
-    sources:
-      - path: "src"
-        include_extensions: [".py", ".js"]
-        excludes: ["**/test_*"]
-```
-
-### 2. Use Conditional Bundles
-
-Avoid errors by making bundles conditional:
-
-```yaml
-bundles:
-  tests:
-    description: "Test suite"
-    output: ".m1f/tests.txt"
-    enabled_if_exists: "tests/"  # Skip if no tests directory
-    sources:
-      - path: "tests"
-```
-
-### 3. Leverage Global Settings
-
-Define common settings once:
-
-```yaml
-global:
-  defaults:
-    minimal_output: true
-    force_overwrite: true
-    separator_style: "Detailed"
-    
-  global_excludes:
-    - "**/.git/**"
-    - "**/node_modules/**"
-    - "**/__pycache__/**"
-    - "**/*.pyc"
-```
-
-### 4. Create AI/LLM-Optimized Bundles
-
-Structure bundles for effective AI context:
-
-```yaml
-bundles:
-  # High-priority context
-  ai-context-core:
-    description: "Core project context for AI"
-    output: ".m1f/ai/core-context.txt"
-    sources:
-      - path: "."
-        include_files: ["README.md", "pyproject.toml", "package.json"]
-      - path: "docs"
-        include_extensions: [".md"]
-        excludes: ["**/api-reference/**"]
-    separator_style: "Markdown"
-    
-  # Detailed implementation
-  ai-context-impl:
-    description: "Implementation details for AI"
-    output: ".m1f/ai/implementation.txt"
-    sources:
-      - path: "src"
-        include_extensions: [".py", ".js"]
-        excludes: ["**/test_*", "**/migrations/**"]
-```
-
-### 5. Use Descriptive Names and Descriptions
-
-Make it clear what each bundle contains:
-
-```yaml
-bundles:
-  frontend-react-components:
-    description: "React component library source code"
-    # ... vs ...
-  frontend:
-    description: "Frontend files"
-```
-
-## Integration with CI/CD
-
-### GitHub Actions Example
-
-```yaml
-- name: Create m1f bundles
-  run: |
-    python -m pip install pyyaml
-    python -m tools.m1f auto-bundle
-    
-- name: Upload bundles
-  uses: actions/upload-artifact@v3
-  with:
-    name: m1f-bundles
-    path: .m1f/
-```
-
-### Pre-commit Hook
-
-```bash
-#!/bin/bash
-# .git/hooks/pre-commit
-python -m tools.m1f auto-bundle --quiet
-git add .m1f/
-```
+1. **Organize with Groups**: Use groups to categorize bundles logically
+2. **Version Control**: Include `.m1f.config.yml` in version control
+3. **Exclude Generated Files**: Don't include `.m1f/` directory in bundles
+4. **Use Descriptive Names**: Make bundle names self-explanatory
+5. **Regular Updates**: Schedule automatic updates for frequently changing projects
 
 ## Troubleshooting
 
-### Common Issues
+### Config Not Found
 
-**"No auto-bundle configuration found"**
-- Ensure `.m1f.config.yml` exists in your project root
-- Check file name is exactly `.m1f.config.yml`
+If you see "No .m1f.config.yml configuration found!", the tool couldn't find a config file searching from the current directory up to the root. Create a `.m1f.config.yml` in your project root.
 
-**"Failed to load config: "**
-- Verify YAML syntax is correct
-- Install PyYAML: `pip install pyyaml`
+### Bundle Not Created
 
-**"Bundle 'x' not found in configuration"**
-- Run `python -m tools.m1f auto-bundle --list` to see available bundles
-- Check bundle name spelling
-
-**"Command failed: "**
-- Check source paths exist
-- Verify file permissions
-- Ensure output directory can be created
-
-### Debugging
-
-Use verbose mode to see detailed output:
-
+Check the verbose output:
 ```bash
-python -m tools.m1f auto-bundle --verbose
+m1f auto-bundle --verbose
 ```
 
-This will show:
-- Which directories are being created
-- The exact m1f commands being executed
-- Any errors or warnings
+Common issues:
+- Incorrect file paths
+- Missing source directories
+- Invalid YAML syntax
+- Disabled bundles
 
-## See Also
+### Group Not Found
 
-- [m1f Documentation](00_m1f.md)
-- [m1f CLI Reference](07_cli_reference.md)
-- [m1f Presets Guide](02_m1f_presets.md)
-- [M1F Development Workflow](04_m1f_development_workflow.md)
+If using `--group` and no bundles are found:
+1. Check that bundles have the `group` field
+2. Verify the group name matches exactly
+3. Use `--list` to see available groups
+
+## Examples
+
+### Documentation Site Bundle
+
+```yaml
+bundles:
+  docs-site:
+    description: "Documentation site content"
+    group: "documentation"
+    output: ".m1f/docs-site.txt"
+    sources:
+      - path: "content"
+        include_extensions: [".md", ".mdx"]
+      - path: "src/components"
+        include_extensions: [".jsx", ".tsx"]
+    excludes:
+      - "**/node_modules/**"
+      - "**/.next/**"
+```
+
+### Multi-Language Project
+
+```yaml
+bundles:
+  python-code:
+    description: "Python backend code"
+    group: "backend"
+    output: ".m1f/backend/python.txt"
+    sources:
+      - path: "backend"
+        include_extensions: [".py"]
+  
+  javascript-code:
+    description: "JavaScript frontend code"
+    group: "frontend"
+    output: ".m1f/frontend/javascript.txt"
+    sources:
+      - path: "frontend"
+        include_extensions: [".js", ".jsx", ".ts", ".tsx"]
+  
+  all-code:
+    description: "All source code"
+    output: ".m1f/all-code.txt"
+    sources:
+      - path: "."
+        include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
+```
+
+### WordPress Plugin Bundle
+
+```yaml
+bundles:
+  wp-plugin:
+    description: "WordPress plugin files"
+    group: "wordpress"
+    output: ".m1f/wp-plugin.txt"
+    preset: "presets/wordpress.m1f-presets.yml"
+    sources:
+      - path: "."
+        include_extensions: [".php", ".js", ".css"]
+    excludes:
+      - "**/vendor/**"
+      - "**/node_modules/**"
+```
