@@ -180,4 +180,4 @@ running on large codebases.
 
 ## Version Information
 
-This documentation is accurate as of m1f version 2.1.0 (2025-05-15).
+This documentation is accurate as of m1f version 3.2.0.

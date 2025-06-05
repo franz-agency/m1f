@@ -46,9 +46,10 @@ process multiple directories.
 Path to a text file containing a list of files/directories to process, one per
 line. These files are explicitly included and bypass all filter rules.
 
-**Important**: Source directory (`-s`) is still required. Relative paths in the 
-input file are resolved relative to the source directory. Absolute paths are 
-used as-is.
+**Note**: At least one of `-s` (source directory) or `-i` (input file) must be
+specified. When using `-i` alone, relative paths in the input file are resolved
+relative to the current working directory. When both `-s` and `-i` are used,
+relative paths in the input file are resolved relative to the source directory.
 
 Example input file:
 ```
@@ -288,25 +289,24 @@ Disable all preset processing, even if preset files are specified.
 ## Exit Codes
 
 - **0**: Success
-- **1**: General error
-- **2**: Invalid arguments
-- **3**: File not found
-- **4**: Permission denied
-- **5**: Security check failed
+- **1**: General error (M1FError base)
+- **2**: File not found (FileNotFoundError)
+- **3**: Permission denied (PermissionError)
+- **4**: Encoding error (EncodingError)
+- **5**: Configuration error (ConfigurationError)
+- **6**: Validation error (ValidationError)
+- **7**: Security check failed (SecurityError)
+- **8**: Archive creation failed (ArchiveError)
+- **130**: Operation cancelled by user (Ctrl+C)
 
 ## Environment Variables
 
-### `M1F_DEFAULT_PRESET`
+**Note**: The following environment variables are documented for future implementation
+but are not currently supported in v3.2.0:
 
-Path to default preset file to load if no `--preset` is specified.
-
-### `M1F_SECURITY_CHECK`
-
-Default security check mode (abort, skip, warn).
-
-### `M1F_MAX_FILE_SIZE`
-
-Default maximum file size limit.
+- `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
+- `M1F_SECURITY_CHECK` - Default security check mode (not implemented)
+- `M1F_MAX_FILE_SIZE` - Default maximum file size limit (not implemented)
 
 ## Subcommands
 
@@ -339,12 +339,13 @@ See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration 
 
 ## Notes
 
-1. **Module Invocation**: Currently, `python -m tools.m1f` may not work due to
-   import issues. Use `python tools/m1f.py` or set up the `m1f` alias as
-   described in the development workflow.
+1. **Module Invocation**: You can use either `python -m tools.m1f` or 
+   `python tools/m1f.py`, or set up the `m1f` alias as described in the 
+   development workflow.
 
-2. **Default Behavior**: If neither `-s` nor `-i` is specified, m1f will process
-   the current directory.
+2. **Input Requirements**: At least one of `-s` (source directory) or `-i` 
+   (input file) must be specified. If neither is provided, m1f will show an 
+   error message.
 
 3. **Gitignore**: m1f respects .gitignore files by default unless
    `--no-default-excludes` is used.
