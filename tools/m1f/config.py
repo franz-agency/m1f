@@ -321,13 +321,14 @@ class Config:
         input_include_files = config.input_include_files
         
         # Only override if not provided via CLI (with path traversal validation)
+        # Paths from presets are trusted
         if not args.source_directory and global_settings.source_directory:
             resolved_path = Path(global_settings.source_directory).resolve()
-            source_dir = validate_path_traversal(resolved_path)
+            source_dir = validate_path_traversal(resolved_path, from_preset=True)
         
         if not args.input_file and global_settings.input_file:
             resolved_path = Path(global_settings.input_file).resolve()
-            input_file = validate_path_traversal(resolved_path)
+            input_file = validate_path_traversal(resolved_path, from_preset=True)
         
         # Only override output_file if not provided via CLI
         if not args.output_file and global_settings.output_file:
@@ -337,13 +338,13 @@ class Config:
         if not args.input_include_files and global_settings.input_include_files:
             if isinstance(global_settings.input_include_files, str):
                 resolved_path = Path(global_settings.input_include_files).resolve()
-                validated_path = validate_path_traversal(resolved_path)
+                validated_path = validate_path_traversal(resolved_path, from_preset=True)
                 input_include_files = [validated_path]
             else:
                 input_include_files = []
                 for f in global_settings.input_include_files:
                     resolved_path = Path(f).resolve()
-                    validated_path = validate_path_traversal(resolved_path)
+                    validated_path = validate_path_traversal(resolved_path, from_preset=True)
                     input_include_files.append(validated_path)
         
         # Create new OutputConfig with overrides

@@ -313,7 +313,7 @@ def sort_files_by_depth_and_name(
     return sorted(file_paths, key=sort_key)
 
 
-def validate_path_traversal(path: Path, base_path: Path = None, allow_outside: bool = False) -> Path:
+def validate_path_traversal(path: Path, base_path: Path = None, allow_outside: bool = False, from_preset: bool = False) -> Path:
     """Validate that a resolved path does not traverse outside allowed directories.
     
     Args:
@@ -322,6 +322,7 @@ def validate_path_traversal(path: Path, base_path: Path = None, allow_outside: b
                   If None, uses the current working directory.
         allow_outside: If True, allows paths outside the base directory but
                       still validates against malicious traversal patterns
+        from_preset: If True, this path comes from a preset file
     
     Returns:
         The validated path
@@ -341,14 +342,14 @@ def validate_path_traversal(path: Path, base_path: Path = None, allow_outside: b
     
     # Check for excessive parent directory traversals
     parent_traversals = path_str.count("../")
-    if parent_traversals >= 3 and not allow_outside:
+    if parent_traversals >= 3 and not (allow_outside or from_preset):
         # Three or more parent directory traversals are suspicious
         raise ValueError(
             f"Path traversal detected: '{path}' contains suspicious '..' patterns"
         )
     
-    if allow_outside:
-        # For output paths, just return the resolved path
+    if allow_outside or from_preset:
+        # For output paths or preset paths, just return the resolved path
         return resolved_path
     
     # For input paths, allow certain exceptions
