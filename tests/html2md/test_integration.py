@@ -50,11 +50,11 @@ class TestIntegration(unittest.TestCase):
 
         # Find the tools directory
         self.tools_dir = Path(__file__).parents[2] / "tools"
-        self.html2md_script = self.tools_dir / "mf1-html2md.py"
+        self.html2md_script = self.tools_dir / "html2md.py"
         self.prepare_docs_script = self.tools_dir / "prepare_docs.py"
 
         if not self.html2md_script.exists():
-            self.skipTest(f"mf1-html2md.py script not found: {self.html2md_script}")
+            self.skipTest(f"html2md.py script not found: {self.html2md_script}")
 
         if not self.prepare_docs_script.exists():
             self.skipTest(
@@ -66,7 +66,7 @@ class TestIntegration(unittest.TestCase):
         shutil.rmtree(self.test_dir)
 
     def test_direct_conversion(self):
-        """Test direct conversion with mf1-html2md.py."""
+        """Test direct conversion with html2md.py."""
         cmd = [
             sys.executable,
             str(self.html2md_script),
@@ -137,10 +137,10 @@ class TestIntegration(unittest.TestCase):
         # Check that blockquotes are converted
         self.assertIn("> This is a blockquote", content)
 
-        # Verify that all major sections are present in the output
-        # even though content filtering is not currently working
-        self.assertIn("Related Links", content)  # From sidebar
-        self.assertIn("All rights reserved", content)  # From footer
+        # Note: Current html2md implementation extracts only main content
+        # Sidebar and footer content are excluded by design
+        # self.assertIn("Related Links", content)  # From sidebar
+        # self.assertIn("All rights reserved", content)  # From footer
 
     def test_code_block_language_detection(self):
         """Test that code block languages are properly detected."""
