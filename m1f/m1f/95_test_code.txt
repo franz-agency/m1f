@@ -2020,6 +2020,7 @@ from bs4 import BeautifulSoup
 import markdownify
 from urllib.parse import urljoin
 import time
+import pytest
 
 # Test server configuration
 TEST_SERVER_URL = "http://localhost:8080"
