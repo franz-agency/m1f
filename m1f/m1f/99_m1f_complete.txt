@@ -8878,7 +8878,7 @@ Language Models (LLMs) and creating bundled documentation.
 - **Flexibility**: Control content deduplication and UTF-8 encoding preferences
 - **Reliability**: Improved error handling and security scanning
 
-See the [v3.2 Features Guide](./14_version_3_2_features.md) for details.
+See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
 
 ## Table of Contents
 
@@ -8886,39 +8886,42 @@ See the [v3.2 Features Guide](./14_version_3_2_features.md) for details.
 
 - [**00_m1f.md**](00_m1f.md) - Main documentation with features, usage examples,
   and architecture
-- [**09_quick_reference.md**](./09_quick_reference.md) - Quick command reference
+- [**01_quick_reference.md**](./01_quick_reference.md) - Quick command reference
   and common patterns
-- [**14_version_3_2_features.md**](./14_version_3_2_features.md) - Comprehensive
-  v3.2 feature documentation and migration guide
+- [**02_cli_reference.md**](./02_cli_reference.md) - Complete command-line
+  parameter reference
+- [**03_troubleshooting.md**](./03_troubleshooting.md) - Common issues and
+  solutions
 
 ### Preset System
 
-- [**02_m1f_presets.md**](./02_m1f_presets.md) - Comprehensive preset system
+- [**10_m1f_presets.md**](./10_m1f_presets.md) - Comprehensive preset system
   guide
-- [**03_m1f_preset_per_file_settings.md**](./03_m1f_preset_per_file_settings.md) -
+- [**11_preset_per_file_settings.md**](./11_preset_per_file_settings.md) -
   Advanced per-file processing configuration
-- [**10_preset_reference.md**](./10_preset_reference.md) - Complete preset
+- [**12_preset_reference.md**](./12_preset_reference.md) - Complete preset
   reference with all settings, features, and clarifications
 
-### Workflows and Integration
+### Features & Tools
 
-- [**01_claude_workflows.md**](./01_claude_workflows.md) - Working with Claude
-  and LLMs
-- [**04_m1f_development_workflow.md**](./04_m1f_development_workflow.md) - Best
-  practices for development workflows
-- [**05_claude_code_integration.md**](./05_claude_code_integration.md) -
-  Integration with Claude Code for AI-assisted development
-- [**06_auto_bundle_guide.md**](./06_auto_bundle_guide.md) - Automated bundling
+- [**20_auto_bundle_guide.md**](./20_auto_bundle_guide.md) - Automated bundling
   with configuration files
+- [**21_development_workflow.md**](./21_development_workflow.md) - Best
+  practices for development workflows
 
-### Reference & Support
+### AI Integration
 
-- [**07_cli_reference.md**](./07_cli_reference.md) - Complete command-line
-  parameter reference
-- [**08_troubleshooting.md**](./08_troubleshooting.md) - Common issues and
-  solutions
-- [**13_security_best_practices.md**](./13_security_best_practices.md) - Security
+- [**30_claude_workflows.md**](./30_claude_workflows.md) - Working with Claude
+  and LLMs
+- [**31_claude_code_integration.md**](./31_claude_code_integration.md) -
+  Integration with Claude Code for AI-assisted development
+
+### Advanced Topics
+
+- [**40_security_best_practices.md**](./40_security_best_practices.md) - Security
   guidelines and protective measures
+- [**41_version_3_2_features.md**](./41_version_3_2_features.md) - Comprehensive
+  v3.2 feature documentation and migration guide
 
 ## Quick Start
 
@@ -8940,7 +8943,7 @@ m1f -s ./src -o bundle.txt --security-check warn
 ```
 
 For detailed information, start with the [main documentation](00_m1f.md) or jump
-to the [quick reference](./09_quick_reference.md) for common commands.
+to the [quick reference](./01_quick_reference.md) for common commands.
 
 ======= docs/01_m1f/00_m1f.md ======
 # m1f (Make One File)
