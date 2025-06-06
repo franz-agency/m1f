@@ -790,23 +790,23 @@ cd /your/project
 m1f-link
 ```
 
-This creates `.m1f/m1f-docs.txt` - a symlink to the complete m1f documentation
+This creates `m1f/m1f-docs.txt` - a symlink to the complete m1f documentation
 that AI tools can read.
 
 #### Example AI Prompts:
 
 ```bash
 # Ask Claude Code to create a configuration
-"Please read @.m1f/m1f-docs.txt and create a .m1f.config.yml
+"Please read @m1f/m1f-docs.txt and create a .m1f.config.yml
 for my Python web project"
 
 # Get help with specific use cases
-"Based on @.m1f/m1f-docs.txt, how do I exclude all test
+"Based on @m1f/m1f-docs.txt, how do I exclude all test
 files but include fixture data?"
 
 # Troubleshoot issues
 "I'm getting this error: [error message]. Can you check
-@.m1f/m1f-docs.txt to help me fix it?"
+@m1f/m1f-docs.txt to help me fix it?"
 ```
 
 The AI will understand:
@@ -815,29 +815,6 @@ The AI will understand:
 - How to create `.m1f.config.yml` files
 - Preset system and file processing options
 - Best practices for different project types
-
-Or manually:
-
-### Linux/macOS
-
-```bash
-mkdir -p .m1f
-ln -s /path/to/m1f/.m1f .m1f/m1f
-```
-
-### Windows (with Developer Mode)
-
-```powershell
-New-Item -ItemType Directory -Force -Path .m1f
-New-Item -ItemType SymbolicLink -Path ".m1f\m1f" -Target "C:\path\to\m1f\.m1f"
-```
-
-### Windows (without Developer Mode - Junction)
-
-```powershell
-New-Item -ItemType Directory -Force -Path .m1f
-cmd /c mklink /J ".m1f\m1f" "C:\path\to\m1f\.m1f"
-```
 
 ## Troubleshooting
 
@@ -938,7 +915,7 @@ BIN_DIR="$(dirname "$SCRIPT_PATH")"
 PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Path to the m1f documentation bundle
-M1F_DOCS="$PROJECT_ROOT/m1f/m1f-doc/99_m1fdocs.txt"
+M1F_DOCS="$PROJECT_ROOT/m1f/m1f-docs.txt"
 
 # Create m1f directory if it doesn't exist
 if [ ! -d "m1f" ]; then
@@ -1039,7 +1016,7 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 
 - [Auto Bundle Guide](01_m1f/06_auto_bundle_guide.md) - Automatic project
   bundling for AI/LLM consumption
-- [Claude + m1f Workflows](01_m1f/08_claude_workflows.md) - Turn Claude into
+- [Claude + m1f Workflows](01_m1f/01_claude_workflows.md) - Turn Claude into
   your personal m1f expert with smart prompt enhancement
 - [Claude Code Integration](01_m1f/05_claude_code_integration.md) - Optional
   AI-powered tool automation
@@ -1047,6 +1024,11 @@ This directory contains detailed documentation for the m1f project v3.2.0.
   rules and configurations
 - [Per-File-Type Settings](01_m1f/03_m1f_preset_per_file_settings.md) -
   Fine-grained control over file processing
+
+### Development
+
+- [Version Management](05_development/55_version_management.md) - Version management and release process
+- [Git Hooks Setup](05_development/56_git_hooks_setup.md) - Git hooks for automated bundling
 
 ## Quick Navigation
 
@@ -1132,7 +1114,7 @@ and this project adheres to
     `curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash`
   - Auto-detection of m1f development repository vs. installed m1f
   - Automatic staging of generated bundles in `m1f/` directory
-  - Comprehensive setup guide at `docs/01_m1f/12_git_hooks_setup.md`
+  - Comprehensive setup guide at `docs/05_development/56_git_hooks_setup.md`
 
 - **Bundle Directory Migration**: Moved from `.m1f/` to `m1f/` for better AI
   tool compatibility
@@ -3545,18 +3527,18 @@ echo For detailed help on each tool, use: ^<tool^> --help'
 setlocal
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=%SCRIPT_DIR%.."
-set "M1F_DOCS=%PROJECT_ROOT%\.m1f\m1f-doc\99_m1fdocs.txt"
-if not exist ".m1f" mkdir ".m1f"
-if exist ".m1f\m1f-docs.txt" (
-    echo m1f documentation already linked at .m1f\m1f-docs.txt
+set "M1F_DOCS=%PROJECT_ROOT%\m1f\m1f-docs.txt"
+if not exist "m1f" mkdir "m1f"
+if exist "m1f\m1f-docs.txt" (
+    echo m1f documentation already linked at m1f\m1f-docs.txt
 ) else (
-    mklink ".m1f\m1f-docs.txt" "%M1F_DOCS%"
+    mklink "m1f\m1f-docs.txt" "%M1F_DOCS%"
     echo.
     echo You can now reference m1f documentation in AI tools:
-    echo   @.m1f\m1f-docs.txt
+    echo   @m1f\m1f-docs.txt
     echo.
     echo Example usage with Claude Code:
-    echo   "Please read @.m1f\m1f-docs.txt and help me set up m1f for this project"
+    echo   "Please read @m1f\m1f-docs.txt and help me set up m1f for this project"
 )'
 }
 
@@ -4994,16 +4976,16 @@ This approach helps you provide targeted and relevant information to your AI
 assistant, leading to more accurate and helpful responses for your WordPress
 development tasks.
 
-## Example: Organizing a Large Project with `.m1f`
+## Example: Organizing a Large Project with `m1f`
 
 When dealing with a project that contains hundreds or thousands of files, start
 by generating a complete file and directory listing without creating the merged
 context file. Run the **Project Review: Generate Lists** task. It calls
 `tools/m1f.py` with `--skip-output-file` and saves two inventory files to the
-`.m1f` directory:
+`m1f` directory:
 
-- `.m1f/project_review_filelist.txt`
-- `.m1f/project_review_dirlist.txt`
+- `m1f/project_review_filelist.txt`
+- `m1f/project_review_dirlist.txt`
 
 Review these lists and decide which areas of the project you want to load into
 your AI assistant. Typical numbered context files might include:
@@ -5012,15 +4994,15 @@ your AI assistant. Typical numbered context files might include:
 - `2_template.txt` – template files from your theme
 - `3_plugin.txt` – a specific plugin or a group of plugins
 
-Store each generated context file in the `.m1f` folder with a number prefix for
+Store each generated context file in the `m1f` folder with a number prefix for
 quick referencing in Windsurf, Cursor, or Claude (for example
-`@.m1f/1_doc.txt`).
+`@m1f/1_doc.txt`).
 
 To keep the inventory current during development, launch **Project Review: Watch
 for Changes**. This background watcher reruns the list generation whenever files
 are modified.
 
-Remember to add `.m1f/` (and `.1f/` if used) to your `.gitignore` so these
+Remember to add `m1f/` (and `.1f/` if used) to your `.gitignore` so these
 helper files stay out of version control.
 
 ======= tasks/ai_context_files.txt ======
@@ -5671,7 +5653,7 @@ helper files stay out of version control.
             ],
             "problemMatcher": [],
             "group": "build",
-            "detail": "Generates full project file and directory listings in the .m1f directory."
+            "detail": "Generates full project file and directory listings in the m1f directory."
         },
         {
             "label": "Project Review: Watch for Changes",
@@ -7848,8 +7830,8 @@ class M1FClaude:
         self.m1f_root = Path(__file__).parent.parent
 
         # Check for m1f documentation in various locations
-        self.m1f_docs_link = self.project_path / ".m1f" / "m1f-docs.txt"
-        self.m1f_docs_direct = self.project_path / ".m1f" / "m1f-doc" / "99_m1fdocs.txt"
+        self.m1f_docs_link = self.project_path / "m1f" / "m1f-docs.txt"
+        self.m1f_docs_direct = self.project_path / "m1f" / "m1f-docs.txt"
 
         # Check if m1f-link has been run or docs exist directly
         self.has_m1f_docs = self.m1f_docs_link.exists() or self.m1f_docs_direct.exists()
@@ -7896,7 +7878,7 @@ This documentation includes:
 ⚠️  m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
 
 Without the docs, I'll use my general knowledge of m1f, but I'll be much more helpful
-if you run 'm1f-link' and then reference @.m1f/m1f-docs.txt
+if you run 'm1f-link' and then reference @m1f/m1f-docs.txt
 """
             )
 
@@ -8889,18 +8871,25 @@ Welcome to the m1f (Make One File) documentation. This tool combines multiple
 text files into a single output file, perfect for providing context to Large
 Language Models (LLMs) and creating bundled documentation.
 
+## What's New in v3.2
+
+- **Enhanced Security**: Path traversal protection, SSRF prevention, automatic robots.txt compliance
+- **Performance**: Parallel file processing enabled by default (3-5x faster)
+- **Flexibility**: Control content deduplication and UTF-8 encoding preferences
+- **Reliability**: Improved error handling and security scanning
+
+See the [v3.2 Features Guide](./14_version_3_2_features.md) for details.
+
 ## Table of Contents
 
-### Core Documentation
+### Getting Started
 
-- [**01_m1f.md**](00_m1f.md) - Main documentation with features, usage examples,
+- [**00_m1f.md**](00_m1f.md) - Main documentation with features, usage examples,
   and architecture
-- [**07_cli_reference.md**](./07_cli_reference.md) - Complete command-line
-  parameter reference
-- [**08_troubleshooting.md**](./08_troubleshooting.md) - Common issues and
-  solutions
 - [**09_quick_reference.md**](./09_quick_reference.md) - Quick command reference
   and common patterns
+- [**14_version_3_2_features.md**](./14_version_3_2_features.md) - Comprehensive
+  v3.2 feature documentation and migration guide
 
 ### Preset System
 
@@ -8909,12 +8898,12 @@ Language Models (LLMs) and creating bundled documentation.
 - [**03_m1f_preset_per_file_settings.md**](./03_m1f_preset_per_file_settings.md) -
   Advanced per-file processing configuration
 - [**10_preset_reference.md**](./10_preset_reference.md) - Complete preset
-  reference with all settings and features
-- [**11_preset_system_clarifications.md**](./11_preset_system_clarifications.md) -
-  Important clarifications and common misconceptions
+  reference with all settings, features, and clarifications
 
 ### Workflows and Integration
 
+- [**01_claude_workflows.md**](./01_claude_workflows.md) - Working with Claude
+  and LLMs
 - [**04_m1f_development_workflow.md**](./04_m1f_development_workflow.md) - Best
   practices for development workflows
 - [**05_claude_code_integration.md**](./05_claude_code_integration.md) -
@@ -8922,17 +8911,32 @@ Language Models (LLMs) and creating bundled documentation.
 - [**06_auto_bundle_guide.md**](./06_auto_bundle_guide.md) - Automated bundling
   with configuration files
 
+### Reference & Support
+
+- [**07_cli_reference.md**](./07_cli_reference.md) - Complete command-line
+  parameter reference
+- [**08_troubleshooting.md**](./08_troubleshooting.md) - Common issues and
+  solutions
+- [**13_security_best_practices.md**](./13_security_best_practices.md) - Security
+  guidelines and protective measures
+
 ## Quick Start
 
 ```bash
-# Basic usage
-python tools/m1f.py -s ./your_project -o ./combined.txt
+# Basic usage (parallel processing is automatic in v3.2)
+m1f -s ./your_project -o ./combined.txt
 
 # With file type filtering
-python tools/m1f.py -s ./src -o code.txt --include-extensions .py .js
+m1f -s ./src -o code.txt --include-extensions .py .js
 
 # Using presets
-python tools/m1f.py -s . -o bundle.txt --preset wordpress.m1f-presets.yml
+m1f -s . -o bundle.txt --preset wordpress.m1f-presets.yml
+
+# v3.2 features: Allow duplicate files + custom encoding
+m1f -s ./legacy -o output.txt --allow-duplicate-files --no-prefer-utf8-for-text-files
+
+# Security scanning with warning mode
+m1f -s ./src -o bundle.txt --security-check warn
 ```
 
 For detailed information, start with the [main documentation](00_m1f.md) or jump
@@ -9387,12 +9391,18 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 ======= docs/01_m1f/01_claude_workflows.md ======
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
 
-Ever wished you had an AI buddy who actually understands your project structure?
-That's what happens when you combine Claude with m1f. This guide shows you how
-to turn Claude into your personal project assistant who knows exactly how to
-bundle, organize, and process your code.
+Ever wished you had an AI buddy who actually understands your project structure? That's what happens when you combine Claude with m1f. This guide shows you how to turn Claude into your personal project assistant who knows exactly how to bundle, organize, and process your code.
 
-## The Magic Setup ✨
+## The Power of m1f v3.2 + Claude ✨
+
+With m1f v3.2's enhanced features, Claude can help you:
+- Configure comprehensive security scanning
+- Set up parallel processing for faster bundling
+- Create sophisticated preset configurations
+- Manage content deduplication strategies
+- Handle complex encoding scenarios
+
+## Getting Started with Claude
 
 ### Step 1: Give Claude the Power
 
@@ -9400,11 +9410,10 @@ First, let's get Claude up to speed on what m1f can do:
 
 ```bash
 cd /your/awesome/project
-m1f-link  # Creates .m1f/m1f-docs.txt
+m1f-link  # Creates m1f/m1f-docs.txt symlink
 ```
 
-Boom! 💥 Now you've got the complete m1f documentation sitting in your project.
-Claude can read this and instantly become an m1f expert.
+Boom! 💥 Now you've got the complete m1f documentation sitting in your project. Claude can read this and instantly become an m1f expert.
 
 ### Step 2: Start the Conversation
 
@@ -9412,7 +9421,7 @@ Here's where it gets fun. Just tell Claude what you need:
 
 ```
 Hey Claude, I need help setting up m1f for my project.
-Check out @.m1f/m1f-docs.txt to see what m1f can do.
+Check out @m1f/m1f-docs.txt to see what m1f can do.
 
 My project is a Python web app with:
 - Backend API in /api
@@ -9423,49 +9432,50 @@ My project is a Python web app with:
 Can you create a .m1f.config.yml that bundles these intelligently?
 ```
 
-Claude will read the docs and create a perfect config for your project
-structure. No more guessing at parameters!
+Claude will read the docs and create a perfect config for your project structure. No more guessing at parameters!
 
 ## Real-World Workflows That Actually Work 🚀
 
-### The "I Need Context for My AI" Workflow
+### The "Security-First Bundle" Workflow
 
 ```
-Claude, I want to use Cursor/Windsurf to refactor my code.
-Based on @.m1f/m1f-docs.txt, create bundles that give
-the AI perfect context without overwhelming it.
+Claude, I need to create bundles for external review.
+Using m1f v3.2's security features:
 
-Focus on:
-- Core business logic (not tests)
-- Related config files
-- Keep each bundle under 100KB for fast processing
+1. Create a config that scans for secrets (security_check: error)
+2. Exclude any files with sensitive data
+3. Set up proper path validation
+4. Ensure no internal IPs or credentials leak through
+
+Focus on making it safe to share with contractors.
 ```
 
-### The "My Docs Are a Mess" Workflow
+### The "Performance Optimization" Workflow
 
 ```
-Claude, I scraped our docs site and now I have 500 HTML files.
-Using @.m1f/m1f-docs.txt as reference:
+Claude, my project has 5000+ files and bundling is slow.
+Help me optimize using m1f v3.2's features:
 
-1. Help me analyze the HTML structure
-2. Create a preprocessing config to clean them up
-3. Convert to clean Markdown
-4. Bundle by topic for our new docs site
+1. Leverage parallel processing (enabled by default)
+2. Set up smart file size limits
+3. Use content deduplication to reduce bundle size
+4. Create targeted bundles instead of one massive file
 
-The HTML files are in ./scraped-docs/
+The goal is sub-10 second bundle generation.
 ```
 
-### The "Deploy Day Documentation" Workflow
+### The "Multi-Environment Setup" Workflow
 
 ```
-Claude, we're deploying tomorrow. I need you to:
+Claude, I need different bundles for dev/staging/prod.
+Using m1f v3.2's preset system:
 
-1. Create a bundle with all deployment-related files
-2. Include configs, scripts, and deployment docs
-3. Exclude all test files and development configs
-4. Make it readable for the ops team
+1. Create environment-specific presets
+2. Use conditional presets (enabled_if_exists)
+3. Set different security levels per environment
+4. Configure appropriate output formats
 
-Check @.m1f/m1f-docs.txt for the right parameters.
+Make it so I can just run: m1f --preset env.yml --preset-group production
 ```
 
 ## Using m1f-claude: The Smart Assistant 🧠
@@ -9486,13 +9496,127 @@ m1f-claude -i
 ### What Makes m1f-claude Special?
 
 When you use `m1f-claude`, it automatically:
-
 - Knows where to find m1f documentation
 - Understands your project structure
 - Suggests optimal parameters
 - Can execute commands directly (with your permission)
 
-## Pro Tips from the Trenches 💪
+## Working with Claude Code
+
+If you're using Claude Code (claude.ai/code), you can leverage its file reading capabilities:
+
+```
+# In Claude Code, you can directly reference files
+Claude, please read my current .m1f.config.yml and suggest improvements
+based on m1f v3.2 features like:
+- Better security scanning
+- Optimized performance settings
+- Advanced preset configurations
+```
+
+## Advanced v3.2 Patterns 🎯
+
+### The "Complete Configuration via Presets"
+
+With v3.2, you can control everything through presets:
+
+```yaml
+# production.m1f-presets.yml
+production:
+  description: "Production-ready bundles with full security"
+  
+  global_settings:
+    # Input/Output
+    source_directory: "./src"
+    output_file: "dist/prod-bundle.txt"
+    input_include_files: ["README.md", "LICENSE"]
+    
+    # Security (v3.2)
+    security_check: "error"  # Stop on any secrets
+    
+    # Performance (v3.2)
+    enable_content_deduplication: true
+    prefer_utf8_for_text_files: true
+    
+    # Output control
+    add_timestamp: true
+    create_archive: true
+    archive_type: "tar.gz"
+    force: true
+    minimal_output: true
+    quiet: true
+    
+    # Processing
+    separator_style: "MachineReadable"
+    encoding: "utf-8"
+    max_file_size: "1MB"
+    
+    # Exclusions
+    exclude_patterns: 
+      - "**/*.test.js"
+      - "**/*.spec.ts"
+      - "**/node_modules/**"
+      - "**/.env*"
+
+  presets:
+    minify_production:
+      patterns: ["dist/**/*"]
+      extensions: [".js", ".css"]
+      actions: ["minify", "strip_comments"]
+```
+
+### The "AI Context Optimization" Pattern
+
+```yaml
+bundles:
+  ai-context:
+    description: "Optimized for Claude and other LLMs"
+    output: "m1f/ai-context.txt"
+    sources:
+      - path: "src"
+        include_extensions: [".py", ".js", ".ts", ".jsx", ".tsx"]
+        exclude_patterns:
+          - "**/*.test.*"
+          - "**/*.spec.*"
+          - "**/test/**"
+    
+    # v3.2 optimizations
+    global_settings:
+      # Security first
+      security_check: "warn"
+      
+      # Performance
+      enable_content_deduplication: true  # Reduce token usage
+      
+      # AI-friendly format
+      separator_style: "Markdown"
+      max_file_size: "100KB"  # Keep context focused
+      
+      # Clean output
+      remove_scraped_metadata: true
+      allow_duplicate_files: false
+```
+
+### The "Encoding-Aware Bundle" Pattern
+
+```yaml
+bundles:
+  legacy-code:
+    description: "Handle mixed encoding legacy code"
+    output: "m1f/legacy-bundle.txt"
+    
+    global_settings:
+      # v3.2 encoding features
+      prefer_utf8_for_text_files: false  # Respect original encoding
+      convert_to_charset: "utf-8"  # But convert output
+      abort_on_encoding_error: false  # Continue on errors
+      
+      # Include everything
+      include_binary_files: false
+      include_dot_paths: true
+```
+
+## Pro Tips for Claude Interactions 💪
 
 ### 1. Let Claude Learn Your Project
 
@@ -9505,181 +9629,191 @@ how to organize it with m1f bundles. Consider:
 - Logical groupings for different use cases
 - Size limits for AI context windows
 
-Use @.m1f/m1f-docs.txt to understand all available options.
+Use @m1f/m1f-docs.txt to understand all available options.
 ```
 
-### 2. Create Reusable Configs
+### 2. Provide Clear Context
 
 ```
-Claude, based on our discussion, create a .m1f.config.yml
-that I can commit to the repo. Include:
-- Development bundles for coding
-- Documentation bundles for writing
-- Deployment bundles for ops
-- AI context bundles for assistants
+Claude, here's my project structure from m1f:
+- Total files: 500
+- Main languages: Python (60%), JavaScript (30%), Docs (10%)
+- Special requirements: HIPAA compliance, no credential exposure
+- Target use: Sharing with external auditors
+
+Create a secure bundling strategy using m1f v3.2's security features.
+Check @m1f/m1f-docs.txt for security parameters.
 ```
 
-### 3. Automate the Boring Stuff
+### 3. Iterative Refinement
 
 ```
-Claude, write a GitHub Action that:
-1. Runs m1f-update on every push
-2. Creates bundles for different purposes
-3. Uploads them as artifacts
-4. Comments on the PR with bundle stats
-
-Here's what m1f can do: @.m1f/m1f-docs.txt
+Claude, the bundle is too large (50MB). Help me:
+1. Use content deduplication more aggressively
+2. Set up file size limits
+3. Create multiple smaller bundles by component
+4. Exclude generated files and build artifacts
 ```
 
-## Common Patterns That Just Work 🎯
+### 4. Preset Composition
 
-### The "AI Context Special"
+```
+Claude, I want layered presets:
+1. base.yml - Company-wide standards
+2. project.yml - Project-specific rules  
+3. personal.yml - My personal preferences
+
+Show me how to use them together with proper override behavior.
+```
+
+## Security-First Workflows 🔒
+
+### Preparing Code for Review
+
+```
+Claude, I need to share code with a contractor. Create a config that:
+1. Runs strict security scanning (security_check: error)
+2. Validates all file paths
+3. Excludes .env files and secrets
+4. Redacts any hardcoded credentials
+5. Creates an audit trail
+
+Use m1f v3.2's security features to make this bulletproof.
+```
+
+### Automated Security Checks
+
+```
+Claude, write a Git pre-commit hook that:
+1. Runs m1f with security scanning
+2. Blocks commits if secrets are found
+3. Auto-generates safe bundles
+4. Updates the m1f/ directory
+
+Make it work with m1f v3.2's git hooks setup.
+```
+
+## Performance Optimization Strategies 🚀
+
+### Large Codebase Handling
+
+```
+Claude, optimize m1f for our monorepo (10K+ files):
+
+1. Set up smart exclusion patterns
+2. Use size-based filtering
+3. Create focused bundles per team
+4. Leverage parallel processing
+5. Implement caching strategies
+
+Goal: Bundle generation under 30 seconds.
+```
+
+### Memory-Efficient Processing
 
 ```yaml
-# Claude will generate something like this
-bundles:
-  ai-context:
-    description: "Optimized for AI assistants"
-    output: ".m1f/ai-context.txt"
-    sources:
-      - path: "."
-        include_extensions: [".py", ".js", ".md"]
-        excludes:
-          - "**/test_*"
-          - "**/node_modules/**"
-          - "**/__pycache__/**"
-    separator_style: "Markdown" # Best for AI readability
-    max_file_size: "100KB" # Keep context focused
+# Claude might suggest this for large files
+large_files:
+  description: "Handle massive log files"
+  
+  global_settings:
+    max_file_size: "10MB"  # Skip huge files
+    enable_content_deduplication: true
+    
+  presets:
+    truncate_logs:
+      extensions: [".log", ".txt"]
+      custom_processor: "truncate"
+      processor_args:
+        max_lines: 1000
+        add_marker: true
 ```
 
-### The "Documentation Bundle"
+## Troubleshooting with Claude 🔧
 
-```yaml
-bundles:
-  docs-all:
-    description: "All documentation for new developers"
-    output: ".m1f/docs-complete.txt"
-    sources:
-      - path: "."
-        include_files: ["README.md", "CONTRIBUTING.md"]
-      - path: "docs"
-        include_extensions: [".md", ".rst"]
-      - path: "examples"
-        include_extensions: [".py", ".js"]
-    separator_style: "Detailed"
-```
-
-### The "Code Review Bundle"
-
-```yaml
-bundles:
-  pr-changes:
-    description: "Changed files for PR review"
-    output: ".m1f/pr-review.txt"
-    sources:
-      - path: "."
-        include_files: ${CHANGED_FILES} # From git diff
-    filename_mtime_hash: true # Track changes
-```
-
-## Troubleshooting Like a Pro 🔧
-
-### "Claude doesn't understand my project"
-
-Solution: Be specific about your stack:
+### Common Issues and Solutions
 
 ```
-Claude, this is a Django project with:
-- Django 4.2
-- PostgreSQL
-- Redis for caching
-- Celery for tasks
-
-Given this stack and @.m1f/m1f-docs.txt,
-how should I bundle for deployment?
+Claude, m1f is flagging false positives for secrets. Help me:
+1. Configure security_check levels appropriately
+2. Create patterns to exclude test fixtures
+3. Set up per-file security overrides
+4. Document why certain warnings are acceptable
 ```
 
-### "The bundles are too big"
-
-Ask Claude to optimize:
+### Performance Debugging
 
 ```
-Claude, my bundles are huge. Using @.m1f/m1f-docs.txt,
-help me:
-1. Split into smaller logical chunks
-2. Use the preset system to process files
-3. Exclude unnecessary files
-4. Set appropriate size limits
+Claude, bundling takes 5 minutes. Analyze this verbose output
+and suggest optimizations:
+[paste m1f --verbose output]
+
+Consider:
+- File count and sizes
+- Duplicate detection overhead
+- Encoding detection delays
+- Security scanning bottlenecks
 ```
 
-### "I need different bundles for different teams"
+## Integration Patterns 🔌
 
-Claude's got you:
-
-```
-Claude, create bundles for:
-- Frontend team (React/TypeScript only)
-- Backend team (Python/Django only)
-- DevOps (configs/scripts only)
-- QA team (tests/fixtures only)
-
-Check @.m1f/m1f-docs.txt for the best approach.
-```
-
-## Advanced Wizardry 🧙‍♂️
-
-### Custom Processing Rules
+### CI/CD Integration
 
 ```
-Claude, I need custom processing:
-- Minify all CSS/JS in production bundles
-- Strip comments from Python files
-- Remove console.logs from JavaScript
-- Keep markdown files pristine
+Claude, create a GitHub Action that:
+1. Triggers on PR creation
+2. Generates comparison bundles (before/after)
+3. Posts bundle statistics as PR comment
+4. Fails if bundle size increases >10%
+5. Runs security scanning on changed files
 
-Create a preset configuration based on @.m1f/m1f-docs.txt
+Use m1f v3.2's features for efficiency.
 ```
 
-### Dynamic Bundle Generation
+### Documentation Automation
 
 ```
-Claude, write a Python script that:
-1. Checks which modules changed
-2. Creates targeted bundles for just those modules
-3. Includes related tests and docs
-4. Uses m1f's auto-bundle feature
+Claude, automate our documentation workflow:
+1. Scrape our docs site weekly
+2. Convert HTML to Markdown
+3. Bundle by section with m1f
+4. Remove outdated metadata
+5. Create versioned archives
 
-Reference @.m1f/m1f-docs.txt for the API.
+Leverage m1f's web scraping and processing features.
 ```
 
-### Integration with Your Workflow
+## Quick Reference Commands 🎪
 
-```
-Claude, integrate m1f into our workflow:
-1. Pre-commit hook for documentation bundles
-2. CI/CD bundle generation
-3. Automatic context for our AI coding assistant
-4. Daily bundle reports via Slack
-
-You know what m1f can do from @.m1f/m1f-docs.txt
-```
-
-## The One-Liner Wonders 🎪
-
-Some quick commands that make life easier:
+Some powerful one-liners for common tasks:
 
 ```bash
-# "Just make it work for my Python project"
+# Give Claude m1f superpowers
+m1f-link
+
+# Quick m1f setup for your project
 m1f-claude "Setup m1f for a typical Python project with tests and docs"
 
-# "Help me understand this codebase"
+# Interactive Claude session
+m1f-claude -i
+
+# Security audit bundle
+m1f -s . -o audit.txt --security-check error --minimal-output
+
+# Fast development bundle (no security checks)
+m1f -s ./src -o dev.txt --security-check skip 
+
+# Documentation bundle with metadata
+m1f -s ./docs -o docs.txt --separator-style Detailed
+
+# Clean bundle for AI consumption
+m1f -s . -o ai-context.txt --allow-duplicate-files false
+
+# Help me understand this codebase
 m1f-claude "Create bundles to help a new developer understand this project"
 
-# "Prep for the AI apocalypse"
+# Prep for the AI apocalypse
 m1f-claude "Optimize my project for AI assistants with proper context windows"
-
-# "Friday afternoon deployment special"
-m1f-claude "Bundle everything needed for production deployment, exclude the scary stuff"
 ```
 
 ## Your Turn! 🎮
@@ -9688,18 +9822,17 @@ Now you're ready to turn Claude into your personal m1f expert. Remember:
 
 1. Always start with `m1f-link` to give Claude the docs
 2. Be specific about what you want to achieve
-3. Let Claude suggest optimal configurations
+3. Let Claude suggest optimal configurations based on the documentation
 4. Iterate and refine based on results
+5. Test security settings thoroughly before sharing
 
-The best part? Claude remembers your conversations, so it gets better at
-understanding your project over time.
+The best part? Claude remembers your conversations, so it gets better at understanding your project over time.
 
 Happy bundling! 🚀
 
 ---
 
-_P.S. - If Claude suggests something that seems off, just ask "Are you sure
-about that? Check @.m1f/m1f-docs.txt again." Works every time! 😉_
+_P.S. - If Claude suggests something that seems off, just ask "Are you sure about that? Check @m1f/m1f-docs.txt again." Works every time! 😉_
 
 ======= docs/01_m1f/02_m1f_presets.md ======
 # m1f Preset System Documentation
@@ -11225,7 +11358,7 @@ The hook will:
 - Block commits if bundle generation fails
 
 For detailed setup instructions, see the
-[Git Hooks Setup Guide](12_git_hooks_setup.md).
+[Git Hooks Setup Guide](../05_development/56_git_hooks_setup.md).
 
 ## Best Practices
 
@@ -11354,9 +11487,11 @@ m1f [-h] [--version] [-s DIR] [-i FILE] -o FILE
     [--max-file-size SIZE] [--no-default-excludes]
     [--remove-scraped-metadata]
     [--convert-to-charset {utf-8,utf-16,utf-16-le,utf-16-be,ascii,latin-1,cp1252}]
-    [--abort-on-encoding-error] [--security-check {abort,skip,warn}]
+    [--abort-on-encoding-error] [--no-prefer-utf8-for-text-files]
+    [--security-check {error,warn,skip}]
     [--create-archive] [--archive-type {zip,tar.gz}] [-f]
-    [--minimal-output] [--skip-output-file] [-v] [-q]
+    [--minimal-output] [--skip-output-file] [--allow-duplicate-files]
+    [-v] [-q]
     [--preset FILE [FILE ...]] [--preset-group GROUP]
     [--disable-presets]
 ```
@@ -11581,13 +11716,13 @@ emojis or special characters.
 
 ## Security Options
 
-### `--security-check {abort,skip,warn}`
+### `--security-check {error,warn,skip}`
 
 Check for sensitive information in files using detect-secrets.
 
-- **abort**: Stop processing if secrets are found
-- **skip**: Skip files containing secrets
-- **warn**: Include files but show warnings (default)
+- **error**: Stop processing if secrets are found (default in v3.2)
+- **warn**: Include files but show warnings
+- **skip**: Disable security scanning (not recommended)
 
 ## Archive Options
 
@@ -12170,9 +12305,43 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 ======= docs/01_m1f/10_preset_reference.md ======
 # m1f Preset System Complete Reference
 
-This document provides a comprehensive reference for the m1f preset system,
-including all available settings, undocumented features, and advanced usage
-patterns.
+This document provides a comprehensive reference for the m1f preset system, including all available settings, clarifications, and advanced usage patterns.
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Preset File Format](#preset-file-format)
+- [All Available Settings](#all-available-settings)
+- [Available Actions](#available-actions)
+- [Pattern Matching](#pattern-matching)
+- [Processing Order](#processing-order)
+- [Important Clarifications](#important-clarifications)
+- [Advanced Features](#advanced-features)
+- [Examples](#examples)
+- [Debugging and Best Practices](#debugging-and-best-practices)
+
+## Quick Start
+
+The m1f preset system allows you to define file-specific processing rules and configurations. Here's a minimal example:
+
+```yaml
+# my-preset.yml
+web_assets:
+  description: "Process web assets"
+  presets:
+    javascript:
+      extensions: [".js", ".jsx"]
+      actions: ["minify", "strip_comments"]
+```
+
+Use it with:
+```bash
+# Module invocation (recommended)
+python -m tools.m1f -s ./src -o bundle.txt --preset my-preset.yml
+
+# Direct script invocation (alternative)
+python tools/m1f.py -s ./src -o bundle.txt --preset my-preset.yml
+```
 
 ## Preset File Format
 
@@ -12197,7 +12366,7 @@ group_name:
         - compress_whitespace
 
       # Per-file overrides
-      security_check: "warn" # abort, skip, warn
+      security_check: "warn" # error, skip, warn
       max_file_size: "500KB"
       include_dot_paths: true
       include_binary_files: false
@@ -12242,7 +12411,7 @@ globals:
     # Per-extension settings
     extensions:
       .py:
-        security_check: "abort"
+        security_check: "error"
         max_file_size: "2MB"
       .env:
         security_check: "skip"
@@ -12263,8 +12432,7 @@ globals:
 
 ### Global Settings (NEW in v3.2.0)
 
-These settings can be specified in the `global_settings` section and override
-CLI defaults:
+These settings can be specified in the `global_settings` section and override CLI defaults:
 
 #### Input/Output Settings
 
@@ -12277,13 +12445,14 @@ CLI defaults:
 
 #### Output Control Settings
 
-| Setting               | Type    | Default | Description                          |
-| --------------------- | ------- | ------- | ------------------------------------ |
-| `add_timestamp`       | boolean | false   | Add timestamp to output filename     |
-| `filename_mtime_hash` | boolean | false   | Add hash of file mtimes to filename  |
-| `force`               | boolean | false   | Force overwrite existing output file |
-| `minimal_output`      | boolean | false   | Only create main output file         |
-| `skip_output_file`    | boolean | false   | Skip creating main output file       |
+| Setting                      | Type    | Default | Description                          |
+| ---------------------------- | ------- | ------- | ------------------------------------ |
+| `add_timestamp`              | boolean | false   | Add timestamp to output filename     |
+| `filename_mtime_hash`        | boolean | false   | Add hash of file mtimes to filename  |
+| `force`                      | boolean | false   | Force overwrite existing output file |
+| `minimal_output`             | boolean | false   | Only create main output file         |
+| `skip_output_file`           | boolean | false   | Skip creating main output file       |
+| `allow_duplicate_files`      | boolean | false   | Allow duplicate content (v3.2)       |
 
 #### Archive Settings
 
@@ -12299,15 +12468,17 @@ CLI defaults:
 | `verbose` | boolean | false   | Enable verbose output       |
 | `quiet`   | boolean | false   | Suppress all console output |
 
-#### File Processing Settings (Existing)
+#### File Processing Settings
 
-| Setting           | Type   | Default | Description                   |
-| ----------------- | ------ | ------- | ----------------------------- |
-| `encoding`        | string | "utf-8" | Target encoding for all files |
-| `separator_style` | string | none    | File separator style          |
-| `line_ending`     | string | "lf"    | Line ending style (lf/crlf)   |
-| `security_check`  | string | "warn"  | How to handle secrets         |
-| `max_file_size`   | string | none    | Maximum file size to process  |
+| Setting                       | Type    | Default | Description                              |
+| ----------------------------- | ------- | ------- | ---------------------------------------- |
+| `encoding`                    | string  | "utf-8" | Target encoding for all files            |
+| `separator_style`             | string  | none    | File separator style                     |
+| `line_ending`                 | string  | "lf"    | Line ending style (lf/crlf)              |
+| `security_check`              | string  | "warn"  | How to handle secrets                    |
+| `max_file_size`               | string  | none    | Maximum file size to process             |
+| `enable_content_deduplication`| boolean | true    | Enable content deduplication (v3.2)      |
+| `prefer_utf8_for_text_files`  | boolean | true    | Prefer UTF-8 for text files (v3.2)      |
 
 ### Preset-Level Settings
 
@@ -12335,25 +12506,21 @@ CLI defaults:
 ### Built-in Actions
 
 1. **`minify`** - Remove unnecessary whitespace and formatting
-
    - Reduces file size
    - Maintains functionality
    - Best for: JS, CSS, HTML
 
 2. **`strip_tags`** - Remove HTML/XML tags
-
    - Extracts text content only
    - Preserves text between tags
    - Best for: HTML, XML, Markdown with HTML
 
 3. **`strip_comments`** - Remove code comments
-
    - Removes single and multi-line comments
    - Language-aware (JS, Python, CSS, etc.)
    - Best for: Production code bundles
 
 4. **`compress_whitespace`** - Reduce multiple spaces/newlines
-
    - Converts multiple spaces to single space
    - Reduces multiple newlines to double newline
    - Best for: Documentation, logs
@@ -12365,8 +12532,9 @@ CLI defaults:
 
 ### Custom Processors
 
-1. **`truncate`** - Limit file length
+Currently implemented:
 
+1. **`truncate`** - Limit file length
    ```yaml
    custom_processor: "truncate"
    processor_args:
@@ -12376,12 +12544,11 @@ CLI defaults:
    ```
 
 2. **`redact_secrets`** - Remove sensitive data
-
    ```yaml
    custom_processor: "redact_secrets"
    processor_args:
      patterns:
-       - '(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*["\']?[\\w-]+["\']?'
+       - '(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*["\\']?[\\w-]+["\\']?'
        - '(?i)bearer\\s+[\\w-]+'
      replacement: "[REDACTED]"
    ```
@@ -12394,23 +12561,22 @@ CLI defaults:
      include_docstrings: true
    ```
 
+Note: Other processors mentioned in examples (like `extract_code_cells`) are illustrative and would need to be implemented.
+
 ## Pattern Matching
 
 ### Pattern Types
 
 1. **Extension Matching**
-
    ```yaml
    extensions: [".py", ".pyx", "py"] # All are equivalent
    ```
 
 2. **Glob Patterns**
-
    ```yaml
    patterns:
      - "*.test.js" # All test files
      - "src/**/*.js" # All JS in src/
-     # Note: Exclude patterns with "!" are not currently supported
    ```
 
 3. **Combined Matching**
@@ -12437,28 +12603,6 @@ group_name:
 3. **First Match Wins** - First matching preset is applied
 4. **Action Order** - Actions are applied in the order listed
 
-## Global Settings
-
-### Structure
-
-```yaml
-globals:
-  global_settings:
-    # Default settings for all files
-    security_check: "warn"
-    max_file_size: "1MB"
-
-    # Per-extension overrides
-    extensions:
-      .py:
-        security_check: "abort"
-        max_file_size: "2MB"
-        actions: ["strip_comments"]
-      .env:
-        security_check: "skip"
-        actions: ["redact_secrets"]
-```
-
 ### Setting Precedence
 
 1. CLI arguments (highest priority)
@@ -12467,9 +12611,69 @@ globals:
 4. Global default settings
 5. m1f defaults (lowest priority)
 
-**Note**: CLI arguments ALWAYS override preset values. This allows presets to
-define defaults while still allowing users to override specific settings via
-command line.
+**Note**: CLI arguments ALWAYS override preset values.
+
+## Important Clarifications
+
+### Pattern Matching Limitations
+
+**Exclude patterns with `!` prefix are not supported in preset patterns**. To exclude files:
+
+1. **Use Global Settings** (Recommended):
+   ```yaml
+   globals:
+     global_settings:
+       exclude_patterns: ["*.min.js", "*.map", "dist/**/*"]
+   ```
+
+2. **Use CLI Arguments**:
+   ```bash
+   python tools/m1f.py -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
+   ```
+
+### Settings Hierarchy
+
+Understanding where settings can be applied:
+
+1. **Global Settings Level** (`globals.global_settings`):
+   - `include_patterns` / `exclude_patterns`
+   - `include_extensions` / `exclude_extensions`
+   - All general m1f settings
+
+2. **Preset Level** (individual presets):
+   - `patterns` and `extensions` (for matching)
+   - `actions` (processing actions)
+   - Override settings like `security_check`
+
+3. **Extension-Specific Global Settings** (`globals.global_settings.extensions.{ext}`):
+   - All preset-level settings per extension
+
+### Common Misconceptions
+
+1. **Exclude Patterns in Presets**
+   
+   ❌ **Incorrect**:
+   ```yaml
+   presets:
+     my_preset:
+       exclude_patterns: ["*.min.js"] # Doesn't work here
+   ```
+   
+   ✅ **Correct**:
+   ```yaml
+   globals:
+     global_settings:
+       exclude_patterns: ["*.min.js"] # Works here
+   ```
+
+2. **Actions vs Settings**
+   
+   **Actions** (go in `actions` list):
+   - `minify`, `strip_tags`, `strip_comments`, etc.
+   
+   **Settings** (separate fields):
+   - `strip_tags: ["script", "style"]` (configuration)
+   - `max_lines: 100` (configuration)
 
 ## Advanced Features
 
@@ -12498,40 +12702,56 @@ python tools/m1f.py -s . -o out.txt \
 
 1. **Project presets**: `./presets/*.m1f-presets.yml`
 2. **Local preset**: `./.m1f-presets.yml`
-3. **User presets**: `~/.m1f/*.m1f-presets.yml`
+3. **User presets**: `~/m1f/*.m1f-presets.yml`
 4. **Specified presets**: Via `--preset` flag
 
-## Debugging Presets
+### Complete Parameter Control (v3.2.0+)
 
-### Verbose Mode
+Starting with v3.2.0, ALL m1f parameters can be controlled via presets:
 
-```bash
-python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
+```yaml
+# production.m1f-presets.yml
+production:
+  description: "Production build configuration"
+  
+  global_settings:
+    # Define all inputs/outputs
+    source_directory: "./src"
+    output_file: "dist/bundle.txt"
+    input_include_files: ["README.md", "LICENSE"]
+    
+    # Enable production features
+    add_timestamp: true
+    create_archive: true
+    archive_type: "tar.gz"
+    force: true
+    
+    # Production optimizations
+    minimal_output: true
+    quiet: true
+    
+    # File processing
+    separator_style: "MachineReadable"
+    encoding: "utf-8"
+    security_check: "error"
 ```
 
-Shows:
+Usage comparison:
 
-- Which preset is applied to each file
-- Which actions are performed
-- Processing time for each action
+**Before v3.2.0** (long command):
+```bash
+python -m tools.m1f -s ./src -o dist/bundle.txt \
+  --input-include-files README.md LICENSE \
+  --add-timestamp --create-archive --archive-type tar.gz \
+  --force --minimal-output --quiet \
+  --separator-style MachineReadable \
+  --security-check error
+```
 
-### Common Issues
-
-1. **Preset not applied**
-
-   - Check pattern matching
-   - Verify preset group is enabled
-   - Use verbose mode to debug
-
-2. **Wrong action order**
-
-   - Actions are applied sequentially
-   - Order matters (e.g., minify before strip_comments)
-
-3. **Performance issues**
-   - Limit expensive actions to necessary files
-   - Use `max_file_size` to skip large files
-   - Consider `minimal_output` mode
+**After v3.2.0** (simple command):
+```bash
+python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
+```
 
 ## Examples
 
@@ -12553,7 +12773,7 @@ web_development:
       patterns: ["src/**/*"]
       extensions: [".js", ".jsx", ".ts", ".tsx"]
       actions: ["strip_comments"]
-      security_check: "abort"
+      security_check: "error"
 
     # Documentation
     docs:
@@ -12563,7 +12783,7 @@ web_development:
     # Configuration files
     config:
       patterns: ["*.json", "*.yml", "*.yaml"]
-      security_check: "abort"
+      security_check: "error"
       custom_processor: "redact_secrets"
 ```
 
@@ -12572,11 +12792,6 @@ web_development:
 ```yaml
 data_science:
   presets:
-    # Notebooks - extract code cells only (Note: extract_code_cells is an example)
-    notebooks:
-      extensions: [".ipynb"]
-      custom_processor: "extract_code_cells" # This processor would need to be implemented
-
     # Large data files - truncate
     data_files:
       extensions: [".csv", ".json", ".parquet"]
@@ -12589,89 +12804,6 @@ data_science:
     scripts:
       extensions: [".py", ".r", ".jl"]
       actions: ["strip_comments"]
-```
-
-## Best Practices
-
-1. **Start Simple** - Begin with basic actions, add complexity as needed
-2. **Test Thoroughly** - Use verbose mode to verify behavior
-3. **Layer Presets** - Use multiple files for base + overrides
-4. **Document Presets** - Add descriptions to groups and complex presets
-5. **Version Control** - Keep presets in your repository
-6. **Performance First** - Apply expensive actions only where needed
-
-## Complete Parameter Control via Presets (v3.2.0+)
-
-Starting with v3.2.0, ALL m1f parameters can be controlled via presets,
-eliminating the need for complex command lines:
-
-### Example: Full Configuration Preset
-
-```yaml
-# production.m1f-presets.yml
-production:
-  description: "Production build configuration"
-  priority: 100
-
-  global_settings:
-    # Define all inputs/outputs
-    source_directory: "./src"
-    output_file: "dist/bundle.txt"
-    input_include_files: ["README.md", "LICENSE"]
-
-    # Enable production features
-    add_timestamp: true
-    create_archive: true
-    archive_type: "tar.gz"
-    force: true # Always overwrite
-
-    # Production optimizations
-    minimal_output: true
-    quiet: true # No console output
-
-    # File processing
-    separator_style: "MachineReadable"
-    encoding: "utf-8"
-    security_check: "abort"
-
-    # Only include necessary files
-    include_extensions: [".js", ".jsx", ".ts", ".tsx", ".json"]
-    exclude_patterns: ["*.test.*", "*.spec.*", "__tests__/**"]
-    max_file_size: "1MB"
-```
-
-### Usage Comparison
-
-**Before v3.2.0** (long command line):
-
-```bash
-python -m tools.m1f -s ./src -o dist/bundle.txt \
-  --input-include-files README.md LICENSE \
-  --add-timestamp --create-archive --archive-type tar.gz \
-  --force --minimal-output --quiet \
-  --separator-style MachineReadable \
-  --convert-to-charset utf-8 --security-check abort \
-  --include-extensions .js .jsx .ts .tsx .json \
-  --excludes "*.test.*" "*.spec.*" "__tests__/**" \
-  --max-file-size 1MB
-```
-
-**After v3.2.0** (simple command):
-
-```bash
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
-```
-
-### Command Line Override
-
-CLI parameters still take precedence, allowing quick overrides:
-
-```bash
-# Use production preset but enable verbose output for debugging
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt -v
-
-# Use production preset but change archive type
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt --archive-type zip
 ```
 
 ### Multiple Environment Presets
@@ -12693,7 +12825,7 @@ staging:
     source_directory: "./src"
     output_file: "stage-bundle.txt"
     create_archive: true
-    security_check: "abort"
+    security_check: "error"
 
 production:
   priority: 30
@@ -12707,7 +12839,6 @@ production:
 ```
 
 Use with `--preset-group`:
-
 ```bash
 # Development build
 python -m tools.m1f --preset environments.yml --preset-group development
@@ -12716,428 +12847,561 @@ python -m tools.m1f --preset environments.yml --preset-group development
 python -m tools.m1f --preset environments.yml --preset-group production
 ```
 
-======= docs/01_m1f/11_preset_system_clarifications.md ======
-# Preset System Clarifications and Notes
+## Debugging and Best Practices
 
-This document clarifies important aspects of the m1f preset system that may not
-be immediately obvious from the main documentation.
+### Debugging Tips
 
-## Command Invocation
-
-Both module and direct script invocation are supported:
-
-```bash
-# Module invocation (recommended):
-python -m tools.m1f -s . -o out.txt --preset my-preset.yml
-
-# Direct script invocation (alternative):
-python tools/m1f.py -s . -o out.txt --preset my-preset.yml
-```
-
-## Pattern Matching Limitations
-
-### Exclude Patterns
-
-Exclude patterns with `!` prefix (e.g., `!*.min.js`) are **not currently
-supported** in the `patterns` field of presets. To exclude files, use one of
-these approaches:
-
-1. **Global Settings Approach** (Recommended):
-
-   ```yaml
-   globals:
-     global_settings:
-       exclude_patterns: ["*.min.js", "*.map", "dist/**/*"]
-   ```
-
-2. **CLI Arguments**:
+1. **Verbose Mode**
    ```bash
-   python tools/m1f.py -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
+   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
    ```
+   Shows which preset is applied to each file and processing details.
 
-## Settings Hierarchy
-
-Understanding where settings can be applied is crucial:
-
-### 1. Global Settings Level
-
-Available in `globals.global_settings`:
-
-- `include_patterns` / `exclude_patterns`
-- `include_extensions` / `exclude_extensions`
-- `security_check`
-- `max_file_size`
-- All other general m1f settings
-
-### 2. Preset Level
-
-Available in individual presets:
-
-- `patterns` (for matching files)
-- `extensions` (for matching files)
-- `actions` (processing actions)
-- `strip_tags` / `preserve_tags` (for strip_tags action)
-- `separator_style`
-- `include_metadata`
-- `max_lines`
-- `custom_processor` / `processor_args`
-- Override settings: `security_check`, `max_file_size`, etc.
-
-### 3. Extension-Specific Global Settings
-
-Available in `globals.global_settings.extensions.{extension}`:
-
-- All preset-level settings can be applied per extension globally
-
-## Built-in vs Example Processors
-
-### Currently Implemented Custom Processors:
-
-- `truncate` - Limits file content by lines or characters
-- `redact_secrets` - Removes sensitive information using regex patterns
-- `extract_functions` - Extracts Python function definitions
-
-### Example/Future Processors (Not Implemented):
-
-- `extract_code_cells` - Would extract code cells from Jupyter notebooks
-- Any other custom processors mentioned in examples
-
-To implement a custom processor, you would need to add it to the
-`tools/m1f/presets.py` file.
-
-## Common Misconceptions
-
-### 1. Exclude Patterns in Presets
-
-**Incorrect**:
-
-```yaml
-presets:
-  my_preset:
-    exclude_patterns: ["*.min.js"] # This doesn't work here
-```
-
-**Correct**:
-
-```yaml
-globals:
-  global_settings:
-    exclude_patterns: ["*.min.js"] # Works here
-```
-
-### 2. Action vs Setting
-
-Some features are actions (in the `actions` list), while others are settings:
-
-**Actions** (go in `actions` list):
-
-- `minify`
-- `strip_tags`
-- `strip_comments`
-- `compress_whitespace`
-- `remove_empty_lines`
-- `custom`
-
-**Settings** (separate fields):
-
-- `strip_tags: ["script", "style"]` (which tags to strip)
-- `preserve_tags: ["pre", "code"]` (which tags to keep)
-- `max_lines: 100` (truncation setting)
-- `separator_style: "Markdown"` (output format)
-
-### 3. Pattern Base Path
-
-When using `base_path` at the group level, it affects all patterns in that
-group:
-
-```yaml
-my_group:
-  base_path: "src"
-  presets:
-    components:
-      patterns: ["components/*.js"] # Actually matches: src/components/*.js
-```
-
-## Best Practices
-
-1. **Test with Verbose Mode**: Always test new presets with `--verbose` to see
-   which files match which presets.
-
-2. **Use Priority Wisely**: Higher priority groups are checked first. Use this
-   to create override rules.
-
-3. **Combine Multiple Files**: Layer preset files for maximum flexibility:
-
+2. **Check What's Applied**
    ```bash
-   python tools/m1f.py -s . -o out.txt \
-     --preset company-defaults.yml \
-     --preset project-specific.yml \
-     --preset local-overrides.yml
+   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
    ```
 
-4. **Document Your Presets**: Always add descriptions to explain the purpose of
-   each preset group.
+3. **Validate YAML**
+   ```bash
+   python -c "import yaml; yaml.safe_load(open('my-preset.yml'))"
+   ```
 
-## Debugging Tips
+4. **Test Small First**
+   Create a test directory with a few files to verify preset behavior before running on large codebases.
 
-### Check What's Applied
+### Best Practices
 
-```bash
-python tools/m1f.py -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
-```
+1. **Start Simple** - Begin with basic actions, add complexity as needed
+2. **Test Thoroughly** - Use verbose mode to verify behavior
+3. **Layer Presets** - Use multiple files for base + overrides
+4. **Document Presets** - Add descriptions to groups and complex presets
+5. **Version Control** - Keep presets in your repository
+6. **Performance First** - Apply expensive actions only where needed
+7. **Use Priority Wisely** - Higher priority groups are checked first
 
-### Validate YAML
+### Common Issues
 
-```bash
-python -c "import yaml; yaml.safe_load(open('my-preset.yml'))"
-```
+1. **Preset not applied**
+   - Check pattern matching
+   - Verify preset group is enabled
+   - Use verbose mode to debug
 
-### Test Small First
+2. **Wrong action order**
+   - Actions are applied sequentially
+   - Order matters (e.g., minify before strip_comments)
 
-Create a test directory with a few files to verify preset behavior before
-running on large codebases.
+3. **Performance issues**
+   - Limit expensive actions to necessary files
+   - Use `max_file_size` to skip large files
+   - Consider `minimal_output` mode
 
 ## Version Information
 
 This documentation is accurate as of m1f version 3.2.0.
 
-======= docs/01_m1f/12_git_hooks_setup.md ======
-# m1f Git Hooks Setup Guide
-
-This guide explains how to set up Git hooks for automatic m1f bundle generation
-in your projects.
+======= docs/01_m1f/13_security_best_practices.md ======
+# Security Best Practices Guide for m1f Toolkit
 
 ## Overview
 
-The m1f Git pre-commit hook automatically runs `m1f auto-bundle` before each
-commit, ensuring that your bundled files are always up-to-date with your source
-code.
+This guide documents security best practices and protective measures implemented in the m1f toolkit v3.2. Following these practices ensures safe operation and prevents common security vulnerabilities.
 
-## Features
+## Path Validation and Traversal Protection
 
-- **Automatic bundle generation** - Bundles are regenerated on every commit
-- **Fail-safe commits** - Commits are blocked if bundle generation fails
-- **Auto-staging** - Generated bundles in the `m1f/` directory are automatically
-  added to commits
-- **Conditional execution** - Only runs if `.m1f.config.yml` exists in your
-  project
+### Why It Matters
+Path traversal attacks can allow malicious actors to access files outside intended directories, potentially exposing sensitive system files or overwriting critical data.
 
-## Installation
+### Best Practices
 
-### Method 1: Using the Installation Script (Recommended)
+1. **Always validate resolved paths**:
+   ```python
+   # Good practice - validate after resolving
+   from tools.m1f.utils import validate_safe_path
+   
+   target_path = Path(user_input).resolve()
+   validate_safe_path(target_path, base_path)
+   ```
 
-1. Navigate to your project root (where `.m1f.config.yml` is located)
-2. Run the installation script:
+2. **Use the provided validation utilities**:
+   - `validate_safe_path()` in `tools/m1f/utils.py` ensures paths stay within allowed boundaries
+   - All user-provided paths should be validated before use
 
-```bash
-# Download and run the installation script
-curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash
+3. **Symlink safety**:
+   - Symlinks are resolved and validated to prevent escaping directories
+   - Target of symlinks must be within the allowed base path
 
-# Or if you have the m1f repository cloned
-bash /path/to/m1f/scripts/install-git-hooks.sh
-```
+### Common Pitfalls to Avoid
+- Never use user input directly in file paths without validation
+- Don't trust relative paths without resolving and validating them
+- Always validate paths from configuration files and presets
 
-The script will:
+## Web Scraping Security
 
-- Check if you're in a Git repository
-- Install the pre-commit hook
-- Backup any existing pre-commit hook
-- Make the hook executable
+### SSRF (Server-Side Request Forgery) Protection
 
-### Method 2: Manual Installation
+The toolkit blocks access to:
+- Private IP ranges (10.x.x.x, 172.16.x.x, 192.168.x.x)
+- Localhost and loopback addresses (127.0.0.1, ::1)
+- Link-local addresses (169.254.x.x)
+- Cloud metadata endpoints (169.254.169.254)
 
-1. Create the pre-commit hook file:
+### SSL/TLS Validation
 
-```bash
-cat > .git/hooks/pre-commit << 'EOF'
-#!/bin/bash
-# m1f Auto-Bundle Git Pre-Commit Hook
-
-if [ -f ".m1f.config.yml" ]; then
-    if ! command -v m1f &> /dev/null; then
-        echo "Error: m1f command not found!"
-        echo "Please install m1f: pip install m1f"
-        exit 1
-    fi
-
-    echo "Running m1f auto-bundle..."
-    if m1f auto-bundle; then
-        echo "Auto-bundle completed successfully."
-        [ -d "m1f" ] && git add m1f/*
-    else
-        echo "Auto-bundle failed. Please fix the issues before committing."
-        exit 1
-    fi
-fi
-exit 0
-EOF
-```
-
-2. Make it executable:
-
-```bash
-chmod +x .git/hooks/pre-commit
-```
-
-## How It Works
-
-When you run `git commit`, the pre-commit hook:
-
-1. Checks if `.m1f.config.yml` exists in your repository
-2. Verifies that the `m1f` command is available
-3. If both conditions are met, runs `m1f auto-bundle`
-4. If bundle generation succeeds:
-   - Adds all files in the `m1f/` directory to the commit
-   - Allows the commit to proceed
-5. If bundle generation fails:
-   - Displays the error message
-   - Blocks the commit
-   - You must fix the issues before committing
-
-## Usage
-
-Once installed, the hook works automatically:
-
-```bash
-# Normal commit - bundles are generated automatically
-git add your-files.py
-git commit -m "feat: add new feature"
-
-# Skip the hook if needed
-git commit --no-verify -m "wip: quick save"
-```
-
-## Troubleshooting
-
-### Hook not running
-
-1. Check if the hook is executable:
-
+1. **Default behavior**: SSL certificates are validated by default
+2. **Disabling validation** (use with caution):
    ```bash
-   ls -la .git/hooks/pre-commit
+   # Only for trusted internal sites or testing
+   m1f-scrape --ignore-https-errors https://internal-site.com
    ```
+   
+   ⚠️ **Warning**: Disabling SSL validation exposes you to man-in-the-middle attacks. Only use for trusted internal resources.
 
-2. Make it executable if needed:
-   ```bash
-   chmod +x .git/hooks/pre-commit
-   ```
+### robots.txt Compliance
 
-### Bundle generation fails
+All scrapers automatically respect robots.txt files:
+- Automatically fetched and parsed for each domain
+- Scraping is blocked for disallowed paths
+- User-agent specific rules are respected
+- This is always enabled - no configuration option to disable
 
-1. Run auto-bundle manually to see the error:
+### JavaScript Execution Safety
 
-   ```bash
-   m1f auto-bundle
-   ```
+When using Playwright with custom scripts:
+- Scripts are validated for dangerous patterns
+- Avoid executing untrusted JavaScript code
+- Use built-in actions instead of custom scripts when possible
 
-2. Fix any issues in your `.m1f.config.yml`
+## Command Injection Prevention
 
-3. Try committing again
+### Safe Command Execution
 
-### m1f command not found
+The toolkit uses proper escaping for all system commands:
+```python
+# Good - using shlex.quote()
+import shlex
+command = f"httrack {shlex.quote(url)} -O {shlex.quote(output_dir)}"
 
-If you get "m1f command not found", ensure m1f is installed:
-
-```bash
-pip install m1f
-# or for development
-pip install -e /path/to/m1f
+# Bad - direct string interpolation
+command = f"httrack {url} -O {output_dir}"  # DON'T DO THIS
 ```
 
-### Disable the hook temporarily
+## Preset System Security
 
-Use the `--no-verify` flag:
+### File Size Limits
+- Preset files are limited to 10MB to prevent memory exhaustion
+- Large preset files are rejected with an error
+
+### Path Validation in Presets
+- All paths in preset files are validated
+- Paths cannot escape the project directory
+- Absolute paths outside the project are blocked
+
+### Custom Processor Validation
+- Processor names must be alphanumeric with underscores only
+- Special characters that could enable code injection are blocked
+
+## Secure Temporary File Handling
+
+The toolkit uses Python's `tempfile` module for all temporary files:
+- Temporary directories are created with restricted permissions
+- All temporary files are cleaned up after use
+- No sensitive data is left in temporary locations
+
+## Security Scanning for Sensitive Data
+
+### Built-in Secret Detection
+
+m1f includes automatic scanning for:
+- API keys and tokens
+- Passwords and credentials
+- Private keys
+- High-entropy strings that might be secrets
+
+### Security Check Modes
+
+1. **Error mode** (default): Stops processing if secrets are found
+   ```bash
+   m1f -s ./src -o output.txt --security-check error
+   ```
+
+2. **Warn mode**: Logs warnings but continues processing
+   ```bash
+   m1f -s ./src -o output.txt --security-check warn
+   ```
+
+3. **Skip mode**: Disables security scanning (not recommended)
+   ```bash
+   m1f -s ./src -o output.txt --security-check skip
+   ```
+
+### Handling False Positives
+
+If legitimate content is flagged as sensitive:
+1. Review the warnings carefully
+2. Use `--security-check warn` if you're certain the content is safe
+3. Consider refactoring code to avoid patterns that trigger detection
+
+## Input Validation Best Practices
+
+### File Type Validation
+- Use include/exclude patterns to limit processed file types
+- Be explicit about allowed file extensions
+- Validate file contents match expected formats
+
+### Size and Resource Limits
+- Set appropriate limits for file sizes
+- Use `--max-file-size` to prevent processing huge files
+- Monitor memory usage for large file sets
+
+### Encoding Safety
+- The toolkit automatically detects file encodings
+- UTF-8 is preferred for text files by default
+- Binary files are handled safely without interpretation
+
+## Deployment Security Recommendations
+
+### Environment Configuration
+1. Run with minimal required permissions
+2. Use dedicated service accounts when possible
+3. Avoid running as root/administrator
+
+### Network Security
+1. Use HTTPS for all web scraping when possible
+2. Configure firewall rules to limit outbound connections
+3. Monitor for unusual network activity
+
+### Logging and Monitoring
+1. Enable verbose logging for security-sensitive operations
+2. Review logs regularly for suspicious patterns
+3. Set up alerts for security check failures
+
+## Reporting Security Issues
+
+If you discover a security vulnerability in m1f:
+1. Do NOT open a public issue
+2. Email security details to the maintainers
+3. Include steps to reproduce the issue
+4. Allow time for a fix before public disclosure
+
+## Security Checklist for Users
+
+Before running m1f in production:
+
+- [ ] Validate all input paths and patterns
+- [ ] Review security check mode settings
+- [ ] Enable SSL validation for web scraping
+- [ ] Set appropriate file size limits
+- [ ] Use minimal required permissions
+- [ ] Review preset files for suspicious content
+- [ ] Test security scanning on sample data
+- [ ] Configure proper logging and monitoring
+- [ ] Keep the toolkit updated to the latest version
+
+## Updates and Security Patches
+
+Stay informed about security updates:
+- Check the CHANGELOG for security-related fixes
+- Update to new versions promptly
+- Review breaking changes that might affect security
+
+Remember: Security is a shared responsibility. While m1f implements many protective measures, proper configuration and usage are essential for maintaining a secure environment.
+
+======= docs/01_m1f/14_version_3_2_features.md ======
+# m1f v3.2 Feature Documentation
+
+## Overview
+
+Version 3.2 of the m1f toolkit introduces significant security enhancements, performance improvements, and new configuration options. This document provides a comprehensive overview of all v3.2 features and changes.
+
+## Major Security Enhancements
+
+### 1. Path Traversal Protection
+- **What's New**: Comprehensive validation of all file paths to prevent directory traversal attacks
+- **Impact**: Prevents malicious actors from accessing files outside intended directories
+- **Implementation**: 
+  - New `validate_safe_path()` utility function
+  - Applied to all user inputs, preset paths, and configuration files
+  - Symlink targets are now validated
+
+### 2. SSRF Protection in Web Scrapers
+- **What's New**: Blocks access to private IP ranges and cloud metadata endpoints
+- **Protected Ranges**:
+  - Private networks (10.x.x.x, 172.16.x.x, 192.168.x.x)
+  - Localhost (127.0.0.1, ::1)
+  - Link-local (169.254.x.x)
+  - Cloud metadata (169.254.169.254)
+- **Applies to**: All web scraping tools (BeautifulSoup, Playwright, Scrapy, Selectolax)
+
+### 3. robots.txt Compliance
+- **What's New**: All scrapers now automatically respect robots.txt files
+- **Features**:
+  - Automatic robots.txt fetching and parsing
+  - Per-path access validation
+  - User-agent specific rule support
+  - No configuration needed - always enabled
+- **Previously**: Only HTTrack respected robots.txt
+
+### 4. SSL/TLS Certificate Validation
+- **What's New**: SSL validation is now enabled by default
+- **Configuration**:
+  - New `--ignore-https-errors` flag for exceptions
+  - Per-scraper SSL configuration
+- **Security**: Prevents man-in-the-middle attacks
+
+### 5. Command Injection Prevention
+- **What's New**: Proper escaping of all shell commands
+- **Implementation**: Uses `shlex.quote()` for all user inputs in commands
+- **Affected Tools**: HTTrack scraper, git operations
+
+### 6. JavaScript Execution Safety
+- **What's New**: Validation of custom JavaScript in Playwright scraper
+- **Features**:
+  - Detects dangerous patterns (eval, Function constructor)
+  - Warns about custom script execution
+  - Encourages use of built-in actions
+
+### 7. Custom Processor Validation
+- **What's New**: Validates processor names to prevent injection attacks
+- **Rules**: Only alphanumeric characters and underscores allowed
+- **Impact**: Prevents code injection through preset files
+
+## Performance Improvements
+
+### 1. Parallel File Processing
+- **Enabled by Default**: Parallel processing is now always active
+- **Features**:
+  - Concurrent file reading with automatic batch size optimization
+  - Thread-safe checksum deduplication
+  - Maintains deterministic file order in output
+- **Performance**: Up to 3-5x faster for large file sets
+
+### 2. Optimized Checksum Verification
+- **What's Changed**: Stream-based file reading for checksums
+- **Benefits**:
+  - Reduced memory usage for large files
+  - Prevents out-of-memory errors
+  - 8KB chunk processing
+
+### 3. Concurrent Write Limits in s1f
+- **What's New**: Semaphore-based write limiting
+- **Default**: 10 concurrent file operations
+- **Benefits**: Prevents "too many open files" errors
+
+### 4. Async I/O Improvements
+- **Updates**:
+  - Uses `aiofiles` for truly async file operations
+  - Modern async patterns (asyncio.run())
+  - Proper exception handling in async contexts
+
+## Configuration Enhancements
+
+### 1. Content Deduplication Control
+- **New CLI Option**: `--allow-duplicate-files`
+- **Preset Setting**: `enable_content_deduplication`
+- **Default**: Deduplication enabled (False for allow-duplicate)
+- **Use Case**: When you need to preserve duplicate content
+
+### 2. UTF-8 Preference Control
+- **New CLI Option**: `--no-prefer-utf8-for-text-files`
+- **Preset Setting**: `prefer_utf8_for_text_files`
+- **Default**: UTF-8 preferred (True)
+- **Use Case**: Working with legacy encodings like windows-1252
+
+### 3. Security Check Modes
+- **Options**:
+  - `error` (default): Stop on security issues
+  - `warn`: Log warnings but continue
+  - `skip`: Disable security scanning
+- **CLI**: `--security-check {error|warn|skip}`
+- **Preset**: `security_check` setting
+
+### 4. File Size Limits
+- **Preset Files**: Limited to 10MB
+- **Benefits**: Prevents memory exhaustion attacks
+- **Error Handling**: Clear error messages for oversized files
+
+## Improved Patterns and Flexibility
+
+### 1. Flexible Metadata Stripping
+- **What's New**: More flexible regex for scraped content metadata
+- **Supports**:
+  - Various horizontal rule styles (`---`, `___`, `***`)
+  - Different emphasis markers
+  - Multiple formatting variations
+
+### 2. Code Block Detection in s1f
+- **What's New**: Ignores separators inside code blocks
+- **Benefits**: Prevents false positive file detection
+- **Applies to**: Markdown code blocks (```)
+
+### 3. Timezone-Aware Timestamps
+- **What's Changed**: All timestamps now use UTC
+- **Implementation**: `datetime.now(timezone.utc)`
+- **Benefits**: Consistent timestamps across timezones
+
+## CLI Updates
+
+### New Options Summary
 
 ```bash
-git commit --no-verify -m "your message"
+# Performance
+--allow-duplicate-files         # Disable content deduplication
+
+# Encoding
+--no-prefer-utf8-for-text-files # Disable UTF-8 preference
+
+# Security
+--security-check {error|warn|skip}  # Security scanning mode
+--ignore-https-errors              # Disable SSL validation (scraping)
+
+# Existing options work as before
+--source-directory, -s          # Source directory
+--output-file, -o              # Output file
+--preset                       # Use preset configuration
 ```
 
-### Remove the hook
+## Breaking Changes
 
-To uninstall the pre-commit hook:
+### 1. Standard Separator Format
+- **Change**: File separators no longer include checksums
+- **Before**: `=== path/to/file.txt === SHA256: abc123...`
+- **After**: `=== path/to/file.txt ===`
+- **Impact**: s1f can still read old format files
 
-```bash
-rm .git/hooks/pre-commit
-```
+### 2. SSL Validation Default
+- **Change**: SSL validation now enabled by default
+- **Impact**: May break scraping of sites with invalid certificates
+- **Migration**: Use `--ignore-https-errors` if needed
 
-## Best Practices
+### 3. Security Scanning Default
+- **Change**: Security scanning in error mode by default
+- **Impact**: Processing stops on sensitive data detection
+- **Migration**: Use `--security-check warn` for old behavior
 
-1. **Include m1f/ in version control** - This ensures bundled files are
-   available to all team members and AI tools
+## Preset System Enhancements
 
-2. **Review bundle changes** - Check the generated bundles in your diffs before
-   committing
-
-3. **Keep bundles focused** - Configure smaller, specific bundles rather than
-   one large bundle
-
-4. **Use bundle groups** - Organize related bundles into groups for better
-   management
-
-## Example Workflow
-
-1. Set up your project with m1f:
-
-   ```bash
-   m1f-link  # Create documentation symlink
-   ```
-
-2. Create `.m1f.config.yml`:
-
-   ```yaml
-   bundles:
-     project-docs:
-       description: "Project documentation"
-       output: "m1f/docs.txt"
-       sources:
-         - path: "docs"
-           include_extensions: [".md"]
-   ```
-
-3. Install the Git hook:
-
-   ```bash
-   bash /path/to/m1f/scripts/install-git-hooks.sh
-   ```
-
-4. Work normally - bundles update automatically:
-   ```bash
-   echo "# New Feature" > docs/feature.md
-   git add docs/feature.md
-   git commit -m "docs: add feature documentation"
-   # Bundle is regenerated and included in the commit
-   ```
-
-## Integration with CI/CD
-
-The pre-commit hook ensures local development stays in sync. For CI/CD
-pipelines, you can also run auto-bundle as a build step:
+### New Preset Settings
 
 ```yaml
-# GitHub Actions example
-- name: Install m1f
-  run: pip install m1f
+# Performance
+enable_content_deduplication: false  # Allow duplicate files
 
-- name: Generate m1f bundles
-  run: m1f auto-bundle
+# Encoding
+prefer_utf8_for_text_files: false   # Disable UTF-8 preference
+
+# Security
+security_check: warn              # Security check mode
+
+# Per-file settings still work
+per_file_settings:
+  "*.min.js":
+    processors:
+      - minify_content
 ```
+
+## Test Suite Improvements
+
+- Fixed test isolation issues
+- Added proper async test support
+- Improved test server connectivity handling
+- Enhanced security test coverage
+
+## Migration Guide
+
+### From v3.1 to v3.2
+
+1. **Review Security Settings**:
+   - Default security scanning may flag legitimate content
+   - Use `--security-check warn` during migration
+
+2. **Check SSL Requirements**:
+   - Sites with self-signed certificates need `--ignore-https-errors`
+   - Review and update scraping scripts
+
+3. **Update Separator Parsing**:
+   - If you parse m1f output, update to handle new separator format
+   - s1f handles both formats automatically
+
+4. **Performance Tuning**:
+   - Parallel processing is automatic - no configuration needed
+   - Monitor memory usage with large file sets
+
+## Examples
+
+### Using New Features
 
 ```bash
-# GitLab CI example
-before_script:
-  - pip install m1f
+# Security in warn mode (parallel processing is automatic)
+m1f -s ./src -o bundle.txt --security-check warn
 
-bundle:
-  script:
-    - m1f auto-bundle
+# Allow duplicates with custom encoding handling
+m1f -s ./legacy -o output.txt --allow-duplicate-files --no-prefer-utf8-for-text-files
+
+# Secure web scraping (robots.txt compliance is automatic)
+m1f-scrape https://example.com -o ./scraped
+
+# Using new features in presets
+m1f -s . -o bundle.txt --preset my-preset.yml
 ```
 
-## See Also
+### Sample v3.2 Preset
 
-- [Auto-Bundle Guide](06_auto_bundle_guide.md) - Complete auto-bundle
-  documentation
-- [m1f Configuration](02_m1f_presets.md) - Preset system documentation
-- [Quick Reference](09_quick_reference.md) - Common m1f commands
+```yaml
+name: "Modern Web Project v3.2"
+version: "3.2"
+
+# Global settings with v3.2 features
+settings:
+  enable_content_deduplication: true
+  prefer_utf8_for_text_files: true
+  security_check: error
+  
+# File patterns remain the same
+include_patterns:
+  - "src/**/*.{js,ts,jsx,tsx}"
+  - "**/*.md"
+
+exclude_patterns:
+  - "**/node_modules/**"
+  - "**/.git/**"
+
+# Per-file settings with processors
+per_file_settings:
+  "*.min.js":
+    processors:
+      - minify_content
+```
+
+## Performance Benchmarks
+
+Typical improvements with v3.2:
+
+- **Parallel Processing**: 3-5x faster for 1000+ files
+- **Memory Usage**: 50% reduction for large files
+- **s1f Extraction**: 2x faster with concurrent writes
+- **Checksum Calculation**: Constant memory usage regardless of file size
+
+## Security Audit Results
+
+v3.2 addresses all HIGH and MEDIUM priority security issues:
+
+- ✅ Path traversal vulnerabilities fixed
+- ✅ SSRF protection implemented
+- ✅ Command injection prevented
+- ✅ SSL validation enforced
+- ✅ robots.txt compliance added
+- ✅ JavaScript execution validated
+- ✅ Race conditions eliminated
+
+## Support and Resources
+
+- [Security Best Practices Guide](./13_security_best_practices.md)
+- [CLI Reference](./07_cli_reference.md)
+- [Preset System Guide](./02_m1f_presets.md)
+- [Troubleshooting Guide](./08_troubleshooting.md)
+
+For questions or issues, please refer to the project repository.
 
 ======= docs/02_s1f/20_s1f.md ======
 # s1f (Split One File)
@@ -15190,7 +15454,7 @@ optimal LLM context usage.
 - **Multiple Scraper Backends**: Choose from BeautifulSoup (default), HTTrack,
   Scrapy, Playwright, or Selectolax
 - **Async I/O**: High-performance concurrent downloading
-- **Intelligent Crawling**: Respects robots.txt, follows redirects, handles
+- **Intelligent Crawling**: Automatically respects robots.txt, follows redirects, handles
   encoding
 - **Metadata Preservation**: Saves HTTP headers and metadata alongside HTML
   files
@@ -15578,7 +15842,7 @@ HTTrack is a professional website copier that creates complete offline mirrors.
 - Preserves directory structure
 - Handles complex websites well
 - Resume interrupted downloads
-- Built-in robots.txt support
+- Automatic robots.txt compliance
 
 **Cons:**
 
@@ -15953,6 +16217,23 @@ To add a new scraper backend:
 
 See the BeautifulSoup implementation for a complete example.
 
+======= docs/05_development/README.md ======
+# Development Documentation
+
+This section contains guides and references for developers working on or with the m1f toolkit.
+
+## Contents
+
+- [**55_version_management.md**](./55_version_management.md) - Version management and release process
+- [**56_git_hooks_setup.md**](./56_git_hooks_setup.md) - Git hooks for automated bundling
+
+## Quick Links
+
+- [Main m1f Documentation](../01_m1f/)
+- [s1f Documentation](../02_s1f/)
+- [html2md Documentation](../03_html2md/)
+- [Scraper Documentation](../04_scrape/)
+
 ======= docs/05_development/55_version_management.md ======
 # Version Management
 
@@ -16040,6 +16321,244 @@ When adding a new tool or module that needs version info:
 - Pre-release versions supported: `3.2.0-beta1`
 - `__version__`: String format (e.g., "3.1.0")
 - `__version_info__`: Tuple format (e.g., (3, 1, 0))
+
+======= docs/05_development/56_git_hooks_setup.md ======
+# m1f Git Hooks Setup Guide
+
+This guide explains how to set up Git hooks for automatic m1f bundle generation
+in your projects.
+
+## Overview
+
+The m1f Git pre-commit hook automatically runs `m1f auto-bundle` before each
+commit, ensuring that your bundled files are always up-to-date with your source
+code.
+
+## Features
+
+- **Automatic bundle generation** - Bundles are regenerated on every commit
+- **Fail-safe commits** - Commits are blocked if bundle generation fails
+- **Auto-staging** - Generated bundles in the `m1f/` directory are automatically
+  added to commits
+- **Conditional execution** - Only runs if `.m1f.config.yml` exists in your
+  project
+
+## Installation
+
+### Method 1: Using the Installation Script (Recommended)
+
+1. Navigate to your project root (where `.m1f.config.yml` is located)
+2. Run the installation script:
+
+```bash
+# Download and run the installation script
+curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash
+
+# Or if you have the m1f repository cloned
+bash /path/to/m1f/scripts/install-git-hooks.sh
+```
+
+The script will:
+
+- Check if you're in a Git repository
+- Install the pre-commit hook
+- Backup any existing pre-commit hook
+- Make the hook executable
+
+### Method 2: Manual Installation
+
+1. Create the pre-commit hook file:
+
+```bash
+cat > .git/hooks/pre-commit << 'EOF'
+#!/bin/bash
+# m1f Auto-Bundle Git Pre-Commit Hook
+
+if [ -f ".m1f.config.yml" ]; then
+    if ! command -v m1f &> /dev/null; then
+        echo "Error: m1f command not found!"
+        echo "Please install m1f: pip install m1f"
+        exit 1
+    fi
+
+    echo "Running m1f auto-bundle..."
+    if m1f auto-bundle; then
+        echo "Auto-bundle completed successfully."
+        [ -d "m1f" ] && git add m1f/*
+    else
+        echo "Auto-bundle failed. Please fix the issues before committing."
+        exit 1
+    fi
+fi
+exit 0
+EOF
+```
+
+2. Make it executable:
+
+```bash
+chmod +x .git/hooks/pre-commit
+```
+
+## How It Works
+
+When you run `git commit`, the pre-commit hook:
+
+1. Checks if `.m1f.config.yml` exists in your repository
+2. Verifies that the `m1f` command is available
+3. If both conditions are met, runs `m1f auto-bundle`
+4. If bundle generation succeeds:
+   - Adds all files in the `m1f/` directory to the commit
+   - Allows the commit to proceed
+5. If bundle generation fails:
+   - Displays the error message
+   - Blocks the commit
+   - You must fix the issues before committing
+
+## Usage
+
+Once installed, the hook works automatically:
+
+```bash
+# Normal commit - bundles are generated automatically
+git add your-files.py
+git commit -m "feat: add new feature"
+
+# Skip the hook if needed
+git commit --no-verify -m "wip: quick save"
+```
+
+## Troubleshooting
+
+### Hook not running
+
+1. Check if the hook is executable:
+
+   ```bash
+   ls -la .git/hooks/pre-commit
+   ```
+
+2. Make it executable if needed:
+   ```bash
+   chmod +x .git/hooks/pre-commit
+   ```
+
+### Bundle generation fails
+
+1. Run auto-bundle manually to see the error:
+
+   ```bash
+   m1f auto-bundle
+   ```
+
+2. Fix any issues in your `.m1f.config.yml`
+
+3. Try committing again
+
+### m1f command not found
+
+If you get "m1f command not found", ensure m1f is installed:
+
+```bash
+pip install m1f
+# or for development
+pip install -e /path/to/m1f
+```
+
+### Disable the hook temporarily
+
+Use the `--no-verify` flag:
+
+```bash
+git commit --no-verify -m "your message"
+```
+
+### Remove the hook
+
+To uninstall the pre-commit hook:
+
+```bash
+rm .git/hooks/pre-commit
+```
+
+## Best Practices
+
+1. **Include m1f/ in version control** - This ensures bundled files are
+   available to all team members and AI tools
+
+2. **Review bundle changes** - Check the generated bundles in your diffs before
+   committing
+
+3. **Keep bundles focused** - Configure smaller, specific bundles rather than
+   one large bundle
+
+4. **Use bundle groups** - Organize related bundles into groups for better
+   management
+
+## Example Workflow
+
+1. Set up your project with m1f:
+
+   ```bash
+   m1f-link  # Create documentation symlink
+   ```
+
+2. Create `.m1f.config.yml`:
+
+   ```yaml
+   bundles:
+     project-docs:
+       description: "Project documentation"
+       output: "m1f/docs.txt"
+       sources:
+         - path: "docs"
+           include_extensions: [".md"]
+   ```
+
+3. Install the Git hook:
+
+   ```bash
+   bash /path/to/m1f/scripts/install-git-hooks.sh
+   ```
+
+4. Work normally - bundles update automatically:
+   ```bash
+   echo "# New Feature" > docs/feature.md
+   git add docs/feature.md
+   git commit -m "docs: add feature documentation"
+   # Bundle is regenerated and included in the commit
+   ```
+
+## Integration with CI/CD
+
+The pre-commit hook ensures local development stays in sync. For CI/CD
+pipelines, you can also run auto-bundle as a build step:
+
+```yaml
+# GitHub Actions example
+- name: Install m1f
+  run: pip install m1f
+
+- name: Generate m1f bundles
+  run: m1f auto-bundle
+```
+
+```bash
+# GitLab CI example
+before_script:
+  - pip install m1f
+
+bundle:
+  script:
+    - m1f auto-bundle
+```
+
+## See Also
+
+- [Auto-Bundle Guide](../01_m1f/06_auto_bundle_guide.md) - Complete auto-bundle
+  documentation
+- [m1f Configuration](../01_m1f/02_m1f_presets.md) - Preset system documentation
+- [Quick Reference](../01_m1f/09_quick_reference.md) - Common m1f commands
 
 ======= docs/99_misc/98_token_counter.md ======
 # token_counter - Token Estimation Tool
@@ -18475,6 +18994,65 @@ def m1f_cli_runner():
         )
 
     return _run_cli
+
+======= tests/m1f/conftest_security.py ======
+"""
+Shared test infrastructure for security tests.
+"""
+import tempfile
+import shutil
+from pathlib import Path
+from contextlib import contextmanager
+
+
+@contextmanager
+def isolated_test_directory():
+    """Create an isolated temporary directory for tests."""
+    temp_dir = None
+    try:
+        # Create a unique temporary directory
+        temp_dir = tempfile.mkdtemp(prefix="m1f_security_test_")
+        temp_path = Path(temp_dir)
+        
+        # Create standard subdirectories
+        source_dir = temp_path / "source"
+        output_dir = temp_path / "output"
+        source_dir.mkdir(parents=True, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        yield temp_path, source_dir, output_dir
+        
+    finally:
+        # Clean up the temporary directory
+        if temp_dir and Path(temp_dir).exists():
+            try:
+                shutil.rmtree(temp_dir)
+            except (OSError, PermissionError):
+                # Best effort cleanup - ignore errors
+                pass
+
+
+def create_test_file(base_dir: Path, relative_path: str, content: str) -> Path:
+    """Create a test file with proper directory structure."""
+    file_path = base_dir / relative_path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text(content, encoding="utf-8")
+    return file_path
+
+
+def ensure_test_isolation():
+    """Ensure tests are properly isolated from each other."""
+    import logging
+    
+    # Reset logging state
+    logger = logging.getLogger()
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+        if hasattr(handler, 'close'):
+            handler.close()
+    
+    # Reset logging level
+    logger.setLevel(logging.WARNING)
 
 ======= tests/m1f/exclude_paths.txt ======
 # Paths to exclude from processing
@@ -23941,10 +24519,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-# Define test directories - use project's tmp directory
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-SOURCE_DIR = PROJECT_ROOT / "tmp" / "m1f_test_source"
-OUTPUT_DIR = PROJECT_ROOT / "tmp" / "m1f_test_output"
+# Import test infrastructure helpers
+from .conftest_security import isolated_test_directory, create_test_file, ensure_test_isolation
 
 
 def _create_test_file(path: Path, content: str) -> None:
@@ -24007,18 +24583,14 @@ def _scan_files_for_sensitive_info(files):
 
 def test_security_detection():
     """Test that security scanning correctly identifies files with/without sensitive information."""
-    # Ensure base directories exist
-    try:
-        SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
+    # Ensure test isolation
+    ensure_test_isolation()
+    
+    with isolated_test_directory() as (temp_path, source_dir, output_dir):
+        # Create a test directory with clean and sensitive files
+        test_dir = source_dir / "security_detection_test"
+        test_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create a test directory with clean and sensitive files
-    test_dir = SOURCE_DIR / "security_detection_test"
-    test_dir.mkdir(parents=True, exist_ok=True)
-
-    try:
         # Create a file with no sensitive information
         clean_file = test_dir / "clean_file.txt"
         _create_test_file(clean_file, "This is a clean file with no secrets.")
@@ -24088,29 +24660,22 @@ def test_security_detection():
             api_key_findings_count == 2
         ), "Should have exactly 2 findings for API key file (both Secret Keyword and Hex High Entropy String)"
 
-    finally:
-        # Clean up
-        shutil.rmtree(test_dir)
-
 
 def test_security_check_skip():
-    # Ensure source directory exists and has a file with sensitive content
-    try:
-        SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
+    """Test security check skip functionality."""
+    # Ensure test isolation
+    ensure_test_isolation()
+    
+    with isolated_test_directory() as (temp_path, source_dir, output_dir):
+        # Create a test file with SECRET_KEY
+        test_file = source_dir / "test_with_secret.py"
+        _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
 
-    # Create a test file with SECRET_KEY
-    test_file = SOURCE_DIR / "test_with_secret.py"
-    _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
-
-    try:
-        output_file = OUTPUT_DIR / "security_skip.txt"
+        output_file = output_dir / "security_skip.txt"
         result = run_m1f(
             [
                 "--source-directory",
-                str(SOURCE_DIR),
+                str(source_dir),
                 "--output-file",
                 str(output_file),
                 "--include-dot-paths",
@@ -24127,30 +24692,23 @@ def test_security_check_skip():
         # Clean up
         if output_file.exists():
             output_file.unlink()
-    finally:
-        # Clean up test file
-        if test_file.exists():
-            test_file.unlink()
 
 
 def test_security_check_warn():
-    # Ensure source directory exists and has a file with sensitive content
-    try:
-        SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
+    """Test security check warn functionality."""
+    # Ensure test isolation
+    ensure_test_isolation()
+    
+    with isolated_test_directory() as (temp_path, source_dir, output_dir):
+        # Create a test file with SECRET_KEY
+        test_file = source_dir / "test_with_secret.py"
+        _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
 
-    # Create a test file with SECRET_KEY
-    test_file = SOURCE_DIR / "test_with_secret.py"
-    _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
-
-    try:
-        output_file = OUTPUT_DIR / "security_warn.txt"
+        output_file = output_dir / "security_warn.txt"
         result = run_m1f(
             [
                 "--source-directory",
-                str(SOURCE_DIR),
+                str(source_dir),
                 "--output-file",
                 str(output_file),
                 "--include-dot-paths",
@@ -24169,10 +24727,6 @@ def test_security_check_warn():
         # Clean up
         if output_file.exists():
             output_file.unlink()
-    finally:
-        # Clean up test file
-        if test_file.exists():
-            test_file.unlink()
 
 ======= tests/m1f/test_summary.md ======
 # M1F Test Failure Summary
