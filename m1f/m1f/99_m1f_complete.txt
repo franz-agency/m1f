@@ -9386,10 +9386,10 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 
 **Workflows and Integration:**
 
-- [Development Workflow](./04_m1f_development_workflow.md) - Best practices
-- [Claude Code Integration](./05_claude_code_integration.md) - AI-assisted
+- [Development Workflow](./21_development_workflow.md) - Best practices
+- [Claude Code Integration](./31_claude_code_integration.md) - AI-assisted
   development
-- [Auto Bundle Guide](./06_auto_bundle_guide.md) - Automated bundling
+- [Auto Bundle Guide](./20_auto_bundle_guide.md) - Automated bundling
 
 ======= docs/01_m1f/01_quick_reference.md ======
 # m1f Quick Reference
@@ -9621,7 +9621,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 - Full options: `python tools/m1f.py --help`
 - [Complete CLI Reference](./07_cli_reference.md)
 - [Troubleshooting Guide](./08_troubleshooting.md)
-- [Preset Documentation](./02_m1f_presets.md)
+- [Preset Documentation](./10_m1f_presets.md)
 
 ======= docs/01_m1f/02_cli_reference.md ======
 # m1f CLI Reference

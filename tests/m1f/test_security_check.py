@@ -26,10 +26,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-# Define test directories - use project's tmp directory
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-SOURCE_DIR = PROJECT_ROOT / "tmp" / "m1f_test_source"
-OUTPUT_DIR = PROJECT_ROOT / "tmp" / "m1f_test_output"
+# Import test infrastructure helpers
+from .conftest_security import isolated_test_directory, create_test_file, ensure_test_isolation
 
 
 def _create_test_file(path: Path, content: str) -> None:
@@ -92,18 +90,14 @@ def _scan_files_for_sensitive_info(files):
 
 def test_security_detection():
     """Test that security scanning correctly identifies files with/without sensitive information."""
-    # Ensure base directories exist
-    try:
-        SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
+    # Ensure test isolation
+    ensure_test_isolation()
+    
+    with isolated_test_directory() as (temp_path, source_dir, output_dir):
+        # Create a test directory with clean and sensitive files
+        test_dir = source_dir / "security_detection_test"
+        test_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create a test directory with clean and sensitive files
-    test_dir = SOURCE_DIR / "security_detection_test"
-    test_dir.mkdir(parents=True, exist_ok=True)
-
-    try:
         # Create a file with no sensitive information
         clean_file = test_dir / "clean_file.txt"
         _create_test_file(clean_file, "This is a clean file with no secrets.")
@@ -173,29 +167,22 @@ def test_security_detection():
             api_key_findings_count == 2
         ), "Should have exactly 2 findings for API key file (both Secret Keyword and Hex High Entropy String)"
 
-    finally:
-        # Clean up
-        shutil.rmtree(test_dir)
-
 
 def test_security_check_skip():
-    # Ensure source directory exists and has a file with sensitive content
-    try:
-        SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
+    """Test security check skip functionality."""
+    # Ensure test isolation
+    ensure_test_isolation()
+    
+    with isolated_test_directory() as (temp_path, source_dir, output_dir):
+        # Create a test file with SECRET_KEY
+        test_file = source_dir / "test_with_secret.py"
+        _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
 
-    # Create a test file with SECRET_KEY
-    test_file = SOURCE_DIR / "test_with_secret.py"
-    _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
-
-    try:
-        output_file = OUTPUT_DIR / "security_skip.txt"
+        output_file = output_dir / "security_skip.txt"
         result = run_m1f(
             [
                 "--source-directory",
-                str(SOURCE_DIR),
+                str(source_dir),
                 "--output-file",
                 str(output_file),
                 "--include-dot-paths",
@@ -212,30 +199,23 @@ def test_security_check_skip():
         # Clean up
         if output_file.exists():
             output_file.unlink()
-    finally:
-        # Clean up test file
-        if test_file.exists():
-            test_file.unlink()
 
 
 def test_security_check_warn():
-    # Ensure source directory exists and has a file with sensitive content
-    try:
-        SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        pytest.skip(f"Cannot create test directories in {PROJECT_ROOT}/tmp: {e}")
+    """Test security check warn functionality."""
+    # Ensure test isolation
+    ensure_test_isolation()
+    
+    with isolated_test_directory() as (temp_path, source_dir, output_dir):
+        # Create a test file with SECRET_KEY
+        test_file = source_dir / "test_with_secret.py"
+        _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
 
-    # Create a test file with SECRET_KEY
-    test_file = SOURCE_DIR / "test_with_secret.py"
-    _create_test_file(test_file, 'SECRET_KEY = "super_secret_123"')
-
-    try:
-        output_file = OUTPUT_DIR / "security_warn.txt"
+        output_file = output_dir / "security_warn.txt"
         result = run_m1f(
             [
                 "--source-directory",
-                str(SOURCE_DIR),
+                str(source_dir),
                 "--output-file",
                 str(output_file),
                 "--include-dot-paths",
@@ -254,7 +234,3 @@ def test_security_check_warn():
         # Clean up
         if output_file.exists():
             output_file.unlink()
-    finally:
-        # Clean up test file
-        if test_file.exists():
-            test_file.unlink()
