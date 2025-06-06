@@ -389,6 +389,350 @@ Conventional commits: `<type>(<scope>): <subject>`
 - Main branch: `main`
 - Pre-commit hook runs auto-bundle to keep bundles synchronized
 
+======= m1f-claude.txt ======
+# m1f-claude.txt: Essential m1f Guide for Claude
+
+This is a focused guide for Claude to help you set up and use m1f effectively in any project.
+
+## Quick Start
+
+m1f (Make One File) combines multiple files into a single reference file - perfect for providing context to AI assistants like Claude.
+
+### Basic Usage
+
+```bash
+# Simple bundling
+m1f -s . -o output.txt
+
+# Bundle specific file types
+m1f -s . -o code.txt --include-extensions .py .js .ts
+
+# Use presets for smart processing
+m1f -s . -o bundle.txt --preset web-project
+```
+
+## CRITICAL: Directory Context Issue
+
+**IMPORTANT**: When m1f is installed globally, it runs from its installation directory, NOT your current directory. This causes path issues.
+
+### Workarounds:
+
+1. **Use Python module directly** (RECOMMENDED):
+   ```bash
+   python -m tools.m1f -s . -o output.txt
+   ```
+
+2. **Create local wrapper script** in your project:
+   ```bash
+   #!/bin/bash
+   # Save as: m1f-local
+   python /path/to/m1f/tools/m1f.py "$@"
+   ```
+
+3. **Use absolute paths**:
+   ```bash
+   m1f -s /absolute/path/to/project -o /absolute/path/to/output.txt
+   ```
+
+## Setting Up Auto-Bundling
+
+Auto-bundling creates predefined bundles automatically. Essential for maintaining up-to-date context files.
+
+### 1. Create `.m1f.config.yml` in your project root:
+
+```yaml
+# .m1f.config.yml
+bundles:
+  # Complete project overview
+  complete:
+    description: "Complete project bundle for initial AI context"
+    sources:
+      - path: "."
+    output: "m1f/1_complete.txt"
+    separator_style: "MachineReadable"
+    filters:
+      max_file_size: "100KB"
+      exclude_extensions: [".log", ".tmp"]
+    
+  # Documentation only
+  docs:
+    description: "All documentation files"
+    sources:
+      - path: "."
+    output: "m1f/2_docs.txt"
+    separator_style: "Markdown"
+    filters:
+      include_extensions: [".md", ".rst", ".txt"]
+      max_file_size: "50KB"
+    
+  # Source code focus
+  code:
+    description: "Source code for debugging"
+    sources:
+      - path: "src"
+      - path: "lib"
+    output: "m1f/3_code.txt"
+    separator_style: "MachineReadable"
+    filters:
+      include_extensions: [".py", ".js", ".ts", ".jsx", ".tsx"]
+      exclude_patterns:
+        - "**/__pycache__/**"
+        - "**/node_modules/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+
+# Global settings
+global:
+  exclude_patterns:
+    - "**/.git/**"
+    - "**/.venv/**"
+    - "**/node_modules/**"
+    - "**/vendor/**"
+    - "**/__pycache__/**"
+    - "**/*.pyc"
+    - "**/.env*"
+  
+  security_check:
+    default_level: "detect"
+    file_types:
+      ".env": "error"
+      ".yml": "warn"
+      ".json": "warn"
+```
+
+### 2. Create m1f output directory:
+
+```bash
+mkdir -p m1f
+echo "m1f/" >> .gitignore  # Don't commit generated bundles
+```
+
+### 3. Generate bundles:
+
+```bash
+# List available bundles
+m1f auto-bundle --list
+
+# Generate all bundles
+m1f auto-bundle
+
+# Generate specific bundle
+m1f auto-bundle code
+```
+
+## Preset Files
+
+Presets enable file-specific processing (minification, comment removal, etc.).
+
+### 1. Create preset file in your project:
+
+```yaml
+# myproject.m1f-presets.yml
+name: "MyProject"
+description: "Custom processing for my project"
+
+# File-specific processors
+file_processors:
+  # Minify JavaScript
+  "**/*.js":
+    - minify_js
+  
+  # Compress CSS
+  "**/*.css":
+    - minify_css
+    - compress_whitespace
+  
+  # Clean Python files
+  "**/*.py":
+    - remove_comments
+    - strip_empty_lines
+  
+  # Process JSON
+  "**/*.json":
+    - minify_json
+
+# Security settings
+security:
+  # Scan for secrets
+  detect_secrets: true
+  
+  # Patterns to flag as errors
+  error_patterns:
+    - "password.*=.*['\"].*['\"]"
+    - "api[_-]?key.*=.*['\"].*['\"]"
+    - "secret.*=.*['\"].*['\"]"
+
+# Encoding preferences
+encoding:
+  # Auto-detect encoding
+  auto_detect: true
+  
+  # Preferred output encoding
+  output_encoding: "utf-8"
+  
+  # Fallback encoding
+  fallback_encoding: "utf-8"
+```
+
+### 2. Use the preset:
+
+```bash
+m1f -s . -o output.txt --preset myproject.m1f-presets.yml
+```
+
+## Best Practices for AI Context
+
+### 1. Keep bundles focused and under 100KB:
+```yaml
+bundles:
+  api:
+    sources: [{ path: "api" }]
+    output: "m1f/api.txt"
+    filters: { max_file_size: "50KB" }
+  
+  frontend:
+    sources: [{ path: "frontend/src" }]
+    output: "m1f/frontend.txt"
+    filters: { max_file_size: "50KB" }
+```
+
+### 2. Use appropriate separator styles:
+- `MachineReadable`: Best for extraction/parsing
+- `Markdown`: Best for human/AI reading
+- `Standard`: Simple and clean
+- `None`: When you just need content
+
+### 3. Create task-specific bundles:
+```yaml
+bundles:
+  bug_fix:
+    description: "Files related to current bug"
+    sources:
+      - path: "src/auth"
+      - path: "tests/auth"
+    output: "m1f/bug_context.txt"
+  
+  new_feature:
+    description: "Files for new feature development"
+    sources:
+      - path: "src/components"
+      - path: "docs/api"
+    output: "m1f/feature_context.txt"
+```
+
+## Common Patterns
+
+### WordPress Project
+```yaml
+bundles:
+  theme:
+    sources: [{ path: "wp-content/themes/mytheme" }]
+    output: "m1f/theme.txt"
+    preset: "wordpress"
+    filters:
+      exclude_patterns: ["**/node_modules/**", "**/vendor/**"]
+```
+
+### Python Project
+```yaml
+bundles:
+  core:
+    sources: [{ path: "src" }]
+    output: "m1f/core.txt"
+    filters:
+      include_extensions: [".py"]
+      exclude_patterns: ["**/__pycache__/**", "**/*.pyc"]
+```
+
+### React/Vue/Angular Project
+```yaml
+bundles:
+  components:
+    sources: [{ path: "src/components" }]
+    output: "m1f/components.txt"
+    filters:
+      include_extensions: [".jsx", ".tsx", ".vue"]
+      exclude_patterns: ["**/*.test.*", "**/*.spec.*"]
+```
+
+## Troubleshooting
+
+### "Path traversal detected" error
+- m1f is running from its installation directory
+- Use workarounds mentioned above
+
+### Bundle too large
+- Add `max_file_size` filter
+- Split into multiple focused bundles
+- Exclude test files and dependencies
+
+### Encoding issues
+- Add `--prefer-utf8` flag
+- Set `encoding.auto_detect: true` in preset
+
+### Auto-bundle not finding config
+- Ensure `.m1f.config.yml` is in project root
+- Check YAML syntax is valid
+- Use `m1f auto-bundle --list` to verify
+
+## Integration with Claude
+
+### 1. Reference bundles in CLAUDE.md:
+```markdown
+# CLAUDE.md
+
+## Available Context Files
+- `@m1f/1_complete.txt` - Full project overview
+- `@m1f/2_docs.txt` - All documentation
+- `@m1f/3_code.txt` - Source code only
+
+Use these with @ mentions for instant context.
+```
+
+### 2. Keep bundles updated:
+```bash
+# Add to git pre-commit hook
+m1f auto-bundle --quiet
+
+# Or use file watcher
+./scripts/watch_and_bundle.sh
+```
+
+### 3. Optimize for Claude's context window:
+- Keep individual bundles under 100KB
+- Create topic-specific bundles
+- Use clear, descriptive filenames
+- Include file paths in separator style
+
+## Quick Reference Card
+
+```bash
+# Install m1f
+git clone https://github.com/FranzForstmayr/m1f.git
+cd m1f && ./scripts/install.sh
+
+# Basic commands
+m1f -s . -o output.txt                    # Bundle current directory
+m1f auto-bundle                           # Run auto-bundling
+m1f auto-bundle --list                    # List available bundles
+m1f-s1f -i bundle.txt -d extracted/       # Extract files from bundle
+
+# With presets
+m1f -s . -o out.txt --preset wordpress    # Use WordPress preset
+m1f -s . -o out.txt --preset mypreset.yml # Use custom preset
+
+# Common flags
+--include-extensions .py .js              # Only specific file types
+--exclude-patterns "**/test/**"           # Exclude patterns
+--max-file-size 100KB                     # Limit file sizes
+--separator-style Markdown                # Human-readable output
+--force                                   # Overwrite existing
+--minimal-output                          # Less verbose
+--prefer-utf8                             # Handle encoding issues
+```
+
+Remember: Always use absolute paths or run from m1f directory when using global installation!
+
 ======= package.json ======
 {
   "devDependencies": {
