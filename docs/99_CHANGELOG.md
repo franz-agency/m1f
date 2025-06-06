@@ -97,6 +97,7 @@ and this project adheres to
   - Examples for server-wide bundle management and automation
 
 - **Join Paragraphs Feature**: Markdown optimization for LLMs
+
   - New `JOIN_PARAGRAPHS` processing action to compress markdown
   - Intelligently joins multi-line paragraphs while preserving structure
   - Preserves code blocks, tables, lists, and other markdown elements
@@ -104,26 +105,34 @@ and this project adheres to
   - Available in presets for documentation bundles
 
 - **S1F List Command**: Display archive contents without extraction
+
   - New `--list` flag to show files in m1f archives
   - Displays file information including size, encoding, and type
   - No longer shows SHA256 hashes for cleaner output
   - Useful for previewing archive contents before extraction
 
-- **Configurable UTF-8 Preference**: Made UTF-8 encoding preference for text files configurable
-  - Added `prefer_utf8_for_text_files` option to EncodingConfig (defaults to True)
+- **Configurable UTF-8 Preference**: Made UTF-8 encoding preference for text
+  files configurable
+
+  - Added `prefer_utf8_for_text_files` option to EncodingConfig (defaults to
+    True)
   - New CLI flag `--no-prefer-utf8-for-text-files` to disable UTF-8 preference
   - Configurable via preset files through `prefer_utf8_for_text_files` setting
-  - Affects only text files (.md, .markdown, .txt, .rst) when encoding detection is ambiguous
+  - Affects only text files (.md, .markdown, .txt, .rst) when encoding detection
+    is ambiguous
 
 - **Configurable Content Deduplication**: Made content deduplication optional
-  - Added `enable_content_deduplication` option to OutputConfig (defaults to True)
-  - New CLI flag `--allow-duplicate-files` to include files with identical content
+  - Added `enable_content_deduplication` option to OutputConfig (defaults to
+    True)
+  - New CLI flag `--allow-duplicate-files` to include files with identical
+    content
   - Configurable via preset files through `enable_content_deduplication` setting
   - Useful when you need to preserve all files regardless of duplicate content
 
 ### Fixed
 
 - **Security**: Comprehensive path traversal protection across all tools
+
   - Added path validation to prevent directory traversal attacks
   - Block paths with `../` or `..\` patterns
   - Reject absolute paths in s1f extraction
@@ -131,12 +140,14 @@ and this project adheres to
   - Allow legitimate exceptions: home directory configs (~/.m1f/), output files
 
 - **Markdown Format**: Fixed separator and content formatting issues
+
   - Content now properly starts on new line after code fence in markdown format
   - Added blank line between separator and content in parallel processing mode
   - Fixed S1F markdown parser to correctly handle language hint and newline
   - Fixed closing ``` for markdown format in parallel processing
 
 - **S1F List Output**: Simplified file information display
+
   - Removed SHA256 hash display from list output
   - No longer shows "[Unknown]" for missing file sizes
   - Only displays file size when available
@@ -149,6 +160,7 @@ and this project adheres to
 ### Changed
 
 - **Parallel File Processing**: Enhanced performance for large projects
+
   - Added optional `--parallel` flag for concurrent file processing
   - Implemented asyncio-based batch handling with proper thread safety
   - Added locks for thread-safe checksum operations
@@ -171,11 +183,13 @@ and this project adheres to
   - Prevents naming conflicts with system commands
 
 - **Module Execution**: Fixed import errors with proper module syntax
+
   - All scripts now use `python -m tools.m1f` format
   - Ensures reliable imports across different environments
   - Updated all documentation examples
 
 - **WebScraper Rate Limiting**: Conservative defaults for Cloudflare protection
+
   - Changed default request delay from 0.5s to 15s
   - Reduced concurrent requests from 5 to 2
   - Added bandwidth limiting (100KB/s) and connection rate limits
@@ -190,6 +204,7 @@ and this project adheres to
 ### Security
 
 - **Path Traversal Protection**: Comprehensive validation across all tools
+
   - Prevents attackers from using paths like `../../../etc/passwd`
   - Validates resolved paths against project boundaries
   - Allows legitimate exceptions for configs and output files
@@ -204,18 +219,21 @@ and this project adheres to
 ### Improved
 
 - **HTML2MD Enhancement**: Better file path handling
+
   - Improved source path logic for file inputs
   - Enhanced relative path resolution for edge cases
   - Consistent output path generation with fallback mechanisms
   - Removed hardcoded Anthropic-specific navigation selectors
 
 - **Encoding Detection**: Enhanced fallback logic
+
   - Default to UTF-8 if chardet fails or returns empty
   - Prefer UTF-8 over Windows-1252 for markdown files
   - Expanded encoding map for better emoji support
   - Better handling of exotic encodings
 
 - **Async I/O Support**: Performance optimizations
+
   - S1F now supports optional aiofiles for async file reading
   - Better handling of deprecated asyncio methods
   - Improved concurrent operation handling

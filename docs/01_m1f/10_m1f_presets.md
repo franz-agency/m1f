@@ -536,7 +536,7 @@ bundling system.
 - [**Preset System Complete Reference**](./10_preset_reference.md) -
   Comprehensive reference with all settings, undocumented features, and advanced
   patterns
-- [**Per-File Settings Guide**](./11_preset_per_file_settings.md) - Deep
-  dive into per-file processing
+- [**Per-File Settings Guide**](./11_preset_per_file_settings.md) - Deep dive
+  into per-file processing
 - [**Auto Bundle Guide**](./20_auto_bundle_guide.md) - Automated bundling with
   presets

@@ -19,8 +19,8 @@ optimal LLM context usage.
 - **Multiple Scraper Backends**: Choose from BeautifulSoup (default), HTTrack,
   Scrapy, Playwright, or Selectolax
 - **Async I/O**: High-performance concurrent downloading
-- **Intelligent Crawling**: Automatically respects robots.txt, follows redirects, handles
-  encoding
+- **Intelligent Crawling**: Automatically respects robots.txt, follows
+  redirects, handles encoding
 - **Metadata Preservation**: Saves HTTP headers and metadata alongside HTML
   files
 - **Domain Restriction**: Automatically restricts crawling to the starting

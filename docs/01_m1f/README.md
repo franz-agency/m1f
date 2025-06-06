@@ -6,7 +6,8 @@ Language Models (LLMs) and creating bundled documentation.
 
 ## What's New in v3.2
 
-- **Enhanced Security**: Path traversal protection, SSRF prevention, automatic robots.txt compliance
+- **Enhanced Security**: Path traversal protection, SSRF prevention, automatic
+  robots.txt compliance
 - **Performance**: Parallel file processing enabled by default (3-5x faster)
 - **Flexibility**: Control content deduplication and UTF-8 encoding preferences
 - **Reliability**: Improved error handling and security scanning
@@ -51,8 +52,8 @@ See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
 
 ### Advanced Topics
 
-- [**40_security_best_practices.md**](./40_security_best_practices.md) - Security
-  guidelines and protective measures
+- [**40_security_best_practices.md**](./40_security_best_practices.md) -
+  Security guidelines and protective measures
 - [**41_version_3_2_features.md**](./41_version_3_2_features.md) - Comprehensive
   v3.2 feature documentation and migration guide
 

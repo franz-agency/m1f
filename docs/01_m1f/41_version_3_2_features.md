@@ -2,28 +2,37 @@
 
 ## Overview
 
-Version 3.2 of the m1f toolkit introduces significant security enhancements, performance improvements, and new configuration options. This document provides a comprehensive overview of all v3.2 features and changes.
+Version 3.2 of the m1f toolkit introduces significant security enhancements,
+performance improvements, and new configuration options. This document provides
+a comprehensive overview of all v3.2 features and changes.
 
 ## Major Security Enhancements
 
 ### 1. Path Traversal Protection
-- **What's New**: Comprehensive validation of all file paths to prevent directory traversal attacks
-- **Impact**: Prevents malicious actors from accessing files outside intended directories
-- **Implementation**: 
+
+- **What's New**: Comprehensive validation of all file paths to prevent
+  directory traversal attacks
+- **Impact**: Prevents malicious actors from accessing files outside intended
+  directories
+- **Implementation**:
   - New `validate_safe_path()` utility function
   - Applied to all user inputs, preset paths, and configuration files
   - Symlink targets are now validated
 
 ### 2. SSRF Protection in Web Scrapers
-- **What's New**: Blocks access to private IP ranges and cloud metadata endpoints
+
+- **What's New**: Blocks access to private IP ranges and cloud metadata
+  endpoints
 - **Protected Ranges**:
   - Private networks (10.x.x.x, 172.16.x.x, 192.168.x.x)
   - Localhost (127.0.0.1, ::1)
   - Link-local (169.254.x.x)
   - Cloud metadata (169.254.169.254)
-- **Applies to**: All web scraping tools (BeautifulSoup, Playwright, Scrapy, Selectolax)
+- **Applies to**: All web scraping tools (BeautifulSoup, Playwright, Scrapy,
+  Selectolax)
 
 ### 3. robots.txt Compliance
+
 - **What's New**: All scrapers now automatically respect robots.txt files
 - **Features**:
   - Automatic robots.txt fetching and parsing
@@ -33,6 +42,7 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 - **Previously**: Only HTTrack respected robots.txt
 
 ### 4. SSL/TLS Certificate Validation
+
 - **What's New**: SSL validation is now enabled by default
 - **Configuration**:
   - New `--ignore-https-errors` flag for exceptions
@@ -40,11 +50,13 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 - **Security**: Prevents man-in-the-middle attacks
 
 ### 5. Command Injection Prevention
+
 - **What's New**: Proper escaping of all shell commands
 - **Implementation**: Uses `shlex.quote()` for all user inputs in commands
 - **Affected Tools**: HTTrack scraper, git operations
 
 ### 6. JavaScript Execution Safety
+
 - **What's New**: Validation of custom JavaScript in Playwright scraper
 - **Features**:
   - Detects dangerous patterns (eval, Function constructor)
@@ -52,6 +64,7 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
   - Encourages use of built-in actions
 
 ### 7. Custom Processor Validation
+
 - **What's New**: Validates processor names to prevent injection attacks
 - **Rules**: Only alphanumeric characters and underscores allowed
 - **Impact**: Prevents code injection through preset files
@@ -59,6 +72,7 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 ## Performance Improvements
 
 ### 1. Parallel File Processing
+
 - **Enabled by Default**: Parallel processing is now always active
 - **Features**:
   - Concurrent file reading with automatic batch size optimization
@@ -67,6 +81,7 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 - **Performance**: Up to 3-5x faster for large file sets
 
 ### 2. Optimized Checksum Verification
+
 - **What's Changed**: Stream-based file reading for checksums
 - **Benefits**:
   - Reduced memory usage for large files
@@ -74,11 +89,13 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
   - 8KB chunk processing
 
 ### 3. Concurrent Write Limits in s1f
+
 - **What's New**: Semaphore-based write limiting
 - **Default**: 10 concurrent file operations
 - **Benefits**: Prevents "too many open files" errors
 
 ### 4. Async I/O Improvements
+
 - **Updates**:
   - Uses `aiofiles` for truly async file operations
   - Modern async patterns (asyncio.run())
@@ -87,18 +104,21 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 ## Configuration Enhancements
 
 ### 1. Content Deduplication Control
+
 - **New CLI Option**: `--allow-duplicate-files`
 - **Preset Setting**: `enable_content_deduplication`
 - **Default**: Deduplication enabled (False for allow-duplicate)
 - **Use Case**: When you need to preserve duplicate content
 
 ### 2. UTF-8 Preference Control
+
 - **New CLI Option**: `--no-prefer-utf8-for-text-files`
 - **Preset Setting**: `prefer_utf8_for_text_files`
 - **Default**: UTF-8 preferred (True)
 - **Use Case**: Working with legacy encodings like windows-1252
 
 ### 3. Security Check Modes
+
 - **Options**:
   - `error` (default): Stop on security issues
   - `warn`: Log warnings but continue
@@ -107,6 +127,7 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 - **Preset**: `security_check` setting
 
 ### 4. File Size Limits
+
 - **Preset Files**: Limited to 10MB
 - **Benefits**: Prevents memory exhaustion attacks
 - **Error Handling**: Clear error messages for oversized files
@@ -114,6 +135,7 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 ## Improved Patterns and Flexibility
 
 ### 1. Flexible Metadata Stripping
+
 - **What's New**: More flexible regex for scraped content metadata
 - **Supports**:
   - Various horizontal rule styles (`---`, `___`, `***`)
@@ -121,11 +143,13 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
   - Multiple formatting variations
 
 ### 2. Code Block Detection in s1f
+
 - **What's New**: Ignores separators inside code blocks
 - **Benefits**: Prevents false positive file detection
 - **Applies to**: Markdown code blocks (```)
 
 ### 3. Timezone-Aware Timestamps
+
 - **What's Changed**: All timestamps now use UTC
 - **Implementation**: `datetime.now(timezone.utc)`
 - **Benefits**: Consistent timestamps across timezones
@@ -154,17 +178,20 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 ## Breaking Changes
 
 ### 1. Standard Separator Format
+
 - **Change**: File separators no longer include checksums
 - **Before**: `=== path/to/file.txt === SHA256: abc123...`
 - **After**: `=== path/to/file.txt ===`
 - **Impact**: s1f can still read old format files
 
 ### 2. SSL Validation Default
+
 - **Change**: SSL validation now enabled by default
 - **Impact**: May break scraping of sites with invalid certificates
 - **Migration**: Use `--ignore-https-errors` if needed
 
 ### 3. Security Scanning Default
+
 - **Change**: Security scanning in error mode by default
 - **Impact**: Processing stops on sensitive data detection
 - **Migration**: Use `--security-check warn` for old behavior
@@ -175,13 +202,13 @@ Version 3.2 of the m1f toolkit introduces significant security enhancements, per
 
 ```yaml
 # Performance
-enable_content_deduplication: false  # Allow duplicate files
+enable_content_deduplication: false # Allow duplicate files
 
 # Encoding
-prefer_utf8_for_text_files: false   # Disable UTF-8 preference
+prefer_utf8_for_text_files: false # Disable UTF-8 preference
 
 # Security
-security_check: warn              # Security check mode
+security_check: warn # Security check mode
 
 # Per-file settings still work
 per_file_settings:
@@ -202,14 +229,17 @@ per_file_settings:
 ### From v3.1 to v3.2
 
 1. **Review Security Settings**:
+
    - Default security scanning may flag legitimate content
    - Use `--security-check warn` during migration
 
 2. **Check SSL Requirements**:
+
    - Sites with self-signed certificates need `--ignore-https-errors`
    - Review and update scraping scripts
 
 3. **Update Separator Parsing**:
+
    - If you parse m1f output, update to handle new separator format
    - s1f handles both formats automatically
 
@@ -246,7 +276,7 @@ settings:
   enable_content_deduplication: true
   prefer_utf8_for_text_files: true
   security_check: error
-  
+
 # File patterns remain the same
 include_patterns:
   - "src/**/*.{js,ts,jsx,tsx}"

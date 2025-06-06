@@ -550,12 +550,11 @@ your AI assistant. Typical numbered context files might include:
 - `3_plugin.txt` – a specific plugin or a group of plugins
 
 Store each generated context file in the `m1f` folder with a number prefix for
-quick referencing in Windsurf, Cursor, or Claude (for example
-`@m1f/1_doc.txt`).
+quick referencing in Windsurf, Cursor, or Claude (for example `@m1f/1_doc.txt`).
 
 To keep the inventory current during development, launch **Project Review: Watch
 for Changes**. This background watcher reruns the list generation whenever files
 are modified.
 
-Remember to add `m1f/` (and `.1f/` if used) to your `.gitignore` so these
-helper files stay out of version control.
+Remember to add `m1f/` (and `.1f/` if used) to your `.gitignore` so these helper
+files stay out of version control.

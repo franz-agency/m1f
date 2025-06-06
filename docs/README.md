@@ -35,13 +35,15 @@ This directory contains detailed documentation for the m1f project v3.2.0.
   AI-powered tool automation
 - [Preset System Guide](01_m1f/10_m1f_presets.md) - File-specific processing
   rules and configurations
-- [Per-File-Type Settings](01_m1f/11_preset_per_file_settings.md) -
-  Fine-grained control over file processing
+- [Per-File-Type Settings](01_m1f/11_preset_per_file_settings.md) - Fine-grained
+  control over file processing
 
 ### Development
 
-- [Version Management](05_development/55_version_management.md) - Version management and release process
-- [Git Hooks Setup](05_development/56_git_hooks_setup.md) - Git hooks for automated bundling
+- [Version Management](05_development/55_version_management.md) - Version
+  management and release process
+- [Git Hooks Setup](05_development/56_git_hooks_setup.md) - Git hooks for
+  automated bundling
 
 ## Quick Navigation
 

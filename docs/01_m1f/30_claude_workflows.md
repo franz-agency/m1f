@@ -1,10 +1,14 @@
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
 
-Ever wished you had an AI buddy who actually understands your project structure? That's what happens when you combine Claude with m1f. This guide shows you how to turn Claude into your personal project assistant who knows exactly how to bundle, organize, and process your code.
+Ever wished you had an AI buddy who actually understands your project structure?
+That's what happens when you combine Claude with m1f. This guide shows you how
+to turn Claude into your personal project assistant who knows exactly how to
+bundle, organize, and process your code.
 
 ## The Power of m1f v3.2 + Claude ✨
 
 With m1f v3.2's enhanced features, Claude can help you:
+
 - Configure comprehensive security scanning
 - Set up parallel processing for faster bundling
 - Create sophisticated preset configurations
@@ -22,7 +26,8 @@ cd /your/awesome/project
 m1f-link  # Creates m1f/m1f-docs.txt symlink
 ```
 
-Boom! 💥 Now you've got the complete m1f documentation sitting in your project. Claude can read this and instantly become an m1f expert.
+Boom! 💥 Now you've got the complete m1f documentation sitting in your project.
+Claude can read this and instantly become an m1f expert.
 
 ### Step 2: Start the Conversation
 
@@ -41,7 +46,8 @@ My project is a Python web app with:
 Can you create a .m1f.config.yml that bundles these intelligently?
 ```
 
-Claude will read the docs and create a perfect config for your project structure. No more guessing at parameters!
+Claude will read the docs and create a perfect config for your project
+structure. No more guessing at parameters!
 
 ## Real-World Workflows That Actually Work 🚀
 
@@ -105,6 +111,7 @@ m1f-claude -i
 ### What Makes m1f-claude Special?
 
 When you use `m1f-claude`, it automatically:
+
 - Knows where to find m1f documentation
 - Understands your project structure
 - Suggests optimal parameters
@@ -112,7 +119,8 @@ When you use `m1f-claude`, it automatically:
 
 ## Working with Claude Code
 
-If you're using Claude Code (claude.ai/code), you can leverage its file reading capabilities:
+If you're using Claude Code (claude.ai/code), you can leverage its file reading
+capabilities:
 
 ```
 # In Claude Code, you can directly reference files
@@ -133,20 +141,20 @@ With v3.2, you can control everything through presets:
 # production.m1f-presets.yml
 production:
   description: "Production-ready bundles with full security"
-  
+
   global_settings:
     # Input/Output
     source_directory: "./src"
     output_file: "dist/prod-bundle.txt"
     input_include_files: ["README.md", "LICENSE"]
-    
+
     # Security (v3.2)
-    security_check: "error"  # Stop on any secrets
-    
+    security_check: "error" # Stop on any secrets
+
     # Performance (v3.2)
     enable_content_deduplication: true
     prefer_utf8_for_text_files: true
-    
+
     # Output control
     add_timestamp: true
     create_archive: true
@@ -154,14 +162,14 @@ production:
     force: true
     minimal_output: true
     quiet: true
-    
+
     # Processing
     separator_style: "MachineReadable"
     encoding: "utf-8"
     max_file_size: "1MB"
-    
+
     # Exclusions
-    exclude_patterns: 
+    exclude_patterns:
       - "**/*.test.js"
       - "**/*.spec.ts"
       - "**/node_modules/**"
@@ -188,19 +196,19 @@ bundles:
           - "**/*.test.*"
           - "**/*.spec.*"
           - "**/test/**"
-    
+
     # v3.2 optimizations
     global_settings:
       # Security first
       security_check: "warn"
-      
+
       # Performance
-      enable_content_deduplication: true  # Reduce token usage
-      
+      enable_content_deduplication: true # Reduce token usage
+
       # AI-friendly format
       separator_style: "Markdown"
-      max_file_size: "100KB"  # Keep context focused
-      
+      max_file_size: "100KB" # Keep context focused
+
       # Clean output
       remove_scraped_metadata: true
       allow_duplicate_files: false
@@ -213,13 +221,13 @@ bundles:
   legacy-code:
     description: "Handle mixed encoding legacy code"
     output: "m1f/legacy-bundle.txt"
-    
+
     global_settings:
       # v3.2 encoding features
-      prefer_utf8_for_text_files: false  # Respect original encoding
-      convert_to_charset: "utf-8"  # But convert output
-      abort_on_encoding_error: false  # Continue on errors
-      
+      prefer_utf8_for_text_files: false # Respect original encoding
+      convert_to_charset: "utf-8" # But convert output
+      abort_on_encoding_error: false # Continue on errors
+
       # Include everything
       include_binary_files: false
       include_dot_paths: true
@@ -269,7 +277,7 @@ Claude, the bundle is too large (50MB). Help me:
 ```
 Claude, I want layered presets:
 1. base.yml - Company-wide standards
-2. project.yml - Project-specific rules  
+2. project.yml - Project-specific rules
 3. personal.yml - My personal preferences
 
 Show me how to use them together with proper override behavior.
@@ -324,11 +332,11 @@ Goal: Bundle generation under 30 seconds.
 # Claude might suggest this for large files
 large_files:
   description: "Handle massive log files"
-  
+
   global_settings:
-    max_file_size: "10MB"  # Skip huge files
+    max_file_size: "10MB" # Skip huge files
     enable_content_deduplication: true
-    
+
   presets:
     truncate_logs:
       extensions: [".log", ".txt"]
@@ -410,7 +418,7 @@ m1f-claude -i
 m1f -s . -o audit.txt --security-check error --minimal-output
 
 # Fast development bundle (no security checks)
-m1f -s ./src -o dev.txt --security-check skip 
+m1f -s ./src -o dev.txt --security-check skip
 
 # Documentation bundle with metadata
 m1f -s ./docs -o docs.txt --separator-style Detailed
@@ -435,10 +443,12 @@ Now you're ready to turn Claude into your personal m1f expert. Remember:
 4. Iterate and refine based on results
 5. Test security settings thoroughly before sharing
 
-The best part? Claude remembers your conversations, so it gets better at understanding your project over time.
+The best part? Claude remembers your conversations, so it gets better at
+understanding your project over time.
 
 Happy bundling! 🚀
 
 ---
 
-_P.S. - If Claude suggests something that seems off, just ask "Are you sure about that? Check @m1f/m1f-docs.txt again." Works every time! 😉_
+_P.S. - If Claude suggests something that seems off, just ask "Are you sure
+about that? Check @m1f/m1f-docs.txt again." Works every time! 😉_

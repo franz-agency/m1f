@@ -239,10 +239,10 @@ skipped with a warning.
 
 ### `--no-prefer-utf8-for-text-files`
 
-Disable UTF-8 preference for text files (.md, .txt, .rst) when encoding is ambiguous.
-By default, m1f prefers UTF-8 encoding for these file types when chardet detects
-windows-1252 with less than 95% confidence, as these files often contain UTF-8
-emojis or special characters.
+Disable UTF-8 preference for text files (.md, .txt, .rst) when encoding is
+ambiguous. By default, m1f prefers UTF-8 encoding for these file types when
+chardet detects windows-1252 with less than 95% confidence, as these files often
+contain UTF-8 emojis or special characters.
 
 ## Security Options
 
@@ -281,8 +281,8 @@ Skip creating the main output file. Useful when only creating an archive.
 
 ### `--allow-duplicate-files`
 
-Allow files with identical content to be included in the output. By default,
-m1f deduplicates files based on their content checksum to save space and tokens.
+Allow files with identical content to be included in the output. By default, m1f
+deduplicates files based on their content checksum to save space and tokens.
 With this flag, all files are included even if they have identical content.
 
 ### `--verbose`, `-v`
