@@ -61,7 +61,7 @@ HTTrack is a professional website copier that creates complete offline mirrors.
 - Preserves directory structure
 - Handles complex websites well
 - Resume interrupted downloads
-- Built-in robots.txt support
+- Automatic robots.txt compliance
 
 **Cons:**
 
