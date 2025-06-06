@@ -1,0 +1,39 @@
+#!/bin/bash
+# m1f Auto-Bundle Git Pre-Commit Hook
+# This hook automatically runs m1f auto-bundle before each commit
+# to ensure all configured bundles are up-to-date.
+
+# Check if .m1f.config.yml exists in the repository
+if [ -f ".m1f.config.yml" ]; then
+    # Check if m1f command is available
+    if ! command -v m1f &> /dev/null; then
+        echo "Error: m1f command not found!"
+        echo "Please ensure m1f is installed and available in your PATH."
+        echo ""
+        echo "Installation instructions:"
+        echo "  pip install m1f"
+        echo "  # or"
+        echo "  cd /path/to/m1f && pip install -e ."
+        exit 1
+    fi
+    
+    echo "Running m1f auto-bundle..."
+    
+    # Run auto-bundle
+    if m1f auto-bundle; then
+        echo "Auto-bundle completed successfully."
+        
+        # Add any generated files in m1f/ directory to the commit
+        if [ -d "m1f" ]; then
+            git add m1f/*
+        fi
+    else
+        echo "Auto-bundle failed. Please fix the issues before committing."
+        exit 1
+    fi
+else
+    # No config file, so nothing to do
+    exit 0
+fi
+
+exit 0

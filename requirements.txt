@@ -51,3 +51,7 @@ scrapy==2.12.0
 
 # Install with: pip install playwright && playwright install
 playwright==1.50.0
+
+# Test server dependencies
+flask==3.1.1
+flask-cors==6.0.0

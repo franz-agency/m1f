@@ -16,11 +16,24 @@
 Setup script for the m1f tool.
 """
 
+import os
+import re
 from setuptools import setup, find_packages
+
+# Read version from _version.py
+version_file = os.path.join(os.path.dirname(__file__), "_version.py")
+with open(version_file, "r", encoding="utf-8") as f:
+    version_match = re.search(
+        r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE
+    )
+    if version_match:
+        version = version_match.group(1)
+    else:
+        raise RuntimeError("Unable to find version string in _version.py")
 
 setup(
     name="m1f",
-    version="3.0.0",
+    version=version,
     description="m1f - Make One File - Combine multiple text files into a single output file",
     author="Franz und Franz",
     author_email="office@franz.agency",

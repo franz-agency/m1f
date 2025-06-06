@@ -126,21 +126,21 @@ class TestIntegration(unittest.TestCase):
         self.assertIn("## Text Formatting", content)
         self.assertIn("### Unordered List", content)
         self.assertIn("### Ordered List", content)
-        
+
         # Check that tables are converted properly
         self.assertIn("| Name | Description | Value |", content)
-        
+
         # Check that code blocks are preserved
         self.assertIn("```python", content)
         self.assertIn("```javascript", content)
-        
+
         # Check that blockquotes are converted
         self.assertIn("> This is a blockquote", content)
-        
-        # Verify that all major sections are present in the output
-        # even though content filtering is not currently working
-        self.assertIn("Related Links", content)  # From sidebar
-        self.assertIn("All rights reserved", content)  # From footer
+
+        # Note: Current html2md implementation extracts only main content
+        # Sidebar and footer content are excluded by design
+        # self.assertIn("Related Links", content)  # From sidebar
+        # self.assertIn("All rights reserved", content)  # From footer
 
     def test_code_block_language_detection(self):
         """Test that code block languages are properly detected."""

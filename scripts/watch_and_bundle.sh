@@ -7,7 +7,8 @@ set -e
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-AUTO_BUNDLE_SCRIPT="$SCRIPT_DIR/auto_bundle.sh"
+# Use python directly for auto-bundle
+PYTHON_CMD="cd \"$PROJECT_ROOT\" && source .venv/bin/activate && python -m tools.m1f auto-bundle"
 
 # Colors
 GREEN='\033[0;32m'
@@ -130,9 +131,9 @@ run_bundle_update() {
     print_info "Updating $bundle_type bundle..."
     
     if [ -z "$bundle_type" ] || [ "$bundle_type" == "all" ]; then
-        "$AUTO_BUNDLE_SCRIPT"
+        eval "$PYTHON_CMD"
     else
-        "$AUTO_BUNDLE_SCRIPT" "$bundle_type"
+        eval "$PYTHON_CMD $bundle_type"
     fi
     
     print_success "Bundle update completed"
@@ -269,7 +270,7 @@ main() {
     
     # Create initial bundles
     print_info "Creating initial bundles..."
-    "$AUTO_BUNDLE_SCRIPT"
+    eval "$PYTHON_CMD"
     
     # Start watching based on available tool
     case "$WATCH_COMMAND" in

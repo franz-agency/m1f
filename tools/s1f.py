@@ -5,10 +5,13 @@
 """Main entry point for s1f - Split One File."""
 
 import sys
-from s1f.cli import main
 
-# Provide compatibility for tests that import s1f module directly
-main = main
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from tools.s1f.cli import main
+except ImportError:
+    # Fallback for direct script execution
+    from s1f.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -202,13 +202,13 @@ Example preset usage:
 
 ```bash
 # Create all standard bundles using presets
-./scripts/auto_bundle.py all
+m1f-update all
 
 # Create WordPress-specific bundles
-./scripts/auto_bundle.py focus wordpress
+m1f-update focus wordpress
 
 # Use specific preset with group
-./scripts/auto_bundle.py preset web-project frontend
+python -m tools.m1f auto-bundle preset web-project frontend
 ```
 
 Available presets:
@@ -531,16 +531,16 @@ This approach helps you provide targeted and relevant information to your AI
 assistant, leading to more accurate and helpful responses for your WordPress
 development tasks.
 
-## Example: Organizing a Large Project with `.m1f`
+## Example: Organizing a Large Project with `m1f`
 
 When dealing with a project that contains hundreds or thousands of files, start
 by generating a complete file and directory listing without creating the merged
 context file. Run the **Project Review: Generate Lists** task. It calls
 `tools/m1f.py` with `--skip-output-file` and saves two inventory files to the
-`.m1f` directory:
+`m1f` directory:
 
-- `.m1f/project_review_filelist.txt`
-- `.m1f/project_review_dirlist.txt`
+- `m1f/project_review_filelist.txt`
+- `m1f/project_review_dirlist.txt`
 
 Review these lists and decide which areas of the project you want to load into
 your AI assistant. Typical numbered context files might include:
@@ -549,13 +549,12 @@ your AI assistant. Typical numbered context files might include:
 - `2_template.txt` – template files from your theme
 - `3_plugin.txt` – a specific plugin or a group of plugins
 
-Store each generated context file in the `.m1f` folder with a number prefix for
-quick referencing in Windsurf, Cursor, or Claude (for example
-`@.m1f/1_doc.txt`).
+Store each generated context file in the `m1f` folder with a number prefix for
+quick referencing in Windsurf, Cursor, or Claude (for example `@m1f/1_doc.txt`).
 
 To keep the inventory current during development, launch **Project Review: Watch
 for Changes**. This background watcher reruns the list generation whenever files
 are modified.
 
-Remember to add `.m1f/` (and `.1f/` if used) to your `.gitignore` so these
-helper files stay out of version control.
+Remember to add `m1f/` (and `.1f/` if used) to your `.gitignore` so these helper
+files stay out of version control.

@@ -6,7 +6,294 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.2.0] - 2025-06-06
+
+### Added
+
+- **Git Hooks Integration**: Automatic bundle generation on every commit
+
+  - Pre-commit hook that runs `m1f auto-bundle` before each commit
+  - Installation script with remote download support:
+    `curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash`
+  - Auto-detection of m1f development repository vs. installed m1f
+  - Automatic staging of generated bundles in `m1f/` directory
+  - Comprehensive setup guide at `docs/05_development/56_git_hooks_setup.md`
+
+- **Bundle Directory Migration**: Moved from `.m1f/` to `m1f/` for better AI
+  tool compatibility
+
+  - AI tools like Claude Code can now access bundled files directly
+  - Generated bundles are included in version control by default
+  - Automatic migration of configuration paths
+  - Updated `m1f-link` command to create symlinks in `m1f/` directory
+  - Added `m1f/README.md` explaining auto-generated files
+
+- **Complete Preset Parameter Support**: ALL m1f parameters can now be
+  configured via presets
+
+  - Input/Output settings: source_directory, input_file, output_file,
+    input_include_files
+  - Output control: add_timestamp, filename_mtime_hash, force, minimal_output,
+    skip_output_file
+  - Archive settings: create_archive, archive_type
+  - Runtime behavior: verbose, quiet
+  - CLI arguments always take precedence over preset values
+  - Enables simple commands like `m1f --preset production.yml`
+  - Updated template-all-settings.m1f-presets.yml with all new parameters
+  - Full documentation in docs/01_m1f/12_preset_reference.md
+
+- **Auto-Bundle Subcommand**: Integrated auto-bundle functionality directly into
+  m1f
+
+  - New `auto-bundle` subcommand for creating multiple bundles from YAML config
+  - Reads `.m1f.config.yml` from project root
+  - Supports creating all bundles or specific bundles by name
+  - `--list` option to show available bundles with descriptions
+  - `--verbose` and `--quiet` options for output control
+  - `m1f-update` command provides convenient access from anywhere
+  - Full compatibility with existing `.m1f.config.yml` format
+  - Supports all m1f options: presets, exclude/include files, conditional
+    bundles
+  - Updated `watch_and_bundle.sh` to use new auto-bundle functionality
+
+- **Simplified Installation System**: Complete installer scripts for all
+  platforms
+
+  - New `install.sh` handles entire setup process (3 commands total!)
+  - New `install.ps1` for Windows with full automation
+  - Automatic Python 3.10+ version checking
+  - Virtual environment creation and dependency installation
+  - Initial bundle generation during setup
+  - Smart shell detection for immediate PATH activation
+  - `uninstall.sh` for clean removal
+
+- **PATH-based Command System**: Replaced aliases with executable wrappers
+
+  - Created `bin/` directory with standalone executable scripts
+  - Each wrapper activates venv and runs appropriate tool
+  - Works consistently across all shells and platforms
+  - Optional symlink creation in ~/.local/bin
+
+- **m1f-claude Command**: Smart prompt enhancement for Claude AI
+
+  - New `m1f-claude` command that enhances prompts with m1f knowledge
+  - Automatically injects m1f documentation context into prompts
+  - Interactive mode for continued conversations
+  - Project structure analysis for better suggestions
+  - Contextual hints based on user intent (bundling, config, WordPress, AI
+    context)
+  - Integration with Claude Code CLI (if installed)
+  - Comprehensive workflow guide at docs/01_m1f/30_claude_workflows.md
+
+- **Enhanced Auto-Bundle Functionality**: Improved usability and flexibility
+
+  - Config file search now traverses from current directory up to root
+  - New `--group` parameter to create bundles by group (e.g.,
+    `m1f auto-bundle --group documentation`)
+  - Bundle grouping support in `.m1f.config.yml` with `group: "name"` field
+  - Improved error messages when config file is not found
+  - Enhanced `--list` output showing bundles organized by groups
+  - Comprehensive documentation in `docs/01_m1f/20_auto_bundle_guide.md`
+  - Examples for server-wide bundle management and automation
+
+- **Join Paragraphs Feature**: Markdown optimization for LLMs
+
+  - New `JOIN_PARAGRAPHS` processing action to compress markdown
+  - Intelligently joins multi-line paragraphs while preserving structure
+  - Preserves code blocks, tables, lists, and other markdown elements
+  - Helps maximize content in the first 200 lines that LLMs read intensively
+  - Available in presets for documentation bundles
+
+- **S1F List Command**: Display archive contents without extraction
+
+  - New `--list` flag to show files in m1f archives
+  - Displays file information including size, encoding, and type
+  - No longer shows SHA256 hashes for cleaner output
+  - Useful for previewing archive contents before extraction
+
+- **Configurable UTF-8 Preference**: Made UTF-8 encoding preference for text
+  files configurable
+
+  - Added `prefer_utf8_for_text_files` option to EncodingConfig (defaults to
+    True)
+  - New CLI flag `--no-prefer-utf8-for-text-files` to disable UTF-8 preference
+  - Configurable via preset files through `prefer_utf8_for_text_files` setting
+  - Affects only text files (.md, .markdown, .txt, .rst) when encoding detection
+    is ambiguous
+
+- **Configurable Content Deduplication**: Made content deduplication optional
+  - Added `enable_content_deduplication` option to OutputConfig (defaults to
+    True)
+  - New CLI flag `--allow-duplicate-files` to include files with identical
+    content
+  - Configurable via preset files through `enable_content_deduplication` setting
+  - Useful when you need to preserve all files regardless of duplicate content
+
+### Fixed
+
+- **Security**: Comprehensive path traversal protection across all tools
+
+  - Added path validation to prevent directory traversal attacks
+  - Block paths with `../` or `..\` patterns
+  - Reject absolute paths in s1f extraction
+  - Validate all user-provided file paths including symlink targets
+  - Allow legitimate exceptions: home directory configs (~/.m1f/), output files
+
+- **Markdown Format**: Fixed separator and content formatting issues
+
+  - Content now properly starts on new line after code fence in markdown format
+  - Added blank line between separator and content in parallel processing mode
+  - Fixed S1F markdown parser to correctly handle language hint and newline
+  - Fixed closing ``` for markdown format in parallel processing
+
+- **S1F List Output**: Simplified file information display
+
+  - Removed SHA256 hash display from list output
+  - No longer shows "[Unknown]" for missing file sizes
+  - Only displays file size when available
+
+- **Standard Separator Format**: Removed checksum from display
+  - Standard format now shows only file path without SHA256
+  - Simplified output for better readability
+  - Parser ignores separators inside code blocks to prevent false positives
+
+### Changed
+
+- **Parallel File Processing**: Enhanced performance for large projects
+
+  - Added optional `--parallel` flag for concurrent file processing
+  - Implemented asyncio-based batch handling with proper thread safety
+  - Added locks for thread-safe checksum operations
+  - Maintained file ordering in output despite parallel processing
+  - Automatic fallback to sequential processing for single files
+
+- **Auto-bundle config file** (`.m1f.config.yml`) updated with group
+  categorization
+
+  - Documentation bundles grouped under "documentation"
+  - Source code bundles grouped under "source"
+  - Complete project bundle in "complete" group
+
+- **Command Naming Standardization**: All tools now use m1f- prefix
+
+  - `s1f` → `m1f-s1f`
+  - `html2md` → `m1f-html2md`
+  - `webscraper` → `m1f-scrape`
+  - `token-counter` → `m1f-token-counter`
+  - Prevents naming conflicts with system commands
+
+- **Module Execution**: Fixed import errors with proper module syntax
+
+  - All scripts now use `python -m tools.m1f` format
+  - Ensures reliable imports across different environments
+  - Updated all documentation examples
+
+- **WebScraper Rate Limiting**: Conservative defaults for Cloudflare protection
+
+  - Changed default request delay from 0.5s to 15s
+  - Reduced concurrent requests from 5 to 2
+  - Added bandwidth limiting (100KB/s) and connection rate limits
+  - Created cloudflare.yaml config with ultra-conservative 30s delays
+
+- **Code Quality**: Comprehensive linting and formatting
+  - Applied Black formatting to all Python code
+  - Applied Prettier formatting to all Markdown files
+  - Added/updated license headers across all source files
+  - Removed deprecated test files and debug utilities
+
+### Security
+
+- **Path Traversal Protection**: Comprehensive validation across all tools
+
+  - Prevents attackers from using paths like `../../../etc/passwd`
+  - Validates resolved paths against project boundaries
+  - Allows legitimate exceptions for configs and output files
+  - Added extensive security tests
+
+- **Scraper Security**: Enhanced security measures
+  - Enforced robots.txt compliance with caching
+  - Added URL validation to prevent SSRF attacks
+  - Basic JavaScript validation to block dangerous scripts
+  - Sanitized command arguments in HTTrack to prevent injection
+
+### Improved
+
+- **HTML2MD Enhancement**: Better file path handling
+
+  - Improved source path logic for file inputs
+  - Enhanced relative path resolution for edge cases
+  - Consistent output path generation with fallback mechanisms
+  - Removed hardcoded Anthropic-specific navigation selectors
+
+- **Encoding Detection**: Enhanced fallback logic
+
+  - Default to UTF-8 if chardet fails or returns empty
+  - Prefer UTF-8 over Windows-1252 for markdown files
+  - Expanded encoding map for better emoji support
+  - Better handling of exotic encodings
+
+- **Async I/O Support**: Performance optimizations
+
+  - S1F now supports optional aiofiles for async file reading
+  - Better handling of deprecated asyncio methods
+  - Improved concurrent operation handling
+
+- **Testing Infrastructure**: Comprehensive test improvements
+  - Reorganized test structure for better clarity
+  - Added path traversal security tests
+  - Fixed all test failures (100% success rate)
+  - Added pytest markers for test categorization
+  - Improved test documentation
+
+### Removed
+
+- Obsolete scripts replaced by integrated functionality:
+  - `scripts/auto_bundle.py` (now `m1f auto-bundle`)
+  - `scripts/auto_bundle.sh` (now `m1f auto-bundle`)
+  - `scripts/auto_bundle.ps1` (now `m1f auto-bundle`)
+  - `scripts/update_m1f_files.sh` (now `m1f-update`)
+  - `setup_m1f_aliases.sh` (replaced by bin/ directory)
+  - Deprecated test files and debug utilities (~3000 lines removed)
+
+## [3.1.0] - 2025-06-04
+
+### Added - html2md
+
+- **Custom Extractor System**: Site-specific content extraction
+  - Pluggable extractor architecture for optimal HTML parsing
+  - Support for function-based and class-based extractors
+  - Extract, preprocess, and postprocess hooks
+  - Dynamic loading of Python extractor files
+  - Default extractor for basic navigation removal
+- **Workflow Integration**: Organized .scrapes directory structure
+  - Standard directory layout: html/, md/, extractors/
+  - .scrapes directory added to .gitignore
+  - Supports Claude-assisted extractor development
+- **CLI Enhancement**: `--extractor` option for custom extraction logic
+- **API Enhancement**: Extractor parameter in Html2mdConverter constructor
+
+### Changed - html2md
+
+- Removed all Anthropic-specific code from core modules
+- Cleaned up api.py to remove hardcoded navigation selectors
+- Improved modularity with separate extractor system
+
+### Added - m1f
+
+- **Multiple Exclude/Include Files Support**: Enhanced file filtering
+  capabilities
+  - `exclude_paths_file` and `include_paths_file` now accept multiple files
+  - Files are merged in order, non-existent files are gracefully skipped
+  - Include files work as whitelists - only matching files are processed
+  - Full backward compatibility with single file syntax
+  - CLI supports multiple files: `--exclude-paths-file file1 file2 file3`
+  - YAML config supports both single file and list syntax
+
+### Changed
+
+- Enhanced file processor to handle pattern merging from multiple sources
+- Updated CLI arguments to accept multiple files with `nargs="+"`
+- Improved pattern matching for exact path excludes/includes
 
 ## [3.0.1] - 2025-06-04
 
@@ -30,7 +317,8 @@ and this project adheres to
   - Config-based directory setup
   - Refined source rules for s1f-code and all bundles
   - Improved path handling for m1f/s1f separation
-- **Depth-based Sorting**: Files and directories now sorted by depth for better organization
+- **Depth-based Sorting**: Files and directories now sorted by depth for better
+  organization
 - **Improved Documentation**: Comprehensive updates to m1f documentation
   - Added CLI reference and troubleshooting guides
   - Enhanced preset system documentation

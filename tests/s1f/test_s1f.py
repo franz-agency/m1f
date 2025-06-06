@@ -34,7 +34,7 @@ from pathlib import Path, PureWindowsPath
 
 # Add the tools directory to path to import the s1f module
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
-import s1f
+from tools import s1f
 
 # Test constants
 TEST_DIR = Path(__file__).parent

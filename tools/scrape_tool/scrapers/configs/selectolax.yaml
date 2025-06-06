@@ -1,0 +1,39 @@
+# Selectolax scraper configuration
+# High-performance HTML parsing with httpx + selectolax
+
+# Basic scraper settings
+max_depth: 10
+max_pages: 1000
+request_delay: 0.1  # Minimal delay for high performance
+concurrent_requests: 20  # Higher concurrency for speed
+respect_robots_txt: true
+timeout: 10.0
+
+# httpx client settings
+httpx_config:
+  # Connection pool settings
+  max_keepalive_connections: 50
+  max_connections: 100
+  keepalive_expiry: 30.0
+  
+  # Timeout settings (in seconds)
+  connect_timeout: 5.0
+  read_timeout: 10.0
+  write_timeout: 5.0
+  pool_timeout: 5.0
+  
+  # HTTP/2 support
+  http2: true
+  
+  # Retry configuration
+  max_retries: 3
+  retry_backoff_factor: 0.5
+
+# Selectolax parser settings
+parser_config:
+  # Parser options
+  strict: false  # Lenient parsing for malformed HTML
+  
+# Example usage:
+# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+#   --scraper selectolax --scraper-config selectolax.yaml

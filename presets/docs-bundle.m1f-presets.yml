@@ -1,14 +1,34 @@
-# Preset for documentation bundles
-# Removes empty lines from markdown files
-
-# Global settings for this preset
-name: "Documentation Bundle"
-description: "Optimizes markdown files by removing empty lines"
-
-# File-specific processors
-processors:
-  # Markdown files - remove empty lines
-  - pattern: "**/*.md"
-    operations:
-      - type: remove_empty_lines
-        description: "Remove empty lines from markdown files"
+# Documentation bundle preset group
+# Claude prefers valid markdown. However, there are LLMs that only read the first 200 lines of a file and then
+# decide whether to continue. This means you need to fit a lot of information into those first 200 lines.
+docs_bundle:
+  name: "Documentation Bundle"
+  description: "Optimizes markdown files by joining paragraphs into single lines for better LLM processing"
+  priority: 10
+  enabled: true
+  
+  # Global settings for documentation bundles
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    security_check: null  # Docs rarely have secrets
+    remove_scraped_metadata: true  # Clean up scraped docs
+    
+    # Exclude build outputs
+    exclude_patterns:
+      - "_build/**"
+      - "build/**"
+      - "site/**"
+      - "public/**"
+  
+  presets:
+    markdown_processor:
+      patterns: 
+        - "**/*.md"
+        - "**/*.markdown"
+        - "**/README*"
+      actions:
+        - "join_paragraphs"  # Compress paragraphs to single lines
+        - "remove_empty_lines"
+      separator_style: "Standard"
+      max_file_size: "2MB"

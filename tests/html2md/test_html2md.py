@@ -26,7 +26,7 @@ from pathlib import Path
 # Add the parent directory to sys.path so we can import the module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from tools.html2md import (
+from tools.html2md_tool import (
     convert_html,
     adjust_internal_links,
     extract_title_from_html,

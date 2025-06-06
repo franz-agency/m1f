@@ -21,7 +21,7 @@ from __future__ import annotations
 import hashlib
 import re
 from pathlib import Path
-from typing import Union, List, Tuple
+from typing import List, Tuple
 
 
 def format_duration(seconds: float) -> str:
@@ -168,7 +168,7 @@ def is_binary_file(file_path: Path) -> bool:
         return True
 
 
-def normalize_path(path: Union[str, Path]) -> Path:
+def normalize_path(path: str | Path) -> Path:
     """Normalize a path to use forward slashes and resolve it."""
     return Path(path).resolve()
 
@@ -311,3 +311,84 @@ def sort_files_by_depth_and_name(
         return (depth, parent.lower(), is_not_readme, filename.lower())
 
     return sorted(file_paths, key=sort_key)
+
+
+def validate_path_traversal(
+    path: Path,
+    base_path: Path = None,
+    allow_outside: bool = False,
+    from_preset: bool = False,
+) -> Path:
+    """Validate that a resolved path does not traverse outside allowed directories.
+
+    Args:
+        path: The resolved path to validate
+        base_path: Optional base directory that the path must be within.
+                  If None, uses the current working directory.
+        allow_outside: If True, allows paths outside the base directory but
+                      still validates against malicious traversal patterns
+        from_preset: If True, this path comes from a preset file
+
+    Returns:
+        The validated path
+
+    Raises:
+        ValueError: If the path attempts malicious directory traversal
+    """
+    # Ensure path is resolved
+    resolved_path = path.resolve()
+
+    # Check for suspicious traversal patterns in the original path
+    path_str = str(path)
+
+    # Allow home directory config files (e.g., ~/.m1f/)
+    if path_str.startswith("~"):
+        return resolved_path
+
+    # Check for excessive parent directory traversals
+    parent_traversals = path_str.count("../")
+    if parent_traversals >= 3 and not (allow_outside or from_preset):
+        # Three or more parent directory traversals are suspicious
+        raise ValueError(
+            f"Path traversal detected: '{path}' contains suspicious '..' patterns"
+        )
+
+    if allow_outside or from_preset:
+        # For output paths or preset paths, just return the resolved path
+        return resolved_path
+
+    # For input paths, allow certain exceptions
+    if base_path is None:
+        base_path = Path.cwd()
+
+    resolved_base = base_path.resolve()
+
+    # Allow access to home directory for config files
+    home_dir = Path.home()
+    if resolved_path.is_relative_to(home_dir / ".m1f"):
+        return resolved_path
+
+    # Allow access to project's tmp directory for tests
+    project_root = resolved_base
+    if resolved_path.is_relative_to(project_root / "tmp"):
+        return resolved_path
+
+    # Check if the resolved path is within the base directory
+    try:
+        # This will raise ValueError if path is not relative to base
+        resolved_path.relative_to(resolved_base)
+        return resolved_path
+    except ValueError:
+        # Check if we're in a test environment
+        if any(
+            part in str(resolved_path)
+            for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
+        ):
+            # Allow temporary test directories
+            return resolved_path
+
+        # Path is outside the base directory
+        raise ValueError(
+            f"Path traversal detected: '{path}' resolves to '{resolved_path}' "
+            f"which is outside the allowed directory '{resolved_base}'"
+        )

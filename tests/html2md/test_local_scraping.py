@@ -44,6 +44,7 @@ from bs4 import BeautifulSoup
 import markdownify
 from urllib.parse import urljoin
 import time
+import pytest
 
 # Test server configuration
 TEST_SERVER_URL = "http://localhost:8080"
@@ -72,7 +73,8 @@ def check_server_connectivity():
 
 def test_server_connectivity():
     """Test if the test server is running and accessible (pytest compatible)."""
-    assert check_server_connectivity(), "Test server is not accessible"
+    if not check_server_connectivity():
+        pytest.skip("Test server is not accessible - skipping test")
 
 
 def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None):
@@ -125,7 +127,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         print(f"   ✅ Converted to {len(markdown)} characters of Markdown")
 
         # Save to file
-        output_dir = Path("tests/html2md/scraped_examples")
+        output_dir = Path("tests/mf1-html2md/scraped_examples")
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"scraped_{page_name}.md"
 
@@ -169,7 +171,7 @@ def main():
             "ignore_selectors": ["nav", "footer"],
         },
         {
-            "name": "html2md-documentation",
+            "name": "mf1-html2md-documentation",
             "description": "HTML2MD Documentation (with code blocks)",
             "outermost_selector": "main",
             "ignore_selectors": ["nav", ".sidebar", "footer"],

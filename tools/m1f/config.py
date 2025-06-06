@@ -21,10 +21,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional, Set, List
+from typing import Optional, Set, List, Union
 import argparse
 
-from .utils import parse_file_size
+from .utils import parse_file_size, validate_path_traversal
 
 
 class SeparatorStyle(Enum):
@@ -75,6 +75,7 @@ class EncodingConfig:
 
     target_charset: Optional[str] = None
     abort_on_error: bool = False
+    prefer_utf8_for_text_files: bool = True
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,8 @@ class OutputConfig:
     skip_output_file: bool = False
     separator_style: SeparatorStyle = SeparatorStyle.DETAILED
     line_ending: LineEnding = LineEnding.LF
+    parallel: bool = True  # Default to parallel processing for better performance
+    enable_content_deduplication: bool = True  # Enable content deduplication by default
 
 
 @dataclass(frozen=True)
@@ -97,7 +100,8 @@ class FilterConfig:
 
     exclude_paths: Set[str] = field(default_factory=set)
     exclude_patterns: List[str] = field(default_factory=list)
-    exclude_paths_file: Optional[Path] = None
+    exclude_paths_file: Optional[Union[str, List[str]]] = None
+    include_paths_file: Optional[Union[str, List[str]]] = None
     include_extensions: Set[str] = field(default_factory=set)
     exclude_extensions: Set[str] = field(default_factory=set)
     include_dot_paths: bool = False
@@ -158,22 +162,62 @@ class Config:
     @classmethod
     def from_args(cls, args: argparse.Namespace) -> Config:
         """Create configuration from parsed arguments."""
-        # Process source directory
-        source_dir = (
-            Path(args.source_directory).resolve() if args.source_directory else None
-        )
+        # First create the basic config from CLI args
+        config = cls._create_from_cli_args(args)
 
-        # Process input file
-        input_file = Path(args.input_file).resolve() if args.input_file else None
+        # Then apply preset overrides if presets are enabled
+        if not config.preset.disable_presets and config.preset.preset_files:
+            config = cls._apply_preset_overrides(config, args)
 
-        # Process include files
+        # Validate that we have required inputs after preset application
+        if not config.source_directory and not config.input_file:
+            raise ValueError(
+                "At least one of source_directory or input_file must be provided "
+                "(either via CLI arguments or preset configuration)"
+            )
+
+        # Validate output_file - it should not be the default dummy value
+        if config.output.output_file == Path("output.txt"):
+            raise ValueError(
+                "output_file must be provided (either via -o CLI argument or preset configuration)"
+            )
+
+        return config
+
+    @classmethod
+    def _create_from_cli_args(cls, args: argparse.Namespace) -> Config:
+        """Create initial configuration from CLI arguments."""
+        # Process source directory with path traversal validation
+        source_dir = None
+        if args.source_directory:
+            resolved_path = Path(args.source_directory).resolve()
+            source_dir = validate_path_traversal(resolved_path)
+
+        # Process input file with path traversal validation
+        input_file = None
+        if args.input_file:
+            resolved_path = Path(args.input_file).resolve()
+            input_file = validate_path_traversal(resolved_path)
+
+        # Process include files with path traversal validation
         include_files = []
         if hasattr(args, "input_include_files") and args.input_include_files:
-            include_files = [Path(f).resolve() for f in args.input_include_files]
+            for f in args.input_include_files:
+                resolved_path = Path(f).resolve()
+                validated_path = validate_path_traversal(resolved_path)
+                include_files.append(validated_path)
 
-        # Create output configuration
+        # Create output configuration with path traversal validation
+        # Output paths are allowed to be outside the base directory
+        output_file_path = None
+        if args.output_file:
+            resolved_path = Path(args.output_file).resolve()
+            output_file_path = validate_path_traversal(
+                resolved_path, allow_outside=True
+            )
         output_config = OutputConfig(
-            output_file=Path(args.output_file).resolve(),
+            output_file=output_file_path
+            or Path("output.txt"),  # Default if not provided
             add_timestamp=args.add_timestamp,
             filename_mtime_hash=getattr(args, "filename_mtime_hash", False),
             force_overwrite=args.force,
@@ -181,6 +225,9 @@ class Config:
             skip_output_file=getattr(args, "skip_output_file", False),
             separator_style=SeparatorStyle(args.separator_style),
             line_ending=LineEnding.from_str(args.line_ending),
+            enable_content_deduplication=not getattr(
+                args, "allow_duplicate_files", False
+            ),
         )
 
         # Parse max file size if provided
@@ -195,11 +242,8 @@ class Config:
         filter_config = FilterConfig(
             exclude_paths=set(getattr(args, "exclude_paths", [])),
             exclude_patterns=getattr(args, "excludes", []),
-            exclude_paths_file=(
-                Path(args.exclude_paths_file)
-                if getattr(args, "exclude_paths_file", None)
-                else None
-            ),
+            exclude_paths_file=getattr(args, "exclude_paths_file", None),
+            include_paths_file=getattr(args, "include_paths_file", None),
             include_extensions=set(
                 normalize_extensions(getattr(args, "include_extensions", []))
             ),
@@ -218,6 +262,9 @@ class Config:
         encoding_config = EncodingConfig(
             target_charset=getattr(args, "convert_to_charset", None),
             abort_on_error=getattr(args, "abort_on_encoding_error", False),
+            prefer_utf8_for_text_files=not getattr(
+                args, "no_prefer_utf8_for_text_files", False
+            ),
         )
 
         # Create security configuration
@@ -238,10 +285,13 @@ class Config:
             verbose=args.verbose, quiet=getattr(args, "quiet", False)
         )
 
-        # Create preset configuration
+        # Create preset configuration with path traversal validation
         preset_files = []
         if hasattr(args, "preset_files") and args.preset_files:
-            preset_files = [Path(f).resolve() for f in args.preset_files]
+            for f in args.preset_files:
+                resolved_path = Path(f).resolve()
+                validated_path = validate_path_traversal(resolved_path)
+                preset_files.append(validated_path)
 
         preset_config = PresetConfig(
             preset_files=preset_files,
@@ -260,6 +310,144 @@ class Config:
             archive=archive_config,
             logging=logging_config,
             preset=preset_config,
+        )
+
+    @classmethod
+    def _apply_preset_overrides(
+        cls, config: Config, args: argparse.Namespace
+    ) -> Config:
+        """Apply preset overrides to configuration."""
+        from .presets import load_presets
+
+        # Load presets
+        preset_manager = load_presets(config.preset.preset_files)
+        global_settings = preset_manager.get_global_settings()
+
+        if not global_settings:
+            return config
+
+        # Apply overrides - CLI arguments take precedence over presets
+
+        # Input/Output overrides
+        source_dir = config.source_directory
+        input_file = config.input_file
+        output_file = config.output.output_file
+        input_include_files = config.input_include_files
+
+        # Only override if not provided via CLI (with path traversal validation)
+        # Paths from presets are trusted
+        if not args.source_directory and global_settings.source_directory:
+            resolved_path = Path(global_settings.source_directory).resolve()
+            source_dir = validate_path_traversal(resolved_path, from_preset=True)
+
+        if not args.input_file and global_settings.input_file:
+            resolved_path = Path(global_settings.input_file).resolve()
+            input_file = validate_path_traversal(resolved_path, from_preset=True)
+
+        # Only override output_file if not provided via CLI
+        if not args.output_file and global_settings.output_file:
+            resolved_path = Path(global_settings.output_file).resolve()
+            output_file = validate_path_traversal(resolved_path, allow_outside=True)
+
+        if not args.input_include_files and global_settings.input_include_files:
+            if isinstance(global_settings.input_include_files, str):
+                resolved_path = Path(global_settings.input_include_files).resolve()
+                validated_path = validate_path_traversal(
+                    resolved_path, from_preset=True
+                )
+                input_include_files = [validated_path]
+            else:
+                input_include_files = []
+                for f in global_settings.input_include_files:
+                    resolved_path = Path(f).resolve()
+                    validated_path = validate_path_traversal(
+                        resolved_path, from_preset=True
+                    )
+                    input_include_files.append(validated_path)
+
+        # Create new OutputConfig with overrides
+        output_config = OutputConfig(
+            output_file=output_file,
+            add_timestamp=(
+                args.add_timestamp
+                if args.add_timestamp
+                else (global_settings.add_timestamp or False)
+            ),
+            filename_mtime_hash=getattr(args, "filename_mtime_hash", False)
+            or (global_settings.filename_mtime_hash or False),
+            force_overwrite=(
+                args.force if args.force else (global_settings.force or False)
+            ),
+            minimal_output=getattr(args, "minimal_output", False)
+            or (global_settings.minimal_output or False),
+            skip_output_file=getattr(args, "skip_output_file", False)
+            or (global_settings.skip_output_file or False),
+            separator_style=(
+                SeparatorStyle(args.separator_style)
+                if args.separator_style != "Detailed"
+                else (
+                    SeparatorStyle(global_settings.separator_style)
+                    if global_settings.separator_style
+                    else SeparatorStyle.DETAILED
+                )
+            ),
+            line_ending=(
+                LineEnding.from_str(args.line_ending)
+                if args.line_ending != "lf"
+                else (
+                    LineEnding.from_str(global_settings.line_ending)
+                    if global_settings.line_ending
+                    else LineEnding.LF
+                )
+            ),
+            parallel=config.output.parallel,  # Keep existing value
+            enable_content_deduplication=(
+                not getattr(args, "allow_duplicate_files", False)
+                if hasattr(args, "allow_duplicate_files")
+                and getattr(args, "allow_duplicate_files", False)
+                else (
+                    global_settings.enable_content_deduplication
+                    if global_settings.enable_content_deduplication is not None
+                    else config.output.enable_content_deduplication
+                )
+            ),
+        )
+
+        # Create new ArchiveConfig with overrides
+        archive_config = ArchiveConfig(
+            create_archive=getattr(args, "create_archive", False)
+            or (global_settings.create_archive or False),
+            archive_type=(
+                ArchiveType(getattr(args, "archive_type", "zip"))
+                if getattr(args, "archive_type", "zip") != "zip"
+                else (
+                    ArchiveType(global_settings.archive_type)
+                    if global_settings.archive_type
+                    else ArchiveType.ZIP
+                )
+            ),
+        )
+
+        # Create new LoggingConfig with overrides
+        logging_config = LoggingConfig(
+            verbose=(
+                args.verbose if args.verbose else (global_settings.verbose or False)
+            ),
+            quiet=getattr(args, "quiet", False) or (global_settings.quiet or False),
+        )
+
+        # Return new config with overrides applied
+        return cls(
+            source_directory=source_dir,
+            input_file=input_file,
+            input_include_files=input_include_files,
+            output=output_config,
+            filter=config.filter,  # Filter settings are handled separately in FileProcessor
+            encoding=config.encoding,  # Encoding settings are handled separately
+            security=config.security,  # Security settings are handled separately
+            archive=archive_config,
+            logging=logging_config,
+            preset=config.preset,
         )
 
 

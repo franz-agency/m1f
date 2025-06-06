@@ -1,190 +1,227 @@
-# m1f - Make One File
+# m1f - Make One File 🚀
 
-A powerful suite of tools for working efficiently with Large Language Models
-(LLMs) and AI, developed by [Franz und Franz](https://franz.agency).
+**Feed your AI the whole story.** A powerful toolkit that turns messy codebases
+into AI-ready context bundles.
 
-## Project Overview
+## What's This?
 
-m1f provides utilities for efficiently working with LLMs by managing context.
-The core tools are:
+Ever tried explaining your entire project to Claude or ChatGPT? Yeah, that's
+what we thought. m1f makes it stupid simple to bundle your code, docs, and
+whatever else into perfectly digestible chunks for LLMs.
 
-- **m1f (Make One File)**: Combines multiple project files into a single
-  reference file for providing comprehensive context to LLMs
-- **s1f (Split One File)**: Extracts individual files from a combined file,
-  preserving original structure
-- **webscraper**: Downloads websites for offline viewing and processing
-- **html2md**: Modern HTML to Markdown converter with HTML analysis capabilities
-- **token_counter**: Estimates token usage for LLM context planning and
-  optimization
+## The Squad
 
-These tools solve the challenge of providing comprehensive context to AI
-assistants while optimizing token usage.
+### 🎯 **m1f** - The Bundler
+
+Combines multiple files into a single, AI-friendly mega-file. Smart enough to
+deduplicate content, handle any encoding, and even scan for secrets. Because
+nobody wants their API keys in a ChatGPT conversation.
+
+```bash
+# Bundle your entire project (but smart about it)
+m1f -s ./your-project -o context.txt --preset wordpress
+```
+
+### ✂️ **m1f-s1f** - The Splitter
+
+Extracts files back from bundles. Perfect for when your AI assistant generates
+that perfect codebase and you need it back in actual files.
+
+```bash
+# Unbundle that AI-generated masterpiece
+m1f-s1f -i bundle.txt -d ./extracted
+```
+
+### 🌐 **m1f-scrape** - The Collector
+
+Downloads entire websites for offline processing. Multiple backends for
+different scenarios - from simple HTML to JavaScript-heavy SPAs.
+
+```bash
+# Grab those docs
+m1f-scrape https://docs.example.com -o ./html --scraper playwright
+```
+
+### 📝 **m1f-html2md** - The Converter
+
+Transforms HTML into clean Markdown. Analyzes structure, suggests optimal
+selectors, and handles even the messiest enterprise documentation.
+
+```bash
+# Make it readable
+m1f-html2md convert ./html -o ./markdown --content-selector "article"
+```
+
+### 🔢 **m1f-token-counter** - The Calculator
+
+Counts tokens before you hit those pesky context limits. Support for all major
+LLM encodings.
+
+```bash
+# Will it fit?
+m1f-token-counter ./bundle.txt
+```
+
+## Real-World Magic
+
+### Feed Documentation to Your AI Assistant
+
+```bash
+# Download → Convert → Bundle → Profit
+m1f-scrape https://react.dev -o ./react-html
+m1f-html2md convert ./react-html -o ./react-md
+m1f -s ./react-md -o react-docs-for-claude.txt
+```
+
+### Smart WordPress Development
+
+```bash
+# Bundle your theme with intelligent filtering
+m1f -s ./wp-content/themes/mytheme -o theme-context.txt \
+    --preset presets/wordpress.m1f-presets.yml
+```
+
+### Auto-Bundle Your Project
+
+```bash
+# Set it and forget it
+m1f-update
+# Or watch for changes
+./scripts/watch_and_bundle.sh
+```
+
+## Why You'll Love It
+
+- **🧠 AI-First**: Built specifically for LLM context windows
+- **⚡ Fast AF**: Async I/O, parallel processing, the works
+- **🎨 Presets**: WordPress, web projects, documentation - we got you
+- **🔒 Security**: Automatic secret detection (because accidents happen)
+- **📦 All-in-One**: Download, convert, bundle, done
 
 ## Quick Start
 
-For the recommended development workflow and setup instructions, see the
-[M1F Development Workflow](docs/01_m1f/04_m1f_development_workflow.md) guide.
-This includes:
-
-- Setting up convenient shell aliases for global access
-- Using pre-generated m1f bundles in your projects
-- Development best practices
-
-## Features
-
-### Content Deduplication
-
-m1f automatically detects files with identical content and only includes them
-once in the output. If the same file content appears in multiple locations
-(different paths, filenames, or timestamps), only the first encountered version
-will be included. This:
-
-- Reduces redundancy in the combined output
-- Decreases the token count for LLM processing
-- Improves readability by eliminating duplicate sections
-- Works automatically without requiring any special flags
-
-This feature is especially useful in projects with:
-
-- Code duplication across different directories
-- Backup copies with identical content
-- Files accessible through symbolic links or alternative paths
-
-The deduplication is based purely on file content (using SHA256 checksums), so
-even files with different names, paths, or modification times will be
-deduplicated if their content is identical.
-
-### Web Scraping and HTML Conversion
-
-The toolkit now separates web scraping from HTML-to-Markdown conversion for
-better modularity. The primary use case is downloading online documentation to
-provide to LLMs like Claude.
-
-#### webscraper
-
-Downloads websites (especially documentation) for offline processing:
+### Linux/macOS (3 commands)
 
 ```bash
-# Download a documentation website
-python -m tools.webscraper https://docs.example.com -o ./downloaded_html
-
-# Advanced options for larger documentation sites
-python -m tools.webscraper https://docs.example.com -o ./html \
-  --max-pages 50 \
-  --max-depth 3 \
-  --scraper beautifulsoup
-```
-
-Supported scrapers: beautifulsoup (default), httrack, scrapy, playwright,
-selectolax
-
-#### html2md
-
-Converts HTML files to Markdown with intelligent content extraction:
-
-```bash
-# Convert HTML directory to Markdown
-python -m tools.html2md convert ./downloaded_html -o ./markdown
-
-# Analyze HTML structure to find best selectors
-python -m tools.html2md analyze ./html/*.html --suggest-selectors
-
-# Convert with specific content extraction
-python -m tools.html2md convert ./html -o ./md \
-  --content-selector "article.post" \
-  --ignore-selectors "nav" ".sidebar" ".ads"
-```
-
-#### Complete Workflow: Documentation for LLMs
-
-```bash
-# 1. Download documentation
-python -m tools.webscraper https://docs.framework.com -o ./docs_html
-
-# 2. Convert to Markdown
-python -m tools.html2md convert ./docs_html -o ./docs_md
-
-# 3. Bundle into single file for LLM
-python -m tools.m1f -s ./docs_md -o ./framework_docs.txt
-
-# Now framework_docs.txt can be provided to Claude or other LLMs
-```
-
-### HTML2MD Integration with m1f
-
-m1f includes enhanced support for working with HTML-to-Markdown converted
-content:
-
-- **Metadata Cleaning**: Use `--remove-scraped-metadata` to automatically remove
-  URL, timestamp, and source information from scraped HTML2MD files
-- **Clean Documentation Bundles**: Combine multiple scraped websites into clean,
-  professional documentation without scraping artifacts
-- **LLM-Ready Content**: Prepare web content for AI analysis by removing
-  time-specific metadata that may confuse models
-
-### Preset System
-
-m1f includes a powerful preset system for applying different processing rules to
-different file types:
-
-- **Hierarchical Configuration**: Global (~/.m1f/) → User → Project settings
-- **File-Specific Processing**: Different rules for HTML, CSS, JS, Python, etc.
-- **Built-in Actions**: Minify, strip tags, remove comments, compress whitespace
-- **Custom Processors**: Truncate large files, redact secrets, extract functions
-- **Example Presets**: WordPress, web projects, documentation bundles
-
-```bash
-# Use WordPress preset for a WordPress site
-python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
-
-# Apply production optimizations
-python -m tools.m1f -s ./project -o bundle.txt --preset prod.yml --preset-group production
-```
-
-See [Preset System Guide](docs/01_m1f/02_m1f_presets.md) for detailed
-documentation.
-
-## Installation
-
-```bash
-# Clone the repository
 git clone https://github.com/franzundfriends/m1f.git
 cd m1f
-
-# Create and activate a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+source ./scripts/install.sh
 ```
 
-### Optional: Claude Code Integration
+### Windows (3 commands + restart)
 
-For AI-powered automation of m1f tools, you can install Claude Code:
+```powershell
+git clone https://github.com/franzundfriends/m1f.git
+cd m1f
+.\scripts\install.ps1
+# Restart PowerShell or run: . $PROFILE
+```
+
+That's it! ✨ The installer handles everything:
+
+- ✅ Checks Python 3.10+
+- ✅ Creates virtual environment
+- ✅ Installs all dependencies
+- ✅ Generates initial bundles
+- ✅ Sets up global commands
+
+Test it:
 
 ```bash
-npm install -g @anthropic-ai/claude-code
+m1f --help
+m1f-update
 ```
 
-This enables natural language control of all tools. For example:
+## Pro Tips
 
-- "Bundle all Python files into a single m1f"
-- "Convert HTML documentation to Markdown with preprocessing"
-- "Create topic-based bundles from documentation"
+- Start small: Test with a few files before going wild
+- Use presets: They're there for a reason
+- Check token counts: Your LLM will thank you
+- Read the docs: Seriously, they're pretty good
 
-See [Claude Code Integration Guide](docs/01_m1f/05_claude_code_integration.md)
-for setup and usage.
+## Real Example: Scraping Claude's Documentation 🤖
 
-## Documentation
+Want to give Claude its own documentation? Here's how to scrape, process, and
+bundle the Anthropic docs:
 
-For detailed documentation, please check the [docs directory](./docs/README.md).
+### The Full Pipeline
+
+```bash
+# 1. Download Claude's documentation
+m1f-scrape https://docs.anthropic.com -o ./claude-docs-html \
+  --max-pages 200 \
+  --max-depth 4 \
+  --request-delay 1.0
+
+# 2. Analyze the HTML structure to find the best selectors
+m1f-html2md analyze ./claude-docs-html/*.html --suggest-selectors
+
+# 3. Convert to clean Markdown (adjust selectors based on analysis)
+m1f-html2md convert ./claude-docs-html -o ./claude-docs-md \
+  --content-selector "main.docs-content, article.documentation" \
+  --ignore-selectors "nav" ".sidebar" ".footer" ".search-box"
+
+# 4. Create the mega-bundle for Claude
+m1f -s ./claude-docs-md -o claude-documentation.txt \
+  --remove-scraped-metadata \
+  --separator-style MachineReadable
+
+# 5. Check if it fits (Claude can handle 200k tokens)
+m1f-token-counter ./claude-documentation.txt
+```
+
+### Or Use the One-Liner Pro Move™
+
+```bash
+# Configure once
+cat > claude-docs-config.yml << EOF
+bundles:
+  claude-docs:
+    description: "Claude API Documentation"
+    output: ".ai-context/claude-complete-docs.txt"
+    sources:
+      - path: "./claude-docs-md"
+        include_extensions: [".md"]
+    separator_style: "MachineReadable"
+    priority: "high"
+EOF
+
+# Then auto-bundle whenever you need fresh docs
+./scripts/auto_bundle.sh claude-docs
+```
+
+### The Result?
+
+Now you can literally tell Claude: "Hey, here's your complete documentation" and
+paste the entire context. Perfect for:
+
+- Building Claude-powered tools with accurate API knowledge
+- Creating Claude integration guides
+- Having Claude help debug its own API calls
+- Getting Claude to write better prompts for itself (meta!)
+
+```bash
+# Example usage in your prompt:
+"Based on your documentation below, help me implement a streaming response handler:
+[contents of claude-documentation.txt]"
+```
+
+### Pro tip: Keep It Fresh 🌿
+
+Set up a weekly cron job to re-scrape and rebuild:
+
+```bash
+# Add to your crontab
+0 0 * * 0 cd /path/to/m1f && ./scripts/scrape-claude-docs.sh
+```
+
+Where `scrape-claude-docs.sh` contains the full pipeline above.
 
 ## License
 
-This project is licensed under the Apache 2.0 License. See the
-[LICENSE](LICENSE) file for details.
+Apache 2.0 - Go wild, just don't blame us.
 
-## Contributing
+---
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to
+robots.

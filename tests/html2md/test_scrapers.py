@@ -1,3 +1,17 @@
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Tests for web scraper backends."""
 
 import asyncio
@@ -5,28 +19,28 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 
-from tools.webscraper.scrapers import create_scraper, ScraperConfig, SCRAPER_REGISTRY
-from tools.webscraper.scrapers.base import ScrapedPage
-from tools.webscraper.scrapers.beautifulsoup import BeautifulSoupScraper
-from tools.webscraper.scrapers.httrack import HTTrackScraper
+from tools.scrape_tool.scrapers import create_scraper, ScraperConfig, SCRAPER_REGISTRY
+from tools.scrape_tool.scrapers.base import ScrapedPage
+from tools.scrape_tool.scrapers.beautifulsoup import BeautifulSoupScraper
+from tools.scrape_tool.scrapers.httrack import HTTrackScraper
 
 # Import new scrapers conditionally
 try:
-    from tools.webscraper.scrapers.selectolax import SelectolaxScraper
+    from tools.scrape_tool.scrapers.selectolax import SelectolaxScraper
 
     SELECTOLAX_AVAILABLE = True
 except ImportError:
     SELECTOLAX_AVAILABLE = False
 
 try:
-    from tools.webscraper.scrapers.scrapy_scraper import ScrapyScraper
+    from tools.scrape_tool.scrapers.scrapy_scraper import ScrapyScraper
 
     SCRAPY_AVAILABLE = True
 except ImportError:
     SCRAPY_AVAILABLE = False
 
 try:
-    from tools.webscraper.scrapers.playwright import PlaywrightScraper
+    from tools.scrape_tool.scrapers.playwright import PlaywrightScraper
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -160,33 +174,36 @@ class TestBeautifulSoupScraper:
             assert page.encoding == "utf-8"
             assert page.status_code == 200
 
-    def test_validate_url(self, scraper):
+    @pytest.mark.asyncio
+    async def test_validate_url(self, scraper):
         """Test URL validation."""
         # Valid URLs
-        assert scraper.validate_url("https://example.com") is True
-        assert scraper.validate_url("http://example.com/page") is True
+        assert await scraper.validate_url("https://example.com") is True
+        assert await scraper.validate_url("http://example.com/page") is True
 
         # Invalid URLs
-        assert scraper.validate_url("ftp://example.com") is False
-        assert scraper.validate_url("javascript:alert()") is False
-        assert scraper.validate_url("mailto:test@example.com") is False
+        assert await scraper.validate_url("ftp://example.com") is False
+        assert await scraper.validate_url("javascript:alert()") is False
+        assert await scraper.validate_url("mailto:test@example.com") is False
 
-    def test_validate_url_with_allowed_domains(self, scraper):
+    @pytest.mark.asyncio
+    async def test_validate_url_with_allowed_domains(self, scraper):
         """Test URL validation with allowed domains."""
         scraper.config.allowed_domains = ["example.com", "test.com"]
 
-        assert scraper.validate_url("https://example.com/page") is True
-        assert scraper.validate_url("https://test.com/page") is True
-        assert scraper.validate_url("https://other.com/page") is False
+        assert await scraper.validate_url("https://example.com/page") is True
+        assert await scraper.validate_url("https://test.com/page") is True
+        assert await scraper.validate_url("https://other.com/page") is False
 
-    def test_validate_url_with_exclude_patterns(self, scraper):
+    @pytest.mark.asyncio
+    async def test_validate_url_with_exclude_patterns(self, scraper):
         """Test URL validation with exclude patterns."""
         scraper.config.exclude_patterns = ["/admin/", ".pdf", "private"]
 
-        assert scraper.validate_url("https://example.com/page") is True
-        assert scraper.validate_url("https://example.com/admin/page") is False
-        assert scraper.validate_url("https://example.com/file.pdf") is False
-        assert scraper.validate_url("https://example.com/private/data") is False
+        assert await scraper.validate_url("https://example.com/page") is True
+        assert await scraper.validate_url("https://example.com/admin/page") is False
+        assert await scraper.validate_url("https://example.com/file.pdf") is False
+        assert await scraper.validate_url("https://example.com/private/data") is False
 
 
 class TestHTTrackScraper:
@@ -225,7 +242,7 @@ class TestHTTrackScraper:
                 output_dir.mkdir(parents=True)
                 output_file = output_dir / "index.html"
                 output_file.write_text(test_html)
-                
+
                 async with scraper:
                     page = await scraper.scrape_url("https://example.com")
 
@@ -309,7 +326,7 @@ class TestSelectolaxScraper:
     def test_httpx_not_available(self):
         """Test error when httpx/selectolax not installed."""
         config = ScraperConfig()
-        with patch("tools.webscraper.scrapers.selectolax.HTTPX_AVAILABLE", False):
+        with patch("tools.scrape_tool.scrapers.selectolax.HTTPX_AVAILABLE", False):
             with pytest.raises(ImportError, match="httpx and selectolax are required"):
                 SelectolaxScraper(config)
 
@@ -327,7 +344,7 @@ class TestScrapyScraper:
     def test_scrapy_not_available(self):
         """Test error when scrapy not installed."""
         config = ScraperConfig()
-        with patch("tools.webscraper.scrapers.scrapy_scraper.SCRAPY_AVAILABLE", False):
+        with patch("tools.scrape_tool.scrapers.scrapy_scraper.SCRAPY_AVAILABLE", False):
             with pytest.raises(ImportError, match="scrapy is required"):
                 ScrapyScraper(config)
 
@@ -365,7 +382,7 @@ class TestPlaywrightScraper:
     def test_playwright_not_available(self):
         """Test error when playwright not installed."""
         config = ScraperConfig()
-        with patch("tools.webscraper.scrapers.playwright.PLAYWRIGHT_AVAILABLE", False):
+        with patch("tools.scrape_tool.scrapers.playwright.PLAYWRIGHT_AVAILABLE", False):
             with pytest.raises(ImportError, match="playwright is required"):
                 PlaywrightScraper(config)
 

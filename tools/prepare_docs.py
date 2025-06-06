@@ -18,7 +18,7 @@ prepare_docs.py - Documentation Preparation Tool
 
 This script automates the process of converting HTML documentation to Markdown
 and maintaining the documentation structure. It works in conjunction with the
-html2md.py tool to provide a streamlined documentation workflow.
+mf1-html2md.py tool to provide a streamlined documentation workflow.
 
 Usage:
     python tools/prepare_docs.py --convert-html  # Convert HTML docs to Markdown
@@ -44,9 +44,11 @@ logger = logging.getLogger("prepare_docs")
 
 # Configuration
 BASE_DIR = Path(__file__).parent.parent
-HTML_DOCS_DIR = BASE_DIR / "tests" / "html2md" / "source" / "html"
-MD_DOCS_DIR = BASE_DIR / "tests" / "html2md" / "output" / "markdown"
-BUNDLE_OUTPUT = BASE_DIR / "tests" / "html2md" / "output" / "documentation-bundle.md"
+HTML_DOCS_DIR = BASE_DIR / "tests" / "mf1-html2md" / "source" / "html"
+MD_DOCS_DIR = BASE_DIR / "tests" / "mf1-html2md" / "output" / "markdown"
+BUNDLE_OUTPUT = (
+    BASE_DIR / "tests" / "mf1-html2md" / "output" / "documentation-bundle.md"
+)
 
 
 def ensure_dir(directory: Path) -> None:
@@ -57,7 +59,7 @@ def ensure_dir(directory: Path) -> None:
 
 
 def convert_html_to_markdown() -> bool:
-    """Convert HTML documentation to Markdown using html2md.py.
+    """Convert HTML documentation to Markdown using mf1-html2md.py.
 
     Returns:
         bool: True if conversion was successful, False otherwise
@@ -78,8 +80,8 @@ def convert_html_to_markdown() -> bool:
         )
         return False
 
-    # Build command for html2md.py
-    html2md_script = BASE_DIR / "tools" / "html2md.py"
+    # Build command for mf1-html2md.py
+    html2md_script = BASE_DIR / "tools" / "mf1-html2md.py"
 
     if not html2md_script.exists():
         logger.error(f"HTML to Markdown conversion script not found: {html2md_script}")
@@ -116,7 +118,7 @@ def convert_html_to_markdown() -> bool:
         # Print any output from the command
         if result.stdout:
             for line in result.stdout.splitlines():
-                logger.info(f"html2md: {line}")
+                logger.info(f"mf1-html2md: {line}")
 
         return True
 

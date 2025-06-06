@@ -41,6 +41,7 @@ try:
     from tools.m1f.core import FileCombiner
     from tools.m1f.exceptions import M1FError
     from tools.m1f.logging import setup_logging, get_logger
+    from tools.m1f.auto_bundle import AutoBundler
 except ImportError:
     # Fallback for direct script execution
     from m1f.cli import create_parser, parse_args
@@ -48,9 +49,16 @@ except ImportError:
     from m1f.core import FileCombiner
     from m1f.exceptions import M1FError
     from m1f.logging import setup_logging, get_logger
+    from m1f.auto_bundle import AutoBundler
 
 
-__version__ = "3.0.0"
+try:
+    from _version import __version__, __version_info__
+except ImportError:
+    # Fallback for when running as a script
+    __version__ = "3.2.0"
+    __version_info__ = (3, 2, 0)
+
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
 
@@ -58,6 +66,46 @@ __project__ = "https://m1f.dev"
 async def async_main() -> int:
     """Async main function for the application."""
     try:
+        # Check if we're running auto-bundle command
+        if len(sys.argv) > 1 and sys.argv[1] == "auto-bundle":
+            # Handle auto-bundle subcommand
+            import argparse
+
+            parser = argparse.ArgumentParser(
+                prog="m1f auto-bundle", description="Auto-bundle functionality for m1f"
+            )
+            parser.add_argument(
+                "bundle_name", nargs="?", help="Name of specific bundle to create"
+            )
+            parser.add_argument(
+                "--list", action="store_true", help="List available bundles"
+            )
+            parser.add_argument(
+                "--group",
+                "-g",
+                type=str,
+                help="Only create bundles from specified group",
+            )
+            parser.add_argument(
+                "-v", "--verbose", action="store_true", help="Enable verbose output"
+            )
+            parser.add_argument(
+                "-q", "--quiet", action="store_true", help="Suppress all console output"
+            )
+
+            # Parse auto-bundle args
+            args = parser.parse_args(sys.argv[2:])
+
+            # Create and run auto-bundler
+            bundler = AutoBundler(Path.cwd(), verbose=args.verbose, quiet=args.quiet)
+            success = bundler.run(
+                bundle_name=args.bundle_name,
+                list_bundles=args.list,
+                bundle_group=args.group,
+            )
+            return 0 if success else 1
+
+        # Regular m1f execution
         # Parse command line arguments
         parser = create_parser()
         args = parse_args(parser)

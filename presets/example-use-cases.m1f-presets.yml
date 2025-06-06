@@ -172,7 +172,41 @@ web_project_complete:
       max_file_size: "50KB"  # Only include small vendor files
       security_check: null  # Don't check vendor code
 
+# v3.2 feature example: Control deduplication and encoding
+v3_2_features:
+  description: "Demonstrating v3.2 features"
+  priority: 20
+  
+  global_settings:
+    # v3.2: Control content deduplication
+    enable_content_deduplication: false  # Include duplicate files
+    
+    # v3.2: Control UTF-8 preference
+    prefer_utf8_for_text_files: false  # Use detected encoding
+    
+    
+    # v3.2: Enhanced security options
+    security_check: "error"  # Strictest mode
+  
+  presets:
+    # Legacy encoding files
+    legacy_files:
+      patterns:
+        - "legacy/**/*.txt"
+        - "legacy/**/*.md"
+      # Will use windows-1252 if detected, not force UTF-8
+      prefer_utf8_for_text_files: false
+    
+    # Test files that might have duplicates
+    test_files:
+      patterns:
+        - "test/**/*"
+        - "tests/**/*"
+      # Allow duplicate test fixtures
+      enable_content_deduplication: false
+
 # Usage examples:
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
+# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group v3_2_features

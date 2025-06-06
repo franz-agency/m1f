@@ -62,7 +62,8 @@ class OutputWriter:
         self.encoding_handler = EncodingHandler(config, logger_manager)
         self.separator_generator = SeparatorGenerator(config, logger_manager)
         self._processed_checksums: Set[str] = set()
-        self._content_dedupe: bool = True  # Enable content deduplication by default
+        self._content_dedupe: bool = config.output.enable_content_deduplication
+        self._checksum_lock = asyncio.Lock()  # Lock for thread-safe checksum operations
 
     def _apply_global_settings(self, config: Config) -> Config:
         """Apply global preset settings to config if not already set."""
@@ -102,6 +103,15 @@ class OutputWriter:
             )
             self.logger.debug(
                 f"Applied global abort_on_encoding_error: {self.global_settings.abort_on_encoding_error}"
+            )
+
+        if self.global_settings.prefer_utf8_for_text_files is not None:
+            encoding_config = replace(
+                encoding_config,
+                prefer_utf8_for_text_files=self.global_settings.prefer_utf8_for_text_files,
+            )
+            self.logger.debug(
+                f"Applied global prefer_utf8_for_text_files: {self.global_settings.prefer_utf8_for_text_files}"
             )
 
         # Apply separator style if global setting exists
@@ -168,12 +178,18 @@ class OutputWriter:
             return content
 
         # Pattern to match scraped metadata at the end of the file
-        # Looks for a horizontal rule followed by scraped metadata
+        # More flexible pattern that handles variations in formatting
         pattern = (
-            r"\n\n---\n\n"
-            r"\*Scraped from:.*?\*\n\n"
-            r"\*Scraped at:.*?\*\n\n"
-            r"\*Source URL:.*?\*\s*$"
+            r"\n{1,3}"  # 1-3 newlines
+            r"(?:---|===|\*\*\*){1}\n{1,2}"  # Any horizontal rule style
+            r"(?:\*{1,2}|_)?"  # Optional emphasis markers
+            r"Scraped (?:from|URL):.*?"  # Scraped from or URL
+            r"(?:\*{1,2}|_)?\n{1,2}"  # Optional emphasis and newlines
+            r"(?:\*{1,2}|_)?"  # Optional emphasis markers
+            r"Scraped (?:at|date|time):.*?"  # Various date/time labels
+            r"(?:\*{1,2}|_)?\n{0,2}"  # Optional emphasis and newlines
+            r"(?:(?:\*{1,2}|_)?Source URL:.*?(?:\*{1,2}|_)?\n{0,2})?"  # Optional source URL
+            r"\s*$"  # Trailing whitespace at end
         )
 
         # Remove the metadata if found
@@ -197,6 +213,16 @@ class OutputWriter:
         # Combine include files with regular files
         all_files = include_files + files_to_process
 
+        # Use parallel processing if enabled and have multiple files
+        if self.config.output.parallel and len(all_files) > 1:
+            return await self._write_combined_file_parallel(output_path, all_files)
+        else:
+            return await self._write_combined_file_sequential(output_path, all_files)
+
+    async def _write_combined_file_sequential(
+        self, output_path: Path, all_files: List[Tuple[Path, str]]
+    ) -> int:
+        """Write all files sequentially (original implementation)."""
         try:
             # Open output file
             output_encoding = self.config.encoding.target_charset or "utf-8"
@@ -226,6 +252,200 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+
+    async def _write_combined_file_parallel(
+        self, output_path: Path, all_files: List[Tuple[Path, str]]
+    ) -> int:
+        """Write all files using parallel processing for reading."""
+        self.logger.info("Using parallel processing for file reading...")
+
+        try:
+            # Process files in batches to avoid too many concurrent operations
+            batch_size = 10  # Process 10 files concurrently
+
+            # First, read and process all files in parallel
+            processed_files = []
+
+            for batch_start in range(0, len(all_files), batch_size):
+                batch_end = min(batch_start + batch_size, len(all_files))
+                batch = all_files[batch_start:batch_end]
+
+                # Create tasks for parallel processing
+                tasks = []
+                for i, (file_path, rel_path) in enumerate(batch, batch_start + 1):
+                    # Skip if output file itself
+                    if file_path.resolve() == output_path.resolve():
+                        self.logger.warning(f"Skipping output file itself: {file_path}")
+                        continue
+
+                    task = self._process_single_file_parallel(
+                        file_path, rel_path, i, len(all_files)
+                    )
+                    tasks.append(task)
+
+                # Process batch concurrently
+                batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                # Collect successful results
+                for j, result in enumerate(batch_results):
+                    if isinstance(result, Exception):
+                        # Log error but continue
+                        file_path, rel_path = batch[j]
+                        self.logger.error(f"Failed to process {file_path}: {result}")
+                    elif result is not None:
+                        processed_files.append((batch[j], result))
+
+            # Now write all processed files sequentially to maintain order
+            output_encoding = self.config.encoding.target_charset or "utf-8"
+
+            with open(
+                output_path,
+                "w",
+                encoding=output_encoding,
+                newline=self.config.output.line_ending.value,
+            ) as outfile:
+                files_written = 0
+
+                for i, ((file_path, rel_path), processed_data) in enumerate(
+                    processed_files
+                ):
+                    if processed_data:
+                        # Write the pre-processed content
+                        separator, content, separator_style = processed_data
+
+                        # Write separator
+                        outfile.write(separator)
+
+                        # Add blank line for some styles (between separator and content)
+                        if separator_style in [
+                            SeparatorStyle.STANDARD,
+                            SeparatorStyle.DETAILED,
+                            SeparatorStyle.MARKDOWN,
+                        ]:
+                            outfile.write(self.config.output.line_ending.value)
+
+                        # Write content
+                        outfile.write(content)
+
+                        # Ensure newline at end if needed
+                        if content and not content.endswith(("\n", "\r")):
+                            outfile.write(self.config.output.line_ending.value)
+
+                        # Write closing separator for Markdown
+                        if separator_style == SeparatorStyle.MARKDOWN:
+                            outfile.write("```")
+                            outfile.write(self.config.output.line_ending.value)
+
+                        # Add inter-file spacing if not last file
+                        if i < len(processed_files) - 1:
+                            outfile.write(self.config.output.line_ending.value)
+
+                        files_written += 1
+
+            return files_written
+
+        except IOError as e:
+            raise PermissionError(f"Cannot write to output file: {e}")
+
+    async def _process_single_file_parallel(
+        self, file_path: Path, rel_path: str, file_num: int, total_files: int
+    ) -> Optional[Tuple[str, str]]:
+        """Process a single file for parallel writing, returning separator and content."""
+        try:
+            # Log progress
+            if self.config.logging.verbose:
+                self.logger.debug(
+                    f"Processing file ({file_num}/{total_files}): {file_path.name}"
+                )
+
+            # Read file with encoding handling
+            content, encoding_info = await self.encoding_handler.read_file(file_path)
+
+            # Apply preset processing if available
+            preset = None
+            if self.preset_manager:
+                preset = self.preset_manager.get_preset_for_file(
+                    file_path, self.config.preset.preset_group
+                )
+                if preset:
+                    self.logger.debug(f"Applying preset to {file_path}")
+                    content = self.preset_manager.process_content(
+                        content, preset, file_path
+                    )
+
+            # Remove scraped metadata if requested
+            # Check file-specific override first
+            remove_metadata = self.config.filter.remove_scraped_metadata
+            if (
+                preset
+                and hasattr(preset, "remove_scraped_metadata")
+                and preset.remove_scraped_metadata is not None
+            ):
+                remove_metadata = preset.remove_scraped_metadata
+
+            if remove_metadata:
+                content = self._remove_scraped_metadata(content)
+
+            # Check for content deduplication
+            # Skip deduplication for symlinks when include_symlinks is enabled
+            skip_dedupe = self.config.filter.include_symlinks and file_path.is_symlink()
+
+            if (
+                self._content_dedupe
+                and not rel_path.startswith(("intro:", "include:"))
+                and not skip_dedupe
+            ):
+                content_checksum = calculate_checksum(content)
+
+                async with self._checksum_lock:
+                    if content_checksum in self._processed_checksums:
+                        self.logger.debug(f"Skipping duplicate content: {file_path}")
+                        return None
+
+                    self._processed_checksums.add(content_checksum)
+
+            # Generate separator
+            # Check if preset overrides separator style
+            separator_style = self.config.output.separator_style
+            if self.preset_manager and preset and preset.separator_style:
+                try:
+                    separator_style = SeparatorStyle(preset.separator_style)
+                except ValueError:
+                    self.logger.warning(
+                        f"Invalid separator style in preset: {preset.separator_style}"
+                    )
+
+            # Temporarily override separator style if needed
+            original_style = self.separator_generator.config.output.separator_style
+            if separator_style != original_style:
+                # Create a temporary config with the new style
+                from dataclasses import replace
+
+                temp_output = replace(
+                    self.separator_generator.config.output,
+                    separator_style=separator_style,
+                )
+                temp_config = replace(
+                    self.separator_generator.config, output=temp_output
+                )
+                self.separator_generator.config = temp_config
+
+            separator = await self.separator_generator.generate_separator(
+                file_path=file_path,
+                rel_path=rel_path,
+                encoding_info=encoding_info,
+                file_content=content,
+            )
+
+            # Restore original config if changed
+            if separator_style != original_style:
+                self.separator_generator.config = self.config
+
+            return (separator, content, separator_style)
+
+        except Exception as e:
+            self.logger.error(f"Error processing file {file_path}: {e}")
+            raise
 
     async def _prepare_include_files(self) -> List[Tuple[Path, str]]:
         """Prepare include files from configuration."""
@@ -289,14 +509,22 @@ class OutputWriter:
                 content = self._remove_scraped_metadata(content)
 
             # Check for content deduplication
-            if self._content_dedupe and not rel_path.startswith(("intro:", "include:")):
+            # Skip deduplication for symlinks when include_symlinks is enabled
+            skip_dedupe = self.config.filter.include_symlinks and file_path.is_symlink()
+
+            if (
+                self._content_dedupe
+                and not rel_path.startswith(("intro:", "include:"))
+                and not skip_dedupe
+            ):
                 content_checksum = calculate_checksum(content)
 
-                if content_checksum in self._processed_checksums:
-                    self.logger.debug(f"Skipping duplicate content: {file_path}")
-                    return False
+                async with self._checksum_lock:
+                    if content_checksum in self._processed_checksums:
+                        self.logger.debug(f"Skipping duplicate content: {file_path}")
+                        return False
 
-                self._processed_checksums.add(content_checksum)
+                    self._processed_checksums.add(content_checksum)
 
             # Generate separator
             # Check if preset overrides separator style
@@ -338,6 +566,11 @@ class OutputWriter:
             # Write separator
             if separator:
                 outfile.write(separator)
+
+                # For Markdown, ensure separator ends with newline before adding blank line
+                if self.config.output.separator_style == SeparatorStyle.MARKDOWN:
+                    if not separator.endswith(("\n", "\r\n", "\r")):
+                        outfile.write(self.config.output.line_ending.value)
 
                 # Add blank line for some styles
                 if self.config.output.separator_style in [

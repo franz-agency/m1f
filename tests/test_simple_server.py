@@ -15,7 +15,7 @@
 
 """
 Simple tests for the HTML2MD test server functionality.
-Tests the server endpoints without complex html2md integration.
+Tests the server endpoints without complex mf1-html2md integration.
 """
 
 import requests
@@ -163,7 +163,11 @@ class TestHTML2MDServer:
 
     def test_page_structure_for_conversion(self):
         """Test that pages have structure suitable for HTML to Markdown conversion."""
-        test_pages = ["m1f-documentation", "html2md-documentation", "complex-layout"]
+        test_pages = [
+            "m1f-documentation",
+            "html2md-documentation",
+            "complex-layout",
+        ]
 
         for page_name in test_pages:
             response = requests.get(f"{TEST_SERVER_URL}/page/{page_name}")

@@ -60,3 +60,14 @@ MACHINE_READABLE_BOUNDARY_PREFIX: str = "PYMK1F"
 
 # Token encoding name for tiktoken
 TOKEN_ENCODING_NAME: str = "cl100k_base"
+
+# ANSI color codes
+ANSI_COLORS = {
+    "HEADER": "\033[95m",
+    "BLUE": "\033[94m",
+    "GREEN": "\033[92m",
+    "YELLOW": "\033[93m",
+    "RED": "\033[91m",
+    "RESET": "\033[0m",
+    "BOLD": "\033[1m",
+}

@@ -1,0 +1,62 @@
+# Scrapy scraper configuration
+# Industrial-strength web scraping framework
+
+# Basic scraper settings
+max_depth: 10
+max_pages: 5000
+request_delay: 0.5
+concurrent_requests: 16  # Scrapy default
+respect_robots_txt: true
+timeout: 180.0
+
+# Scrapy-specific settings
+scrapy_config:
+  # Download settings
+  DOWNLOAD_DELAY: 0.5
+  RANDOMIZE_DOWNLOAD_DELAY: true
+  DOWNLOAD_TIMEOUT: 30
+  
+  # Concurrent requests
+  CONCURRENT_REQUESTS: 16
+  CONCURRENT_REQUESTS_PER_DOMAIN: 8
+  
+  # Auto-throttle settings
+  AUTOTHROTTLE_ENABLED: true
+  AUTOTHROTTLE_START_DELAY: 0.5
+  AUTOTHROTTLE_MAX_DELAY: 10.0
+  AUTOTHROTTLE_TARGET_CONCURRENCY: 8.0
+  AUTOTHROTTLE_DEBUG: false
+  
+  # Retry settings
+  RETRY_ENABLED: true
+  RETRY_TIMES: 3
+  RETRY_HTTP_CODES: [500, 502, 503, 504, 408, 429]
+  
+  # Cache settings
+  HTTPCACHE_ENABLED: true
+  HTTPCACHE_EXPIRATION_SECS: 3600
+  HTTPCACHE_IGNORE_HTTP_CODES: [503, 504, 400, 403, 404]
+  
+  # Middleware settings
+  COOKIES_ENABLED: true
+  REDIRECT_ENABLED: true
+  REDIRECT_MAX_TIMES: 5
+  
+  # DNS settings
+  DNSCACHE_ENABLED: true
+  DNSCACHE_SIZE: 10000
+  DNS_TIMEOUT: 60
+  
+  # Memory usage control
+  MEMUSAGE_ENABLED: true
+  MEMUSAGE_LIMIT_MB: 2048
+  MEMUSAGE_WARNING_MB: 1536
+  
+  # Depth control
+  DEPTH_PRIORITY: 1
+  SCHEDULER_DISK_QUEUE: 'scrapy.squeues.PickleFifoDiskQueue'
+  SCHEDULER_MEMORY_QUEUE: 'scrapy.squeues.FifoMemoryQueue'
+
+# Example usage:
+# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+#   --scraper scrapy --scraper-config scrapy.yaml

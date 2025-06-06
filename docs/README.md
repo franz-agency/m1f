@@ -1,12 +1,12 @@
 # m1f Documentation
 
-This directory contains detailed documentation for the m1f project v2.0.0.
+This directory contains detailed documentation for the m1f project v3.2.0.
 
 ## Contents
 
 ### Core Tools
 
-- [m1f (Make One File)](01_m1f/01_m1f.md) - Documentation for the main tool that
+- [m1f (Make One File)](01_m1f/00_m1f.md) - Documentation for the main tool that
   combines multiple files into a single file with content deduplication and
   async I/O
 - [s1f (Split One File)](02_s1f/20_s1f.md) - Documentation for the tool that
@@ -16,7 +16,7 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 
 ### Web Scraping and HTML Conversion
 
-- [webscraper](04_webscraper/40_webscraper.md) - Download websites for offline
+- [webscraper](04_scrape/40_webscraper.md) - Download websites for offline
   viewing and processing
 - [html2md Overview](03_html2md/30_html2md.md) - Comprehensive guide to the HTML
   to Markdown converter
@@ -27,14 +27,23 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 
 ### Advanced Features
 
-- [Auto Bundle Guide](01_m1f/06_auto_bundle_guide.md) - Automatic project
+- [Auto Bundle Guide](01_m1f/20_auto_bundle_guide.md) - Automatic project
   bundling for AI/LLM consumption
-- [Claude Code Integration](01_m1f/05_claude_code_integration.md) - Optional
+- [Claude + m1f Workflows](01_m1f/30_claude_workflows.md) - Turn Claude into
+  your personal m1f expert with smart prompt enhancement
+- [Claude Code Integration](01_m1f/31_claude_code_integration.md) - Optional
   AI-powered tool automation
-- [Preset System Guide](01_m1f/02_m1f_presets.md) - File-specific processing
+- [Preset System Guide](01_m1f/10_m1f_presets.md) - File-specific processing
   rules and configurations
-- [Per-File-Type Settings](01_m1f/03_m1f_preset_per_file_settings.md) -
-  Fine-grained control over file processing
+- [Per-File-Type Settings](01_m1f/11_preset_per_file_settings.md) - Fine-grained
+  control over file processing
+
+### Development
+
+- [Version Management](05_development/55_version_management.md) - Version
+  management and release process
+- [Git Hooks Setup](05_development/56_git_hooks_setup.md) - Git hooks for
+  automated bundling
 
 ## Quick Navigation
 
@@ -61,11 +70,11 @@ This directory contains detailed documentation for the m1f project v2.0.0.
 ### Key Concepts
 
 - **Separator Styles**: Different formats for separating files in the combined
-  output ([details](01_m1f/01_m1f.md#separator-styles))
+  output ([details](01_m1f/00_m1f.md#separator-styles))
 - **File Filtering**: Include/exclude specific files using patterns
-  ([details](01_m1f/01_m1f.md#command-line-options))
+  ([details](01_m1f/00_m1f.md#command-line-options))
 - **Security**: Scan for secrets before combining files
-  ([details](01_m1f/01_m1f.md#security-check))
+  ([details](01_m1f/00_m1f.md#security-check))
 - **Content Selection**: Extract specific content using CSS selectors
   ([details](03_html2md/30_html2md.md#content-selection))
 

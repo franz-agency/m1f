@@ -205,7 +205,7 @@
             ],
             "problemMatcher": [],
             "group": "build",
-            "detail": "Generates full project file and directory listings in the .m1f directory."
+            "detail": "Generates full project file and directory listings in the m1f directory."
         },
         {
             "label": "Project Review: Watch for Changes",

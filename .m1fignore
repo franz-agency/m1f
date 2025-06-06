@@ -1,0 +1,22 @@
+# m1f exclude file - additional files to exclude from bundles which are not in .gitignore
+/m1f
+/dev
+
+# License and notice files
+LICENSE
+NOTICE
+
+# Package files
+package-lock.json
+
+# Git configuration files
+.gitignore
+.gitattributes
+
+# GitHub workflows (if present)
+.github/**
+
+pyproject.toml
+pytest.ini
+wp-cli.example.yml
+requirements.txt

@@ -18,6 +18,7 @@ import asyncio
 import os
 from pathlib import Path
 from typing import List, Optional, Tuple
+import threading
 import logging
 from datetime import datetime
 
@@ -46,6 +47,10 @@ class FileWriter:
     def __init__(self, config: Config, logger: logging.Logger):
         self.config = config
         self.logger = logger
+        self._counter_lock = asyncio.Lock()  # For thread-safe counter updates
+        self._write_semaphore = asyncio.Semaphore(
+            10
+        )  # Limit concurrent writes to prevent "too many open files"
 
     async def write_files(
         self, extracted_files: List[ExtractedFile]
@@ -63,7 +68,19 @@ class FileWriter:
                 self._write_file_async(file_data, result)
                 for file_data in extracted_files
             ]
-            await asyncio.gather(*tasks, return_exceptions=True)
+            # Gather results and handle exceptions properly
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            # Check for exceptions in results
+            for i, result_or_exc in enumerate(results):
+                if isinstance(result_or_exc, Exception):
+                    # An exception occurred during file writing
+                    file_data = extracted_files[i]
+                    async with self._counter_lock:
+                        result.files_failed += 1
+                    logger.error(
+                        f"Failed to write file {file_data.relative_path}: {result_or_exc}"
+                    )
         else:
             # Fallback to synchronous writing
             for file_data in extracted_files:
@@ -75,49 +92,56 @@ class FileWriter:
         self, file_data: ExtractedFile, result: ExtractionResult
     ):
         """Write a single file asynchronously."""
-        try:
-            output_path = await self._prepare_output_path(file_data)
-            if output_path is None:
-                result.files_failed += 1
-                return
-
-            # Check if file exists
-            is_overwrite = output_path.exists()
-
-            if is_overwrite and not self.config.force_overwrite:
-                if not await self._confirm_overwrite_async(output_path):
-                    self.logger.info(f"Skipping existing file '{output_path}'")
+        async with self._write_semaphore:  # Limit concurrent file operations
+            try:
+                output_path = await self._prepare_output_path(file_data)
+                if output_path is None:
+                    async with self._counter_lock:
+                        result.files_failed += 1
                     return
 
-            # Determine encoding
-            encoding = self._determine_encoding(file_data)
+                # Check if file exists
+                is_overwrite = output_path.exists()
 
-            # Write the file
-            content_bytes = await self._encode_content(
-                file_data.content, encoding, file_data.path
-            )
+                if is_overwrite and not self.config.force_overwrite:
+                    if not await self._confirm_overwrite_async(output_path):
+                        self.logger.info(f"Skipping existing file '{output_path}'")
+                        return
 
-            async with aiofiles.open(output_path, "wb") as f:
-                await f.write(content_bytes)
+                # Determine encoding
+                encoding = self._determine_encoding(file_data)
 
-            # Update result
-            if is_overwrite:
-                result.files_overwritten += 1
-                self.logger.debug(f"Overwrote file: {output_path}")
-            else:
-                result.files_created += 1
-                self.logger.debug(f"Created file: {output_path}")
+                # Write the file
+                content_bytes = await self._encode_content(
+                    file_data.content, encoding, file_data.path
+                )
 
-            # Set file timestamp
-            await self._set_file_timestamp(output_path, file_data)
+                async with aiofiles.open(output_path, "wb") as f:
+                    await f.write(content_bytes)
 
-            # Verify checksum if needed
-            if not self.config.ignore_checksum and file_data.metadata.checksum_sha256:
-                await self._verify_checksum_async(output_path, file_data)
+                # Update result with thread-safe counter increment
+                async with self._counter_lock:
+                    if is_overwrite:
+                        result.files_overwritten += 1
+                        self.logger.debug(f"Overwrote file: {output_path}")
+                    else:
+                        result.files_created += 1
+                        self.logger.debug(f"Created file: {output_path}")
 
-        except Exception as e:
-            self.logger.error(f"Failed to write file '{file_data.path}': {e}")
-            result.files_failed += 1
+                # Set file timestamp
+                await self._set_file_timestamp(output_path, file_data)
+
+                # Verify checksum if needed
+                if (
+                    not self.config.ignore_checksum
+                    and file_data.metadata.checksum_sha256
+                ):
+                    await self._verify_checksum_async(output_path, file_data)
+
+            except Exception as e:
+                self.logger.error(f"Failed to write file '{file_data.path}': {e}")
+                async with self._counter_lock:
+                    result.files_failed += 1
 
     async def _write_file_sync(
         self, file_data: ExtractedFile, result: ExtractionResult
@@ -126,7 +150,8 @@ class FileWriter:
         try:
             output_path = await self._prepare_output_path(file_data)
             if output_path is None:
-                result.files_failed += 1
+                async with self._counter_lock:
+                    result.files_failed += 1
                 return
 
             # Check if file exists
@@ -146,13 +171,14 @@ class FileWriter:
             )
             output_path.write_bytes(content_bytes)
 
-            # Update result
-            if is_overwrite:
-                result.files_overwritten += 1
-                self.logger.debug(f"Overwrote file: {output_path}")
-            else:
-                result.files_created += 1
-                self.logger.debug(f"Created file: {output_path}")
+            # Update result with thread-safe counter increment
+            async with self._counter_lock:
+                if is_overwrite:
+                    result.files_overwritten += 1
+                    self.logger.debug(f"Overwrote file: {output_path}")
+                else:
+                    result.files_created += 1
+                    self.logger.debug(f"Created file: {output_path}")
 
             # Set file timestamp
             await self._set_file_timestamp(output_path, file_data)
@@ -163,7 +189,8 @@ class FileWriter:
 
         except Exception as e:
             self.logger.error(f"Failed to write file '{file_data.path}': {e}")
-            result.files_failed += 1
+            async with self._counter_lock:
+                result.files_failed += 1
 
     async def _prepare_output_path(self, file_data: ExtractedFile) -> Optional[Path]:
         """Prepare the output path for a file."""
@@ -254,7 +281,7 @@ class FileWriter:
                 access_time = mod_time
 
                 # Use asyncio to run in executor for non-blocking
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 await loop.run_in_executor(
                     None, os.utime, path, (access_time, mod_time)
                 )
@@ -271,11 +298,16 @@ class FileWriter:
     async def _verify_checksum_async(self, path: Path, file_data: ExtractedFile):
         """Verify file checksum asynchronously."""
         try:
-            # Read file content
-            async with aiofiles.open(path, "rb") as f:
-                content_bytes = await f.read()
+            # Calculate checksum using chunks to avoid loading entire file into memory
+            import hashlib
 
-            calculated_checksum = calculate_sha256(content_bytes)
+            sha256_hash = hashlib.sha256()
+
+            async with aiofiles.open(path, "rb") as f:
+                while chunk := await f.read(8192):  # Read in 8KB chunks
+                    sha256_hash.update(chunk)
+
+            calculated_checksum = sha256_hash.hexdigest()
             expected_checksum = file_data.metadata.checksum_sha256
 
             if calculated_checksum != expected_checksum:

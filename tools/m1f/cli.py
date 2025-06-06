@@ -20,6 +20,8 @@ import argparse
 import sys
 from typing import Optional, NoReturn
 
+from . import __version__
+
 # Try to import colorama for colored help
 try:
     from colorama import Fore, Style, init
@@ -95,7 +97,10 @@ Perfect for:
   %(prog)s -s ./docs -o docs.txt --include-extensions .md .rst .txt
   %(prog)s -s ./project -o all.txt --no-default-excludes --include-dot-paths
   %(prog)s -s ./src -o code.txt --security-check warn --quiet
-  %(prog)s -s ./files -o small-files.txt --max-file-size 50KB"""
+  %(prog)s -s ./files -o small-files.txt --max-file-size 50KB
+  %(prog)s auto-bundle                         # Create all bundles from .m1f.config.yml
+  %(prog)s auto-bundle docs                    # Create only the 'docs' bundle
+  %(prog)s auto-bundle --list                  # List available bundles"""
 
     parser = CustomArgumentParser(
         prog="m1f",
@@ -109,7 +114,7 @@ Perfect for:
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 3.0.0",
+        version=f"%(prog)s {__version__}",
         help="Show program version and exit",
     )
 
@@ -136,9 +141,9 @@ Perfect for:
         "-o",
         "--output-file",
         type=str,
-        required=True,
+        required=False,  # Made optional to allow preset override
         metavar="FILE",
-        help="Path where the combined output file will be created",
+        help="Path where the combined output file will be created (can be set via preset)",
     )
 
     io_group.add_argument(
@@ -194,8 +199,17 @@ Perfect for:
     filter_group.add_argument(
         "--exclude-paths-file",
         type=str,
+        nargs="+",
         metavar="FILE",
-        help="File containing paths to exclude (supports gitignore format)",
+        help="File(s) containing paths to exclude (supports gitignore format, multiple files merged)",
+    )
+
+    filter_group.add_argument(
+        "--include-paths-file",
+        type=str,
+        nargs="+",
+        metavar="FILE",
+        help="File(s) containing paths to include (supports gitignore format, multiple files merged)",
     )
 
     filter_group.add_argument(
@@ -275,6 +289,12 @@ Perfect for:
         help="Abort if encoding conversion fails",
     )
 
+    encoding_group.add_argument(
+        "--no-prefer-utf8-for-text-files",
+        action="store_true",
+        help="Disable UTF-8 preference for text files (.md, .txt, .rst) when encoding is ambiguous",
+    )
+
     # Security group
     security_group = parser.add_argument_group("Security Options")
 
@@ -323,6 +343,12 @@ Perfect for:
     )
 
     control_group.add_argument(
+        "--allow-duplicate-files",
+        action="store_true",
+        help="Allow files with identical content (disable deduplication)",
+    )
+
+    control_group.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
 
@@ -364,11 +390,13 @@ def parse_args(
     """Parse command-line arguments."""
     parsed_args = parser.parse_args(args)
 
-    # Validate that at least one input source is provided
-    if not parsed_args.source_directory and not parsed_args.input_file:
-        parser.error(
-            "At least one of -s/--source-directory or -i/--input-file is required"
-        )
+    # Skip validation if presets are being used - they may provide required values
+    if not parsed_args.preset_files or parsed_args.disable_presets:
+        # Validate that at least one input source is provided
+        if not parsed_args.source_directory and not parsed_args.input_file:
+            parser.error(
+                "At least one of -s/--source-directory or -i/--input-file is required"
+            )
 
     # Validate conflicting options
     if parsed_args.quiet and parsed_args.verbose:

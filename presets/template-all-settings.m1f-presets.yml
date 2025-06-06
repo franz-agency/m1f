@@ -37,6 +37,59 @@ example_group_name:
     # Options: lf, crlf
     line_ending: "lf"
     
+    # === INPUT/OUTPUT SETTINGS ===
+    
+    # Source directory path (overrides CLI -s/--source-directory)
+    # source_directory: "/path/to/source"
+    
+    # Input file path (overrides CLI -i/--input-file)
+    # input_file: "/path/to/input-list.txt"
+    
+    # Output file path (overrides CLI -o/--output-file)
+    # output_file: "/path/to/output.txt"
+    
+    # Intro files to include at beginning (single file or list)
+    # Single file:
+    # input_include_files: "README.md"
+    # Multiple files:
+    # input_include_files:
+    #   - "README.md"
+    #   - "intro.txt"
+    
+    # === OUTPUT CONTROL ===
+    
+    # Add timestamp to output filename (default: false)
+    add_timestamp: false
+    
+    # Add hash of file modification times to filename (default: false)
+    filename_mtime_hash: false
+    
+    # Force overwrite existing output file (default: false)
+    force: false
+    
+    # Only create main output file, skip auxiliary files (default: false)
+    minimal_output: false
+    
+    # Skip creating main output file (default: false)
+    skip_output_file: false
+    
+    # === ARCHIVE SETTINGS ===
+    
+    # Create backup archive of processed files (default: false)
+    create_archive: false
+    
+    # Archive format when create_archive is true
+    # Options: zip, tar.gz
+    archive_type: "zip"
+    
+    # === RUNTIME BEHAVIOR ===
+    
+    # Enable verbose output (default: false)
+    verbose: false
+    
+    # Suppress all output (default: false)
+    quiet: false
+    
     # === INCLUDE/EXCLUDE PATTERNS ===
     
     # Patterns to include (gitignore-style patterns)
@@ -85,13 +138,32 @@ example_group_name:
     # Disable default exclusions like node_modules, .git, etc (default: false)
     no_default_excludes: false
     
+    # v3.2 features
+    enable_content_deduplication: true  # Deduplicate files by content
+    prefer_utf8_for_text_files: true    # Prefer UTF-8 for .md, .txt files
+    
     # Maximum file size to include
     # Supports: B, KB, MB, GB, TB (e.g., "50KB", "10MB", "1.5GB")
     max_file_size: "10MB"
     
-    # Path to file containing additional exclude patterns
+    # Path(s) to file(s) containing additional exclude patterns
     # Can be a .gitignore file or custom exclude file
+    # Single file:
     exclude_paths_file: ".gitignore"
+    # Multiple files (merged in order):
+    # exclude_paths_file:
+    #   - ".gitignore"
+    #   - ".m1fignore"
+    #   - "exclude-patterns.txt"
+    
+    # Path(s) to file(s) containing include patterns
+    # Only files matching these patterns will be included
+    # Single file:
+    # include_paths_file: "include-patterns.txt"
+    # Multiple files (merged in order):
+    # include_paths_file:
+    #   - ".m1f-include"
+    #   - "include-patterns.txt"
     
     # === PROCESSING OPTIONS ===
     
@@ -186,6 +258,7 @@ example_group_name:
       actions:
         - remove_empty_lines
         - compress_whitespace
+        - join_paragraphs  # v3.2: Compress paragraphs for LLMs
       
       # Override separator style for these files
       separator_style: "Markdown"

@@ -1,0 +1,75 @@
+# Playwright scraper configuration
+# Browser-based scraping for JavaScript-heavy sites
+
+# Basic scraper settings
+max_depth: 5  # Lower depth for resource-intensive browser scraping
+max_pages: 100  # Lower limit due to browser overhead
+request_delay: 1.0  # Higher delay to be respectful
+concurrent_requests: 3  # Limited concurrent browser pages
+respect_robots_txt: true
+timeout: 30.0
+
+# Browser configuration
+browser_config:
+  # Browser type: chromium, firefox, or webkit
+  browser: chromium
+  
+  # Run in headless mode (no UI)
+  headless: true
+  
+  # Viewport size
+  viewport:
+    width: 1920
+    height: 1080
+  
+  # Wait strategies
+  # Options: load, domcontentloaded, networkidle, commit
+  wait_until: networkidle
+  
+  # Timeout for wait operations (milliseconds)
+  wait_timeout: 30000
+  
+  # Optional: Wait for specific selector before considering page loaded
+  # wait_for_selector: "div.main-content"
+  
+  # Optional: Execute custom JavaScript after page load
+  # execute_script: |
+  #   window.scrollTo(0, document.body.scrollHeight);
+  #   await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  # Screenshot options
+  screenshot: false
+  screenshot_path: "screenshots/"
+  
+  # Browser launch options
+  launch_options:
+    # Chromium-specific options
+    args:
+      - "--disable-dev-shm-usage"
+      - "--no-sandbox"  # Required in some Docker environments
+      - "--disable-setuid-sandbox"
+      - "--disable-gpu"  # Disable GPU in headless mode
+    
+    # Ignore HTTPS errors
+    ignoreHTTPSErrors: true
+    
+    # Slow down operations by specified milliseconds (for debugging)
+    # slowMo: 100
+    
+    # Enable devtools (chromium/firefox only)
+    # devtools: true
+
+# Mobile emulation example (uncomment to use)
+# browser_config:
+#   browser: chromium
+#   headless: true
+#   viewport:
+#     width: 375
+#     height: 667
+#     isMobile: true
+#     hasTouch: true
+#   user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) ..."
+
+# Example usage:
+# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+#   --scraper playwright --scraper-config playwright.yaml

@@ -38,7 +38,7 @@ from contextlib import contextmanager
 
 # Add the tools directory to path to import the m1f module
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
-import m1f
+from tools import m1f
 
 # Test constants
 TEST_DIR = Path(__file__).parent
@@ -105,12 +105,12 @@ class TestLargeFileHandlingRefactored:
 
         # Verify m1f can be imported
         try:
-            import m1f
+            from tools import m1f
 
             print(f"Successfully imported m1f from: {m1f.__file__}")
             print(f"m1f version: {getattr(m1f, '__version__', 'unknown')}")
         except Exception as e:
-            print(f"ERROR: Failed to import m1f: {e}")
+            print(f"ERROR: Failed to from tools import m1f: {e}")
             raise
 
     def setup_method(self):
