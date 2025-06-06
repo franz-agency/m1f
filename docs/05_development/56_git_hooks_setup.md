@@ -230,7 +230,7 @@ bundle:
 
 ## See Also
 
-- [Auto-Bundle Guide](06_auto_bundle_guide.md) - Complete auto-bundle
+- [Auto-Bundle Guide](../01_m1f/06_auto_bundle_guide.md) - Complete auto-bundle
   documentation
-- [m1f Configuration](02_m1f_presets.md) - Preset system documentation
-- [Quick Reference](09_quick_reference.md) - Common m1f commands
+- [m1f Configuration](../01_m1f/02_m1f_presets.md) - Preset system documentation
+- [Quick Reference](../01_m1f/09_quick_reference.md) - Common m1f commands

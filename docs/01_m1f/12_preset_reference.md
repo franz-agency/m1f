@@ -1,8 +1,42 @@
 # m1f Preset System Complete Reference
 
-This document provides a comprehensive reference for the m1f preset system,
-including all available settings, undocumented features, and advanced usage
-patterns.
+This document provides a comprehensive reference for the m1f preset system, including all available settings, clarifications, and advanced usage patterns.
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Preset File Format](#preset-file-format)
+- [All Available Settings](#all-available-settings)
+- [Available Actions](#available-actions)
+- [Pattern Matching](#pattern-matching)
+- [Processing Order](#processing-order)
+- [Important Clarifications](#important-clarifications)
+- [Advanced Features](#advanced-features)
+- [Examples](#examples)
+- [Debugging and Best Practices](#debugging-and-best-practices)
+
+## Quick Start
+
+The m1f preset system allows you to define file-specific processing rules and configurations. Here's a minimal example:
+
+```yaml
+# my-preset.yml
+web_assets:
+  description: "Process web assets"
+  presets:
+    javascript:
+      extensions: [".js", ".jsx"]
+      actions: ["minify", "strip_comments"]
+```
+
+Use it with:
+```bash
+# Module invocation (recommended)
+python -m tools.m1f -s ./src -o bundle.txt --preset my-preset.yml
+
+# Direct script invocation (alternative)
+python tools/m1f.py -s ./src -o bundle.txt --preset my-preset.yml
+```
 
 ## Preset File Format
 
@@ -27,7 +61,7 @@ group_name:
         - compress_whitespace
 
       # Per-file overrides
-      security_check: "warn" # abort, skip, warn
+      security_check: "warn" # error, skip, warn
       max_file_size: "500KB"
       include_dot_paths: true
       include_binary_files: false
@@ -72,7 +106,7 @@ globals:
     # Per-extension settings
     extensions:
       .py:
-        security_check: "abort"
+        security_check: "error"
         max_file_size: "2MB"
       .env:
         security_check: "skip"
@@ -93,8 +127,7 @@ globals:
 
 ### Global Settings (NEW in v3.2.0)
 
-These settings can be specified in the `global_settings` section and override
-CLI defaults:
+These settings can be specified in the `global_settings` section and override CLI defaults:
 
 #### Input/Output Settings
 
@@ -107,13 +140,14 @@ CLI defaults:
 
 #### Output Control Settings
 
-| Setting               | Type    | Default | Description                          |
-| --------------------- | ------- | ------- | ------------------------------------ |
-| `add_timestamp`       | boolean | false   | Add timestamp to output filename     |
-| `filename_mtime_hash` | boolean | false   | Add hash of file mtimes to filename  |
-| `force`               | boolean | false   | Force overwrite existing output file |
-| `minimal_output`      | boolean | false   | Only create main output file         |
-| `skip_output_file`    | boolean | false   | Skip creating main output file       |
+| Setting                      | Type    | Default | Description                          |
+| ---------------------------- | ------- | ------- | ------------------------------------ |
+| `add_timestamp`              | boolean | false   | Add timestamp to output filename     |
+| `filename_mtime_hash`        | boolean | false   | Add hash of file mtimes to filename  |
+| `force`                      | boolean | false   | Force overwrite existing output file |
+| `minimal_output`             | boolean | false   | Only create main output file         |
+| `skip_output_file`           | boolean | false   | Skip creating main output file       |
+| `allow_duplicate_files`      | boolean | false   | Allow duplicate content (v3.2)       |
 
 #### Archive Settings
 
@@ -129,15 +163,17 @@ CLI defaults:
 | `verbose` | boolean | false   | Enable verbose output       |
 | `quiet`   | boolean | false   | Suppress all console output |
 
-#### File Processing Settings (Existing)
+#### File Processing Settings
 
-| Setting           | Type   | Default | Description                   |
-| ----------------- | ------ | ------- | ----------------------------- |
-| `encoding`        | string | "utf-8" | Target encoding for all files |
-| `separator_style` | string | none    | File separator style          |
-| `line_ending`     | string | "lf"    | Line ending style (lf/crlf)   |
-| `security_check`  | string | "warn"  | How to handle secrets         |
-| `max_file_size`   | string | none    | Maximum file size to process  |
+| Setting                       | Type    | Default | Description                              |
+| ----------------------------- | ------- | ------- | ---------------------------------------- |
+| `encoding`                    | string  | "utf-8" | Target encoding for all files            |
+| `separator_style`             | string  | none    | File separator style                     |
+| `line_ending`                 | string  | "lf"    | Line ending style (lf/crlf)              |
+| `security_check`              | string  | "warn"  | How to handle secrets                    |
+| `max_file_size`               | string  | none    | Maximum file size to process             |
+| `enable_content_deduplication`| boolean | true    | Enable content deduplication (v3.2)      |
+| `prefer_utf8_for_text_files`  | boolean | true    | Prefer UTF-8 for text files (v3.2)      |
 
 ### Preset-Level Settings
 
@@ -165,25 +201,21 @@ CLI defaults:
 ### Built-in Actions
 
 1. **`minify`** - Remove unnecessary whitespace and formatting
-
    - Reduces file size
    - Maintains functionality
    - Best for: JS, CSS, HTML
 
 2. **`strip_tags`** - Remove HTML/XML tags
-
    - Extracts text content only
    - Preserves text between tags
    - Best for: HTML, XML, Markdown with HTML
 
 3. **`strip_comments`** - Remove code comments
-
    - Removes single and multi-line comments
    - Language-aware (JS, Python, CSS, etc.)
    - Best for: Production code bundles
 
 4. **`compress_whitespace`** - Reduce multiple spaces/newlines
-
    - Converts multiple spaces to single space
    - Reduces multiple newlines to double newline
    - Best for: Documentation, logs
@@ -195,8 +227,9 @@ CLI defaults:
 
 ### Custom Processors
 
-1. **`truncate`** - Limit file length
+Currently implemented:
 
+1. **`truncate`** - Limit file length
    ```yaml
    custom_processor: "truncate"
    processor_args:
@@ -206,12 +239,11 @@ CLI defaults:
    ```
 
 2. **`redact_secrets`** - Remove sensitive data
-
    ```yaml
    custom_processor: "redact_secrets"
    processor_args:
      patterns:
-       - '(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*["\']?[\\w-]+["\']?'
+       - '(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*["\\']?[\\w-]+["\\']?'
        - '(?i)bearer\\s+[\\w-]+'
      replacement: "[REDACTED]"
    ```
@@ -224,23 +256,22 @@ CLI defaults:
      include_docstrings: true
    ```
 
+Note: Other processors mentioned in examples (like `extract_code_cells`) are illustrative and would need to be implemented.
+
 ## Pattern Matching
 
 ### Pattern Types
 
 1. **Extension Matching**
-
    ```yaml
    extensions: [".py", ".pyx", "py"] # All are equivalent
    ```
 
 2. **Glob Patterns**
-
    ```yaml
    patterns:
      - "*.test.js" # All test files
      - "src/**/*.js" # All JS in src/
-     # Note: Exclude patterns with "!" are not currently supported
    ```
 
 3. **Combined Matching**
@@ -267,28 +298,6 @@ group_name:
 3. **First Match Wins** - First matching preset is applied
 4. **Action Order** - Actions are applied in the order listed
 
-## Global Settings
-
-### Structure
-
-```yaml
-globals:
-  global_settings:
-    # Default settings for all files
-    security_check: "warn"
-    max_file_size: "1MB"
-
-    # Per-extension overrides
-    extensions:
-      .py:
-        security_check: "abort"
-        max_file_size: "2MB"
-        actions: ["strip_comments"]
-      .env:
-        security_check: "skip"
-        actions: ["redact_secrets"]
-```
-
 ### Setting Precedence
 
 1. CLI arguments (highest priority)
@@ -297,9 +306,69 @@ globals:
 4. Global default settings
 5. m1f defaults (lowest priority)
 
-**Note**: CLI arguments ALWAYS override preset values. This allows presets to
-define defaults while still allowing users to override specific settings via
-command line.
+**Note**: CLI arguments ALWAYS override preset values.
+
+## Important Clarifications
+
+### Pattern Matching Limitations
+
+**Exclude patterns with `!` prefix are not supported in preset patterns**. To exclude files:
+
+1. **Use Global Settings** (Recommended):
+   ```yaml
+   globals:
+     global_settings:
+       exclude_patterns: ["*.min.js", "*.map", "dist/**/*"]
+   ```
+
+2. **Use CLI Arguments**:
+   ```bash
+   python tools/m1f.py -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
+   ```
+
+### Settings Hierarchy
+
+Understanding where settings can be applied:
+
+1. **Global Settings Level** (`globals.global_settings`):
+   - `include_patterns` / `exclude_patterns`
+   - `include_extensions` / `exclude_extensions`
+   - All general m1f settings
+
+2. **Preset Level** (individual presets):
+   - `patterns` and `extensions` (for matching)
+   - `actions` (processing actions)
+   - Override settings like `security_check`
+
+3. **Extension-Specific Global Settings** (`globals.global_settings.extensions.{ext}`):
+   - All preset-level settings per extension
+
+### Common Misconceptions
+
+1. **Exclude Patterns in Presets**
+   
+   ❌ **Incorrect**:
+   ```yaml
+   presets:
+     my_preset:
+       exclude_patterns: ["*.min.js"] # Doesn't work here
+   ```
+   
+   ✅ **Correct**:
+   ```yaml
+   globals:
+     global_settings:
+       exclude_patterns: ["*.min.js"] # Works here
+   ```
+
+2. **Actions vs Settings**
+   
+   **Actions** (go in `actions` list):
+   - `minify`, `strip_tags`, `strip_comments`, etc.
+   
+   **Settings** (separate fields):
+   - `strip_tags: ["script", "style"]` (configuration)
+   - `max_lines: 100` (configuration)
 
 ## Advanced Features
 
@@ -328,40 +397,56 @@ python tools/m1f.py -s . -o out.txt \
 
 1. **Project presets**: `./presets/*.m1f-presets.yml`
 2. **Local preset**: `./.m1f-presets.yml`
-3. **User presets**: `~/.m1f/*.m1f-presets.yml`
+3. **User presets**: `~/m1f/*.m1f-presets.yml`
 4. **Specified presets**: Via `--preset` flag
 
-## Debugging Presets
+### Complete Parameter Control (v3.2.0+)
 
-### Verbose Mode
+Starting with v3.2.0, ALL m1f parameters can be controlled via presets:
 
-```bash
-python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
+```yaml
+# production.m1f-presets.yml
+production:
+  description: "Production build configuration"
+  
+  global_settings:
+    # Define all inputs/outputs
+    source_directory: "./src"
+    output_file: "dist/bundle.txt"
+    input_include_files: ["README.md", "LICENSE"]
+    
+    # Enable production features
+    add_timestamp: true
+    create_archive: true
+    archive_type: "tar.gz"
+    force: true
+    
+    # Production optimizations
+    minimal_output: true
+    quiet: true
+    
+    # File processing
+    separator_style: "MachineReadable"
+    encoding: "utf-8"
+    security_check: "error"
 ```
 
-Shows:
+Usage comparison:
 
-- Which preset is applied to each file
-- Which actions are performed
-- Processing time for each action
+**Before v3.2.0** (long command):
+```bash
+python -m tools.m1f -s ./src -o dist/bundle.txt \
+  --input-include-files README.md LICENSE \
+  --add-timestamp --create-archive --archive-type tar.gz \
+  --force --minimal-output --quiet \
+  --separator-style MachineReadable \
+  --security-check error
+```
 
-### Common Issues
-
-1. **Preset not applied**
-
-   - Check pattern matching
-   - Verify preset group is enabled
-   - Use verbose mode to debug
-
-2. **Wrong action order**
-
-   - Actions are applied sequentially
-   - Order matters (e.g., minify before strip_comments)
-
-3. **Performance issues**
-   - Limit expensive actions to necessary files
-   - Use `max_file_size` to skip large files
-   - Consider `minimal_output` mode
+**After v3.2.0** (simple command):
+```bash
+python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
+```
 
 ## Examples
 
@@ -383,7 +468,7 @@ web_development:
       patterns: ["src/**/*"]
       extensions: [".js", ".jsx", ".ts", ".tsx"]
       actions: ["strip_comments"]
-      security_check: "abort"
+      security_check: "error"
 
     # Documentation
     docs:
@@ -393,7 +478,7 @@ web_development:
     # Configuration files
     config:
       patterns: ["*.json", "*.yml", "*.yaml"]
-      security_check: "abort"
+      security_check: "error"
       custom_processor: "redact_secrets"
 ```
 
@@ -402,11 +487,6 @@ web_development:
 ```yaml
 data_science:
   presets:
-    # Notebooks - extract code cells only (Note: extract_code_cells is an example)
-    notebooks:
-      extensions: [".ipynb"]
-      custom_processor: "extract_code_cells" # This processor would need to be implemented
-
     # Large data files - truncate
     data_files:
       extensions: [".csv", ".json", ".parquet"]
@@ -419,89 +499,6 @@ data_science:
     scripts:
       extensions: [".py", ".r", ".jl"]
       actions: ["strip_comments"]
-```
-
-## Best Practices
-
-1. **Start Simple** - Begin with basic actions, add complexity as needed
-2. **Test Thoroughly** - Use verbose mode to verify behavior
-3. **Layer Presets** - Use multiple files for base + overrides
-4. **Document Presets** - Add descriptions to groups and complex presets
-5. **Version Control** - Keep presets in your repository
-6. **Performance First** - Apply expensive actions only where needed
-
-## Complete Parameter Control via Presets (v3.2.0+)
-
-Starting with v3.2.0, ALL m1f parameters can be controlled via presets,
-eliminating the need for complex command lines:
-
-### Example: Full Configuration Preset
-
-```yaml
-# production.m1f-presets.yml
-production:
-  description: "Production build configuration"
-  priority: 100
-
-  global_settings:
-    # Define all inputs/outputs
-    source_directory: "./src"
-    output_file: "dist/bundle.txt"
-    input_include_files: ["README.md", "LICENSE"]
-
-    # Enable production features
-    add_timestamp: true
-    create_archive: true
-    archive_type: "tar.gz"
-    force: true # Always overwrite
-
-    # Production optimizations
-    minimal_output: true
-    quiet: true # No console output
-
-    # File processing
-    separator_style: "MachineReadable"
-    encoding: "utf-8"
-    security_check: "abort"
-
-    # Only include necessary files
-    include_extensions: [".js", ".jsx", ".ts", ".tsx", ".json"]
-    exclude_patterns: ["*.test.*", "*.spec.*", "__tests__/**"]
-    max_file_size: "1MB"
-```
-
-### Usage Comparison
-
-**Before v3.2.0** (long command line):
-
-```bash
-python -m tools.m1f -s ./src -o dist/bundle.txt \
-  --input-include-files README.md LICENSE \
-  --add-timestamp --create-archive --archive-type tar.gz \
-  --force --minimal-output --quiet \
-  --separator-style MachineReadable \
-  --convert-to-charset utf-8 --security-check abort \
-  --include-extensions .js .jsx .ts .tsx .json \
-  --excludes "*.test.*" "*.spec.*" "__tests__/**" \
-  --max-file-size 1MB
-```
-
-**After v3.2.0** (simple command):
-
-```bash
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
-```
-
-### Command Line Override
-
-CLI parameters still take precedence, allowing quick overrides:
-
-```bash
-# Use production preset but enable verbose output for debugging
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt -v
-
-# Use production preset but change archive type
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt --archive-type zip
 ```
 
 ### Multiple Environment Presets
@@ -523,7 +520,7 @@ staging:
     source_directory: "./src"
     output_file: "stage-bundle.txt"
     create_archive: true
-    security_check: "abort"
+    security_check: "error"
 
 production:
   priority: 30
@@ -537,7 +534,6 @@ production:
 ```
 
 Use with `--preset-group`:
-
 ```bash
 # Development build
 python -m tools.m1f --preset environments.yml --preset-group development
@@ -545,3 +541,56 @@ python -m tools.m1f --preset environments.yml --preset-group development
 # Production build
 python -m tools.m1f --preset environments.yml --preset-group production
 ```
+
+## Debugging and Best Practices
+
+### Debugging Tips
+
+1. **Verbose Mode**
+   ```bash
+   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
+   ```
+   Shows which preset is applied to each file and processing details.
+
+2. **Check What's Applied**
+   ```bash
+   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
+   ```
+
+3. **Validate YAML**
+   ```bash
+   python -c "import yaml; yaml.safe_load(open('my-preset.yml'))"
+   ```
+
+4. **Test Small First**
+   Create a test directory with a few files to verify preset behavior before running on large codebases.
+
+### Best Practices
+
+1. **Start Simple** - Begin with basic actions, add complexity as needed
+2. **Test Thoroughly** - Use verbose mode to verify behavior
+3. **Layer Presets** - Use multiple files for base + overrides
+4. **Document Presets** - Add descriptions to groups and complex presets
+5. **Version Control** - Keep presets in your repository
+6. **Performance First** - Apply expensive actions only where needed
+7. **Use Priority Wisely** - Higher priority groups are checked first
+
+### Common Issues
+
+1. **Preset not applied**
+   - Check pattern matching
+   - Verify preset group is enabled
+   - Use verbose mode to debug
+
+2. **Wrong action order**
+   - Actions are applied sequentially
+   - Order matters (e.g., minify before strip_comments)
+
+3. **Performance issues**
+   - Limit expensive actions to necessary files
+   - Use `max_file_size` to skip large files
+   - Consider `minimal_output` mode
+
+## Version Information
+
+This documentation is accurate as of m1f version 3.2.0.

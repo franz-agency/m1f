@@ -17,7 +17,7 @@ and this project adheres to
     `curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash`
   - Auto-detection of m1f development repository vs. installed m1f
   - Automatic staging of generated bundles in `m1f/` directory
-  - Comprehensive setup guide at `docs/01_m1f/12_git_hooks_setup.md`
+  - Comprehensive setup guide at `docs/05_development/56_git_hooks_setup.md`
 
 - **Bundle Directory Migration**: Moved from `.m1f/` to `m1f/` for better AI
   tool compatibility
@@ -40,7 +40,7 @@ and this project adheres to
   - CLI arguments always take precedence over preset values
   - Enables simple commands like `m1f --preset production.yml`
   - Updated template-all-settings.m1f-presets.yml with all new parameters
-  - Full documentation in docs/01_m1f/10_preset_reference.md
+  - Full documentation in docs/01_m1f/12_preset_reference.md
 
 - **Auto-Bundle Subcommand**: Integrated auto-bundle functionality directly into
   m1f
@@ -83,7 +83,7 @@ and this project adheres to
   - Contextual hints based on user intent (bundling, config, WordPress, AI
     context)
   - Integration with Claude Code CLI (if installed)
-  - Comprehensive workflow guide at docs/01_m1f/08_claude_workflows.md
+  - Comprehensive workflow guide at docs/01_m1f/30_claude_workflows.md
 
 - **Enhanced Auto-Bundle Functionality**: Improved usability and flexibility
 
@@ -93,7 +93,7 @@ and this project adheres to
   - Bundle grouping support in `.m1f.config.yml` with `group: "name"` field
   - Improved error messages when config file is not found
   - Enhanced `--list` output showing bundles organized by groups
-  - Comprehensive documentation in `docs/01_m1f/06_auto_bundle_guide.md`
+  - Comprehensive documentation in `docs/01_m1f/20_auto_bundle_guide.md`
   - Examples for server-wide bundle management and automation
 
 - **Join Paragraphs Feature**: Markdown optimization for LLMs

@@ -27,16 +27,21 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 
 ### Advanced Features
 
-- [Auto Bundle Guide](01_m1f/06_auto_bundle_guide.md) - Automatic project
+- [Auto Bundle Guide](01_m1f/20_auto_bundle_guide.md) - Automatic project
   bundling for AI/LLM consumption
-- [Claude + m1f Workflows](01_m1f/08_claude_workflows.md) - Turn Claude into
+- [Claude + m1f Workflows](01_m1f/30_claude_workflows.md) - Turn Claude into
   your personal m1f expert with smart prompt enhancement
-- [Claude Code Integration](01_m1f/05_claude_code_integration.md) - Optional
+- [Claude Code Integration](01_m1f/31_claude_code_integration.md) - Optional
   AI-powered tool automation
-- [Preset System Guide](01_m1f/02_m1f_presets.md) - File-specific processing
+- [Preset System Guide](01_m1f/10_m1f_presets.md) - File-specific processing
   rules and configurations
-- [Per-File-Type Settings](01_m1f/03_m1f_preset_per_file_settings.md) -
+- [Per-File-Type Settings](01_m1f/11_preset_per_file_settings.md) -
   Fine-grained control over file processing
+
+### Development
+
+- [Version Management](05_development/55_version_management.md) - Version management and release process
+- [Git Hooks Setup](05_development/56_git_hooks_setup.md) - Git hooks for automated bundling
 
 ## Quick Navigation
 

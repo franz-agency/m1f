@@ -528,7 +528,7 @@ The preset system integrates seamlessly with the auto-bundling scripts:
 - **Security Control**: Different security levels for different file types
 - **Size Management**: Appropriate size limits per file type
 
-See the [Auto Bundle Guide](06_auto_bundle_guide.md) for more details on the
+See the [Auto Bundle Guide](20_auto_bundle_guide.md) for more details on the
 bundling system.
 
 ## See Also
@@ -536,7 +536,7 @@ bundling system.
 - [**Preset System Complete Reference**](./10_preset_reference.md) -
   Comprehensive reference with all settings, undocumented features, and advanced
   patterns
-- [**Per-File Settings Guide**](./03_m1f_preset_per_file_settings.md) - Deep
+- [**Per-File Settings Guide**](./11_preset_per_file_settings.md) - Deep
   dive into per-file processing
-- [**Auto Bundle Guide**](./06_auto_bundle_guide.md) - Automated bundling with
+- [**Auto Bundle Guide**](./20_auto_bundle_guide.md) - Automated bundling with
   presets

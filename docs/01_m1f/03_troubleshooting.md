@@ -20,7 +20,7 @@ python tools/m1f.py [options]
 ```
 
 Or set up the alias as described in the
-[Development Workflow](./04_m1f_development_workflow.md).
+[Development Workflow](./21_development_workflow.md).
 
 ### Permission Denied
 
@@ -192,9 +192,9 @@ This will show:
 
 ## Getting Help
 
-1. Check the [CLI Reference](./07_cli_reference.md) for parameter details
+1. Check the [CLI Reference](./02_cli_reference.md) for parameter details
 2. Review [examples in the main documentation](00_m1f.md#common-use-cases)
-3. Check the [preset documentation](./02_m1f_presets.md) for configuration
+3. Check the [preset documentation](./10_m1f_presets.md) for configuration
    issues
 4. Report issues at the project repository
 

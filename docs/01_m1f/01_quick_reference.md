@@ -225,6 +225,6 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 ## Need Help?
 
 - Full options: `python tools/m1f.py --help`
-- [Complete CLI Reference](./07_cli_reference.md)
-- [Troubleshooting Guide](./08_troubleshooting.md)
-- [Preset Documentation](./02_m1f_presets.md)
+- [Complete CLI Reference](./02_cli_reference.md)
+- [Troubleshooting Guide](./03_troubleshooting.md)
+- [Preset Documentation](./10_m1f_presets.md)

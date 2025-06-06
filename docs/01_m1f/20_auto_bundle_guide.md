@@ -235,7 +235,7 @@ The hook will:
 - Block commits if bundle generation fails
 
 For detailed setup instructions, see the
-[Git Hooks Setup Guide](12_git_hooks_setup.md).
+[Git Hooks Setup Guide](../05_development/56_git_hooks_setup.md).
 
 ## Best Practices
 

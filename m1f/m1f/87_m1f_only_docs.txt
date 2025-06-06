@@ -753,9 +753,9 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 ## Need Help?
 
 - Full options: `python tools/m1f.py --help`
-- [Complete CLI Reference](./07_cli_reference.md)
-- [Troubleshooting Guide](./08_troubleshooting.md)
-- [Preset Documentation](./02_m1f_presets.md)
+- [Complete CLI Reference](./02_cli_reference.md)
+- [Troubleshooting Guide](./03_troubleshooting.md)
+- [Preset Documentation](./10_m1f_presets.md)
 
 ======= 02_cli_reference.md ======
 # m1f CLI Reference
@@ -1119,7 +1119,7 @@ m1f auto-bundle --quiet
 - `--verbose`, `-v`: Enable verbose output
 - `--quiet`, `-q`: Suppress all console output
 
-See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration
+See the [Auto Bundle Guide](20_auto_bundle_guide.md) for detailed configuration
 instructions.
 
 ## Notes
@@ -1161,7 +1161,7 @@ python tools/m1f.py [options]
 ```
 
 Or set up the alias as described in the
-[Development Workflow](./04_m1f_development_workflow.md).
+[Development Workflow](./21_development_workflow.md).
 
 ### Permission Denied
 
@@ -1333,9 +1333,9 @@ This will show:
 
 ## Getting Help
 
-1. Check the [CLI Reference](./07_cli_reference.md) for parameter details
+1. Check the [CLI Reference](./02_cli_reference.md) for parameter details
 2. Review [examples in the main documentation](00_m1f.md#common-use-cases)
-3. Check the [preset documentation](./02_m1f_presets.md) for configuration
+3. Check the [preset documentation](./10_m1f_presets.md) for configuration
    issues
 4. Report issues at the project repository
 
@@ -1891,7 +1891,7 @@ The preset system integrates seamlessly with the auto-bundling scripts:
 - **Security Control**: Different security levels for different file types
 - **Size Management**: Appropriate size limits per file type
 
-See the [Auto Bundle Guide](06_auto_bundle_guide.md) for more details on the
+See the [Auto Bundle Guide](20_auto_bundle_guide.md) for more details on the
 bundling system.
 
 ## See Also
@@ -1899,9 +1899,9 @@ bundling system.
 - [**Preset System Complete Reference**](./10_preset_reference.md) -
   Comprehensive reference with all settings, undocumented features, and advanced
   patterns
-- [**Per-File Settings Guide**](./03_m1f_preset_per_file_settings.md) - Deep
+- [**Per-File Settings Guide**](./11_preset_per_file_settings.md) - Deep
   dive into per-file processing
-- [**Auto Bundle Guide**](./06_auto_bundle_guide.md) - Automated bundling with
+- [**Auto Bundle Guide**](./20_auto_bundle_guide.md) - Automated bundling with
   presets
 
 ======= 11_preset_per_file_settings.md ======
@@ -2161,7 +2161,7 @@ my_project:
 
 ## See Also
 
-- [Preset System Guide](02_m1f_presets.md) - General preset documentation
+- [Preset System Guide](10_m1f_presets.md) - General preset documentation
 - [Preset Template](../../presets/template-all-settings.m1f-presets.yml) -
   Complete example with all settings
 - [Use Case Examples](../../presets/example-use-cases.m1f-presets.yml) -
@@ -4533,9 +4533,9 @@ v3.2 addresses all HIGH and MEDIUM priority security issues:
 
 ## Support and Resources
 
-- [Security Best Practices Guide](./13_security_best_practices.md)
-- [CLI Reference](./07_cli_reference.md)
-- [Preset System Guide](./02_m1f_presets.md)
-- [Troubleshooting Guide](./08_troubleshooting.md)
+- [Security Best Practices Guide](./40_security_best_practices.md)
+- [CLI Reference](./02_cli_reference.md)
+- [Preset System Guide](./10_m1f_presets.md)
+- [Troubleshooting Guide](./03_troubleshooting.md)
 
 For questions or issues, please refer to the project repository.

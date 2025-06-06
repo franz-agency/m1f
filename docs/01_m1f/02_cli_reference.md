@@ -17,9 +17,11 @@ m1f [-h] [--version] [-s DIR] [-i FILE] -o FILE
     [--max-file-size SIZE] [--no-default-excludes]
     [--remove-scraped-metadata]
     [--convert-to-charset {utf-8,utf-16,utf-16-le,utf-16-be,ascii,latin-1,cp1252}]
-    [--abort-on-encoding-error] [--security-check {abort,skip,warn}]
+    [--abort-on-encoding-error] [--no-prefer-utf8-for-text-files]
+    [--security-check {error,warn,skip}]
     [--create-archive] [--archive-type {zip,tar.gz}] [-f]
-    [--minimal-output] [--skip-output-file] [-v] [-q]
+    [--minimal-output] [--skip-output-file] [--allow-duplicate-files]
+    [-v] [-q]
     [--preset FILE [FILE ...]] [--preset-group GROUP]
     [--disable-presets]
 ```
@@ -244,13 +246,13 @@ emojis or special characters.
 
 ## Security Options
 
-### `--security-check {abort,skip,warn}`
+### `--security-check {error,warn,skip}`
 
 Check for sensitive information in files using detect-secrets.
 
-- **abort**: Stop processing if secrets are found
-- **skip**: Skip files containing secrets
-- **warn**: Include files but show warnings (default)
+- **error**: Stop processing if secrets are found (default in v3.2)
+- **warn**: Include files but show warnings
+- **skip**: Disable security scanning (not recommended)
 
 ## Archive Options
 
@@ -357,7 +359,7 @@ m1f auto-bundle --quiet
 - `--verbose`, `-v`: Enable verbose output
 - `--quiet`, `-q`: Suppress all console output
 
-See the [Auto Bundle Guide](06_auto_bundle_guide.md) for detailed configuration
+See the [Auto Bundle Guide](20_auto_bundle_guide.md) for detailed configuration
 instructions.
 
 ## Notes
