@@ -1515,6 +1515,203 @@ improvements and new features.
 - Multiple output formats
 - Cross-platform compatibility
 
+======= presets/ai-context.m1f-presets.yml ======
+# AI Context Generation Preset
+# Optimized for creating context bundles for Claude, ChatGPT, and other LLMs
+
+# For code review and analysis
+code_review:
+  description: "Code bundle for AI review and analysis"
+  enabled: true
+  priority: 20
+  
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "MachineReadable"  # Best for AI parsing
+    security_check: "warn"  # Warn but don't stop
+    
+    # Exclude generated and dependency files
+    exclude_patterns:
+      - "**/node_modules/**"
+      - "**/venv/**"
+      - "**/__pycache__/**"
+      - "**/dist/**"
+      - "**/build/**"
+      - "**/.git/**"
+      - "**/*.min.js"
+      - "**/*.min.css"
+      - "**/*.map"
+    
+    # Size limits for AI context windows
+    max_file_size: "500KB"  # Keep individual files reasonable
+    
+    # Extension-specific defaults
+    extensions:
+      .py:
+        actions:
+          - strip_comments  # Remove comments but keep docstrings
+          - remove_empty_lines
+      .js:
+        actions:
+          - strip_comments
+          - compress_whitespace
+      .tsx:
+        actions:
+          - strip_comments
+          - compress_whitespace
+      .jsx:
+        actions:
+          - strip_comments
+          - compress_whitespace
+  
+  presets:
+    # Source code
+    source:
+      patterns:
+        - "src/**/*"
+        - "lib/**/*"
+        - "app/**/*"
+      exclude_patterns:
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/__tests__/**"
+      separator_style: "MachineReadable"
+      include_metadata: true
+    
+    # Configuration and setup
+    config:
+      patterns:
+        - "package.json"
+        - "tsconfig*.json"
+        - "webpack.config.*"
+        - "vite.config.*"
+        - ".eslintrc*"
+        - "pyproject.toml"
+        - "requirements*.txt"
+        - "Makefile"
+        - "docker-compose*.yml"
+      actions: []  # Keep configs as-is
+      include_metadata: true
+    
+    # Documentation
+    docs:
+      patterns:
+        - "README*"
+        - "docs/**/*.md"
+        - "*.md"
+      actions:
+        - join_paragraphs  # Compress for AI
+        - remove_empty_lines
+      max_lines: 500  # Limit doc length
+    
+    # Tests - just structure
+    tests:
+      patterns:
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/test_*.py"
+      actions:
+        - custom
+      custom_processor: "extract_functions"
+      max_lines: 50
+
+# For documentation chat
+docs_chat:
+  description: "Documentation bundle optimized for Q&A"
+  enabled: true
+  priority: 15
+  
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Markdown"  # Better for chat context
+    security_check: null  # No secrets in docs
+    remove_scraped_metadata: true
+    
+    exclude_patterns:
+      - "_build/**"
+      - "site/**"
+      - ".tox/**"
+  
+  presets:
+    # All markdown files
+    markdown:
+      patterns:
+        - "**/*.md"
+        - "**/*.mdx"
+        - "**/*.markdown"
+      actions:
+        - join_paragraphs
+        - remove_empty_lines
+      max_file_size: "1MB"
+      separator_style: "Markdown"
+    
+    # Code examples in docs
+    examples:
+      patterns:
+        - "**/examples/**/*"
+        - "**/snippets/**/*"
+      actions:
+        - strip_comments
+        - compress_whitespace
+      max_lines: 100
+    
+    # API reference
+    api_ref:
+      patterns:
+        - "**/api/**/*.md"
+        - "**/reference/**/*.md"
+      actions:
+        - compress_whitespace
+      max_file_size: "2MB"
+
+# For debugging and problem-solving
+debug_context:
+  description: "Include everything relevant for debugging"
+  enabled: false  # Enable with --preset-group debug_context
+  priority: 30
+  
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Detailed"  # Maximum detail
+    security_check: "warn"
+    
+    # Include more for debugging
+    include_dot_paths: true  # Include .env, .config, etc
+    max_file_size: "10MB"   # Allow larger files
+    
+    # Less strict excludes
+    exclude_patterns:
+      - "**/node_modules/**"
+      - "**/.git/objects/**"
+      - "**/*.log"
+  
+  presets:
+    # Everything in the current directory
+    all_files:
+      patterns:
+        - "**/*"
+      actions: []  # No processing - keep original
+      include_metadata: true
+      separator_style: "Detailed"
+    
+    # Logs and debug output
+    logs:
+      patterns:
+        - "**/*.log"
+        - "**/debug/**/*"
+        - "**/logs/**/*"
+      actions:
+        - custom
+      custom_processor: "truncate"
+      processor_args:
+        max_chars: 10000  # Last 10KB of logs
+      max_lines: 500
+
+# Usage examples:
+# m1f -s . -o ai-context.txt --preset ai-context.m1f-presets.yml
+# m1f -s ./docs -o docs-qa.txt --preset ai-context.m1f-presets.yml --preset-group docs_chat
+# m1f -s . -o debug.txt --preset ai-context.m1f-presets.yml --preset-group debug_context
+
 ======= presets/docs-bundle.m1f-presets.yml ======
 # Documentation bundle preset group
 # Claude prefers valid markdown. However, there are LLMs that only read the first 200 lines of a file and then
@@ -1525,13 +1722,31 @@ docs_bundle:
   priority: 10
   enabled: true
   
+  # Global settings for documentation bundles
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    security_check: null  # Docs rarely have secrets
+    remove_scraped_metadata: true  # Clean up scraped docs
+    
+    # Exclude build outputs
+    exclude_patterns:
+      - "_build/**"
+      - "build/**"
+      - "site/**"
+      - "public/**"
+  
   presets:
     markdown_processor:
       patterns: 
         - "**/*.md"
+        - "**/*.markdown"
+        - "**/README*"
       actions:
-        - "join_paragraphs"
+        - "join_paragraphs"  # Compress paragraphs to single lines
         - "remove_empty_lines"
+      separator_style: "Standard"
+      max_file_size: "2MB"
 
 ======= presets/documentation.m1f-presets.yml ======
 # Documentation Project Preset Configuration for m1f
@@ -1541,6 +1756,29 @@ documentation:
   description: "Documentation project processing"
   enabled: true
   priority: 20  # Higher priority for documentation-focused projects
+  
+  # Global settings for documentation projects
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    security_check: null  # Documentation rarely has secrets
+    
+    # Documentation-specific excludes
+    exclude_patterns:
+      - "_build/**"
+      - "build/**"
+      - ".tox/**"
+      - "htmlcov/**"
+      - "site/**"  # MkDocs build output
+      - "public/**"  # Hugo/Jekyll output
+      - "*.pyc"
+      - "__pycache__/**"
+    
+    # Allow larger documentation files
+    max_file_size: "5MB"
+    
+    # Keep all metadata by default
+    remove_scraped_metadata: false
   
   presets:
     # Markdown files - main content
@@ -1567,9 +1805,10 @@ documentation:
       actions:
         - strip_comments
         - compress_whitespace
-      # Keep examples concise
-      max_lines: 50
-      separator_style: "Detailed"
+      # Keep examples concise but useful
+      max_lines: 100  # Show more of examples
+      separator_style: "Standard"
+      max_file_size: "200KB"
     
     # API documentation
     api_docs:
@@ -1580,7 +1819,8 @@ documentation:
         - "swagger*.json"
       actions:
         - compress_whitespace
-      separator_style: "Detailed"
+      separator_style: "Standard"
+      max_file_size: "1MB"  # API docs can be large
     
     # Jupyter notebooks
     notebooks:
@@ -1622,7 +1862,7 @@ documentation:
         - custom
       custom_processor: "truncate"
       processor_args:
-        max_chars: 100  # Just show path and basic info
+        max_chars: 200  # Show path and alt text if available
       include_metadata: true
     
     # Configuration files
@@ -1646,6 +1886,11 @@ technical_writing:
   description: "Technical documentation with special formatting"
   enabled: false  # Enable when needed
   priority: 15
+  
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    max_file_size: "10MB"  # LaTeX files can be large
   
   presets:
     # AsciiDoc files
@@ -1705,7 +1950,10 @@ web_project:
     include_symlinks: false         # Follow symbolic links
     no_default_excludes: false      # Disable default exclusions (node_modules, etc)
     max_file_size: "10MB"          # Skip files larger than this
-    # exclude_paths_file: ".gitignore"  # Use gitignore file for exclusions
+    # Use multiple exclude files - they are merged
+    exclude_paths_file:
+      - ".gitignore"
+      - ".m1fignore"
     
     # Processing options
     remove_scraped_metadata: true   # Remove HTML2MD metadata
@@ -1982,10 +2230,44 @@ web_project_complete:
       max_file_size: "50KB"  # Only include small vendor files
       security_check: null  # Don't check vendor code
 
+# v3.2 feature example: Control deduplication and encoding
+v3_2_features:
+  description: "Demonstrating v3.2 features"
+  priority: 20
+  
+  global_settings:
+    # v3.2: Control content deduplication
+    enable_content_deduplication: false  # Include duplicate files
+    
+    # v3.2: Control UTF-8 preference
+    prefer_utf8_for_text_files: false  # Use detected encoding
+    
+    
+    # v3.2: Enhanced security options
+    security_check: "error"  # Strictest mode
+  
+  presets:
+    # Legacy encoding files
+    legacy_files:
+      patterns:
+        - "legacy/**/*.txt"
+        - "legacy/**/*.md"
+      # Will use windows-1252 if detected, not force UTF-8
+      prefer_utf8_for_text_files: false
+    
+    # Test files that might have duplicates
+    test_files:
+      patterns:
+        - "test/**/*"
+        - "tests/**/*"
+      # Allow duplicate test fixtures
+      enable_content_deduplication: false
+
 # Usage examples:
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
 # python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
+# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group v3_2_features
 
 ======= presets/template-all-settings.m1f-presets.yml ======
 # Complete m1f Preset Template
@@ -2128,6 +2410,10 @@ example_group_name:
     # Disable default exclusions like node_modules, .git, etc (default: false)
     no_default_excludes: false
     
+    # v3.2 features
+    enable_content_deduplication: true  # Deduplicate files by content
+    prefer_utf8_for_text_files: true    # Prefer UTF-8 for .md, .txt files
+    
     # Maximum file size to include
     # Supports: B, KB, MB, GB, TB (e.g., "50KB", "10MB", "1.5GB")
     max_file_size: "10MB"
@@ -2244,6 +2530,7 @@ example_group_name:
       actions:
         - remove_empty_lines
         - compress_whitespace
+        - join_paragraphs  # v3.2: Compress paragraphs for LLMs
       
       # Override separator style for these files
       separator_style: "Markdown"
@@ -2639,8 +2926,6 @@ wordpress:
     # Security - warn for WordPress since config files may have keys
     security_check: "warn"
     
-    # Performance - parallel processing enabled by default in v3.2
-    # parallel: true  # This is now always on
     
     # WordPress-specific excludes
     exclude_patterns:

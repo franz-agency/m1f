@@ -1,0 +1,195 @@
+# AI Context Generation Preset
+# Optimized for creating context bundles for Claude, ChatGPT, and other LLMs
+
+# For code review and analysis
+code_review:
+  description: "Code bundle for AI review and analysis"
+  enabled: true
+  priority: 20
+  
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "MachineReadable"  # Best for AI parsing
+    security_check: "warn"  # Warn but don't stop
+    
+    # Exclude generated and dependency files
+    exclude_patterns:
+      - "**/node_modules/**"
+      - "**/venv/**"
+      - "**/__pycache__/**"
+      - "**/dist/**"
+      - "**/build/**"
+      - "**/.git/**"
+      - "**/*.min.js"
+      - "**/*.min.css"
+      - "**/*.map"
+    
+    # Size limits for AI context windows
+    max_file_size: "500KB"  # Keep individual files reasonable
+    
+    # Extension-specific defaults
+    extensions:
+      .py:
+        actions:
+          - strip_comments  # Remove comments but keep docstrings
+          - remove_empty_lines
+      .js:
+        actions:
+          - strip_comments
+          - compress_whitespace
+      .tsx:
+        actions:
+          - strip_comments
+          - compress_whitespace
+      .jsx:
+        actions:
+          - strip_comments
+          - compress_whitespace
+  
+  presets:
+    # Source code
+    source:
+      patterns:
+        - "src/**/*"
+        - "lib/**/*"
+        - "app/**/*"
+      exclude_patterns:
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/__tests__/**"
+      separator_style: "MachineReadable"
+      include_metadata: true
+    
+    # Configuration and setup
+    config:
+      patterns:
+        - "package.json"
+        - "tsconfig*.json"
+        - "webpack.config.*"
+        - "vite.config.*"
+        - ".eslintrc*"
+        - "pyproject.toml"
+        - "requirements*.txt"
+        - "Makefile"
+        - "docker-compose*.yml"
+      actions: []  # Keep configs as-is
+      include_metadata: true
+    
+    # Documentation
+    docs:
+      patterns:
+        - "README*"
+        - "docs/**/*.md"
+        - "*.md"
+      actions:
+        - join_paragraphs  # Compress for AI
+        - remove_empty_lines
+      max_lines: 500  # Limit doc length
+    
+    # Tests - just structure
+    tests:
+      patterns:
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/test_*.py"
+      actions:
+        - custom
+      custom_processor: "extract_functions"
+      max_lines: 50
+
+# For documentation chat
+docs_chat:
+  description: "Documentation bundle optimized for Q&A"
+  enabled: true
+  priority: 15
+  
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Markdown"  # Better for chat context
+    security_check: null  # No secrets in docs
+    remove_scraped_metadata: true
+    
+    exclude_patterns:
+      - "_build/**"
+      - "site/**"
+      - ".tox/**"
+  
+  presets:
+    # All markdown files
+    markdown:
+      patterns:
+        - "**/*.md"
+        - "**/*.mdx"
+        - "**/*.markdown"
+      actions:
+        - join_paragraphs
+        - remove_empty_lines
+      max_file_size: "1MB"
+      separator_style: "Markdown"
+    
+    # Code examples in docs
+    examples:
+      patterns:
+        - "**/examples/**/*"
+        - "**/snippets/**/*"
+      actions:
+        - strip_comments
+        - compress_whitespace
+      max_lines: 100
+    
+    # API reference
+    api_ref:
+      patterns:
+        - "**/api/**/*.md"
+        - "**/reference/**/*.md"
+      actions:
+        - compress_whitespace
+      max_file_size: "2MB"
+
+# For debugging and problem-solving
+debug_context:
+  description: "Include everything relevant for debugging"
+  enabled: false  # Enable with --preset-group debug_context
+  priority: 30
+  
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Detailed"  # Maximum detail
+    security_check: "warn"
+    
+    # Include more for debugging
+    include_dot_paths: true  # Include .env, .config, etc
+    max_file_size: "10MB"   # Allow larger files
+    
+    # Less strict excludes
+    exclude_patterns:
+      - "**/node_modules/**"
+      - "**/.git/objects/**"
+      - "**/*.log"
+  
+  presets:
+    # Everything in the current directory
+    all_files:
+      patterns:
+        - "**/*"
+      actions: []  # No processing - keep original
+      include_metadata: true
+      separator_style: "Detailed"
+    
+    # Logs and debug output
+    logs:
+      patterns:
+        - "**/*.log"
+        - "**/debug/**/*"
+        - "**/logs/**/*"
+      actions:
+        - custom
+      custom_processor: "truncate"
+      processor_args:
+        max_chars: 10000  # Last 10KB of logs
+      max_lines: 500
+
+# Usage examples:
+# m1f -s . -o ai-context.txt --preset ai-context.m1f-presets.yml
+# m1f -s ./docs -o docs-qa.txt --preset ai-context.m1f-presets.yml --preset-group docs_chat
+# m1f -s . -o debug.txt --preset ai-context.m1f-presets.yml --preset-group debug_context

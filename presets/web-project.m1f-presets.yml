@@ -6,6 +6,34 @@ frontend:
   enabled: true
   priority: 10
   
+  # Global settings for frontend projects
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    security_check: "warn"
+    
+    # Common frontend excludes
+    exclude_patterns:
+      - "node_modules/**"
+      - "dist/**"
+      - "build/**"
+      - ".next/**"
+      - ".nuxt/**"
+      - "coverage/**"
+      - "*.log"
+      - ".cache/**"
+      - ".parcel-cache/**"
+    
+    # Default size limits for frontend assets
+    max_file_size: "1MB"
+    
+    # Extension defaults
+    extensions:
+      .js:
+        max_file_size: "200KB"
+      .css:
+        max_file_size: "100KB"
+  
   presets:
     # React/Vue/Angular components
     components:
@@ -66,8 +94,11 @@ frontend:
         - compress_whitespace
       # Truncate large data files
       max_lines: 100
+      max_file_size: "50KB"
       patterns:
         - "src/data/**/*.json"
+        - "mock/**/*.json"
+        - "fixtures/**/*.json"
     
     # Images - just include reference
     images:
@@ -76,8 +107,9 @@ frontend:
         - custom
       custom_processor: "truncate"
       processor_args:
-        max_chars: 50  # Just show filename
+        max_chars: 100  # Just show filename and basic info
       include_metadata: true
+      max_file_size: "10KB"  # Only process small images
     
     # Configuration
     config:
@@ -101,6 +133,27 @@ backend:
   enabled: true
   priority: 5
   
+  # Global settings for backend projects
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    security_check: "abort"  # Stricter for backend
+    
+    # Backend-specific excludes
+    exclude_patterns:
+      - "node_modules/**"
+      - "venv/**"
+      - "__pycache__/**"
+      - "*.pyc"
+      - ".pytest_cache/**"
+      - "coverage/**"
+      - "*.log"
+      - ".env*"
+      - "*.sqlite"
+      - "*.db"
+    
+    max_file_size: "5MB"  # Allow larger backend files
+  
   presets:
     # API routes
     routes:
@@ -113,6 +166,7 @@ backend:
         - custom
       custom_processor: "extract_functions"
       separator_style: "Detailed"
+      max_file_size: "500KB"
     
     # Database models
     models:
@@ -145,6 +199,9 @@ backend:
       actions:
         - strip_comments
       max_lines: 200
+      exclude_patterns:
+        - "**/backups/**"
+        - "**/dumps/**"
     
     default:
       actions:

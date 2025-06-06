@@ -16,8 +16,6 @@ wordpress:
     # Security - warn for WordPress since config files may have keys
     security_check: "warn"
     
-    # Performance - parallel processing enabled by default in v3.2
-    # parallel: true  # This is now always on
     
     # WordPress-specific excludes
     exclude_patterns:
@@ -72,9 +70,13 @@ wordpress:
         - "wp-content/themes/**/*.php"
       actions:
         - remove_empty_lines
-      # Don't include metadata for cleaner output
       include_metadata: true
-      separator_style: "Detailed"
+      separator_style: "Standard"
+      # Exclude vendor and library files
+      exclude_patterns:
+        - "wp-includes/**"  # WordPress core
+        - "wp-admin/**"      # WordPress admin
+        - "**/vendor/**"     # Composer dependencies
     
     # HTML templates and output
     html:
@@ -115,9 +117,11 @@ wordpress:
       actions:
         - strip_comments
         - compress_whitespace
-      # Exclude minified files from processing
+      # Exclude minified and vendor files
       exclude_patterns:
         - "*.min.js"
+        - "**/vendor/**"
+        - "**/node_modules/**"
       separator_style: "Standard"
     
     # CSS files
@@ -132,22 +136,22 @@ wordpress:
         - "*.min.css"
       separator_style: "Standard"
     
-    # Configuration files
+    # Configuration files - exclude most sensitive ones
     config:
       patterns:
-        - "wp-config*.php"
-        - ".env*"
         - "*.json"
         - "*.yml"
         - "*.yaml"
+        - "composer.json"
+        - "package.json"
       actions:
-        - custom
-      custom_processor: "redact_secrets"
-      processor_args:
-        patterns:
-          - "(?i)define\\s*\\(\\s*[\"']DB_(NAME|USER|PASSWORD|HOST)[\"'].*?\\)"
-          - "(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*[\"']?[\\w-]+[\"']?"
+        - compress_whitespace
+      # wp-config.php is excluded globally for security
+      exclude_patterns:
+        - "wp-config*.php"
+        - ".env*"
       include_metadata: true
+      max_file_size: "100KB"
     
     # SQL files
     sql:
@@ -156,7 +160,7 @@ wordpress:
         - strip_comments
         - compress_whitespace
       # Truncate large dump files
-      max_lines: 1000
+      max_lines: 500  # Truncate large SQL dumps
     
     # Default for unmatched files
     default:

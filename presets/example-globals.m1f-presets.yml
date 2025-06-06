@@ -28,7 +28,10 @@ web_project:
     include_symlinks: false         # Follow symbolic links
     no_default_excludes: false      # Disable default exclusions (node_modules, etc)
     max_file_size: "10MB"          # Skip files larger than this
-    # exclude_paths_file: ".gitignore"  # Use gitignore file for exclusions
+    # Use multiple exclude files - they are merged
+    exclude_paths_file:
+      - ".gitignore"
+      - ".m1fignore"
     
     # Processing options
     remove_scraped_metadata: true   # Remove HTML2MD metadata

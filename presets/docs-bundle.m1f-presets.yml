@@ -7,10 +7,28 @@ docs_bundle:
   priority: 10
   enabled: true
   
+  # Global settings for documentation bundles
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    security_check: null  # Docs rarely have secrets
+    remove_scraped_metadata: true  # Clean up scraped docs
+    
+    # Exclude build outputs
+    exclude_patterns:
+      - "_build/**"
+      - "build/**"
+      - "site/**"
+      - "public/**"
+  
   presets:
     markdown_processor:
       patterns: 
         - "**/*.md"
+        - "**/*.markdown"
+        - "**/README*"
       actions:
-        - "join_paragraphs"
+        - "join_paragraphs"  # Compress paragraphs to single lines
         - "remove_empty_lines"
+      separator_style: "Standard"
+      max_file_size: "2MB"

@@ -6,6 +6,29 @@ documentation:
   enabled: true
   priority: 20  # Higher priority for documentation-focused projects
   
+  # Global settings for documentation projects
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    security_check: null  # Documentation rarely has secrets
+    
+    # Documentation-specific excludes
+    exclude_patterns:
+      - "_build/**"
+      - "build/**"
+      - ".tox/**"
+      - "htmlcov/**"
+      - "site/**"  # MkDocs build output
+      - "public/**"  # Hugo/Jekyll output
+      - "*.pyc"
+      - "__pycache__/**"
+    
+    # Allow larger documentation files
+    max_file_size: "5MB"
+    
+    # Keep all metadata by default
+    remove_scraped_metadata: false
+  
   presets:
     # Markdown files - main content
     markdown:
@@ -31,9 +54,10 @@ documentation:
       actions:
         - strip_comments
         - compress_whitespace
-      # Keep examples concise
-      max_lines: 50
-      separator_style: "Detailed"
+      # Keep examples concise but useful
+      max_lines: 100  # Show more of examples
+      separator_style: "Standard"
+      max_file_size: "200KB"
     
     # API documentation
     api_docs:
@@ -44,7 +68,8 @@ documentation:
         - "swagger*.json"
       actions:
         - compress_whitespace
-      separator_style: "Detailed"
+      separator_style: "Standard"
+      max_file_size: "1MB"  # API docs can be large
     
     # Jupyter notebooks
     notebooks:
@@ -86,7 +111,7 @@ documentation:
         - custom
       custom_processor: "truncate"
       processor_args:
-        max_chars: 100  # Just show path and basic info
+        max_chars: 200  # Show path and alt text if available
       include_metadata: true
     
     # Configuration files
@@ -110,6 +135,11 @@ technical_writing:
   description: "Technical documentation with special formatting"
   enabled: false  # Enable when needed
   priority: 15
+  
+  global_settings:
+    encoding: "utf-8"
+    separator_style: "Standard"
+    max_file_size: "10MB"  # LaTeX files can be large
   
   presets:
     # AsciiDoc files

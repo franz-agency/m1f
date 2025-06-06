@@ -138,6 +138,10 @@ example_group_name:
     # Disable default exclusions like node_modules, .git, etc (default: false)
     no_default_excludes: false
     
+    # v3.2 features
+    enable_content_deduplication: true  # Deduplicate files by content
+    prefer_utf8_for_text_files: true    # Prefer UTF-8 for .md, .txt files
+    
     # Maximum file size to include
     # Supports: B, KB, MB, GB, TB (e.g., "50KB", "10MB", "1.5GB")
     max_file_size: "10MB"
@@ -254,6 +258,7 @@ example_group_name:
       actions:
         - remove_empty_lines
         - compress_whitespace
+        - join_paragraphs  # v3.2: Compress paragraphs for LLMs
       
       # Override separator style for these files
       separator_style: "Markdown"
