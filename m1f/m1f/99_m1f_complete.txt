@@ -764,7 +764,7 @@ limitations under the License.
   },
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
@@ -1511,6 +1511,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [3.2.1] - 2025-06-07
+
+### Fixed
+
+- **Wrapper Scripts**: Added PYTHONPATH to all wrapper scripts to ensure proper module imports
+- **Pre-commit Hook**: Updated to use python3 and properly handle virtual environments
+- **Bin Scripts**: All wrapper scripts now preserve current working directory
 
 ## [3.2.0] - 2025-06-06
 
@@ -8390,7 +8398,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.2.0"
+__version__ = "3.2.1"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======

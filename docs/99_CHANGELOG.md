@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2025-06-07
+
+### Fixed
+
+- **Wrapper Scripts**: Added PYTHONPATH to all wrapper scripts to ensure proper module imports
+- **Pre-commit Hook**: Updated to use python3 and properly handle virtual environments
+- **Bin Scripts**: All wrapper scripts now preserve current working directory
+
 ## [3.2.0] - 2025-06-06
 
 ### Added
