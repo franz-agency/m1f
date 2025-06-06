@@ -162,18 +162,18 @@ echo For detailed help on each tool, use: ^<tool^> --help'
 setlocal
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=%SCRIPT_DIR%.."
-set "M1F_DOCS=%PROJECT_ROOT%\.m1f\m1f-doc\99_m1fdocs.txt"
-if not exist ".m1f" mkdir ".m1f"
-if exist ".m1f\m1f-docs.txt" (
-    echo m1f documentation already linked at .m1f\m1f-docs.txt
+set "M1F_DOCS=%PROJECT_ROOT%\m1f\m1f-docs.txt"
+if not exist "m1f" mkdir "m1f"
+if exist "m1f\m1f-docs.txt" (
+    echo m1f documentation already linked at m1f\m1f-docs.txt
 ) else (
-    mklink ".m1f\m1f-docs.txt" "%M1F_DOCS%"
+    mklink "m1f\m1f-docs.txt" "%M1F_DOCS%"
     echo.
     echo You can now reference m1f documentation in AI tools:
-    echo   @.m1f\m1f-docs.txt
+    echo   @m1f\m1f-docs.txt
     echo.
     echo Example usage with Claude Code:
-    echo   "Please read @.m1f\m1f-docs.txt and help me set up m1f for this project"
+    echo   "Please read @m1f\m1f-docs.txt and help me set up m1f for this project"
 )'
 }
 
