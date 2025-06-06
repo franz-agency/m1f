@@ -187,23 +187,23 @@ cd /your/project
 m1f-link
 ```
 
-This creates `.m1f/m1f-docs.txt` - a symlink to the complete m1f documentation
+This creates `m1f/m1f-docs.txt` - a symlink to the complete m1f documentation
 that AI tools can read.
 
 #### Example AI Prompts:
 
 ```bash
 # Ask Claude Code to create a configuration
-"Please read @.m1f/m1f-docs.txt and create a .m1f.config.yml
+"Please read @m1f/m1f-docs.txt and create a .m1f.config.yml
 for my Python web project"
 
 # Get help with specific use cases
-"Based on @.m1f/m1f-docs.txt, how do I exclude all test
+"Based on @m1f/m1f-docs.txt, how do I exclude all test
 files but include fixture data?"
 
 # Troubleshoot issues
 "I'm getting this error: [error message]. Can you check
-@.m1f/m1f-docs.txt to help me fix it?"
+@m1f/m1f-docs.txt to help me fix it?"
 ```
 
 The AI will understand:
@@ -212,29 +212,6 @@ The AI will understand:
 - How to create `.m1f.config.yml` files
 - Preset system and file processing options
 - Best practices for different project types
-
-Or manually:
-
-### Linux/macOS
-
-```bash
-mkdir -p .m1f
-ln -s /path/to/m1f/.m1f .m1f/m1f
-```
-
-### Windows (with Developer Mode)
-
-```powershell
-New-Item -ItemType Directory -Force -Path .m1f
-New-Item -ItemType SymbolicLink -Path ".m1f\m1f" -Target "C:\path\to\m1f\.m1f"
-```
-
-### Windows (without Developer Mode - Junction)
-
-```powershell
-New-Item -ItemType Directory -Force -Path .m1f
-cmd /c mklink /J ".m1f\m1f" "C:\path\to\m1f\.m1f"
-```
 
 ## Troubleshooting
 
