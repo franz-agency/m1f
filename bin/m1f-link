@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # m1f-link - Create symlink to m1f documentation
 
+# Save current directory
+ORIGINAL_DIR="$(pwd)"
+
 # Get the real path of this script
 SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
 BIN_DIR="$(dirname "$SCRIPT_PATH")"
@@ -8,6 +11,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Path to the m1f documentation bundle
 M1F_DOCS="$PROJECT_ROOT/m1f/m1f-docs.txt"
+
+# Make sure we're in the original directory
+cd "$ORIGINAL_DIR"
 
 # Create m1f directory if it doesn't exist
 if [ ! -d "m1f" ]; then

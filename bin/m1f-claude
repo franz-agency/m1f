@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # m1f-claude - Enhance Claude prompts with m1f knowledge
 
+# Save current directory
+ORIGINAL_DIR="$(pwd)"
+
 # Get the real path of this script
 SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
 BIN_DIR="$(dirname "$SCRIPT_PATH")"
 PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
-# Activate virtual environment and run m1f-claude
-cd "$PROJECT_ROOT" && source .venv/bin/activate && exec python tools/m1f_claude.py "$@"
+# Activate virtual environment
+source "$PROJECT_ROOT/.venv/bin/activate"
+
+# Go back to original directory and run m1f-claude
+cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/m1f_claude.py" "$@"
