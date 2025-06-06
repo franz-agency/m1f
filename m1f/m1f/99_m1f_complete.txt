@@ -1267,6 +1267,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
 
+# Set PYTHONPATH to include the project root
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
 # Go back to original directory and run mf1-html2md
 cd "$ORIGINAL_DIR" && exec python -m tools.html2md "$@"
 
@@ -1322,6 +1325,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
 
+# Set PYTHONPATH to include the project root
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
 # Go back to original directory and run s1f
 cd "$ORIGINAL_DIR" && exec python -m tools.s1f "$@"
 
@@ -1339,6 +1345,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
+
+# Set PYTHONPATH to include the project root
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run m1f-scrape
 cd "$ORIGINAL_DIR" && exec python -m tools.scrape_tool "$@"
@@ -1375,6 +1384,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
+
+# Set PYTHONPATH to include the project root
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run auto-bundle
 cd "$ORIGINAL_DIR" && exec python -m tools.m1f auto-bundle "$@"
