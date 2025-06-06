@@ -104,7 +104,7 @@ class OutputWriter:
             self.logger.debug(
                 f"Applied global abort_on_encoding_error: {self.global_settings.abort_on_encoding_error}"
             )
-        
+
         if self.global_settings.prefer_utf8_for_text_files is not None:
             encoding_config = replace(
                 encoding_config,

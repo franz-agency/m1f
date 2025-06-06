@@ -135,7 +135,10 @@ class EncodingHandler:
             }
 
             # Check if file extension suggests markdown or text files that should be UTF-8
-            if self.config.encoding.prefer_utf8_for_text_files and file_path.suffix.lower() in [".md", ".markdown", ".txt", ".rst"]:
+            if (
+                self.config.encoding.prefer_utf8_for_text_files
+                and file_path.suffix.lower() in [".md", ".markdown", ".txt", ".rst"]
+            ):
                 # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
                 # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
                 if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:

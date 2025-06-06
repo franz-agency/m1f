@@ -53,16 +53,16 @@ def test_deduplication_behavior(tmp_path):
     file1 = tmp_path / "file1.txt"
     file2 = tmp_path / "file2.txt"
     file3 = tmp_path / "file3.txt"
-    
+
     duplicate_content = "This is duplicate content"
     unique_content = "This is unique content"
-    
+
     file1.write_text(duplicate_content)
     file2.write_text(duplicate_content)
     file3.write_text(unique_content)
-    
+
     output_file = tmp_path / "output.txt"
-    
+
     # Test with deduplication enabled (default)
     result = subprocess.run(
         [
@@ -73,20 +73,23 @@ def test_deduplication_behavior(tmp_path):
             str(tmp_path),
             "-o",
             str(output_file),
-            "--include-extensions", ".txt",
-            "--excludes", "output*.txt", "*.log",
+            "--include-extensions",
+            ".txt",
+            "--excludes",
+            "output*.txt",
+            "*.log",
         ],
         capture_output=True,
         text=True,
     )
-    
+
     assert result.returncode == 0
     output_content = output_file.read_text()
-    
+
     # Should only have one instance of duplicate content
     assert output_content.count(duplicate_content) == 1
     assert output_content.count(unique_content) == 1
-    
+
     # Test with deduplication disabled
     output_file2 = tmp_path / "output2.txt"
     result = subprocess.run(
@@ -98,17 +101,20 @@ def test_deduplication_behavior(tmp_path):
             str(tmp_path),
             "-o",
             str(output_file2),
-            "--include-extensions", ".txt",
-            "--excludes", "output*.txt", "*.log",
+            "--include-extensions",
+            ".txt",
+            "--excludes",
+            "output*.txt",
+            "*.log",
             "--allow-duplicate-files",
         ],
         capture_output=True,
         text=True,
     )
-    
+
     assert result.returncode == 0
     output_content2 = output_file2.read_text()
-    
+
     # Should have two instances of duplicate content
     assert output_content2.count(duplicate_content) == 2
     assert output_content2.count(unique_content) == 1

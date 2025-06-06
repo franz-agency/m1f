@@ -42,7 +42,9 @@ def test_prefer_utf8_default_value():
 def test_no_prefer_utf8_cli_argument():
     """Test that --no-prefer-utf8-for-text-files sets the value to False."""
     parser = create_parser()
-    args = parser.parse_args(["-s", ".", "-o", "test.txt", "--no-prefer-utf8-for-text-files"])
+    args = parser.parse_args(
+        ["-s", ".", "-o", "test.txt", "--no-prefer-utf8-for-text-files"]
+    )
     config = Config.from_args(args)
     assert config.encoding.prefer_utf8_for_text_files is False
 
@@ -52,9 +54,9 @@ def test_m1f_runs_with_no_prefer_utf8_flag(tmp_path):
     # Create a test file
     test_file = tmp_path / "test.txt"
     test_file.write_text("Hello, world!")
-    
+
     output_file = tmp_path / "output.txt"
-    
+
     # Run m1f with the new flag
     result = subprocess.run(
         [
@@ -70,7 +72,7 @@ def test_m1f_runs_with_no_prefer_utf8_flag(tmp_path):
         capture_output=True,
         text=True,
     )
-    
+
     # Check that it ran successfully
     assert result.returncode == 0
     assert output_file.exists()

@@ -29,15 +29,15 @@ def isolated_test_directory():
         # Create a unique temporary directory
         temp_dir = tempfile.mkdtemp(prefix="m1f_security_test_")
         temp_path = Path(temp_dir)
-        
+
         # Create standard subdirectories
         source_dir = temp_path / "source"
         output_dir = temp_path / "output"
         source_dir.mkdir(parents=True, exist_ok=True)
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         yield temp_path, source_dir, output_dir
-        
+
     finally:
         # Clean up the temporary directory
         if temp_dir and Path(temp_dir).exists():
@@ -59,13 +59,13 @@ def create_test_file(base_dir: Path, relative_path: str, content: str) -> Path:
 def ensure_test_isolation():
     """Ensure tests are properly isolated from each other."""
     import logging
-    
+
     # Reset logging state
     logger = logging.getLogger()
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
-        if hasattr(handler, 'close'):
+        if hasattr(handler, "close"):
             handler.close()
-    
+
     # Reset logging level
     logger.setLevel(logging.WARNING)

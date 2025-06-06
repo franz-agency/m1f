@@ -2822,18 +2822,29 @@ wordpress:
   global_settings:
     # Default encoding and formatting
     encoding: "utf-8"
-    separator_style: "Detailed"
+    separator_style: "Standard"
     line_ending: "lf"
+    
+    # Security - warn for WordPress since config files may have keys
+    security_check: "warn"
+    
+    # Performance - parallel processing enabled by default in v3.2
+    # parallel: true  # This is now always on
     
     # WordPress-specific excludes
     exclude_patterns:
-      - "wp-content/uploads"
-      - "wp-content/cache"
-      - "wp-content/upgrade"
-      - "wp-content/backups"
+      - "wp-content/uploads/**"
+      - "wp-content/cache/**"
+      - "wp-content/upgrade/**"
+      - "wp-content/backups/**"
+      - "wp-content/backup-*/**"
+      - "wp-content/wflogs/**"  # Wordfence logs
+      - "wp-content/updraft/**"  # UpdraftPlus backups
       - "*.log"
       - "error_log"
-      - ".htaccess"
+      - "debug.log"
+      - ".htaccess"  # Usually contains sensitive server configs
+      - "wp-config.php"  # Contains database credentials
     
     # Common WordPress file extensions to exclude
     exclude_extensions:
@@ -2844,7 +2855,10 @@ wordpress:
       - ".zip"
       - ".tar"
       - ".gz"
+      - ".sql"
       - ".sql.gz"
+      - ".bak"
+      - ".tmp"
     
     # Extension-specific processing defaults
     extensions:
@@ -19030,15 +19044,15 @@ def isolated_test_directory():
         # Create a unique temporary directory
         temp_dir = tempfile.mkdtemp(prefix="m1f_security_test_")
         temp_path = Path(temp_dir)
-        
+
         # Create standard subdirectories
         source_dir = temp_path / "source"
         output_dir = temp_path / "output"
         source_dir.mkdir(parents=True, exist_ok=True)
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         yield temp_path, source_dir, output_dir
-        
+
     finally:
         # Clean up the temporary directory
         if temp_dir and Path(temp_dir).exists():
@@ -19060,14 +19074,14 @@ def create_test_file(base_dir: Path, relative_path: str, content: str) -> Path:
 def ensure_test_isolation():
     """Ensure tests are properly isolated from each other."""
     import logging
-    
+
     # Reset logging state
     logger = logging.getLogger()
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
-        if hasattr(handler, 'close'):
+        if hasattr(handler, "close"):
             handler.close()
-    
+
     # Reset logging level
     logger.setLevel(logging.WARNING)
 
@@ -19254,16 +19268,16 @@ def test_deduplication_behavior(tmp_path):
     file1 = tmp_path / "file1.txt"
     file2 = tmp_path / "file2.txt"
     file3 = tmp_path / "file3.txt"
-    
+
     duplicate_content = "This is duplicate content"
     unique_content = "This is unique content"
-    
+
     file1.write_text(duplicate_content)
     file2.write_text(duplicate_content)
     file3.write_text(unique_content)
-    
+
     output_file = tmp_path / "output.txt"
-    
+
     # Test with deduplication enabled (default)
     result = subprocess.run(
         [
@@ -19274,20 +19288,23 @@ def test_deduplication_behavior(tmp_path):
             str(tmp_path),
             "-o",
             str(output_file),
-            "--include-extensions", ".txt",
-            "--excludes", "output*.txt", "*.log",
+            "--include-extensions",
+            ".txt",
+            "--excludes",
+            "output*.txt",
+            "*.log",
         ],
         capture_output=True,
         text=True,
     )
-    
+
     assert result.returncode == 0
     output_content = output_file.read_text()
-    
+
     # Should only have one instance of duplicate content
     assert output_content.count(duplicate_content) == 1
     assert output_content.count(unique_content) == 1
-    
+
     # Test with deduplication disabled
     output_file2 = tmp_path / "output2.txt"
     result = subprocess.run(
@@ -19299,17 +19316,20 @@ def test_deduplication_behavior(tmp_path):
             str(tmp_path),
             "-o",
             str(output_file2),
-            "--include-extensions", ".txt",
-            "--excludes", "output*.txt", "*.log",
+            "--include-extensions",
+            ".txt",
+            "--excludes",
+            "output*.txt",
+            "*.log",
             "--allow-duplicate-files",
         ],
         capture_output=True,
         text=True,
     )
-    
+
     assert result.returncode == 0
     output_content2 = output_file2.read_text()
-    
+
     # Should have two instances of duplicate content
     assert output_content2.count(duplicate_content) == 2
     assert output_content2.count(unique_content) == 1
@@ -24502,7 +24522,9 @@ def test_prefer_utf8_default_value():
 def test_no_prefer_utf8_cli_argument():
     """Test that --no-prefer-utf8-for-text-files sets the value to False."""
     parser = create_parser()
-    args = parser.parse_args(["-s", ".", "-o", "test.txt", "--no-prefer-utf8-for-text-files"])
+    args = parser.parse_args(
+        ["-s", ".", "-o", "test.txt", "--no-prefer-utf8-for-text-files"]
+    )
     config = Config.from_args(args)
     assert config.encoding.prefer_utf8_for_text_files is False
 
@@ -24512,9 +24534,9 @@ def test_m1f_runs_with_no_prefer_utf8_flag(tmp_path):
     # Create a test file
     test_file = tmp_path / "test.txt"
     test_file.write_text("Hello, world!")
-    
+
     output_file = tmp_path / "output.txt"
-    
+
     # Run m1f with the new flag
     result = subprocess.run(
         [
@@ -24530,7 +24552,7 @@ def test_m1f_runs_with_no_prefer_utf8_flag(tmp_path):
         capture_output=True,
         text=True,
     )
-    
+
     # Check that it ran successfully
     assert result.returncode == 0
     assert output_file.exists()
@@ -24565,7 +24587,11 @@ import subprocess
 import tempfile
 
 # Import test infrastructure helpers
-from .conftest_security import isolated_test_directory, create_test_file, ensure_test_isolation
+from .conftest_security import (
+    isolated_test_directory,
+    create_test_file,
+    ensure_test_isolation,
+)
 
 
 def _create_test_file(path: Path, content: str) -> None:
@@ -24630,7 +24656,7 @@ def test_security_detection():
     """Test that security scanning correctly identifies files with/without sensitive information."""
     # Ensure test isolation
     ensure_test_isolation()
-    
+
     with isolated_test_directory() as (temp_path, source_dir, output_dir):
         # Create a test directory with clean and sensitive files
         test_dir = source_dir / "security_detection_test"
@@ -24710,7 +24736,7 @@ def test_security_check_skip():
     """Test security check skip functionality."""
     # Ensure test isolation
     ensure_test_isolation()
-    
+
     with isolated_test_directory() as (temp_path, source_dir, output_dir):
         # Create a test file with SECRET_KEY
         test_file = source_dir / "test_with_secret.py"
@@ -24743,7 +24769,7 @@ def test_security_check_warn():
     """Test security check warn functionality."""
     # Ensure test isolation
     ensure_test_isolation()
-    
+
     with isolated_test_directory() as (temp_path, source_dir, output_dir):
         # Create a test file with SECRET_KEY
         test_file = source_dir / "test_with_secret.py"
@@ -31222,7 +31248,9 @@ class Config:
             skip_output_file=getattr(args, "skip_output_file", False),
             separator_style=SeparatorStyle(args.separator_style),
             line_ending=LineEnding.from_str(args.line_ending),
-            enable_content_deduplication=not getattr(args, "allow_duplicate_files", False),
+            enable_content_deduplication=not getattr(
+                args, "allow_duplicate_files", False
+            ),
         )
 
         # Parse max file size if provided
@@ -31257,7 +31285,9 @@ class Config:
         encoding_config = EncodingConfig(
             target_charset=getattr(args, "convert_to_charset", None),
             abort_on_error=getattr(args, "abort_on_encoding_error", False),
-            prefer_utf8_for_text_files=not getattr(args, "no_prefer_utf8_for_text_files", False),
+            prefer_utf8_for_text_files=not getattr(
+                args, "no_prefer_utf8_for_text_files", False
+            ),
         )
 
         # Create security configuration
@@ -31396,7 +31426,8 @@ class Config:
             parallel=config.output.parallel,  # Keep existing value
             enable_content_deduplication=(
                 not getattr(args, "allow_duplicate_files", False)
-                if hasattr(args, "allow_duplicate_files") and getattr(args, "allow_duplicate_files", False)
+                if hasattr(args, "allow_duplicate_files")
+                and getattr(args, "allow_duplicate_files", False)
                 else (
                     global_settings.enable_content_deduplication
                     if global_settings.enable_content_deduplication is not None
@@ -32413,7 +32444,10 @@ class EncodingHandler:
             }
 
             # Check if file extension suggests markdown or text files that should be UTF-8
-            if self.config.encoding.prefer_utf8_for_text_files and file_path.suffix.lower() in [".md", ".markdown", ".txt", ".rst"]:
+            if (
+                self.config.encoding.prefer_utf8_for_text_files
+                and file_path.suffix.lower() in [".md", ".markdown", ".txt", ".rst"]
+            ):
                 # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
                 # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
                 if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:
@@ -33704,7 +33738,7 @@ class OutputWriter:
             self.logger.debug(
                 f"Applied global abort_on_encoding_error: {self.global_settings.abort_on_encoding_error}"
             )
-        
+
         if self.global_settings.prefer_utf8_for_text_files is not None:
             encoding_config = replace(
                 encoding_config,
@@ -35187,12 +35221,12 @@ class PresetManager:
         if not processor_name or not isinstance(processor_name, str):
             logger.warning(f"Invalid processor name: {processor_name}")
             return content
-        
+
         # Only allow alphanumeric and underscore in processor names
         if not processor_name.replace("_", "").isalnum():
             logger.warning(f"Invalid processor name format: {processor_name}")
             return content
-        
+
         if processor_name in self._builtin_processors:
             return self._builtin_processors[processor_name](content, args, file_path)
         else:

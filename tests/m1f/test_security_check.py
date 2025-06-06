@@ -27,7 +27,11 @@ import subprocess
 import tempfile
 
 # Import test infrastructure helpers
-from .conftest_security import isolated_test_directory, create_test_file, ensure_test_isolation
+from .conftest_security import (
+    isolated_test_directory,
+    create_test_file,
+    ensure_test_isolation,
+)
 
 
 def _create_test_file(path: Path, content: str) -> None:
@@ -92,7 +96,7 @@ def test_security_detection():
     """Test that security scanning correctly identifies files with/without sensitive information."""
     # Ensure test isolation
     ensure_test_isolation()
-    
+
     with isolated_test_directory() as (temp_path, source_dir, output_dir):
         # Create a test directory with clean and sensitive files
         test_dir = source_dir / "security_detection_test"
@@ -172,7 +176,7 @@ def test_security_check_skip():
     """Test security check skip functionality."""
     # Ensure test isolation
     ensure_test_isolation()
-    
+
     with isolated_test_directory() as (temp_path, source_dir, output_dir):
         # Create a test file with SECRET_KEY
         test_file = source_dir / "test_with_secret.py"
@@ -205,7 +209,7 @@ def test_security_check_warn():
     """Test security check warn functionality."""
     # Ensure test isolation
     ensure_test_isolation()
-    
+
     with isolated_test_directory() as (temp_path, source_dir, output_dir):
         # Create a test file with SECRET_KEY
         test_file = source_dir / "test_with_secret.py"

@@ -225,7 +225,9 @@ class Config:
             skip_output_file=getattr(args, "skip_output_file", False),
             separator_style=SeparatorStyle(args.separator_style),
             line_ending=LineEnding.from_str(args.line_ending),
-            enable_content_deduplication=not getattr(args, "allow_duplicate_files", False),
+            enable_content_deduplication=not getattr(
+                args, "allow_duplicate_files", False
+            ),
         )
 
         # Parse max file size if provided
@@ -260,7 +262,9 @@ class Config:
         encoding_config = EncodingConfig(
             target_charset=getattr(args, "convert_to_charset", None),
             abort_on_error=getattr(args, "abort_on_encoding_error", False),
-            prefer_utf8_for_text_files=not getattr(args, "no_prefer_utf8_for_text_files", False),
+            prefer_utf8_for_text_files=not getattr(
+                args, "no_prefer_utf8_for_text_files", False
+            ),
         )
 
         # Create security configuration
@@ -399,7 +403,8 @@ class Config:
             parallel=config.output.parallel,  # Keep existing value
             enable_content_deduplication=(
                 not getattr(args, "allow_duplicate_files", False)
-                if hasattr(args, "allow_duplicate_files") and getattr(args, "allow_duplicate_files", False)
+                if hasattr(args, "allow_duplicate_files")
+                and getattr(args, "allow_duplicate_files", False)
                 else (
                     global_settings.enable_content_deduplication
                     if global_settings.enable_content_deduplication is not None

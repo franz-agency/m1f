@@ -2556,18 +2556,29 @@ wordpress:
   global_settings:
     # Default encoding and formatting
     encoding: "utf-8"
-    separator_style: "Detailed"
+    separator_style: "Standard"
     line_ending: "lf"
+    
+    # Security - warn for WordPress since config files may have keys
+    security_check: "warn"
+    
+    # Performance - parallel processing enabled by default in v3.2
+    # parallel: true  # This is now always on
     
     # WordPress-specific excludes
     exclude_patterns:
-      - "wp-content/uploads"
-      - "wp-content/cache"
-      - "wp-content/upgrade"
-      - "wp-content/backups"
+      - "wp-content/uploads/**"
+      - "wp-content/cache/**"
+      - "wp-content/upgrade/**"
+      - "wp-content/backups/**"
+      - "wp-content/backup-*/**"
+      - "wp-content/wflogs/**"  # Wordfence logs
+      - "wp-content/updraft/**"  # UpdraftPlus backups
       - "*.log"
       - "error_log"
-      - ".htaccess"
+      - "debug.log"
+      - ".htaccess"  # Usually contains sensitive server configs
+      - "wp-config.php"  # Contains database credentials
     
     # Common WordPress file extensions to exclude
     exclude_extensions:
@@ -2578,7 +2589,10 @@ wordpress:
       - ".zip"
       - ".tar"
       - ".gz"
+      - ".sql"
       - ".sql.gz"
+      - ".bak"
+      - ".tmp"
     
     # Extension-specific processing defaults
     extensions:
