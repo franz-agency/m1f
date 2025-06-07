@@ -342,7 +342,7 @@ if you run 'm1f-link' and then reference @m1f/m1f-docs.txt
             context_parts.append("  📂 Standard project structure")
 
         # Check for m1f bundles
-        m1f_dir = self.project_path / ".m1f"
+        m1f_dir = self.project_path / "m1f"
         if m1f_dir.exists() and m1f_dir.is_dir():
             bundles = list(m1f_dir.glob("*.txt"))
             if bundles:
