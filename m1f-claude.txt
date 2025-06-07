@@ -27,7 +27,7 @@ m1f -s . -o bundle.txt --preset web-project
 
 1. **Use Python module directly** (RECOMMENDED):
    ```bash
-   python -m tools.m1f -s . -o output.txt
+   m1f -s . -o output.txt
    ```
 
 2. **Create local wrapper script** in your project:
@@ -122,10 +122,10 @@ echo "m1f/" >> .gitignore  # Don't commit generated bundles
 m1f auto-bundle --list
 
 # Generate all bundles
-m1f auto-bundle
+m1f-update
 
 # Generate specific bundle
-m1f auto-bundle code
+m1f-update code
 ```
 
 ## Preset Files
@@ -300,7 +300,7 @@ Use these with @ mentions for instant context.
 ### 2. Keep bundles updated:
 ```bash
 # Add to git pre-commit hook
-m1f auto-bundle --quiet
+m1f-update --quiet
 
 # Or use file watcher
 ./scripts/watch_and_bundle.sh
@@ -321,7 +321,7 @@ cd m1f && ./scripts/install.sh
 
 # Basic commands
 m1f -s . -o output.txt                    # Bundle current directory
-m1f auto-bundle                           # Run auto-bundling
+m1f-update                                # Run auto-bundling
 m1f auto-bundle --list                    # List available bundles
 m1f-s1f -i bundle.txt -d extracted/       # Extract files from bundle
 

@@ -21,7 +21,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.2.1"
+__version__ = "3.2.2"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= html2md.py ======
@@ -1976,7 +1976,7 @@ class Html2mdConverter:
         # Import crawler from m1f-scrape module
         raise NotImplementedError(
             "Website crawling has been moved to the m1f-scrape tool. "
-            "Please use: python -m tools.m1f-scrape <url> -o <output_dir>"
+            "Please use: m1f-scrape <url> -o <output_dir>"
         )
 
     async def convert_website_async(self, start_url: str) -> Dict[str, Path]:

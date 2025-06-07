@@ -71,5 +71,5 @@ browser_config:
 #   user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) ..."
 
 # Example usage:
-# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+# m1f-scrape https://example.com -o output/ \
 #   --scraper playwright --scraper-config playwright.yaml

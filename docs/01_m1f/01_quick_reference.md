@@ -6,98 +6,98 @@
 
 ```bash
 # Combine all files in current directory
-python tools/m1f.py -s . -o output.txt
+m1f -s . -o output.txt
 
 # Combine specific directory
-python tools/m1f.py -s ./src -o bundle.txt
+m1f -s ./src -o bundle.txt
 
 # Force overwrite existing output
-python tools/m1f.py -s . -o output.txt -f
+m1f -s . -o output.txt -f
 ```
 
 ### Using Presets (v3.2.0+)
 
 ```bash
 # Use a preset file (can define ALL parameters)
-python tools/m1f.py --preset production.yml -o output.txt
+m1f --preset production.yml -o output.txt
 
 # Preset can even define source and output
-python tools/m1f.py --preset full-config.yml
+m1f --preset full-config.yml
 
 # Override preset values with CLI
-python tools/m1f.py --preset prod.yml -o custom-output.txt -v
+m1f --preset prod.yml -o custom-output.txt -v
 ```
 
 ### File Type Filtering
 
 ```bash
 # Only Python files
-python tools/m1f.py -s . -o code.txt --include-extensions .py
+m1f -s . -o code.txt --include-extensions .py
 
 # Multiple file types
-python tools/m1f.py -s . -o docs.txt --include-extensions .md .txt .rst
+m1f -s . -o docs.txt --include-extensions .md .txt .rst
 
 # Exclude certain types
-python tools/m1f.py -s . -o output.txt --exclude-extensions .pyc .log
+m1f -s . -o output.txt --exclude-extensions .pyc .log
 ```
 
 ### Directory and Pattern Exclusions
 
 ```bash
 # Exclude specific directories
-python tools/m1f.py -s . -o output.txt --excludes "tests/" "docs/"
+m1f -s . -o output.txt --excludes "tests/" "docs/"
 
 # Exclude patterns
-python tools/m1f.py -s . -o output.txt --excludes "*.test.js" "*/tmp/*"
+m1f -s . -o output.txt --excludes "*.test.js" "*/tmp/*"
 
 # Use gitignore file
-python tools/m1f.py -s . -o output.txt --exclude-paths-file .gitignore
+m1f -s . -o output.txt --exclude-paths-file .gitignore
 ```
 
 ### Output Formatting
 
 ```bash
 # Markdown format
-python tools/m1f.py -s . -o output.md --separator-style Markdown
+m1f -s . -o output.md --separator-style Markdown
 
 # Machine-readable JSON metadata
-python tools/m1f.py -s . -o output.txt --separator-style MachineReadable
+m1f -s . -o output.txt --separator-style MachineReadable
 
 # No separators
-python tools/m1f.py -s . -o output.txt --separator-style None
+m1f -s . -o output.txt --separator-style None
 ```
 
 ### Size Management
 
 ```bash
 # Skip large files
-python tools/m1f.py -s . -o output.txt --max-file-size 100KB
+m1f -s . -o output.txt --max-file-size 100KB
 
 # Include only small text files
-python tools/m1f.py -s . -o small.txt --max-file-size 50KB --include-extensions .txt .md
+m1f -s . -o small.txt --max-file-size 50KB --include-extensions .txt .md
 ```
 
 ### Archive Creation
 
 ```bash
 # Create zip backup
-python tools/m1f.py -s . -o output.txt --create-archive
+m1f -s . -o output.txt --create-archive
 
 # Create tar.gz backup
-python tools/m1f.py -s . -o output.txt --create-archive --archive-type tar.gz
+m1f -s . -o output.txt --create-archive --archive-type tar.gz
 ```
 
 ### Using Presets
 
 ```bash
 # Use single preset
-python tools/m1f.py -s . -o output.txt --preset wordpress.m1f-presets.yml
+m1f -s . -o output.txt --preset wordpress.m1f-presets.yml
 
 # Use preset group
-python tools/m1f.py -s . -o output.txt --preset web.yml --preset-group frontend
+m1f -s . -o output.txt --preset web.yml --preset-group frontend
 
 # Multiple presets (merged in order)
-python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
+m1f -s . -o output.txt --preset base.yml project.yml
 ```
 
 ## Common Patterns
@@ -105,7 +105,7 @@ python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
 ### Documentation Bundle
 
 ```bash
-python tools/m1f.py -s ./docs -o documentation.txt \
+m1f -s ./docs -o documentation.txt \
     --include-extensions .md .rst .txt \
     --separator-style Markdown
 ```
@@ -113,7 +113,7 @@ python tools/m1f.py -s ./docs -o documentation.txt \
 ### Source Code Bundle
 
 ```bash
-python tools/m1f.py -s ./src -o source-code.txt \
+m1f -s ./src -o source-code.txt \
     --include-extensions .py .js .ts .jsx .tsx \
     --excludes "*.test.*" "*.spec.*" \
     --max-file-size 500KB
@@ -122,7 +122,7 @@ python tools/m1f.py -s ./src -o source-code.txt \
 ### WordPress Theme/Plugin
 
 ```bash
-python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
+m1f -s ./wp-content/themes/mytheme -o theme.txt \
     --include-extensions .php .js .css \
     --excludes "node_modules/" "vendor/" \
     --preset presets/wordpress.m1f-presets.yml
@@ -131,7 +131,7 @@ python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
 ### Clean Documentation Export
 
 ```bash
-python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
+m1f -s ./scraped_docs -o clean-docs.txt \
     --include-extensions .md \
     --remove-scraped-metadata \
     --separator-style Markdown
@@ -141,11 +141,11 @@ python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
 
 ```bash
 # Multiple exclude files (merged)
-python tools/m1f.py -s . -o output.txt \
+m1f -s . -o output.txt \
     --exclude-paths-file .gitignore .dockerignore custom-excludes.txt
 
 # Whitelist mode with include files
-python tools/m1f.py -s . -o api-bundle.txt \
+m1f -s . -o api-bundle.txt \
     --include-paths-file api-files.txt core-files.txt \
     --exclude-paths-file .gitignore
 ```
@@ -154,13 +154,13 @@ python tools/m1f.py -s . -o api-bundle.txt \
 
 ```bash
 # Single input file
-python tools/m1f.py -s . -i files.txt -o output.txt
+m1f -s . -i files.txt -o output.txt
 
 # Merge multiple file lists (Bash)
-python tools/m1f.py -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
+m1f -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
 
 # Combine with filters (input files bypass filters)
-python tools/m1f.py -s . -i must-include.txt -o output.txt \
+m1f -s . -i must-include.txt -o output.txt \
     --exclude-paths-file .gitignore
 ```
 
@@ -168,13 +168,13 @@ python tools/m1f.py -s . -i must-include.txt -o output.txt \
 
 ```bash
 # Create timestamped output
-python tools/m1f.py -s . -o build.txt -t
+m1f -s . -o build.txt -t
 
 # Minimal output for automation
-python tools/m1f.py -s . -o output.txt --minimal-output --quiet
+m1f -s . -o output.txt --minimal-output --quiet
 
 # With security check
-python tools/m1f.py -s . -o output.txt --security-check abort
+m1f -s . -o output.txt --security-check abort
 ```
 
 ## Quick Option Reference
@@ -209,7 +209,7 @@ Example: `--max-file-size 1.5MB`
 ## Exit on Success
 
 ```bash
-python tools/m1f.py -s . -o output.txt && echo "Success!"
+m1f -s . -o output.txt && echo "Success!"
 ```
 
 ## Aliases Setup
@@ -224,7 +224,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 
 ## Need Help?
 
-- Full options: `python tools/m1f.py --help`
+- Full options: `m1f --help`
 - [Complete CLI Reference](./02_cli_reference.md)
 - [Troubleshooting Guide](./03_troubleshooting.md)
 - [Preset Documentation](./10_m1f_presets.md)

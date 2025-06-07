@@ -371,7 +371,7 @@ class Html2mdConverter:
         # Import crawler from m1f-scrape module
         raise NotImplementedError(
             "Website crawling has been moved to the m1f-scrape tool. "
-            "Please use: python -m tools.m1f-scrape <url> -o <output_dir>"
+            "Please use: m1f-scrape <url> -o <output_dir>"
         )
 
     async def convert_website_async(self, start_url: str) -> Dict[str, Path]:

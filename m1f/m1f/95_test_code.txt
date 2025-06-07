@@ -2834,19 +2834,19 @@ tests/html2md_server/
 
    ```bash
    # Basic conversion
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page \
      --destination-dir ./output
 
    # With content selection
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page \
      --destination-dir ./output \
      --outermost-selector "article" \
      --ignore-selectors "nav" ".sidebar" "footer"
 
    # Specific page with options
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page/code-examples \
      --destination-dir ./output \
      --add-frontmatter \
@@ -3401,10 +3401,10 @@ commands from the project root to create the necessary test files:
 
 ```bash
 # Create combined files with different separator styles
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force
 ```
 
 ## Running Tests
@@ -3855,16 +3855,16 @@ def main():
         print("Error: Test files are missing from the output directory.")
         print("Please run the following commands to generate test files:")
         print(
-            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force"
+            "m1f --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force"
         )
         print(
-            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force"
+            "m1f --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force"
         )
         print(
-            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force"
+            "m1f --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force"
         )
         print(
-            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force"
+            "m1f --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force"
         )
         return 1
 
@@ -5837,7 +5837,7 @@ These files can be processed with m1f using the `--remove-scraped-metadata`
 option:
 
 ```bash
-python tools/m1f.py -s tests/mf1-html2md/scraped_examples -o output.md \
+m1f -s tests/mf1-html2md/scraped_examples -o output.md \
   --include-extensions .md --remove-scraped-metadata
 ```
 
@@ -6493,7 +6493,7 @@ async fn main() -> Result<()> {
 
 When working with HTML to Markdown conversion, you might encounter various
 inline code snippets like `document.querySelector('.content')` or shell commands
-like `python tools/html2md.py --help`. The converter should preserve these
+like `m1f-html2md --help`. The converter should preserve these
 inline code blocks.
 
 Here's a paragraph with multiple inline code elements: The `HTML2MDConverter`
@@ -7013,10 +7013,10 @@ Performance & Scalability
 pip install beautifulsoup4 markdownify chardet pyyaml
 
 # Basic conversion
-python tools/html2md.py --source-dir ./website --destination-dir ./markdown
+m1f-html2md --source-dir ./website --destination-dir ./markdown
 
 # Extract main content only
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./website \
     --destination-dir ./markdown \
     --outermost-selector "main" \
@@ -7047,11 +7047,11 @@ pip install pyyaml         # YAML frontmatter support
 
 ```
 # Check if html2md is working
-python tools/html2md.py --help
+m1f-html2md --help
 
 # Test with a simple conversion
 echo '<h1>Test</h1><p>Hello World</p>' > test.html
-python tools/html2md.py --source-dir . --destination-dir output
+m1f-html2md --source-dir . --destination-dir output
 ```
 
 ## Detailed Usage
@@ -7076,7 +7076,7 @@ python tools/html2md.py --source-dir . --destination-dir output
 #### Example 1: Documentation Site Conversion
 
 ```
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./docs-site \
     --destination-dir ./markdown-docs \
     --outermost-selector "article.documentation" \
@@ -7089,7 +7089,7 @@ python tools/html2md.py \
 #### Example 2: Blog Migration
 
 ```
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./wordpress-export \
     --destination-dir ./blog-markdown \
     --outermost-selector "div.post-content" \
@@ -7103,7 +7103,7 @@ python tools/html2md.py \
 #### Example 3: Knowledge Base Extraction
 
 ```
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./kb-site \
     --destination-dir ./kb-markdown \
     --outermost-selector "main#content" \
@@ -7277,7 +7277,7 @@ Try specifying `--source-encoding` or use `--target-encoding utf-8`
 
 # Enable debug output
 
-python tools/html2md.py \
+m1f-html2md \
  --source-dir ./website \
  --destination-dir ./output \
  --verbose \
@@ -7376,10 +7376,10 @@ Get up and running with M1F in seconds:
 
 ```
 # Basic usage - combine all Python files
-$ python tools/m1f.py --source-directory ./src --output-file combined.txt --include-patterns "*.py"
+$ m1f --source-directory ./src --output-file combined.txt --include-patterns "*.py"
 
 # Advanced usage with multiple patterns
-$ python tools/m1f.py \
+$ m1f \
     --source-directory ./project \
     --output-file project.m1f.md \
     --include-patterns "*.py" "*.js" "*.md" \
@@ -7446,7 +7446,7 @@ metadata:
 Combine an entire Python project for ChatGPT or Claude analysis:
 
 ```
-python tools/m1f.py \
+m1f \
     --source-directory ./my-python-project \
     --output-file project-for-llm.txt \
     --include-patterns "*.py" "*.md" "requirements.txt" "pyproject.toml" \
@@ -7492,7 +7492,7 @@ class Application:
 Combine all documentation files with preserved structure:
 
 ```
-python tools/m1f.py \
+m1f \
     --source-directory ./docs \
     --output-file documentation.m1f.md \
     --include-patterns "**/*.md" "**/*.rst" "**/*.txt" \
@@ -7506,7 +7506,7 @@ python tools/m1f.py \
 Combine a full-stack application with multiple languages:
 
 ```
-python tools/m1f.py \
+m1f \
     --config fullstack-config.yaml
 ```
 
@@ -7598,7 +7598,7 @@ For extremely large outputs, use streaming mode:
 
 ```
 # Stream output to avoid memory issues
-python tools/m1f.py \
+m1f \
     --source-directory ./massive-project \
     --output-file output.m1f.txt \
     --streaming-mode \
@@ -7613,10 +7613,10 @@ Convert HTML documentation to Markdown, then combine:
 
 ```
 # First convert HTML to MD
-python tools/html2md.py --source-dir ./html-docs --destination-dir ./md-docs
+m1f-html2md --source-dir ./html-docs --destination-dir ./md-docs
 
 # Then combine with m1f
-python tools/m1f.py --source-directory ./md-docs --output-file docs.m1f.md
+m1f --source-directory ./md-docs --output-file docs.m1f.md
 ```
 
 ### 🤖 With LLMs
@@ -8417,7 +8417,7 @@ async fn main() -> Result<()> {
                 
                 <div class="inline-code-test">
                     <h3>Mixed Content with Inline Code</h3>
-                    <p>When working with HTML to Markdown conversion, you might encounter various inline code snippets like <code>document.querySelector('.content')</code> or shell commands like <code>python tools/html2md.py --help</code>. The converter should preserve these inline code blocks.</p>
+                    <p>When working with HTML to Markdown conversion, you might encounter various inline code snippets like <code>document.querySelector('.content')</code> or shell commands like <code>m1f-html2md --help</code>. The converter should preserve these inline code blocks.</p>
                     
                     <p>Here's a paragraph with multiple inline code elements: The <code>HTML2MDConverter</code> class uses <code>BeautifulSoup</code> for parsing and <code>markdownify</code> for conversion. You can configure it with options like <code>--outermost-selector</code> and <code>--ignore-selectors</code>.</p>
                     
@@ -9276,10 +9276,10 @@ function deeplyNested() {
 pip install beautifulsoup4 markdownify chardet pyyaml
 
 # Basic conversion
-python tools/html2md.py --source-dir ./website --destination-dir ./markdown
+m1f-html2md --source-dir ./website --destination-dir ./markdown
 
 # Extract main content only
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./website \
     --destination-dir ./markdown \
     --outermost-selector "main" \
@@ -9308,11 +9308,11 @@ pip install pyyaml         # YAML frontmatter support</code></pre>
 
                 <h3>Verify Installation</h3>
                 <pre><code class="language-bash"># Check if html2md is working
-python tools/html2md.py --help
+m1f-html2md --help
 
 # Test with a simple conversion
 echo '&lt;h1&gt;Test&lt;/h1&gt;&lt;p&gt;Hello World&lt;/p&gt;' &gt; test.html
-python tools/html2md.py --source-dir . --destination-dir output</code></pre>
+m1f-html2md --source-dir . --destination-dir output</code></pre>
             </section>
 
             <section id="usage">
@@ -9387,7 +9387,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
                 
                 <div class="example-box">
                     <h4>Example 1: Documentation Site Conversion</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./docs-site \
     --destination-dir ./markdown-docs \
     --outermost-selector "article.documentation" \
@@ -9399,7 +9399,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
 
                 <div class="example-box">
                     <h4>Example 2: Blog Migration</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./wordpress-export \
     --destination-dir ./blog-markdown \
     --outermost-selector "div.post-content" \
@@ -9412,7 +9412,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
 
                 <div class="example-box">
                     <h4>Example 3: Knowledge Base Extraction</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./kb-site \
     --destination-dir ./kb-markdown \
     --outermost-selector "main#content" \
@@ -9593,7 +9593,7 @@ converter.on("conversion_complete", on_complete)</code></pre>
 
                 <h3>Debug Mode</h3>
                 <pre><code class="language-bash"># Enable debug output
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./website \
     --destination-dir ./output \
     --verbose \
@@ -9737,13 +9737,13 @@ python tools/html2md.py \
 $ python tests/html2md_server/server.py
 
 # In another terminal, run html2md on the test pages
-$ python tools/html2md.py \
+$ m1f-html2md \
     --source-dir http://localhost:8080/page/ \
     --destination-dir ./tests/html2md_output/ \
     --verbose
 
 # Or test specific selectors
-$ python tools/html2md.py \
+$ m1f-html2md \
     --source-dir http://localhost:8080/page/ \
     --destination-dir ./tests/html2md_output/ \
     --outermost-selector "article" \
@@ -9930,10 +9930,10 @@ $ python tools/html2md.py \
                 
                 <div class="command-example">
                     <pre><code># Basic usage - combine all Python files
-$ python tools/m1f.py --source-directory ./src --output-file combined.txt --include-patterns "*.py"
+$ m1f --source-directory ./src --output-file combined.txt --include-patterns "*.py"
 
 # Advanced usage with multiple patterns
-$ python tools/m1f.py \
+$ m1f \
     --source-directory ./project \
     --output-file project.m1f.md \
     --include-patterns "*.py" "*.js" "*.md" \
@@ -10044,7 +10044,7 @@ metadata:
                     <h3>Example 1: Preparing Code for LLM Analysis</h3>
                     <p>Combine an entire Python project for ChatGPT or Claude analysis:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --source-directory ./my-python-project \
     --output-file project-for-llm.txt \
     --include-patterns "*.py" "*.md" "requirements.txt" "pyproject.toml" \
@@ -10088,7 +10088,7 @@ class Application:
                     <h3>Example 2: Creating Documentation Archive</h3>
                     <p>Combine all documentation files with preserved structure:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --source-directory ./docs \
     --output-file documentation.m1f.md \
     --include-patterns "**/*.md" "**/*.rst" "**/*.txt" \
@@ -10101,7 +10101,7 @@ class Application:
                     <h3>Example 3: Multi-Language Project</h3>
                     <p>Combine a full-stack application with multiple languages:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --config fullstack-config.yaml</code></pre>
                     
                     <p>Where <code>fullstack-config.yaml</code> contains:</p>
@@ -10185,7 +10185,7 @@ m1f = M1F(separator_function=custom_separator)</code></pre>
                 <p>For extremely large outputs, use streaming mode:</p>
                 
                 <pre><code class="language-bash"># Stream output to avoid memory issues
-python tools/m1f.py \
+m1f \
     --source-directory ./massive-project \
     --output-file output.m1f.txt \
     --streaming-mode \
@@ -10200,10 +10200,10 @@ python tools/m1f.py \
                         <h3>🔄 With html2md</h3>
                         <p>Convert HTML documentation to Markdown, then combine:</p>
                         <pre><code class="language-bash"># First convert HTML to MD
-python tools/html2md.py --source-dir ./html-docs --destination-dir ./md-docs
+m1f-html2md --source-dir ./html-docs --destination-dir ./md-docs
 
 # Then combine with m1f
-python tools/m1f.py --source-directory ./md-docs --output-file docs.m1f.md</code></pre>
+m1f --source-directory ./md-docs --output-file docs.m1f.md</code></pre>
                     </div>
                     
                     <div class="card">

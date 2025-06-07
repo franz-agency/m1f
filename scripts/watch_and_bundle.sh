@@ -8,7 +8,7 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # Use python directly for auto-bundle
-PYTHON_CMD="cd \"$PROJECT_ROOT\" && source .venv/bin/activate && python -m tools.m1f auto-bundle"
+PYTHON_CMD="cd \"$PROJECT_ROOT\" && source .venv/bin/activate && m1f-update"
 
 # Colors
 GREEN='\033[0;32m'

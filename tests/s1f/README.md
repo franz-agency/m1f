@@ -19,10 +19,10 @@ commands from the project root to create the necessary test files:
 
 ```bash
 # Create combined files with different separator styles
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force
 ```
 
 ## Running Tests

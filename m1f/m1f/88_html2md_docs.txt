@@ -45,28 +45,28 @@ tool for better modularity. Use `webscraper` to download websites, then
 
 ```bash
 # Basic conversion of all HTML files in a directory
-python -m tools.html2md convert ./website -o ./docs
+m1f-html2md convert ./website -o ./docs
 
 # Use a custom extractor for site-specific conversion
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --extractor ./extractors/custom_extractor.py
 
 # Extract only main content from HTML files
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "main.content" --ignore-selectors nav .sidebar footer
 
 # Skip YAML frontmatter and adjust heading levels
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --no-frontmatter --heading-offset 1
 
 # Analyze HTML structure to find best selectors
-python -m tools.html2md analyze ./html/*.html --suggest-selectors
+m1f-html2md analyze ./html/*.html --suggest-selectors
 
 # Analyze with detailed structure output
-python -m tools.html2md analyze ./html/*.html --show-structure --common-patterns
+m1f-html2md analyze ./html/*.html --show-structure --common-patterns
 
 # Generate a configuration file
-python -m tools.html2md config -o config.yaml
+m1f-html2md config -o config.yaml
 ```
 
 ### Complete Workflow Example with .scrapes Directory
@@ -76,10 +76,10 @@ python -m tools.html2md config -o config.yaml
 mkdir -p .scrapes/my-project/{html,md,extractors}
 
 # Step 2: Download website using webscraper
-python -m tools.scrape_tool https://example.com -o .scrapes/my-project/html
+m1f-scrape https://example.com -o .scrapes/my-project/html
 
 # Step 3: Analyze HTML structure (optional)
-python -m tools.html2md analyze .scrapes/my-project/html/*.html --suggest-selectors
+m1f-html2md analyze .scrapes/my-project/html/*.html --suggest-selectors
 
 # Step 4: Create custom extractor (optional)
 # Use Claude to analyze and create site-specific extractor:
@@ -87,7 +87,7 @@ claude -p "Analyze these HTML files and create a custom extractor for html2md" \
   --files .scrapes/my-project/html/*.html
 
 # Step 5: Convert with custom extractor
-python -m tools.html2md convert .scrapes/my-project/html -o .scrapes/my-project/md \
+m1f-html2md convert .scrapes/my-project/html -o .scrapes/my-project/md \
   --extractor .scrapes/my-project/extractors/custom_extractor.py
 ```
 
@@ -100,7 +100,7 @@ The html2md tool uses subcommands for different operations:
 Convert local HTML files to Markdown:
 
 ```bash
-python -m tools.html2md convert <source> -o <output> [options]
+m1f-html2md convert <source> -o <output> [options]
 ```
 
 | Option               | Description                                                   |
@@ -125,7 +125,7 @@ python -m tools.html2md convert <source> -o <output> [options]
 Analyze HTML structure for optimal content extraction:
 
 ```bash
-python -m tools.html2md analyze <files> [options]
+m1f-html2md analyze <files> [options]
 ```
 
 | Option                | Description                                                          |
@@ -143,7 +143,7 @@ python -m tools.html2md analyze <files> [options]
 Generate a configuration file template:
 
 ```bash
-python -m tools.html2md config [options]
+m1f-html2md config [options]
 ```
 
 | Option         | Description                                            |
@@ -157,27 +157,27 @@ python -m tools.html2md config [options]
 
 ```bash
 # Simple conversion of all HTML files in a directory
-python -m tools.html2md convert ./website -o ./docs
+m1f-html2md convert ./website -o ./docs
 
 # Convert files with verbose logging
-python -m tools.html2md convert ./website -o ./docs --verbose
+m1f-html2md convert ./website -o ./docs --verbose
 
 # Convert to m1f bundle format
-python -m tools.html2md convert ./website -o ./docs.m1f --format m1f_bundle
+m1f-html2md convert ./website -o ./docs.m1f --format m1f_bundle
 
 # Convert to JSON format for processing
-python -m tools.html2md convert ./website -o ./data.json --format json
+m1f-html2md convert ./website -o ./data.json --format json
 ```
 
 ### Content Selection
 
 ```bash
 # Extract only the main content and ignore navigation elements
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "main" --ignore-selectors nav .sidebar footer
 
 # Extract article content from specific selectors
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "article.content" \
   --ignore-selectors .author-bio .share-buttons .related-articles
 ```
@@ -186,16 +186,16 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Analyze HTML files to find optimal selectors
-python -m tools.html2md analyze ./html/*.html
+m1f-html2md analyze ./html/*.html
 
 # Show detailed structure of HTML files
-python -m tools.html2md analyze ./html/*.html --show-structure
+m1f-html2md analyze ./html/*.html --show-structure
 
 # Find common patterns across multiple files
-python -m tools.html2md analyze ./html/*.html --common-patterns
+m1f-html2md analyze ./html/*.html --common-patterns
 
 # Get all analysis options
-python -m tools.html2md analyze ./html/*.html \
+m1f-html2md analyze ./html/*.html \
   --show-structure --common-patterns --suggest-selectors
 ```
 
@@ -203,7 +203,7 @@ python -m tools.html2md analyze ./html/*.html \
 
 ```bash
 # Process only specific file types
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   -c config.yaml  # Use a configuration file for file filtering
 ```
 
@@ -211,18 +211,18 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Adjust heading levels (e.g., h1 → h2, h2 → h3)
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --heading-offset 1
 
 # Skip frontmatter generation
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --no-frontmatter
 
 # Use configuration file for advanced formatting options
-python -m tools.html2md convert ./website -o ./docs -c config.yaml
+m1f-html2md convert ./website -o ./docs -c config.yaml
 
 # Log conversion process to file
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --log-file conversion.log
 ```
 
@@ -230,7 +230,7 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Use parallel processing for faster conversion of large sites
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --parallel
 ```
 
@@ -302,7 +302,7 @@ class Extractor(BaseExtractor):
 
 ```bash
 # Use with CLI
-python -m tools.html2md convert ./html -o ./markdown \
+m1f-html2md convert ./html -o ./markdown \
   --extractor ./extractors/my_extractor.py
 
 # Use with API
@@ -347,7 +347,7 @@ including:
 To disable frontmatter generation, use the `--no-frontmatter` option:
 
 ```bash
-python -m tools.html2md convert ./website -o ./docs --no-frontmatter
+m1f-html2md convert ./website -o ./docs --no-frontmatter
 ```
 
 The generated frontmatter looks like:
@@ -448,12 +448,12 @@ documentation handling:
 1. First convert HTML files to Markdown:
 
    ```bash
-   python -m tools.html2md convert ./html-docs -o ./markdown-docs
+   m1f-html2md convert ./html-docs -o ./markdown-docs
    ```
 
 2. Then use m1f to combine the Markdown files:
    ```bash
-   python -m tools.m1f -s ./markdown-docs -o ./combined-docs.m1f.txt \
+   m1f -s ./markdown-docs -o ./combined-docs.m1f.txt \
      --separator-style Markdown
    ```
 
@@ -582,25 +582,25 @@ pip install toml      # For TOML configuration files
 ### Convert a Single File
 
 ```bash
-python -m tools.html2md convert index.html -o index.md
+m1f-html2md convert index.html -o index.md
 ```
 
 ### Convert a Directory
 
 ```bash
-python -m tools.html2md convert ./html_docs/ -o ./markdown_docs/
+m1f-html2md convert ./html_docs/ -o ./markdown_docs/
 ```
 
 ### Analyze HTML Structure
 
 ```bash
-python -m tools.html2md analyze ./html/*.html --suggest-selectors
+m1f-html2md analyze ./html/*.html --suggest-selectors
 ```
 
 ### Generate Configuration
 
 ```bash
-python -m tools.html2md config -o config.yaml
+m1f-html2md config -o config.yaml
 ```
 
 ## Command Line Usage
@@ -610,7 +610,7 @@ The tool provides three main commands:
 ### `convert` - Convert Files or Directories
 
 ```bash
-python -m tools.html2md convert [source] -o [output] [options]
+m1f-html2md convert [source] -o [output] [options]
 
 Options:
   -c, --config FILE         Configuration file (YAML format)
@@ -629,7 +629,7 @@ Options:
 ### `analyze` - Analyze HTML Structure
 
 ```bash
-python -m tools.html2md analyze [files] [options]
+m1f-html2md analyze [files] [options]
 
 Options:
   --show-structure         Show detailed HTML structure
@@ -641,7 +641,7 @@ Options:
 ### `config` - Generate Configuration File
 
 ```bash
-python -m tools.html2md config [options]
+m1f-html2md config [options]
 
 Options:
   -o, --output FILE        Output file (default: config.yaml)
@@ -824,7 +824,7 @@ def postprocess(markdown: str, config=None):
 ### Using Custom Extractors
 
 ```bash
-python -m tools.html2md convert ./html -o ./markdown \
+m1f-html2md convert ./html -o ./markdown \
   --extractor ./extractors/my_extractor.py
 ```
 
@@ -915,7 +915,7 @@ parallel: true
 EOF
 
 # Run conversion
-python -m tools.html2md convert ./python-docs-html -o ./python-docs-md -c docs-config.yaml
+m1f-html2md convert ./python-docs-html -o ./python-docs-md -c docs-config.yaml
 ```
 
 ### Example 2: Convert Blog with Specific Content
@@ -946,10 +946,10 @@ results = asyncio.run(converter.convert_directory(
 
 ```bash
 # First download the website using webscraper
-python -m tools.scrape_tool https://docs.example.com -o ./html
+m1f-scrape https://docs.example.com -o ./html
 
 # Then convert to m1f bundle
-python -m tools.html2md convert ./html \
+m1f-html2md convert ./html \
   -o ./output.m1f \
   --format m1f_bundle \
   --content-selector "main.content" \
@@ -969,7 +969,7 @@ python -m tools.html2md convert ./html \
    Solution: Use the analyze command to find the right selectors:
 
    ```bash
-   python -m tools.html2md analyze ./html/*.html --suggest-selectors
+   m1f-html2md analyze ./html/*.html --suggest-selectors
    ```
 
 2. **Encoding issues**
@@ -986,7 +986,7 @@ python -m tools.html2md convert ./html \
    Solution: Use parallel processing:
 
    ```bash
-   python -m tools.html2md convert ./html -o ./md --parallel
+   m1f-html2md convert ./html -o ./md --parallel
    ```
 
 4. **Missing content after conversion**
@@ -994,7 +994,7 @@ python -m tools.html2md convert ./html \
    Solution: Check your ignore selectors - they may be too broad:
 
    ```bash
-   python -m tools.html2md convert ./html -o ./md \
+   m1f-html2md convert ./html -o ./md \
      --content-selector "body" \
      --ignore-selectors .ads .cookie-notice
    ```
@@ -1004,7 +1004,7 @@ python -m tools.html2md convert ./html \
 Enable verbose logging for debugging:
 
 ```bash
-python -m tools.html2md convert ./html -o ./md -v --log-file debug.log
+m1f-html2md convert ./html -o ./md -v --log-file debug.log
 ```
 
 Or in configuration:
@@ -1044,19 +1044,19 @@ To create an m1f bundle after conversion:
 
 ```bash
 # Download website first
-python -m tools.scrape_tool https://docs.example.com -o ./html/
+m1f-scrape https://docs.example.com -o ./html/
 
 # Convert to Markdown
-python -m tools.html2md convert ./html/ -o ./docs/
+m1f-html2md convert ./html/ -o ./docs/
 
 # Create m1f bundle
-python -m tools.m1f -s ./docs/ -o documentation.m1f.txt
+m1f -s ./docs/ -o documentation.m1f.txt
 ```
 
 Or convert directly to m1f bundle format:
 
 ```bash
-python -m tools.html2md convert ./html/ \
+m1f-html2md convert ./html/ \
   -o ./docs.m1f \
   --format m1f_bundle
 ```
@@ -1103,7 +1103,7 @@ You have several options:
 #### Option A: Use webscraper tool
 
 ```bash
-python -m tools.m1f-scrape https://example.com \
+m1f-scrape https://example.com \
   -o .scrapes/my-docs/html \
   --max-pages 50 \
   --scraper playwright
@@ -1126,12 +1126,12 @@ Understand the HTML structure before creating extractors:
 
 ```bash
 # Analyze a few sample files
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/my-docs/html/*.html \
   --suggest-selectors
 
 # Get detailed structure analysis
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/my-docs/html/*.html \
   --show-structure \
   --common-patterns
@@ -1201,7 +1201,7 @@ Write the extractor to .scrapes/my-docs/extractors/custom_extractor.py" \
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/custom_extractor.py
 ```
 
@@ -1209,14 +1209,14 @@ python ../../tools/html2md_tool.py convert html -o md \
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md
+m1f-html2md convert html -o md
 ```
 
 #### With CSS Selectors Only
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --content-selector "main.content" \
   --ignore-selectors "nav" ".sidebar" ".ads"
 ```
@@ -1238,13 +1238,13 @@ Here's a complete example for converting a documentation site:
 mkdir -p .scrapes/docs-site/{html,md,extractors}
 
 # 2. Download documentation
-python -m tools.m1f-scrape https://docs.example.com \
+m1f-scrape https://docs.example.com \
   -o .scrapes/docs-site/html \
   --max-pages 100 \
   --scraper playwright
 
 # 3. Analyze structure
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/docs-site/html/*.html \
   --suggest-selectors
 
@@ -1288,11 +1288,11 @@ EOF
 
 # 5. Convert with custom extractor
 cd .scrapes/docs-site
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/docs_extractor.py
 
 # 6. Create m1f bundle (optional)
-python ../../tools/m1f.py -s md -o docs-bundle.txt
+m1f -s md -o docs-bundle.txt
 ```
 
 ## Best Practices
@@ -1376,7 +1376,7 @@ print(result.prettify())
 2. **Use verbose mode**:
 
 ```bash
-python -m tools.html2md_tool convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/custom_extractor.py \
   --verbose
 ```
@@ -1384,7 +1384,7 @@ python -m tools.html2md_tool convert html -o md \
 3. **Process single file**:
 
 ```bash
-python -m tools.html2md_tool convert html/single-file.html \
+m1f-html2md convert html/single-file.html \
   -o test.md \
   --extractor extractors/custom_extractor.py
 ```

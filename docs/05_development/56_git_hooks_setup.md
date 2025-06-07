@@ -5,7 +5,7 @@ in your projects.
 
 ## Overview
 
-The m1f Git pre-commit hook automatically runs `m1f auto-bundle` before each
+The m1f Git pre-commit hook automatically runs `m1f-update` before each
 commit, ensuring that your bundled files are always up-to-date with your source
 code.
 
@@ -56,8 +56,8 @@ if [ -f ".m1f.config.yml" ]; then
         exit 1
     fi
 
-    echo "Running m1f auto-bundle..."
-    if m1f auto-bundle; then
+    echo "Running m1f-update..."
+    if m1f-update; then
         echo "Auto-bundle completed successfully."
         [ -d "m1f" ] && git add m1f/*
     else
@@ -81,7 +81,7 @@ When you run `git commit`, the pre-commit hook:
 
 1. Checks if `.m1f.config.yml` exists in your repository
 2. Verifies that the `m1f` command is available
-3. If both conditions are met, runs `m1f auto-bundle`
+3. If both conditions are met, runs `m1f-update`
 4. If bundle generation succeeds:
    - Adds all files in the `m1f/` directory to the commit
    - Allows the commit to proceed
@@ -123,7 +123,7 @@ git commit --no-verify -m "wip: quick save"
 1. Run auto-bundle manually to see the error:
 
    ```bash
-   m1f auto-bundle
+   m1f-update
    ```
 
 2. Fix any issues in your `.m1f.config.yml`
@@ -215,7 +215,7 @@ pipelines, you can also run auto-bundle as a build step:
   run: pip install m1f
 
 - name: Generate m1f bundles
-  run: m1f auto-bundle
+  run: m1f-update
 ```
 
 ```bash
@@ -225,7 +225,7 @@ before_script:
 
 bundle:
   script:
-    - m1f auto-bundle
+    - m1f-update
 ```
 
 ## See Also

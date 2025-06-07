@@ -19,18 +19,18 @@ Instead of applying the same settings to all files, presets let you:
 1. **Use a built-in preset**:
 
    ```bash
-   python tools/m1f.py -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+   m1f -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
    ```
 
 2. **Specify a preset group**:
 
    ```bash
-   python tools/m1f.py -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
+   m1f -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
    ```
 
 3. **Use multiple preset files**:
    ```bash
-   python tools/m1f.py -s . -o bundle.txt --preset company-presets.yml project-presets.yml
+   m1f -s . -o bundle.txt --preset company-presets.yml project-presets.yml
    ```
 
 ## Preset Configuration File
@@ -249,16 +249,16 @@ When multiple preset groups are loaded:
 
 ```bash
 # Use single preset file
-python tools/m1f.py -s . -o out.txt --preset my-presets.yml
+m1f -s . -o out.txt --preset my-presets.yml
 
 # Use specific group
-python tools/m1f.py -s . -o out.txt --preset presets.yml --preset-group backend
+m1f -s . -o out.txt --preset presets.yml --preset-group backend
 
 # Multiple preset files (merged in order)
-python tools/m1f.py -s . -o out.txt --preset base.yml project.yml
+m1f -s . -o out.txt --preset base.yml project.yml
 
 # Disable all presets
-python tools/m1f.py -s . -o out.txt --preset presets.yml --disable-presets
+m1f -s . -o out.txt --preset presets.yml --disable-presets
 ```
 
 ## Complete List of Supported Settings
@@ -427,7 +427,7 @@ conditional:
 You can load multiple preset files that build on each other:
 
 ```bash
-python tools/m1f.py -s . -o bundle.txt \
+m1f -s . -o bundle.txt \
   --preset base-rules.yml \
   --preset project-specific.yml \
   --preset production-overrides.yml
@@ -463,7 +463,7 @@ python tools/m1f.py -s . -o bundle.txt \
 # GitHub Actions example
 - name: Create bundle with presets
   run: |
-    python tools/m1f.py \
+    m1f \
       -s . \
       -o release-bundle.txt \
       --preset .github/release-presets.yml \

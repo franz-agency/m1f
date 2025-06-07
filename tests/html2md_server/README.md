@@ -106,19 +106,19 @@ tests/html2md_server/
 
    ```bash
    # Basic conversion
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page \
      --destination-dir ./output
 
    # With content selection
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page \
      --destination-dir ./output \
      --outermost-selector "article" \
      --ignore-selectors "nav" ".sidebar" "footer"
 
    # Specific page with options
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page/code-examples \
      --destination-dir ./output \
      --add-frontmatter \

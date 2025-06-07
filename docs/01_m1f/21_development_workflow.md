@@ -102,7 +102,7 @@ The AI can then:
 2. Test changes directly:
 
    ```bash
-   python tools/m1f.py -s test_dir -o output.txt
+   python -m tools.m1f -s test_dir -o output.txt
    ```
 
 3. Run tests:
@@ -230,7 +230,7 @@ Add m1f to your CI pipeline:
 # Example GitHub Actions
 - name: Generate Documentation Bundle
   run: |
-    python tools/m1f.py -s docs -o docs-bundle.txt
+    python -m tools.m1f -s docs -o docs-bundle.txt
 
 - name: Upload Bundle
   uses: actions/upload-artifact@v2

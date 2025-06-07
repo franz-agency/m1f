@@ -89,10 +89,10 @@
                 
                 <div class="command-example">
                     <pre><code># Basic usage - combine all Python files
-$ python tools/m1f.py --source-directory ./src --output-file combined.txt --include-patterns "*.py"
+$ m1f --source-directory ./src --output-file combined.txt --include-patterns "*.py"
 
 # Advanced usage with multiple patterns
-$ python tools/m1f.py \
+$ m1f \
     --source-directory ./project \
     --output-file project.m1f.md \
     --include-patterns "*.py" "*.js" "*.md" \
@@ -203,7 +203,7 @@ metadata:
                     <h3>Example 1: Preparing Code for LLM Analysis</h3>
                     <p>Combine an entire Python project for ChatGPT or Claude analysis:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --source-directory ./my-python-project \
     --output-file project-for-llm.txt \
     --include-patterns "*.py" "*.md" "requirements.txt" "pyproject.toml" \
@@ -247,7 +247,7 @@ class Application:
                     <h3>Example 2: Creating Documentation Archive</h3>
                     <p>Combine all documentation files with preserved structure:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --source-directory ./docs \
     --output-file documentation.m1f.md \
     --include-patterns "**/*.md" "**/*.rst" "**/*.txt" \
@@ -260,7 +260,7 @@ class Application:
                     <h3>Example 3: Multi-Language Project</h3>
                     <p>Combine a full-stack application with multiple languages:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --config fullstack-config.yaml</code></pre>
                     
                     <p>Where <code>fullstack-config.yaml</code> contains:</p>
@@ -344,7 +344,7 @@ m1f = M1F(separator_function=custom_separator)</code></pre>
                 <p>For extremely large outputs, use streaming mode:</p>
                 
                 <pre><code class="language-bash"># Stream output to avoid memory issues
-python tools/m1f.py \
+m1f \
     --source-directory ./massive-project \
     --output-file output.m1f.txt \
     --streaming-mode \
@@ -359,10 +359,10 @@ python tools/m1f.py \
                         <h3>🔄 With html2md</h3>
                         <p>Convert HTML documentation to Markdown, then combine:</p>
                         <pre><code class="language-bash"># First convert HTML to MD
-python tools/html2md.py --source-dir ./html-docs --destination-dir ./md-docs
+m1f-html2md --source-dir ./html-docs --destination-dir ./md-docs
 
 # Then combine with m1f
-python tools/m1f.py --source-directory ./md-docs --output-file docs.m1f.md</code></pre>
+m1f --source-directory ./md-docs --output-file docs.m1f.md</code></pre>
                     </div>
                     
                     <div class="card">

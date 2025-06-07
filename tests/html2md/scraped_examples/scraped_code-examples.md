@@ -646,7 +646,7 @@ async fn main() -> Result<()> {
 
 When working with HTML to Markdown conversion, you might encounter various
 inline code snippets like `document.querySelector('.content')` or shell commands
-like `python tools/html2md.py --help`. The converter should preserve these
+like `m1f-html2md --help`. The converter should preserve these
 inline code blocks.
 
 Here's a paragraph with multiple inline code elements: The `HTML2MDConverter`

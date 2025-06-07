@@ -39,7 +39,7 @@ You have several options:
 #### Option A: Use webscraper tool
 
 ```bash
-python -m tools.m1f-scrape https://example.com \
+m1f-scrape https://example.com \
   -o .scrapes/my-docs/html \
   --max-pages 50 \
   --scraper playwright
@@ -62,12 +62,12 @@ Understand the HTML structure before creating extractors:
 
 ```bash
 # Analyze a few sample files
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/my-docs/html/*.html \
   --suggest-selectors
 
 # Get detailed structure analysis
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/my-docs/html/*.html \
   --show-structure \
   --common-patterns
@@ -137,7 +137,7 @@ Write the extractor to .scrapes/my-docs/extractors/custom_extractor.py" \
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/custom_extractor.py
 ```
 
@@ -145,14 +145,14 @@ python ../../tools/html2md_tool.py convert html -o md \
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md
+m1f-html2md convert html -o md
 ```
 
 #### With CSS Selectors Only
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --content-selector "main.content" \
   --ignore-selectors "nav" ".sidebar" ".ads"
 ```
@@ -174,13 +174,13 @@ Here's a complete example for converting a documentation site:
 mkdir -p .scrapes/docs-site/{html,md,extractors}
 
 # 2. Download documentation
-python -m tools.m1f-scrape https://docs.example.com \
+m1f-scrape https://docs.example.com \
   -o .scrapes/docs-site/html \
   --max-pages 100 \
   --scraper playwright
 
 # 3. Analyze structure
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/docs-site/html/*.html \
   --suggest-selectors
 
@@ -224,11 +224,11 @@ EOF
 
 # 5. Convert with custom extractor
 cd .scrapes/docs-site
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/docs_extractor.py
 
 # 6. Create m1f bundle (optional)
-python ../../tools/m1f.py -s md -o docs-bundle.txt
+m1f -s md -o docs-bundle.txt
 ```
 
 ## Best Practices
@@ -312,7 +312,7 @@ print(result.prettify())
 2. **Use verbose mode**:
 
 ```bash
-python -m tools.html2md_tool convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/custom_extractor.py \
   --verbose
 ```
@@ -320,7 +320,7 @@ python -m tools.html2md_tool convert html -o md \
 3. **Process single file**:
 
 ```bash
-python -m tools.html2md_tool convert html/single-file.html \
+m1f-html2md convert html/single-file.html \
   -o test.md \
   --extractor extractors/custom_extractor.py
 ```
