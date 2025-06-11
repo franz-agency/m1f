@@ -389,6 +389,7 @@ Conventional commits: `<type>(<scope>): <subject>`
 - Main branch: `main`
 - Pre-commit hook runs auto-bundle to keep bundles synchronized
 
+
 ======= m1f-claude.txt ======
 # m1f-claude.txt: Essential m1f Guide for Claude
 
