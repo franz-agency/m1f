@@ -115,7 +115,7 @@ if (Test-Path "requirements.txt") {
 # Step 3: Generate initial m1f bundles
 Write-Host
 Write-ColorOutput "Step 3: Generating initial m1f bundles..." -Color $colors.Green
-python -m tools.m1f auto-bundle --quiet
+m1f-update --quiet
 Write-ColorOutput "✓ Initial bundles generated" -Color $colors.Green
 
 # Step 4: Setup PowerShell functions
@@ -140,12 +140,12 @@ if (!(Test-Path $batchDir)) {
 
 # Create batch files
 $commands = @{
-    "m1f.bat" = "python -m tools.m1f"
-    "m1f-s1f.bat" = "python -m tools.s1f"
-    "m1f-html2md.bat" = "python -m tools.html2md"
-    "m1f-scrape.bat" = "python -m tools.webscraper"
-    "m1f-token-counter.bat" = "python tools\token_counter.py"
-    "m1f-update.bat" = "python -m tools.m1f auto-bundle"
+    "m1f.bat" = "m1f"
+    "m1f-s1f.bat" = "m1f-s1f"
+    "m1f-html2md.bat" = "m1f-html2md"
+    "m1f-scrape.bat" = "m1f-scrape"
+    "m1f-token-counter.bat" = "m1f-token-counter"
+    "m1f-update.bat" = "m1f auto-bundle"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files

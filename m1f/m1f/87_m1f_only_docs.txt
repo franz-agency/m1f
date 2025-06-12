@@ -113,16 +113,16 @@ comprehensive metadata.
 
 ```bash
 # Basic usage with a source directory
-python -m tools.m1f -s ./your_project -o ./combined.txt
+m1f -s ./your_project -o ./combined.txt
 
 # Include only specific file types
-python -m tools.m1f -s ./your_project -o ./combined.txt --include-extensions .py .js .md
+m1f -s ./your_project -o ./combined.txt --include-extensions .py .js .md
 
 # Exclude specific directories
-python -m tools.m1f -s ./your_project -o ./combined.txt --excludes "node_modules/" "build/" "dist/"
+m1f -s ./your_project -o ./combined.txt --excludes "node_modules/" "build/" "dist/"
 
 # Filter by file size (new in v2.0.0)
-python -m tools.m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
+m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 ```
 
 > **Note**: For a complete reference of all available options, see the
@@ -181,13 +181,13 @@ Presets are loaded in the following order (highest priority wins):
 
 ```bash
 # Use built-in WordPress preset
-python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
 
 # Use specific preset group
-python -m tools.m1f -s ./project -o bundle.txt --preset my-presets.yml --preset-group production
+m1f -s ./project -o bundle.txt --preset my-presets.yml --preset-group production
 
 # Load multiple preset files (merged in order)
-python -m tools.m1f -s . -o out.txt --preset defaults.yml project.yml overrides.yml
+m1f -s . -o out.txt --preset defaults.yml project.yml overrides.yml
 ```
 
 ### Available Processing Actions
@@ -211,17 +211,17 @@ For detailed preset documentation, see:
 
 ```bash
 # Basic command using a source directory
-python -m tools.m1f --source-directory /path/to/your/code \
+m1f --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
 
 # Using an input file containing paths to process (one per line)
-python -m tools.m1f -i filelist.txt -o combined_output.txt
+m1f -i filelist.txt -o combined_output.txt
 
 # Using both source directory and input file together
-python -m tools.m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
 
 # Remove scraped metadata from HTML2MD files (new in v2.0.0)
-python -m tools.m1f -s ./scraped_docs -o ./clean_docs.txt \
+m1f -s ./scraped_docs -o ./clean_docs.txt \
   --include-extensions .md --remove-scraped-metadata
 ```
 
@@ -229,19 +229,19 @@ python -m tools.m1f -s ./scraped_docs -o ./clean_docs.txt \
 
 ```bash
 # Using MachineReadable style with verbose logging
-python -m tools.m1f -s ./my_project -o ./output/bundle.m1f.txt \
+m1f -s ./my_project -o ./output/bundle.m1f.txt \
   --separator-style MachineReadable --force --verbose
 
 # Creating a combined file and a backup zip archive
-python -m tools.m1f -s ./source_code -o ./dist/combined.txt \
+m1f -s ./source_code -o ./dist/combined.txt \
   --create-archive --archive-type zip
 
 # Only include text files under 50KB to avoid large generated files
-python -m tools.m1f -s ./project -o ./text_only.txt \
+m1f -s ./project -o ./text_only.txt \
   --max-file-size 50KB --include-extensions .py .js .md .txt .json
 
 # Handle symlinks with cycle detection (new in v2.0.0)
-python -m tools.m1f -s ./project -o ./output.txt \
+m1f -s ./project -o ./output.txt \
   --include-symlinks --verbose
 ```
 
@@ -279,7 +279,7 @@ To create only the primary output file and skip the auxiliary files, use the
 
 ```bash
 # Create only the combined output file without any auxiliary files
-python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
+m1f -s ./src -o ./combined.txt --minimal-output
 ```
 
 ## Common Use Cases
@@ -288,21 +288,21 @@ python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
 
 ```bash
 # Create a complete documentation bundle from all markdown files
-python tools/m1f.py -s ./docs -o ./doc_bundle.m1f.txt --include-extensions .md
+m1f -s ./docs -o ./doc_bundle.m1f.txt --include-extensions .md
 ```
 
 ### Code Review Preparation
 
 ```bash
 # Bundle specific components for code review
-python tools/m1f.py -i code_review_files.txt -o ./review_bundle.m1f.txt
+m1f -i code_review_files.txt -o ./review_bundle.m1f.txt
 ```
 
 ### WordPress Development
 
 ```bash
 # Combine theme or plugin files for AI analysis
-python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
+m1f -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
   --include-extensions .php .js .css --exclude-paths-file ./exclude_build_files.txt
 ```
 
@@ -310,7 +310,7 @@ python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
 
 ```bash
 # Create a searchable knowledge base from project documentation
-python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
+m1f -s ./project -o ./knowledge_base.m1f.txt \
   --include-extensions .md .txt .rst --minimal-output
 ```
 
@@ -318,11 +318,11 @@ python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
 
 ```bash
 # Combine scraped markdown files and remove metadata
-python tools/m1f.py -s ./scraped_content -o ./clean_content.m1f.txt \
+m1f -s ./scraped_content -o ./clean_content.m1f.txt \
   --include-extensions .md --remove-scraped-metadata
 
 # Merge multiple scraped websites into a clean documentation bundle
-python tools/m1f.py -s ./web_content -o ./web_docs.m1f.txt \
+m1f -s ./web_content -o ./web_docs.m1f.txt \
   --include-extensions .md --remove-scraped-metadata --separator-style Markdown
 ```
 
@@ -535,98 +535,98 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 
 ```bash
 # Combine all files in current directory
-python tools/m1f.py -s . -o output.txt
+m1f -s . -o output.txt
 
 # Combine specific directory
-python tools/m1f.py -s ./src -o bundle.txt
+m1f -s ./src -o bundle.txt
 
 # Force overwrite existing output
-python tools/m1f.py -s . -o output.txt -f
+m1f -s . -o output.txt -f
 ```
 
 ### Using Presets (v3.2.0+)
 
 ```bash
 # Use a preset file (can define ALL parameters)
-python tools/m1f.py --preset production.yml -o output.txt
+m1f --preset production.yml -o output.txt
 
 # Preset can even define source and output
-python tools/m1f.py --preset full-config.yml
+m1f --preset full-config.yml
 
 # Override preset values with CLI
-python tools/m1f.py --preset prod.yml -o custom-output.txt -v
+m1f --preset prod.yml -o custom-output.txt -v
 ```
 
 ### File Type Filtering
 
 ```bash
 # Only Python files
-python tools/m1f.py -s . -o code.txt --include-extensions .py
+m1f -s . -o code.txt --include-extensions .py
 
 # Multiple file types
-python tools/m1f.py -s . -o docs.txt --include-extensions .md .txt .rst
+m1f -s . -o docs.txt --include-extensions .md .txt .rst
 
 # Exclude certain types
-python tools/m1f.py -s . -o output.txt --exclude-extensions .pyc .log
+m1f -s . -o output.txt --exclude-extensions .pyc .log
 ```
 
 ### Directory and Pattern Exclusions
 
 ```bash
 # Exclude specific directories
-python tools/m1f.py -s . -o output.txt --excludes "tests/" "docs/"
+m1f -s . -o output.txt --excludes "tests/" "docs/"
 
 # Exclude patterns
-python tools/m1f.py -s . -o output.txt --excludes "*.test.js" "*/tmp/*"
+m1f -s . -o output.txt --excludes "*.test.js" "*/tmp/*"
 
 # Use gitignore file
-python tools/m1f.py -s . -o output.txt --exclude-paths-file .gitignore
+m1f -s . -o output.txt --exclude-paths-file .gitignore
 ```
 
 ### Output Formatting
 
 ```bash
 # Markdown format
-python tools/m1f.py -s . -o output.md --separator-style Markdown
+m1f -s . -o output.md --separator-style Markdown
 
 # Machine-readable JSON metadata
-python tools/m1f.py -s . -o output.txt --separator-style MachineReadable
+m1f -s . -o output.txt --separator-style MachineReadable
 
 # No separators
-python tools/m1f.py -s . -o output.txt --separator-style None
+m1f -s . -o output.txt --separator-style None
 ```
 
 ### Size Management
 
 ```bash
 # Skip large files
-python tools/m1f.py -s . -o output.txt --max-file-size 100KB
+m1f -s . -o output.txt --max-file-size 100KB
 
 # Include only small text files
-python tools/m1f.py -s . -o small.txt --max-file-size 50KB --include-extensions .txt .md
+m1f -s . -o small.txt --max-file-size 50KB --include-extensions .txt .md
 ```
 
 ### Archive Creation
 
 ```bash
 # Create zip backup
-python tools/m1f.py -s . -o output.txt --create-archive
+m1f -s . -o output.txt --create-archive
 
 # Create tar.gz backup
-python tools/m1f.py -s . -o output.txt --create-archive --archive-type tar.gz
+m1f -s . -o output.txt --create-archive --archive-type tar.gz
 ```
 
 ### Using Presets
 
 ```bash
 # Use single preset
-python tools/m1f.py -s . -o output.txt --preset wordpress.m1f-presets.yml
+m1f -s . -o output.txt --preset wordpress.m1f-presets.yml
 
 # Use preset group
-python tools/m1f.py -s . -o output.txt --preset web.yml --preset-group frontend
+m1f -s . -o output.txt --preset web.yml --preset-group frontend
 
 # Multiple presets (merged in order)
-python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
+m1f -s . -o output.txt --preset base.yml project.yml
 ```
 
 ## Common Patterns
@@ -634,7 +634,7 @@ python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
 ### Documentation Bundle
 
 ```bash
-python tools/m1f.py -s ./docs -o documentation.txt \
+m1f -s ./docs -o documentation.txt \
     --include-extensions .md .rst .txt \
     --separator-style Markdown
 ```
@@ -642,7 +642,7 @@ python tools/m1f.py -s ./docs -o documentation.txt \
 ### Source Code Bundle
 
 ```bash
-python tools/m1f.py -s ./src -o source-code.txt \
+m1f -s ./src -o source-code.txt \
     --include-extensions .py .js .ts .jsx .tsx \
     --excludes "*.test.*" "*.spec.*" \
     --max-file-size 500KB
@@ -651,7 +651,7 @@ python tools/m1f.py -s ./src -o source-code.txt \
 ### WordPress Theme/Plugin
 
 ```bash
-python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
+m1f -s ./wp-content/themes/mytheme -o theme.txt \
     --include-extensions .php .js .css \
     --excludes "node_modules/" "vendor/" \
     --preset presets/wordpress.m1f-presets.yml
@@ -660,7 +660,7 @@ python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
 ### Clean Documentation Export
 
 ```bash
-python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
+m1f -s ./scraped_docs -o clean-docs.txt \
     --include-extensions .md \
     --remove-scraped-metadata \
     --separator-style Markdown
@@ -670,11 +670,11 @@ python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
 
 ```bash
 # Multiple exclude files (merged)
-python tools/m1f.py -s . -o output.txt \
+m1f -s . -o output.txt \
     --exclude-paths-file .gitignore .dockerignore custom-excludes.txt
 
 # Whitelist mode with include files
-python tools/m1f.py -s . -o api-bundle.txt \
+m1f -s . -o api-bundle.txt \
     --include-paths-file api-files.txt core-files.txt \
     --exclude-paths-file .gitignore
 ```
@@ -683,13 +683,13 @@ python tools/m1f.py -s . -o api-bundle.txt \
 
 ```bash
 # Single input file
-python tools/m1f.py -s . -i files.txt -o output.txt
+m1f -s . -i files.txt -o output.txt
 
 # Merge multiple file lists (Bash)
-python tools/m1f.py -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
+m1f -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
 
 # Combine with filters (input files bypass filters)
-python tools/m1f.py -s . -i must-include.txt -o output.txt \
+m1f -s . -i must-include.txt -o output.txt \
     --exclude-paths-file .gitignore
 ```
 
@@ -697,13 +697,13 @@ python tools/m1f.py -s . -i must-include.txt -o output.txt \
 
 ```bash
 # Create timestamped output
-python tools/m1f.py -s . -o build.txt -t
+m1f -s . -o build.txt -t
 
 # Minimal output for automation
-python tools/m1f.py -s . -o output.txt --minimal-output --quiet
+m1f -s . -o output.txt --minimal-output --quiet
 
 # With security check
-python tools/m1f.py -s . -o output.txt --security-check abort
+m1f -s . -o output.txt --security-check abort
 ```
 
 ## Quick Option Reference
@@ -738,7 +738,7 @@ Example: `--max-file-size 1.5MB`
 ## Exit on Success
 
 ```bash
-python tools/m1f.py -s . -o output.txt && echo "Success!"
+m1f -s . -o output.txt && echo "Success!"
 ```
 
 ## Aliases Setup
@@ -753,7 +753,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 
 ## Need Help?
 
-- Full options: `python tools/m1f.py --help`
+- Full options: `m1f --help`
 - [Complete CLI Reference](./02_cli_reference.md)
 - [Troubleshooting Guide](./03_troubleshooting.md)
 - [Preset Documentation](./10_m1f_presets.md)
@@ -1113,6 +1113,18 @@ m1f auto-bundle --verbose
 m1f auto-bundle --quiet
 ```
 
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle` that can be used interchangeably:
+
+```bash
+# These are equivalent:
+m1f auto-bundle
+m1f-update
+
+# With specific bundle:
+m1f auto-bundle code
+m1f-update code
+```
+
 **Options:**
 
 - `BUNDLE_NAME`: Name of specific bundle to create (optional)
@@ -1125,8 +1137,8 @@ instructions.
 
 ## Notes
 
-1. **Module Invocation**: You can use either `python -m tools.m1f` or
-   `python tools/m1f.py`, or set up the `m1f` alias as described in the
+1. **Module Invocation**: You can use either `m1f` or
+   `python -m tools.m1f`, or set up the `m1f` alias as described in the
    development workflow.
 
 2. **Input Requirements**: At least one of `-s` (source directory) or `-i`
@@ -1149,7 +1161,7 @@ using m1f.
 
 ### Module Import Error
 
-**Problem**: Running `python -m tools.m1f` results in:
+**Problem**: Running `m1f` results in:
 
 ```
 ModuleNotFoundError: No module named 'm1f'
@@ -1158,7 +1170,7 @@ ModuleNotFoundError: No module named 'm1f'
 **Solution**: Use the direct script invocation instead:
 
 ```bash
-python tools/m1f.py [options]
+m1f [options]
 ```
 
 Or set up the alias as described in the
@@ -1201,7 +1213,7 @@ PermissionError: [Errno 13] Permission denied: '/path/to/output.txt'
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --convert-to-charset utf-8
+m1f -s . -o output.txt --convert-to-charset utf-8
 ```
 
 ### Memory Issues with Large Projects
@@ -1218,7 +1230,7 @@ python tools/m1f.py -s . -o output.txt --convert-to-charset utf-8
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --max-file-size 1MB --include-extensions .py .md
+m1f -s . -o output.txt --max-file-size 1MB --include-extensions .py .md
 ```
 
 ### Symlink Cycles
@@ -1245,7 +1257,7 @@ python tools/m1f.py -s . -o output.txt --max-file-size 1MB --include-extensions 
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --security-check warn --excludes ".env" "config/secrets.yml"
+m1f -s . -o output.txt --security-check warn --excludes ".env" "config/secrets.yml"
 ```
 
 ## Error Messages
@@ -1322,7 +1334,7 @@ needed.
 For detailed debugging information:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --verbose
+m1f -s . -o output.txt --verbose
 ```
 
 This will show:
@@ -1354,7 +1366,7 @@ Understanding exit codes can help in scripting:
 Use in scripts:
 
 ```bash
-if python tools/m1f.py -s . -o output.txt; then
+if m1f -s . -o output.txt; then
     echo "Success"
 else
     echo "Failed with exit code: $?"
@@ -1383,18 +1395,18 @@ Instead of applying the same settings to all files, presets let you:
 1. **Use a built-in preset**:
 
    ```bash
-   python tools/m1f.py -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+   m1f -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
    ```
 
 2. **Specify a preset group**:
 
    ```bash
-   python tools/m1f.py -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
+   m1f -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
    ```
 
 3. **Use multiple preset files**:
    ```bash
-   python tools/m1f.py -s . -o bundle.txt --preset company-presets.yml project-presets.yml
+   m1f -s . -o bundle.txt --preset company-presets.yml project-presets.yml
    ```
 
 ## Preset Configuration File
@@ -1613,16 +1625,16 @@ When multiple preset groups are loaded:
 
 ```bash
 # Use single preset file
-python tools/m1f.py -s . -o out.txt --preset my-presets.yml
+m1f -s . -o out.txt --preset my-presets.yml
 
 # Use specific group
-python tools/m1f.py -s . -o out.txt --preset presets.yml --preset-group backend
+m1f -s . -o out.txt --preset presets.yml --preset-group backend
 
 # Multiple preset files (merged in order)
-python tools/m1f.py -s . -o out.txt --preset base.yml project.yml
+m1f -s . -o out.txt --preset base.yml project.yml
 
 # Disable all presets
-python tools/m1f.py -s . -o out.txt --preset presets.yml --disable-presets
+m1f -s . -o out.txt --preset presets.yml --disable-presets
 ```
 
 ## Complete List of Supported Settings
@@ -1791,7 +1803,7 @@ conditional:
 You can load multiple preset files that build on each other:
 
 ```bash
-python tools/m1f.py -s . -o bundle.txt \
+m1f -s . -o bundle.txt \
   --preset base-rules.yml \
   --preset project-specific.yml \
   --preset production-overrides.yml
@@ -1827,7 +1839,7 @@ python tools/m1f.py -s . -o bundle.txt \
 # GitHub Actions example
 - name: Create bundle with presets
   run: |
-    python tools/m1f.py \
+    m1f \
       -s . \
       -o release-bundle.txt \
       --preset .github/release-presets.yml \
@@ -2206,10 +2218,10 @@ Use it with:
 
 ```bash
 # Module invocation (recommended)
-python -m tools.m1f -s ./src -o bundle.txt --preset my-preset.yml
+m1f -s ./src -o bundle.txt --preset my-preset.yml
 
-# Direct script invocation (alternative)
-python tools/m1f.py -s ./src -o bundle.txt --preset my-preset.yml
+# Direct command invocation (if installed)
+m1f -s ./src -o bundle.txt --preset my-preset.yml
 ```
 
 ## Preset File Format
@@ -2509,7 +2521,7 @@ exclude files:
 
 2. **Use CLI Arguments**:
    ```bash
-   python tools/m1f.py -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
+   m1f -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
    ```
 
 ### Settings Hierarchy
@@ -2580,7 +2592,7 @@ production:
 
 ```bash
 # Files are merged in order (later files override earlier ones)
-python tools/m1f.py -s . -o out.txt \
+m1f -s . -o out.txt \
   --preset base.yml \
   --preset project.yml \
   --preset overrides.yml
@@ -2629,7 +2641,7 @@ Usage comparison:
 **Before v3.2.0** (long command):
 
 ```bash
-python -m tools.m1f -s ./src -o dist/bundle.txt \
+m1f -s ./src -o dist/bundle.txt \
   --input-include-files README.md LICENSE \
   --add-timestamp --create-archive --archive-type tar.gz \
   --force --minimal-output --quiet \
@@ -2640,7 +2652,7 @@ python -m tools.m1f -s ./src -o dist/bundle.txt \
 **After v3.2.0** (simple command):
 
 ```bash
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
+m1f --preset production.m1f-presets.yml -o output.txt
 ```
 
 ## Examples
@@ -2732,10 +2744,10 @@ Use with `--preset-group`:
 
 ```bash
 # Development build
-python -m tools.m1f --preset environments.yml --preset-group development
+m1f --preset environments.yml --preset-group development
 
 # Production build
-python -m tools.m1f --preset environments.yml --preset-group production
+m1f --preset environments.yml --preset-group production
 ```
 
 ## Debugging and Best Practices
@@ -2745,7 +2757,7 @@ python -m tools.m1f --preset environments.yml --preset-group production
 1. **Verbose Mode**
 
    ```bash
-   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
+   m1f -s . -o out.txt --preset my.yml --verbose
    ```
 
    Shows which preset is applied to each file and processing details.
@@ -2753,7 +2765,7 @@ python -m tools.m1f --preset environments.yml --preset-group production
 2. **Check What's Applied**
 
    ```bash
-   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
+   m1f -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
    ```
 
 3. **Validate YAML**
@@ -2846,12 +2858,16 @@ bundles:
 
 ```bash
 m1f auto-bundle
+# Or use the convenient alias:
+m1f-update
 ```
 
 ### Create Specific Bundle
 
 ```bash
 m1f auto-bundle docs
+# Or use the convenient alias:
+m1f-update docs
 ```
 
 ### List Available Bundles
@@ -2864,7 +2880,11 @@ m1f auto-bundle --list
 
 ```bash
 m1f auto-bundle --group documentation
+# Or use the convenient alias:
+m1f-update --group documentation
 ```
+
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle` that provides a simpler way to regenerate bundles.
 
 ## Bundle Groups
 
@@ -2917,7 +2937,7 @@ for config in $(find /home/projects -name ".m1f.config.yml" -type f); do
     echo "Updating bundles in: $project_dir"
 
     cd "$project_dir"
-    m1f auto-bundle --quiet
+    m1f-update --quiet
 done
 ```
 
@@ -2940,7 +2960,7 @@ Then update only specific projects:
 
 ```bash
 cd /path/to/project-a
-m1f auto-bundle --group project-a
+m1f-update --group project-a
 ```
 
 ### Automated Bundle Updates
@@ -3030,7 +3050,7 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 
 The hook will:
 
-- Run `m1f auto-bundle` before each commit
+- Run `m1f-update` before each commit
 - Add generated bundles to the commit automatically
 - Block commits if bundle generation fails
 
@@ -3061,7 +3081,7 @@ config file searching from the current directory up to the root. Create a
 Check the verbose output:
 
 ```bash
-m1f auto-bundle --verbose
+m1f-update --verbose
 ```
 
 Common issues:
@@ -3249,7 +3269,7 @@ The AI can then:
 2. Test changes directly:
 
    ```bash
-   python tools/m1f.py -s test_dir -o output.txt
+   python -m tools.m1f -s test_dir -o output.txt
    ```
 
 3. Run tests:
@@ -3377,7 +3397,7 @@ Add m1f to your CI pipeline:
 # Example GitHub Actions
 - name: Generate Documentation Bundle
   run: |
-    python tools/m1f.py -s docs -o docs-bundle.txt
+    python -m tools.m1f -s docs -o docs-bundle.txt
 
 - name: Upload Bundle
   uses: actions/upload-artifact@v2

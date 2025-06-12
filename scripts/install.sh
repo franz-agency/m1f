@@ -75,7 +75,7 @@ fi
 # Step 3: Generate initial m1f bundles
 echo
 echo -e "${GREEN}Step 3: Generating initial m1f bundles...${NC}"
-python -m tools.m1f auto-bundle --quiet
+m1f-update --quiet
 echo -e "${GREEN}✓ Initial bundles generated${NC}"
 
 # Step 4: Setup PATH

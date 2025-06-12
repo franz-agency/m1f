@@ -227,6 +227,170 @@ Apache 2.0 - Go wild, just don't blame us.
 Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to
 robots.
 
+======= CLAUDE.md ======
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Core Architecture
+
+m1f is a Python toolkit for efficiently working with Large Language Models (LLMs) by managing context. Built with Python 3.10+ featuring async I/O, type hints, and modular design.
+
+### Key Tools
+- **m1f**: Combines multiple files into a single reference file with content deduplication
+- **s1f**: Extracts individual files from combined files, preserving structure  
+- **webscraper**: Downloads websites for offline viewing and processing
+- **html2md**: HTML to Markdown converter with structure analysis
+- **token_counter**: Estimates token usage for LLM context planning
+- **claude_orchestrator**: Optional AI-powered automation via Claude Code
+
+### Module Structure
+Each tool follows clean architecture with separate modules:
+- `config.py` / `config_loader.py`: Configuration management
+- `core.py`: Main business logic
+- `cli.py`: Command-line interface
+- `logging.py`: Logging configuration
+- `utils.py`: Utility functions
+- `exceptions.py`: Custom exceptions
+
+m1f-specific modules:
+- `file_processor.py`: File processing logic
+- `security_scanner.py`: Security checks
+- `output_writer.py`: Output formatting
+- `presets.py`: Preset system implementation
+- `encoding_handler.py`: Encoding detection/conversion
+- `separator_generator.py`: Generates file separators (Standard format now excludes checksums)
+
+### Parser Architecture
+s1f parsers in `tools/s1f/parsers.py`:
+- `CombinedFileParser`: Orchestrates all format parsers
+- Format parsers: PYMK1F, MachineReadable, Markdown, Detailed, Standard
+- Code block detection: Separators inside ``` blocks are ignored
+
+## Development Commands
+
+### Setup
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# Install git hooks
+./scripts/install-git-hooks.sh
+```
+
+### Running Tools
+```bash
+# Using installed commands (after running install.sh)
+m1f -s ./source -o ./output.txt
+m1f-s1f -i ./combined.txt -d ./extracted
+m1f-scrape https://example.com -o ./html_files
+m1f-html2md convert ./html ./markdown
+m1f-token-counter ./file.txt
+
+# Using Python modules directly
+python -m tools.m1f -s ./source -o ./output.txt
+python -m tools.s1f -i ./combined.txt -d ./extracted
+python -m tools.scrape_tool https://example.com -o ./html_files
+python -m tools.html2md_tool convert ./html ./markdown
+m1f-token-counter ./file.txt
+
+# Auto-bundle management
+m1f auto-bundle              # Create all bundles
+m1f auto-bundle --list       # List available bundles
+m1f auto-bundle <name>       # Create specific bundle
+m1f auto-bundle --group documentation  # Create bundles by group
+```
+
+### Testing
+```bash
+# Run all tests
+pytest
+
+# Run specific test categories
+pytest -m unit
+pytest -m integration
+pytest -m "not slow"
+
+# Run specific test files
+pytest tests/m1f/test_m1f_basic.py
+pytest tests/s1f/test_s1f.py
+
+# Run a single test
+pytest tests/m1f/test_m1f_basic.py::test_basic_functionality -v
+
+# Run tests with coverage
+pytest --cov=tools --cov-report=html
+```
+
+### Linting & Formatting
+```bash
+# Format Python code with Black
+black tools/ tests/
+
+# Check Python code style
+black --check tools/ tests/
+
+# Format Markdown files
+npm run lint:md        # Auto-fix
+npm run lint:md:check  # Check only
+```
+
+## Testing Architecture
+
+- pytest-based with markers: unit, integration, slow, encoding, asyncio
+- Test structure mirrors tool structure: `tests/{m1f,s1f,html2md}/`
+- Test fixtures in `conftest.py` files
+- 300-second default timeout (configurable per test)
+- Test data in `tests/*/source/` directories
+
+## Preset System
+
+m1f uses hierarchical YAML presets for file-specific processing:
+- Global: `~/.m1f/`
+- Project: `presets/` directory
+- Per-file processors: minify, strip tags, remove comments, compress whitespace
+
+Example presets available:
+- `wordpress.m1f-presets.yml`: WordPress site processing
+- `web-project.m1f-presets.yml`: Web development projects
+- `documentation.m1f-presets.yml`: Documentation bundles
+
+## Auto-Bundle Configuration
+
+The `.m1f.config.yml` file defines auto-bundle settings:
+- Bundle definitions with sources, outputs, and filters
+- Global exclusions and settings
+- File watcher configuration
+- Security check levels per file type
+
+Bundles are automatically generated:
+- On git pre-commit hook
+- Via `m1f auto-bundle` command
+- Through file watcher (`./scripts/watch_and_bundle.sh`)
+
+## Recent Changes
+
+### Separator Format Updates
+- Standard separator format now shows only file path without checksum
+- s1f list output no longer displays SHA256 hashes or "[Unknown]" for missing sizes
+- s1f parser ignores separators inside code blocks to prevent false positives
+
+### Key Files Modified
+- `tools/m1f/separator_generator.py`: Standard format generation
+- `tools/s1f/core.py`: List output formatting
+- `tools/s1f/parsers.py`: Code block detection logic
+
+## Git Workflow
+
+Conventional commits: `<type>(<scope>): <subject>`
+- - Types: feat, fix, docs, style, refactor, test, chore, perf
+- 50 char subject, imperative mood
+- Main branch: `main`
+- Pre-commit hook runs auto-bundle to keep bundles synchronized
+- No reference to Claude Code in git commits
+- 
+
 ======= m1f-claude.txt ======
 # m1f-claude.txt: Essential m1f Guide for Claude
 
@@ -257,7 +421,7 @@ m1f -s . -o bundle.txt --preset web-project
 
 1. **Use Python module directly** (RECOMMENDED):
    ```bash
-   python -m tools.m1f -s . -o output.txt
+   m1f -s . -o output.txt
    ```
 
 2. **Create local wrapper script** in your project:
@@ -352,10 +516,10 @@ echo "m1f/" >> .gitignore  # Don't commit generated bundles
 m1f auto-bundle --list
 
 # Generate all bundles
-m1f auto-bundle
+m1f-update
 
 # Generate specific bundle
-m1f auto-bundle code
+m1f-update code
 ```
 
 ## Preset Files
@@ -530,7 +694,7 @@ Use these with @ mentions for instant context.
 ### 2. Keep bundles updated:
 ```bash
 # Add to git pre-commit hook
-m1f auto-bundle --quiet
+m1f-update --quiet
 
 # Or use file watcher
 ./scripts/watch_and_bundle.sh
@@ -551,7 +715,7 @@ cd m1f && ./scripts/install.sh
 
 # Basic commands
 m1f -s . -o output.txt                    # Bundle current directory
-m1f auto-bundle                           # Run auto-bundling
+m1f-update                                # Run auto-bundling
 m1f auto-bundle --list                    # List available bundles
 m1f-s1f -i bundle.txt -d extracted/       # Extract files from bundle
 
@@ -602,7 +766,7 @@ limitations under the License.
   },
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
@@ -846,7 +1010,7 @@ After installation, these commands are available globally:
 - `m1f` - Main tool for combining files
 - `m1f-s1f` - Split combined files back to original structure
 - `m1f-html2md` - Convert HTML to Markdown
-- `scrape_tool` - Download websites for offline viewing
+- `m1f-scrape` - Download websites for offline viewing
 - `m1f-token-counter` - Count tokens in files
 - `m1f-update` - Regenerate all m1f bundles
 - `m1f-link` - Link m1f documentation for AI tools (Claude Code, etc.)
@@ -905,7 +1069,7 @@ pip install -r requirements.txt
 ### 3. Generate Initial Bundles
 
 ```bash
-python -m tools.m1f auto-bundle
+m1f-update
 ```
 
 ### 4. Add to PATH
@@ -949,15 +1113,15 @@ Example batch file (`m1f.bat`):
 @echo off
 cd /d "C:\path\to\m1f"
 call .venv\Scripts\activate.bat
-python -m tools.m1f %*
+m1f %*
 ```
 
 Create similar batch files for:
 
-- `m1f-s1f.bat` → `python -m tools.s1f %*`
-- `m1f-html2md.bat` → `python -m tools.html2md %*`
-- `scrape_tool.bat` → `python -m tools.webscraper %*`
-- `m1f-token-counter.bat` → `python tools\token_counter.py %*`
+- `m1f-s1f.bat` → `m1f-s1f %*`
+- `m1f-html2md.bat` → `m1f-html2md %*`
+- `m1f-scrape.bat` → `m1f-scrape %*`
+- `m1f-token-counter.bat` → `m1f-token-counter %*`
 
 ## Using m1f in Other Projects
 
@@ -1288,14 +1452,14 @@ This directory contains detailed documentation for the m1f project v3.2.0.
   pip install -r requirements.txt
   ```
 - **Basic file combination**: Use
-  `python -m tools.m1f -s ./your_project -o ./combined.txt`
+  `m1f -s ./your_project -o ./combined.txt`
 - **File extraction**: Use
-  `python -m tools.s1f -i ./combined.txt -d ./extracted_files`
-- **Check token count**: Use `python tools/token_counter.py ./combined.txt`
+  `m1f-s1f -i ./combined.txt -d ./extracted_files`
+- **Check token count**: Use `m1f-token-counter ./combined.txt`
 - **Download website**: Use
-  `python -m tools.webscraper https://example.com -o ./html`
+  `m1f-scrape https://example.com -o ./html`
 - **Convert HTML to Markdown**: Use
-  `python -m tools.html2md convert ./html ./markdown`
+  `m1f-html2md convert ./html ./markdown`
 - **Auto-bundle project**: Use `./scripts/auto_bundle.sh` or configure with
   `.m1f.config.yml`
 
@@ -1349,6 +1513,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [3.2.2] - 2025-07-06
+
+### Changed
+
+- **Documentation**: Updated all command examples to use installed bin commands
+  - Replaced `python -m tools.m1f` with `m1f`
+  - Replaced `python -m tools.s1f` with `m1f-s1f`
+  - Replaced `python -m tools.scrape_tool` and `python -m tools.webscraper` with `m1f-scrape`
+  - Replaced `python -m tools.html2md` and `python -m tools.html2md_tool` with `m1f-html2md`
+  - Replaced `python tools/token_counter.py` with `m1f-token-counter`
+  - Replaced `m1f auto-bundle` with `m1f-update` where appropriate
+  - Updated all documentation, scripts, and examples for consistency
+
+### Fixed
+
+- **Scraper Config Files**: Fixed typo in YAML configs (mf1-html2md → m1f-scrape)
+- **Documentation**: Improved command consistency across all user-facing documentation
 
 ## [3.2.1] - 2025-06-07
 
@@ -2783,10 +2965,10 @@ v3_2_features:
       enable_content_deduplication: false
 
 # Usage examples:
-# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
-# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
-# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
-# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group v3_2_features
+# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
+# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
+# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
+# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group v3_2_features
 
 ======= presets/template-all-settings.m1f-presets.yml ======
 # Complete m1f Preset Template
@@ -3211,9 +3393,9 @@ development:
 # - extract_functions: Extract only function definitions (Python)
 
 # Usage Examples:
-# python -m tools.m1f -s . -o bundle.txt --preset this-file.yml
-# python -m tools.m1f -s . -o prod.txt --preset this-file.yml --preset-group production
-# python -m tools.m1f -s . -o dev.txt --preset this-file.yml --preset-group development
+# m1f -s . -o bundle.txt --preset this-file.yml
+# m1f -s . -o prod.txt --preset this-file.yml --preset-group production
+# m1f -s . -o dev.txt --preset this-file.yml --preset-group development
 
 ======= presets/web-project.m1f-presets.yml ======
 # Web Project Preset Configuration for m1f
@@ -3625,14 +3807,14 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         all|focus|preset)
-            # Legacy command support - convert to m1f auto-bundle
+            # Legacy command support - convert to m1f-update
             if [ "$1" = "all" ]; then
                 # Run auto-bundle for all bundles
-                cd "$PROJECT_ROOT" && source .venv/bin/activate && python -m tools.m1f auto-bundle
+                cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update
                 exit 0
             elif [ "$1" = "focus" ] && [ -n "$2" ]; then
                 # Run auto-bundle for specific bundle
-                cd "$PROJECT_ROOT" && source .venv/bin/activate && python -m tools.m1f auto-bundle "$2"
+                cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update "$2"
                 exit 0
             elif [ "$1" = "preset" ] && [ -n "$2" ]; then
                 PRESET="$2"
@@ -3658,13 +3840,13 @@ if [ -n "$PRESET" ]; then
     cd "$PROJECT_ROOT" && source .venv/bin/activate
     
     if [ -n "$GROUP" ]; then
-        python -m tools.m1f --preset "$PRESET" --preset-group "$GROUP" -o ".ai-context/${GROUP}.txt"
+        m1f --preset "$PRESET" --preset-group "$GROUP" -o ".ai-context/${GROUP}.txt"
     else
-        python -m tools.m1f --preset "$PRESET" -o ".ai-context/preset-bundle.txt"
+        m1f --preset "$PRESET" -o ".ai-context/preset-bundle.txt"
     fi
 else
     # Default to running auto-bundle
-    cd "$PROJECT_ROOT" && source .venv/bin/activate && python -m tools.m1f auto-bundle
+    cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update
 fi
 
 ======= scripts/bump_version.py ======
@@ -3984,7 +4166,7 @@ install_hook "pre-commit"
 echo ""
 echo -e "${GREEN}Git hooks installation complete!${NC}"
 echo ""
-echo "The pre-commit hook will automatically run m1f auto-bundle"
+echo "The pre-commit hook will automatically run m1f-update"
 echo "before each commit if a .m1f.config.yml file exists."
 echo ""
 echo "Prerequisites:"
@@ -4115,7 +4297,7 @@ if (Test-Path "requirements.txt") {
 # Step 3: Generate initial m1f bundles
 Write-Host
 Write-ColorOutput "Step 3: Generating initial m1f bundles..." -Color $colors.Green
-python -m tools.m1f auto-bundle --quiet
+m1f-update --quiet
 Write-ColorOutput "✓ Initial bundles generated" -Color $colors.Green
 
 # Step 4: Setup PowerShell functions
@@ -4140,12 +4322,12 @@ if (!(Test-Path $batchDir)) {
 
 # Create batch files
 $commands = @{
-    "m1f.bat" = "python -m tools.m1f"
-    "m1f-s1f.bat" = "python -m tools.s1f"
-    "m1f-html2md.bat" = "python -m tools.html2md"
-    "m1f-scrape.bat" = "python -m tools.webscraper"
-    "m1f-token-counter.bat" = "python tools\token_counter.py"
-    "m1f-update.bat" = "python -m tools.m1f auto-bundle"
+    "m1f.bat" = "m1f"
+    "m1f-s1f.bat" = "m1f-s1f"
+    "m1f-html2md.bat" = "m1f-html2md"
+    "m1f-scrape.bat" = "m1f-scrape"
+    "m1f-token-counter.bat" = "m1f-token-counter"
+    "m1f-update.bat" = "m1f auto-bundle"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files
@@ -4302,7 +4484,7 @@ fi
 # Step 3: Generate initial m1f bundles
 echo
 echo -e "${GREEN}Step 3: Generating initial m1f bundles...${NC}"
-python -m tools.m1f auto-bundle --quiet
+m1f-update --quiet
 echo -e "${GREEN}✓ Initial bundles generated${NC}"
 
 # Step 4: Setup PATH
@@ -4527,7 +4709,7 @@ $standaloneBatch = @"
 @echo off
 cd /d "$ProjectRoot"
 call "$ProjectRoot\.venv\Scripts\activate.bat"
-python -m tools.m1f %*
+m1f %*
 "@
 Set-Content "$scriptsDir\m1f.bat" $standaloneBatch
 
@@ -4771,7 +4953,7 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # Use python directly for auto-bundle
-PYTHON_CMD="cd \"$PROJECT_ROOT\" && source .venv/bin/activate && python -m tools.m1f auto-bundle"
+PYTHON_CMD="cd \"$PROJECT_ROOT\" && source .venv/bin/activate && m1f-update"
 
 # Colors
 GREEN='\033[0;32m'
@@ -5091,7 +5273,7 @@ context for AI interactions. The system includes:
 3. **Preset System** - Apply file-specific processing rules
 4. **Watch Mode** - Automatically regenerate bundles when files change
 
-Using the `m1f.py` tool and auto-bundling scripts, you can create optimized
+Using the `m1f` tool and auto-bundling scripts, you can create optimized
 context files for AI assistants.
 
 ## VS Code Setup
@@ -5288,7 +5470,7 @@ m1f-update all
 m1f-update focus wordpress
 
 # Use specific preset with group
-python -m tools.m1f auto-bundle preset web-project frontend
+m1f auto-bundle preset web-project frontend
 ```
 
 Available presets:
@@ -5334,7 +5516,7 @@ You can customize the tasks by editing `m1f.json` for your specific needs:
 
 ## Additional Options
 
-Consider these advanced options from `m1f.py` for specific needs:
+Consider these advanced options from `m1f` for specific needs:
 
 - `--include-dot-paths`: Useful for including WordPress-specific configuration
   files like `.htaccess` or other dot files and directories (e.g., `.config/`,
@@ -5351,7 +5533,7 @@ For a complete list of all available options and their detailed descriptions,
 run:
 
 ```
-python tools/m1f.py --help
+m1f --help
 ```
 
 ## Machine-Readable Format
@@ -5498,11 +5680,11 @@ wp-content/plugins/UtilityPlugin/includes/cpt-slides.php
 
 ### 3. Generate the Combined Context File
 
-Run `m1f.py` from your terminal, pointing to your input file list and specifying
+Run `m1f` from your terminal, pointing to your input file list and specifying
 an output file. It's recommended to use the `MachineReadable` separator style.
 
 ```bash
-python tools/m1f.py \
+m1f \
   --input-file my_wp_context_files.txt \
   --output-file .gen/wordpress_context.m1f.txt \
   --separator-style MachineReadable \
@@ -5527,7 +5709,7 @@ You can also generate only the auxiliary files (file list and directory list)
 without creating the combined file:
 
 ```bash
-python tools/m1f.py \
+m1f \
   --input-file my_wp_context_files.txt \
   --output-file .gen/wordpress_auxiliary_only.m1f.txt \
   --skip-output-file \
@@ -5616,7 +5798,7 @@ development tasks.
 When dealing with a project that contains hundreds or thousands of files, start
 by generating a complete file and directory listing without creating the merged
 context file. Run the **Project Review: Generate Lists** task. It calls
-`tools/m1f.py` with `--skip-output-file` and saves two inventory files to the
+`m1f` with `--skip-output-file` and saves two inventory files to the
 `m1f` directory:
 
 - `m1f/project_review_filelist.txt`
@@ -8236,7 +8418,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.2.1"
+__version__ = "3.2.2"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -8557,7 +8739,7 @@ if you run 'm1f-link' and then reference @m1f/m1f-docs.txt
             context_parts.append("  📂 Standard project structure")
 
         # Check for m1f bundles
-        m1f_dir = self.project_path / ".m1f"
+        m1f_dir = self.project_path / "m1f"
         if m1f_dir.exists() and m1f_dir.is_dir():
             bundles = list(m1f_dir.glob("*.txt"))
             if bundles:
@@ -9613,16 +9795,16 @@ comprehensive metadata.
 
 ```bash
 # Basic usage with a source directory
-python -m tools.m1f -s ./your_project -o ./combined.txt
+m1f -s ./your_project -o ./combined.txt
 
 # Include only specific file types
-python -m tools.m1f -s ./your_project -o ./combined.txt --include-extensions .py .js .md
+m1f -s ./your_project -o ./combined.txt --include-extensions .py .js .md
 
 # Exclude specific directories
-python -m tools.m1f -s ./your_project -o ./combined.txt --excludes "node_modules/" "build/" "dist/"
+m1f -s ./your_project -o ./combined.txt --excludes "node_modules/" "build/" "dist/"
 
 # Filter by file size (new in v2.0.0)
-python -m tools.m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
+m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 ```
 
 > **Note**: For a complete reference of all available options, see the
@@ -9681,13 +9863,13 @@ Presets are loaded in the following order (highest priority wins):
 
 ```bash
 # Use built-in WordPress preset
-python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
 
 # Use specific preset group
-python -m tools.m1f -s ./project -o bundle.txt --preset my-presets.yml --preset-group production
+m1f -s ./project -o bundle.txt --preset my-presets.yml --preset-group production
 
 # Load multiple preset files (merged in order)
-python -m tools.m1f -s . -o out.txt --preset defaults.yml project.yml overrides.yml
+m1f -s . -o out.txt --preset defaults.yml project.yml overrides.yml
 ```
 
 ### Available Processing Actions
@@ -9711,17 +9893,17 @@ For detailed preset documentation, see:
 
 ```bash
 # Basic command using a source directory
-python -m tools.m1f --source-directory /path/to/your/code \
+m1f --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
 
 # Using an input file containing paths to process (one per line)
-python -m tools.m1f -i filelist.txt -o combined_output.txt
+m1f -i filelist.txt -o combined_output.txt
 
 # Using both source directory and input file together
-python -m tools.m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
 
 # Remove scraped metadata from HTML2MD files (new in v2.0.0)
-python -m tools.m1f -s ./scraped_docs -o ./clean_docs.txt \
+m1f -s ./scraped_docs -o ./clean_docs.txt \
   --include-extensions .md --remove-scraped-metadata
 ```
 
@@ -9729,19 +9911,19 @@ python -m tools.m1f -s ./scraped_docs -o ./clean_docs.txt \
 
 ```bash
 # Using MachineReadable style with verbose logging
-python -m tools.m1f -s ./my_project -o ./output/bundle.m1f.txt \
+m1f -s ./my_project -o ./output/bundle.m1f.txt \
   --separator-style MachineReadable --force --verbose
 
 # Creating a combined file and a backup zip archive
-python -m tools.m1f -s ./source_code -o ./dist/combined.txt \
+m1f -s ./source_code -o ./dist/combined.txt \
   --create-archive --archive-type zip
 
 # Only include text files under 50KB to avoid large generated files
-python -m tools.m1f -s ./project -o ./text_only.txt \
+m1f -s ./project -o ./text_only.txt \
   --max-file-size 50KB --include-extensions .py .js .md .txt .json
 
 # Handle symlinks with cycle detection (new in v2.0.0)
-python -m tools.m1f -s ./project -o ./output.txt \
+m1f -s ./project -o ./output.txt \
   --include-symlinks --verbose
 ```
 
@@ -9779,7 +9961,7 @@ To create only the primary output file and skip the auxiliary files, use the
 
 ```bash
 # Create only the combined output file without any auxiliary files
-python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
+m1f -s ./src -o ./combined.txt --minimal-output
 ```
 
 ## Common Use Cases
@@ -9788,21 +9970,21 @@ python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
 
 ```bash
 # Create a complete documentation bundle from all markdown files
-python tools/m1f.py -s ./docs -o ./doc_bundle.m1f.txt --include-extensions .md
+m1f -s ./docs -o ./doc_bundle.m1f.txt --include-extensions .md
 ```
 
 ### Code Review Preparation
 
 ```bash
 # Bundle specific components for code review
-python tools/m1f.py -i code_review_files.txt -o ./review_bundle.m1f.txt
+m1f -i code_review_files.txt -o ./review_bundle.m1f.txt
 ```
 
 ### WordPress Development
 
 ```bash
 # Combine theme or plugin files for AI analysis
-python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
+m1f -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
   --include-extensions .php .js .css --exclude-paths-file ./exclude_build_files.txt
 ```
 
@@ -9810,7 +9992,7 @@ python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
 
 ```bash
 # Create a searchable knowledge base from project documentation
-python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
+m1f -s ./project -o ./knowledge_base.m1f.txt \
   --include-extensions .md .txt .rst --minimal-output
 ```
 
@@ -9818,11 +10000,11 @@ python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
 
 ```bash
 # Combine scraped markdown files and remove metadata
-python tools/m1f.py -s ./scraped_content -o ./clean_content.m1f.txt \
+m1f -s ./scraped_content -o ./clean_content.m1f.txt \
   --include-extensions .md --remove-scraped-metadata
 
 # Merge multiple scraped websites into a clean documentation bundle
-python tools/m1f.py -s ./web_content -o ./web_docs.m1f.txt \
+m1f -s ./web_content -o ./web_docs.m1f.txt \
   --include-extensions .md --remove-scraped-metadata --separator-style Markdown
 ```
 
@@ -10035,98 +10217,98 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 
 ```bash
 # Combine all files in current directory
-python tools/m1f.py -s . -o output.txt
+m1f -s . -o output.txt
 
 # Combine specific directory
-python tools/m1f.py -s ./src -o bundle.txt
+m1f -s ./src -o bundle.txt
 
 # Force overwrite existing output
-python tools/m1f.py -s . -o output.txt -f
+m1f -s . -o output.txt -f
 ```
 
 ### Using Presets (v3.2.0+)
 
 ```bash
 # Use a preset file (can define ALL parameters)
-python tools/m1f.py --preset production.yml -o output.txt
+m1f --preset production.yml -o output.txt
 
 # Preset can even define source and output
-python tools/m1f.py --preset full-config.yml
+m1f --preset full-config.yml
 
 # Override preset values with CLI
-python tools/m1f.py --preset prod.yml -o custom-output.txt -v
+m1f --preset prod.yml -o custom-output.txt -v
 ```
 
 ### File Type Filtering
 
 ```bash
 # Only Python files
-python tools/m1f.py -s . -o code.txt --include-extensions .py
+m1f -s . -o code.txt --include-extensions .py
 
 # Multiple file types
-python tools/m1f.py -s . -o docs.txt --include-extensions .md .txt .rst
+m1f -s . -o docs.txt --include-extensions .md .txt .rst
 
 # Exclude certain types
-python tools/m1f.py -s . -o output.txt --exclude-extensions .pyc .log
+m1f -s . -o output.txt --exclude-extensions .pyc .log
 ```
 
 ### Directory and Pattern Exclusions
 
 ```bash
 # Exclude specific directories
-python tools/m1f.py -s . -o output.txt --excludes "tests/" "docs/"
+m1f -s . -o output.txt --excludes "tests/" "docs/"
 
 # Exclude patterns
-python tools/m1f.py -s . -o output.txt --excludes "*.test.js" "*/tmp/*"
+m1f -s . -o output.txt --excludes "*.test.js" "*/tmp/*"
 
 # Use gitignore file
-python tools/m1f.py -s . -o output.txt --exclude-paths-file .gitignore
+m1f -s . -o output.txt --exclude-paths-file .gitignore
 ```
 
 ### Output Formatting
 
 ```bash
 # Markdown format
-python tools/m1f.py -s . -o output.md --separator-style Markdown
+m1f -s . -o output.md --separator-style Markdown
 
 # Machine-readable JSON metadata
-python tools/m1f.py -s . -o output.txt --separator-style MachineReadable
+m1f -s . -o output.txt --separator-style MachineReadable
 
 # No separators
-python tools/m1f.py -s . -o output.txt --separator-style None
+m1f -s . -o output.txt --separator-style None
 ```
 
 ### Size Management
 
 ```bash
 # Skip large files
-python tools/m1f.py -s . -o output.txt --max-file-size 100KB
+m1f -s . -o output.txt --max-file-size 100KB
 
 # Include only small text files
-python tools/m1f.py -s . -o small.txt --max-file-size 50KB --include-extensions .txt .md
+m1f -s . -o small.txt --max-file-size 50KB --include-extensions .txt .md
 ```
 
 ### Archive Creation
 
 ```bash
 # Create zip backup
-python tools/m1f.py -s . -o output.txt --create-archive
+m1f -s . -o output.txt --create-archive
 
 # Create tar.gz backup
-python tools/m1f.py -s . -o output.txt --create-archive --archive-type tar.gz
+m1f -s . -o output.txt --create-archive --archive-type tar.gz
 ```
 
 ### Using Presets
 
 ```bash
 # Use single preset
-python tools/m1f.py -s . -o output.txt --preset wordpress.m1f-presets.yml
+m1f -s . -o output.txt --preset wordpress.m1f-presets.yml
 
 # Use preset group
-python tools/m1f.py -s . -o output.txt --preset web.yml --preset-group frontend
+m1f -s . -o output.txt --preset web.yml --preset-group frontend
 
 # Multiple presets (merged in order)
-python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
+m1f -s . -o output.txt --preset base.yml project.yml
 ```
 
 ## Common Patterns
@@ -10134,7 +10316,7 @@ python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
 ### Documentation Bundle
 
 ```bash
-python tools/m1f.py -s ./docs -o documentation.txt \
+m1f -s ./docs -o documentation.txt \
     --include-extensions .md .rst .txt \
     --separator-style Markdown
 ```
@@ -10142,7 +10324,7 @@ python tools/m1f.py -s ./docs -o documentation.txt \
 ### Source Code Bundle
 
 ```bash
-python tools/m1f.py -s ./src -o source-code.txt \
+m1f -s ./src -o source-code.txt \
     --include-extensions .py .js .ts .jsx .tsx \
     --excludes "*.test.*" "*.spec.*" \
     --max-file-size 500KB
@@ -10151,7 +10333,7 @@ python tools/m1f.py -s ./src -o source-code.txt \
 ### WordPress Theme/Plugin
 
 ```bash
-python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
+m1f -s ./wp-content/themes/mytheme -o theme.txt \
     --include-extensions .php .js .css \
     --excludes "node_modules/" "vendor/" \
     --preset presets/wordpress.m1f-presets.yml
@@ -10160,7 +10342,7 @@ python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
 ### Clean Documentation Export
 
 ```bash
-python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
+m1f -s ./scraped_docs -o clean-docs.txt \
     --include-extensions .md \
     --remove-scraped-metadata \
     --separator-style Markdown
@@ -10170,11 +10352,11 @@ python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
 
 ```bash
 # Multiple exclude files (merged)
-python tools/m1f.py -s . -o output.txt \
+m1f -s . -o output.txt \
     --exclude-paths-file .gitignore .dockerignore custom-excludes.txt
 
 # Whitelist mode with include files
-python tools/m1f.py -s . -o api-bundle.txt \
+m1f -s . -o api-bundle.txt \
     --include-paths-file api-files.txt core-files.txt \
     --exclude-paths-file .gitignore
 ```
@@ -10183,13 +10365,13 @@ python tools/m1f.py -s . -o api-bundle.txt \
 
 ```bash
 # Single input file
-python tools/m1f.py -s . -i files.txt -o output.txt
+m1f -s . -i files.txt -o output.txt
 
 # Merge multiple file lists (Bash)
-python tools/m1f.py -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
+m1f -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
 
 # Combine with filters (input files bypass filters)
-python tools/m1f.py -s . -i must-include.txt -o output.txt \
+m1f -s . -i must-include.txt -o output.txt \
     --exclude-paths-file .gitignore
 ```
 
@@ -10197,13 +10379,13 @@ python tools/m1f.py -s . -i must-include.txt -o output.txt \
 
 ```bash
 # Create timestamped output
-python tools/m1f.py -s . -o build.txt -t
+m1f -s . -o build.txt -t
 
 # Minimal output for automation
-python tools/m1f.py -s . -o output.txt --minimal-output --quiet
+m1f -s . -o output.txt --minimal-output --quiet
 
 # With security check
-python tools/m1f.py -s . -o output.txt --security-check abort
+m1f -s . -o output.txt --security-check abort
 ```
 
 ## Quick Option Reference
@@ -10238,7 +10420,7 @@ Example: `--max-file-size 1.5MB`
 ## Exit on Success
 
 ```bash
-python tools/m1f.py -s . -o output.txt && echo "Success!"
+m1f -s . -o output.txt && echo "Success!"
 ```
 
 ## Aliases Setup
@@ -10253,7 +10435,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 
 ## Need Help?
 
-- Full options: `python tools/m1f.py --help`
+- Full options: `m1f --help`
 - [Complete CLI Reference](./02_cli_reference.md)
 - [Troubleshooting Guide](./03_troubleshooting.md)
 - [Preset Documentation](./10_m1f_presets.md)
@@ -10613,6 +10795,18 @@ m1f auto-bundle --verbose
 m1f auto-bundle --quiet
 ```
 
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle` that can be used interchangeably:
+
+```bash
+# These are equivalent:
+m1f auto-bundle
+m1f-update
+
+# With specific bundle:
+m1f auto-bundle code
+m1f-update code
+```
+
 **Options:**
 
 - `BUNDLE_NAME`: Name of specific bundle to create (optional)
@@ -10625,8 +10819,8 @@ instructions.
 
 ## Notes
 
-1. **Module Invocation**: You can use either `python -m tools.m1f` or
-   `python tools/m1f.py`, or set up the `m1f` alias as described in the
+1. **Module Invocation**: You can use either `m1f` or
+   `python -m tools.m1f`, or set up the `m1f` alias as described in the
    development workflow.
 
 2. **Input Requirements**: At least one of `-s` (source directory) or `-i`
@@ -10649,7 +10843,7 @@ using m1f.
 
 ### Module Import Error
 
-**Problem**: Running `python -m tools.m1f` results in:
+**Problem**: Running `m1f` results in:
 
 ```
 ModuleNotFoundError: No module named 'm1f'
@@ -10658,7 +10852,7 @@ ModuleNotFoundError: No module named 'm1f'
 **Solution**: Use the direct script invocation instead:
 
 ```bash
-python tools/m1f.py [options]
+m1f [options]
 ```
 
 Or set up the alias as described in the
@@ -10701,7 +10895,7 @@ PermissionError: [Errno 13] Permission denied: '/path/to/output.txt'
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --convert-to-charset utf-8
+m1f -s . -o output.txt --convert-to-charset utf-8
 ```
 
 ### Memory Issues with Large Projects
@@ -10718,7 +10912,7 @@ python tools/m1f.py -s . -o output.txt --convert-to-charset utf-8
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --max-file-size 1MB --include-extensions .py .md
+m1f -s . -o output.txt --max-file-size 1MB --include-extensions .py .md
 ```
 
 ### Symlink Cycles
@@ -10745,7 +10939,7 @@ python tools/m1f.py -s . -o output.txt --max-file-size 1MB --include-extensions 
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --security-check warn --excludes ".env" "config/secrets.yml"
+m1f -s . -o output.txt --security-check warn --excludes ".env" "config/secrets.yml"
 ```
 
 ## Error Messages
@@ -10822,7 +11016,7 @@ needed.
 For detailed debugging information:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --verbose
+m1f -s . -o output.txt --verbose
 ```
 
 This will show:
@@ -10854,7 +11048,7 @@ Understanding exit codes can help in scripting:
 Use in scripts:
 
 ```bash
-if python tools/m1f.py -s . -o output.txt; then
+if m1f -s . -o output.txt; then
     echo "Success"
 else
     echo "Failed with exit code: $?"
@@ -10883,18 +11077,18 @@ Instead of applying the same settings to all files, presets let you:
 1. **Use a built-in preset**:
 
    ```bash
-   python tools/m1f.py -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+   m1f -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
    ```
 
 2. **Specify a preset group**:
 
    ```bash
-   python tools/m1f.py -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
+   m1f -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
    ```
 
 3. **Use multiple preset files**:
    ```bash
-   python tools/m1f.py -s . -o bundle.txt --preset company-presets.yml project-presets.yml
+   m1f -s . -o bundle.txt --preset company-presets.yml project-presets.yml
    ```
 
 ## Preset Configuration File
@@ -11113,16 +11307,16 @@ When multiple preset groups are loaded:
 
 ```bash
 # Use single preset file
-python tools/m1f.py -s . -o out.txt --preset my-presets.yml
+m1f -s . -o out.txt --preset my-presets.yml
 
 # Use specific group
-python tools/m1f.py -s . -o out.txt --preset presets.yml --preset-group backend
+m1f -s . -o out.txt --preset presets.yml --preset-group backend
 
 # Multiple preset files (merged in order)
-python tools/m1f.py -s . -o out.txt --preset base.yml project.yml
+m1f -s . -o out.txt --preset base.yml project.yml
 
 # Disable all presets
-python tools/m1f.py -s . -o out.txt --preset presets.yml --disable-presets
+m1f -s . -o out.txt --preset presets.yml --disable-presets
 ```
 
 ## Complete List of Supported Settings
@@ -11291,7 +11485,7 @@ conditional:
 You can load multiple preset files that build on each other:
 
 ```bash
-python tools/m1f.py -s . -o bundle.txt \
+m1f -s . -o bundle.txt \
   --preset base-rules.yml \
   --preset project-specific.yml \
   --preset production-overrides.yml
@@ -11327,7 +11521,7 @@ python tools/m1f.py -s . -o bundle.txt \
 # GitHub Actions example
 - name: Create bundle with presets
   run: |
-    python tools/m1f.py \
+    m1f \
       -s . \
       -o release-bundle.txt \
       --preset .github/release-presets.yml \
@@ -11706,10 +11900,10 @@ Use it with:
 
 ```bash
 # Module invocation (recommended)
-python -m tools.m1f -s ./src -o bundle.txt --preset my-preset.yml
+m1f -s ./src -o bundle.txt --preset my-preset.yml
 
-# Direct script invocation (alternative)
-python tools/m1f.py -s ./src -o bundle.txt --preset my-preset.yml
+# Direct command invocation (if installed)
+m1f -s ./src -o bundle.txt --preset my-preset.yml
 ```
 
 ## Preset File Format
@@ -12009,7 +12203,7 @@ exclude files:
 
 2. **Use CLI Arguments**:
    ```bash
-   python tools/m1f.py -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
+   m1f -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
    ```
 
 ### Settings Hierarchy
@@ -12080,7 +12274,7 @@ production:
 
 ```bash
 # Files are merged in order (later files override earlier ones)
-python tools/m1f.py -s . -o out.txt \
+m1f -s . -o out.txt \
   --preset base.yml \
   --preset project.yml \
   --preset overrides.yml
@@ -12129,7 +12323,7 @@ Usage comparison:
 **Before v3.2.0** (long command):
 
 ```bash
-python -m tools.m1f -s ./src -o dist/bundle.txt \
+m1f -s ./src -o dist/bundle.txt \
   --input-include-files README.md LICENSE \
   --add-timestamp --create-archive --archive-type tar.gz \
   --force --minimal-output --quiet \
@@ -12140,7 +12334,7 @@ python -m tools.m1f -s ./src -o dist/bundle.txt \
 **After v3.2.0** (simple command):
 
 ```bash
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
+m1f --preset production.m1f-presets.yml -o output.txt
 ```
 
 ## Examples
@@ -12232,10 +12426,10 @@ Use with `--preset-group`:
 
 ```bash
 # Development build
-python -m tools.m1f --preset environments.yml --preset-group development
+m1f --preset environments.yml --preset-group development
 
 # Production build
-python -m tools.m1f --preset environments.yml --preset-group production
+m1f --preset environments.yml --preset-group production
 ```
 
 ## Debugging and Best Practices
@@ -12245,7 +12439,7 @@ python -m tools.m1f --preset environments.yml --preset-group production
 1. **Verbose Mode**
 
    ```bash
-   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
+   m1f -s . -o out.txt --preset my.yml --verbose
    ```
 
    Shows which preset is applied to each file and processing details.
@@ -12253,7 +12447,7 @@ python -m tools.m1f --preset environments.yml --preset-group production
 2. **Check What's Applied**
 
    ```bash
-   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
+   m1f -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
    ```
 
 3. **Validate YAML**
@@ -12346,12 +12540,16 @@ bundles:
 
 ```bash
 m1f auto-bundle
+# Or use the convenient alias:
+m1f-update
 ```
 
 ### Create Specific Bundle
 
 ```bash
 m1f auto-bundle docs
+# Or use the convenient alias:
+m1f-update docs
 ```
 
 ### List Available Bundles
@@ -12364,7 +12562,11 @@ m1f auto-bundle --list
 
 ```bash
 m1f auto-bundle --group documentation
+# Or use the convenient alias:
+m1f-update --group documentation
 ```
+
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle` that provides a simpler way to regenerate bundles.
 
 ## Bundle Groups
 
@@ -12417,7 +12619,7 @@ for config in $(find /home/projects -name ".m1f.config.yml" -type f); do
     echo "Updating bundles in: $project_dir"
 
     cd "$project_dir"
-    m1f auto-bundle --quiet
+    m1f-update --quiet
 done
 ```
 
@@ -12440,7 +12642,7 @@ Then update only specific projects:
 
 ```bash
 cd /path/to/project-a
-m1f auto-bundle --group project-a
+m1f-update --group project-a
 ```
 
 ### Automated Bundle Updates
@@ -12530,7 +12732,7 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 
 The hook will:
 
-- Run `m1f auto-bundle` before each commit
+- Run `m1f-update` before each commit
 - Add generated bundles to the commit automatically
 - Block commits if bundle generation fails
 
@@ -12561,7 +12763,7 @@ config file searching from the current directory up to the root. Create a
 Check the verbose output:
 
 ```bash
-m1f auto-bundle --verbose
+m1f-update --verbose
 ```
 
 Common issues:
@@ -12749,7 +12951,7 @@ The AI can then:
 2. Test changes directly:
 
    ```bash
-   python tools/m1f.py -s test_dir -o output.txt
+   python -m tools.m1f -s test_dir -o output.txt
    ```
 
 3. Run tests:
@@ -12877,7 +13079,7 @@ Add m1f to your CI pipeline:
 # Example GitHub Actions
 - name: Generate Documentation Bundle
   run: |
-    python tools/m1f.py -s docs -o docs-bundle.txt
+    python -m tools.m1f -s docs -o docs-bundle.txt
 
 - name: Upload Bundle
   uses: actions/upload-artifact@v2
@@ -14174,22 +14376,22 @@ verification and proper encoding handling.
 
 ```bash
 # Basic extraction (positional arguments - recommended)
-python -m tools.s1f ./combined.txt ./extracted_files
+m1f-s1f ./combined.txt ./extracted_files
 
 # Basic extraction (option-style arguments)
-python -m tools.s1f -i ./combined.txt -d ./extracted_files
+m1f-s1f -i ./combined.txt -d ./extracted_files
 
 # List files without extracting
-python -m tools.s1f --list ./combined.txt
+m1f-s1f --list ./combined.txt
 
 # Force overwrite of existing files
-python -m tools.s1f ./combined.txt ./extracted_files -f
+m1f-s1f ./combined.txt ./extracted_files -f
 
 # Verbose output to see detailed extraction progress
-python -m tools.s1f ./combined.txt ./extracted_files -v
+m1f-s1f ./combined.txt ./extracted_files -v
 
 # Extract with specific encoding (new in v2.0.0)
-python -m tools.s1f ./combined.txt ./extracted_files --target-encoding utf-16-le
+m1f-s1f ./combined.txt ./extracted_files --target-encoding utf-16-le
 ```
 
 ## Architecture
@@ -14255,39 +14457,39 @@ s1f -i <input_file> -d <destination_directory>
 
 ```bash
 # Basic command (positional arguments)
-python -m tools.s1f /path/to/combined_output.txt /path/to/output_folder
+m1f-s1f /path/to/combined_output.txt /path/to/output_folder
 
 # Basic command (option-style)
-python -m tools.s1f --input-file /path/to/combined_output.txt \
+m1f-s1f --input-file /path/to/combined_output.txt \
   --destination-directory /path/to/output_folder
 
 # List files in archive without extracting
-python -m tools.s1f --list ./output/bundle.m1f.txt
+m1f-s1f --list ./output/bundle.m1f.txt
 
 # Splitting a MachineReadable file with force overwrite and verbose output
-python -m tools.s1f ./output/bundle.m1f.txt ./extracted_project -f -v
+m1f-s1f ./output/bundle.m1f.txt ./extracted_project -f -v
 
 # Check version
-python -m tools.s1f --version
+m1f-s1f --version
 ```
 
 ### Advanced Operations
 
 ```bash
 # Using current system time for timestamps
-python -m tools.s1f -i ./combined_file.txt -d ./extracted_files \
+m1f-s1f -i ./combined_file.txt -d ./extracted_files \
   --timestamp-mode current
 
 # Preserving original file encodings
-python -m tools.s1f -i ./with_encodings.txt -d ./extracted_files \
+m1f-s1f -i ./with_encodings.txt -d ./extracted_files \
   --respect-encoding
 
 # Using a specific encoding for all extracted files
-python -m tools.s1f -i ./combined_file.txt -d ./extracted_files \
+m1f-s1f -i ./combined_file.txt -d ./extracted_files \
   --target-encoding utf-8
 
 # Ignoring checksum verification (when files were intentionally modified)
-python -m tools.s1f -i ./modified_bundle.m1f.txt -d ./extracted_files \
+m1f-s1f -i ./modified_bundle.m1f.txt -d ./extracted_files \
   --ignore-checksum
 ```
 
@@ -14317,7 +14519,7 @@ files:
 
 ```bash
 # Step 1: Extract the files with verification
-python -m tools.s1f -i ./project_bundle.m1f.txt -d ./extracted_project -v
+m1f-s1f -i ./project_bundle.m1f.txt -d ./extracted_project -v
 
 # Step 2: Check for any checksum errors in the output
 # If any errors are reported, consider using --ignore-checksum if appropriate
@@ -14329,10 +14531,10 @@ When you need to extract the same combined file to different locations:
 
 ```bash
 # Extract for development
-python -m tools.s1f -i ./project.m1f.txt -d ./dev_workspace
+m1f-s1f -i ./project.m1f.txt -d ./dev_workspace
 
 # Extract for backup with original timestamps
-python -m tools.s1f -i ./project.m1f.txt -d ./backup --timestamp-mode original
+m1f-s1f -i ./project.m1f.txt -d ./backup --timestamp-mode original
 ```
 
 ## Performance
@@ -14402,28 +14604,28 @@ tool for better modularity. Use `webscraper` to download websites, then
 
 ```bash
 # Basic conversion of all HTML files in a directory
-python -m tools.html2md convert ./website -o ./docs
+m1f-html2md convert ./website -o ./docs
 
 # Use a custom extractor for site-specific conversion
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --extractor ./extractors/custom_extractor.py
 
 # Extract only main content from HTML files
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "main.content" --ignore-selectors nav .sidebar footer
 
 # Skip YAML frontmatter and adjust heading levels
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --no-frontmatter --heading-offset 1
 
 # Analyze HTML structure to find best selectors
-python -m tools.html2md analyze ./html/*.html --suggest-selectors
+m1f-html2md analyze ./html/*.html --suggest-selectors
 
 # Analyze with detailed structure output
-python -m tools.html2md analyze ./html/*.html --show-structure --common-patterns
+m1f-html2md analyze ./html/*.html --show-structure --common-patterns
 
 # Generate a configuration file
-python -m tools.html2md config -o config.yaml
+m1f-html2md config -o config.yaml
 ```
 
 ### Complete Workflow Example with .scrapes Directory
@@ -14433,10 +14635,10 @@ python -m tools.html2md config -o config.yaml
 mkdir -p .scrapes/my-project/{html,md,extractors}
 
 # Step 2: Download website using webscraper
-python -m tools.scrape_tool https://example.com -o .scrapes/my-project/html
+m1f-scrape https://example.com -o .scrapes/my-project/html
 
 # Step 3: Analyze HTML structure (optional)
-python -m tools.html2md analyze .scrapes/my-project/html/*.html --suggest-selectors
+m1f-html2md analyze .scrapes/my-project/html/*.html --suggest-selectors
 
 # Step 4: Create custom extractor (optional)
 # Use Claude to analyze and create site-specific extractor:
@@ -14444,7 +14646,7 @@ claude -p "Analyze these HTML files and create a custom extractor for html2md" \
   --files .scrapes/my-project/html/*.html
 
 # Step 5: Convert with custom extractor
-python -m tools.html2md convert .scrapes/my-project/html -o .scrapes/my-project/md \
+m1f-html2md convert .scrapes/my-project/html -o .scrapes/my-project/md \
   --extractor .scrapes/my-project/extractors/custom_extractor.py
 ```
 
@@ -14457,7 +14659,7 @@ The html2md tool uses subcommands for different operations:
 Convert local HTML files to Markdown:
 
 ```bash
-python -m tools.html2md convert <source> -o <output> [options]
+m1f-html2md convert <source> -o <output> [options]
 ```
 
 | Option               | Description                                                   |
@@ -14482,7 +14684,7 @@ python -m tools.html2md convert <source> -o <output> [options]
 Analyze HTML structure for optimal content extraction:
 
 ```bash
-python -m tools.html2md analyze <files> [options]
+m1f-html2md analyze <files> [options]
 ```
 
 | Option                | Description                                                          |
@@ -14500,7 +14702,7 @@ python -m tools.html2md analyze <files> [options]
 Generate a configuration file template:
 
 ```bash
-python -m tools.html2md config [options]
+m1f-html2md config [options]
 ```
 
 | Option         | Description                                            |
@@ -14514,27 +14716,27 @@ python -m tools.html2md config [options]
 
 ```bash
 # Simple conversion of all HTML files in a directory
-python -m tools.html2md convert ./website -o ./docs
+m1f-html2md convert ./website -o ./docs
 
 # Convert files with verbose logging
-python -m tools.html2md convert ./website -o ./docs --verbose
+m1f-html2md convert ./website -o ./docs --verbose
 
 # Convert to m1f bundle format
-python -m tools.html2md convert ./website -o ./docs.m1f --format m1f_bundle
+m1f-html2md convert ./website -o ./docs.m1f --format m1f_bundle
 
 # Convert to JSON format for processing
-python -m tools.html2md convert ./website -o ./data.json --format json
+m1f-html2md convert ./website -o ./data.json --format json
 ```
 
 ### Content Selection
 
 ```bash
 # Extract only the main content and ignore navigation elements
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "main" --ignore-selectors nav .sidebar footer
 
 # Extract article content from specific selectors
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "article.content" \
   --ignore-selectors .author-bio .share-buttons .related-articles
 ```
@@ -14543,16 +14745,16 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Analyze HTML files to find optimal selectors
-python -m tools.html2md analyze ./html/*.html
+m1f-html2md analyze ./html/*.html
 
 # Show detailed structure of HTML files
-python -m tools.html2md analyze ./html/*.html --show-structure
+m1f-html2md analyze ./html/*.html --show-structure
 
 # Find common patterns across multiple files
-python -m tools.html2md analyze ./html/*.html --common-patterns
+m1f-html2md analyze ./html/*.html --common-patterns
 
 # Get all analysis options
-python -m tools.html2md analyze ./html/*.html \
+m1f-html2md analyze ./html/*.html \
   --show-structure --common-patterns --suggest-selectors
 ```
 
@@ -14560,7 +14762,7 @@ python -m tools.html2md analyze ./html/*.html \
 
 ```bash
 # Process only specific file types
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   -c config.yaml  # Use a configuration file for file filtering
 ```
 
@@ -14568,18 +14770,18 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Adjust heading levels (e.g., h1 → h2, h2 → h3)
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --heading-offset 1
 
 # Skip frontmatter generation
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --no-frontmatter
 
 # Use configuration file for advanced formatting options
-python -m tools.html2md convert ./website -o ./docs -c config.yaml
+m1f-html2md convert ./website -o ./docs -c config.yaml
 
 # Log conversion process to file
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --log-file conversion.log
 ```
 
@@ -14587,7 +14789,7 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Use parallel processing for faster conversion of large sites
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --parallel
 ```
 
@@ -14659,7 +14861,7 @@ class Extractor(BaseExtractor):
 
 ```bash
 # Use with CLI
-python -m tools.html2md convert ./html -o ./markdown \
+m1f-html2md convert ./html -o ./markdown \
   --extractor ./extractors/my_extractor.py
 
 # Use with API
@@ -14704,7 +14906,7 @@ including:
 To disable frontmatter generation, use the `--no-frontmatter` option:
 
 ```bash
-python -m tools.html2md convert ./website -o ./docs --no-frontmatter
+m1f-html2md convert ./website -o ./docs --no-frontmatter
 ```
 
 The generated frontmatter looks like:
@@ -14805,12 +15007,12 @@ documentation handling:
 1. First convert HTML files to Markdown:
 
    ```bash
-   python -m tools.html2md convert ./html-docs -o ./markdown-docs
+   m1f-html2md convert ./html-docs -o ./markdown-docs
    ```
 
 2. Then use m1f to combine the Markdown files:
    ```bash
-   python -m tools.m1f -s ./markdown-docs -o ./combined-docs.m1f.txt \
+   m1f -s ./markdown-docs -o ./combined-docs.m1f.txt \
      --separator-style Markdown
    ```
 
@@ -14939,25 +15141,25 @@ pip install toml      # For TOML configuration files
 ### Convert a Single File
 
 ```bash
-python -m tools.html2md convert index.html -o index.md
+m1f-html2md convert index.html -o index.md
 ```
 
 ### Convert a Directory
 
 ```bash
-python -m tools.html2md convert ./html_docs/ -o ./markdown_docs/
+m1f-html2md convert ./html_docs/ -o ./markdown_docs/
 ```
 
 ### Analyze HTML Structure
 
 ```bash
-python -m tools.html2md analyze ./html/*.html --suggest-selectors
+m1f-html2md analyze ./html/*.html --suggest-selectors
 ```
 
 ### Generate Configuration
 
 ```bash
-python -m tools.html2md config -o config.yaml
+m1f-html2md config -o config.yaml
 ```
 
 ## Command Line Usage
@@ -14967,7 +15169,7 @@ The tool provides three main commands:
 ### `convert` - Convert Files or Directories
 
 ```bash
-python -m tools.html2md convert [source] -o [output] [options]
+m1f-html2md convert [source] -o [output] [options]
 
 Options:
   -c, --config FILE         Configuration file (YAML format)
@@ -14986,7 +15188,7 @@ Options:
 ### `analyze` - Analyze HTML Structure
 
 ```bash
-python -m tools.html2md analyze [files] [options]
+m1f-html2md analyze [files] [options]
 
 Options:
   --show-structure         Show detailed HTML structure
@@ -14998,7 +15200,7 @@ Options:
 ### `config` - Generate Configuration File
 
 ```bash
-python -m tools.html2md config [options]
+m1f-html2md config [options]
 
 Options:
   -o, --output FILE        Output file (default: config.yaml)
@@ -15181,7 +15383,7 @@ def postprocess(markdown: str, config=None):
 ### Using Custom Extractors
 
 ```bash
-python -m tools.html2md convert ./html -o ./markdown \
+m1f-html2md convert ./html -o ./markdown \
   --extractor ./extractors/my_extractor.py
 ```
 
@@ -15272,7 +15474,7 @@ parallel: true
 EOF
 
 # Run conversion
-python -m tools.html2md convert ./python-docs-html -o ./python-docs-md -c docs-config.yaml
+m1f-html2md convert ./python-docs-html -o ./python-docs-md -c docs-config.yaml
 ```
 
 ### Example 2: Convert Blog with Specific Content
@@ -15303,10 +15505,10 @@ results = asyncio.run(converter.convert_directory(
 
 ```bash
 # First download the website using webscraper
-python -m tools.scrape_tool https://docs.example.com -o ./html
+m1f-scrape https://docs.example.com -o ./html
 
 # Then convert to m1f bundle
-python -m tools.html2md convert ./html \
+m1f-html2md convert ./html \
   -o ./output.m1f \
   --format m1f_bundle \
   --content-selector "main.content" \
@@ -15326,7 +15528,7 @@ python -m tools.html2md convert ./html \
    Solution: Use the analyze command to find the right selectors:
 
    ```bash
-   python -m tools.html2md analyze ./html/*.html --suggest-selectors
+   m1f-html2md analyze ./html/*.html --suggest-selectors
    ```
 
 2. **Encoding issues**
@@ -15343,7 +15545,7 @@ python -m tools.html2md convert ./html \
    Solution: Use parallel processing:
 
    ```bash
-   python -m tools.html2md convert ./html -o ./md --parallel
+   m1f-html2md convert ./html -o ./md --parallel
    ```
 
 4. **Missing content after conversion**
@@ -15351,7 +15553,7 @@ python -m tools.html2md convert ./html \
    Solution: Check your ignore selectors - they may be too broad:
 
    ```bash
-   python -m tools.html2md convert ./html -o ./md \
+   m1f-html2md convert ./html -o ./md \
      --content-selector "body" \
      --ignore-selectors .ads .cookie-notice
    ```
@@ -15361,7 +15563,7 @@ python -m tools.html2md convert ./html \
 Enable verbose logging for debugging:
 
 ```bash
-python -m tools.html2md convert ./html -o ./md -v --log-file debug.log
+m1f-html2md convert ./html -o ./md -v --log-file debug.log
 ```
 
 Or in configuration:
@@ -15401,19 +15603,19 @@ To create an m1f bundle after conversion:
 
 ```bash
 # Download website first
-python -m tools.scrape_tool https://docs.example.com -o ./html/
+m1f-scrape https://docs.example.com -o ./html/
 
 # Convert to Markdown
-python -m tools.html2md convert ./html/ -o ./docs/
+m1f-html2md convert ./html/ -o ./docs/
 
 # Create m1f bundle
-python -m tools.m1f -s ./docs/ -o documentation.m1f.txt
+m1f -s ./docs/ -o documentation.m1f.txt
 ```
 
 Or convert directly to m1f bundle format:
 
 ```bash
-python -m tools.html2md convert ./html/ \
+m1f-html2md convert ./html/ \
   -o ./docs.m1f \
   --format m1f_bundle
 ```
@@ -15460,7 +15662,7 @@ You have several options:
 #### Option A: Use webscraper tool
 
 ```bash
-python -m tools.m1f-scrape https://example.com \
+m1f-scrape https://example.com \
   -o .scrapes/my-docs/html \
   --max-pages 50 \
   --scraper playwright
@@ -15483,12 +15685,12 @@ Understand the HTML structure before creating extractors:
 
 ```bash
 # Analyze a few sample files
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/my-docs/html/*.html \
   --suggest-selectors
 
 # Get detailed structure analysis
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/my-docs/html/*.html \
   --show-structure \
   --common-patterns
@@ -15558,7 +15760,7 @@ Write the extractor to .scrapes/my-docs/extractors/custom_extractor.py" \
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/custom_extractor.py
 ```
 
@@ -15566,14 +15768,14 @@ python ../../tools/html2md_tool.py convert html -o md \
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md
+m1f-html2md convert html -o md
 ```
 
 #### With CSS Selectors Only
 
 ```bash
 cd .scrapes/my-docs
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --content-selector "main.content" \
   --ignore-selectors "nav" ".sidebar" ".ads"
 ```
@@ -15595,13 +15797,13 @@ Here's a complete example for converting a documentation site:
 mkdir -p .scrapes/docs-site/{html,md,extractors}
 
 # 2. Download documentation
-python -m tools.m1f-scrape https://docs.example.com \
+m1f-scrape https://docs.example.com \
   -o .scrapes/docs-site/html \
   --max-pages 100 \
   --scraper playwright
 
 # 3. Analyze structure
-python -m tools.html2md_tool analyze \
+m1f-html2md analyze \
   .scrapes/docs-site/html/*.html \
   --suggest-selectors
 
@@ -15645,11 +15847,11 @@ EOF
 
 # 5. Convert with custom extractor
 cd .scrapes/docs-site
-python ../../tools/html2md_tool.py convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/docs_extractor.py
 
 # 6. Create m1f bundle (optional)
-python ../../tools/m1f.py -s md -o docs-bundle.txt
+m1f -s md -o docs-bundle.txt
 ```
 
 ## Best Practices
@@ -15733,7 +15935,7 @@ print(result.prettify())
 2. **Use verbose mode**:
 
 ```bash
-python -m tools.html2md_tool convert html -o md \
+m1f-html2md convert html -o md \
   --extractor extractors/custom_extractor.py \
   --verbose
 ```
@@ -15741,7 +15943,7 @@ python -m tools.html2md_tool convert html -o md \
 3. **Process single file**:
 
 ```bash
-python -m tools.html2md_tool convert html/single-file.html \
+m1f-html2md convert html/single-file.html \
   -o test.md \
   --extractor extractors/custom_extractor.py
 ```
@@ -16209,24 +16411,24 @@ optimal LLM context usage.
 
 ```bash
 # Basic website download
-python -m tools.scrape_tool https://example.com -o ./downloaded_html
+m1f-scrape https://example.com -o ./downloaded_html
 
 # Download with specific depth and page limits
-python -m tools.scrape_tool https://example.com -o ./html \
+m1f-scrape https://example.com -o ./html \
   --max-pages 50 \
   --max-depth 3
 
 # Use different scraper backend
-python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
+m1f-scrape https://example.com -o ./html --scraper httrack
 
 # List downloaded files after completion
-python -m tools.scrape_tool https://example.com -o ./html --list-files
+m1f-scrape https://example.com -o ./html --list-files
 ```
 
 ## Command Line Interface
 
 ```bash
-python -m tools.scrape_tool <url> -o <output> [options]
+m1f-scrape <url> -o <output> [options]
 ```
 
 ### Required Arguments
@@ -16262,7 +16464,7 @@ python -m tools.scrape_tool <url> -o <output> [options]
 - **Limitations**: No JavaScript support
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper beautifulsoup
+m1f-scrape https://example.com -o ./html --scraper beautifulsoup
 ```
 
 ### HTTrack
@@ -16272,7 +16474,7 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper beautifulsou
 - **Limitations**: Requires HTTrack to be installed separately
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
+m1f-scrape https://example.com -o ./html --scraper httrack
 ```
 
 ### Scrapy
@@ -16282,7 +16484,7 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
 - **Limitations**: More complex configuration
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper scrapy
+m1f-scrape https://example.com -o ./html --scraper scrapy
 ```
 
 ### Playwright
@@ -16292,7 +16494,7 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper scrapy
 - **Limitations**: Slower, requires more resources
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper playwright
+m1f-scrape https://example.com -o ./html --scraper playwright
 ```
 
 ### Selectolax
@@ -16302,7 +16504,7 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper playwright
 - **Limitations**: Basic feature set
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper selectolax
+m1f-scrape https://example.com -o ./html --scraper selectolax
 ```
 
 ## Usage Examples
@@ -16311,22 +16513,22 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper selectolax
 
 ```bash
 # Download a simple website
-python -m tools.scrape_tool https://docs.example.com -o ./docs_html
+m1f-scrape https://docs.example.com -o ./docs_html
 
 # Download with verbose output
-python -m tools.scrape_tool https://docs.example.com -o ./docs_html -v
+m1f-scrape https://docs.example.com -o ./docs_html -v
 ```
 
 ### Controlled Crawling
 
 ```bash
 # Limit crawl depth for shallow scraping
-python -m tools.scrape_tool https://blog.example.com -o ./blog \
+m1f-scrape https://blog.example.com -o ./blog \
   --max-depth 2 \
   --max-pages 20
 
 # Slow crawling to be respectful
-python -m tools.scrape_tool https://example.com -o ./html \
+m1f-scrape https://example.com -o ./html \
   --request-delay 2.0 \
   --concurrent-requests 2
 ```
@@ -16335,11 +16537,11 @@ python -m tools.scrape_tool https://example.com -o ./html \
 
 ```bash
 # Use custom user agent
-python -m tools.scrape_tool https://example.com -o ./html \
+m1f-scrape https://example.com -o ./html \
   --user-agent "MyBot/1.0 (Compatible)"
 
 # Use scraper-specific configuration
-python -m tools.scrape_tool https://example.com -o ./html \
+m1f-scrape https://example.com -o ./html \
   --scraper scrapy \
   --scraper-config ./scrapy-settings.yaml
 ```
@@ -16397,18 +16599,18 @@ to LLMs:
 
 ```bash
 # Step 1: Download documentation website
-python -m tools.scrape_tool https://docs.example.com -o ./html_files
+m1f-scrape https://docs.example.com -o ./html_files
 
 # Step 2: Analyze HTML structure
-python -m tools.html2md analyze ./html_files/*.html --suggest-selectors
+m1f-html2md analyze ./html_files/*.html --suggest-selectors
 
 # Step 3: Convert to Markdown
-python -m tools.html2md convert ./html_files -o ./markdown \
+m1f-html2md convert ./html_files -o ./markdown \
   --content-selector "main.content" \
   --ignore-selectors "nav" ".sidebar"
 
 # Step 4: Bundle for LLM consumption
-python -m tools.m1f -s ./markdown -o ./docs_bundle.txt \
+m1f -s ./markdown -o ./docs_bundle.txt \
   --remove-scraped-metadata
 
 # Now docs_bundle.txt contains all documentation in a single file
@@ -16419,17 +16621,17 @@ python -m tools.m1f -s ./markdown -o ./docs_bundle.txt \
 
 ```bash
 # Download React documentation for LLM analysis
-python -m tools.scrape_tool https://react.dev/learn -o ./react_docs \
+m1f-scrape https://react.dev/learn -o ./react_docs \
   --max-pages 100 \
   --max-depth 3
 
 # Convert to clean Markdown
-python -m tools.html2md convert ./react_docs -o ./react_md \
+m1f-html2md convert ./react_docs -o ./react_md \
   --content-selector "article" \
   --ignore-selectors "nav" "footer" ".sidebar"
 
 # Create single file for LLM
-python -m tools.m1f -s ./react_md -o ./react_documentation.txt
+m1f -s ./react_md -o ./react_documentation.txt
 
 # Now you can provide react_documentation.txt to Claude:
 # "Here is the React documentation: <contents of react_documentation.txt>"
@@ -16463,7 +16665,7 @@ scraper now includes conservative defaults to help avoid detection:
 For heavily protected sites, manually set very conservative values:
 
 ```bash
-python -m tools.scrape_tool https://protected-site.com -o ./output \
+m1f-scrape https://protected-site.com -o ./output \
   --request-delay 30 \
   --concurrent-requests 1 \
   --max-pages 50 \
@@ -16486,7 +16688,7 @@ If conservative settings don't work:
 1. **Try Playwright backend**: Uses real browser automation
 
    ```bash
-   python -m tools.scrape_tool https://site.com -o ./output --scraper playwright
+   m1f-scrape https://site.com -o ./output --scraper playwright
    ```
 
 2. **Manual download**: Some sites require manual browsing
@@ -16561,13 +16763,13 @@ BeautifulSoup4 is the default backend, ideal for scraping static HTML websites.
 
 ```bash
 # Default backend (no need to specify)
-python -m tools.scrape_tool https://example.com -o output/
+m1f-scrape https://example.com -o output/
 
 # Explicitly specify BeautifulSoup
-python -m tools.scrape_tool https://example.com -o output/ --scraper beautifulsoup
+m1f-scrape https://example.com -o output/ --scraper beautifulsoup
 
 # With custom options
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper beautifulsoup \
   --max-depth 3 \
   --max-pages 100 \
@@ -16608,10 +16810,10 @@ brew install httrack
 **Usage:**
 
 ```bash
-python -m tools.scrape_tool https://example.com -o output/ --scraper httrack
+m1f-scrape https://example.com -o output/ --scraper httrack
 
 # With HTTrack-specific options
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper httrack \
   --max-depth 5 \
   --concurrent-requests 8
@@ -16665,7 +16867,7 @@ extra_filters:
 Use with:
 
 ```bash
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper beautifulsoup \
   --scraper-config beautifulsoup-config.yaml
 ```
@@ -16707,7 +16909,7 @@ scraper_config:
 For sites with mostly static HTML content:
 
 ```bash
-python -m tools.scrape_tool https://docs.example.com -o docs/ \
+m1f-scrape https://docs.example.com -o docs/ \
   --scraper beautifulsoup \
   --max-depth 10 \
   --request-delay 0.2
@@ -16718,7 +16920,7 @@ python -m tools.scrape_tool https://docs.example.com -o docs/ \
 For creating a complete offline mirror:
 
 ```bash
-python -m tools.scrape_tool https://example.com -o backup/ \
+m1f-scrape https://example.com -o backup/ \
   --scraper httrack \
   --max-pages 10000
 ```
@@ -16728,7 +16930,7 @@ python -m tools.scrape_tool https://example.com -o backup/ \
 For sites with strict rate limits:
 
 ```bash
-python -m tools.scrape_tool https://api.example.com/docs -o api-docs/ \
+m1f-scrape https://api.example.com/docs -o api-docs/ \
   --scraper beautifulsoup \
   --request-delay 2.0 \
   --concurrent-requests 1
@@ -16743,7 +16945,7 @@ python -m tools.scrape_tool https://api.example.com/docs -o api-docs/ \
 ```bash
 # Create a config file with UTF-8 encoding
 echo 'encoding: utf-8' > bs-config.yaml
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper beautifulsoup \
   --scraper-config bs-config.yaml
 ```
@@ -16753,7 +16955,7 @@ python -m tools.scrape_tool https://example.com -o output/ \
 ```bash
 # Create a config file with different parser
 echo 'parser: html5lib' > bs-config.yaml
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper beautifulsoup \
   --scraper-config bs-config.yaml
 ```
@@ -16765,7 +16967,7 @@ python -m tools.scrape_tool https://example.com -o output/ \
 ```bash
 # Create a config file to ignore SSL errors (use with caution)
 echo 'mirror_options: ["--assume-insecure"]' > httrack-config.yaml
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper httrack \
   --scraper-config httrack-config.yaml
 ```
@@ -16813,16 +17015,16 @@ pip install httpx selectolax
 
 ```bash
 # Basic usage
-python -m tools.scrape_tool https://example.com -o output/ --scraper selectolax
+m1f-scrape https://example.com -o output/ --scraper selectolax
 
 # With custom configuration
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper selectolax \
   --concurrent-requests 20 \
   --request-delay 0.1
 
 # Using httpx alias
-python -m tools.scrape_tool https://example.com -o output/ --scraper httpx
+m1f-scrape https://example.com -o output/ --scraper httpx
 ```
 
 ### Scrapy
@@ -16854,15 +17056,15 @@ pip install scrapy
 
 ```bash
 # Basic usage
-python -m tools.scrape_tool https://example.com -o output/ --scraper scrapy
+m1f-scrape https://example.com -o output/ --scraper scrapy
 
 # With auto-throttle and caching
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper scrapy \
   --scraper-config scrapy.yaml
 
 # Large-scale crawling
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper scrapy \
   --max-pages 10000 \
   --concurrent-requests 16
@@ -16898,15 +17100,15 @@ playwright install  # Install browser binaries
 
 ```bash
 # Basic usage
-python -m tools.scrape_tool https://example.com -o output/ --scraper playwright
+m1f-scrape https://example.com -o output/ --scraper playwright
 
 # With custom browser settings
-python -m tools.scrape_tool https://example.com -o output/ \
+m1f-scrape https://example.com -o output/ \
   --scraper playwright \
   --scraper-config playwright.yaml
 
 # For SPA with wait conditions
-python -m tools.scrape_tool https://spa-example.com -o output/ \
+m1f-scrape https://spa-example.com -o output/ \
   --scraper playwright \
   --request-delay 2.0 \
   --concurrent-requests 2
@@ -17075,7 +17277,7 @@ in your projects.
 
 ## Overview
 
-The m1f Git pre-commit hook automatically runs `m1f auto-bundle` before each
+The m1f Git pre-commit hook automatically runs `m1f-update` before each
 commit, ensuring that your bundled files are always up-to-date with your source
 code.
 
@@ -17126,8 +17328,8 @@ if [ -f ".m1f.config.yml" ]; then
         exit 1
     fi
 
-    echo "Running m1f auto-bundle..."
-    if m1f auto-bundle; then
+    echo "Running m1f-update..."
+    if m1f-update; then
         echo "Auto-bundle completed successfully."
         [ -d "m1f" ] && git add m1f/*
     else
@@ -17151,7 +17353,7 @@ When you run `git commit`, the pre-commit hook:
 
 1. Checks if `.m1f.config.yml` exists in your repository
 2. Verifies that the `m1f` command is available
-3. If both conditions are met, runs `m1f auto-bundle`
+3. If both conditions are met, runs `m1f-update`
 4. If bundle generation succeeds:
    - Adds all files in the `m1f/` directory to the commit
    - Allows the commit to proceed
@@ -17193,7 +17395,7 @@ git commit --no-verify -m "wip: quick save"
 1. Run auto-bundle manually to see the error:
 
    ```bash
-   m1f auto-bundle
+   m1f-update
    ```
 
 2. Fix any issues in your `.m1f.config.yml`
@@ -17285,7 +17487,7 @@ pipelines, you can also run auto-bundle as a build step:
   run: pip install m1f
 
 - name: Generate m1f bundles
-  run: m1f auto-bundle
+  run: m1f-update
 ```
 
 ```bash
@@ -17295,7 +17497,7 @@ before_script:
 
 bundle:
   script:
-    - m1f auto-bundle
+    - m1f-update
 ```
 
 ## See Also
@@ -17331,10 +17533,10 @@ within the context window limits of your chosen LLM.
 
 ```bash
 # Check token count of a file
-python -m tools.token_counter ./combined.txt
+m1f-token-counter ./combined.txt
 
 # Use a specific encoding model
-python -m tools.token_counter ./combined.txt -e p50k_base
+m1f-token-counter ./combined.txt -e p50k_base
 ```
 
 ## Command Line Options
@@ -17349,13 +17551,13 @@ python -m tools.token_counter ./combined.txt -e p50k_base
 Basic usage with default encoding (cl100k_base, used by GPT-4 and ChatGPT):
 
 ```bash
-python -m tools.token_counter combined_output.txt
+m1f-token-counter combined_output.txt
 ```
 
 Using a specific encoding:
 
 ```bash
-python -m tools.token_counter myfile.txt -e p50k_base
+m1f-token-counter myfile.txt -e p50k_base
 ```
 
 ## Encoding Models
@@ -17388,12 +17590,12 @@ your combined files will fit within the token limit of your chosen LLM:
 1. First, combine files with m1f:
 
    ```bash
-   python -m tools.m1f -s ./project -o ./combined.txt --include-extensions .py .js
+   m1f -s ./project -o ./combined.txt --include-extensions .py .js
    ```
 
 2. Then, check the token count:
    ```bash
-   python -m tools.token_counter ./combined.txt
+   m1f-token-counter ./combined.txt
    ```
 
 This workflow helps you adjust your file selection to stay within token limits
@@ -17415,7 +17617,7 @@ To reduce token consumption while maintaining context quality:
 
 Token counter v2.0.0 features a simple but effective design:
 
-- **Module Structure**: Can be run as a module (`python -m tools.token_counter`)
+- **Module Structure**: Can be run as a module (`m1f-token-counter`)
 - **Type Safety**: Full type hints for better IDE support
 - **Error Handling**: Graceful handling of encoding errors and file issues
 - **Performance**: Efficient token counting for large files
@@ -17443,19 +17645,19 @@ This dependency is included in the project's requirements.txt file.
 ======= scripts/hooks/pre-commit ======
 #!/bin/bash
 # m1f Auto-Bundle Git Pre-Commit Hook
-# This hook automatically runs m1f auto-bundle before each commit
+# This hook automatically runs m1f-update before each commit
 # to ensure all configured bundles are up-to-date.
 
 # Check if .m1f.config.yml exists in the repository
 if [ -f ".m1f.config.yml" ]; then
     # For m1f development repository, use python -m
     if [ -f "tools/m1f/__init__.py" ]; then
-        echo "Running m1f auto-bundle (development mode)..."
+        echo "Running m1f-update (development mode)..."
         # Activate virtual environment if it exists
         if [ -f ".venv/bin/activate" ]; then
             source .venv/bin/activate
         fi
-        if python3 -m tools.m1f auto-bundle; then
+        if m1f-update; then
             echo "Auto-bundle completed successfully."
             [ -d "m1f" ] && git add m1f/*
         else
@@ -17475,10 +17677,10 @@ if [ -f ".m1f.config.yml" ]; then
             exit 1
         fi
         
-        echo "Running m1f auto-bundle..."
+        echo "Running m1f-update..."
         
         # Run auto-bundle
-        if m1f auto-bundle; then
+        if m1f-update; then
             echo "Auto-bundle completed successfully."
             
             # Add any generated files in m1f/ directory to the commit
@@ -18665,19 +18867,19 @@ tests/html2md_server/
 
    ```bash
    # Basic conversion
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page \
      --destination-dir ./output
 
    # With content selection
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page \
      --destination-dir ./output \
      --outermost-selector "article" \
      --ignore-selectors "nav" ".sidebar" "footer"
 
    # Specific page with options
-   python tools/mf1-html2md.py \
+   m1f-html2md \
      --source-dir http://localhost:8080/page/code-examples \
      --destination-dir ./output \
      --add-frontmatter \
@@ -25866,10 +26068,10 @@ commands from the project root to create the necessary test files:
 
 ```bash
 # Create combined files with different separator styles
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force
-python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force
+m1f --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force
 ```
 
 ## Running Tests
@@ -26320,16 +26522,16 @@ def main():
         print("Error: Test files are missing from the output directory.")
         print("Please run the following commands to generate test files:")
         print(
-            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force"
+            "m1f --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force"
         )
         print(
-            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force"
+            "m1f --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force"
         )
         print(
-            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force"
+            "m1f --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force"
         )
         print(
-            "python tools/m1f.py --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force"
+            "m1f --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force"
         )
         return 1
 
@@ -28859,7 +29061,7 @@ class Html2mdConverter:
         # Import crawler from m1f-scrape module
         raise NotImplementedError(
             "Website crawling has been moved to the m1f-scrape tool. "
-            "Please use: python -m tools.m1f-scrape <url> -o <output_dir>"
+            "Please use: m1f-scrape <url> -o <output_dir>"
         )
 
     async def convert_website_async(self, start_url: str) -> Dict[str, Path]:
@@ -40413,7 +40615,7 @@ async fn main() -> Result<()> {
                 
                 <div class="inline-code-test">
                     <h3>Mixed Content with Inline Code</h3>
-                    <p>When working with HTML to Markdown conversion, you might encounter various inline code snippets like <code>document.querySelector('.content')</code> or shell commands like <code>python tools/html2md.py --help</code>. The converter should preserve these inline code blocks.</p>
+                    <p>When working with HTML to Markdown conversion, you might encounter various inline code snippets like <code>document.querySelector('.content')</code> or shell commands like <code>m1f-html2md --help</code>. The converter should preserve these inline code blocks.</p>
                     
                     <p>Here's a paragraph with multiple inline code elements: The <code>HTML2MDConverter</code> class uses <code>BeautifulSoup</code> for parsing and <code>markdownify</code> for conversion. You can configure it with options like <code>--outermost-selector</code> and <code>--ignore-selectors</code>.</p>
                     
@@ -41272,10 +41474,10 @@ function deeplyNested() {
 pip install beautifulsoup4 markdownify chardet pyyaml
 
 # Basic conversion
-python tools/html2md.py --source-dir ./website --destination-dir ./markdown
+m1f-html2md --source-dir ./website --destination-dir ./markdown
 
 # Extract main content only
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./website \
     --destination-dir ./markdown \
     --outermost-selector "main" \
@@ -41304,11 +41506,11 @@ pip install pyyaml         # YAML frontmatter support</code></pre>
 
                 <h3>Verify Installation</h3>
                 <pre><code class="language-bash"># Check if html2md is working
-python tools/html2md.py --help
+m1f-html2md --help
 
 # Test with a simple conversion
 echo '&lt;h1&gt;Test&lt;/h1&gt;&lt;p&gt;Hello World&lt;/p&gt;' &gt; test.html
-python tools/html2md.py --source-dir . --destination-dir output</code></pre>
+m1f-html2md --source-dir . --destination-dir output</code></pre>
             </section>
 
             <section id="usage">
@@ -41383,7 +41585,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
                 
                 <div class="example-box">
                     <h4>Example 1: Documentation Site Conversion</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./docs-site \
     --destination-dir ./markdown-docs \
     --outermost-selector "article.documentation" \
@@ -41395,7 +41597,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
 
                 <div class="example-box">
                     <h4>Example 2: Blog Migration</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./wordpress-export \
     --destination-dir ./blog-markdown \
     --outermost-selector "div.post-content" \
@@ -41408,7 +41610,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
 
                 <div class="example-box">
                     <h4>Example 3: Knowledge Base Extraction</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./kb-site \
     --destination-dir ./kb-markdown \
     --outermost-selector "main#content" \
@@ -41589,7 +41791,7 @@ converter.on("conversion_complete", on_complete)</code></pre>
 
                 <h3>Debug Mode</h3>
                 <pre><code class="language-bash"># Enable debug output
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./website \
     --destination-dir ./output \
     --verbose \
@@ -41733,13 +41935,13 @@ python tools/html2md.py \
 $ python tests/html2md_server/server.py
 
 # In another terminal, run html2md on the test pages
-$ python tools/html2md.py \
+$ m1f-html2md \
     --source-dir http://localhost:8080/page/ \
     --destination-dir ./tests/html2md_output/ \
     --verbose
 
 # Or test specific selectors
-$ python tools/html2md.py \
+$ m1f-html2md \
     --source-dir http://localhost:8080/page/ \
     --destination-dir ./tests/html2md_output/ \
     --outermost-selector "article" \
@@ -41926,10 +42128,10 @@ $ python tools/html2md.py \
                 
                 <div class="command-example">
                     <pre><code># Basic usage - combine all Python files
-$ python tools/m1f.py --source-directory ./src --output-file combined.txt --include-patterns "*.py"
+$ m1f --source-directory ./src --output-file combined.txt --include-patterns "*.py"
 
 # Advanced usage with multiple patterns
-$ python tools/m1f.py \
+$ m1f \
     --source-directory ./project \
     --output-file project.m1f.md \
     --include-patterns "*.py" "*.js" "*.md" \
@@ -42040,7 +42242,7 @@ metadata:
                     <h3>Example 1: Preparing Code for LLM Analysis</h3>
                     <p>Combine an entire Python project for ChatGPT or Claude analysis:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --source-directory ./my-python-project \
     --output-file project-for-llm.txt \
     --include-patterns "*.py" "*.md" "requirements.txt" "pyproject.toml" \
@@ -42084,7 +42286,7 @@ class Application:
                     <h3>Example 2: Creating Documentation Archive</h3>
                     <p>Combine all documentation files with preserved structure:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --source-directory ./docs \
     --output-file documentation.m1f.md \
     --include-patterns "**/*.md" "**/*.rst" "**/*.txt" \
@@ -42097,7 +42299,7 @@ class Application:
                     <h3>Example 3: Multi-Language Project</h3>
                     <p>Combine a full-stack application with multiple languages:</p>
                     
-                    <pre><code class="language-bash">python tools/m1f.py \
+                    <pre><code class="language-bash">m1f \
     --config fullstack-config.yaml</code></pre>
                     
                     <p>Where <code>fullstack-config.yaml</code> contains:</p>
@@ -42181,7 +42383,7 @@ m1f = M1F(separator_function=custom_separator)</code></pre>
                 <p>For extremely large outputs, use streaming mode:</p>
                 
                 <pre><code class="language-bash"># Stream output to avoid memory issues
-python tools/m1f.py \
+m1f \
     --source-directory ./massive-project \
     --output-file output.m1f.txt \
     --streaming-mode \
@@ -42196,10 +42398,10 @@ python tools/m1f.py \
                         <h3>🔄 With html2md</h3>
                         <p>Convert HTML documentation to Markdown, then combine:</p>
                         <pre><code class="language-bash"># First convert HTML to MD
-python tools/html2md.py --source-dir ./html-docs --destination-dir ./md-docs
+m1f-html2md --source-dir ./html-docs --destination-dir ./md-docs
 
 # Then combine with m1f
-python tools/m1f.py --source-directory ./md-docs --output-file docs.m1f.md</code></pre>
+m1f --source-directory ./md-docs --output-file docs.m1f.md</code></pre>
                     </div>
                     
                     <div class="card">
@@ -45610,7 +45812,7 @@ browser_config:
 #   user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) ..."
 
 # Example usage:
-# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+# m1f-scrape https://example.com -o output/ \
 #   --scraper playwright --scraper-config playwright.yaml
 
 ======= tools/scrape_tool/scrapers/configs/scrapy.yaml ======
@@ -45674,7 +45876,7 @@ scrapy_config:
   SCHEDULER_MEMORY_QUEUE: 'scrapy.squeues.FifoMemoryQueue'
 
 # Example usage:
-# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+# m1f-scrape https://example.com -o output/ \
 #   --scraper scrapy --scraper-config scrapy.yaml
 
 ======= tools/scrape_tool/scrapers/configs/selectolax.yaml ======
@@ -45715,5 +45917,8 @@ parser_config:
   strict: false  # Lenient parsing for malformed HTML
   
 # Example usage:
-# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+# m1f-scrape https://example.com -o output/ \
 #   --scraper selectolax --scraper-config selectolax.yaml
+
+======= tests/m1f/extracted/encoding_test/default/test_file.txt ======
+Hello with special chars: äöüß привет こんにちは 你好

@@ -420,6 +420,6 @@ development:
 # - extract_functions: Extract only function definitions (Python)
 
 # Usage Examples:
-# python -m tools.m1f -s . -o bundle.txt --preset this-file.yml
-# python -m tools.m1f -s . -o prod.txt --preset this-file.yml --preset-group production
-# python -m tools.m1f -s . -o dev.txt --preset this-file.yml --preset-group development
+# m1f -s . -o bundle.txt --preset this-file.yml
+# m1f -s . -o prod.txt --preset this-file.yml --preset-group production
+# m1f -s . -o dev.txt --preset this-file.yml --preset-group development

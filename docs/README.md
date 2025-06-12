@@ -56,14 +56,14 @@ This directory contains detailed documentation for the m1f project v3.2.0.
   pip install -r requirements.txt
   ```
 - **Basic file combination**: Use
-  `python -m tools.m1f -s ./your_project -o ./combined.txt`
+  `m1f -s ./your_project -o ./combined.txt`
 - **File extraction**: Use
-  `python -m tools.s1f -i ./combined.txt -d ./extracted_files`
-- **Check token count**: Use `python tools/token_counter.py ./combined.txt`
+  `m1f-s1f -i ./combined.txt -d ./extracted_files`
+- **Check token count**: Use `m1f-token-counter ./combined.txt`
 - **Download website**: Use
-  `python -m tools.webscraper https://example.com -o ./html`
+  `m1f-scrape https://example.com -o ./html`
 - **Convert HTML to Markdown**: Use
-  `python -m tools.html2md convert ./html ./markdown`
+  `m1f-html2md convert ./html ./markdown`
 - **Auto-bundle project**: Use `./scripts/auto_bundle.sh` or configure with
   `.m1f.config.yml`
 

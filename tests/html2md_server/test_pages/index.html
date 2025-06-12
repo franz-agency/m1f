@@ -59,13 +59,13 @@
 $ python tests/html2md_server/server.py
 
 # In another terminal, run html2md on the test pages
-$ python tools/html2md.py \
+$ m1f-html2md \
     --source-dir http://localhost:8080/page/ \
     --destination-dir ./tests/html2md_output/ \
     --verbose
 
 # Or test specific selectors
-$ python tools/html2md.py \
+$ m1f-html2md \
     --source-dir http://localhost:8080/page/ \
     --destination-dir ./tests/html2md_output/ \
     --outermost-selector "article" \

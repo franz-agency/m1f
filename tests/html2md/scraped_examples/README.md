@@ -48,7 +48,7 @@ These files can be processed with m1f using the `--remove-scraped-metadata`
 option:
 
 ```bash
-python tools/m1f.py -s tests/mf1-html2md/scraped_examples -o output.md \
+m1f -s tests/mf1-html2md/scraped_examples -o output.md \
   --include-extensions .md --remove-scraped-metadata
 ```
 

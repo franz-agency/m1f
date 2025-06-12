@@ -24,14 +24,14 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         all|focus|preset)
-            # Legacy command support - convert to m1f auto-bundle
+            # Legacy command support - convert to m1f-update
             if [ "$1" = "all" ]; then
                 # Run auto-bundle for all bundles
-                cd "$PROJECT_ROOT" && source .venv/bin/activate && python -m tools.m1f auto-bundle
+                cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update
                 exit 0
             elif [ "$1" = "focus" ] && [ -n "$2" ]; then
                 # Run auto-bundle for specific bundle
-                cd "$PROJECT_ROOT" && source .venv/bin/activate && python -m tools.m1f auto-bundle "$2"
+                cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update "$2"
                 exit 0
             elif [ "$1" = "preset" ] && [ -n "$2" ]; then
                 PRESET="$2"
@@ -57,11 +57,11 @@ if [ -n "$PRESET" ]; then
     cd "$PROJECT_ROOT" && source .venv/bin/activate
     
     if [ -n "$GROUP" ]; then
-        python -m tools.m1f --preset "$PRESET" --preset-group "$GROUP" -o ".ai-context/${GROUP}.txt"
+        m1f --preset "$PRESET" --preset-group "$GROUP" -o ".ai-context/${GROUP}.txt"
     else
-        python -m tools.m1f --preset "$PRESET" -o ".ai-context/preset-bundle.txt"
+        m1f --preset "$PRESET" -o ".ai-context/preset-bundle.txt"
     fi
 else
     # Default to running auto-bundle
-    cd "$PROJECT_ROOT" && source .venv/bin/activate && python -m tools.m1f auto-bundle
+    cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update
 fi

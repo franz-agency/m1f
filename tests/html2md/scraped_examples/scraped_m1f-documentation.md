@@ -53,10 +53,10 @@ Get up and running with M1F in seconds:
 
 ```
 # Basic usage - combine all Python files
-$ python tools/m1f.py --source-directory ./src --output-file combined.txt --include-patterns "*.py"
+$ m1f --source-directory ./src --output-file combined.txt --include-patterns "*.py"
 
 # Advanced usage with multiple patterns
-$ python tools/m1f.py \
+$ m1f \
     --source-directory ./project \
     --output-file project.m1f.md \
     --include-patterns "*.py" "*.js" "*.md" \
@@ -123,7 +123,7 @@ metadata:
 Combine an entire Python project for ChatGPT or Claude analysis:
 
 ```
-python tools/m1f.py \
+m1f \
     --source-directory ./my-python-project \
     --output-file project-for-llm.txt \
     --include-patterns "*.py" "*.md" "requirements.txt" "pyproject.toml" \
@@ -169,7 +169,7 @@ class Application:
 Combine all documentation files with preserved structure:
 
 ```
-python tools/m1f.py \
+m1f \
     --source-directory ./docs \
     --output-file documentation.m1f.md \
     --include-patterns "**/*.md" "**/*.rst" "**/*.txt" \
@@ -183,7 +183,7 @@ python tools/m1f.py \
 Combine a full-stack application with multiple languages:
 
 ```
-python tools/m1f.py \
+m1f \
     --config fullstack-config.yaml
 ```
 
@@ -275,7 +275,7 @@ For extremely large outputs, use streaming mode:
 
 ```
 # Stream output to avoid memory issues
-python tools/m1f.py \
+m1f \
     --source-directory ./massive-project \
     --output-file output.m1f.txt \
     --streaming-mode \
@@ -290,10 +290,10 @@ Convert HTML documentation to Markdown, then combine:
 
 ```
 # First convert HTML to MD
-python tools/html2md.py --source-dir ./html-docs --destination-dir ./md-docs
+m1f-html2md --source-dir ./html-docs --destination-dir ./md-docs
 
 # Then combine with m1f
-python tools/m1f.py --source-directory ./md-docs --output-file docs.m1f.md
+m1f --source-directory ./md-docs --output-file docs.m1f.md
 ```
 
 ### 🤖 With LLMs

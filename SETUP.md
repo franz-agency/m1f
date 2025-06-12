@@ -61,7 +61,7 @@ After installation, these commands are available globally:
 - `m1f` - Main tool for combining files
 - `m1f-s1f` - Split combined files back to original structure
 - `m1f-html2md` - Convert HTML to Markdown
-- `scrape_tool` - Download websites for offline viewing
+- `m1f-scrape` - Download websites for offline viewing
 - `m1f-token-counter` - Count tokens in files
 - `m1f-update` - Regenerate all m1f bundles
 - `m1f-link` - Link m1f documentation for AI tools (Claude Code, etc.)
@@ -120,7 +120,7 @@ pip install -r requirements.txt
 ### 3. Generate Initial Bundles
 
 ```bash
-python -m tools.m1f auto-bundle
+m1f-update
 ```
 
 ### 4. Add to PATH
@@ -164,15 +164,15 @@ Example batch file (`m1f.bat`):
 @echo off
 cd /d "C:\path\to\m1f"
 call .venv\Scripts\activate.bat
-python -m tools.m1f %*
+m1f %*
 ```
 
 Create similar batch files for:
 
-- `m1f-s1f.bat` → `python -m tools.s1f %*`
-- `m1f-html2md.bat` → `python -m tools.html2md %*`
-- `scrape_tool.bat` → `python -m tools.webscraper %*`
-- `m1f-token-counter.bat` → `python tools\token_counter.py %*`
+- `m1f-s1f.bat` → `m1f-s1f %*`
+- `m1f-html2md.bat` → `m1f-html2md %*`
+- `m1f-scrape.bat` → `m1f-scrape %*`
+- `m1f-token-counter.bat` → `m1f-token-counter %*`
 
 ## Using m1f in Other Projects
 

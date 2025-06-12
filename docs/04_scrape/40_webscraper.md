@@ -32,24 +32,24 @@ optimal LLM context usage.
 
 ```bash
 # Basic website download
-python -m tools.scrape_tool https://example.com -o ./downloaded_html
+m1f-scrape https://example.com -o ./downloaded_html
 
 # Download with specific depth and page limits
-python -m tools.scrape_tool https://example.com -o ./html \
+m1f-scrape https://example.com -o ./html \
   --max-pages 50 \
   --max-depth 3
 
 # Use different scraper backend
-python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
+m1f-scrape https://example.com -o ./html --scraper httrack
 
 # List downloaded files after completion
-python -m tools.scrape_tool https://example.com -o ./html --list-files
+m1f-scrape https://example.com -o ./html --list-files
 ```
 
 ## Command Line Interface
 
 ```bash
-python -m tools.scrape_tool <url> -o <output> [options]
+m1f-scrape <url> -o <output> [options]
 ```
 
 ### Required Arguments
@@ -85,7 +85,7 @@ python -m tools.scrape_tool <url> -o <output> [options]
 - **Limitations**: No JavaScript support
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper beautifulsoup
+m1f-scrape https://example.com -o ./html --scraper beautifulsoup
 ```
 
 ### HTTrack
@@ -95,7 +95,7 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper beautifulsou
 - **Limitations**: Requires HTTrack to be installed separately
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
+m1f-scrape https://example.com -o ./html --scraper httrack
 ```
 
 ### Scrapy
@@ -105,7 +105,7 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper httrack
 - **Limitations**: More complex configuration
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper scrapy
+m1f-scrape https://example.com -o ./html --scraper scrapy
 ```
 
 ### Playwright
@@ -115,7 +115,7 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper scrapy
 - **Limitations**: Slower, requires more resources
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper playwright
+m1f-scrape https://example.com -o ./html --scraper playwright
 ```
 
 ### Selectolax
@@ -125,7 +125,7 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper playwright
 - **Limitations**: Basic feature set
 
 ```bash
-python -m tools.scrape_tool https://example.com -o ./html --scraper selectolax
+m1f-scrape https://example.com -o ./html --scraper selectolax
 ```
 
 ## Usage Examples
@@ -134,22 +134,22 @@ python -m tools.scrape_tool https://example.com -o ./html --scraper selectolax
 
 ```bash
 # Download a simple website
-python -m tools.scrape_tool https://docs.example.com -o ./docs_html
+m1f-scrape https://docs.example.com -o ./docs_html
 
 # Download with verbose output
-python -m tools.scrape_tool https://docs.example.com -o ./docs_html -v
+m1f-scrape https://docs.example.com -o ./docs_html -v
 ```
 
 ### Controlled Crawling
 
 ```bash
 # Limit crawl depth for shallow scraping
-python -m tools.scrape_tool https://blog.example.com -o ./blog \
+m1f-scrape https://blog.example.com -o ./blog \
   --max-depth 2 \
   --max-pages 20
 
 # Slow crawling to be respectful
-python -m tools.scrape_tool https://example.com -o ./html \
+m1f-scrape https://example.com -o ./html \
   --request-delay 2.0 \
   --concurrent-requests 2
 ```
@@ -158,11 +158,11 @@ python -m tools.scrape_tool https://example.com -o ./html \
 
 ```bash
 # Use custom user agent
-python -m tools.scrape_tool https://example.com -o ./html \
+m1f-scrape https://example.com -o ./html \
   --user-agent "MyBot/1.0 (Compatible)"
 
 # Use scraper-specific configuration
-python -m tools.scrape_tool https://example.com -o ./html \
+m1f-scrape https://example.com -o ./html \
   --scraper scrapy \
   --scraper-config ./scrapy-settings.yaml
 ```
@@ -220,18 +220,18 @@ to LLMs:
 
 ```bash
 # Step 1: Download documentation website
-python -m tools.scrape_tool https://docs.example.com -o ./html_files
+m1f-scrape https://docs.example.com -o ./html_files
 
 # Step 2: Analyze HTML structure
-python -m tools.html2md analyze ./html_files/*.html --suggest-selectors
+m1f-html2md analyze ./html_files/*.html --suggest-selectors
 
 # Step 3: Convert to Markdown
-python -m tools.html2md convert ./html_files -o ./markdown \
+m1f-html2md convert ./html_files -o ./markdown \
   --content-selector "main.content" \
   --ignore-selectors "nav" ".sidebar"
 
 # Step 4: Bundle for LLM consumption
-python -m tools.m1f -s ./markdown -o ./docs_bundle.txt \
+m1f -s ./markdown -o ./docs_bundle.txt \
   --remove-scraped-metadata
 
 # Now docs_bundle.txt contains all documentation in a single file
@@ -242,17 +242,17 @@ python -m tools.m1f -s ./markdown -o ./docs_bundle.txt \
 
 ```bash
 # Download React documentation for LLM analysis
-python -m tools.scrape_tool https://react.dev/learn -o ./react_docs \
+m1f-scrape https://react.dev/learn -o ./react_docs \
   --max-pages 100 \
   --max-depth 3
 
 # Convert to clean Markdown
-python -m tools.html2md convert ./react_docs -o ./react_md \
+m1f-html2md convert ./react_docs -o ./react_md \
   --content-selector "article" \
   --ignore-selectors "nav" "footer" ".sidebar"
 
 # Create single file for LLM
-python -m tools.m1f -s ./react_md -o ./react_documentation.txt
+m1f -s ./react_md -o ./react_documentation.txt
 
 # Now you can provide react_documentation.txt to Claude:
 # "Here is the React documentation: <contents of react_documentation.txt>"
@@ -286,7 +286,7 @@ scraper now includes conservative defaults to help avoid detection:
 For heavily protected sites, manually set very conservative values:
 
 ```bash
-python -m tools.scrape_tool https://protected-site.com -o ./output \
+m1f-scrape https://protected-site.com -o ./output \
   --request-delay 30 \
   --concurrent-requests 1 \
   --max-pages 50 \
@@ -309,7 +309,7 @@ If conservative settings don't work:
 1. **Try Playwright backend**: Uses real browser automation
 
    ```bash
-   python -m tools.scrape_tool https://site.com -o ./output --scraper playwright
+   m1f-scrape https://site.com -o ./output --scraper playwright
    ```
 
 2. **Manual download**: Some sites require manual browsing

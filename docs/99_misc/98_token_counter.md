@@ -23,10 +23,10 @@ within the context window limits of your chosen LLM.
 
 ```bash
 # Check token count of a file
-python -m tools.token_counter ./combined.txt
+m1f-token-counter ./combined.txt
 
 # Use a specific encoding model
-python -m tools.token_counter ./combined.txt -e p50k_base
+m1f-token-counter ./combined.txt -e p50k_base
 ```
 
 ## Command Line Options
@@ -41,13 +41,13 @@ python -m tools.token_counter ./combined.txt -e p50k_base
 Basic usage with default encoding (cl100k_base, used by GPT-4 and ChatGPT):
 
 ```bash
-python -m tools.token_counter combined_output.txt
+m1f-token-counter combined_output.txt
 ```
 
 Using a specific encoding:
 
 ```bash
-python -m tools.token_counter myfile.txt -e p50k_base
+m1f-token-counter myfile.txt -e p50k_base
 ```
 
 ## Encoding Models
@@ -80,12 +80,12 @@ your combined files will fit within the token limit of your chosen LLM:
 1. First, combine files with m1f:
 
    ```bash
-   python -m tools.m1f -s ./project -o ./combined.txt --include-extensions .py .js
+   m1f -s ./project -o ./combined.txt --include-extensions .py .js
    ```
 
 2. Then, check the token count:
    ```bash
-   python -m tools.token_counter ./combined.txt
+   m1f-token-counter ./combined.txt
    ```
 
 This workflow helps you adjust your file selection to stay within token limits
@@ -107,7 +107,7 @@ To reduce token consumption while maintaining context quality:
 
 Token counter v2.0.0 features a simple but effective design:
 
-- **Module Structure**: Can be run as a module (`python -m tools.token_counter`)
+- **Module Structure**: Can be run as a module (`m1f-token-counter`)
 - **Type Safety**: Full type hints for better IDE support
 - **Error Handling**: Graceful handling of encoding errors and file issues
 - **Performance**: Efficient token counting for large files

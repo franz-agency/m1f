@@ -46,12 +46,16 @@ bundles:
 
 ```bash
 m1f auto-bundle
+# Or use the convenient alias:
+m1f-update
 ```
 
 ### Create Specific Bundle
 
 ```bash
 m1f auto-bundle docs
+# Or use the convenient alias:
+m1f-update docs
 ```
 
 ### List Available Bundles
@@ -64,7 +68,11 @@ m1f auto-bundle --list
 
 ```bash
 m1f auto-bundle --group documentation
+# Or use the convenient alias:
+m1f-update --group documentation
 ```
+
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle` that provides a simpler way to regenerate bundles.
 
 ## Bundle Groups
 
@@ -117,7 +125,7 @@ for config in $(find /home/projects -name ".m1f.config.yml" -type f); do
     echo "Updating bundles in: $project_dir"
 
     cd "$project_dir"
-    m1f auto-bundle --quiet
+    m1f-update --quiet
 done
 ```
 
@@ -140,7 +148,7 @@ Then update only specific projects:
 
 ```bash
 cd /path/to/project-a
-m1f auto-bundle --group project-a
+m1f-update --group project-a
 ```
 
 ### Automated Bundle Updates
@@ -230,7 +238,7 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 
 The hook will:
 
-- Run `m1f auto-bundle` before each commit
+- Run `m1f-update` before each commit
 - Add generated bundles to the commit automatically
 - Block commits if bundle generation fails
 
@@ -261,7 +269,7 @@ config file searching from the current directory up to the root. Create a
 Check the verbose output:
 
 ```bash
-m1f auto-bundle --verbose
+m1f-update --verbose
 ```
 
 Common issues:

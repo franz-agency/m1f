@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.2] - 2025-07-06
+
+### Changed
+
+- **Documentation**: Updated all command examples to use installed bin commands
+  - Replaced `python -m tools.m1f` with `m1f`
+  - Replaced `python -m tools.s1f` with `m1f-s1f`
+  - Replaced `python -m tools.scrape_tool` and `python -m tools.webscraper` with `m1f-scrape`
+  - Replaced `python -m tools.html2md` and `python -m tools.html2md_tool` with `m1f-html2md`
+  - Replaced `python tools/token_counter.py` with `m1f-token-counter`
+  - Replaced `m1f auto-bundle` with `m1f-update` where appropriate
+  - Updated all documentation, scripts, and examples for consistency
+
+### Fixed
+
+- **Scraper Config Files**: Fixed typo in YAML configs (mf1-html2md → m1f-scrape)
+- **Documentation**: Improved command consistency across all user-facing documentation
+
 ## [3.2.1] - 2025-06-07
 
 ### Fixed

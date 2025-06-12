@@ -45,25 +45,25 @@ pip install toml      # For TOML configuration files
 ### Convert a Single File
 
 ```bash
-python -m tools.html2md convert index.html -o index.md
+m1f-html2md convert index.html -o index.md
 ```
 
 ### Convert a Directory
 
 ```bash
-python -m tools.html2md convert ./html_docs/ -o ./markdown_docs/
+m1f-html2md convert ./html_docs/ -o ./markdown_docs/
 ```
 
 ### Analyze HTML Structure
 
 ```bash
-python -m tools.html2md analyze ./html/*.html --suggest-selectors
+m1f-html2md analyze ./html/*.html --suggest-selectors
 ```
 
 ### Generate Configuration
 
 ```bash
-python -m tools.html2md config -o config.yaml
+m1f-html2md config -o config.yaml
 ```
 
 ## Command Line Usage
@@ -73,7 +73,7 @@ The tool provides three main commands:
 ### `convert` - Convert Files or Directories
 
 ```bash
-python -m tools.html2md convert [source] -o [output] [options]
+m1f-html2md convert [source] -o [output] [options]
 
 Options:
   -c, --config FILE         Configuration file (YAML format)
@@ -92,7 +92,7 @@ Options:
 ### `analyze` - Analyze HTML Structure
 
 ```bash
-python -m tools.html2md analyze [files] [options]
+m1f-html2md analyze [files] [options]
 
 Options:
   --show-structure         Show detailed HTML structure
@@ -104,7 +104,7 @@ Options:
 ### `config` - Generate Configuration File
 
 ```bash
-python -m tools.html2md config [options]
+m1f-html2md config [options]
 
 Options:
   -o, --output FILE        Output file (default: config.yaml)
@@ -287,7 +287,7 @@ def postprocess(markdown: str, config=None):
 ### Using Custom Extractors
 
 ```bash
-python -m tools.html2md convert ./html -o ./markdown \
+m1f-html2md convert ./html -o ./markdown \
   --extractor ./extractors/my_extractor.py
 ```
 
@@ -378,7 +378,7 @@ parallel: true
 EOF
 
 # Run conversion
-python -m tools.html2md convert ./python-docs-html -o ./python-docs-md -c docs-config.yaml
+m1f-html2md convert ./python-docs-html -o ./python-docs-md -c docs-config.yaml
 ```
 
 ### Example 2: Convert Blog with Specific Content
@@ -409,10 +409,10 @@ results = asyncio.run(converter.convert_directory(
 
 ```bash
 # First download the website using webscraper
-python -m tools.scrape_tool https://docs.example.com -o ./html
+m1f-scrape https://docs.example.com -o ./html
 
 # Then convert to m1f bundle
-python -m tools.html2md convert ./html \
+m1f-html2md convert ./html \
   -o ./output.m1f \
   --format m1f_bundle \
   --content-selector "main.content" \
@@ -432,7 +432,7 @@ python -m tools.html2md convert ./html \
    Solution: Use the analyze command to find the right selectors:
 
    ```bash
-   python -m tools.html2md analyze ./html/*.html --suggest-selectors
+   m1f-html2md analyze ./html/*.html --suggest-selectors
    ```
 
 2. **Encoding issues**
@@ -449,7 +449,7 @@ python -m tools.html2md convert ./html \
    Solution: Use parallel processing:
 
    ```bash
-   python -m tools.html2md convert ./html -o ./md --parallel
+   m1f-html2md convert ./html -o ./md --parallel
    ```
 
 4. **Missing content after conversion**
@@ -457,7 +457,7 @@ python -m tools.html2md convert ./html \
    Solution: Check your ignore selectors - they may be too broad:
 
    ```bash
-   python -m tools.html2md convert ./html -o ./md \
+   m1f-html2md convert ./html -o ./md \
      --content-selector "body" \
      --ignore-selectors .ads .cookie-notice
    ```
@@ -467,7 +467,7 @@ python -m tools.html2md convert ./html \
 Enable verbose logging for debugging:
 
 ```bash
-python -m tools.html2md convert ./html -o ./md -v --log-file debug.log
+m1f-html2md convert ./html -o ./md -v --log-file debug.log
 ```
 
 Or in configuration:
@@ -507,19 +507,19 @@ To create an m1f bundle after conversion:
 
 ```bash
 # Download website first
-python -m tools.scrape_tool https://docs.example.com -o ./html/
+m1f-scrape https://docs.example.com -o ./html/
 
 # Convert to Markdown
-python -m tools.html2md convert ./html/ -o ./docs/
+m1f-html2md convert ./html/ -o ./docs/
 
 # Create m1f bundle
-python -m tools.m1f -s ./docs/ -o documentation.m1f.txt
+m1f -s ./docs/ -o documentation.m1f.txt
 ```
 
 Or convert directly to m1f bundle format:
 
 ```bash
-python -m tools.html2md convert ./html/ \
+m1f-html2md convert ./html/ \
   -o ./docs.m1f \
   --format m1f_bundle
 ```

@@ -206,7 +206,7 @@ v3_2_features:
       enable_content_deduplication: false
 
 # Usage examples:
-# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
-# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
-# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
-# python -m tools.m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group v3_2_features
+# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
+# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
+# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
+# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group v3_2_features

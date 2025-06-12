@@ -131,7 +131,7 @@ $standaloneBatch = @"
 @echo off
 cd /d "$ProjectRoot"
 call "$ProjectRoot\.venv\Scripts\activate.bat"
-python -m tools.m1f %*
+m1f %*
 "@
 Set-Content "$scriptsDir\m1f.bat" $standaloneBatch
 

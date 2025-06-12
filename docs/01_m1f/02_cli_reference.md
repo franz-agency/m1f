@@ -352,6 +352,18 @@ m1f auto-bundle --verbose
 m1f auto-bundle --quiet
 ```
 
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle` that can be used interchangeably:
+
+```bash
+# These are equivalent:
+m1f auto-bundle
+m1f-update
+
+# With specific bundle:
+m1f auto-bundle code
+m1f-update code
+```
+
 **Options:**
 
 - `BUNDLE_NAME`: Name of specific bundle to create (optional)
@@ -364,8 +376,8 @@ instructions.
 
 ## Notes
 
-1. **Module Invocation**: You can use either `python -m tools.m1f` or
-   `python tools/m1f.py`, or set up the `m1f` alias as described in the
+1. **Module Invocation**: You can use either `m1f` or
+   `python -m tools.m1f`, or set up the `m1f` alias as described in the
    development workflow.
 
 2. **Input Requirements**: At least one of `-s` (source directory) or `-i`
