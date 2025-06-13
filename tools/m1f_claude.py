@@ -223,41 +223,39 @@ if you run 'm1f-link' and then reference @m1f/m1f.txt
                 )
                 return None
 
-            # Send to Claude Code
+            # Send to Claude Code using --print for non-interactive mode
             logger.info("\n🤖 Sending to Claude Code...\n")
 
-            # Create a temporary file with the prompt to handle complex prompts
-            import tempfile
-
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".txt", delete=False
-            ) as f:
-                f.write(enhanced_prompt)
-                temp_path = f.name
+            # Use subprocess.Popen for better control over stdin/stdout
+            process = subprocess.Popen(
+                ["claude", "--print"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
 
             try:
-                result = subprocess.run(
-                    ["claude", "-f", temp_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
+                # Send the enhanced prompt via stdin
+                stdout, stderr = process.communicate(
+                    input=enhanced_prompt, timeout=300  # 5 minute timeout
                 )
 
-                if result.returncode == 0:
-                    return result.stdout
+                if process.returncode == 0:
+                    return stdout
                 else:
-                    logger.error(f"Claude Code error: {result.stderr}")
+                    logger.error(f"Claude Code error: {stderr}")
                     return None
-            finally:
-                os.unlink(temp_path)
+
+            except subprocess.TimeoutExpired:
+                process.kill()
+                logger.error("Claude Code timed out after 5 minutes")
+                return None
 
         except FileNotFoundError:
             logger.info(
                 "\n📝 Claude Code not installed. Install with: npm install -g @anthropic-ai/claude-code"
             )
-            return None
-        except subprocess.TimeoutExpired:
-            logger.error("Claude Code timed out")
             return None
         except Exception as e:
             logger.error(f"Error communicating with Claude Code: {e}")
@@ -389,6 +387,12 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
         action="store_true",
         help="Don't send to Claude Code, just show enhanced prompt",
     )
+    
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Send prompt directly to Claude without m1f enhancement",
+    )
 
     args = parser.parse_args()
 
@@ -434,18 +438,29 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
 
     # Single prompt mode
     prompt = " ".join(args.prompt)
-    enhanced = m1f_claude.create_enhanced_prompt(prompt)
-
-    if args.no_send:
-        print("\n--- Enhanced Prompt ---")
-        print(enhanced)
-    else:
-        response = m1f_claude.send_to_claude_code(enhanced)
+    
+    # Handle raw mode - send directly without enhancement
+    if args.raw:
+        response = m1f_claude.send_to_claude_code(prompt)
         if response:
             print(response)
         else:
-            print("\n--- Enhanced Prompt (copy this to Claude) ---")
+            logger.error("Failed to send to Claude Code")
+            sys.exit(1)
+    else:
+        # Normal mode - enhance the prompt
+        enhanced = m1f_claude.create_enhanced_prompt(prompt)
+
+        if args.no_send:
+            print("\n--- Enhanced Prompt ---")
             print(enhanced)
+        else:
+            response = m1f_claude.send_to_claude_code(enhanced)
+            if response:
+                print(response)
+            else:
+                print("\n--- Enhanced Prompt (copy this to Claude) ---")
+                print(enhanced)
 
 
 if __name__ == "__main__":
