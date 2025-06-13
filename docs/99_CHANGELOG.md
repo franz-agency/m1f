@@ -35,6 +35,12 @@ and this project adheres to
     - Shows session IDs, costs, and API usage
     - Displays tool invocations and responses
     - Helps troubleshoot issues and monitor usage
+  - **Interactive Mode UX**: Improved visual feedback
+    - "Claude is thinking..." indicator during processing
+    - Tool usage notifications: `[🔧 Using tool: Read]`
+    - Response completion indicator: `[✅ Response complete]`
+    - Better prompt spacing with newlines before "You:"
+    - Clear separation between responses and new prompts
   - **Exit Command**: Added `/e` command support like Claude CLI
     - Works alongside 'quit', 'exit', and 'q' commands
     - Updated help text and keyboard interrupt messages

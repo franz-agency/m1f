@@ -511,7 +511,8 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         while True:
             try:
-                user_input = input("You: ").strip()
+                # Show prompt only when ready for input
+                user_input = input("\nYou: ").strip()
 
                 if not user_input:
                     continue
@@ -539,16 +540,19 @@ I'll analyze your project and create an optimal m1f configuration that:
                     prompt_to_send = user_input
 
                 # Send to Claude using subprocess
-                print("\nClaude: ", end="", flush=True)
+                print("\n🤖 Claude is thinking...", end="", flush=True)
                 response, new_session_id = self._send_with_session(prompt_to_send, session_id)
                 
                 if response is not None:  # Empty response is still valid
-                    print()  # New line after response
+                    # Clear the "thinking" message
+                    print("\r" + " " * 30 + "\r", end="", flush=True)
+                    print("Claude: ", end="", flush=True)
                     if new_session_id:
                         session_id = new_session_id
                     first_prompt = False
+                    print("\n")  # Extra newline after response for clarity
                 else:
-                    print("\n❌ Failed to send to Claude Code. Check your connection.\n")
+                    print("\r❌ Failed to send to Claude Code. Check your connection.\n")
 
             except KeyboardInterrupt:
                 print("\n\nUse 'quit' or '/e' to exit properly")
@@ -577,8 +581,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             if session_id:
                 cmd.extend(["-r", session_id])
             
-            if not session_id:  # Only show on first prompt
-                logger.info("\n🤖 Sending to Claude Code...\n")
+            # Remove the "Sending to Claude Code" message here since we show "thinking" in interactive mode
             
             # Execute command
             process = subprocess.Popen(
@@ -634,9 +637,15 @@ I'll analyze your project and create an optimal m1f configuration that:
                                     if item.get("type") == "text":
                                         text = item.get("text", "")
                                         response_text += text
+                                        # In interactive mode, print text directly
                                         print(text, end="", flush=True)
-                                    elif item.get("type") == "tool_use" and self.debug:
-                                        print(f"\n[DEBUG] Tool use: {item.get('name')} - {item.get('input', {})}")
+                                    elif item.get("type") == "tool_use":
+                                        tool_name = item.get('name', 'Unknown')
+                                        # Show tool usage to user
+                                        print(f"\n[🔧 Using tool: {tool_name}]", end="", flush=True)
+                                        if self.debug:
+                                            print(f" - {item.get('input', {})}", end="")
+                                        print()  # Newline after tool
                         elif isinstance(content, str):
                             response_text += content
                             print(content, end="", flush=True)
@@ -644,8 +653,9 @@ I'll analyze your project and create an optimal m1f configuration that:
                     elif data.get("type") == "result":
                         # Final result message
                         new_session_id = data.get("session_id", session_id)
+                        # Show completion indicator
+                        print("\n[✅ Response complete]", flush=True)
                         if self.debug:
-                            print(f"\n[DEBUG] Session complete!")
                             print(f"[DEBUG] Session ID: {new_session_id}")
                             print(f"[DEBUG] Cost: ${data.get('total_cost_usd', 0):.4f}")
                             print(f"[DEBUG] Turns: {data.get('num_turns', 0)}")
