@@ -227,170 +227,6 @@ Apache 2.0 - Go wild, just don't blame us.
 Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to
 robots.
 
-======= CLAUDE.md ======
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Core Architecture
-
-m1f is a Python toolkit for efficiently working with Large Language Models (LLMs) by managing context. Built with Python 3.10+ featuring async I/O, type hints, and modular design.
-
-### Key Tools
-- **m1f**: Combines multiple files into a single reference file with content deduplication
-- **s1f**: Extracts individual files from combined files, preserving structure  
-- **webscraper**: Downloads websites for offline viewing and processing
-- **html2md**: HTML to Markdown converter with structure analysis
-- **token_counter**: Estimates token usage for LLM context planning
-- **claude_orchestrator**: Optional AI-powered automation via Claude Code
-
-### Module Structure
-Each tool follows clean architecture with separate modules:
-- `config.py` / `config_loader.py`: Configuration management
-- `core.py`: Main business logic
-- `cli.py`: Command-line interface
-- `logging.py`: Logging configuration
-- `utils.py`: Utility functions
-- `exceptions.py`: Custom exceptions
-
-m1f-specific modules:
-- `file_processor.py`: File processing logic
-- `security_scanner.py`: Security checks
-- `output_writer.py`: Output formatting
-- `presets.py`: Preset system implementation
-- `encoding_handler.py`: Encoding detection/conversion
-- `separator_generator.py`: Generates file separators (Standard format now excludes checksums)
-
-### Parser Architecture
-s1f parsers in `tools/s1f/parsers.py`:
-- `CombinedFileParser`: Orchestrates all format parsers
-- Format parsers: PYMK1F, MachineReadable, Markdown, Detailed, Standard
-- Code block detection: Separators inside ``` blocks are ignored
-
-## Development Commands
-
-### Setup
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-
-# Install git hooks
-./scripts/install-git-hooks.sh
-```
-
-### Running Tools
-```bash
-# Using installed commands (after running install.sh)
-m1f -s ./source -o ./output.txt
-m1f-s1f -i ./combined.txt -d ./extracted
-m1f-scrape https://example.com -o ./html_files
-m1f-html2md convert ./html ./markdown
-m1f-token-counter ./file.txt
-
-# Using Python modules directly
-python -m tools.m1f -s ./source -o ./output.txt
-python -m tools.s1f -i ./combined.txt -d ./extracted
-python -m tools.scrape_tool https://example.com -o ./html_files
-python -m tools.html2md_tool convert ./html ./markdown
-m1f-token-counter ./file.txt
-
-# Auto-bundle management
-m1f auto-bundle              # Create all bundles
-m1f auto-bundle --list       # List available bundles
-m1f auto-bundle <name>       # Create specific bundle
-m1f auto-bundle --group documentation  # Create bundles by group
-```
-
-### Testing
-```bash
-# Run all tests
-pytest
-
-# Run specific test categories
-pytest -m unit
-pytest -m integration
-pytest -m "not slow"
-
-# Run specific test files
-pytest tests/m1f/test_m1f_basic.py
-pytest tests/s1f/test_s1f.py
-
-# Run a single test
-pytest tests/m1f/test_m1f_basic.py::test_basic_functionality -v
-
-# Run tests with coverage
-pytest --cov=tools --cov-report=html
-```
-
-### Linting & Formatting
-```bash
-# Format Python code with Black
-black tools/ tests/
-
-# Check Python code style
-black --check tools/ tests/
-
-# Format Markdown files
-npm run lint:md        # Auto-fix
-npm run lint:md:check  # Check only
-```
-
-## Testing Architecture
-
-- pytest-based with markers: unit, integration, slow, encoding, asyncio
-- Test structure mirrors tool structure: `tests/{m1f,s1f,html2md}/`
-- Test fixtures in `conftest.py` files
-- 300-second default timeout (configurable per test)
-- Test data in `tests/*/source/` directories
-
-## Preset System
-
-m1f uses hierarchical YAML presets for file-specific processing:
-- Global: `~/.m1f/`
-- Project: `presets/` directory
-- Per-file processors: minify, strip tags, remove comments, compress whitespace
-
-Example presets available:
-- `wordpress.m1f-presets.yml`: WordPress site processing
-- `web-project.m1f-presets.yml`: Web development projects
-- `documentation.m1f-presets.yml`: Documentation bundles
-
-## Auto-Bundle Configuration
-
-The `.m1f.config.yml` file defines auto-bundle settings:
-- Bundle definitions with sources, outputs, and filters
-- Global exclusions and settings
-- File watcher configuration
-- Security check levels per file type
-
-Bundles are automatically generated:
-- On git pre-commit hook
-- Via `m1f auto-bundle` command
-- Through file watcher (`./scripts/watch_and_bundle.sh`)
-
-## Recent Changes
-
-### Separator Format Updates
-- Standard separator format now shows only file path without checksum
-- s1f list output no longer displays SHA256 hashes or "[Unknown]" for missing sizes
-- s1f parser ignores separators inside code blocks to prevent false positives
-
-### Key Files Modified
-- `tools/m1f/separator_generator.py`: Standard format generation
-- `tools/s1f/core.py`: List output formatting
-- `tools/s1f/parsers.py`: Code block detection logic
-
-## Git Workflow
-
-Conventional commits: `<type>(<scope>): <subject>`
-- - Types: feat, fix, docs, style, refactor, test, chore, perf
-- 50 char subject, imperative mood
-- Main branch: `main`
-- Pre-commit hook runs auto-bundle to keep bundles synchronized
-- No reference to Claude Code in git commits
-- 
-
 ======= m1f-claude.txt ======
 # m1f-claude.txt: Essential m1f Guide for Claude
 
@@ -766,7 +602,7 @@ limitations under the License.
   },
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
@@ -915,7 +751,7 @@ pytest-timeout==2.4.0
 pytest-asyncio==0.25.2
 PyYAML==6.0.2
 regex==2024.11.6
-requests==2.32.3
+requests==2.32.4
 rich==13.7.0
 tiktoken==0.9.0
 tomli==2.2.1
@@ -926,6 +762,10 @@ wcwidth==0.2.13
 
 # Async file operations
 aiofiles==24.1.0
+anyio==4.9.0
+
+# Claude Code SDK for m1f-claude
+claude-code-sdk==0.0.10
 
 # Optional dependencies for additional scrapers
 # Install with: pip install httpx selectolax
@@ -1213,6 +1053,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
 
+# Add project root to PYTHONPATH so tools module can be found
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
 # Go back to original directory and run m1f
 cd "$ORIGINAL_DIR" && exec python -m tools.m1f "$@"
 
@@ -1230,6 +1073,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
+
+# Add project root to PYTHONPATH so tools module can be found
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run m1f-claude
 cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/m1f_claude.py" "$@"
@@ -1288,7 +1134,7 @@ BIN_DIR="$(dirname "$SCRIPT_PATH")"
 PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Path to the m1f documentation bundle
-M1F_DOCS="$PROJECT_ROOT/m1f/m1f.txt"
+M1F_DOCS="$PROJECT_ROOT/m1f/m1f/87_m1f_only_docs.txt"
 
 # Make sure we're in the original directory
 cd "$ORIGINAL_DIR"
@@ -1368,6 +1214,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
+
+# Add project root to PYTHONPATH so tools module can be found
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run token-counter
 cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/token_counter.py" "$@"
@@ -1513,6 +1362,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Fixed
+
+- **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
+  - Created m1f_aliases.ps1 with all PowerShell functions and aliases
+  - Added file existence check in setup_m1f_aliases.ps1 before sourcing
+  - Fixed hardcoded path issue that caused PowerShell profile errors
+  - Now uses correct relative paths based on actual m1f installation location
+  - Added PowerShell profile path to warning message for easier debugging
 
 ## [3.2.2] - 2025-07-06
 
@@ -4297,7 +4157,8 @@ if (Test-Path "requirements.txt") {
 # Step 3: Generate initial m1f bundles
 Write-Host
 Write-ColorOutput "Step 3: Generating initial m1f bundles..." -Color $colors.Green
-m1f-update --quiet
+$m1fUpdatePath = Join-Path $projectRoot "bin\m1f-update"
+& python $m1fUpdatePath --quiet
 Write-ColorOutput "✓ Initial bundles generated" -Color $colors.Green
 
 # Step 4: Setup PowerShell functions
@@ -4575,6 +4436,147 @@ echo
 echo -e "${YELLOW}To uninstall:${NC}"
 echo -e "  ${BLUE}$SCRIPT_DIR/uninstall.sh${NC}"
 
+======= scripts/m1f_aliases.ps1 ======
+# m1f PowerShell aliases and functions
+# This file is sourced by the PowerShell profile to provide m1f commands
+
+# Get the directory where this script is located
+$M1F_SCRIPTS_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
+$M1F_ROOT = Split-Path -Parent $M1F_SCRIPTS_DIR
+
+# Ensure virtual environment is activated
+function Activate-M1FEnvironment {
+    $venvPath = Join-Path $M1F_ROOT ".venv\Scripts\Activate.ps1"
+    if (Test-Path $venvPath) {
+        & $venvPath
+    }
+}
+
+# Main m1f function
+function m1f {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.m1f @args
+}
+
+# Split function (s1f)
+function m1f-s1f {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.s1f @args
+}
+
+# Alias for backwards compatibility
+Set-Alias -Name s1f -Value m1f-s1f
+
+# HTML to Markdown converter
+function m1f-html2md {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.html2md @args
+}
+
+# Alias for backwards compatibility
+Set-Alias -Name html2md -Value m1f-html2md
+
+# Web scraper
+function m1f-scrape {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.scrape @args
+}
+
+# Alias for backwards compatibility
+Set-Alias -Name webscraper -Value m1f-scrape
+
+# Token counter
+function m1f-token-counter {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.token_counter @args
+}
+
+# Alias for backwards compatibility
+Set-Alias -Name token-counter -Value m1f-token-counter
+
+# Update function
+function m1f-update {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.m1f auto-bundle @args
+}
+
+# Link function - creates symlinks to m1f documentation
+function m1f-link {
+    $docsSource = Join-Path $M1F_ROOT "m1f\m1f-docs.txt"
+    $docsTarget = Join-Path (Get-Location) "m1f\m1f-docs.txt"
+    
+    # Create m1f directory if it doesn't exist
+    $m1fDir = Join-Path (Get-Location) "m1f"
+    if (!(Test-Path $m1fDir)) {
+        New-Item -ItemType Directory -Path $m1fDir | Out-Null
+    }
+    
+    # Check if link already exists
+    if (Test-Path $docsTarget) {
+        Write-Host "m1f documentation already linked at m1f\m1f-docs.txt" -ForegroundColor Yellow
+    } else {
+        # Create symlink (requires admin on older Windows, works without admin on Windows 10 with developer mode)
+        try {
+            New-Item -ItemType SymbolicLink -Path $docsTarget -Target $docsSource -ErrorAction Stop | Out-Null
+            Write-Host "✓ m1f documentation linked successfully" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "You can now reference m1f documentation in AI tools:" -ForegroundColor Yellow
+            Write-Host "  @m1f\m1f-docs.txt" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "Example usage with Claude Code:" -ForegroundColor Yellow
+            Write-Host '  "Please read @m1f\m1f-docs.txt and help me set up m1f for this project"' -ForegroundColor Cyan
+        } catch {
+            # Fallback to hard link or copy if symlink fails
+            Write-Host "Could not create symbolic link (may require admin rights)." -ForegroundColor Yellow
+            Write-Host "Creating hard link instead..." -ForegroundColor Yellow
+            try {
+                New-Item -ItemType HardLink -Path $docsTarget -Target $docsSource | Out-Null
+                Write-Host "✓ m1f documentation linked successfully (hard link)" -ForegroundColor Green
+            } catch {
+                # Final fallback: copy the file
+                Copy-Item -Path $docsSource -Destination $docsTarget
+                Write-Host "✓ m1f documentation copied successfully" -ForegroundColor Green
+            }
+            Write-Host ""
+            Write-Host "You can now reference m1f documentation in AI tools:" -ForegroundColor Yellow
+            Write-Host "  @m1f\m1f-docs.txt" -ForegroundColor Cyan
+        }
+    }
+}
+
+# Help function
+function m1f-help {
+    Write-Host ""
+    Write-Host "m1f Tools - Available Commands:" -ForegroundColor Cyan
+    Write-Host "================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  m1f               - Main m1f tool for combining files" -ForegroundColor Green
+    Write-Host "  m1f-s1f           - Split combined files back to original structure" -ForegroundColor Green
+    Write-Host "  m1f-html2md       - Convert HTML to Markdown" -ForegroundColor Green
+    Write-Host "  m1f-scrape        - Download websites for offline viewing" -ForegroundColor Green
+    Write-Host "  m1f-token-counter - Count tokens in files" -ForegroundColor Green
+    Write-Host "  m1f-update        - Update m1f bundle files" -ForegroundColor Green
+    Write-Host "  m1f-link          - Link m1f documentation for AI tools" -ForegroundColor Green
+    Write-Host "  m1f-help          - Show this help message" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Aliases (for backwards compatibility):" -ForegroundColor Yellow
+    Write-Host "  s1f          → m1f-s1f" -ForegroundColor Gray
+    Write-Host "  html2md      → m1f-html2md" -ForegroundColor Gray
+    Write-Host "  webscraper   → m1f-scrape" -ForegroundColor Gray
+    Write-Host "  token-counter → m1f-token-counter" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "For detailed help on each tool, use: <tool> --help" -ForegroundColor Cyan
+    Write-Host ""
+}
+
+# Functions and aliases are automatically available when this script is dot-sourced
+
 ======= scripts/setup_m1f_aliases.ps1 ======
 #!/usr/bin/env pwsh
 # Setup script for m1f aliases in PowerShell
@@ -4646,7 +4648,11 @@ $FunctionsContent = @"
 
 # m1f tools functions (added by m1f setup script)
 # Dot-source the m1f aliases file
-. "$ProjectRoot\scripts\m1f_aliases.ps1"
+if (Test-Path "$ProjectRoot\scripts\m1f_aliases.ps1") {
+    . "$ProjectRoot\scripts\m1f_aliases.ps1"
+} else {
+    Write-Warning "m1f aliases file not found at: $ProjectRoot\scripts\m1f_aliases.ps1 (check your PowerShell profile at: `$PROFILE)"
+}
 
 "@
 
@@ -8418,7 +8424,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.2.2"
+__version__ = "3.2.3"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -8629,6 +8635,8 @@ from typing import Dict, Optional, List
 import argparse
 import logging
 from datetime import datetime
+import anyio
+from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 
 # Configure logging
 logging.basicConfig(
@@ -8640,14 +8648,18 @@ logger = logging.getLogger(__name__)
 class M1FClaude:
     """Enhance Claude prompts with m1f knowledge and context."""
 
-    def __init__(self, project_path: Path = None):
+    def __init__(self, project_path: Path = None, allowed_tools: str = "Read,Edit,MultiEdit,Write,Glob,Grep,Bash", debug: bool = False):
         """Initialize m1f-claude with project context."""
         self.project_path = project_path or Path.cwd()
         self.m1f_root = Path(__file__).parent.parent
+        self.session_id = None  # Store session ID for conversation continuity
+        self.conversation_started = False  # Track if conversation has started
+        self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
+        self.debug = debug  # Enable debug output
 
         # Check for m1f documentation in various locations
-        self.m1f_docs_link = self.project_path / "m1f" / "m1f-docs.txt"
-        self.m1f_docs_direct = self.project_path / "m1f" / "m1f-docs.txt"
+        self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
+        self.m1f_docs_direct = self.project_path / "m1f" / "m1f.txt"
 
         # Check if m1f-link has been run or docs exist directly
         self.has_m1f_docs = self.m1f_docs_link.exists() or self.m1f_docs_direct.exists()
@@ -8676,16 +8688,18 @@ class M1FClaude:
         if self.has_m1f_docs:
             enhanced.append(
                 f"""
-m1f (Make One File) is installed and ready to use in this project.
+m1f (Make One File) is installed and ready to optimize your project for AI assistance!
 
 📚 Complete m1f documentation is available at: @{self.m1f_docs_path.relative_to(self.project_path)}
 
-This documentation includes:
-- All m1f commands and parameters
-- Preset system for file-specific processing
-- Auto-bundle configuration with YAML
-- Security scanning and encoding handling
-- Integration with html2md, webscraper, and other tools
+Key m1f capabilities I can help you with:
+- Setting up auto-bundling with .m1f.config.yml for continuous AI context
+- Creating focused bundles under 100KB for optimal Claude performance
+- Configuring presets for smart file processing (minification, comment removal)
+- Implementing security scanning to prevent secrets in bundles
+- Establishing project-specific bundling strategies
+
+I'll analyze your project and suggest the best m1f setup for your needs.
 """
             )
         else:
@@ -8693,13 +8707,20 @@ This documentation includes:
                 """
 ⚠️  m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
 
-Without the docs, I'll use my general knowledge of m1f, but I'll be much more helpful
-if you run 'm1f-link' and then reference @m1f/m1f.txt
+m1f helps bundle your project files into AI-friendly context files. I can help you:
+- Set up initial m1f configuration
+- Create auto-bundling workflows
+- Optimize for Claude's context window
+
+Run 'm1f-link' and then reference @m1f/m1f.txt for complete assistance.
 """
             )
 
         # Add project context
         enhanced.append(self._analyze_project_context())
+        
+        # Add m1f setup recommendations
+        enhanced.append(self._get_m1f_recommendations())
 
         # Add user's original prompt
         enhanced.append("\n" + "=" * 50)
@@ -8707,7 +8728,7 @@ if you run 'm1f-link' and then reference @m1f/m1f.txt
         enhanced.append(user_prompt)
 
         # Add helpful hints based on common patterns
-        enhanced.append("\n\n💡 m1f Quick Reference:")
+        enhanced.append("\n\n💡 m1f Action Plan:")
         enhanced.append(self._get_contextual_hints(user_prompt))
 
         return "\n".join(enhanced)
@@ -8751,65 +8772,203 @@ if you run 'm1f-link' and then reference @m1f/m1f.txt
 
         return "\n".join(context_parts)
 
+    def _get_m1f_recommendations(self) -> str:
+        """Provide m1f setup recommendations based on project type."""
+        recommendations = ["\n🎯 m1f Setup Recommendations:"]
+        
+        # Check if .m1f.config.yml exists
+        m1f_config = self.project_path / ".m1f.config.yml"
+        if m1f_config.exists():
+            recommendations.append("  ✅ Auto-bundle config found (.m1f.config.yml)")
+            recommendations.append("     Run 'm1f-update' to generate bundles")
+        else:
+            recommendations.append("  📝 No .m1f.config.yml found - I'll help create one!")
+            
+        # Check for m1f directory
+        m1f_dir = self.project_path / "m1f"
+        if m1f_dir.exists():
+            bundle_count = len(list(m1f_dir.glob("*.txt")))
+            if bundle_count > 0:
+                recommendations.append(f"  📦 Found {bundle_count} existing m1f bundles")
+        else:
+            recommendations.append("  📁 'mkdir m1f' to create bundle output directory")
+            
+        # Suggest project-specific setup
+        if (self.project_path / "package.json").exists():
+            recommendations.append("\n  🔧 Node.js project detected:")
+            recommendations.append("     - Bundle source code separately from node_modules")
+            recommendations.append("     - Create component-specific bundles for React/Vue")
+            recommendations.append("     - Use minification presets for production code")
+            
+        if (self.project_path / "requirements.txt").exists() or (self.project_path / "setup.py").exists():
+            recommendations.append("\n  🐍 Python project detected:")
+            recommendations.append("     - Exclude __pycache__ and .pyc files")
+            recommendations.append("     - Create separate bundles for src/, tests/, docs/")
+            recommendations.append("     - Use comment removal for cleaner context")
+            
+        if (self.project_path / "composer.json").exists():
+            recommendations.append("\n  🎼 PHP project detected:")
+            recommendations.append("     - Exclude vendor/ directory")
+            recommendations.append("     - Bundle by MVC structure if applicable")
+            
+        # Check for WordPress
+        wp_indicators = ["wp-content", "wp-config.php", "functions.php", "style.css"]
+        if any((self.project_path / indicator).exists() for indicator in wp_indicators):
+            recommendations.append("\n  🎨 WordPress project detected:")
+            recommendations.append("     - Use --preset wordpress for optimal bundling")
+            recommendations.append("     - Separate theme/plugin bundles")
+            recommendations.append("     - Exclude uploads and cache directories")
+            
+        return "\n".join(recommendations)
+
     def _get_contextual_hints(self, user_prompt: str) -> str:
         """Provide contextual hints based on the user's prompt."""
         hints = []
         prompt_lower = user_prompt.lower()
 
-        # Detect intent and provide relevant hints
+        # Default m1f setup guidance
+        if not any(word in prompt_lower for word in ["bundle", "config", "setup", "wordpress", "ai", "test"]):
+            # User hasn't specified what they want - provide comprehensive setup
+            hints.append(
+                """
+Based on your project, I'll help you:
+1. Create a .m1f.config.yml with optimal bundle configuration
+2. Set up the m1f/ directory for output
+3. Configure project-specific presets
+4. Run initial bundling with m1f-update
+5. Establish a workflow for keeping bundles current
+
+I'll analyze your project structure and create bundles that:
+- Stay under 100KB for optimal Claude performance
+- Focus on specific areas (docs, code, tests, etc.)
+- Exclude unnecessary files (node_modules, __pycache__, etc.)
+- Use appropriate processing (minification, comment removal)
+"""
+            )
+            return "\n".join(hints)
+
+        # Specific intent detection
         if any(word in prompt_lower for word in ["bundle", "combine", "merge"]):
             hints.append(
                 """
-- Basic bundling: m1f -s . -o output.txt
-- With presets: m1f --preset wordpress -o bundle.txt
-- Auto-bundle: m1f-update (if .m1f.config.yml exists)
+I'll set up smart bundling for your project:
+- Create .m1f.config.yml with multiple focused bundles
+- Configure auto-bundling with m1f-update
+- Set up watch scripts for continuous updates
 """
             )
 
         if any(word in prompt_lower for word in ["config", "configure", "setup"]):
             hints.append(
                 """
-- Create .m1f.config.yml for auto-bundling
-- Use presets for file-specific processing
-- Set up exclude/include patterns
+I'll create a comprehensive .m1f.config.yml that includes:
+- Multiple bundle definitions (complete, docs, code, etc.)
+- Smart filtering by file type and size
+- Security scanning configuration
+- Project-specific exclusions
 """
             )
 
         if any(word in prompt_lower for word in ["wordpress", "wp", "theme", "plugin"]):
             hints.append(
                 """
-- WordPress preset available: --preset presets/wordpress.m1f-presets.yml
-- Excludes vendor/node_modules automatically
-- Handles PHP/CSS/JS with appropriate processing
+I'll configure m1f specifically for WordPress:
+- Use the WordPress preset for optimal processing
+- Create separate bundles for theme/plugin/core
+- Exclude WordPress core files and uploads
+- Set up proper PHP/CSS/JS processing
 """
             )
 
-        if any(word in prompt_lower for word in ["ai", "context", "assistant"]):
+        if any(word in prompt_lower for word in ["ai", "context", "assistant", "claude"]):
             hints.append(
                 """
-- Keep bundles under 100KB for AI context windows
-- Use Markdown separator style for AI readability
-- Create topic-specific bundles, not everything at once
+I'll optimize your m1f setup for AI assistance:
+- Create focused bundles under 100KB each
+- Use MachineReadable separators for parsing
+- Set up topic-specific bundles for different tasks
+- Configure CLAUDE.md with bundle references
 """
             )
 
         if any(word in prompt_lower for word in ["test", "tests", "testing"]):
             hints.append(
                 """
-- Exclude tests: --excludes "**/test_*" "**/*_test.*"
-- Or create test-only bundle for QA team
-- Use include_extensions to filter by file type
+I'll configure test handling in m1f:
+- Create separate test bundle for QA reference
+- Exclude tests from main code bundles
+- Set up test-specific file patterns
 """
             )
 
         return (
             "\n".join(hints)
             if hints
-            else "\nAsk me anything about bundling, organizing, or processing your files!"
+            else """
+I'll analyze your project and create an optimal m1f configuration that:
+- Organizes code into focused, AI-friendly bundles
+- Excludes unnecessary files automatically
+- Stays within context window limits
+- Updates automatically with m1f-update
+"""
         )
 
-    def send_to_claude_code(self, enhanced_prompt: str) -> Optional[str]:
-        """Send the enhanced prompt to Claude Code if available."""
+    async def send_to_claude_code_async(self, prompt: str, max_turns: int = 1, is_first_prompt: bool = False) -> Optional[str]:
+        """Send the prompt to Claude Code using the SDK with session persistence."""
+        try:
+            logger.info("\n🤖 Sending to Claude Code...\n")
+            
+            messages: list[Message] = []
+            
+            # Configure options based on whether this is a continuation
+            options = ClaudeCodeOptions(
+                max_turns=max_turns,
+                continue_conversation=not is_first_prompt and self.session_id is not None,
+                resume=self.session_id if not is_first_prompt and self.session_id else None
+            )
+            
+            async for message in query(
+                prompt=prompt,
+                options=options
+            ):
+                messages.append(message)
+                
+                # Extract session ID from ResultMessage
+                if isinstance(message, ResultMessage) and hasattr(message, 'session_id'):
+                    self.session_id = message.session_id
+                    self.conversation_started = True
+            
+            # Combine all messages into a single response
+            if messages:
+                # Extract text content from messages
+                response_parts = []
+                for msg in messages:
+                    if hasattr(msg, 'content'):
+                        if isinstance(msg.content, str):
+                            response_parts.append(msg.content)
+                        elif isinstance(msg.content, list):
+                            # Handle structured content
+                            for content_item in msg.content:
+                                if isinstance(content_item, dict) and 'text' in content_item:
+                                    response_parts.append(content_item['text'])
+                                elif hasattr(content_item, 'text'):
+                                    response_parts.append(content_item.text)
+                
+                return "\n".join(response_parts) if response_parts else None
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error communicating with Claude Code SDK: {e}")
+            # Fall back to subprocess method if SDK fails
+            return self.send_to_claude_code_subprocess(prompt)
+    
+    def send_to_claude_code(self, prompt: str, max_turns: int = 1, is_first_prompt: bool = False) -> Optional[str]:
+        """Synchronous wrapper for send_to_claude_code_async."""
+        return anyio.run(self.send_to_claude_code_async, prompt, max_turns, is_first_prompt)
+    
+    def send_to_claude_code_subprocess(self, enhanced_prompt: str) -> Optional[str]:
+        """Fallback method using subprocess if SDK fails."""
         try:
             # Check if claude command exists
             result = subprocess.run(
@@ -8822,55 +8981,56 @@ if you run 'm1f-link' and then reference @m1f/m1f.txt
                 )
                 return None
 
-            # Send to Claude Code
-            logger.info("\n🤖 Sending to Claude Code...\n")
+            # Send to Claude Code using --print for non-interactive mode
+            logger.info("\n🤖 Sending to Claude Code (subprocess fallback)...\n")
 
-            # Create a temporary file with the prompt to handle complex prompts
-            import tempfile
-
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".txt", delete=False
-            ) as f:
-                f.write(enhanced_prompt)
-                temp_path = f.name
+            # Use subprocess.Popen for better control over stdin/stdout
+            process = subprocess.Popen(
+                ["claude", "--print"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
 
             try:
-                result = subprocess.run(
-                    ["claude", "-f", temp_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
+                # Send the enhanced prompt via stdin
+                stdout, stderr = process.communicate(
+                    input=enhanced_prompt, timeout=300  # 5 minute timeout
                 )
 
-                if result.returncode == 0:
-                    return result.stdout
+                if process.returncode == 0:
+                    return stdout
                 else:
-                    logger.error(f"Claude Code error: {result.stderr}")
+                    logger.error(f"Claude Code error: {stderr}")
                     return None
-            finally:
-                os.unlink(temp_path)
+
+            except subprocess.TimeoutExpired:
+                process.kill()
+                logger.error("Claude Code timed out after 5 minutes")
+                return None
 
         except FileNotFoundError:
             logger.info(
                 "\n📝 Claude Code not installed. Install with: npm install -g @anthropic-ai/claude-code"
             )
             return None
-        except subprocess.TimeoutExpired:
-            logger.error("Claude Code timed out")
-            return None
         except Exception as e:
             logger.error(f"Error communicating with Claude Code: {e}")
             return None
 
     def interactive_mode(self):
-        """Run in interactive mode for continued conversation."""
+        """Run in interactive mode with proper session management."""
         print("\n🤖 m1f-claude Interactive Mode")
         print("=" * 50)
         print("I'll enhance your prompts with m1f knowledge!")
-        print("Commands: 'help', 'context', 'examples', 'quit'\n")
+        print("Commands: 'help', 'context', 'examples', 'quit', '/e'\n")
 
         if not self.has_m1f_docs:
             print("💡 Tip: Run 'm1f-link' first for better assistance!\n")
+
+        session_id = None
+        first_prompt = True
 
         while True:
             try:
@@ -8879,7 +9039,7 @@ if you run 'm1f-link' and then reference @m1f/m1f.txt
                 if not user_input:
                     continue
 
-                if user_input.lower() in ["quit", "exit", "q"]:
+                if user_input.lower() in ["quit", "exit", "q"] or user_input.strip() == "/e":
                     print("\n👋 Happy bundling!")
                     break
 
@@ -8895,23 +9055,185 @@ if you run 'm1f-link' and then reference @m1f/m1f.txt
                     self._show_examples()
                     continue
 
-                # Enhance and process the prompt
-                enhanced = self.create_enhanced_prompt(user_input)
-
-                # Try to send to Claude Code
-                response = self.send_to_claude_code(enhanced)
-
-                if response:
-                    print(f"\nClaude: {response}\n")
+                # Prepare the prompt
+                if first_prompt:
+                    prompt_to_send = self.create_enhanced_prompt(user_input)
                 else:
-                    print("\n--- Enhanced Prompt ---")
-                    print(enhanced)
-                    print("\n--- Copy the above and paste into Claude! ---\n")
+                    prompt_to_send = user_input
+
+                # Send to Claude using subprocess
+                print("\nClaude: ", end="", flush=True)
+                response, new_session_id = self._send_with_session(prompt_to_send, session_id)
+                
+                if response is not None:  # Empty response is still valid
+                    print()  # New line after response
+                    if new_session_id:
+                        session_id = new_session_id
+                    first_prompt = False
+                else:
+                    print("\n❌ Failed to send to Claude Code. Check your connection.\n")
 
             except KeyboardInterrupt:
-                print("\n\nUse 'quit' to exit properly")
+                print("\n\nUse 'quit' or '/e' to exit properly")
             except Exception as e:
                 logger.error(f"Error: {e}")
+
+    def _send_with_session(self, prompt: str, session_id: Optional[str] = None) -> tuple[Optional[str], Optional[str]]:
+        """Send prompt to Claude Code, managing session continuity.
+        
+        Returns: (response_text, session_id)
+        """
+        try:
+            # Build command - use stream-json for real-time feedback
+            cmd = [
+                "claude", 
+                "--print", 
+                "--verbose",  # Required for stream-json
+                "--output-format", "stream-json",
+                "--allowedTools", self.allowed_tools
+            ]
+            
+            # Note: --debug flag interferes with JSON parsing, only use in stderr
+            if self.debug:
+                print(f"[DEBUG] Command: {' '.join(cmd)}")
+                
+            if session_id:
+                cmd.extend(["-r", session_id])
+            
+            if not session_id:  # Only show on first prompt
+                logger.info("\n🤖 Sending to Claude Code...\n")
+            
+            # Execute command
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1  # Line buffered
+            )
+            
+            # Send prompt
+            process.stdin.write(prompt + "\n")
+            process.stdin.flush()
+            process.stdin.close()
+            
+            # Process streaming JSON output
+            response_text = ""
+            new_session_id = session_id
+            
+            for line in process.stdout:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Skip debug lines that start with [DEBUG]
+                if line.startswith("[DEBUG]"):
+                    if self.debug:
+                        print(f"\n{line}")
+                    continue
+                    
+                try:
+                    data = json.loads(line)
+                    
+                    # Handle different message types
+                    if data.get("type") == "system":
+                        if data.get("subtype") == "init":
+                            # Initial system message with session info
+                            new_session_id = data.get("session_id", session_id)
+                            if self.debug:
+                                print(f"\n[DEBUG] Session initialized: {new_session_id}")
+                        elif self.debug:
+                            print(f"\n[DEBUG] System message: {data}")
+                            
+                    elif data.get("type") == "assistant":
+                        # Assistant messages have a nested structure
+                        message_data = data.get("message", {})
+                        content = message_data.get("content", [])
+                        
+                        if isinstance(content, list):
+                            for item in content:
+                                if isinstance(item, dict):
+                                    if item.get("type") == "text":
+                                        text = item.get("text", "")
+                                        response_text += text
+                                        print(text, end="", flush=True)
+                                    elif item.get("type") == "tool_use" and self.debug:
+                                        print(f"\n[DEBUG] Tool use: {item.get('name')} - {item.get('input', {})}")
+                        elif isinstance(content, str):
+                            response_text += content
+                            print(content, end="", flush=True)
+                                
+                    elif data.get("type") == "result":
+                        # Final result message
+                        new_session_id = data.get("session_id", session_id)
+                        if self.debug:
+                            print(f"\n[DEBUG] Session complete!")
+                            print(f"[DEBUG] Session ID: {new_session_id}")
+                            print(f"[DEBUG] Cost: ${data.get('total_cost_usd', 0):.4f}")
+                            print(f"[DEBUG] Turns: {data.get('num_turns', 0)}")
+                            
+                except json.JSONDecodeError:
+                    if self.debug:
+                        print(f"\n[DEBUG] Non-JSON line: {line}")
+                        
+            # Wait for process to complete
+            process.wait(timeout=10)
+            
+            # Check stderr for errors
+            stderr_output = process.stderr.read()
+            if stderr_output and self.debug:
+                print(f"\n[DEBUG] Stderr: {stderr_output}")
+            
+            if process.returncode == 0:
+                return response_text, new_session_id
+            else:
+                logger.error(f"Claude Code error (code {process.returncode})")
+                if stderr_output:
+                    logger.error(f"Error details: {stderr_output}")
+                return None, None
+                
+        except subprocess.TimeoutExpired:
+            process.kill()
+            logger.error("Claude Code timed out after 5 minutes")
+            return None, None
+        except FileNotFoundError:
+            logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code")
+            return None, None
+        except Exception as e:
+            logger.error(f"Error communicating with Claude Code: {e}")
+            if self.debug:
+                import traceback
+                traceback.print_exc()
+            return None, None
+    
+    def _extract_session_id(self, output: str) -> Optional[str]:
+        """Extract session ID from Claude output."""
+        if not output:
+            return None
+            
+        # Look for session ID patterns in the output
+        import re
+        
+        # Common patterns for session IDs
+        patterns = [
+            r"session[_\s]?id[:\s]+([a-zA-Z0-9\-_]+)",
+            r"Session:\s+([a-zA-Z0-9\-_]+)",
+            r"session/([a-zA-Z0-9\-_]+)",
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, output, re.IGNORECASE)
+            if match:
+                return match.group(1)
+                
+        # If no pattern matches, check if the entire output looks like a session ID
+        # (alphanumeric with hyphens/underscores, reasonable length)
+        output_clean = output.strip()
+        if re.match(r"^[a-zA-Z0-9\-_]{8,64}$", output_clean):
+            return output_clean
+            
+        return None
 
     def _show_help(self):
         """Show help information."""
@@ -8924,6 +9246,7 @@ Commands:
   context  - Show current project context
   examples - Show example prompts
   quit     - Exit interactive mode
+  /e       - Exit interactive mode (like Claude CLI)
 
 Tips:
   • Run 'm1f-link' first for best results
@@ -8988,11 +9311,37 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
         action="store_true",
         help="Don't send to Claude Code, just show enhanced prompt",
     )
+    
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Send prompt directly to Claude without m1f enhancement",
+    )
+    
+    parser.add_argument(
+        "--max-turns",
+        type=int,
+        default=1,
+        help="Maximum number of conversation turns (default: 1)",
+    )
+    
+    parser.add_argument(
+        "--allowed-tools",
+        type=str,
+        default="Read,Edit,MultiEdit,Write,Glob,Grep,Bash",
+        help="Comma-separated list of allowed tools (default: Read,Edit,MultiEdit,Write,Glob,Grep,Bash)",
+    )
+    
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode to show detailed output",
+    )
 
     args = parser.parse_args()
 
     # Initialize m1f-claude
-    m1f_claude = M1FClaude()
+    m1f_claude = M1FClaude(allowed_tools=args.allowed_tools, debug=args.debug)
 
     # Check status
     if args.check:
@@ -9033,18 +9382,29 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
 
     # Single prompt mode
     prompt = " ".join(args.prompt)
-    enhanced = m1f_claude.create_enhanced_prompt(prompt)
-
-    if args.no_send:
-        print("\n--- Enhanced Prompt ---")
-        print(enhanced)
-    else:
-        response = m1f_claude.send_to_claude_code(enhanced)
+    
+    # Handle raw mode - send directly without enhancement
+    if args.raw:
+        response = m1f_claude.send_to_claude_code(prompt, max_turns=args.max_turns, is_first_prompt=True)
         if response:
             print(response)
         else:
-            print("\n--- Enhanced Prompt (copy this to Claude) ---")
+            logger.error("Failed to send to Claude Code")
+            sys.exit(1)
+    else:
+        # Normal mode - enhance the prompt
+        enhanced = m1f_claude.create_enhanced_prompt(prompt)
+
+        if args.no_send:
+            print("\n--- Enhanced Prompt ---")
             print(enhanced)
+        else:
+            response = m1f_claude.send_to_claude_code(enhanced, max_turns=args.max_turns, is_first_prompt=True)
+            if response:
+                print(response)
+            else:
+                print("\n--- Enhanced Prompt (copy this to Claude) ---")
+                print(enhanced)
 
 
 if __name__ == "__main__":
@@ -9461,7 +9821,7 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
-            "m1f=m1f_refactored:main",
+            "m1f=m1f:main",
         ],
     },
     python_requires=">=3.10",
@@ -12902,22 +13262,22 @@ by creating a symlink to the complete m1f documentation.
    m1f-link
    ```
 
-   This creates: `.m1f/m1f.txt -> /path/to/m1f/.m1f/m1f-doc/99_m1fdocs.txt`
+   This creates: `m1f/m1f.txt -> /path/to/m1f/m1f/m1f/87_m1f_only_docs.txt`
 
 3. Reference the documentation in your AI tool:
 
    ```bash
    # For Claude Code, Cursor, or similar AI assistants:
-   @.m1f/m1f.txt
+   @m1f/m1f.txt
 
    # Example prompts:
-   "Please read @.m1f/m1f.txt and help me create a .m1f.config.yml
+   "Please read @m1f/m1f.txt and help me create a .m1f.config.yml
    for bundling my Python project"
 
-   "Based on @.m1f/m1f.txt, what's the best way to exclude test
+   "Based on @m1f/m1f.txt, what's the best way to exclude test
    files while keeping documentation?"
 
-   "Using @.m1f/m1f.txt as reference, help me set up auto-bundling
+   "Using @m1f/m1f.txt as reference, help me set up auto-bundling
    for a WordPress theme"
    ```
 
@@ -45919,6 +46279,3 @@ parser_config:
 # Example usage:
 # m1f-scrape https://example.com -o output/ \
 #   --scraper selectolax --scraper-config selectolax.yaml
-
-======= tests/m1f/extracted/encoding_test/default/test_file.txt ======
-Hello with special chars: äöüß привет こんにちは 你好

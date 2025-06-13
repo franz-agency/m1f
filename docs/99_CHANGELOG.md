@@ -8,6 +8,44 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- **m1f-claude Enhancements**: Major improvements for intelligent m1f setup assistance
+  - **Session Persistence**: Implemented proper conversation continuity using Claude CLI's `-r` flag
+    - Each conversation maintains its own session ID
+    - Multiple users can work in the same directory simultaneously
+    - Session IDs are extracted from JSON responses and reused
+  - **Streaming Output**: Real-time feedback with `--output-format stream-json`
+    - Shows Claude's responses as they arrive
+    - Displays tool usage in debug mode
+    - Provides immediate visual feedback during processing
+  - **Tool Permissions**: Added `--allowedTools` parameter with sensible defaults
+    - Default tools: Read, Edit, MultiEdit, Write, Glob, Grep, Bash
+    - Customizable via `--allowed-tools` command line argument
+    - Enables file operations and project analysis
+  - **Enhanced Prompt System**: Sophisticated prompt enhancement for m1f setup
+    - Deep thinking task list approach for systematic m1f configuration
+    - Detects when users want to set up m1f (various phrase patterns)
+    - Provides 5-phase task list: Analysis, Documentation Study, Design, Implementation, Validation
+    - Always references @m1f/m1f.txt documentation (5+ references per prompt)
+    - Detects and prioritizes AI context files (CLAUDE.md, .cursorrules, .windsurfrules)
+    - Project-aware recommendations based on detected frameworks
+    - Line-specific documentation references for key sections
+  - **Debug Mode**: Added `--debug` flag for detailed output
+    - Shows session IDs, costs, and API usage
+    - Displays tool invocations and responses
+    - Helps troubleshoot issues and monitor usage
+  - **Exit Command**: Added `/e` command support like Claude CLI
+    - Works alongside 'quit', 'exit', and 'q' commands
+    - Updated help text and keyboard interrupt messages
+
+### Changed
+
+- **m1f-claude Architecture**: Switched from SDK to subprocess for better control
+  - Uses Claude CLI directly with proper session management
+  - More reliable than the SDK for interactive sessions
+  - Better error handling and fallback mechanisms
+
 ### Fixed
 
 - **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
@@ -16,6 +54,12 @@ and this project adheres to
   - Fixed hardcoded path issue that caused PowerShell profile errors
   - Now uses correct relative paths based on actual m1f installation location
   - Added PowerShell profile path to warning message for easier debugging
+
+### Dependencies
+
+- Added required dependencies for m1f-claude:
+  - anyio==4.9.0 (async support)
+  - claude-code-sdk==0.0.10 (Claude integration)
 
 ## [3.2.2] - 2025-07-06
 
