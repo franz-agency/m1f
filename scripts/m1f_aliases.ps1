@@ -130,5 +130,4 @@ function m1f-help {
     Write-Host ""
 }
 
-# Export functions so they're available in the session
-Export-ModuleMember -Function m1f, m1f-s1f, m1f-html2md, m1f-scrape, m1f-token-counter, m1f-update, m1f-link, m1f-help -Alias s1f, html2md, webscraper, token-counter
+# Functions and aliases are automatically available when this script is dot-sourced
