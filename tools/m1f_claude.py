@@ -47,8 +47,8 @@ class M1FClaude:
         self.m1f_root = Path(__file__).parent.parent
 
         # Check for m1f documentation in various locations
-        self.m1f_docs_link = self.project_path / "m1f" / "m1f-docs.txt"
-        self.m1f_docs_direct = self.project_path / "m1f" / "m1f-docs.txt"
+        self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
+        self.m1f_docs_direct = self.project_path / "m1f" / "m1f.txt"
 
         # Check if m1f-link has been run or docs exist directly
         self.has_m1f_docs = self.m1f_docs_link.exists() or self.m1f_docs_direct.exists()
@@ -95,7 +95,7 @@ This documentation includes:
 ⚠️  m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
 
 Without the docs, I'll use my general knowledge of m1f, but I'll be much more helpful
-if you run 'm1f-link' and then reference @m1f/m1f-docs.txt
+if you run 'm1f-link' and then reference @m1f/m1f.txt
 """
             )
 

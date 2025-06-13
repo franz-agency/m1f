@@ -115,7 +115,8 @@ if (Test-Path "requirements.txt") {
 # Step 3: Generate initial m1f bundles
 Write-Host
 Write-ColorOutput "Step 3: Generating initial m1f bundles..." -Color $colors.Green
-m1f-update --quiet
+$m1fUpdatePath = Join-Path $projectRoot "bin\m1f-update"
+& python $m1fUpdatePath --quiet
 Write-ColorOutput "✓ Initial bundles generated" -Color $colors.Green
 
 # Step 4: Setup PowerShell functions

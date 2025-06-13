@@ -297,7 +297,7 @@ This documentation includes:
 ⚠️  m1f documentation not linked yet. Run 'm1f-link' first to give me full context!
 
 Without the docs, I'll use my general knowledge of m1f, but I'll be much more helpful
-if you run 'm1f-link' and then reference @m1f/m1f-docs.txt
+if you run 'm1f-link' and then reference @m1f/m1f.txt
 """
             )
 

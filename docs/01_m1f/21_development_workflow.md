@@ -53,22 +53,22 @@ by creating a symlink to the complete m1f documentation.
    m1f-link
    ```
 
-   This creates: `.m1f/m1f-docs.txt -> /path/to/m1f/.m1f/m1f-doc/99_m1fdocs.txt`
+   This creates: `m1f/m1f.txt -> /path/to/m1f/m1f/m1f/87_m1f_only_docs.txt`
 
 3. Reference the documentation in your AI tool:
 
    ```bash
    # For Claude Code, Cursor, or similar AI assistants:
-   @.m1f/m1f-docs.txt
+   @m1f/m1f.txt
 
    # Example prompts:
-   "Please read @.m1f/m1f-docs.txt and help me create a .m1f.config.yml
+   "Please read @m1f/m1f.txt and help me create a .m1f.config.yml
    for bundling my Python project"
 
-   "Based on @.m1f/m1f-docs.txt, what's the best way to exclude test
+   "Based on @m1f/m1f.txt, what's the best way to exclude test
    files while keeping documentation?"
 
-   "Using @.m1f/m1f-docs.txt as reference, help me set up auto-bundling
+   "Using @m1f/m1f.txt as reference, help me set up auto-bundling
    for a WordPress theme"
    ```
 

@@ -10,7 +10,7 @@ BIN_DIR="$(dirname "$SCRIPT_PATH")"
 PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Path to the m1f documentation bundle
-M1F_DOCS="$PROJECT_ROOT/m1f/m1f-docs.txt"
+M1F_DOCS="$PROJECT_ROOT/m1f/m1f/87_m1f_only_docs.txt"
 
 # Make sure we're in the original directory
 cd "$ORIGINAL_DIR"
@@ -21,15 +21,15 @@ if [ ! -d "m1f" ]; then
 fi
 
 # Check if symlink already exists
-if [ -e "m1f/m1f-docs.txt" ]; then
-    echo "m1f documentation already linked at m1f/m1f-docs.txt"
+if [ -e "m1f/m1f.txt" ]; then
+    echo "m1f documentation already linked at m1f/m1f.txt"
 else
-    ln -s "$M1F_DOCS" m1f/m1f-docs.txt
-    echo "Created symlink: m1f/m1f-docs.txt -> $M1F_DOCS"
+    ln -s "$M1F_DOCS" m1f/m1f.txt
+    echo "Created symlink: m1f/m1f.txt -> $M1F_DOCS"
     echo ""
     echo "You can now reference m1f documentation in AI tools:"
-    echo "  @m1f/m1f-docs.txt"
+    echo "  @m1f/m1f.txt"
     echo ""
     echo "Example usage with Claude Code:"
-    echo "  'Please read @m1f/m1f-docs.txt and help me set up m1f for this project'"
+    echo "  'Please read @m1f/m1f.txt and help me set up m1f for this project'"
 fi

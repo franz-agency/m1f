@@ -12,5 +12,8 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
 
+# Add project root to PYTHONPATH so tools module can be found
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
 # Go back to original directory and run m1f-claude
 cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/m1f_claude.py" "$@"

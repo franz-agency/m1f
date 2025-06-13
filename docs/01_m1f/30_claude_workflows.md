@@ -23,7 +23,7 @@ First, let's get Claude up to speed on what m1f can do:
 
 ```bash
 cd /your/awesome/project
-m1f-link  # Creates m1f/m1f-docs.txt symlink
+m1f-link  # Creates m1f/m1f.txt symlink
 ```
 
 Boom! 💥 Now you've got the complete m1f documentation sitting in your project.
@@ -35,7 +35,7 @@ Here's where it gets fun. Just tell Claude what you need:
 
 ```
 Hey Claude, I need help setting up m1f for my project.
-Check out @m1f/m1f-docs.txt to see what m1f can do.
+Check out @m1f/m1f.txt to see what m1f can do.
 
 My project is a Python web app with:
 - Backend API in /api
@@ -246,7 +246,7 @@ how to organize it with m1f bundles. Consider:
 - Logical groupings for different use cases
 - Size limits for AI context windows
 
-Use @m1f/m1f-docs.txt to understand all available options.
+Use @m1f/m1f.txt to understand all available options.
 ```
 
 ### 2. Provide Clear Context
@@ -259,7 +259,7 @@ Claude, here's my project structure from m1f:
 - Target use: Sharing with external auditors
 
 Create a secure bundling strategy using m1f v3.2's security features.
-Check @m1f/m1f-docs.txt for security parameters.
+Check @m1f/m1f.txt for security parameters.
 ```
 
 ### 3. Iterative Refinement
@@ -451,4 +451,4 @@ Happy bundling! 🚀
 ---
 
 _P.S. - If Claude suggests something that seems off, just ask "Are you sure
-about that? Check @m1f/m1f-docs.txt again." Works every time! 😉_
+about that? Check @m1f/m1f.txt again." Works every time! 😉_
