@@ -196,3 +196,6 @@ CLAUDE.md
 
 # Scrapes directory for mf1-html2md workflow
 .scrapes/
+
+# Vim swap files
+*.swp
