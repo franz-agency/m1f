@@ -31,6 +31,7 @@ import argparse
 import logging
 from datetime import datetime
 import anyio
+import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 
 # Configure logging
@@ -38,6 +39,11 @@ logging.basicConfig(
     level=logging.INFO, format="%(message)s"  # Simple format for user-facing messages
 )
 logger = logging.getLogger(__name__)
+
+
+class ClaudeResponseCancelled(Exception):
+    """Exception raised when Claude response is cancelled by user."""
+    pass
 
 
 class M1FClaude:
@@ -392,6 +398,17 @@ I'll analyze your project and create an optimal m1f configuration that:
 
     async def send_to_claude_code_async(self, prompt: str, max_turns: int = 1, is_first_prompt: bool = False) -> Optional[str]:
         """Send the prompt to Claude Code using the SDK with session persistence."""
+        cancelled = False
+        
+        def handle_interrupt(signum, frame):
+            nonlocal cancelled
+            cancelled = True
+            logger.info("\n\n🛑 Cancelling Claude response... Press Ctrl-C again to force quit.\n")
+            raise ClaudeResponseCancelled()
+        
+        # Set up signal handler
+        old_handler = signal.signal(signal.SIGINT, handle_interrupt)
+        
         try:
             logger.info("\n🤖 Sending to Claude Code...\n")
             
@@ -408,6 +425,9 @@ I'll analyze your project and create an optimal m1f configuration that:
                 prompt=prompt,
                 options=options
             ):
+                if cancelled:
+                    break
+                    
                 messages.append(message)
                 
                 # Extract session ID from ResultMessage
@@ -435,10 +455,16 @@ I'll analyze your project and create an optimal m1f configuration that:
             
             return None
             
+        except ClaudeResponseCancelled:
+            logger.info("Response cancelled by user.")
+            return None
         except Exception as e:
             logger.error(f"Error communicating with Claude Code SDK: {e}")
             # Fall back to subprocess method if SDK fails
             return self.send_to_claude_code_subprocess(prompt)
+        finally:
+            # Restore original signal handler
+            signal.signal(signal.SIGINT, old_handler)
     
     def send_to_claude_code(self, prompt: str, max_turns: int = 1, is_first_prompt: bool = False) -> Optional[str]:
         """Synchronous wrapper for send_to_claude_code_async."""
@@ -508,6 +534,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         session_id = None
         first_prompt = True
+        interaction_count = 0
 
         while True:
             try:
@@ -550,7 +577,16 @@ I'll analyze your project and create an optimal m1f configuration that:
                     if new_session_id:
                         session_id = new_session_id
                     first_prompt = False
+                    interaction_count += 1
                     print("\n")  # Extra newline after response for clarity
+                    
+                    # Check if we should ask about continuing
+                    if interaction_count >= 10 and interaction_count % 10 == 0:
+                        print(f"\n⚠️  You've had {interaction_count} interactions in this session.")
+                        continue_choice = input("Continue? (y/n) [y]: ").strip().lower()
+                        if continue_choice in ['n', 'no']:
+                            print("\n👋 Session ended by user. Happy bundling!")
+                            break
                 else:
                     print("\r❌ Failed to send to Claude Code. Check your connection.\n")
 
@@ -564,6 +600,24 @@ I'll analyze your project and create an optimal m1f configuration that:
         
         Returns: (response_text, session_id)
         """
+        process = None
+        cancelled = False
+        
+        def handle_interrupt(signum, frame):
+            nonlocal cancelled, process
+            cancelled = True
+            if process:
+                logger.info("\n\n🛑 Cancelling Claude response...")
+                process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+            raise KeyboardInterrupt()
+        
+        # Set up signal handler
+        old_handler = signal.signal(signal.SIGINT, handle_interrupt)
+        
         try:
             # Build command - use stream-json for real-time feedback
             cmd = [
@@ -603,6 +657,9 @@ I'll analyze your project and create an optimal m1f configuration that:
             new_session_id = session_id
             
             for line in process.stdout:
+                if cancelled:
+                    break
+                    
                 line = line.strip()
                 if not line:
                     continue
@@ -665,14 +722,18 @@ I'll analyze your project and create an optimal m1f configuration that:
                         print(f"\n[DEBUG] Non-JSON line: {line}")
                         
             # Wait for process to complete
-            process.wait(timeout=10)
+            if not cancelled:
+                process.wait(timeout=10)
             
             # Check stderr for errors
             stderr_output = process.stderr.read()
             if stderr_output and self.debug:
                 print(f"\n[DEBUG] Stderr: {stderr_output}")
             
-            if process.returncode == 0:
+            if cancelled:
+                logger.info("\nResponse cancelled by user.")
+                return None, None
+            elif process.returncode == 0:
                 return response_text, new_session_id
             else:
                 logger.error(f"Claude Code error (code {process.returncode})")
@@ -680,8 +741,12 @@ I'll analyze your project and create an optimal m1f configuration that:
                     logger.error(f"Error details: {stderr_output}")
                 return None, None
                 
+        except KeyboardInterrupt:
+            logger.info("\nResponse cancelled.")
+            return None, None
         except subprocess.TimeoutExpired:
-            process.kill()
+            if process:
+                process.kill()
             logger.error("Claude Code timed out after 5 minutes")
             return None, None
         except FileNotFoundError:
@@ -693,6 +758,16 @@ I'll analyze your project and create an optimal m1f configuration that:
                 import traceback
                 traceback.print_exc()
             return None, None
+        finally:
+            # Restore original signal handler
+            signal.signal(signal.SIGINT, old_handler)
+            # Ensure process is cleaned up
+            if process and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
     
     def _extract_session_id(self, output: str) -> Optional[str]:
         """Extract session ID from Claude output."""

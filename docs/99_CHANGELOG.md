@@ -41,6 +41,8 @@ and this project adheres to
     - Response completion indicator: `[✅ Response complete]`
     - Better prompt spacing with newlines before "You:"
     - Clear separation between responses and new prompts
+    - Interaction counter: prompts to continue after every 10 exchanges
+    - Ctrl-C signal handling for graceful cancellation
   - **Exit Command**: Added `/e` command support like Claude CLI
     - Works alongside 'quit', 'exit', and 'q' commands
     - Updated help text and keyboard interrupt messages

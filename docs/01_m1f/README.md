@@ -42,6 +42,8 @@ See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
   with configuration files
 - [**21_development_workflow.md**](./21_development_workflow.md) - Best
   practices for development workflows
+- [**25_m1f_config_examples.md**](./25_m1f_config_examples.md) - Comprehensive
+  configuration examples for different project types
 
 ### AI Integration
 
