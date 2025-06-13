@@ -130,17 +130,21 @@ You need to follow this systematic task list to properly set up m1f for this pro
 4. **Implementation Phase**
    □ Create m1f/ directory if it doesn't exist
    □ Create MINIMAL .m1f.config.yml (don't repeat default excludes!)
+   □ CRITICAL: Use "sources:" array format, NOT "source_directory:"!
+   □ CRITICAL: Use "Standard" separator, NOT "Detailed"!
    □ Use exclude_paths_file: ".gitignore" instead of listing excludes
-   □ Set up project-specific presets if needed
-   □ Configure security scanning and encoding
 
 5. **Validation Phase**
-   □ Run m1f-update to test configuration
+   □ MUST run m1f-update IMMEDIATELY after creating/editing .m1f.config.yml
+   □ Fix any errors before proceeding
    □ Check bundle sizes with m1f-token-counter
    □ Verify no secrets or sensitive data included
    □ Create CLAUDE.md with bundle references
 
-IMPORTANT: Keep configurations MINIMAL! m1f already excludes common directories.
+CRITICAL CONFIG RULES:
+- Bundle format: Use "sources:" array, NOT "source_directory:" 
+- Separator: Use "Standard" (or omit), NOT "Detailed"
+- ALWAYS test with m1f-update after creating/editing configs!
 """
             )
 
@@ -361,15 +365,16 @@ IMPORTANT: Always use separator_style: Standard (or omit it) for AI bundles!
                 """
 I'll create a MINIMAL .m1f.config.yml that includes:
 - Multiple bundle definitions (complete, docs, code, etc.)
-- Standard separator style for AI consumption (NOT Markdown!)
+- CORRECT FORMAT: Use "sources:" array (NOT "source_directory:")
+- Standard separator (NOT Detailed/Markdown!)
 - Smart filtering by file type and size
 - ONLY project-specific exclusions (NOT defaults!)
-- Reference to .gitignore for additional excludes
 
-REMEMBER: 
-- node_modules, vendor, .git, etc. are AUTO-EXCLUDED
-- These bundles are for AI assistants, not human Markdown viewing!
-- Keep it MINIMAL - less is more!
+CRITICAL STEPS:
+1. Create .m1f.config.yml with "sources:" format
+2. Use "Standard" separator (or omit it)
+3. Run m1f-update IMMEDIATELY to test
+4. Fix any errors before proceeding
 """
             )
 

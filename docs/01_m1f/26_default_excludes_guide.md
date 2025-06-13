@@ -2,6 +2,29 @@
 
 This guide explains the files and directories that m1f excludes by default, helping you write minimal and efficient `.m1f.config.yml` configurations.
 
+## 🚨 CRITICAL: Correct Bundle Format
+
+**ALWAYS use the `sources:` array format, NOT `source_directory:`!**
+
+```yaml
+# ✅ CORRECT FORMAT:
+bundles:
+  - name: my-bundle
+    sources:
+      - "./src"
+    output_file: "m1f/my-bundle.txt"
+    separator_style: Standard  # Or omit - Standard is default
+    
+# ❌ WRONG FORMAT (will cause errors):
+bundles:
+  my-bundle:
+    source_directory: "./src"  # This format causes "ERROR: At least one of -s/--source-directory..."
+    output_file: "m1f/my-bundle.txt"
+    separator_style: Detailed  # Don't use for AI bundles!
+```
+
+**ALWAYS test with `m1f-update` immediately after creating/editing .m1f.config.yml!**
+
 ## Understanding Default Excludes
 
 **IMPORTANT**: m1f automatically excludes many common directories and files. You DON'T need to repeat these in your configuration - only add project-specific exclusions!
