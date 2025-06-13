@@ -2,6 +2,8 @@
 
 This guide provides comprehensive examples of `.m1f.config.yml` files for different project types. Each example includes detailed comments explaining the configuration choices.
 
+> **⚠️ IMPORTANT**: m1f automatically excludes many common directories (node_modules, .git, __pycache__, etc.). See the [Default Excludes Guide](./26_default_excludes_guide.md) for the complete list. **Only add project-specific excludes to keep your configs minimal!**
+
 ## 🚨 IMPORTANT: Use Standard Separator for AI Bundles!
 
 **The primary purpose of m1f bundles is to provide context to AI assistants like Claude, NOT for human reading in Markdown!**
@@ -23,6 +25,45 @@ bundles:
 ```
 
 **Note**: `MachineReadable` is only needed when you plan to use `s1f` to split the bundle back into individual files.
+
+## Minimal vs Verbose Configurations
+
+### ❌ BAD Example - Overly Verbose (Don't Do This!)
+
+```yaml
+global:
+  global_excludes:
+    # ❌ ALL of these are already excluded by default!
+    - "**/node_modules/**"     # Auto-excluded
+    - "**/vendor/**"           # Auto-excluded
+    - "**/__pycache__/**"      # Auto-excluded
+    - "**/build/**"            # Auto-excluded
+    - "**/dist/**"             # Auto-excluded
+    - "**/.git/**"             # Auto-excluded
+    - "**/cache/**"            # Auto-excluded
+    - "**/.vscode/**"          # Auto-excluded
+    - "**/.idea/**"            # Auto-excluded
+    
+    # ✅ Only these are needed (project-specific)
+    - "**/logs/**"             
+    - "**/tmp/**"              
+    - "/m1f/**"                
+```
+
+### ✅ GOOD Example - Minimal Configuration
+
+```yaml
+global:
+  global_excludes:
+    # Only project-specific excludes
+    - "**/logs/**"             # Your log files
+    - "**/tmp/**"              # Your temp files
+    - "/m1f/**"                # Output directory
+    
+  global_settings:
+    # Let .gitignore handle most excludes
+    exclude_paths_file: ".gitignore"
+```
 
 ## Table of Contents
 
@@ -132,15 +173,14 @@ Configuration for a modern React application with TypeScript and testing.
 
 global:
   global_excludes:
-    # Node.js specific
-    - "**/node_modules/**"              # Dependencies
-    - "**/dist/**"                      # Build output
-    - "**/build/**"                     # Build output
-    - "**/.next/**"                     # Next.js build
-    - "**/coverage/**"                  # Test coverage reports
-    - "**/.cache/**"                    # Various caches
+    # ⚠️ MINIMAL CONFIG - Only project-specific excludes!
+    # DON'T add node_modules, dist, build - they're auto-excluded!
     
-    # Common development files
+    # Next.js specific (not in defaults)
+    - "**/.next/**"                     # Next.js build cache
+    - "**/coverage/**"                  # Test coverage reports
+    
+    # Log and temp files
     - "**/*.log"
     - "**/*.map"                        # Source maps
     - "**/.DS_Store"
@@ -278,19 +318,14 @@ Configuration for a Django web application with REST API.
 
 global:
   global_excludes:
-    # Python specific
-    - "**/__pycache__/**"
+    # ⚠️ MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
+    
+    # Python bytecode (not in defaults)
     - "**/*.pyc"
     - "**/*.pyo"
     - "**/*.pyd"
-    - "**/.Python"
-    - "**/pip-log.txt"
-    - "**/pip-delete-this-directory.txt"
-    - "**/.tox/"
-    - "**/.coverage"
-    - "**/.coverage.*"
-    - "**/htmlcov/"
-    - "**/.pytest_cache/"
+    
+    # Virtual environments (common names)
     - "**/venv/**"
     - "**/.venv/**"
     - "**/env/**"
@@ -431,24 +466,20 @@ Configuration for a custom WordPress theme with modern build tools.
 
 global:
   global_excludes:
-    # WordPress core files
-    - "wp-admin/**"
-    - "wp-includes/**"
-    - "wp-content/uploads/**"
-    - "wp-content/cache/**"
-    - "wp-content/backup/**"
-    - "wp-content/upgrade/**"
+    # ⚠️ MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
     
-    # Build and dependencies
-    - "**/node_modules/**"
-    - "**/vendor/**"                    # Composer dependencies
-    - "**/dist/**"
-    - "**/build/**"
+    # WordPress specific (not in defaults)
+    - "wp-admin/**"                     # Core files
+    - "wp-includes/**"                  # Core files
+    - "wp-content/uploads/**"           # User uploads
+    - "wp-content/cache/**"             # Cache plugins
+    - "wp-content/backup/**"            # Backup files
+    - "wp-content/upgrade/**"           # Updates
     
-    # Development files
-    - "**/*.log"
+    # Sass cache (not in defaults)
     - "**/.sass-cache/**"
-    - "**/*.map"
+    - "**/*.map"                        # Source maps
+    - "**/*.log"                        # Log files
 
   global_settings:
     security_check: "warn"

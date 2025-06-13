@@ -112,7 +112,9 @@ You need to follow this systematic task list to properly set up m1f for this pro
 
 2. **Documentation Study Phase**
    □ Read @m1f/m1f.txt thoroughly (especially sections 230-600)
+   □ CRITICAL: Read docs/01_m1f/26_default_excludes_guide.md
    □ Pay special attention to:
+     - Default excludes (DON'T repeat them in config!)
      - .m1f.config.yml structure (lines 279-339)
      - Preset system (lines 361-413)
      - Best practices for AI context (lines 421-459)
@@ -121,12 +123,14 @@ You need to follow this systematic task list to properly set up m1f for this pro
 3. **Configuration Design Phase**
    □ Based on project type, design optimal bundle structure
    □ Plan multiple focused bundles (complete, docs, code, tests, etc.)
-   □ Determine appropriate filters and exclusions
+   □ Create MINIMAL excludes (only project-specific, NOT defaults!)
+   □ Remember: node_modules, .git, __pycache__, etc. are AUTO-EXCLUDED
    □ Select suitable presets or design custom ones
 
 4. **Implementation Phase**
    □ Create m1f/ directory if it doesn't exist
-   □ Create comprehensive .m1f.config.yml
+   □ Create MINIMAL .m1f.config.yml (don't repeat default excludes!)
+   □ Use exclude_paths_file: ".gitignore" instead of listing excludes
    □ Set up project-specific presets if needed
    □ Configure security scanning and encoding
 
@@ -136,7 +140,7 @@ You need to follow this systematic task list to properly set up m1f for this pro
    □ Verify no secrets or sensitive data included
    □ Create CLAUDE.md with bundle references
 
-IMPORTANT: Use deep thinking and reasoning at each step. Consider edge cases and optimize for the specific project needs.
+IMPORTANT: Keep configurations MINIMAL! m1f already excludes common directories.
 """
             )
 
@@ -185,14 +189,17 @@ Start with Task 1: Project Analysis
         
         # ALWAYS remind Claude to check the documentation
         enhanced.append("\n" + "=" * 50)
-        enhanced.append("\n📖 CRITICAL: Study @m1f/m1f.txt before implementing!")
-        enhanced.append("Key sections to focus on:")
+        enhanced.append("\n📖 CRITICAL: Study these docs before implementing!")
+        enhanced.append("Essential documentation to read:")
+        enhanced.append("- @m1f/m1f.txt - Complete m1f reference")
+        enhanced.append("- docs/01_m1f/26_default_excludes_guide.md - MUST READ!")
+        enhanced.append("\nKey sections in m1f.txt:")
         enhanced.append("- Lines 230-278: m1f-claude integration guide")
         enhanced.append("- Lines 279-339: .m1f.config.yml structure")
         enhanced.append("- Lines 361-413: Preset system")
         enhanced.append("- Lines 421-459: Best practices for AI context")
         enhanced.append("- Lines 461-494: Project-specific patterns")
-        enhanced.append("\nUse deep thinking to create the optimal configuration for this specific project.")
+        enhanced.append("\n⚠️ REMEMBER: Keep configs MINIMAL - don't repeat default excludes!")
 
         return "\n".join(enhanced)
 
@@ -335,10 +342,15 @@ I'll reference @m1f/m1f.txt for exact syntax and best practices.
             hints.append(
                 """
 I'll set up smart bundling for your project:
-- Create .m1f.config.yml with multiple focused bundles
+- Create MINIMAL .m1f.config.yml (no default excludes!)
 - Use Standard separator (NOT Markdown!) for AI consumption
 - Configure auto-bundling with m1f-update
 - Set up watch scripts for continuous updates
+
+MINIMAL CONFIG RULES:
+- DON'T exclude node_modules, .git, __pycache__ (auto-excluded!)
+- DO use exclude_paths_file: ".gitignore" 
+- ONLY add project-specific excludes
 
 IMPORTANT: Always use separator_style: Standard (or omit it) for AI bundles!
 """
@@ -347,14 +359,17 @@ IMPORTANT: Always use separator_style: Standard (or omit it) for AI bundles!
         if any(word in prompt_lower for word in ["config", "configure", "setup"]):
             hints.append(
                 """
-I'll create a comprehensive .m1f.config.yml that includes:
+I'll create a MINIMAL .m1f.config.yml that includes:
 - Multiple bundle definitions (complete, docs, code, etc.)
 - Standard separator style for AI consumption (NOT Markdown!)
 - Smart filtering by file type and size
-- Security scanning configuration
-- Project-specific exclusions
+- ONLY project-specific exclusions (NOT defaults!)
+- Reference to .gitignore for additional excludes
 
-Remember: These bundles are for AI assistants, not human Markdown viewing!
+REMEMBER: 
+- node_modules, vendor, .git, etc. are AUTO-EXCLUDED
+- These bundles are for AI assistants, not human Markdown viewing!
+- Keep it MINIMAL - less is more!
 """
             )
 
