@@ -336,8 +336,11 @@ I'll reference @m1f/m1f.txt for exact syntax and best practices.
                 """
 I'll set up smart bundling for your project:
 - Create .m1f.config.yml with multiple focused bundles
+- Use Standard separator (NOT Markdown!) for AI consumption
 - Configure auto-bundling with m1f-update
 - Set up watch scripts for continuous updates
+
+IMPORTANT: Always use separator_style: Standard (or omit it) for AI bundles!
 """
             )
 
@@ -346,9 +349,12 @@ I'll set up smart bundling for your project:
                 """
 I'll create a comprehensive .m1f.config.yml that includes:
 - Multiple bundle definitions (complete, docs, code, etc.)
+- Standard separator style for AI consumption (NOT Markdown!)
 - Smart filtering by file type and size
 - Security scanning configuration
 - Project-specific exclusions
+
+Remember: These bundles are for AI assistants, not human Markdown viewing!
 """
             )
 
@@ -368,9 +374,11 @@ I'll configure m1f specifically for WordPress:
                 """
 I'll optimize your m1f setup for AI assistance:
 - Create focused bundles under 100KB each
-- Use MachineReadable separators for parsing
+- Use Standard separators for clean AI consumption
 - Set up topic-specific bundles for different tasks
 - Configure CLAUDE.md with bundle references
+
+CRITICAL: Avoid Markdown separator for AI bundles - use Standard (default)!
 """
             )
 
@@ -390,6 +398,7 @@ I'll configure test handling in m1f:
             else """
 I'll analyze your project and create an optimal m1f configuration that:
 - Organizes code into focused, AI-friendly bundles
+- Uses Standard separator format (not Markdown) for clean AI consumption
 - Excludes unnecessary files automatically
 - Stays within context window limits
 - Updates automatically with m1f-update
@@ -703,6 +712,20 @@ I'll analyze your project and create an optimal m1f configuration that:
                                         if self.debug:
                                             print(f" - {item.get('input', {})}", end="")
                                         print()  # Newline after tool
+                                    elif item.get("type") == "tool_result":
+                                        # Show tool results if available
+                                        tool_content = item.get('content', [])
+                                        if isinstance(tool_content, list):
+                                            for content_item in tool_content:
+                                                if isinstance(content_item, dict) and content_item.get('type') == 'text':
+                                                    result_text = content_item.get('text', '')
+                                                    if result_text:
+                                                        # Show abbreviated tool output
+                                                        lines = result_text.strip().split('\n')
+                                                        if len(lines) > 3:
+                                                            print(f"[📄 Output: {lines[0][:60]}... ({len(lines)} lines)]")
+                                                        else:
+                                                            print(f"[📄 Output: {result_text[:100]}...]")
                         elif isinstance(content, str):
                             response_text += content
                             print(content, end="", flush=True)

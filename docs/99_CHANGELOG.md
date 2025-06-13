@@ -43,6 +43,8 @@ and this project adheres to
     - Clear separation between responses and new prompts
     - Interaction counter: prompts to continue after every 10 exchanges
     - Ctrl-C signal handling for graceful cancellation
+    - Tool output preview: shows abbreviated results from Claude's tool usage
+    - Emphasis on Standard separator (not Markdown) for AI-optimized bundles
   - **Exit Command**: Added `/e` command support like Claude CLI
     - Works alongside 'quit', 'exit', and 'q' commands
     - Updated help text and keyboard interrupt messages

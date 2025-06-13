@@ -2,6 +2,28 @@
 
 This guide provides comprehensive examples of `.m1f.config.yml` files for different project types. Each example includes detailed comments explaining the configuration choices.
 
+## 🚨 IMPORTANT: Use Standard Separator for AI Bundles!
+
+**The primary purpose of m1f bundles is to provide context to AI assistants like Claude, NOT for human reading in Markdown!**
+
+- ✅ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the default)
+- ❌ **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language blocks)
+- 🎯 **Why**: Standard format is clean and optimal for AI consumption
+
+```yaml
+# CORRECT - For AI consumption:
+bundles:
+  - name: my-bundle
+    separator_style: Standard  # ← This is optimal (or just omit it)
+    
+# AVOID - Adds unnecessary markdown formatting:
+bundles:
+  - name: my-bundle
+    separator_style: Markdown  # ← Don't use for AI bundles!
+```
+
+**Note**: `MachineReadable` is only needed when you plan to use `s1f` to split the bundle back into individual files.
+
 ## Table of Contents
 
 1. [m1f Tool Project (Current)](#m1f-tool-project-current)
