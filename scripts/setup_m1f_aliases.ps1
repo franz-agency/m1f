@@ -71,7 +71,7 @@ $FunctionsContent = @"
 if (Test-Path "$ProjectRoot\scripts\m1f_aliases.ps1") {
     . "$ProjectRoot\scripts\m1f_aliases.ps1"
 } else {
-    Write-Warning "m1f aliases file not found at: $ProjectRoot\scripts\m1f_aliases.ps1"
+    Write-Warning "m1f aliases file not found at: $ProjectRoot\scripts\m1f_aliases.ps1 (check your PowerShell profile at: `$PROFILE)"
 }
 
 "@

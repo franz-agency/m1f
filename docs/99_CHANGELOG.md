@@ -15,6 +15,7 @@ and this project adheres to
   - Added file existence check in setup_m1f_aliases.ps1 before sourcing
   - Fixed hardcoded path issue that caused PowerShell profile errors
   - Now uses correct relative paths based on actual m1f installation location
+  - Added PowerShell profile path to warning message for easier debugging
 
 ## [3.2.2] - 2025-07-06
 
