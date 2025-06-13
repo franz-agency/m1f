@@ -68,7 +68,11 @@ $FunctionsContent = @"
 
 # m1f tools functions (added by m1f setup script)
 # Dot-source the m1f aliases file
-. "$ProjectRoot\scripts\m1f_aliases.ps1"
+if (Test-Path "$ProjectRoot\scripts\m1f_aliases.ps1") {
+    . "$ProjectRoot\scripts\m1f_aliases.ps1"
+} else {
+    Write-Warning "m1f aliases file not found at: $ProjectRoot\scripts\m1f_aliases.ps1"
+}
 
 "@
 

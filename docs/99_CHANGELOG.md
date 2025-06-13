@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
+  - Created m1f_aliases.ps1 with all PowerShell functions and aliases
+  - Added file existence check in setup_m1f_aliases.ps1 before sourcing
+  - Fixed hardcoded path issue that caused PowerShell profile errors
+  - Now uses correct relative paths based on actual m1f installation location
+
 ## [3.2.2] - 2025-07-06
 
 ### Changed
