@@ -683,7 +683,13 @@ I'll analyze your project and create an optimal m1f configuration that:
                     data = json.loads(line)
                     
                     # Handle different message types
-                    if data.get("type") == "system":
+                    event_type = data.get("type", "")
+                    
+                    # Always show event types in verbose mode
+                    if self.debug and event_type not in ["assistant", "system"]:
+                        print(f"\n[DEBUG] Event: {event_type} - {data}")
+                    
+                    if event_type == "system":
                         if data.get("subtype") == "init":
                             # Initial system message with session info
                             new_session_id = data.get("session_id", session_id)
@@ -691,8 +697,60 @@ I'll analyze your project and create an optimal m1f configuration that:
                                 print(f"\n[DEBUG] Session initialized: {new_session_id}")
                         elif self.debug:
                             print(f"\n[DEBUG] System message: {data}")
+                    
+                    elif event_type == "tool_use":
+                        # Tool use events
+                        tool_name = data.get("name", "Unknown")
+                        tool_input = data.get("input", {})
+                        
+                        # Extract parameters based on tool
+                        param_info = ""
+                        if tool_input:
+                            if tool_name == "Read" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Write" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Edit" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Bash" and "command" in tool_input:
+                                cmd = tool_input['command']
+                                param_info = f" → {cmd[:50]}..." if len(cmd) > 50 else f" → {cmd}"
+                            elif tool_name == "Grep" and "pattern" in tool_input:
+                                param_info = f" → '{tool_input['pattern']}'"
+                            elif tool_name == "Glob" and "pattern" in tool_input:
+                                param_info = f" → {tool_input['pattern']}"
+                            elif tool_name == "LS" and "path" in tool_input:
+                                param_info = f" → {tool_input['path']}"
+                            elif tool_name == "TodoWrite" and "todos" in tool_input:
+                                todos = tool_input.get("todos", [])
+                                param_info = f" → {len(todos)} tasks"
+                            elif tool_name == "Task" and "description" in tool_input:
+                                param_info = f" → {tool_input['description']}"
+                        
+                        print(f"\n[🔧 {tool_name}]{param_info}", flush=True)
+                    
+                    elif event_type == "tool_result":
+                        # Tool result events
+                        output = data.get("output", "")
+                        if output:
+                            if isinstance(output, str):
+                                lines = output.strip().split('\n')
+                                if len(lines) > 2:
+                                    # Multi-line output
+                                    first_line = lines[0][:80] + "..." if len(lines[0]) > 80 else lines[0]
+                                    print(f"[📄 {first_line} ... ({len(lines)} lines)]", flush=True)
+                                elif len(output) > 100:
+                                    # Long single line
+                                    print(f"[📄 {output[:80]}... ({len(output)} chars)]", flush=True)
+                                else:
+                                    # Short output
+                                    print(f"[📄 {output}]", flush=True)
+                            elif output == True:
+                                print(f"[✓ Success]", flush=True)
+                            elif output == False:
+                                print(f"[✗ Failed]", flush=True)
                             
-                    elif data.get("type") == "assistant":
+                    elif event_type == "assistant":
                         # Assistant messages have a nested structure
                         message_data = data.get("message", {})
                         content = message_data.get("content", [])
@@ -706,31 +764,13 @@ I'll analyze your project and create an optimal m1f configuration that:
                                         # In interactive mode, print text directly
                                         print(text, end="", flush=True)
                                     elif item.get("type") == "tool_use":
-                                        tool_name = item.get('name', 'Unknown')
-                                        # Show tool usage to user
-                                        print(f"\n[🔧 Using tool: {tool_name}]", end="", flush=True)
-                                        if self.debug:
-                                            print(f" - {item.get('input', {})}", end="")
-                                        print()  # Newline after tool
-                                    elif item.get("type") == "tool_result":
-                                        # Show tool results if available
-                                        tool_content = item.get('content', [])
-                                        if isinstance(tool_content, list):
-                                            for content_item in tool_content:
-                                                if isinstance(content_item, dict) and content_item.get('type') == 'text':
-                                                    result_text = content_item.get('text', '')
-                                                    if result_text:
-                                                        # Show abbreviated tool output
-                                                        lines = result_text.strip().split('\n')
-                                                        if len(lines) > 3:
-                                                            print(f"[📄 Output: {lines[0][:60]}... ({len(lines)} lines)]")
-                                                        else:
-                                                            print(f"[📄 Output: {result_text[:100]}...]")
+                                        # This is handled by the top-level tool_use event now
+                                        pass
                         elif isinstance(content, str):
                             response_text += content
                             print(content, end="", flush=True)
                                 
-                    elif data.get("type") == "result":
+                    elif event_type == "result":
                         # Final result message
                         new_session_id = data.get("session_id", session_id)
                         # Show completion indicator
@@ -743,6 +783,10 @@ I'll analyze your project and create an optimal m1f configuration that:
                 except json.JSONDecodeError:
                     if self.debug:
                         print(f"\n[DEBUG] Non-JSON line: {line}")
+                except Exception as e:
+                    if self.debug:
+                        print(f"\n[DEBUG] Error processing line: {e}")
+                        print(f"[DEBUG] Line was: {line}")
                         
             # Wait for process to complete
             if not cancelled:
