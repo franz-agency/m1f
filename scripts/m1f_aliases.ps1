@@ -16,13 +16,15 @@ function Activate-M1FEnvironment {
 # Main m1f function
 function m1f {
     Activate-M1FEnvironment
-    & python (Join-Path $M1F_ROOT "bin\m1f") @args
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.m1f @args
 }
 
 # Split function (s1f)
 function m1f-s1f {
     Activate-M1FEnvironment
-    & python (Join-Path $M1F_ROOT "bin\m1f-s1f") @args
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.s1f @args
 }
 
 # Alias for backwards compatibility
@@ -31,7 +33,8 @@ Set-Alias -Name s1f -Value m1f-s1f
 # HTML to Markdown converter
 function m1f-html2md {
     Activate-M1FEnvironment
-    & python (Join-Path $M1F_ROOT "bin\m1f-html2md") @args
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.html2md @args
 }
 
 # Alias for backwards compatibility
@@ -40,7 +43,8 @@ Set-Alias -Name html2md -Value m1f-html2md
 # Web scraper
 function m1f-scrape {
     Activate-M1FEnvironment
-    & python (Join-Path $M1F_ROOT "bin\m1f-scrape") @args
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.scrape @args
 }
 
 # Alias for backwards compatibility
@@ -49,7 +53,8 @@ Set-Alias -Name webscraper -Value m1f-scrape
 # Token counter
 function m1f-token-counter {
     Activate-M1FEnvironment
-    & python (Join-Path $M1F_ROOT "bin\m1f-token-counter") @args
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.token_counter @args
 }
 
 # Alias for backwards compatibility
@@ -58,7 +63,8 @@ Set-Alias -Name token-counter -Value m1f-token-counter
 # Update function
 function m1f-update {
     Activate-M1FEnvironment
-    & python (Join-Path $M1F_ROOT "bin\m1f") auto-bundle @args
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.m1f auto-bundle @args
 }
 
 # Link function - creates symlinks to m1f documentation
