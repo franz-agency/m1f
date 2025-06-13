@@ -30,6 +30,8 @@ from typing import Dict, Optional, List
 import argparse
 import logging
 from datetime import datetime
+import anyio
+from claude_code_sdk import query, ClaudeCodeOptions, Message
 
 # Configure logging
 logging.basicConfig(
@@ -209,8 +211,50 @@ if you run 'm1f-link' and then reference @m1f/m1f.txt
             else "\nAsk me anything about bundling, organizing, or processing your files!"
         )
 
-    def send_to_claude_code(self, enhanced_prompt: str) -> Optional[str]:
-        """Send the enhanced prompt to Claude Code if available."""
+    async def send_to_claude_code_async(self, enhanced_prompt: str, max_turns: int = 1) -> Optional[str]:
+        """Send the enhanced prompt to Claude Code using the SDK."""
+        try:
+            logger.info("\n🤖 Sending to Claude Code...\n")
+            
+            messages: list[Message] = []
+            
+            async for message in query(
+                prompt=enhanced_prompt,
+                options=ClaudeCodeOptions(max_turns=max_turns)
+            ):
+                messages.append(message)
+            
+            # Combine all messages into a single response
+            if messages:
+                # Extract text content from messages
+                response_parts = []
+                for msg in messages:
+                    if hasattr(msg, 'content'):
+                        if isinstance(msg.content, str):
+                            response_parts.append(msg.content)
+                        elif isinstance(msg.content, list):
+                            # Handle structured content
+                            for content_item in msg.content:
+                                if isinstance(content_item, dict) and 'text' in content_item:
+                                    response_parts.append(content_item['text'])
+                                elif hasattr(content_item, 'text'):
+                                    response_parts.append(content_item.text)
+                
+                return "\n".join(response_parts) if response_parts else None
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error communicating with Claude Code SDK: {e}")
+            # Fall back to subprocess method if SDK fails
+            return self.send_to_claude_code_subprocess(enhanced_prompt)
+    
+    def send_to_claude_code(self, enhanced_prompt: str, max_turns: int = 1) -> Optional[str]:
+        """Synchronous wrapper for send_to_claude_code_async."""
+        return anyio.run(self.send_to_claude_code_async, enhanced_prompt, max_turns)
+    
+    def send_to_claude_code_subprocess(self, enhanced_prompt: str) -> Optional[str]:
+        """Fallback method using subprocess if SDK fails."""
         try:
             # Check if claude command exists
             result = subprocess.run(
@@ -224,7 +268,7 @@ if you run 'm1f-link' and then reference @m1f/m1f.txt
                 return None
 
             # Send to Claude Code using --print for non-interactive mode
-            logger.info("\n🤖 Sending to Claude Code...\n")
+            logger.info("\n🤖 Sending to Claude Code (subprocess fallback)...\n")
 
             # Use subprocess.Popen for better control over stdin/stdout
             process = subprocess.Popen(
@@ -393,6 +437,13 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
         action="store_true",
         help="Send prompt directly to Claude without m1f enhancement",
     )
+    
+    parser.add_argument(
+        "--max-turns",
+        type=int,
+        default=1,
+        help="Maximum number of conversation turns (default: 1)",
+    )
 
     args = parser.parse_args()
 
@@ -441,7 +492,7 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
     
     # Handle raw mode - send directly without enhancement
     if args.raw:
-        response = m1f_claude.send_to_claude_code(prompt)
+        response = m1f_claude.send_to_claude_code(prompt, max_turns=args.max_turns)
         if response:
             print(response)
         else:
@@ -455,7 +506,7 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
             print("\n--- Enhanced Prompt ---")
             print(enhanced)
         else:
-            response = m1f_claude.send_to_claude_code(enhanced)
+            response = m1f_claude.send_to_claude_code(enhanced, max_turns=args.max_turns)
             if response:
                 print(response)
             else:
