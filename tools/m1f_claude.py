@@ -93,9 +93,65 @@ class M1FClaude:
             "help me with m1f", "start with m1f", "initialize m1f"
         ])
         
-        if wants_setup:
-            # Extract project context from user prompt
-            project_context = self._extract_project_context(user_prompt)
+        if wants_setup or user_prompt.strip() == "/init":
+            # First, check if m1f/ directory exists and create file/directory lists
+            import tempfile
+            
+            # Check if m1f/ directory exists
+            m1f_dir = self.project_path / "m1f"
+            if not m1f_dir.exists():
+                # Call m1f-link to create the symlink
+                logger.info("m1f/ directory not found. Creating with m1f-link...")
+                try:
+                    subprocess.run(["m1f-link"], cwd=self.project_path, check=True)
+                except subprocess.CalledProcessError:
+                    logger.warning("Failed to run m1f-link. Continuing without m1f/ directory.")
+                except FileNotFoundError:
+                    logger.warning("m1f-link command not found. Make sure m1f is properly installed.")
+            
+            # Run m1f to generate file and directory lists
+            logger.info("Analyzing project structure...")
+            with tempfile.NamedTemporaryFile(prefix="m1f_analysis_", suffix=".txt", delete=False) as tmp:
+                tmp_path = tmp.name
+            
+            try:
+                # Run m1f with --skip-output-file to generate only auxiliary files
+                cmd = [
+                    "m1f",
+                    "-s", str(self.project_path),
+                    "-o", tmp_path,
+                    "--skip-output-file",
+                    "--minimal-output",
+                    "--quiet"
+                ]
+                
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                
+                # Read the generated file lists
+                filelist_path = Path(tmp_path.replace(".txt", "_filelist.txt"))
+                dirlist_path = Path(tmp_path.replace(".txt", "_dirlist.txt"))
+                
+                files_list = []
+                dirs_list = []
+                
+                if filelist_path.exists():
+                    files_list = filelist_path.read_text().strip().split('\n')
+                    filelist_path.unlink()  # Clean up
+                
+                if dirlist_path.exists():
+                    dirs_list = dirlist_path.read_text().strip().split('\n')
+                    dirlist_path.unlink()  # Clean up
+                
+                # Clean up temp file
+                Path(tmp_path).unlink(missing_ok=True)
+                
+                # Analyze the file and directory lists to determine project type
+                project_context = self._analyze_project_files(files_list, dirs_list)
+                
+            except Exception as e:
+                logger.warning(f"Failed to analyze project structure: {e}")
+                # Fallback to extracting context from user prompt
+                project_context = self._extract_project_context(user_prompt)
             
             # Deep thinking task list approach with structured template
             enhanced.append(
@@ -151,17 +207,30 @@ CRITICAL CONFIG RULES:
 
 📝 PROJECT CONTEXT FOR m1f SETUP:
 
-**Project Information:**
-- Project Name: {project_context.get('name', 'Not specified')}
+**Project Analysis Results:**
+- Total Files: {project_context.get('total_files', 'Unknown')}
+- Total Directories: {project_context.get('total_dirs', 'Unknown')}
 - Project Type: {project_context.get('type', 'Not specified')} 
 - Project Size: {project_context.get('size', 'Not specified')}
 - Main Language(s): {project_context.get('languages', 'Not specified')}
-- Framework(s): {project_context.get('frameworks', 'Not specified')}
 - Directory Structure: {project_context.get('structure', 'Standard')}
+- Recommendation: {project_context.get('recommendation', 'Create focused bundles')}
+
+**Found Documentation Files:**
+{chr(10).join("- " + f for f in project_context.get('documentation_files', [])[:5]) or "- No documentation files found"}
+
+**Main Code Directories:**
+{chr(10).join("- " + d for d in project_context.get('main_code_dirs', [])[:5]) or "- No main code directories detected"}
+
+**Test Directories:**
+{chr(10).join("- " + d for d in project_context.get('test_dirs', [])[:3]) or "- No test directories found"}
+
+**Configuration Files:**
+{chr(10).join("- " + f for f in project_context.get('config_files', [])) or "- No configuration files found"}
 
 **Special Requirements:**
 - Security Level: {project_context.get('security', 'Standard')}
-- Size Constraints: {project_context.get('size_limit', '100KB per bundle')}
+- Size Constraints: {project_context.get('size_limit', '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)')}
 - Performance Needs: {project_context.get('performance', 'Standard')}
 - AI Tool Integration: {project_context.get('ai_tools', 'Claude')}
 
@@ -609,14 +678,14 @@ I'll analyze your project and create an optimal m1f configuration that:
         # Detect size
         if any(word in prompt_lower for word in ['large', 'big', 'huge', 'enterprise']):
             context['size'] = 'Large (1000+ files)'
-            context['size_limit'] = '50KB per bundle'
+            context['size_limit'] = '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)'
             context['performance'] = 'High - use parallel processing'
         elif any(word in prompt_lower for word in ['small', 'tiny', 'simple']):
             context['size'] = 'Small (<100 files)'
-            context['size_limit'] = '200KB per bundle'
+            context['size_limit'] = '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)'
         elif any(word in prompt_lower for word in ['medium', 'moderate']):
             context['size'] = 'Medium (100-1000 files)'
-            context['size_limit'] = '100KB per bundle'
+            context['size_limit'] = '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)'
         
         # Detect security requirements
         if any(word in prompt_lower for word in ['secure', 'security', 'sensitive', 'private']):
@@ -673,6 +742,144 @@ I'll analyze your project and create an optimal m1f configuration that:
             if context['type'] == 'Not specified':
                 context['type'] = 'Go Project'
                 context['languages'] = 'Go'
+        
+        return context
+
+    def _analyze_project_files(self, files_list: List[str], dirs_list: List[str]) -> Dict:
+        """Analyze the file and directory lists to determine project characteristics."""
+        context = {
+            'type': 'Not specified',
+            'languages': 'Not detected',
+            'structure': 'Standard',
+            'documentation_files': [],
+            'main_code_dirs': [],
+            'test_dirs': [],
+            'config_files': [],
+            'total_files': len(files_list),
+            'total_dirs': len(dirs_list)
+        }
+        
+        # Analyze languages based on file extensions
+        language_counters = {}
+        doc_files = []
+        config_files = []
+        
+        for file_path in files_list:
+            file_lower = file_path.lower()
+            
+            # Count language files
+            if file_path.endswith('.py'):
+                language_counters['Python'] = language_counters.get('Python', 0) + 1
+            elif file_path.endswith(('.js', '.jsx')):
+                language_counters['JavaScript'] = language_counters.get('JavaScript', 0) + 1
+            elif file_path.endswith(('.ts', '.tsx')):
+                language_counters['TypeScript'] = language_counters.get('TypeScript', 0) + 1
+            elif file_path.endswith('.php'):
+                language_counters['PHP'] = language_counters.get('PHP', 0) + 1
+            elif file_path.endswith('.go'):
+                language_counters['Go'] = language_counters.get('Go', 0) + 1
+            elif file_path.endswith('.rs'):
+                language_counters['Rust'] = language_counters.get('Rust', 0) + 1
+            elif file_path.endswith('.java'):
+                language_counters['Java'] = language_counters.get('Java', 0) + 1
+            elif file_path.endswith('.rb'):
+                language_counters['Ruby'] = language_counters.get('Ruby', 0) + 1
+            elif file_path.endswith(('.c', '.cpp', '.cc', '.h', '.hpp')):
+                language_counters['C/C++'] = language_counters.get('C/C++', 0) + 1
+            elif file_path.endswith('.cs'):
+                language_counters['C#'] = language_counters.get('C#', 0) + 1
+            
+            # Identify documentation files
+            if file_path.endswith(('.md', '.txt', '.rst', '.adoc')) or 'readme' in file_lower:
+                doc_files.append(file_path)
+                if len(doc_files) <= 10:  # Store first 10 for context
+                    context['documentation_files'].append(file_path)
+            
+            # Identify config files
+            if file_path in ['package.json', 'requirements.txt', 'setup.py', 'composer.json', 
+                           'Cargo.toml', 'go.mod', 'pom.xml', 'build.gradle', '.m1f.config.yml']:
+                config_files.append(file_path)
+                context['config_files'].append(file_path)
+        
+        # Set primary language
+        if language_counters:
+            sorted_languages = sorted(language_counters.items(), key=lambda x: x[1], reverse=True)
+            primary_languages = []
+            for lang, count in sorted_languages[:3]:  # Top 3 languages
+                if count > 5:  # More than 5 files
+                    primary_languages.append(f"{lang} ({count} files)")
+            if primary_languages:
+                context['languages'] = ', '.join(primary_languages)
+        
+        # Analyze directory structure
+        code_dirs = []
+        test_dirs = []
+        
+        for dir_path in dirs_list:
+            dir_lower = dir_path.lower()
+            
+            # Identify main code directories
+            if any(pattern in dir_path for pattern in ['src/', 'lib/', 'app/', 'core/', 
+                                                        'components/', 'modules/', 'packages/']):
+                if dir_path not in code_dirs:
+                    code_dirs.append(dir_path)
+            
+            # Identify test directories
+            if any(pattern in dir_lower for pattern in ['test/', 'tests/', 'spec/', '__tests__/', 
+                                                         'test_', 'testing/']):
+                test_dirs.append(dir_path)
+        
+        context['main_code_dirs'] = code_dirs[:10]  # Top 10 code directories
+        context['test_dirs'] = test_dirs[:5]  # Top 5 test directories
+        
+        # Determine project type based on files and structure
+        if 'package.json' in config_files:
+            if any('react' in f for f in files_list):
+                context['type'] = 'React Application'
+            elif any('vue' in f for f in files_list):
+                context['type'] = 'Vue.js Application'
+            elif any('angular' in f for f in files_list):
+                context['type'] = 'Angular Application'
+            else:
+                context['type'] = 'Node.js/JavaScript Project'
+        elif 'requirements.txt' in config_files or 'setup.py' in config_files:
+            if any('django' in f.lower() for f in files_list):
+                context['type'] = 'Django Project'
+            elif any('flask' in f.lower() for f in files_list):
+                context['type'] = 'Flask Project'
+            else:
+                context['type'] = 'Python Project'
+        elif 'composer.json' in config_files:
+            if any('wp-' in f for f in dirs_list):
+                context['type'] = 'WordPress Project'
+            else:
+                context['type'] = 'PHP Project'
+        elif 'Cargo.toml' in config_files:
+            context['type'] = 'Rust Project'
+        elif 'go.mod' in config_files:
+            context['type'] = 'Go Project'
+        elif 'pom.xml' in config_files or 'build.gradle' in config_files:
+            context['type'] = 'Java Project'
+        
+        # Determine project structure
+        if 'lerna.json' in config_files or 'packages/' in dirs_list:
+            context['structure'] = 'Monorepo'
+        elif any('microservice' in d.lower() for d in dirs_list) or 'services/' in dirs_list:
+            context['structure'] = 'Microservices'
+        
+        # Size assessment
+        if len(files_list) > 1000:
+            context['size'] = 'Large (1000+ files)'
+            context['recommendation'] = 'Create multiple focused bundles under 200KB each (Claude Code) or 5MB (Claude AI)'
+            context['size_limit'] = '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)'
+        elif len(files_list) > 200:
+            context['size'] = 'Medium (200-1000 files)'
+            context['recommendation'] = 'Create 3-5 bundles by feature area'
+            context['size_limit'] = '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)'
+        else:
+            context['size'] = 'Small (<200 files)'
+            context['recommendation'] = 'Can use 1-2 bundles for entire project'
+            context['size_limit'] = '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)'
         
         return context
 
