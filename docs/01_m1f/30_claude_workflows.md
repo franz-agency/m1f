@@ -117,6 +117,17 @@ When you use `m1f-claude`, it automatically:
 - Suggests optimal parameters
 - Can execute commands directly (with your permission)
 
+### 💡 Important: Claude Code Subscription Recommended
+
+**We strongly recommend using Claude Code with a subscription plan** when using m1f-claude for project setup. Setting up m1f with Claude's assistance can involve:
+
+- Multiple file reads to analyze your project structure
+- Creating and editing configuration files
+- Running various commands to test configurations
+- Iterative refinement of bundles
+
+Since we don't know exactly how many tokens this process will consume, a subscription ensures you won't run into usage limits during critical setup phases. The investment pays off quickly through the time saved in properly configuring your project.
+
 ## Working with Claude Code
 
 If you're using Claude Code (claude.ai/code), you can leverage its file reading

@@ -1199,6 +1199,32 @@ Tips:
 
 def main():
     """Main entry point for m1f-claude."""
+    
+    # Check if running on Windows/PowerShell
+    import platform
+    if platform.system() == "Windows" or (
+        os.environ.get("PSModulePath") and sys.platform == "win32"
+    ):
+        print("\n⚠️  Windows/PowerShell Notice")
+        print("=" * 50)
+        print("Claude Code doesn't run on Windows yet!")
+        print("")
+        print("📚 Alternative approaches:")
+        print("1. Use m1f directly to create bundles:")
+        print("   - m1f-update                # Auto-bundle your project")
+        print("   - m1f -s . -o bundle.txt    # Manual bundling")
+        print("")
+        print("2. Create .m1f.config.yml manually:")
+        print("   - See docs: https://github.com/franzundfranz/m1f")
+        print("   - Run: m1f-link            # Get documentation")
+        print("")
+        print("3. Use WSL (Windows Subsystem for Linux) for full Claude Code support")
+        print("")
+        print("For detailed setup instructions, see:")
+        print("docs/01_m1f/21_development_workflow.md")
+        print("=" * 50)
+        print("")
+    
     parser = argparse.ArgumentParser(
         description="Enhance your Claude prompts with m1f knowledge",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1206,7 +1232,15 @@ def main():
 Examples:
   m1f-claude "Help me bundle my Python project"
   m1f-claude -i                    # Interactive mode
+  m1f-claude --init               # Initialize m1f for your project
   m1f-claude --check              # Check setup status
+  
+Commands for initialization:
+  m1f-claude --init
+  m1f-claude /init                 # Alternative syntax
+  
+💡 Recommended: Use Claude Code with a subscription plan due to 
+   potentially high token usage during project setup and configuration.
   
 First time? Run 'm1f-link' to give Claude full m1f documentation!
 """,
@@ -1218,6 +1252,12 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
 
     parser.add_argument(
         "-i", "--interactive", action="store_true", help="Run in interactive mode"
+    )
+
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="Initialize m1f for your project with intelligent assistance",
     )
 
     parser.add_argument(
@@ -1257,6 +1297,11 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
     )
 
     args = parser.parse_args()
+    
+    # Handle /init command in prompt
+    if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/init":
+        args.init = True
+        args.prompt = []
 
     # Initialize m1f-claude
     m1f_claude = M1FClaude(allowed_tools=args.allowed_tools, debug=args.debug)
