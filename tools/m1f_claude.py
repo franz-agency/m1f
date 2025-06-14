@@ -94,9 +94,12 @@ class M1FClaude:
         ])
         
         if wants_setup:
-            # Deep thinking task list approach
+            # Extract project context from user prompt
+            project_context = self._extract_project_context(user_prompt)
+            
+            # Deep thinking task list approach with structured template
             enhanced.append(
-                """
+                f"""
 🧠 DEEP THINKING MODE ACTIVATED: m1f Project Setup
 
 You need to follow this systematic task list to properly set up m1f for this project:
@@ -145,6 +148,85 @@ CRITICAL CONFIG RULES:
 - Bundle format: Use "sources:" array, NOT "source_directory:" 
 - Separator: Use "Standard" (or omit), NOT "Detailed"
 - ALWAYS test with m1f-update after creating/editing configs!
+
+📝 PROJECT CONTEXT FOR m1f SETUP:
+
+**Project Information:**
+- Project Name: {project_context.get('name', 'Not specified')}
+- Project Type: {project_context.get('type', 'Not specified')} 
+- Project Size: {project_context.get('size', 'Not specified')}
+- Main Language(s): {project_context.get('languages', 'Not specified')}
+- Framework(s): {project_context.get('frameworks', 'Not specified')}
+- Directory Structure: {project_context.get('structure', 'Standard')}
+
+**Special Requirements:**
+- Security Level: {project_context.get('security', 'Standard')}
+- Size Constraints: {project_context.get('size_limit', '100KB per bundle')}
+- Performance Needs: {project_context.get('performance', 'Standard')}
+- AI Tool Integration: {project_context.get('ai_tools', 'Claude')}
+
+**Suggested Bundle Structure:**
+Based on the project context, create these bundles:
+1. **complete** - Full project overview (for initial AI context)
+2. **docs** - All documentation and README files
+3. **code** - Source code only (no tests, no docs)
+4. **tests** - Test files for understanding functionality
+5. **api** - API endpoints and contracts (if applicable)
+6. **config** - Configuration files (non-sensitive only)
+
+**Bundle Configuration Template:**
+```yaml
+# .m1f.config.yml - MINIMAL CONFIGURATION
+# m1f Auto-Bundle Configuration
+
+global:
+  # Only project-specific excludes (NOT defaults!)
+  global_excludes:
+    - "**/logs/**"      # Project-specific
+    - "**/tmp/**"       # Project-specific  
+    - "/m1f/**"         # Output directory
+
+  global_settings:
+    security_check: "{project_context.get('security_check', 'warn')}"
+    exclude_paths_file: ".gitignore"  # Use gitignore instead of listing
+
+bundles:
+  # Complete overview
+  complete:
+    description: "Complete project for initial AI context"
+    output: "m1f/1_complete.txt"
+    sources:
+      - path: "."
+    # Don't add separator_style - Standard is default!
+    
+  # Documentation
+  docs:
+    description: "All documentation"
+    output: "m1f/2_docs.txt"
+    sources:
+      - path: "."
+        include_extensions: [".md", ".txt", ".rst"]
+    
+  # Source code
+  code:
+    description: "Source code only"
+    output: "m1f/3_code.txt"
+    sources:
+      - path: "{project_context.get('src_dir', 'src')}"
+        exclude_patterns: ["**/*.test.*", "**/*.spec.*"]
+```
+
+**Automation Preferences:**
+- Git Hooks: {project_context.get('git_hooks', 'Install pre-commit hook for auto-bundling')}
+- CI/CD Integration: {project_context.get('ci_cd', 'Add m1f-update to build pipeline')}
+- Watch Mode: {project_context.get('watch_mode', 'Use for active development')}
+
+**Next Steps After Setup:**
+1. Create .m1f.config.yml with the minimal configuration above
+2. Run `m1f-update` to test and generate initial bundles
+3. Check bundle sizes with `m1f-token-counter m1f/*.txt`
+4. Create CLAUDE.md referencing the bundles
+5. Install git hooks if desired: `bash /path/to/m1f/scripts/install-git-hooks.sh`
 """
             )
 
@@ -424,6 +506,175 @@ I'll analyze your project and create an optimal m1f configuration that:
 - Updates automatically with m1f-update
 """
         )
+
+    def _extract_project_context(self, user_prompt: str) -> Dict:
+        """Extract project context information from user prompt.
+        
+        Parses the user's prompt to identify project details like:
+        - Project name, type, and size
+        - Programming languages and frameworks
+        - Special requirements (security, performance, etc.)
+        - Directory structure clues
+        
+        Returns a dictionary with extracted or inferred project information.
+        """
+        context = {
+            'name': 'Not specified',
+            'type': 'Not specified',
+            'size': 'Not specified',
+            'languages': 'Not specified',
+            'frameworks': 'Not specified',
+            'structure': 'Standard',
+            'security': 'Standard',
+            'size_limit': '100KB per bundle',
+            'performance': 'Standard',
+            'ai_tools': 'Claude',
+            'security_check': 'warn',
+            'src_dir': 'src',
+            'git_hooks': 'Install pre-commit hook for auto-bundling',
+            'ci_cd': 'Add m1f-update to build pipeline',
+            'watch_mode': 'Use for active development'
+        }
+        
+        prompt_lower = user_prompt.lower()
+        
+        # Extract project name (look for patterns like "my project", "project called X", etc.)
+        import re
+        name_patterns = [
+            # "project called 'name'" or "project called name"
+            r'project\s+called\s+["\']([^"\']+)["\']',  # quoted version
+            r'project\s+called\s+(\w+)',               # unquoted single word
+            
+            # "project named name"  
+            r'project\s+named\s+(\w+)',
+            
+            # "for the ProjectName application/project/app" -> extract ProjectName
+            r'for\s+the\s+(\w+)\s+(?:application|project|app|site|website)',
+            
+            # "for ProjectName project/app" -> extract ProjectName  
+            r'for\s+(\w+)\s+(?:project|app)',
+            
+            # "my/our ProjectName project/app" -> extract ProjectName
+            r'(?:my|our)\s+(\w+)\s+(?:project|app|application)',
+            
+            # "for project ProjectName" -> extract ProjectName
+            r'for\s+project\s+(\w+)',
+            
+            # Handle possessive patterns like "company's ProjectName project"
+            r"(?:\w+[\'']s)\s+(\w+)\s+(?:project|app|application|website)",
+        ]
+        for pattern in name_patterns:
+            match = re.search(pattern, prompt_lower)
+            if match:
+                # Get the first non-empty group
+                for group in match.groups():
+                    if group:
+                        context['name'] = group
+                        break
+                break
+        
+        # Detect project type
+        if any(word in prompt_lower for word in ['django', 'flask', 'fastapi']):
+            context['type'] = 'Python Web Application'
+            context['languages'] = 'Python'
+            context['src_dir'] = 'app' if 'flask' in prompt_lower else 'src'
+        elif any(word in prompt_lower for word in ['react', 'vue', 'angular', 'next.js', 'nextjs']):
+            context['type'] = 'Frontend Application'
+            context['languages'] = 'JavaScript/TypeScript'
+            context['frameworks'] = 'React' if 'react' in prompt_lower else 'Vue' if 'vue' in prompt_lower else 'Angular'
+            context['src_dir'] = 'src'
+        elif 'wordpress' in prompt_lower or 'wp' in prompt_lower:
+            context['type'] = 'WordPress Project'
+            context['languages'] = 'PHP, JavaScript, CSS'
+            context['frameworks'] = 'WordPress'
+            context['structure'] = 'WordPress'
+        elif any(word in prompt_lower for word in ['node', 'express', 'nestjs']):
+            context['type'] = 'Node.js Application'
+            context['languages'] = 'JavaScript/TypeScript'
+            context['frameworks'] = 'Express' if 'express' in prompt_lower else 'NestJS' if 'nestjs' in prompt_lower else 'Node.js'
+        elif 'python' in prompt_lower:
+            context['type'] = 'Python Project'
+            context['languages'] = 'Python'
+        elif any(word in prompt_lower for word in ['java', 'spring']):
+            context['type'] = 'Java Application'
+            context['languages'] = 'Java'
+            context['frameworks'] = 'Spring' if 'spring' in prompt_lower else 'Java'
+        elif 'rust' in prompt_lower:
+            context['type'] = 'Rust Project'
+            context['languages'] = 'Rust'
+        elif 'go' in prompt_lower or 'golang' in prompt_lower:
+            context['type'] = 'Go Project'
+            context['languages'] = 'Go'
+        
+        # Detect size
+        if any(word in prompt_lower for word in ['large', 'big', 'huge', 'enterprise']):
+            context['size'] = 'Large (1000+ files)'
+            context['size_limit'] = '50KB per bundle'
+            context['performance'] = 'High - use parallel processing'
+        elif any(word in prompt_lower for word in ['small', 'tiny', 'simple']):
+            context['size'] = 'Small (<100 files)'
+            context['size_limit'] = '200KB per bundle'
+        elif any(word in prompt_lower for word in ['medium', 'moderate']):
+            context['size'] = 'Medium (100-1000 files)'
+            context['size_limit'] = '100KB per bundle'
+        
+        # Detect security requirements
+        if any(word in prompt_lower for word in ['secure', 'security', 'sensitive', 'private']):
+            context['security'] = 'High'
+            context['security_check'] = 'error'
+        elif any(word in prompt_lower for word in ['public', 'open source', 'oss']):
+            context['security'] = 'Low'
+            context['security_check'] = 'warn'
+        
+        # Detect AI tools
+        if 'cursor' in prompt_lower:
+            context['ai_tools'] = 'Cursor'
+        elif 'windsurf' in prompt_lower:
+            context['ai_tools'] = 'Windsurf'
+        elif 'copilot' in prompt_lower:
+            context['ai_tools'] = 'GitHub Copilot'
+        elif 'aider' in prompt_lower:
+            context['ai_tools'] = 'Aider'
+        
+        # Detect directory structure hints
+        if 'monorepo' in prompt_lower:
+            context['structure'] = 'Monorepo'
+            context['src_dir'] = 'packages'
+        elif 'microservice' in prompt_lower:
+            context['structure'] = 'Microservices'
+            context['src_dir'] = 'services'
+        
+        # Detect CI/CD preferences
+        if any(word in prompt_lower for word in ['github action', 'ci/cd', 'pipeline']):
+            context['ci_cd'] = 'Configure GitHub Actions for auto-bundling'
+        elif 'gitlab' in prompt_lower:
+            context['ci_cd'] = 'Configure GitLab CI for auto-bundling'
+        elif 'jenkins' in prompt_lower:
+            context['ci_cd'] = 'Configure Jenkins pipeline for auto-bundling'
+        
+        # Check existing project structure for more context
+        if (self.project_path / "package.json").exists():
+            if context['type'] == 'Not specified':
+                context['type'] = 'Node.js/JavaScript Project'
+                context['languages'] = 'JavaScript/TypeScript'
+        elif (self.project_path / "requirements.txt").exists() or (self.project_path / "setup.py").exists():
+            if context['type'] == 'Not specified':
+                context['type'] = 'Python Project'
+                context['languages'] = 'Python'
+        elif (self.project_path / "composer.json").exists():
+            if context['type'] == 'Not specified':
+                context['type'] = 'PHP Project'
+                context['languages'] = 'PHP'
+        elif (self.project_path / "Cargo.toml").exists():
+            if context['type'] == 'Not specified':
+                context['type'] = 'Rust Project'
+                context['languages'] = 'Rust'
+        elif (self.project_path / "go.mod").exists():
+            if context['type'] == 'Not specified':
+                context['type'] = 'Go Project'
+                context['languages'] = 'Go'
+        
+        return context
 
     async def send_to_claude_code_async(self, prompt: str, max_turns: int = 1, is_first_prompt: bool = False) -> Optional[str]:
         """Send the prompt to Claude Code using the SDK with session persistence."""
