@@ -314,7 +314,9 @@ You need to follow this systematic task list to properly set up m1f for this pro
 
 2. **Documentation Study Phase**
    □ Read @m1f/m1f.txt thoroughly (especially sections 230-600)
+   □ CRITICAL: Read docs/01_m1f/26_default_excludes_guide.md
    □ Pay special attention to:
+     - Default excludes (DON'T repeat them in config!)
      - .m1f.config.yml structure (lines 279-339)
      - Preset system (lines 361-413)
      - Best practices for AI context (lines 421-459)
@@ -323,22 +325,28 @@ You need to follow this systematic task list to properly set up m1f for this pro
 3. **Configuration Design Phase**
    □ Based on project type, design optimal bundle structure
    □ Plan multiple focused bundles (complete, docs, code, tests, etc.)
-   □ Determine appropriate filters and exclusions
+   □ Create MINIMAL excludes (only project-specific, NOT defaults!)
+   □ Remember: node_modules, .git, __pycache__, etc. are AUTO-EXCLUDED
    □ Select suitable presets or design custom ones
 
 4. **Implementation Phase**
    □ Create m1f/ directory if it doesn't exist
-   □ Create comprehensive .m1f.config.yml
-   □ Set up project-specific presets if needed
-   □ Configure security scanning and encoding
+   □ Create MINIMAL .m1f.config.yml (don't repeat default excludes!)
+   □ CRITICAL: Use "sources:" array format, NOT "source_directory:"!
+   □ CRITICAL: Use "Standard" separator, NOT "Detailed"!
+   □ Use exclude_paths_file: ".gitignore" instead of listing excludes
 
 5. **Validation Phase**
-   □ Run m1f-update to test configuration
+   □ MUST run m1f-update IMMEDIATELY after creating/editing .m1f.config.yml
+   □ Fix any errors before proceeding
    □ Check bundle sizes with m1f-token-counter
    □ Verify no secrets or sensitive data included
    □ Create CLAUDE.md with bundle references
 
-IMPORTANT: Use deep thinking and reasoning at each step. Consider edge cases and optimize for the specific project needs.
+CRITICAL CONFIG RULES:
+- Bundle format: Use "sources:" array, NOT "source_directory:" 
+- Separator: Use "Standard" (or omit), NOT "Detailed"
+- ALWAYS test with m1f-update after creating/editing configs!
 """
             )
 
@@ -387,14 +395,17 @@ Start with Task 1: Project Analysis
         
         # ALWAYS remind Claude to check the documentation
         enhanced.append("\n" + "=" * 50)
-        enhanced.append("\n📖 CRITICAL: Study @m1f/m1f.txt before implementing!")
-        enhanced.append("Key sections to focus on:")
+        enhanced.append("\n📖 CRITICAL: Study these docs before implementing!")
+        enhanced.append("Essential documentation to read:")
+        enhanced.append("- @m1f/m1f.txt - Complete m1f reference")
+        enhanced.append("- docs/01_m1f/26_default_excludes_guide.md - MUST READ!")
+        enhanced.append("\nKey sections in m1f.txt:")
         enhanced.append("- Lines 230-278: m1f-claude integration guide")
         enhanced.append("- Lines 279-339: .m1f.config.yml structure")
         enhanced.append("- Lines 361-413: Preset system")
         enhanced.append("- Lines 421-459: Best practices for AI context")
         enhanced.append("- Lines 461-494: Project-specific patterns")
-        enhanced.append("\nUse deep thinking to create the optimal configuration for this specific project.")
+        enhanced.append("\n⚠️ REMEMBER: Keep configs MINIMAL - don't repeat default excludes!")
 
         return "\n".join(enhanced)
 
@@ -537,20 +548,35 @@ I'll reference @m1f/m1f.txt for exact syntax and best practices.
             hints.append(
                 """
 I'll set up smart bundling for your project:
-- Create .m1f.config.yml with multiple focused bundles
+- Create MINIMAL .m1f.config.yml (no default excludes!)
+- Use Standard separator (NOT Markdown!) for AI consumption
 - Configure auto-bundling with m1f-update
 - Set up watch scripts for continuous updates
+
+MINIMAL CONFIG RULES:
+- DON'T exclude node_modules, .git, __pycache__ (auto-excluded!)
+- DO use exclude_paths_file: ".gitignore" 
+- ONLY add project-specific excludes
+
+IMPORTANT: Always use separator_style: Standard (or omit it) for AI bundles!
 """
             )
 
         if any(word in prompt_lower for word in ["config", "configure", "setup"]):
             hints.append(
                 """
-I'll create a comprehensive .m1f.config.yml that includes:
+I'll create a MINIMAL .m1f.config.yml that includes:
 - Multiple bundle definitions (complete, docs, code, etc.)
+- CORRECT FORMAT: Use "sources:" array (NOT "source_directory:")
+- Standard separator (NOT Detailed/Markdown!)
 - Smart filtering by file type and size
-- Security scanning configuration
-- Project-specific exclusions
+- ONLY project-specific exclusions (NOT defaults!)
+
+CRITICAL STEPS:
+1. Create .m1f.config.yml with "sources:" format
+2. Use "Standard" separator (or omit it)
+3. Run m1f-update IMMEDIATELY to test
+4. Fix any errors before proceeding
 """
             )
 
@@ -570,9 +596,11 @@ I'll configure m1f specifically for WordPress:
                 """
 I'll optimize your m1f setup for AI assistance:
 - Create focused bundles under 100KB each
-- Use MachineReadable separators for parsing
+- Use Standard separators for clean AI consumption
 - Set up topic-specific bundles for different tasks
 - Configure CLAUDE.md with bundle references
+
+CRITICAL: Avoid Markdown separator for AI bundles - use Standard (default)!
 """
             )
 
@@ -592,6 +620,7 @@ I'll configure test handling in m1f:
             else """
 I'll analyze your project and create an optimal m1f configuration that:
 - Organizes code into focused, AI-friendly bundles
+- Uses Standard separator format (not Markdown) for clean AI consumption
 - Excludes unnecessary files automatically
 - Stays within context window limits
 - Updates automatically with m1f-update
@@ -736,6 +765,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         session_id = None
         first_prompt = True
+        interaction_count = 0
 
         while True:
             try:
@@ -778,7 +808,16 @@ I'll analyze your project and create an optimal m1f configuration that:
                     if new_session_id:
                         session_id = new_session_id
                     first_prompt = False
+                    interaction_count += 1
                     print("\n")  # Extra newline after response for clarity
+                    
+                    # Check if we should ask about continuing
+                    if interaction_count >= 10 and interaction_count % 10 == 0:
+                        print(f"\n⚠️  You've had {interaction_count} interactions in this session.")
+                        continue_choice = input("Continue? (y/n) [y]: ").strip().lower()
+                        if continue_choice in ['n', 'no']:
+                            print("\n👋 Session ended by user. Happy bundling!")
+                            break
                 else:
                     print("\r❌ Failed to send to Claude Code. Check your connection.\n")
 
@@ -866,7 +905,13 @@ I'll analyze your project and create an optimal m1f configuration that:
                     data = json.loads(line)
                     
                     # Handle different message types
-                    if data.get("type") == "system":
+                    event_type = data.get("type", "")
+                    
+                    # Always show event types in verbose mode
+                    if self.debug and event_type not in ["assistant", "system"]:
+                        print(f"\n[DEBUG] Event: {event_type} - {data}")
+                    
+                    if event_type == "system":
                         if data.get("subtype") == "init":
                             # Initial system message with session info
                             new_session_id = data.get("session_id", session_id)
@@ -874,8 +919,60 @@ I'll analyze your project and create an optimal m1f configuration that:
                                 print(f"\n[DEBUG] Session initialized: {new_session_id}")
                         elif self.debug:
                             print(f"\n[DEBUG] System message: {data}")
+                    
+                    elif event_type == "tool_use":
+                        # Tool use events
+                        tool_name = data.get("name", "Unknown")
+                        tool_input = data.get("input", {})
+                        
+                        # Extract parameters based on tool
+                        param_info = ""
+                        if tool_input:
+                            if tool_name == "Read" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Write" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Edit" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Bash" and "command" in tool_input:
+                                cmd = tool_input['command']
+                                param_info = f" → {cmd[:50]}..." if len(cmd) > 50 else f" → {cmd}"
+                            elif tool_name == "Grep" and "pattern" in tool_input:
+                                param_info = f" → '{tool_input['pattern']}'"
+                            elif tool_name == "Glob" and "pattern" in tool_input:
+                                param_info = f" → {tool_input['pattern']}"
+                            elif tool_name == "LS" and "path" in tool_input:
+                                param_info = f" → {tool_input['path']}"
+                            elif tool_name == "TodoWrite" and "todos" in tool_input:
+                                todos = tool_input.get("todos", [])
+                                param_info = f" → {len(todos)} tasks"
+                            elif tool_name == "Task" and "description" in tool_input:
+                                param_info = f" → {tool_input['description']}"
+                        
+                        print(f"\n[🔧 {tool_name}]{param_info}", flush=True)
+                    
+                    elif event_type == "tool_result":
+                        # Tool result events
+                        output = data.get("output", "")
+                        if output:
+                            if isinstance(output, str):
+                                lines = output.strip().split('\n')
+                                if len(lines) > 2:
+                                    # Multi-line output
+                                    first_line = lines[0][:80] + "..." if len(lines[0]) > 80 else lines[0]
+                                    print(f"[📄 {first_line} ... ({len(lines)} lines)]", flush=True)
+                                elif len(output) > 100:
+                                    # Long single line
+                                    print(f"[📄 {output[:80]}... ({len(output)} chars)]", flush=True)
+                                else:
+                                    # Short output
+                                    print(f"[📄 {output}]", flush=True)
+                            elif output == True:
+                                print(f"[✓ Success]", flush=True)
+                            elif output == False:
+                                print(f"[✗ Failed]", flush=True)
                             
-                    elif data.get("type") == "assistant":
+                    elif event_type == "assistant":
                         # Assistant messages have a nested structure
                         message_data = data.get("message", {})
                         content = message_data.get("content", [])
@@ -887,19 +984,33 @@ I'll analyze your project and create an optimal m1f configuration that:
                                         text = item.get("text", "")
                                         response_text += text
                                         # In interactive mode, print text directly
+                                        # Add newline before common action phrases for better readability
+                                        text_stripped = text.strip()
+                                        if text_stripped and text_stripped.startswith((
+                                            "Let me", "Now let me", "Now I'll", "I'll",
+                                            "First,", "Next,", "Then,", "Finally,",
+                                            "Checking", "Creating", "Looking",
+                                            "I need to", "I'm going to", "I will"
+                                        )):
+                                            print("\n", end="")
                                         print(text, end="", flush=True)
                                     elif item.get("type") == "tool_use":
-                                        tool_name = item.get('name', 'Unknown')
-                                        # Show tool usage to user
-                                        print(f"\n[🔧 Using tool: {tool_name}]", end="", flush=True)
-                                        if self.debug:
-                                            print(f" - {item.get('input', {})}", end="")
-                                        print()  # Newline after tool
+                                        # This is handled by the top-level tool_use event now
+                                        pass
                         elif isinstance(content, str):
                             response_text += content
+                            # Add newline before common action phrases for better readability
+                            content_stripped = content.strip()
+                            if content_stripped and content_stripped.startswith((
+                                "Let me", "Now let me", "Now I'll", "I'll",
+                                "First,", "Next,", "Then,", "Finally,",
+                                "Checking", "Creating", "Looking",
+                                "I need to", "I'm going to", "I will"
+                            )):
+                                print("\n", end="")
                             print(content, end="", flush=True)
                                 
-                    elif data.get("type") == "result":
+                    elif event_type == "result":
                         # Final result message
                         new_session_id = data.get("session_id", session_id)
                         # Show completion indicator
@@ -912,6 +1023,10 @@ I'll analyze your project and create an optimal m1f configuration that:
                 except json.JSONDecodeError:
                     if self.debug:
                         print(f"\n[DEBUG] Non-JSON line: {line}")
+                except Exception as e:
+                    if self.debug:
+                        print(f"\n[DEBUG] Error processing line: {e}")
+                        print(f"[DEBUG] Line was: {line}")
                         
             # Wait for process to complete
             if not cancelled:

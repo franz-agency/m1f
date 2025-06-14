@@ -145,7 +145,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
 | `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
-| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\***                                                                                         |
+| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\*** (see [Default Excludes Guide](./26_default_excludes_guide.md) for complete list)        |
 | `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
 | `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
 | `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
@@ -512,6 +512,7 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 
 - [Quick Reference](./09_quick_reference.md) - Common commands and patterns
 - [CLI Reference](./07_cli_reference.md) - Complete command-line reference
+- [Default Excludes Guide](./26_default_excludes_guide.md) - What's excluded automatically
 - [Troubleshooting Guide](./08_troubleshooting.md) - Common issues and solutions
 
 **Preset System:**
@@ -3413,6 +3414,69 @@ Add m1f to your CI pipeline:
 
 This guide provides comprehensive examples of `.m1f.config.yml` files for different project types. Each example includes detailed comments explaining the configuration choices.
 
+> **‚ö†Ô∏è IMPORTANT**: m1f automatically excludes many common directories (node_modules, .git, __pycache__, etc.). See the [Default Excludes Guide](./26_default_excludes_guide.md) for the complete list. **Only add project-specific excludes to keep your configs minimal!**
+
+## üö® IMPORTANT: Use Standard Separator for AI Bundles!
+
+**The primary purpose of m1f bundles is to provide context to AI assistants like Claude, NOT for human reading in Markdown!**
+
+- ‚úÖ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the default)
+- ‚ùå **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language blocks)
+- üéØ **Why**: Standard format is clean and optimal for AI consumption
+
+```yaml
+# CORRECT - For AI consumption:
+bundles:
+  - name: my-bundle
+    separator_style: Standard  # ‚Üê This is optimal (or just omit it)
+    
+# AVOID - Adds unnecessary markdown formatting:
+bundles:
+  - name: my-bundle
+    separator_style: Markdown  # ‚Üê Don't use for AI bundles!
+```
+
+**Note**: `MachineReadable` is only needed when you plan to use `s1f` to split the bundle back into individual files.
+
+## Minimal vs Verbose Configurations
+
+### ‚ùå BAD Example - Overly Verbose (Don't Do This!)
+
+```yaml
+global:
+  global_excludes:
+    # ‚ùå ALL of these are already excluded by default!
+    - "**/node_modules/**"     # Auto-excluded
+    - "**/vendor/**"           # Auto-excluded
+    - "**/__pycache__/**"      # Auto-excluded
+    - "**/build/**"            # Auto-excluded
+    - "**/dist/**"             # Auto-excluded
+    - "**/.git/**"             # Auto-excluded
+    - "**/cache/**"            # Auto-excluded
+    - "**/.vscode/**"          # Auto-excluded
+    - "**/.idea/**"            # Auto-excluded
+    
+    # ‚úÖ Only these are needed (project-specific)
+    - "**/logs/**"             
+    - "**/tmp/**"              
+    - "/m1f/**"                
+```
+
+### ‚úÖ GOOD Example - Minimal Configuration
+
+```yaml
+global:
+  global_excludes:
+    # Only project-specific excludes
+    - "**/logs/**"             # Your log files
+    - "**/tmp/**"              # Your temp files
+    - "/m1f/**"                # Output directory
+    
+  global_settings:
+    # Let .gitignore handle most excludes
+    exclude_paths_file: ".gitignore"
+```
+
 ## Table of Contents
 
 1. [m1f Tool Project (Current)](#m1f-tool-project-current)
@@ -3521,15 +3585,14 @@ Configuration for a modern React application with TypeScript and testing.
 
 global:
   global_excludes:
-    # Node.js specific
-    - "**/node_modules/**"              # Dependencies
-    - "**/dist/**"                      # Build output
-    - "**/build/**"                     # Build output
-    - "**/.next/**"                     # Next.js build
-    - "**/coverage/**"                  # Test coverage reports
-    - "**/.cache/**"                    # Various caches
+    # ‚ö†Ô∏è MINIMAL CONFIG - Only project-specific excludes!
+    # DON'T add node_modules, dist, build - they're auto-excluded!
     
-    # Common development files
+    # Next.js specific (not in defaults)
+    - "**/.next/**"                     # Next.js build cache
+    - "**/coverage/**"                  # Test coverage reports
+    
+    # Log and temp files
     - "**/*.log"
     - "**/*.map"                        # Source maps
     - "**/.DS_Store"
@@ -3667,19 +3730,14 @@ Configuration for a Django web application with REST API.
 
 global:
   global_excludes:
-    # Python specific
-    - "**/__pycache__/**"
+    # ‚ö†Ô∏è MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
+    
+    # Python bytecode (not in defaults)
     - "**/*.pyc"
     - "**/*.pyo"
     - "**/*.pyd"
-    - "**/.Python"
-    - "**/pip-log.txt"
-    - "**/pip-delete-this-directory.txt"
-    - "**/.tox/"
-    - "**/.coverage"
-    - "**/.coverage.*"
-    - "**/htmlcov/"
-    - "**/.pytest_cache/"
+    
+    # Virtual environments (common names)
     - "**/venv/**"
     - "**/.venv/**"
     - "**/env/**"
@@ -3820,24 +3878,20 @@ Configuration for a custom WordPress theme with modern build tools.
 
 global:
   global_excludes:
-    # WordPress core files
-    - "wp-admin/**"
-    - "wp-includes/**"
-    - "wp-content/uploads/**"
-    - "wp-content/cache/**"
-    - "wp-content/backup/**"
-    - "wp-content/upgrade/**"
+    # ‚ö†Ô∏è MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
     
-    # Build and dependencies
-    - "**/node_modules/**"
-    - "**/vendor/**"                    # Composer dependencies
-    - "**/dist/**"
-    - "**/build/**"
+    # WordPress specific (not in defaults)
+    - "wp-admin/**"                     # Core files
+    - "wp-includes/**"                  # Core files
+    - "wp-content/uploads/**"           # User uploads
+    - "wp-content/cache/**"             # Cache plugins
+    - "wp-content/backup/**"            # Backup files
+    - "wp-content/upgrade/**"           # Updates
     
-    # Development files
-    - "**/*.log"
+    # Sass cache (not in defaults)
     - "**/.sass-cache/**"
-    - "**/*.map"
+    - "**/*.map"                        # Source maps
+    - "**/*.log"                        # Log files
 
   global_settings:
     security_check: "warn"
@@ -4768,6 +4822,246 @@ bundles:
 ```
 
 Remember: The best configuration depends on your specific project needs and how you plan to use the bundles with AI assistants.
+
+======= 26_default_excludes_guide.md ======
+# m1f Default Excludes Guide
+
+This guide explains the files and directories that m1f excludes by default, helping you write minimal and efficient `.m1f.config.yml` configurations.
+
+## üö® CRITICAL: Correct Bundle Format
+
+**ALWAYS use the `sources:` array format, NOT `source_directory:`!**
+
+```yaml
+# ‚úÖ CORRECT FORMAT:
+bundles:
+  - name: my-bundle
+    sources:
+      - "./src"
+    output_file: "m1f/my-bundle.txt"
+    separator_style: Standard  # Or omit - Standard is default
+    
+# ‚ùå WRONG FORMAT (will cause errors):
+bundles:
+  my-bundle:
+    source_directory: "./src"  # This format causes "ERROR: At least one of -s/--source-directory..."
+    output_file: "m1f/my-bundle.txt"
+    separator_style: Detailed  # Don't use for AI bundles!
+```
+
+**ALWAYS test with `m1f-update` immediately after creating/editing .m1f.config.yml!**
+
+## Understanding Default Excludes
+
+**IMPORTANT**: m1f automatically excludes many common directories and files. You DON'T need to repeat these in your configuration - only add project-specific exclusions!
+
+## Default Excluded Directories
+
+The following directories are ALWAYS excluded unless you explicitly use `--no-default-excludes`:
+
+```yaml
+# These are excluded automatically - no need to add them to your config!
+- vendor/          # Composer dependencies (PHP)
+- node_modules/    # NPM dependencies (JavaScript)
+- build/           # Common build output directory
+- dist/            # Distribution/compiled files
+- cache/           # Cache directories
+- .git/            # Git repository data
+- .svn/            # Subversion data
+- .hg/             # Mercurial data
+- __pycache__/     # Python bytecode cache
+- .pytest_cache/   # Pytest cache
+- .mypy_cache/     # MyPy type checker cache
+- .tox/            # Tox testing cache
+- .coverage/       # Coverage.py data
+- .eggs/           # Python eggs
+- htmlcov/         # HTML coverage reports
+- .idea/           # IntelliJ IDEA settings
+- .vscode/         # Visual Studio Code settings
+```
+
+## Default Excluded Files
+
+These specific files are also excluded automatically:
+
+```yaml
+# These files are excluded by default:
+- LICENSE          # License files (usually not needed in bundles)
+- package-lock.json    # NPM lock file
+- composer.lock        # Composer lock file
+- poetry.lock          # Poetry lock file
+- Pipfile.lock         # Pipenv lock file
+- yarn.lock            # Yarn lock file
+```
+
+## Writing Minimal Configurations
+
+### ‚ùå BAD - Overly Verbose Configuration
+
+```yaml
+# DON'T DO THIS - repeating default excludes unnecessarily!
+global:
+  global_excludes:
+    - "**/node_modules/**"     # Already excluded by default!
+    - "**/vendor/**"           # Already excluded by default!
+    - "**/__pycache__/**"      # Already excluded by default!
+    - "**/build/**"            # Already excluded by default!
+    - "**/dist/**"             # Already excluded by default!
+    - "**/.git/**"             # Already excluded by default!
+    - "**/cache/**"            # Already excluded by default!
+    - "**/.vscode/**"          # Already excluded by default!
+    - "**/*.pyc"               # Project-specific - OK
+    - "**/logs/**"             # Project-specific - OK
+```
+
+### ‚úÖ GOOD - Minimal Configuration
+
+```yaml
+# Only add project-specific exclusions!
+global:
+  global_excludes:
+    - "**/*.pyc"               # Python bytecode
+    - "**/logs/**"             # Your project's log files
+    - "**/tmp/**"              # Your temporary directories
+    - "/m1f/**"                # Output directory
+    - "**/secrets/**"          # Sensitive data
+```
+
+## Common Patterns by Project Type
+
+### Python Projects
+
+```yaml
+# Only add what's NOT in default excludes
+global:
+  global_excludes:
+    - "**/*.pyc"               # Bytecode files
+    - "**/*.pyo"               # Optimized bytecode
+    - "**/*.pyd"               # Python DLL files
+    - "**/venv/**"             # Virtual environments
+    - "**/.venv/**"            # Alternative venv naming
+    - "**/env/**"              # Another venv naming
+```
+
+### Node.js Projects
+
+```yaml
+# node_modules is already excluded!
+global:
+  global_excludes:
+    - "**/.next/**"            # Next.js build cache
+    - "**/.nuxt/**"            # Nuxt.js build cache
+    - "**/coverage/**"         # Test coverage reports
+    - "**/*.log"               # Log files
+```
+
+### WordPress Projects
+
+```yaml
+# Only WordPress-specific excludes needed
+global:
+  global_excludes:
+    - "**/wp-content/uploads/**"    # User uploads
+    - "**/wp-content/cache/**"      # Cache plugins
+    - "**/wp-content/backup/**"     # Backup files
+    - "wp-admin/**"                 # Core files
+    - "wp-includes/**"              # Core files
+```
+
+## Using .gitignore as Exclude File
+
+Instead of manually listing excludes, use your existing .gitignore:
+
+```yaml
+global:
+  global_settings:
+    # This automatically uses your .gitignore patterns!
+    exclude_paths_file: ".gitignore"
+```
+
+Or use multiple exclude files:
+
+```yaml
+global:
+  global_settings:
+    exclude_paths_file:
+      - ".gitignore"      # Version control ignores
+      - ".m1fignore"      # m1f-specific ignores
+```
+
+## Checking What's Excluded
+
+To see all excluded paths (including defaults), use verbose mode:
+
+```bash
+m1f -s . -o test.txt --verbose
+```
+
+This will show:
+- Default excluded directories
+- Patterns from your config
+- Files matched by your exclude patterns
+
+## Disabling Default Excludes
+
+If you need to include normally excluded directories:
+
+```bash
+# Include everything, even node_modules, .git, etc.
+m1f -s . -o complete.txt --no-default-excludes
+```
+
+‚ö†Ô∏è **WARNING**: This can create HUGE bundles and include sensitive data!
+
+## Best Practices
+
+1. **Start Simple**: Begin with no excludes and add only as needed
+2. **Use .gitignore**: Leverage existing ignore patterns
+3. **Test First**: Run with `--verbose` to see what's excluded
+4. **Document Why**: Add comments explaining non-obvious excludes
+
+```yaml
+global:
+  global_excludes:
+    # Project-specific build artifacts
+    - "**/generated/**"         # Auto-generated code
+    - "**/reports/**"           # Test/coverage reports
+    
+    # Large data files
+    - "**/*.sqlite"             # Database files
+    - "**/*.csv"                # Data exports
+    
+    # Sensitive information
+    - "**/.env*"                # Environment files
+    - "**/secrets/**"           # API keys, certs
+```
+
+## Quick Reference
+
+### Already Excluded (Don't Repeat)
+- `node_modules/`, `vendor/`, `build/`, `dist/`
+- `.git/`, `.svn/`, `.hg/`
+- `__pycache__/`, `.pytest_cache/`, `.mypy_cache/`
+- `.idea/`, `.vscode/`
+- Lock files: `*.lock`, `package-lock.json`
+
+### Commonly Added (Project-Specific)
+- Virtual envs: `venv/`, `.venv/`, `env/`
+- Logs: `*.log`, `logs/`
+- Temp files: `tmp/`, `temp/`, `*.tmp`
+- Database: `*.sqlite`, `*.db`
+- Environment: `.env`, `.env.*`
+- Output: `/m1f/` (your bundle directory)
+
+## Summary
+
+Keep your `.m1f.config.yml` files clean and minimal by:
+1. NOT repeating default excludes
+2. Only adding project-specific patterns
+3. Using `.gitignore` when possible
+4. Documenting non-obvious exclusions
+
+This makes your configurations easier to read, maintain, and share with others!
 
 ======= 30_claude_workflows.md ======
 # Claude + m1f: Your AI-Powered Project Assistant 🤖

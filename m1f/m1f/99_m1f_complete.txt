@@ -1422,6 +1422,10 @@ and this project adheres to
     - Response completion indicator: `[✅ Response complete]`
     - Better prompt spacing with newlines before "You:"
     - Clear separation between responses and new prompts
+    - Interaction counter: prompts to continue after every 10 exchanges
+    - Ctrl-C signal handling for graceful cancellation
+    - Tool output preview: shows abbreviated results from Claude's tool usage
+    - Emphasis on Standard separator (not Markdown) for AI-optimized bundles
   - **Exit Command**: Added `/e` command support like Claude CLI
     - Works alongside 'quit', 'exit', and 'q' commands
     - Updated help text and keyboard interrupt messages
@@ -8791,7 +8795,9 @@ You need to follow this systematic task list to properly set up m1f for this pro
 
 2. **Documentation Study Phase**
    □ Read @m1f/m1f.txt thoroughly (especially sections 230-600)
+   □ CRITICAL: Read docs/01_m1f/26_default_excludes_guide.md
    □ Pay special attention to:
+     - Default excludes (DON'T repeat them in config!)
      - .m1f.config.yml structure (lines 279-339)
      - Preset system (lines 361-413)
      - Best practices for AI context (lines 421-459)
@@ -8800,22 +8806,28 @@ You need to follow this systematic task list to properly set up m1f for this pro
 3. **Configuration Design Phase**
    □ Based on project type, design optimal bundle structure
    □ Plan multiple focused bundles (complete, docs, code, tests, etc.)
-   □ Determine appropriate filters and exclusions
+   □ Create MINIMAL excludes (only project-specific, NOT defaults!)
+   □ Remember: node_modules, .git, __pycache__, etc. are AUTO-EXCLUDED
    □ Select suitable presets or design custom ones
 
 4. **Implementation Phase**
    □ Create m1f/ directory if it doesn't exist
-   □ Create comprehensive .m1f.config.yml
-   □ Set up project-specific presets if needed
-   □ Configure security scanning and encoding
+   □ Create MINIMAL .m1f.config.yml (don't repeat default excludes!)
+   □ CRITICAL: Use "sources:" array format, NOT "source_directory:"!
+   □ CRITICAL: Use "Standard" separator, NOT "Detailed"!
+   □ Use exclude_paths_file: ".gitignore" instead of listing excludes
 
 5. **Validation Phase**
-   □ Run m1f-update to test configuration
+   □ MUST run m1f-update IMMEDIATELY after creating/editing .m1f.config.yml
+   □ Fix any errors before proceeding
    □ Check bundle sizes with m1f-token-counter
    □ Verify no secrets or sensitive data included
    □ Create CLAUDE.md with bundle references
 
-IMPORTANT: Use deep thinking and reasoning at each step. Consider edge cases and optimize for the specific project needs.
+CRITICAL CONFIG RULES:
+- Bundle format: Use "sources:" array, NOT "source_directory:" 
+- Separator: Use "Standard" (or omit), NOT "Detailed"
+- ALWAYS test with m1f-update after creating/editing configs!
 """
             )
 
@@ -8864,14 +8876,17 @@ Start with Task 1: Project Analysis
         
         # ALWAYS remind Claude to check the documentation
         enhanced.append("\n" + "=" * 50)
-        enhanced.append("\n📖 CRITICAL: Study @m1f/m1f.txt before implementing!")
-        enhanced.append("Key sections to focus on:")
+        enhanced.append("\n📖 CRITICAL: Study these docs before implementing!")
+        enhanced.append("Essential documentation to read:")
+        enhanced.append("- @m1f/m1f.txt - Complete m1f reference")
+        enhanced.append("- docs/01_m1f/26_default_excludes_guide.md - MUST READ!")
+        enhanced.append("\nKey sections in m1f.txt:")
         enhanced.append("- Lines 230-278: m1f-claude integration guide")
         enhanced.append("- Lines 279-339: .m1f.config.yml structure")
         enhanced.append("- Lines 361-413: Preset system")
         enhanced.append("- Lines 421-459: Best practices for AI context")
         enhanced.append("- Lines 461-494: Project-specific patterns")
-        enhanced.append("\nUse deep thinking to create the optimal configuration for this specific project.")
+        enhanced.append("\n⚠️ REMEMBER: Keep configs MINIMAL - don't repeat default excludes!")
 
         return "\n".join(enhanced)
 
@@ -9014,20 +9029,35 @@ I'll reference @m1f/m1f.txt for exact syntax and best practices.
             hints.append(
                 """
 I'll set up smart bundling for your project:
-- Create .m1f.config.yml with multiple focused bundles
+- Create MINIMAL .m1f.config.yml (no default excludes!)
+- Use Standard separator (NOT Markdown!) for AI consumption
 - Configure auto-bundling with m1f-update
 - Set up watch scripts for continuous updates
+
+MINIMAL CONFIG RULES:
+- DON'T exclude node_modules, .git, __pycache__ (auto-excluded!)
+- DO use exclude_paths_file: ".gitignore" 
+- ONLY add project-specific excludes
+
+IMPORTANT: Always use separator_style: Standard (or omit it) for AI bundles!
 """
             )
 
         if any(word in prompt_lower for word in ["config", "configure", "setup"]):
             hints.append(
                 """
-I'll create a comprehensive .m1f.config.yml that includes:
+I'll create a MINIMAL .m1f.config.yml that includes:
 - Multiple bundle definitions (complete, docs, code, etc.)
+- CORRECT FORMAT: Use "sources:" array (NOT "source_directory:")
+- Standard separator (NOT Detailed/Markdown!)
 - Smart filtering by file type and size
-- Security scanning configuration
-- Project-specific exclusions
+- ONLY project-specific exclusions (NOT defaults!)
+
+CRITICAL STEPS:
+1. Create .m1f.config.yml with "sources:" format
+2. Use "Standard" separator (or omit it)
+3. Run m1f-update IMMEDIATELY to test
+4. Fix any errors before proceeding
 """
             )
 
@@ -9047,9 +9077,11 @@ I'll configure m1f specifically for WordPress:
                 """
 I'll optimize your m1f setup for AI assistance:
 - Create focused bundles under 100KB each
-- Use MachineReadable separators for parsing
+- Use Standard separators for clean AI consumption
 - Set up topic-specific bundles for different tasks
 - Configure CLAUDE.md with bundle references
+
+CRITICAL: Avoid Markdown separator for AI bundles - use Standard (default)!
 """
             )
 
@@ -9069,6 +9101,7 @@ I'll configure test handling in m1f:
             else """
 I'll analyze your project and create an optimal m1f configuration that:
 - Organizes code into focused, AI-friendly bundles
+- Uses Standard separator format (not Markdown) for clean AI consumption
 - Excludes unnecessary files automatically
 - Stays within context window limits
 - Updates automatically with m1f-update
@@ -9213,6 +9246,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         session_id = None
         first_prompt = True
+        interaction_count = 0
 
         while True:
             try:
@@ -9255,7 +9289,16 @@ I'll analyze your project and create an optimal m1f configuration that:
                     if new_session_id:
                         session_id = new_session_id
                     first_prompt = False
+                    interaction_count += 1
                     print("\n")  # Extra newline after response for clarity
+                    
+                    # Check if we should ask about continuing
+                    if interaction_count >= 10 and interaction_count % 10 == 0:
+                        print(f"\n⚠️  You've had {interaction_count} interactions in this session.")
+                        continue_choice = input("Continue? (y/n) [y]: ").strip().lower()
+                        if continue_choice in ['n', 'no']:
+                            print("\n👋 Session ended by user. Happy bundling!")
+                            break
                 else:
                     print("\r❌ Failed to send to Claude Code. Check your connection.\n")
 
@@ -9343,7 +9386,13 @@ I'll analyze your project and create an optimal m1f configuration that:
                     data = json.loads(line)
                     
                     # Handle different message types
-                    if data.get("type") == "system":
+                    event_type = data.get("type", "")
+                    
+                    # Always show event types in verbose mode
+                    if self.debug and event_type not in ["assistant", "system"]:
+                        print(f"\n[DEBUG] Event: {event_type} - {data}")
+                    
+                    if event_type == "system":
                         if data.get("subtype") == "init":
                             # Initial system message with session info
                             new_session_id = data.get("session_id", session_id)
@@ -9351,8 +9400,60 @@ I'll analyze your project and create an optimal m1f configuration that:
                                 print(f"\n[DEBUG] Session initialized: {new_session_id}")
                         elif self.debug:
                             print(f"\n[DEBUG] System message: {data}")
+                    
+                    elif event_type == "tool_use":
+                        # Tool use events
+                        tool_name = data.get("name", "Unknown")
+                        tool_input = data.get("input", {})
+                        
+                        # Extract parameters based on tool
+                        param_info = ""
+                        if tool_input:
+                            if tool_name == "Read" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Write" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Edit" and "file_path" in tool_input:
+                                param_info = f" → {tool_input['file_path']}"
+                            elif tool_name == "Bash" and "command" in tool_input:
+                                cmd = tool_input['command']
+                                param_info = f" → {cmd[:50]}..." if len(cmd) > 50 else f" → {cmd}"
+                            elif tool_name == "Grep" and "pattern" in tool_input:
+                                param_info = f" → '{tool_input['pattern']}'"
+                            elif tool_name == "Glob" and "pattern" in tool_input:
+                                param_info = f" → {tool_input['pattern']}"
+                            elif tool_name == "LS" and "path" in tool_input:
+                                param_info = f" → {tool_input['path']}"
+                            elif tool_name == "TodoWrite" and "todos" in tool_input:
+                                todos = tool_input.get("todos", [])
+                                param_info = f" → {len(todos)} tasks"
+                            elif tool_name == "Task" and "description" in tool_input:
+                                param_info = f" → {tool_input['description']}"
+                        
+                        print(f"\n[🔧 {tool_name}]{param_info}", flush=True)
+                    
+                    elif event_type == "tool_result":
+                        # Tool result events
+                        output = data.get("output", "")
+                        if output:
+                            if isinstance(output, str):
+                                lines = output.strip().split('\n')
+                                if len(lines) > 2:
+                                    # Multi-line output
+                                    first_line = lines[0][:80] + "..." if len(lines[0]) > 80 else lines[0]
+                                    print(f"[📄 {first_line} ... ({len(lines)} lines)]", flush=True)
+                                elif len(output) > 100:
+                                    # Long single line
+                                    print(f"[📄 {output[:80]}... ({len(output)} chars)]", flush=True)
+                                else:
+                                    # Short output
+                                    print(f"[📄 {output}]", flush=True)
+                            elif output == True:
+                                print(f"[✓ Success]", flush=True)
+                            elif output == False:
+                                print(f"[✗ Failed]", flush=True)
                             
-                    elif data.get("type") == "assistant":
+                    elif event_type == "assistant":
                         # Assistant messages have a nested structure
                         message_data = data.get("message", {})
                         content = message_data.get("content", [])
@@ -9364,19 +9465,33 @@ I'll analyze your project and create an optimal m1f configuration that:
                                         text = item.get("text", "")
                                         response_text += text
                                         # In interactive mode, print text directly
+                                        # Add newline before common action phrases for better readability
+                                        text_stripped = text.strip()
+                                        if text_stripped and text_stripped.startswith((
+                                            "Let me", "Now let me", "Now I'll", "I'll",
+                                            "First,", "Next,", "Then,", "Finally,",
+                                            "Checking", "Creating", "Looking",
+                                            "I need to", "I'm going to", "I will"
+                                        )):
+                                            print("\n", end="")
                                         print(text, end="", flush=True)
                                     elif item.get("type") == "tool_use":
-                                        tool_name = item.get('name', 'Unknown')
-                                        # Show tool usage to user
-                                        print(f"\n[🔧 Using tool: {tool_name}]", end="", flush=True)
-                                        if self.debug:
-                                            print(f" - {item.get('input', {})}", end="")
-                                        print()  # Newline after tool
+                                        # This is handled by the top-level tool_use event now
+                                        pass
                         elif isinstance(content, str):
                             response_text += content
+                            # Add newline before common action phrases for better readability
+                            content_stripped = content.strip()
+                            if content_stripped and content_stripped.startswith((
+                                "Let me", "Now let me", "Now I'll", "I'll",
+                                "First,", "Next,", "Then,", "Finally,",
+                                "Checking", "Creating", "Looking",
+                                "I need to", "I'm going to", "I will"
+                            )):
+                                print("\n", end="")
                             print(content, end="", flush=True)
                                 
-                    elif data.get("type") == "result":
+                    elif event_type == "result":
                         # Final result message
                         new_session_id = data.get("session_id", session_id)
                         # Show completion indicator
@@ -9389,6 +9504,10 @@ I'll analyze your project and create an optimal m1f configuration that:
                 except json.JSONDecodeError:
                     if self.debug:
                         print(f"\n[DEBUG] Non-JSON line: {line}")
+                except Exception as e:
+                    if self.debug:
+                        print(f"\n[DEBUG] Error processing line: {e}")
+                        print(f"[DEBUG] Line was: {line}")
                         
             # Wait for process to complete
             if not cancelled:
@@ -10418,7 +10537,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
 | `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
-| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\***                                                                                         |
+| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\*** (see [Default Excludes Guide](./26_default_excludes_guide.md) for complete list)        |
 | `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
 | `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
 | `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
@@ -10785,6 +10904,7 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 
 - [Quick Reference](./09_quick_reference.md) - Common commands and patterns
 - [CLI Reference](./07_cli_reference.md) - Complete command-line reference
+- [Default Excludes Guide](./26_default_excludes_guide.md) - What's excluded automatically
 - [Troubleshooting Guide](./08_troubleshooting.md) - Common issues and solutions
 
 **Preset System:**
@@ -13686,6 +13806,69 @@ Add m1f to your CI pipeline:
 
 This guide provides comprehensive examples of `.m1f.config.yml` files for different project types. Each example includes detailed comments explaining the configuration choices.
 
+> **‚ö†Ô∏è IMPORTANT**: m1f automatically excludes many common directories (node_modules, .git, __pycache__, etc.). See the [Default Excludes Guide](./26_default_excludes_guide.md) for the complete list. **Only add project-specific excludes to keep your configs minimal!**
+
+## üö® IMPORTANT: Use Standard Separator for AI Bundles!
+
+**The primary purpose of m1f bundles is to provide context to AI assistants like Claude, NOT for human reading in Markdown!**
+
+- ‚úÖ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the default)
+- ‚ùå **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language blocks)
+- üéØ **Why**: Standard format is clean and optimal for AI consumption
+
+```yaml
+# CORRECT - For AI consumption:
+bundles:
+  - name: my-bundle
+    separator_style: Standard  # ‚Üê This is optimal (or just omit it)
+    
+# AVOID - Adds unnecessary markdown formatting:
+bundles:
+  - name: my-bundle
+    separator_style: Markdown  # ‚Üê Don't use for AI bundles!
+```
+
+**Note**: `MachineReadable` is only needed when you plan to use `s1f` to split the bundle back into individual files.
+
+## Minimal vs Verbose Configurations
+
+### ‚ùå BAD Example - Overly Verbose (Don't Do This!)
+
+```yaml
+global:
+  global_excludes:
+    # ‚ùå ALL of these are already excluded by default!
+    - "**/node_modules/**"     # Auto-excluded
+    - "**/vendor/**"           # Auto-excluded
+    - "**/__pycache__/**"      # Auto-excluded
+    - "**/build/**"            # Auto-excluded
+    - "**/dist/**"             # Auto-excluded
+    - "**/.git/**"             # Auto-excluded
+    - "**/cache/**"            # Auto-excluded
+    - "**/.vscode/**"          # Auto-excluded
+    - "**/.idea/**"            # Auto-excluded
+    
+    # ‚úÖ Only these are needed (project-specific)
+    - "**/logs/**"             
+    - "**/tmp/**"              
+    - "/m1f/**"                
+```
+
+### ‚úÖ GOOD Example - Minimal Configuration
+
+```yaml
+global:
+  global_excludes:
+    # Only project-specific excludes
+    - "**/logs/**"             # Your log files
+    - "**/tmp/**"              # Your temp files
+    - "/m1f/**"                # Output directory
+    
+  global_settings:
+    # Let .gitignore handle most excludes
+    exclude_paths_file: ".gitignore"
+```
+
 ## Table of Contents
 
 1. [m1f Tool Project (Current)](#m1f-tool-project-current)
@@ -13794,15 +13977,14 @@ Configuration for a modern React application with TypeScript and testing.
 
 global:
   global_excludes:
-    # Node.js specific
-    - "**/node_modules/**"              # Dependencies
-    - "**/dist/**"                      # Build output
-    - "**/build/**"                     # Build output
-    - "**/.next/**"                     # Next.js build
-    - "**/coverage/**"                  # Test coverage reports
-    - "**/.cache/**"                    # Various caches
+    # ‚ö†Ô∏è MINIMAL CONFIG - Only project-specific excludes!
+    # DON'T add node_modules, dist, build - they're auto-excluded!
     
-    # Common development files
+    # Next.js specific (not in defaults)
+    - "**/.next/**"                     # Next.js build cache
+    - "**/coverage/**"                  # Test coverage reports
+    
+    # Log and temp files
     - "**/*.log"
     - "**/*.map"                        # Source maps
     - "**/.DS_Store"
@@ -13940,19 +14122,14 @@ Configuration for a Django web application with REST API.
 
 global:
   global_excludes:
-    # Python specific
-    - "**/__pycache__/**"
+    # ‚ö†Ô∏è MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
+    
+    # Python bytecode (not in defaults)
     - "**/*.pyc"
     - "**/*.pyo"
     - "**/*.pyd"
-    - "**/.Python"
-    - "**/pip-log.txt"
-    - "**/pip-delete-this-directory.txt"
-    - "**/.tox/"
-    - "**/.coverage"
-    - "**/.coverage.*"
-    - "**/htmlcov/"
-    - "**/.pytest_cache/"
+    
+    # Virtual environments (common names)
     - "**/venv/**"
     - "**/.venv/**"
     - "**/env/**"
@@ -14093,24 +14270,20 @@ Configuration for a custom WordPress theme with modern build tools.
 
 global:
   global_excludes:
-    # WordPress core files
-    - "wp-admin/**"
-    - "wp-includes/**"
-    - "wp-content/uploads/**"
-    - "wp-content/cache/**"
-    - "wp-content/backup/**"
-    - "wp-content/upgrade/**"
+    # ‚ö†Ô∏è MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
     
-    # Build and dependencies
-    - "**/node_modules/**"
-    - "**/vendor/**"                    # Composer dependencies
-    - "**/dist/**"
-    - "**/build/**"
+    # WordPress specific (not in defaults)
+    - "wp-admin/**"                     # Core files
+    - "wp-includes/**"                  # Core files
+    - "wp-content/uploads/**"           # User uploads
+    - "wp-content/cache/**"             # Cache plugins
+    - "wp-content/backup/**"            # Backup files
+    - "wp-content/upgrade/**"           # Updates
     
-    # Development files
-    - "**/*.log"
+    # Sass cache (not in defaults)
     - "**/.sass-cache/**"
-    - "**/*.map"
+    - "**/*.map"                        # Source maps
+    - "**/*.log"                        # Log files
 
   global_settings:
     security_check: "warn"
@@ -15041,6 +15214,246 @@ bundles:
 ```
 
 Remember: The best configuration depends on your specific project needs and how you plan to use the bundles with AI assistants.
+
+======= docs/01_m1f/26_default_excludes_guide.md ======
+# m1f Default Excludes Guide
+
+This guide explains the files and directories that m1f excludes by default, helping you write minimal and efficient `.m1f.config.yml` configurations.
+
+## üö® CRITICAL: Correct Bundle Format
+
+**ALWAYS use the `sources:` array format, NOT `source_directory:`!**
+
+```yaml
+# ‚úÖ CORRECT FORMAT:
+bundles:
+  - name: my-bundle
+    sources:
+      - "./src"
+    output_file: "m1f/my-bundle.txt"
+    separator_style: Standard  # Or omit - Standard is default
+    
+# ‚ùå WRONG FORMAT (will cause errors):
+bundles:
+  my-bundle:
+    source_directory: "./src"  # This format causes "ERROR: At least one of -s/--source-directory..."
+    output_file: "m1f/my-bundle.txt"
+    separator_style: Detailed  # Don't use for AI bundles!
+```
+
+**ALWAYS test with `m1f-update` immediately after creating/editing .m1f.config.yml!**
+
+## Understanding Default Excludes
+
+**IMPORTANT**: m1f automatically excludes many common directories and files. You DON'T need to repeat these in your configuration - only add project-specific exclusions!
+
+## Default Excluded Directories
+
+The following directories are ALWAYS excluded unless you explicitly use `--no-default-excludes`:
+
+```yaml
+# These are excluded automatically - no need to add them to your config!
+- vendor/          # Composer dependencies (PHP)
+- node_modules/    # NPM dependencies (JavaScript)
+- build/           # Common build output directory
+- dist/            # Distribution/compiled files
+- cache/           # Cache directories
+- .git/            # Git repository data
+- .svn/            # Subversion data
+- .hg/             # Mercurial data
+- __pycache__/     # Python bytecode cache
+- .pytest_cache/   # Pytest cache
+- .mypy_cache/     # MyPy type checker cache
+- .tox/            # Tox testing cache
+- .coverage/       # Coverage.py data
+- .eggs/           # Python eggs
+- htmlcov/         # HTML coverage reports
+- .idea/           # IntelliJ IDEA settings
+- .vscode/         # Visual Studio Code settings
+```
+
+## Default Excluded Files
+
+These specific files are also excluded automatically:
+
+```yaml
+# These files are excluded by default:
+- LICENSE          # License files (usually not needed in bundles)
+- package-lock.json    # NPM lock file
+- composer.lock        # Composer lock file
+- poetry.lock          # Poetry lock file
+- Pipfile.lock         # Pipenv lock file
+- yarn.lock            # Yarn lock file
+```
+
+## Writing Minimal Configurations
+
+### ‚ùå BAD - Overly Verbose Configuration
+
+```yaml
+# DON'T DO THIS - repeating default excludes unnecessarily!
+global:
+  global_excludes:
+    - "**/node_modules/**"     # Already excluded by default!
+    - "**/vendor/**"           # Already excluded by default!
+    - "**/__pycache__/**"      # Already excluded by default!
+    - "**/build/**"            # Already excluded by default!
+    - "**/dist/**"             # Already excluded by default!
+    - "**/.git/**"             # Already excluded by default!
+    - "**/cache/**"            # Already excluded by default!
+    - "**/.vscode/**"          # Already excluded by default!
+    - "**/*.pyc"               # Project-specific - OK
+    - "**/logs/**"             # Project-specific - OK
+```
+
+### ‚úÖ GOOD - Minimal Configuration
+
+```yaml
+# Only add project-specific exclusions!
+global:
+  global_excludes:
+    - "**/*.pyc"               # Python bytecode
+    - "**/logs/**"             # Your project's log files
+    - "**/tmp/**"              # Your temporary directories
+    - "/m1f/**"                # Output directory
+    - "**/secrets/**"          # Sensitive data
+```
+
+## Common Patterns by Project Type
+
+### Python Projects
+
+```yaml
+# Only add what's NOT in default excludes
+global:
+  global_excludes:
+    - "**/*.pyc"               # Bytecode files
+    - "**/*.pyo"               # Optimized bytecode
+    - "**/*.pyd"               # Python DLL files
+    - "**/venv/**"             # Virtual environments
+    - "**/.venv/**"            # Alternative venv naming
+    - "**/env/**"              # Another venv naming
+```
+
+### Node.js Projects
+
+```yaml
+# node_modules is already excluded!
+global:
+  global_excludes:
+    - "**/.next/**"            # Next.js build cache
+    - "**/.nuxt/**"            # Nuxt.js build cache
+    - "**/coverage/**"         # Test coverage reports
+    - "**/*.log"               # Log files
+```
+
+### WordPress Projects
+
+```yaml
+# Only WordPress-specific excludes needed
+global:
+  global_excludes:
+    - "**/wp-content/uploads/**"    # User uploads
+    - "**/wp-content/cache/**"      # Cache plugins
+    - "**/wp-content/backup/**"     # Backup files
+    - "wp-admin/**"                 # Core files
+    - "wp-includes/**"              # Core files
+```
+
+## Using .gitignore as Exclude File
+
+Instead of manually listing excludes, use your existing .gitignore:
+
+```yaml
+global:
+  global_settings:
+    # This automatically uses your .gitignore patterns!
+    exclude_paths_file: ".gitignore"
+```
+
+Or use multiple exclude files:
+
+```yaml
+global:
+  global_settings:
+    exclude_paths_file:
+      - ".gitignore"      # Version control ignores
+      - ".m1fignore"      # m1f-specific ignores
+```
+
+## Checking What's Excluded
+
+To see all excluded paths (including defaults), use verbose mode:
+
+```bash
+m1f -s . -o test.txt --verbose
+```
+
+This will show:
+- Default excluded directories
+- Patterns from your config
+- Files matched by your exclude patterns
+
+## Disabling Default Excludes
+
+If you need to include normally excluded directories:
+
+```bash
+# Include everything, even node_modules, .git, etc.
+m1f -s . -o complete.txt --no-default-excludes
+```
+
+‚ö†Ô∏è **WARNING**: This can create HUGE bundles and include sensitive data!
+
+## Best Practices
+
+1. **Start Simple**: Begin with no excludes and add only as needed
+2. **Use .gitignore**: Leverage existing ignore patterns
+3. **Test First**: Run with `--verbose` to see what's excluded
+4. **Document Why**: Add comments explaining non-obvious excludes
+
+```yaml
+global:
+  global_excludes:
+    # Project-specific build artifacts
+    - "**/generated/**"         # Auto-generated code
+    - "**/reports/**"           # Test/coverage reports
+    
+    # Large data files
+    - "**/*.sqlite"             # Database files
+    - "**/*.csv"                # Data exports
+    
+    # Sensitive information
+    - "**/.env*"                # Environment files
+    - "**/secrets/**"           # API keys, certs
+```
+
+## Quick Reference
+
+### Already Excluded (Don't Repeat)
+- `node_modules/`, `vendor/`, `build/`, `dist/`
+- `.git/`, `.svn/`, `.hg/`
+- `__pycache__/`, `.pytest_cache/`, `.mypy_cache/`
+- `.idea/`, `.vscode/`
+- Lock files: `*.lock`, `package-lock.json`
+
+### Commonly Added (Project-Specific)
+- Virtual envs: `venv/`, `.venv/`, `env/`
+- Logs: `*.log`, `logs/`
+- Temp files: `tmp/`, `temp/`, `*.tmp`
+- Database: `*.sqlite`, `*.db`
+- Environment: `.env`, `.env.*`
+- Output: `/m1f/` (your bundle directory)
+
+## Summary
+
+Keep your `.m1f.config.yml` files clean and minimal by:
+1. NOT repeating default excludes
+2. Only adding project-specific patterns
+3. Using `.gitignore` when possible
+4. Documenting non-obvious exclusions
+
+This makes your configurations easier to read, maintain, and share with others!
 
 ======= docs/01_m1f/30_claude_workflows.md ======
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
