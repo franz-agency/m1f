@@ -1082,6 +1082,178 @@ I'll analyze your project and create an optimal m1f configuration that:
             except Exception as e:
                 logger.error(f"Error: {e}")
 
+    def initialize_project(self):
+        """Initialize m1f for the current project with intelligent assistance."""
+        print("\n🚀 Initializing m1f for your project...")
+        print("=" * 50)
+        
+        # Check if we're in a git repository
+        git_root = self.project_path
+        if (self.project_path / ".git").exists():
+            print(f"✅ Git repository detected: {self.project_path}")
+        else:
+            # Look for git root in parent directories
+            current = self.project_path
+            while current != current.parent:
+                if (current / ".git").exists():
+                    git_root = current
+                    print(f"✅ Git repository detected: {git_root}")
+                    break
+                current = current.parent
+            else:
+                print(f"⚠️  No git repository found - initializing in current directory: {self.project_path}")
+        
+        # Check if m1f-link has been run
+        if not self.has_m1f_docs:
+            print(f"\n📋 Setting up m1f documentation link...")
+            try:
+                # Run m1f-link to create the documentation symlink
+                result = subprocess.run(["m1f-link"], cwd=self.project_path, capture_output=True, text=True)
+                if result.returncode == 0:
+                    print(f"✅ m1f documentation linked successfully")
+                    # Update our paths
+                    self.has_m1f_docs = True
+                    self.m1f_docs_path = self.project_path / "m1f" / "m1f.txt"
+                else:
+                    print(f"⚠️  Failed to link m1f documentation: {result.stderr}")
+            except FileNotFoundError:
+                print(f"⚠️  m1f-link command not found - please ensure m1f is properly installed")
+        else:
+            print(f"✅ m1f documentation already available")
+        
+        # Check for existing .m1f.config.yml
+        config_path = self.project_path / ".m1f.config.yml"
+        if config_path.exists():
+            print(f"✅ m1f configuration found: {config_path.name}")
+        else:
+            print(f"⚠️  No m1f configuration found - will help you create one")
+        
+        # Check for Claude Code availability
+        has_claude_code = False
+        try:
+            result = subprocess.run(["claude", "--version"], capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ Claude Code is available")
+                has_claude_code = True
+            else:
+                print(f"⚠️  Claude Code not found")
+        except FileNotFoundError:
+            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code")
+        
+        print(f"\n📊 Project Analysis")
+        print("=" * 30)
+        
+        # Analyze project structure
+        context = self._analyze_project_context()
+        print(context)
+        
+        # Create initialization prompt for Claude
+        init_prompt = self._create_initialization_prompt(config_path.exists(), has_claude_code)
+        
+        if has_claude_code:
+            print(f"\n🤖 Starting Claude Code session for project setup...")
+            print("─" * 50)
+            
+            try:
+                response = self.send_to_claude_code(init_prompt, max_turns=5, is_first_prompt=True)
+                if response:
+                    print(f"\n✅ Initialization complete!")
+                else:
+                    print(f"\n⚠️  Could not connect to Claude Code")
+                    print(f"\nYou can manually create a .m1f.config.yml file or run:")
+                    print(f"m1f-claude 'Help me set up m1f for my project'")
+            except Exception as e:
+                print(f"\n❌ Error during initialization: {e}")
+                print(f"\nYou can manually run: m1f-claude 'Help me set up m1f for my project'")
+        else:
+            print(f"\n⚠️  Claude Code not available for automated setup")
+            print(f"\nTo complete initialization:")
+            print(f"1. Install Claude Code: npm install -g @anthropic-ai/claude-code")
+            print(f"2. Run: m1f-claude 'Help me set up m1f for my project'")
+            print(f"3. Or manually create a .m1f.config.yml file")
+    
+    def _create_initialization_prompt(self, has_config: bool, has_claude_code: bool) -> str:
+        """Create a comprehensive initialization prompt for Claude."""
+        prompt_parts = []
+        
+        prompt_parts.append("🚀 PROJECT INITIALIZATION ASSISTANCE NEEDED")
+        prompt_parts.append("=" * 60)
+        prompt_parts.append("")
+        prompt_parts.append("I need help setting up m1f (Make One File) for this project.")
+        prompt_parts.append("Please follow this systematic 5-phase approach:")
+        prompt_parts.append("")
+        
+        prompt_parts.append("📋 PHASE 1: PROJECT ANALYSIS")
+        prompt_parts.append("• Analyze the project structure using available tools")
+        prompt_parts.append("• Identify file types, frameworks, and organization patterns")
+        prompt_parts.append("• Determine the project type (web app, library, documentation, etc.)")
+        prompt_parts.append("")
+        
+        prompt_parts.append("📚 PHASE 2: M1F DOCUMENTATION STUDY")
+        prompt_parts.append("• Reference @m1f/m1f.txt for complete m1f syntax and capabilities")
+        prompt_parts.append("• Study auto-bundling configuration examples")
+        prompt_parts.append("• Review preset system options")
+        prompt_parts.append("• Understand bundle organization best practices")
+        prompt_parts.append("• Check available separator styles and their uses")
+        prompt_parts.append("")
+        
+        prompt_parts.append("🎯 PHASE 3: CONFIGURATION DESIGN")
+        prompt_parts.append("• Design logical bundle groups based on project structure")
+        prompt_parts.append("• Select appropriate file inclusion/exclusion patterns")
+        prompt_parts.append("• Choose optimal separator styles (Standard for AI bundles!)")
+        prompt_parts.append("• Plan bundle sizes to stay under 100KB for AI consumption")
+        prompt_parts.append("• Consider security scanning needs")
+        prompt_parts.append("")
+        
+        prompt_parts.append("⚙️ PHASE 4: IMPLEMENTATION")
+        if has_config:
+            prompt_parts.append("• Review existing .m1f.config.yml and suggest improvements")
+            prompt_parts.append("• Update configuration based on current project state")
+        else:
+            prompt_parts.append("• Create comprehensive .m1f.config.yml configuration")
+            prompt_parts.append("• Include bundle definitions for different use cases")
+        
+        prompt_parts.append("• Set up appropriate global excludes")
+        prompt_parts.append("• Configure security scanning settings")
+        prompt_parts.append("• Add helpful bundle descriptions")
+        prompt_parts.append("")
+        
+        prompt_parts.append("✅ PHASE 5: VALIDATION & TESTING")
+        prompt_parts.append("• Test the configuration with m1f-update")
+        prompt_parts.append("• Verify bundle generation works correctly")
+        prompt_parts.append("• Check bundle sizes are appropriate")
+        prompt_parts.append("• Suggest next steps for the user")
+        prompt_parts.append("")
+        
+        prompt_parts.append("🎯 KEY REQUIREMENTS:")
+        prompt_parts.append("• ALWAYS reference @m1f/m1f.txt documentation (5+ times)")
+        prompt_parts.append("• Use Standard separator style for AI bundles (not Markdown)")
+        prompt_parts.append("• Create focused bundles under 100KB each")
+        prompt_parts.append("• Include security scanning configuration")
+        prompt_parts.append("• Provide clear bundle descriptions")
+        prompt_parts.append("• Test the final configuration")
+        prompt_parts.append("")
+        
+        # Add project-specific context
+        context = self._analyze_project_context()
+        if context.strip():
+            prompt_parts.append("📊 CURRENT PROJECT CONTEXT:")
+            prompt_parts.append(context)
+            prompt_parts.append("")
+        
+        # Add AI-specific guidance
+        prompt_parts.append("🤖 AI INTEGRATION FOCUS:")
+        prompt_parts.append("• Prioritize AI context files (CLAUDE.md, .cursorrules, .windsurfrules)")
+        prompt_parts.append("• Create bundles optimized for LLM consumption")
+        prompt_parts.append("• Use Standard separator (not Markdown) for better AI parsing")
+        prompt_parts.append("• Keep individual bundles focused and under 100KB")
+        prompt_parts.append("")
+        
+        prompt_parts.append("Please start with Phase 1 and work systematically through all phases.")
+        prompt_parts.append("Reference @m1f/m1f.txt throughout your analysis and recommendations!")
+        
+        return "\n".join(prompt_parts)
+
     def _send_with_session(self, prompt: str, session_id: Optional[str] = None) -> tuple[Optional[str], Optional[str]]:
         """Send prompt to Claude Code, managing session continuity.
         
@@ -1543,6 +1715,11 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
                 f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
             )
 
+        return
+
+    # Initialize mode
+    if args.init:
+        m1f_claude.initialize_project()
         return
 
     # Interactive mode
