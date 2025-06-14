@@ -48,6 +48,12 @@ and this project adheres to
   - **Exit Command**: Added `/e` command support like Claude CLI
     - Works alongside 'quit', 'exit', and 'q' commands
     - Updated help text and keyboard interrupt messages
+  - **Project Context Extraction**: Added intelligent project context extraction from natural language
+    - New `_extract_project_context` method analyzes user prompts for project details
+    - Detects project name, type, size, languages, frameworks, and special requirements
+    - Generates project-specific m1f configuration templates
+    - Provides tailored bundle suggestions based on detected project characteristics
+    - Includes automation preferences (git hooks, CI/CD, watch mode) in generated configs
 
 ### Changed
 
@@ -64,6 +70,12 @@ and this project adheres to
   - Fixed hardcoded path issue that caused PowerShell profile errors
   - Now uses correct relative paths based on actual m1f installation location
   - Added PowerShell profile path to warning message for easier debugging
+
+- **m1f-claude Project Name Extraction**: Fixed regex patterns that were failing to extract project names
+  - Replaced complex regex patterns with backreferences that were causing incorrect matches
+  - Added simpler, more specific patterns for different name formats (quoted, unquoted, possessive)
+  - Fixed issue where project names were always extracted as empty strings
+  - Now correctly handles formats like "project called 'awesome-app'", "project named MyWebApp", "company's main project"
 
 ### Dependencies
 
