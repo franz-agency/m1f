@@ -30,6 +30,7 @@ from typing import Dict, Optional, List
 import argparse
 import logging
 from datetime import datetime
+import asyncio
 import anyio
 import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
@@ -897,7 +898,9 @@ I'll analyze your project and create an optimal m1f configuration that:
         old_handler = signal.signal(signal.SIGINT, handle_interrupt)
         
         try:
-            logger.info("\n🤖 Sending to Claude Code...\n")
+            logger.info("\n🤖 Sending to Claude Code...")
+            logger.info("📋 Analyzing project and creating configuration...")
+            logger.info("⏳ This may take a moment while Claude processes your project...\n")
             
             messages: list[Message] = []
             
@@ -911,6 +914,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             async with anyio.create_task_group() as tg:
                 async def collect_messages():
                     try:
+                        message_count = 0
                         async for message in query(
                             prompt=prompt,
                             options=options
@@ -919,12 +923,19 @@ I'll analyze your project and create an optimal m1f configuration that:
                                 break
                                 
                             messages.append(message)
+                            message_count += 1
+                            
+                            # Show progress for init prompts
+                            if is_first_prompt and message_count % 3 == 0:
+                                logger.info(f"📝 Processing... ({message_count} messages received)")
                             
                             # Extract session ID from ResultMessage - handle missing fields gracefully
                             if isinstance(message, ResultMessage):
                                 if hasattr(message, 'session_id'):
                                     self.session_id = message.session_id
                                     self.conversation_started = True
+                                    if is_first_prompt:
+                                        logger.info("🔗 Session established with Claude Code")
                                 # Handle cost field gracefully
                                 if hasattr(message, 'cost_usd'):
                                     if self.debug:
@@ -986,19 +997,34 @@ I'll analyze your project and create an optimal m1f configuration that:
                     logger.info("Claude Code not found via subprocess")
                 return None
 
-            logger.info("🤖 Connecting to Claude Code...")
+            # Send to Claude Code using --print for non-interactive mode
+            logger.info("\n🤖 Sending to Claude Code (subprocess fallback)...\n")
 
-            # For initialization, just display the prompt and let user handle it manually
-            # This avoids subprocess hanging issues during project setup
-            print("\n" + "="*60)
-            print("ENHANCED PROMPT FOR CLAUDE:")
-            print("="*60)
-            print(enhanced_prompt)
-            print("="*60)
-            print("\n💡 Copy the above prompt and paste it into Claude Code or Claude directly.")
-            print("   This ensures proper project setup without subprocess issues.")
-            
-            return "Prompt displayed for manual use"
+            # Use subprocess.Popen for better control over stdin/stdout
+            process = subprocess.Popen(
+                ["claude", "--print"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            try:
+                # Send the enhanced prompt via stdin
+                stdout, stderr = process.communicate(
+                    input=enhanced_prompt, timeout=300  # 5 minute timeout
+                )
+
+                if process.returncode == 0:
+                    return stdout
+                else:
+                    logger.error(f"Claude Code error: {stderr}")
+                    return None
+
+            except subprocess.TimeoutExpired:
+                process.kill()
+                logger.error("Claude Code timed out after 5 minutes")
+                return None
 
         except FileNotFoundError:
             if self.debug:
@@ -1143,10 +1169,9 @@ I'll analyze your project and create an optimal m1f configuration that:
         print(f"\n📊 Project Analysis")
         print("=" * 30)
         
-        # Run m1f to generate file and directory lists for comprehensive analysis
+        # Run m1f to generate file and directory lists using intelligent filtering
         import tempfile
         
-        # Run m1f to generate file and directory lists
         print("Analyzing project structure with m1f...")
         with tempfile.NamedTemporaryFile(prefix="m1f_analysis_", suffix=".txt", delete=False) as tmp:
             tmp_path = tmp.name
@@ -1157,30 +1182,38 @@ I'll analyze your project and create an optimal m1f configuration that:
                 "m1f",
                 "-s", str(self.project_path),
                 "-o", tmp_path,
-                "--skip-output-file",
-                "--minimal-output",
-                "--quiet"
+                "--skip-output-file"
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True)
             
-            # Read the generated file lists
-            filelist_path = Path(tmp_path.replace(".txt", "_filelist.txt"))
-            dirlist_path = Path(tmp_path.replace(".txt", "_dirlist.txt"))
+            # The auxiliary files use the pattern: {basename}_filelist.txt and {basename}_dirlist.txt
+            base_name = os.path.splitext(tmp_path)[0]  # Remove .txt extension
+            filelist_path = Path(f"{base_name}_filelist.txt")
+            dirlist_path = Path(f"{base_name}_dirlist.txt")
             
             files_list = []
             dirs_list = []
             
             if filelist_path.exists():
-                files_list = filelist_path.read_text().strip().split('\n')
+                content = filelist_path.read_text().strip()
+                if content:
+                    files_list = content.split('\n')
                 filelist_path.unlink()  # Clean up
             
             if dirlist_path.exists():
-                dirs_list = dirlist_path.read_text().strip().split('\n')
+                content = dirlist_path.read_text().strip()
+                if content:
+                    dirs_list = content.split('\n')
                 dirlist_path.unlink()  # Clean up
             
             # Clean up temp file
             Path(tmp_path).unlink(missing_ok=True)
+            
+            # Also clean up potential log file
+            log_path = Path(f"{base_name}.log")
+            if log_path.exists():
+                log_path.unlink()
             
             # Analyze the file and directory lists to determine project type
             context = self._analyze_project_files(files_list, dirs_list)
@@ -1212,8 +1245,8 @@ I'll analyze your project and create an optimal m1f configuration that:
             print("─" * 50)
             
             try:
-                # Use subprocess method directly for initialization to avoid SDK async issues
-                response = self.send_to_claude_code_subprocess(init_prompt)
+                # Use the synchronous wrapper that tries SDK first, then subprocess
+                response = asyncio.run(self.send_to_claude_code_async(init_prompt, max_turns=1, is_first_prompt=True))
                 if response:
                     print(f"\n✅ Initialization complete!")
                     print(f"📝 Claude has analyzed your project and provided setup guidance.")
@@ -1223,8 +1256,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     print(f"\nYou can manually enhance the configuration or run:")
                     print(f"m1f-claude 'Help me improve my m1f configuration'")
             except Exception as e:
-                if self.debug:
-                    print(f"\n❌ Error during initialization: {e}")
+                print(f"\n❌ Error during initialization: {e}")
                 print(f"\n⚠️  Initialization via automation failed")
                 print(f"\nYou can manually run: m1f-claude 'Help me improve my m1f configuration'")
         else:
