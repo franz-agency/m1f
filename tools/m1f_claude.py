@@ -782,12 +782,30 @@ I'll analyze your project and create an optimal m1f configuration that:
                                         text = item.get("text", "")
                                         response_text += text
                                         # In interactive mode, print text directly
+                                        # Add newline before common action phrases for better readability
+                                        text_stripped = text.strip()
+                                        if text_stripped and text_stripped.startswith((
+                                            "Let me", "Now let me", "Now I'll", "I'll",
+                                            "First,", "Next,", "Then,", "Finally,",
+                                            "Checking", "Creating", "Looking",
+                                            "I need to", "I'm going to", "I will"
+                                        )):
+                                            print("\n", end="")
                                         print(text, end="", flush=True)
                                     elif item.get("type") == "tool_use":
                                         # This is handled by the top-level tool_use event now
                                         pass
                         elif isinstance(content, str):
                             response_text += content
+                            # Add newline before common action phrases for better readability
+                            content_stripped = content.strip()
+                            if content_stripped and content_stripped.startswith((
+                                "Let me", "Now let me", "Now I'll", "I'll",
+                                "First,", "Next,", "Then,", "Finally,",
+                                "Checking", "Creating", "Looking",
+                                "I need to", "I'm going to", "I will"
+                            )):
+                                print("\n", end="")
                             print(content, end="", flush=True)
                                 
                     elif event_type == "result":
