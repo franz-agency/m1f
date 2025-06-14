@@ -908,19 +908,34 @@ I'll analyze your project and create an optimal m1f configuration that:
                 resume=self.session_id if not is_first_prompt and self.session_id else None
             )
             
-            async for message in query(
-                prompt=prompt,
-                options=options
-            ):
-                if cancelled:
-                    break
-                    
-                messages.append(message)
+            async with anyio.create_task_group() as tg:
+                async def collect_messages():
+                    try:
+                        async for message in query(
+                            prompt=prompt,
+                            options=options
+                        ):
+                            if cancelled:
+                                break
+                                
+                            messages.append(message)
+                            
+                            # Extract session ID from ResultMessage - handle missing fields gracefully
+                            if isinstance(message, ResultMessage):
+                                if hasattr(message, 'session_id'):
+                                    self.session_id = message.session_id
+                                    self.conversation_started = True
+                                # Handle cost field gracefully
+                                if hasattr(message, 'cost_usd'):
+                                    if self.debug:
+                                        logger.info(f"Cost: ${message.cost_usd}")
+                    except Exception as e:
+                        if self.debug:
+                            logger.error(f"SDK error during message collection: {e}")
+                        # Don't re-raise, let it fall through to subprocess fallback
+                        pass
                 
-                # Extract session ID from ResultMessage
-                if isinstance(message, ResultMessage) and hasattr(message, 'session_id'):
-                    self.session_id = message.session_id
-                    self.conversation_started = True
+                tg.start_soon(collect_messages)
             
             # Combine all messages into a single response
             if messages:
@@ -946,7 +961,8 @@ I'll analyze your project and create an optimal m1f configuration that:
             logger.info("Response cancelled by user.")
             return None
         except Exception as e:
-            logger.error(f"Error communicating with Claude Code SDK: {e}")
+            if self.debug:
+                logger.error(f"Error communicating with Claude Code SDK: {e}")
             # Fall back to subprocess method if SDK fails
             return self.send_to_claude_code_subprocess(prompt)
         finally:
@@ -966,47 +982,31 @@ I'll analyze your project and create an optimal m1f configuration that:
             )
 
             if result.returncode != 0:
-                logger.info(
-                    "\n📝 Claude Code not found. Here's your enhanced prompt to copy:\n"
-                )
+                if self.debug:
+                    logger.info("Claude Code not found via subprocess")
                 return None
 
-            # Send to Claude Code using --print for non-interactive mode
-            logger.info("\n🤖 Sending to Claude Code (subprocess fallback)...\n")
+            logger.info("🤖 Connecting to Claude Code...")
 
-            # Use subprocess.Popen for better control over stdin/stdout
-            process = subprocess.Popen(
-                ["claude", "--print"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-
-            try:
-                # Send the enhanced prompt via stdin
-                stdout, stderr = process.communicate(
-                    input=enhanced_prompt, timeout=300  # 5 minute timeout
-                )
-
-                if process.returncode == 0:
-                    return stdout
-                else:
-                    logger.error(f"Claude Code error: {stderr}")
-                    return None
-
-            except subprocess.TimeoutExpired:
-                process.kill()
-                logger.error("Claude Code timed out after 5 minutes")
-                return None
+            # For initialization, just display the prompt and let user handle it manually
+            # This avoids subprocess hanging issues during project setup
+            print("\n" + "="*60)
+            print("ENHANCED PROMPT FOR CLAUDE:")
+            print("="*60)
+            print(enhanced_prompt)
+            print("="*60)
+            print("\n💡 Copy the above prompt and paste it into Claude Code or Claude directly.")
+            print("   This ensures proper project setup without subprocess issues.")
+            
+            return "Prompt displayed for manual use"
 
         except FileNotFoundError:
-            logger.info(
-                "\n📝 Claude Code not installed. Install with: npm install -g @anthropic-ai/claude-code"
-            )
+            if self.debug:
+                logger.info("Claude Code not installed")
             return None
         except Exception as e:
-            logger.error(f"Error communicating with Claude Code: {e}")
+            if self.debug:
+                logger.error(f"Error communicating with Claude Code: {e}")
             return None
 
     def interactive_mode(self):
@@ -1143,36 +1143,131 @@ I'll analyze your project and create an optimal m1f configuration that:
         print(f"\n📊 Project Analysis")
         print("=" * 30)
         
-        # Analyze project structure
-        context = self._analyze_project_context()
-        print(context)
+        # Run m1f to generate file and directory lists for comprehensive analysis
+        import tempfile
+        
+        # Run m1f to generate file and directory lists
+        print("Analyzing project structure with m1f...")
+        with tempfile.NamedTemporaryFile(prefix="m1f_analysis_", suffix=".txt", delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            # Run m1f with --skip-output-file to generate only auxiliary files
+            cmd = [
+                "m1f",
+                "-s", str(self.project_path),
+                "-o", tmp_path,
+                "--skip-output-file",
+                "--minimal-output",
+                "--quiet"
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            # Read the generated file lists
+            filelist_path = Path(tmp_path.replace(".txt", "_filelist.txt"))
+            dirlist_path = Path(tmp_path.replace(".txt", "_dirlist.txt"))
+            
+            files_list = []
+            dirs_list = []
+            
+            if filelist_path.exists():
+                files_list = filelist_path.read_text().strip().split('\n')
+                filelist_path.unlink()  # Clean up
+            
+            if dirlist_path.exists():
+                dirs_list = dirlist_path.read_text().strip().split('\n')
+                dirlist_path.unlink()  # Clean up
+            
+            # Clean up temp file
+            Path(tmp_path).unlink(missing_ok=True)
+            
+            # Analyze the file and directory lists to determine project type
+            context = self._analyze_project_files(files_list, dirs_list)
+            
+            # Display analysis results
+            print(f"✅ Found {context.get('total_files', 0)} files in {context.get('total_dirs', 0)} directories")
+            print(f"📁 Project Type: {context.get('type', 'Unknown')}")
+            print(f"💻 Languages: {context.get('languages', 'Unknown')}")
+            if context.get('main_code_dirs'):
+                print(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
+            
+        except Exception as e:
+            print(f"⚠️  Failed to analyze project structure: {e}")
+            # Fallback to basic analysis
+            context = self._analyze_project_context()
+            print(context)
+        
+        # Create a basic configuration file first
+        if not config_path.exists():
+            print(f"\n📝 Creating basic .m1f.config.yml...")
+            self._create_basic_config(config_path)
+            print(f"✅ Basic configuration created at {config_path}")
         
         # Create initialization prompt for Claude
-        init_prompt = self._create_initialization_prompt(config_path.exists(), has_claude_code)
+        init_prompt = self._create_initialization_prompt(config_path.exists(), has_claude_code, context)
         
         if has_claude_code:
             print(f"\n🤖 Starting Claude Code session for project setup...")
             print("─" * 50)
             
             try:
-                response = self.send_to_claude_code(init_prompt, max_turns=5, is_first_prompt=True)
+                # Use subprocess method directly for initialization to avoid SDK async issues
+                response = self.send_to_claude_code_subprocess(init_prompt)
                 if response:
                     print(f"\n✅ Initialization complete!")
+                    print(f"📝 Claude has analyzed your project and provided setup guidance.")
+                    print(f"💡 You can now run: m1f-update")
                 else:
                     print(f"\n⚠️  Could not connect to Claude Code")
-                    print(f"\nYou can manually create a .m1f.config.yml file or run:")
-                    print(f"m1f-claude 'Help me set up m1f for my project'")
+                    print(f"\nYou can manually enhance the configuration or run:")
+                    print(f"m1f-claude 'Help me improve my m1f configuration'")
             except Exception as e:
-                print(f"\n❌ Error during initialization: {e}")
-                print(f"\nYou can manually run: m1f-claude 'Help me set up m1f for my project'")
+                if self.debug:
+                    print(f"\n❌ Error during initialization: {e}")
+                print(f"\n⚠️  Initialization via automation failed")
+                print(f"\nYou can manually run: m1f-claude 'Help me improve my m1f configuration'")
         else:
             print(f"\n⚠️  Claude Code not available for automated setup")
-            print(f"\nTo complete initialization:")
+            print(f"\nTo enhance your configuration:")
             print(f"1. Install Claude Code: npm install -g @anthropic-ai/claude-code")
-            print(f"2. Run: m1f-claude 'Help me set up m1f for my project'")
-            print(f"3. Or manually create a .m1f.config.yml file")
+            print(f"2. Run: m1f-claude 'Help me improve my m1f configuration'")
+            print(f"3. Or manually edit the .m1f.config.yml file")
+        
+        print(f"\n🚀 Next steps:")
+        print(f"• Run 'm1f-update' to generate your first bundles")
+        print(f"• Check the generated bundles in the m1f/ directory")
+        print(f"• Use Claude to help refine your configuration as needed")
     
-    def _create_initialization_prompt(self, has_config: bool, has_claude_code: bool) -> str:
+    def _create_basic_config(self, config_path: Path) -> None:
+        """Create a minimal starter .m1f.config.yml that Claude will enhance."""
+        yaml_content = """# m1f Configuration - Generated by m1f-claude --init
+# This is a basic starter configuration that Claude will analyze and improve
+
+global:
+  global_settings:
+    security_check: "warn"
+    exclude_paths_file: ".gitignore"
+  
+  defaults:
+    force_overwrite: true
+    max_file_size: "100KB"
+    minimal_output: true
+
+bundles:
+  # Basic starter bundle - Claude will analyze your project and suggest improvements
+  main:
+    description: "Main project bundle"
+    output: "m1f/project.txt"
+    sources:
+      - path: "."
+        excludes: ["tests/**"]
+"""
+        
+        with open(config_path, 'w', encoding='utf-8') as f:
+            f.write(yaml_content)
+
+    def _create_initialization_prompt(self, has_config: bool, has_claude_code: bool, project_context: Dict = None) -> str:
         """Create a comprehensive initialization prompt for Claude."""
         prompt_parts = []
         
@@ -1207,15 +1302,17 @@ I'll analyze your project and create an optimal m1f configuration that:
         
         prompt_parts.append("⚙️ PHASE 4: IMPLEMENTATION")
         if has_config:
-            prompt_parts.append("• Review existing .m1f.config.yml and suggest improvements")
-            prompt_parts.append("• Update configuration based on current project state")
+            prompt_parts.append("• Read and analyze the existing .m1f.config.yml file")
+            prompt_parts.append("• Modify the configuration file based on your project analysis")
+            prompt_parts.append("• Enhance bundle definitions for the discovered project structure")
         else:
-            prompt_parts.append("• Create comprehensive .m1f.config.yml configuration")
-            prompt_parts.append("• Include bundle definitions for different use cases")
+            prompt_parts.append("• Create a comprehensive .m1f.config.yml configuration file")
+            prompt_parts.append("• Write bundle definitions tailored to this specific project")
         
-        prompt_parts.append("• Set up appropriate global excludes")
-        prompt_parts.append("• Configure security scanning settings")
-        prompt_parts.append("• Add helpful bundle descriptions")
+        prompt_parts.append("• Configure appropriate global excludes for this project type")
+        prompt_parts.append("• Set up security scanning settings")
+        prompt_parts.append("• Write clear, descriptive bundle names and descriptions")
+        prompt_parts.append("• ACTUALLY CREATE/MODIFY the .m1f.config.yml file using available tools")
         prompt_parts.append("")
         
         prompt_parts.append("✅ PHASE 5: VALIDATION & TESTING")
@@ -1235,11 +1332,43 @@ I'll analyze your project and create an optimal m1f configuration that:
         prompt_parts.append("")
         
         # Add project-specific context
-        context = self._analyze_project_context()
-        if context.strip():
-            prompt_parts.append("📊 CURRENT PROJECT CONTEXT:")
-            prompt_parts.append(context)
+        if project_context:
+            prompt_parts.append("📊 DETAILED PROJECT ANALYSIS:")
+            prompt_parts.append(f"- Total Files: {project_context.get('total_files', 'Unknown')}")
+            prompt_parts.append(f"- Total Directories: {project_context.get('total_dirs', 'Unknown')}")
+            prompt_parts.append(f"- Project Type: {project_context.get('type', 'Not specified')}")
+            prompt_parts.append(f"- Main Language(s): {project_context.get('languages', 'Not specified')}")
+            prompt_parts.append(f"- Size: {project_context.get('size', 'Not specified')}")
+            prompt_parts.append(f"- Recommendation: {project_context.get('recommendation', 'Create focused bundles')}")
+            
+            if project_context.get('documentation_files'):
+                prompt_parts.append(f"\n**Documentation Files:**")
+                for doc_file in project_context['documentation_files'][:5]:
+                    prompt_parts.append(f"- {doc_file}")
+            
+            if project_context.get('main_code_dirs'):
+                prompt_parts.append(f"\n**Main Code Directories:**")
+                for code_dir in project_context['main_code_dirs'][:5]:
+                    prompt_parts.append(f"- {code_dir}")
+            
+            if project_context.get('test_dirs'):
+                prompt_parts.append(f"\n**Test Directories:**")
+                for test_dir in project_context['test_dirs'][:3]:
+                    prompt_parts.append(f"- {test_dir}")
+            
+            if project_context.get('config_files'):
+                prompt_parts.append(f"\n**Configuration Files:**")
+                for config_file in project_context['config_files']:
+                    prompt_parts.append(f"- {config_file}")
+            
             prompt_parts.append("")
+        else:
+            # Fallback to basic analysis
+            context = self._analyze_project_context()
+            if context.strip():
+                prompt_parts.append("📊 CURRENT PROJECT CONTEXT:")
+                prompt_parts.append(context)
+                prompt_parts.append("")
         
         # Add AI-specific guidance
         prompt_parts.append("🤖 AI INTEGRATION FOCUS:")
