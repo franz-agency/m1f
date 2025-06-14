@@ -48,14 +48,19 @@ and this project adheres to
   - **Exit Command**: Added `/e` command support like Claude CLI
     - Works alongside 'quit', 'exit', and 'q' commands
     - Updated help text and keyboard interrupt messages
-  - **Project Context Extraction**: Added intelligent project context extraction from natural language
-    - New `_extract_project_context` method analyzes user prompts for project details
-    - Detects project name, type, size, languages, frameworks, and special requirements
-    - Generates project-specific m1f configuration templates
-    - Provides tailored bundle suggestions based on detected project characteristics
-    - Includes automation preferences (git hooks, CI/CD, watch mode) in generated configs
+  - **Initialization Command**: Fixed `--init` command async/await issues
+    - Resolved RuntimeError with cancel scope in different task
+    - Added graceful handling of missing 'cost_usd' field in Claude SDK responses
+    - Implemented proper anyio task group management for async operations
+    - Enhanced error handling with debug logging for SDK issues
+    - Fixed subprocess hanging by displaying prompts for manual use instead of programmatic execution
 
 ### Changed
+
+- **Dependencies**: Updated claude-code-sdk to use flexible version constraint
+  - Changed from `claude-code-sdk==0.0.10` to `claude-code-sdk>=0.0.10`
+  - Ensures automatic updates to latest compatible versions
+  - Maintains backward compatibility with current version
 
 - **m1f-claude Architecture**: Switched from SDK to subprocess for better control
   - Uses Claude CLI directly with proper session management
