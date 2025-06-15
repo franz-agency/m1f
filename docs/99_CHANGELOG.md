@@ -27,6 +27,19 @@ and this project adheres to
   - Documentation extensions now available system-wide for all tools
 
 - **m1f-claude --init Improvements**: Enhanced project initialization process
+  - **Choice-Based Setup**: Users can choose between quick and advanced initialization modes
+    - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
+    - Command-line parameters: `--quick-setup` and `--advanced-setup` for scripting
+    - Quick setup: Creates bundles in 30 seconds without Claude
+    - Advanced setup: Claude analyzes project and creates topic-specific bundles
+  - **Project-Specific Bundle Naming**: All bundles include project directory name
+    - Example: `m1f_complete.txt`, `m1f_docs.txt` for the m1f project
+    - Auxiliary files also include project name: `m1f_complete_filelist.txt`, `m1f_complete_dirlist.txt`
+    - Makes it easier to identify bundles when working with multiple projects
+  - **Auxiliary File Generation**: Both bundles now generate filelist and dirlist files
+    - Complete bundle creates: `{project}_complete_filelist.txt` and `{project}_complete_dirlist.txt`
+    - Docs bundle creates: `{project}_docs_filelist.txt` and `{project}_docs_dirlist.txt`
+    - Provides overview of included files and directory structure
   - **Streamlined Workflow**: Automatic bundle creation without Claude dependency
     - Automatically creates complete.txt bundle with all project files
     - Automatically creates docs.txt bundle with 62 documentation extensions
