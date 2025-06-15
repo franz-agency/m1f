@@ -1409,10 +1409,15 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Execute Claude directly with the prompt
         print(f"\n🤖 Sending to Claude Code...")
-        print(f"⏳ Claude will now analyze your project and create topic-specific bundles...\n")
+        print(f"⏳ Claude will now analyze your project and create topic-specific bundles...")
+        print(f"\n⚠️  IMPORTANT: This process may take 1-3 minutes as Claude:")
+        print(f"   • Reads and analyzes all project files")
+        print(f"   • Understands your project structure") 
+        print(f"   • Creates intelligent bundle configurations")
+        print(f"\n🔄 Please wait while Claude works...\n")
         
         try:
-            # Run Claude with the prompt directly
+            # PHASE 1: Run Claude with the prompt directly
             cmd = [
                 "claude",
                 "-p", segmentation_prompt,
@@ -1424,11 +1429,53 @@ I'll analyze your project and create an optimal m1f configuration that:
             result = subprocess.run(cmd, cwd=self.project_path, capture_output=False, text=True)
             
             if result.returncode == 0:
-                print(f"\n✅ Advanced segmentation complete!")
-                print(f"📝 Claude has analyzed your project and added topic-specific bundles.")
+                print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
+                print(f"📝 Claude has analyzed your project and updated .m1f.config.yml")
             else:
                 print(f"\n⚠️  Claude exited with code {result.returncode}")
                 print(f"Please check your .m1f.config.yml manually.")
+                return
+                
+            # PHASE 2: Run m1f-update and have Claude verify the results
+            print(f"\n🔄 Phase 2: Generating bundles and verifying configuration...")
+            print(f"⏳ Running m1f-update to generate bundles...")
+            
+            # Run m1f-update to generate the bundles
+            update_result = subprocess.run(
+                ["m1f-update"], 
+                cwd=self.project_path, 
+                capture_output=True, 
+                text=True
+            )
+            
+            if update_result.returncode != 0:
+                print(f"\n⚠️  m1f-update failed:")
+                print(update_result.stderr)
+                print(f"\n📝 Running verification anyway to help fix issues...")
+            else:
+                print(f"✅ Bundles generated successfully!")
+            
+            # Create verification prompt
+            verification_prompt = self._create_verification_prompt(context)
+            
+            print(f"\n🤖 Phase 2: Claude will now verify and improve the configuration...")
+            print(f"⏳ This includes checking bundle quality and fixing any issues...\n")
+            
+            # Run Claude again to verify and improve
+            cmd_verify = [
+                "claude",
+                "-p", verification_prompt,
+                "--add-dir", str(self.project_path),
+                "--allowedTools", "Read,Write,Edit,MultiEdit,Glob,Grep,Bash"
+            ]
+            
+            # Execute Claude for verification
+            verify_result = subprocess.run(cmd_verify, cwd=self.project_path, capture_output=False, text=True)
+            
+            if verify_result.returncode == 0:
+                print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
+            else:
+                print(f"\n⚠️  Verification phase exited with code {verify_result.returncode}")
                 
         except FileNotFoundError:
             print(f"\n❌ Claude Code not found. Please install it first:")
@@ -1439,8 +1486,8 @@ I'll analyze your project and create an optimal m1f configuration that:
             self.send_to_claude_code_subprocess(segmentation_prompt)
 
         print(f"\n🚀 Next steps:")
-        print(f"• Check your updated .m1f.config.yml")
-        print(f"• Run 'm1f-update' to generate the new bundles")
+        print(f"• Your .m1f.config.yml has been created and verified")
+        print(f"• Run 'm1f-update' to regenerate bundles with any improvements")
         print(f"• Use topic-specific bundles with your AI tools")
 
     def _create_basic_config_with_docs(
@@ -1498,24 +1545,50 @@ bundles:
         """Create a prompt for advanced project segmentation."""
         prompt_parts = []
 
-        prompt_parts.append("🎯 CREATE TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT")
+        prompt_parts.append("🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT")
         prompt_parts.append("=" * 60)
         prompt_parts.append("")
         prompt_parts.append(
             "The basic bundles (complete.txt and docs.txt) have already been created."
         )
         prompt_parts.append(
-            "Now create additional topic-specific bundles to segment the project."
+            "Now create additional topic-specific bundles following BEST PRACTICES."
         )
         prompt_parts.append("")
         
         # CRITICAL: Add references to the files Claude needs to read
-        prompt_parts.append("📚 REQUIRED READING:")
+        prompt_parts.append("📚 REQUIRED READING (IN THIS ORDER):")
         prompt_parts.append("1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax")
-        prompt_parts.append("2. READ: @m1f/project_analysis_filelist.txt for complete file listing")
-        prompt_parts.append("3. READ: @m1f/project_analysis_dirlist.txt for directory structure")
+        prompt_parts.append("2. READ: @m1f/project_analysis_dirlist.txt for directory structure")
+        prompt_parts.append("3. READ: @m1f/project_analysis_filelist.txt for complete file listing")
         prompt_parts.append("")
         prompt_parts.append("⚠️ IMPORTANT: Read ALL three files above before proceeding!")
+        prompt_parts.append("")
+
+        # BEST PRACTICES
+        prompt_parts.append("🏆 BEST PRACTICES FOR PERFECT BUNDLES:")
+        prompt_parts.append("")
+        prompt_parts.append("1. **MODULAR ARCHITECTURE** - One bundle per logical module/tool/service")
+        prompt_parts.append("2. **USE PRECISE INCLUDES** - Don't exclude everything except what you want!")
+        prompt_parts.append("   Instead, use precise 'includes' patterns:")
+        prompt_parts.append("   ```yaml")
+        prompt_parts.append("   sources:")
+        prompt_parts.append("     - path: \"src/auth\"")
+        prompt_parts.append("       include_extensions: [\".ts\", \".js\"]")
+        prompt_parts.append("     - path: \"shared\"")
+        prompt_parts.append("       includes: [\"auth-utils.ts\", \"auth-types.ts\"]")
+        prompt_parts.append("   ```")
+        prompt_parts.append("3. **BUNDLE GROUPS** - Organize into logical groups")
+        prompt_parts.append("4. **NUMBERED OUTPUTS** - Optional: Use number prefixes for easier sorting/referencing")
+        prompt_parts.append("5. **HIERARCHICAL BUNDLES** - Create aggregated bundles (all-docs, all-frontend)")
+        prompt_parts.append("")
+
+        # CRITICAL RULES
+        prompt_parts.append("🚨 CRITICAL RULES:")
+        prompt_parts.append("1. NO DEFAULT EXCLUDES (node_modules, .git, __pycache__, vendor/ already excluded)")
+        prompt_parts.append("2. NO IMAGE/BINARY BUNDLES")
+        prompt_parts.append("3. MAXIMUM 20 bundles total")
+        prompt_parts.append("4. Each bundle must be SELF-CONTAINED and useful alone")
         prompt_parts.append("")
 
         prompt_parts.append("📋 ALREADY CREATED BUNDLES:")
@@ -1523,25 +1596,27 @@ bundles:
         prompt_parts.append("- docs: All documentation files")
         prompt_parts.append("")
 
-        prompt_parts.append("🎯 YOUR TASK:")
-        prompt_parts.append(
-            "Analyze the project structure from the file/directory lists and add topic-specific bundles to .m1f.config.yml."
-        )
-        prompt_parts.append("DO NOT modify the existing 'complete' and 'docs' bundles.")
+        prompt_parts.append("🔍 PROJECT ANALYSIS STEPS:")
         prompt_parts.append("")
-
-        prompt_parts.append("💡 SUGGESTED BUNDLE TYPES (only add if they exist):")
-        prompt_parts.append(
-            "- components: UI components (for React/Vue/Angular projects)"
-        )
-        prompt_parts.append("- api: API routes, endpoints, controllers")
-        prompt_parts.append("- models: Data models, schemas, database definitions")
-        prompt_parts.append("- services: Business logic, service layers")
-        prompt_parts.append("- utils/helpers: Utility functions and helpers")
-        prompt_parts.append("- config: Configuration files (but not .env files!)")
-        prompt_parts.append("- styles: CSS, SCSS, style files")
-        prompt_parts.append("- tests: Test files (if separate from main code)")
-        prompt_parts.append("- scripts: Build scripts, automation")
+        prompt_parts.append("STEP 1: Identify Architecture Type")
+        prompt_parts.append("- Monorepo? → Bundle per package")
+        prompt_parts.append("- Multi-app? → Bundle per app + shared bundles")
+        prompt_parts.append("- Plugin system? → Bundle per plugin + core")
+        prompt_parts.append("- Modular? → Bundle per module")
+        prompt_parts.append("")
+        
+        prompt_parts.append("STEP 2: Find Natural Boundaries")
+        prompt_parts.append("Look for:")
+        prompt_parts.append("- Directory names indicating modules (auth/, user/, payment/)")
+        prompt_parts.append("- Plugin/theme directories (wp-content/plugins/*, wp-content/themes/*)")
+        prompt_parts.append("- Feature boundaries (admin/, public/, includes/)")
+        prompt_parts.append("")
+        
+        prompt_parts.append("STEP 3: Design Bundle Hierarchy")
+        prompt_parts.append("1. Module-specific bundles (most granular)")
+        prompt_parts.append("2. Category bundles (all-tests, all-docs)")
+        prompt_parts.append("3. Aggregated bundles (all-frontend, all-backend)")
+        prompt_parts.append("4. Complete bundle (everything)")
         prompt_parts.append("")
 
         # Add project-specific context
@@ -1563,24 +1638,104 @@ bundles:
                     prompt_parts.append(f"- {code_dir}")
             prompt_parts.append("")
 
-        prompt_parts.append("⚙️ IMPLEMENTATION STEPS:")
-        prompt_parts.append("1. First, read all three required files listed above")
-        prompt_parts.append("2. Analyze the file and directory lists to understand project structure")
-        prompt_parts.append("3. Read the existing .m1f.config.yml")
-        prompt_parts.append(
-            "4. Keep the existing 'complete' and 'docs' bundles unchanged"
-        )
-        prompt_parts.append("5. Add new topic-specific bundles after the docs bundle")
-        prompt_parts.append(
-            "6. Use appropriate include/exclude patterns based on the file analysis"
-        )
-        prompt_parts.append("7. Ensure bundles don't overlap unnecessarily")
-        prompt_parts.append("8. Use the MultiEdit tool to add all new bundles at once")
+        prompt_parts.append("📝 IMPLEMENTATION APPROACH:")
         prompt_parts.append("")
-        prompt_parts.append(
-            "Remember: Base your bundle decisions on the actual files found in the project!"
-        )
+        prompt_parts.append("Example for a WordPress plugin:")
+        prompt_parts.append("```yaml")
+        prompt_parts.append("my-plugin-core:")
+        prompt_parts.append("  description: \"My Plugin core functionality\"")
+        prompt_parts.append("  output: \"m1f/my-plugin-core.txt\"")
+        prompt_parts.append("  sources:")
+        prompt_parts.append("    - path: \"wp-content/plugins/my-plugin\"")
+        prompt_parts.append("      include_extensions: [\".php\"]")
+        prompt_parts.append("      includes: [\"my-plugin.php\", \"includes/**\", \"classes/**\"]")
+        prompt_parts.append("")
+        prompt_parts.append("my-plugin-admin:")
+        prompt_parts.append("  description: \"My Plugin admin interface\"")
+        prompt_parts.append("  output: \"m1f/my-plugin-admin.txt\"")
+        prompt_parts.append("  sources:")
+        prompt_parts.append("    - path: \"wp-content/plugins/my-plugin/admin\"")
+        prompt_parts.append("      include_extensions: [\".php\", \".js\", \".css\"]")
+        prompt_parts.append("```")
+        prompt_parts.append("")
+        
+        prompt_parts.append("⚡ ACTION PLAN:")
+        prompt_parts.append("1. Read all required files thoroughly")
+        prompt_parts.append("2. Identify project's modular structure")
+        prompt_parts.append("3. Design bundles with PRECISE INCLUDES (not broad excludes)")
+        prompt_parts.append("4. Optionally use numbered outputs for easier sorting/referencing")
+        prompt_parts.append("5. Create self-contained bundles that include shared dependencies")
+        prompt_parts.append("6. Add all bundles with MultiEdit in one operation")
+        prompt_parts.append("")
+        
+        prompt_parts.append("Remember: Each bundle should answer \"What would I need to understand this module?\"")
 
+        return "\n".join(prompt_parts)
+
+    def _create_verification_prompt(self, project_context: Dict) -> str:
+        """Create a prompt for verifying and improving the generated config."""
+        prompt_parts = []
+        
+        prompt_parts.append("🔍 VERIFY AND IMPROVE M1F CONFIGURATION")
+        prompt_parts.append("=" * 60)
+        prompt_parts.append("")
+        prompt_parts.append("Your task is to verify the .m1f.config.yml that was just created and improve it if needed.")
+        prompt_parts.append("")
+        
+        prompt_parts.append("📋 VERIFICATION CHECKLIST:")
+        prompt_parts.append("")
+        prompt_parts.append("1. **Read .m1f.config.yml** - Check the current configuration")
+        prompt_parts.append("2. **Check Generated Bundles** - Look in m1f/ directory for .txt files")
+        prompt_parts.append("3. **Verify Bundle Quality**:")
+        prompt_parts.append("   - Are bundles under 200KB for Claude Code / 5MB for Claude AI?")
+        prompt_parts.append("   - Do they contain the expected content?")
+        prompt_parts.append("   - Are there any errors or warnings?")
+        project_name = self.project_path.name
+        prompt_parts.append(f"4. **Test a Bundle** - Read at least one generated bundle (e.g., @m1f/{project_name}_complete.txt)")
+        prompt_parts.append("5. **Check for Common Issues**:")
+        prompt_parts.append("   - Redundant excludes (node_modules, .git, etc. are auto-excluded)")
+        prompt_parts.append("   - Missing important files")
+        prompt_parts.append("   - Bundles that are too large or too small")
+        prompt_parts.append("   - Incorrect separator_style (should be Standard or omitted)")
+        prompt_parts.append("   - Wrong sources format (should use 'sources:' array, not 'source_directory:')")
+        prompt_parts.append("")
+        
+        prompt_parts.append("🛠️ IMPROVEMENT ACTIONS:")
+        prompt_parts.append("")
+        prompt_parts.append("If you find issues:")
+        prompt_parts.append("1. **Fix Configuration Errors** - Update .m1f.config.yml")
+        prompt_parts.append("2. **Optimize Bundle Organization** - Better grouping or splitting")
+        prompt_parts.append("3. **Add Missing Bundles** - If important areas aren't covered")
+        prompt_parts.append("4. **Remove Redundant Bundles** - If there's too much overlap")
+        prompt_parts.append("5. **Fix Size Issues** - Split large bundles or combine small ones")
+        prompt_parts.append("")
+        
+        prompt_parts.append("📝 SPECIFIC CHECKS:")
+        prompt_parts.append("")
+        prompt_parts.append("1. Run: `ls -la m1f/` to see all generated bundles and their sizes")
+        prompt_parts.append("2. Check for m1f-update errors in the output above")
+        prompt_parts.append("3. Read the complete bundle to verify content inclusion")
+        prompt_parts.append("4. Ensure each bundle serves a clear, distinct purpose")
+        prompt_parts.append("")
+        
+        # Add project-specific context
+        if project_context:
+            prompt_parts.append("📊 PROJECT CONTEXT:")
+            prompt_parts.append(f"- Type: {project_context.get('type', 'Unknown')}")
+            prompt_parts.append(f"- Languages: {project_context.get('languages', 'Unknown')}")
+            prompt_parts.append(f"- Total Files: {project_context.get('total_files', 'Unknown')}")
+            prompt_parts.append("")
+        
+        prompt_parts.append("🎯 EXPECTED OUTCOME:")
+        prompt_parts.append("")
+        prompt_parts.append("After verification:")
+        prompt_parts.append("1. The .m1f.config.yml should be optimal for this project")
+        prompt_parts.append("2. All bundles should generate without errors")
+        prompt_parts.append("3. Each bundle should be appropriately sized")
+        prompt_parts.append("4. The configuration should follow all best practices")
+        prompt_parts.append("")
+        prompt_parts.append("If everything looks good, just confirm. If improvements are needed, make them!")
+        
         return "\n".join(prompt_parts)
 
     def _send_with_session(
