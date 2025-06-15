@@ -1414,11 +1414,11 @@ bundles:
         prompt_parts.append("")
         
         prompt_parts.append("⚙️ IMPLEMENTATION STEPS:")
-        prompt_parts.append("1. Read the existing .m1f.config.yml if it exists")
-        prompt_parts.append("2. Analyze what bundles make sense for THIS specific project")
-        prompt_parts.append("3. Create bundles that segment the project logically")
-        prompt_parts.append("4. Use the Edit or Write tool to create/update the configuration")
-        prompt_parts.append("5. Include helpful descriptions for each bundle")
+        prompt_parts.append("1. Read the existing .m1f.config.yml - it's just a BASIC STARTER!")
+        prompt_parts.append("2. The current config only has ONE 'complete' bundle - this is NOT enough!")
+        prompt_parts.append("3. You MUST add multiple bundles based on the project structure")
+        prompt_parts.append("4. Use the Edit or MultiEdit tool to REPLACE the entire bundles section")
+        prompt_parts.append("5. Add at least 3-5 bundles that match the actual project content")
         prompt_parts.append("")
         
         prompt_parts.append("🎯 For this specific project, create bundles that match its structure!")
@@ -1426,7 +1426,9 @@ bundles:
         prompt_parts.append("If it has multiple sub-projects, create bundles for each.")
         prompt_parts.append("")
         
-        prompt_parts.append("IMPORTANT: Actually CREATE or MODIFY the .m1f.config.yml file!")
+        prompt_parts.append("⚠️ CRITICAL: You MUST use Edit/MultiEdit to MODIFY .m1f.config.yml!")
+        prompt_parts.append("The file exists but only has a basic 'complete' bundle.")
+        prompt_parts.append("Replace the entire bundles section with project-specific bundles!")
         
         return "\n".join(prompt_parts)
 
