@@ -60,15 +60,36 @@ Create `.claude/settings.json` in the project root:
 
 ### Quick Project Setup with --init
 
-The `m1f-claude --init` command provides an intelligent way to set up m1f for your project:
+The `m1f-claude --init` command provides flexible setup options for your project:
 
 ```bash
-# Initialize m1f configuration with basic bundles
+# Interactive mode - choose between quick and advanced setup
 m1f-claude --init
+
+# Quick setup only (no Claude required)
+m1f-claude --init --quick-setup
+
+# Advanced setup with Claude topic segmentation
+m1f-claude --init --advanced-setup
 
 # With verbose output to see what's happening
 m1f-claude --init --verbose
 ```
+
+#### Setup Modes:
+
+**Quick Setup** (Option 1 or --quick-setup):
+- Creates complete.txt and docs.txt bundles automatically
+- Generates auxiliary files (filelist and dirlist) for each bundle
+- Sets up basic .m1f.config.yml
+- Ready in 30 seconds without Claude
+
+**Advanced Setup** (Option 2 or --advanced-setup):
+- Everything from quick setup PLUS
+- Claude analyzes your project structure
+- Creates topic-specific bundles (models, views, tests, etc.)
+- Customizes configuration for your project type
+- Requires Claude Code installation
 
 #### What --init Does:
 
@@ -79,20 +100,24 @@ m1f-claude --init --verbose
    - Analyzes project type, languages, and structure
 
 2. **Automatic Bundle Creation**
-   - **complete.txt**: Full project bundle (excluding meta files)
-   - **docs.txt**: All documentation files with 50+ supported extensions
-   - Both bundles are created immediately without Claude Code
+   - **complete.txt**: Full project bundle with auxiliary files
+     - `complete_filelist.txt`: List of all included files
+     - `complete_dirlist.txt`: Directory structure
+   - **docs.txt**: Documentation bundle using --docs-only filter
+     - `docs_filelist.txt`: List of documentation files
+     - `docs_dirlist.txt`: Documentation directory structure
+   - Both bundles created immediately without Claude Code
 
 3. **Configuration File**
-   - Creates `.m1f.config.yml` with complete and docs bundles configured
-   - Includes all documentation extensions (.md, .txt, .rst, .adoc, etc.)
+   - Creates `.m1f.config.yml` with complete and docs bundles
+   - Uses `docs_only: true` for documentation bundle
    - No global file size limits
    - Proper meta file exclusions (LICENSE*, CLAUDE.md, *.lock)
 
 4. **Advanced Segmentation (Optional)**
-   - If Claude Code is installed, offers to create topic-specific bundles
+   - If Claude Code is installed and advanced mode selected
    - Analyzes project structure for components, API, styles, etc.
-   - Adds these bundles to your existing configuration
+   - Adds topic-specific bundles to existing configuration
    - Uses `--allowedTools Read,Write,Edit,MultiEdit` for file operations
 
 #### Example Output:
