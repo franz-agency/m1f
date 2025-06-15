@@ -1,13 +1,65 @@
 # m1f - Make One File 🚀
 
-**Feed your AI the whole story.** A powerful toolkit that turns messy codebases
-into AI-ready context bundles.
+**Feed your AI the whole story.**
 
-## What's This?
+## What is m1f?
 
-Ever tried explaining your entire project to Claude or ChatGPT? Yeah, that's
-what we thought. m1f makes it stupid simple to bundle your code, docs, and
-whatever else into perfectly digestible chunks for LLMs.
+m1f (Make One File) bundles your entire codebase into a single file that you can feed to Claude AI, ChatGPT, Google Gemini, or any LLM. Think of it as a context maximizer - it takes hundreds of files from your project and intelligently combines them into one mega-file that fits perfectly in an AI's context window.
+
+## Real Example: Tailwind CSS 4.0
+
+Here's the problem: Tailwind 4.0 dropped in January 2025, but most LLMs are still stuck in 2024. They have no clue how the new version works. 
+
+The solution? Three commands:
+
+```bash
+git clone https://github.com/tailwindlabs/tailwindcss
+cd tailwindcss && m1f-init
+m1f-claude --advanced-setup
+```
+
+Boom. Now Claude knows everything about Tailwind 4.0. Your AI assistant just became an expert on bleeding-edge tech that didn't exist when it was trained. That's the power of m1f.
+
+> **🔐 Security Note**: m1f automatically scans for secrets (API keys, passwords, tokens) using [`detect-secrets`](https://github.com/Yelp/detect-secrets) to prevent accidental exposure to LLMs. It'll warn you before bundling sensitive data!
+
+## The Tool Suite
+
+m1f isn't just one tool - it's a whole squad:
+
+- **m1f** - The main bundler that creates your mega-files
+- **m1f-s1f** - Splits bundles back into individual files  
+- **m1f-scrape** - Downloads entire websites for offline processing
+- **m1f-html2md** - Converts HTML docs to clean Markdown
+- **m1f-token-counter** - Checks if your bundle fits in context windows
+- **m1f-claude** - AI assistant that already knows your codebase
+
+Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
+
+## Key Features of m1f
+
+### 🎯 Dynamic & Always Fresh
+- **Auto-updating bundles** - Configure once, always current
+- **Dynamic paths** - Glob patterns, regex, whatever you need
+- **Smart file selection** - Include/exclude by extension, size, path patterns
+- **Watch mode** - Regenerate bundles on file changes
+- **Git hooks** - Auto-bundle on every commit
+
+### 🚀 Performance
+- **Async I/O** - Blazing fast concurrent file processing
+- **Smart deduplication** - Skip identical files automatically (SHA256)
+- **Streaming architecture** - Handle massive codebases without breaking a sweat
+
+### 🔒 Security First
+- **Secret detection** - Powered by Yelp's [`detect-secrets`](https://github.com/Yelp/detect-secrets) - scans for API keys, passwords, tokens before bundling
+- **Path traversal protection** - No sneaky directory escapes
+- **SSRF protection** - Safe web scraping by default
+- **robots.txt compliance** - Always respects crawl rules
+
+### 🤖 AI-Optimized
+- **Token counting** - Know before you paste
+- **Smart separators** - Choose between human-readable or machine-readable formats
+- **Metadata preservation** - Keep file paths, timestamps, encodings
+- **Size filtering** - Skip those massive log files automatically
 
 ## The Squad
 
@@ -216,6 +268,30 @@ Set up a weekly cron job to re-scrape and rebuild:
 ```
 
 Where `scrape-claude-docs.sh` contains the full pipeline above.
+
+## Beyond AI: Other Cool Uses
+
+m1f isn't just for feeding LLMs. Here's what else you can do:
+
+### 📦 **Backup & Versioning**
+Bundle your project → timestamp it → instant versioned backups. Extract anywhere, anytime with m1f-s1f.
+
+### 🎨 **CSS/JS Bundler**
+Poor man's webpack? Bundle all your CSS and JS files into one. Add `--minify` if you're feeling frisky.
+
+### 🔄 **Universal File Converter**
+Got a mess of encodings? Latin-1, UTF-16, Windows-1252? m1f auto-detects and converts everything to UTF-8 (or whatever you want). One command, all files normalized.
+
+### 🚚 **Project Migration**
+Bundle on machine A → transfer one file → extract on machine B. All paths, permissions, and metadata preserved. Like tar, but smarter.
+
+```bash
+# Example: Full project backup with timestamp
+m1f -s . -o backup_$(date +%Y%m%d_%H%M%S).txt --add-timestamp
+
+# Extract it anywhere
+m1f-s1f -i backup_20250115_143022.txt -d ./restored_project
+```
 
 ## License
 
