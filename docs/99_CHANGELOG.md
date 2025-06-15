@@ -48,6 +48,40 @@ and this project adheres to
     - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
   - **Verbose Mode**: Added `--verbose` flag to show prompts and command parameters
     - Displays complete Claude Code command with permissions
+
+- **m1f-init Tool**: New cross-platform initialization tool
+  - Replaces m1f-link functionality (m1f-link has been removed)
+  - Integrates documentation linking into initialization process
+  - Works on Windows, Linux, and macOS
+  - Creates complete and docs bundles with project-specific names
+  - Generates auxiliary files (filelist, dirlist) for all bundles
+  - Creates basic .m1f.config.yml configuration
+  - Shows platform-specific next steps
+  - On Linux/macOS: Suggests `m1f-claude --advanced-setup` for topic bundles
+
+### Changed
+
+- **m1f-claude Refactoring**: Removed initialization from m1f-claude
+  - Removed --init, --quick-setup parameters
+  - Now only handles --advanced-setup for topic-specific bundles
+  - Requires m1f-init to be run first (checks for prerequisites)
+  - Focuses solely on Claude-assisted advanced configuration
+  - Not available on Windows (Linux/macOS only)
+
+### Removed
+
+- **m1f-link Command**: Functionality integrated into m1f-init
+  - Documentation linking now happens automatically during m1f-init
+  - Simplifies workflow by combining two steps into one
+
+### Enhanced
+
+- **Auxiliary File Documentation**: Added comprehensive documentation
+  - Documented filelist and dirlist generation in main m1f documentation
+  - Added "Output Files" section explaining all generated files
+  - Included examples of working with file lists for custom bundles
+  - Updated Quick Start to show all files created by m1f-init
+  - Added file list editing workflows to development documentation
     - Shows full prompt being sent for debugging
     - Helps troubleshoot initialization issues
   - **Project Analysis Files**: Create and preserve analysis artifacts in m1f/ directory

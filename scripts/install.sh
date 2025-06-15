@@ -140,8 +140,8 @@ echo "  • m1f-html2md       - Convert HTML to Markdown"
 echo "  • m1f-scrape        - Download websites for offline viewing"
 echo "  • m1f-token-counter - Count tokens in files"
 echo "  • m1f-update        - Regenerate m1f bundles"
-echo "  • m1f-link          - Link m1f documentation for AI tools"
-echo "  • m1f-claude        - Enhance prompts with m1f knowledge for Claude"
+echo "  • m1f-init          - Initialize m1f for your project"
+echo "  • m1f-claude        - Advanced setup with topic-specific bundles"
 echo "  • m1f-help          - Show available commands"
 echo
 

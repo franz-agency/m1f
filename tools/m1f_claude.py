@@ -1107,42 +1107,17 @@ I'll analyze your project and create an optimal m1f configuration that:
             except Exception as e:
                 logger.error(f"Error: {e}")
 
-    def initialize_project(self, quick_setup=False, advanced_setup=False):
-        """Initialize m1f for the current project with intelligent assistance."""
-        print("\n🚀 m1f Project Initialization")
+    def advanced_setup(self):
+        """Run advanced setup with Claude Code for topic-specific bundles."""
+        print("\n🤖 m1f Advanced Setup with Claude")
         print("=" * 50)
         
-        # Determine setup mode
-        if quick_setup and advanced_setup:
-            print("❌ Error: Cannot use both --quick-setup and --advanced-setup")
-            return
-        
-        if quick_setup:
-            choice = "1"
-            print("\n📋 Quick Setup Mode Selected")
-        elif advanced_setup:
-            choice = "2"
-            print("\n🤖 Advanced Setup Mode Selected (with Claude)")
-        else:
-            # Interactive mode - ask user
-            print("\nChoose your setup mode:")
-            print("\n1️⃣  Quick Setup (Recommended)")
-            print("    - Creates complete.txt and docs.txt bundles automatically")
-            print("    - Sets up basic .m1f.config.yml")
-            print("    - Ready to use in 30 seconds!")
-            print("\n2️⃣  Advanced Setup with Claude")
-            print("    - Quick setup PLUS Claude analyzes your project")
-            print("    - Creates topic-specific bundles (models, views, tests, etc.)")
-            print("    - Customizes configuration for your project type")
-            print("    - Takes 2-5 minutes with Claude Code")
-            
-            while True:
-                choice = input("\nYour choice (1 or 2): ").strip()
-                if choice in ["1", "2"]:
-                    break
-                print("Please enter 1 or 2")
-        
-        print("\n" + "=" * 50)
+        print("\nThis command adds topic-specific bundles to your existing m1f setup.")
+        print("\n✅ Prerequisites:")
+        print("  • Run 'm1f-init' first to create basic bundles")
+        print("  • Claude Code must be installed")
+        print("  • .m1f.config.yml should exist")
+        print()
         
         # Check if we're in a git repository
         git_root = self.project_path
@@ -1160,23 +1135,12 @@ I'll analyze your project and create an optimal m1f configuration that:
             else:
                 print(f"⚠️  No git repository found - initializing in current directory: {self.project_path}")
         
-        # Check if m1f-link has been run
+        # Check if m1f documentation is available
         if not self.has_m1f_docs:
-            print(f"\n📋 Setting up m1f documentation link...")
-            try:
-                # Run m1f-link to create the documentation symlink
-                result = subprocess.run(["m1f-link"], cwd=self.project_path, capture_output=True, text=True)
-                if result.returncode == 0:
-                    print(f"✅ m1f documentation linked successfully")
-                    # Update our paths
-                    self.has_m1f_docs = True
-                    self.m1f_docs_path = self.project_path / "m1f" / "m1f.txt"
-                else:
-                    print(f"⚠️  Failed to link m1f documentation: {result.stderr}")
-            except FileNotFoundError:
-                print(f"⚠️  m1f-link command not found - please ensure m1f is properly installed")
+            print(f"⚠️  m1f documentation not found - please run 'm1f-init' first!")
+            return
         else:
-            print(f"✅ m1f documentation already available")
+            print(f"✅ m1f documentation available")
         
         # Check for existing .m1f.config.yml
         config_path = self.project_path / ".m1f.config.yml"
@@ -1185,18 +1149,20 @@ I'll analyze your project and create an optimal m1f configuration that:
         else:
             print(f"⚠️  No m1f configuration found - will help you create one")
         
-        # Check for Claude Code availability only if advanced mode selected
+        # Check for Claude Code availability
         has_claude_code = False
-        if choice == "2":
-            try:
-                result = subprocess.run(["claude", "--version"], capture_output=True, text=True)
-                if result.returncode == 0:
-                    print(f"✅ Claude Code is available")
-                    has_claude_code = True
-                else:
-                    print(f"⚠️  Claude Code not found")
-            except FileNotFoundError:
-                print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code")
+        try:
+            result = subprocess.run(["claude", "--version"], capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ Claude Code is available")
+                has_claude_code = True
+            else:
+                print(f"⚠️  Claude Code not found")
+                print(f"\nPlease install Claude Code: npm install -g @anthropic-ai/claude-code")
+                return
+        except FileNotFoundError:
+            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code")
+            return
         
         print(f"\n📊 Project Analysis")
         print("=" * 30)
@@ -1266,90 +1232,19 @@ I'll analyze your project and create an optimal m1f configuration that:
             context = self._analyze_project_context()
             print(context)
         
-        # Always create basic complete and docs bundles first
-        print(f"\n📦 Creating Initial Bundles")
-        print("=" * 30)
-        
-        # Get project name from directory
+        # Check if basic bundles exist
         project_name = self.project_path.name
-        
-        # Create complete bundle
-        print(f"Creating complete project bundle...")
-        complete_cmd = [
-            "m1f",
-            "-s", str(self.project_path),
-            "-o", str(m1f_dir / f"{project_name}_complete.txt"),
-            "--exclude-paths-file", ".gitignore",
-            "--excludes", "m1f/",
-            "--force"
-            # Removed --minimal-output to generate filelist and dirlist
-        ]
-        
-        result = subprocess.run(complete_cmd, capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"✅ Created: m1f/{project_name}_complete.txt")
-            # Check for auxiliary files
-            if (m1f_dir / f"{project_name}_complete_filelist.txt").exists():
-                print(f"📄 Created: m1f/{project_name}_complete_filelist.txt")
-            if (m1f_dir / f"{project_name}_complete_dirlist.txt").exists():
-                print(f"📁 Created: m1f/{project_name}_complete_dirlist.txt")
-        else:
-            print(f"⚠️  Failed to create complete bundle: {result.stderr}")
-        
-        # Create docs bundle with all documentation file extensions
-        print(f"Creating documentation bundle...")
-        # Import documentation extensions from constants
-        import sys
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from tools.m1f.constants import DOCUMENTATION_EXTENSIONS
-        
-        doc_extensions = list(DOCUMENTATION_EXTENSIONS)
-        
-        docs_cmd = [
-            "m1f",
-            "-s", str(self.project_path),
-            "-o", str(m1f_dir / f"{project_name}_docs.txt"),
-            "--exclude-paths-file", ".gitignore",
-            "--excludes", "m1f/",
-            "--docs-only",
-            "--force"
-            # Removed --minimal-output to generate filelist and dirlist
-        ]
-        
-        result = subprocess.run(docs_cmd, capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"✅ Created: m1f/{project_name}_docs.txt")
-            # Check for auxiliary files
-            if (m1f_dir / f"{project_name}_docs_filelist.txt").exists():
-                print(f"📄 Created: m1f/{project_name}_docs_filelist.txt")
-            if (m1f_dir / f"{project_name}_docs_dirlist.txt").exists():
-                print(f"📁 Created: m1f/{project_name}_docs_dirlist.txt")
-        else:
-            print(f"⚠️  Failed to create docs bundle: {result.stderr}")
-        
-        # Create or update configuration file
-        if not config_path.exists():
-            print(f"\n📝 Creating .m1f.config.yml with basic bundles...")
-            self._create_basic_config_with_docs(config_path, doc_extensions, project_name)
-            print(f"✅ Configuration created with complete and docs bundles")
-        else:
-            print(f"✅ Configuration already exists - basic bundles created")
-        
-        # If user chose quick setup, we're done!
-        if choice == "1":
-            print(f"\n✅ Quick Setup Complete!")
-            print(f"\n📌 Next Steps:")
-            print(f"1. Check your bundles in m1f/ directory")
-            print(f"2. Run 'cat m1f/{project_name}_complete.txt | head -50' to preview")
-            print(f"3. Use bundles with your AI tools")
-            print(f"\n💡 To add more specific bundles later, run 'm1f-claude --init' again")
+        if not (m1f_dir / f"{project_name}_complete.txt").exists():
+            print(f"\n⚠️  Basic bundles not found. Please run 'm1f-init' first!")
+            print(f"\nExpected to find:")
+            print(f"  • m1f/{project_name}_complete.txt")
+            print(f"  • m1f/{project_name}_docs.txt")
             return
         
-        # Advanced setup - offer Claude Code for segmentation
-        if choice == "2" and has_claude_code:
-            print(f"\n🤖 Claude Code for Advanced Segmentation")
-            print("─" * 50)
-            print(f"Basic bundles created! Now Claude will help you create topic-specific bundles.")
+        # Run advanced segmentation with Claude
+        print(f"\n🤖 Creating Topic-Specific Bundles")
+        print("─" * 50)
+        print(f"Claude will analyze your project and create focused bundles.")
             
             # Create segmentation prompt focused on advanced bundling
             segmentation_prompt = self._create_segmentation_prompt(context)
@@ -1370,20 +1265,19 @@ I'll analyze your project and create an optimal m1f configuration that:
             except Exception as e:
                 print(f"\n❌ Error during advanced segmentation: {e}")
                 print(f"\nYou can manually run: m1f-claude 'Help me segment my project into topic bundles'")
-        elif choice == "2" and not has_claude_code:
-            print(f"\n⚠️  Claude Code Required for Advanced Setup")
-            print(f"\nTo use advanced setup:")
-            print(f"1. Install Claude Code: npm install -g @anthropic-ai/claude-code")
-            print(f"2. Run 'm1f-claude --init' again")
-            print(f"\n✅ Quick setup completed successfully!")
-            return
+                    print(f"\n✅ Instructions for advanced segmentation displayed!")
+                    print(f"📝 After running the command above, Claude will:")
+                    print(f"   • Analyze your project structure in detail")
+                    print(f"   • Create topic-specific bundles (components, api, etc.)")
+                    print(f"   • Add them to your existing .m1f.config.yml")
+            except Exception as e:
+                print(f"\n❌ Error during advanced segmentation: {e}")
+                print(f"\nYou can manually run: m1f-claude 'Help me segment my project into topic bundles'")
         
         print(f"\n🚀 Next steps:")
-        print(f"• Your bundles are ready in m1f/")
-        print(f"  - {project_name}_complete.txt: Full project bundle")
-        print(f"  - {project_name}_docs.txt: All documentation files")
-        print(f"• Run 'm1f-update' to regenerate bundles after config changes")
-        print(f"• Use Claude to create topic-specific bundles as needed")
+        print(f"• Check your updated .m1f.config.yml")
+        print(f"• Run 'm1f-update' to generate the new bundles")
+        print(f"• Use topic-specific bundles with your AI tools")
     
     def _create_basic_config_with_docs(self, config_path: Path, doc_extensions: List[str], project_name: str) -> None:
         """Create .m1f.config.yml with complete and docs bundles."""
@@ -1787,7 +1681,7 @@ Commands:
   /e       - Exit interactive mode (like Claude CLI)
 
 Tips:
-  • Run 'm1f-link' first for best results
+  • Run 'm1f-init' first to set up basic bundles
   • Be specific about your project type
   • Mention constraints (file size, AI context windows)
   • Ask for complete .m1f.config.yml examples
@@ -1830,13 +1724,13 @@ def main():
         print("Claude Code doesn't run on Windows yet!")
         print("")
         print("📚 Alternative approaches:")
-        print("1. Use m1f directly to create bundles:")
+        print("1. Use m1f-init for basic setup:")
+        print("   - m1f-init                  # Initialize project")
         print("   - m1f-update                # Auto-bundle your project")
-        print("   - m1f -s . -o bundle.txt    # Manual bundling")
         print("")
         print("2. Create .m1f.config.yml manually:")
         print("   - See docs: https://github.com/franzundfranz/m1f")
-        print("   - Run: m1f-link            # Get documentation")
+        print("   - Run: m1f-init            # Get documentation and basic setup")
         print("")
         print("3. Use WSL (Windows Subsystem for Linux) for full Claude Code support")
         print("")
@@ -1852,20 +1746,19 @@ def main():
 Examples:
   m1f-claude "Help me bundle my Python project"
   m1f-claude -i                    # Interactive mode
-  m1f-claude --init               # Initialize m1f (interactive)
-  m1f-claude --init --quick-setup # Quick setup only
-  m1f-claude --init --advanced-setup # Advanced with Claude
+  m1f-claude --advanced-setup     # Add topic bundles to existing setup
   m1f-claude --check              # Check setup status
   
-Commands for initialization:
-  m1f-claude --init               # Interactive choice
-  m1f-claude --init --quick-setup # Skip to quick setup
-  m1f-claude --init --advanced-setup # Skip to advanced setup
+Initialization workflow:
+  1. Run 'm1f-init' first to create basic bundles
+  2. Run 'm1f-claude --advanced-setup' for topic-specific bundles
+  
+Note: m1f-init works on all platforms (Windows, Linux, Mac)
   
 💡 Recommended: Use Claude Code with a subscription plan due to 
    potentially high token usage during project setup and configuration.
   
-First time? Run 'm1f-link' to give Claude full m1f documentation!
+First time? Run 'm1f-init' to set up your project!
 """,
     )
 
@@ -1878,21 +1771,9 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
     )
 
     parser.add_argument(
-        "--init",
-        action="store_true",
-        help="Initialize m1f for your project with intelligent assistance",
-    )
-    
-    parser.add_argument(
-        "--quick-setup",
-        action="store_true",
-        help="Use quick setup mode for --init (no Claude, just basic bundles)",
-    )
-    
-    parser.add_argument(
         "--advanced-setup",
         action="store_true",
-        help="Use advanced setup mode for --init (Claude creates topic bundles)",
+        help="Add topic-specific bundles to existing m1f setup using Claude",
     )
 
     parser.add_argument(
@@ -1939,9 +1820,9 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
 
     args = parser.parse_args()
     
-    # Handle /init command in prompt
-    if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/init":
-        args.init = True
+    # Handle /advanced-setup command in prompt
+    if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/advanced-setup":
+        args.advanced_setup = True
         args.prompt = []
 
     # Initialize m1f-claude
@@ -1959,7 +1840,7 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
                 f"✅ m1f docs found at: {m1f_claude.m1f_docs_path.relative_to(m1f_claude.project_path)}"
             )
         else:
-            print(f"⚠️  m1f docs not found - run 'm1f-link' first!")
+            print(f"⚠️  m1f docs not found - run 'm1f-init' first!")
 
         # Check for Claude Code
         try:
@@ -1979,12 +1860,9 @@ First time? Run 'm1f-link' to give Claude full m1f documentation!
 
         return
 
-    # Initialize mode
-    if args.init:
-        m1f_claude.initialize_project(
-            quick_setup=args.quick_setup,
-            advanced_setup=args.advanced_setup
-        )
+    # Advanced setup mode
+    if args.advanced_setup:
+        m1f_claude.advanced_setup()
         return
 
     # Interactive mode

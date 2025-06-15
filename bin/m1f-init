@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# m1f-init - Initialize m1f for a project
+
+# Save current directory
+ORIGINAL_DIR="$(pwd)"
+
+# Get the real path of this script
+SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
+BIN_DIR="$(dirname "$SCRIPT_PATH")"
+PROJECT_ROOT="$(dirname "$BIN_DIR")"
+
+# Set PYTHONPATH to include project root
+export PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH}"
+
+# Make sure we're in the original directory
+cd "$ORIGINAL_DIR"
+
+# Check if venv exists and activate if available
+if [ -f "${PROJECT_ROOT}/.venv/bin/activate" ]; then
+    source "${PROJECT_ROOT}/.venv/bin/activate"
+elif [ -f "${PROJECT_ROOT}/venv/bin/activate" ]; then
+    source "${PROJECT_ROOT}/venv/bin/activate"
+fi
+
+# Run the Python script
+exec python3 "${PROJECT_ROOT}/tools/m1f_init.py" "$@"
