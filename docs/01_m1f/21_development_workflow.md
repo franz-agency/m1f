@@ -38,14 +38,17 @@ m1f-init
 #### What m1f-init does:
 
 1. **Links m1f documentation** (creates `m1f/m1f.txt`)
+
    - Makes m1f docs available to AI tools
    - Creates symlink on Linux/macOS, copies on Windows
 
 2. **Analyzes your project**
+
    - Detects project type and languages
    - Creates file and directory listings
 
 3. **Generates initial bundles with auxiliary files**
+
    - `m1f/<project>_complete.txt` - Full project bundle
    - `m1f/<project>_complete_filelist.txt` - List of all included files
    - `m1f/<project>_complete_dirlist.txt` - List of all directories

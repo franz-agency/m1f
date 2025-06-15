@@ -10,7 +10,9 @@ and this project adheres to
 
 ### Added
 
-- **--docs-only Parameter**: New command-line flag for documentation-only bundles
+- **--docs-only Parameter**: New command-line flag for documentation-only
+  bundles
+
   - Filters to include only 62 documentation file extensions
   - Simplifies command: `m1f -s . -o docs.txt --docs-only`
   - Replaces verbose `--include-extensions` with 62 extensions
@@ -18,6 +20,7 @@ and this project adheres to
   - Overrides include-extensions when set
 
 - **Documentation File Extensions**: Centralized definition in constants.py
+
   - Added DOCUMENTATION_EXTENSIONS constant with 62 file extensions
   - Added UTF8_PREFERRED_EXTENSIONS constant with 45 UTF-8 preferred formats
   - Includes man pages, markup formats, text files, and developer docs
@@ -27,26 +30,36 @@ and this project adheres to
   - Documentation extensions now available system-wide for all tools
 
 - **m1f-claude --init Improvements**: Enhanced project initialization process
-  - **Choice-Based Setup**: Users can choose between quick and advanced initialization modes
+
+  - **Choice-Based Setup**: Users can choose between quick and advanced
+    initialization modes
     - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
-    - Command-line parameters: `--quick-setup` and `--advanced-setup` for scripting
+    - Command-line parameters: `--quick-setup` and `--advanced-setup` for
+      scripting
     - Quick setup: Creates bundles in 30 seconds without Claude
     - Advanced setup: Claude analyzes project and creates topic-specific bundles
-  - **Project-Specific Bundle Naming**: All bundles include project directory name
+  - **Project-Specific Bundle Naming**: All bundles include project directory
+    name
     - Example: `m1f_complete.txt`, `m1f_docs.txt` for the m1f project
-    - Auxiliary files also include project name: `m1f_complete_filelist.txt`, `m1f_complete_dirlist.txt`
+    - Auxiliary files also include project name: `m1f_complete_filelist.txt`,
+      `m1f_complete_dirlist.txt`
     - Makes it easier to identify bundles when working with multiple projects
-  - **Auxiliary File Generation**: Both bundles now generate filelist and dirlist files
-    - Complete bundle creates: `{project}_complete_filelist.txt` and `{project}_complete_dirlist.txt`
-    - Docs bundle creates: `{project}_docs_filelist.txt` and `{project}_docs_dirlist.txt`
+  - **Auxiliary File Generation**: Both bundles now generate filelist and
+    dirlist files
+    - Complete bundle creates: `{project}_complete_filelist.txt` and
+      `{project}_complete_dirlist.txt`
+    - Docs bundle creates: `{project}_docs_filelist.txt` and
+      `{project}_docs_dirlist.txt`
     - Provides overview of included files and directory structure
-  - **Streamlined Workflow**: Automatic bundle creation without Claude dependency
+  - **Streamlined Workflow**: Automatic bundle creation without Claude
+    dependency
     - Automatically creates complete.txt bundle with all project files
     - Automatically creates docs.txt bundle with 62 documentation extensions
     - Uses --docs-only parameter for efficient documentation bundling
     - Claude Code only invoked for advanced topic-specific segmentation
     - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
-  - **Verbose Mode**: Added `--verbose` flag to show prompts and command parameters
+  - **Verbose Mode**: Added `--verbose` flag to show prompts and command
+    parameters
     - Displays complete Claude Code command with permissions
 
 - **m1f-init Tool**: New cross-platform initialization tool
@@ -77,6 +90,7 @@ and this project adheres to
 ### Enhanced
 
 - **Auxiliary File Documentation**: Added comprehensive documentation
+
   - Documented filelist and dirlist generation in main m1f documentation
   - Added "Output Files" section explaining all generated files
   - Included examples of working with file lists for custom bundles
@@ -84,18 +98,21 @@ and this project adheres to
   - Added file list editing workflows to development documentation
     - Shows full prompt being sent for debugging
     - Helps troubleshoot initialization issues
-  - **Project Analysis Files**: Create and preserve analysis artifacts in m1f/ directory
+  - **Project Analysis Files**: Create and preserve analysis artifacts in m1f/
+    directory
     - Generates `project_analysis_filelist.txt` with all project files
     - Generates `project_analysis_dirlist.txt` with directory structure
     - Files are kept for reference (no cleanup)
     - Respects .gitignore patterns during analysis
     - Explicitly excludes m1f/ directory to prevent recursion
-  - **Better Bundle Strategy**: Improved initialization prompts for project-specific configs
+  - **Better Bundle Strategy**: Improved initialization prompts for
+    project-specific configs
     - Explicit instruction to read @m1f/m1f.txt documentation first
     - Removed global file size limits from defaults
     - Added proper meta file exclusions (LICENSE*, CLAUDE.md, *.lock)
     - Clear rules against creating test bundles when no tests exist
-    - Emphasis on logical segmentation (complete/docs/code/components/config/styles)
+    - Emphasis on logical segmentation
+      (complete/docs/code/components/config/styles)
     - Clarified that dotfiles are excluded by default
     - Added vendor/ to example excludes for PHP projects
   - **Clearer Instructions**: Made prompts more explicit about modifying files
@@ -104,8 +121,10 @@ and this project adheres to
     - Explicit instruction to use Edit/MultiEdit tools
     - Stronger language about actually modifying the config file
 
-- **m1f-claude Enhancements**: Major improvements for intelligent m1f setup assistance
-  - **Session Persistence**: Implemented proper conversation continuity using Claude CLI's `-r` flag
+- **m1f-claude Enhancements**: Major improvements for intelligent m1f setup
+  assistance
+  - **Session Persistence**: Implemented proper conversation continuity using
+    Claude CLI's `-r` flag
     - Each conversation maintains its own session ID
     - Multiple users can work in the same directory simultaneously
     - Session IDs are extracted from JSON responses and reused
@@ -113,16 +132,19 @@ and this project adheres to
     - Shows Claude's responses as they arrive
     - Displays tool usage in debug mode
     - Provides immediate visual feedback during processing
-  - **Tool Permissions**: Added `--allowedTools` parameter with sensible defaults
+  - **Tool Permissions**: Added `--allowedTools` parameter with sensible
+    defaults
     - Default tools: Read, Edit, MultiEdit, Write, Glob, Grep, Bash
     - Customizable via `--allowed-tools` command line argument
     - Enables file operations and project analysis
   - **Enhanced Prompt System**: Sophisticated prompt enhancement for m1f setup
     - Deep thinking task list approach for systematic m1f configuration
     - Detects when users want to set up m1f (various phrase patterns)
-    - Provides 5-phase task list: Analysis, Documentation Study, Design, Implementation, Validation
+    - Provides 5-phase task list: Analysis, Documentation Study, Design,
+      Implementation, Validation
     - Always references @m1f/m1f.txt documentation (5+ references per prompt)
-    - Detects and prioritizes AI context files (CLAUDE.md, .cursorrules, .windsurfrules)
+    - Detects and prioritizes AI context files (CLAUDE.md, .cursorrules,
+      .windsurfrules)
     - Project-aware recommendations based on detected frameworks
     - Line-specific documentation references for key sections
   - **Debug Mode**: Added `--debug` flag for detailed output
@@ -144,14 +166,17 @@ and this project adheres to
     - Updated help text and keyboard interrupt messages
   - **Initialization Command**: Fixed `--init` command async/await issues
     - Resolved RuntimeError with cancel scope in different task
-    - Added graceful handling of missing 'cost_usd' field in Claude SDK responses
+    - Added graceful handling of missing 'cost_usd' field in Claude SDK
+      responses
     - Implemented proper anyio task group management for async operations
     - Enhanced error handling with debug logging for SDK issues
-    - Fixed subprocess hanging by displaying prompts for manual use instead of programmatic execution
+    - Fixed subprocess hanging by displaying prompts for manual use instead of
+      programmatic execution
 
 ### Changed
 
 - **m1f-claude --init Workflow**: Completely redesigned initialization process
+
   - Now automatically creates complete.txt and docs.txt bundles without Claude
   - Generates .m1f.config.yml with both bundles pre-configured
   - Uses new --docs-only parameter for documentation bundle creation
@@ -159,38 +184,46 @@ and this project adheres to
   - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
 
 - **Dependencies**: Updated claude-code-sdk to use flexible version constraint
+
   - Changed from `claude-code-sdk==0.0.10` to `claude-code-sdk>=0.0.10`
   - Ensures automatic updates to latest compatible versions
   - Maintains backward compatibility with current version
 
-- **m1f-claude Architecture**: Switched from SDK to subprocess for better control
+- **m1f-claude Architecture**: Switched from SDK to subprocess for better
+  control
   - Uses Claude CLI directly with proper session management
   - More reliable than the SDK for interactive sessions
   - Better error handling and fallback mechanisms
-  - Removed misleading "subprocess fallback" message (it's the primary method now)
+  - Removed misleading "subprocess fallback" message (it's the primary method
+    now)
 
 ### Fixed
 
 - **m1f-claude --init Command**: Fixed Claude Code subprocess execution
+
   - Resolved parameter ordering issue with `--add-dir` flag
   - Changed from stdin-based prompt delivery to `-p` parameter method
   - Implemented fallback to display manual command when subprocess hangs
   - Now shows clear instructions for manual execution with proper parameters
   - Ensures Claude has directory access permissions for file operations
 
-
 - **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
+
   - Created m1f_aliases.ps1 with all PowerShell functions and aliases
   - Added file existence check in setup_m1f_aliases.ps1 before sourcing
   - Fixed hardcoded path issue that caused PowerShell profile errors
   - Now uses correct relative paths based on actual m1f installation location
   - Added PowerShell profile path to warning message for easier debugging
 
-- **m1f-claude Project Name Extraction**: Fixed regex patterns that were failing to extract project names
-  - Replaced complex regex patterns with backreferences that were causing incorrect matches
-  - Added simpler, more specific patterns for different name formats (quoted, unquoted, possessive)
+- **m1f-claude Project Name Extraction**: Fixed regex patterns that were failing
+  to extract project names
+  - Replaced complex regex patterns with backreferences that were causing
+    incorrect matches
+  - Added simpler, more specific patterns for different name formats (quoted,
+    unquoted, possessive)
   - Fixed issue where project names were always extracted as empty strings
-  - Now correctly handles formats like "project called 'awesome-app'", "project named MyWebApp", "company's main project"
+  - Now correctly handles formats like "project called 'awesome-app'", "project
+    named MyWebApp", "company's main project"
 
 ### Dependencies
 
@@ -205,23 +238,29 @@ and this project adheres to
 - **Documentation**: Updated all command examples to use installed bin commands
   - Replaced `python -m tools.m1f` with `m1f`
   - Replaced `python -m tools.s1f` with `m1f-s1f`
-  - Replaced `python -m tools.scrape_tool` and `python -m tools.webscraper` with `m1f-scrape`
-  - Replaced `python -m tools.html2md` and `python -m tools.html2md_tool` with `m1f-html2md`
+  - Replaced `python -m tools.scrape_tool` and `python -m tools.webscraper` with
+    `m1f-scrape`
+  - Replaced `python -m tools.html2md` and `python -m tools.html2md_tool` with
+    `m1f-html2md`
   - Replaced `python tools/token_counter.py` with `m1f-token-counter`
   - Replaced `m1f auto-bundle` with `m1f-update` where appropriate
   - Updated all documentation, scripts, and examples for consistency
 
 ### Fixed
 
-- **Scraper Config Files**: Fixed typo in YAML configs (mf1-html2md → m1f-scrape)
-- **Documentation**: Improved command consistency across all user-facing documentation
+- **Scraper Config Files**: Fixed typo in YAML configs (mf1-html2md →
+  m1f-scrape)
+- **Documentation**: Improved command consistency across all user-facing
+  documentation
 
 ## [3.2.1] - 2025-06-07
 
 ### Fixed
 
-- **Wrapper Scripts**: Added PYTHONPATH to all wrapper scripts to ensure proper module imports
-- **Pre-commit Hook**: Updated to use python3 and properly handle virtual environments
+- **Wrapper Scripts**: Added PYTHONPATH to all wrapper scripts to ensure proper
+  module imports
+- **Pre-commit Hook**: Updated to use python3 and properly handle virtual
+  environments
 - **Bin Scripts**: All wrapper scripts now preserve current working directory
 
 ## [3.2.0] - 2025-06-06

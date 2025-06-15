@@ -72,7 +72,8 @@ m1f auto-bundle --group documentation
 m1f-update --group documentation
 ```
 
-**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle` that provides a simpler way to regenerate bundles.
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle`
+that provides a simpler way to regenerate bundles.
 
 ## Bundle Groups
 

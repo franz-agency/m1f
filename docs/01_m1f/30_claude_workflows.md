@@ -27,12 +27,14 @@ m1f-init  # Quick setup: links docs, analyzes project, creates bundles
 ```
 
 Boom! 💥 This command:
+
 - Creates m1f/m1f.txt symlink to the complete documentation
 - Analyzes your project structure
 - Generates initial bundles (complete and docs)
 - Creates a basic .m1f.config.yml
 
 For advanced setup with topic-specific bundles (Linux/macOS only):
+
 ```bash
 m1f-claude --advanced-setup
 ```
@@ -122,18 +124,25 @@ When you use `m1f-claude --advanced-setup`, it:
 - Optimizes configuration for your specific project type
 - Provides intelligent suggestions based on your codebase
 
-**Note**: m1f-claude requires Claude Code SDK and is not available on Windows. Windows users can manually customize their .m1f.config.yml after running m1f-init.
+**Note**: m1f-claude requires Claude Code SDK and is not available on Windows.
+Windows users can manually customize their .m1f.config.yml after running
+m1f-init.
 
 ### 💡 Important: Claude Code Subscription Recommended
 
-**We strongly recommend using Claude Code with a subscription plan** when using m1f-claude for project setup. Setting up m1f with Claude's assistance can involve:
+**We strongly recommend using Claude Code with a subscription plan** when using
+m1f-claude for project setup. Setting up m1f with Claude's assistance can
+involve:
 
 - Multiple file reads to analyze your project structure
 - Creating and editing configuration files
 - Running various commands to test configurations
 - Iterative refinement of bundles
 
-Since we don't know exactly how many tokens this process will consume, a subscription ensures you won't run into usage limits during critical setup phases. The investment pays off quickly through the time saved in properly configuring your project.
+Since we don't know exactly how many tokens this process will consume, a
+subscription ensures you won't run into usage limits during critical setup
+phases. The investment pays off quickly through the time saved in properly
+configuring your project.
 
 ## Working with Claude Code
 

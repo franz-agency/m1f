@@ -178,7 +178,8 @@ Create similar batch files for:
 
 ### Quick Setup for AI-Assisted Development
 
-When starting a new project with m1f, use the `m1f-init` command for quick setup:
+When starting a new project with m1f, use the `m1f-init` command for quick
+setup:
 
 ```bash
 cd /your/project
@@ -186,6 +187,7 @@ m1f-init
 ```
 
 This command:
+
 - Creates `m1f/m1f.txt` - a symlink to the complete m1f documentation
 - Analyzes your project structure
 - Generates initial bundles with auxiliary files:
@@ -214,6 +216,7 @@ m1f -s . -i m1f/selected_dirs.txt -o m1f/specific_areas.txt
 ```
 
 For advanced setup with topic-specific bundles (Linux/macOS only):
+
 ```bash
 m1f-claude --advanced-setup
 ```

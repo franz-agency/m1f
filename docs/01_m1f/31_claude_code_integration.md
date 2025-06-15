@@ -73,20 +73,23 @@ m1f-init --verbose
 #### What m1f-init Does:
 
 1. **Links m1f Documentation**
+
    - Creates m1f/m1f.txt symlink (or copies on Windows)
    - Makes documentation accessible to AI tools
 
 2. **Project Analysis**
+
    - Detects git repository boundaries
    - Analyzes project structure and languages
    - Creates file and directory lists in `m1f/` directory
 
 3. **Creates Initial Bundles with Auxiliary Files**
+
    - `<project>_complete.txt` - Full project bundle
    - `<project>_complete_filelist.txt` - List of all included files
    - `<project>_complete_dirlist.txt` - List of all directories
    - `<project>_docs.txt` - Documentation only bundle
-   - `<project>_docs_filelist.txt` - List of documentation files  
+   - `<project>_docs_filelist.txt` - List of documentation files
    - `<project>_docs_dirlist.txt` - Documentation directories
 
 4. **Generates Configuration**
@@ -114,7 +117,8 @@ m1f-claude --advanced-setup
 - Optimizes bundle organization for AI consumption
 - Requires Claude Code SDK installation
 
-**Note**: Windows users can achieve similar results by manually editing .m1f.config.yml after running m1f-init.
+**Note**: Windows users can achieve similar results by manually editing
+.m1f.config.yml after running m1f-init.
 
 ### Working with Generated File Lists
 
@@ -139,6 +143,7 @@ m1f -s src/components -o m1f/components_only.txt
 ```
 
 3. **Configuration File**
+
    - Creates `.m1f.config.yml` with complete and docs bundles
    - Uses `docs_only: true` for documentation bundle
    - No global file size limits
@@ -201,7 +206,8 @@ Basic bundles created! Now Claude can help you create topic-specific bundles.
 
 - **Use --verbose** to see the full prompt and command parameters
 - **Check file permissions** if config isn't being modified
-- **Ensure Claude Code is installed**: `npm install -g @anthropic-ai/claude-code`
+- **Ensure Claude Code is installed**:
+  `npm install -g @anthropic-ai/claude-code`
 - **Analysis files are kept** in m1f/ directory for reference
 
 ## Using Claude Code with m1f Tools
