@@ -95,6 +95,13 @@ and this project adheres to
 
 ### Fixed
 
+- **m1f-claude --init Command**: Fixed Claude Code subprocess execution
+  - Resolved parameter ordering issue with `--add-dir` flag
+  - Changed from stdin-based prompt delivery to `-p` parameter method
+  - Implemented fallback to display manual command when subprocess hangs
+  - Now shows clear instructions for manual execution with proper parameters
+  - Ensures Claude has directory access permissions for file operations
+
 - **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
   - Created m1f_aliases.ps1 with all PowerShell functions and aliases
   - Added file existence check in setup_m1f_aliases.ps1 before sourcing

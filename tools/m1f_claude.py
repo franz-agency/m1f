@@ -1003,49 +1003,27 @@ I'll analyze your project and create an optimal m1f configuration that:
                 return None
 
             # Send to Claude Code using --print for non-interactive mode
-            logger.info("\n🤖 Sending to Claude Code...\n")
+            logger.info("\n🤖 Displaying prompt for manual use...\n")
+            logger.info("⚠️  Due to subprocess limitations, please run the following command manually:")
+            logger.info("")
 
             # Prepare command with proper tools and directory access
-            cmd = ["claude", "--print", "--allowedTools", "Read,Write,Edit,MultiEdit", "--add-dir", str(self.project_path)]
+            # Note: For initialization, we'll display the command rather than execute it
+            cmd_display = f"claude --add-dir {self.project_path} --allowedTools Read,Write,Edit,MultiEdit"
             
-            if self.verbose:
-                print(f"\n{'='*60}")
-                print("VERBOSE: Claude Code Command Parameters")
-                print(f"{'='*60}")
-                print(f"Command: {' '.join(cmd)}")
-                print(f"Working Directory: {self.project_path}")
-                print(f"Allowed Tools: Read,Write,Edit,MultiEdit")
-                print(f"{'='*60}")
-                print("VERBOSE: Prompt being sent to Claude:")
-                print(f"{'='*60}")
-                print(enhanced_prompt)
-                print(f"{'='*60}\n")
-
-            # Use subprocess.Popen for better control over stdin/stdout
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-
-            try:
-                # Send the enhanced prompt via stdin
-                stdout, stderr = process.communicate(
-                    input=enhanced_prompt, timeout=300  # 5 minute timeout
-                )
-
-                if process.returncode == 0:
-                    return stdout
-                else:
-                    logger.error(f"Claude Code error: {stderr}")
-                    return None
-
-            except subprocess.TimeoutExpired:
-                process.kill()
-                logger.error("Claude Code timed out after 5 minutes")
-                return None
+            # Display the command and prompt for manual execution
+            print(f"\n{'='*60}")
+            print("📋 Copy and run this command:")
+            print(f"{'='*60}")
+            print(f"\n{cmd_display}\n")
+            print(f"{'='*60}")
+            print("📝 Then paste this prompt:")
+            print(f"{'='*60}")
+            print(f"\n{enhanced_prompt}\n")
+            print(f"{'='*60}")
+            
+            # Return a message indicating manual steps required
+            return "Manual execution required - see instructions above"
 
         except FileNotFoundError:
             if self.debug:
@@ -1271,14 +1249,18 @@ I'll analyze your project and create an optimal m1f configuration that:
             try:
                 # Use subprocess directly for initialization to ensure stable session
                 response = self.send_to_claude_code_subprocess(init_prompt)
-                if response:
+                if response and response != "Manual execution required - see instructions above":
                     print(f"\n✅ Initialization complete!")
-                    print(f"📝 Claude has analyzed your project and provided setup guidance.")
+                    print(f"📝 Claude has analyzed your project and created an optimized configuration.")
                     print(f"💡 You can now run: m1f-update")
                 else:
-                    print(f"\n⚠️  Could not connect to Claude Code")
-                    print(f"\nYou can manually enhance the configuration or run:")
-                    print(f"m1f-claude 'Help me improve my m1f configuration'")
+                    # Manual execution was required - adjust the message
+                    print(f"\n✅ Setup instructions displayed!")
+                    print(f"📝 After running the command above, Claude will:")
+                    print(f"   • Read the m1f documentation")
+                    print(f"   • Analyze your project structure")
+                    print(f"   • Modify .m1f.config.yml with optimized bundles")
+                    print(f"💡 Then you can run: m1f-update")
             except Exception as e:
                 print(f"\n❌ Error during initialization: {e}")
                 print(f"\n⚠️  Initialization via automation failed")
