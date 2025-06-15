@@ -1299,10 +1299,10 @@ I'll analyze your project and create an optimal m1f configuration that:
 
 global:
   global_excludes:
+    - "m1f/**"
     - "**/*.lock"
     - "**/LICENSE*"
     - "**/CLAUDE.md"
-    - "**/.cursorrules"
   
   global_settings:
     security_check: "warn"
@@ -1337,10 +1337,11 @@ bundles:
         
         prompt_parts.append("⚠️ CRITICAL RULES:")
         prompt_parts.append("1. NO GLOBAL FILE SIZE LIMITS - Never set max_file_size in defaults")
-        prompt_parts.append("2. EXCLUDE META FILES - Always exclude: LICENSE*, CLAUDE.md, .cursorrules, *.lock")
+        prompt_parts.append("2. EXCLUDE META FILES - Always exclude: LICENSE*, CLAUDE.md, *.lock")
         prompt_parts.append("3. PROJECT-SPECIFIC BUNDLES - Create bundles based on what's actually in the project")
         prompt_parts.append("4. NO TEST BUNDLES if no tests exist in the project")
         prompt_parts.append("5. LOGICAL SEGMENTATION - Split by: complete/docs/code/components/config/styles")
+        prompt_parts.append("6. DOT FILES/FOLDERS are excluded by default - no need to add .git, .cursorrules, etc.")
         prompt_parts.append("")
         
         prompt_parts.append("📋 REQUIRED BUNDLES PATTERN:")
@@ -1396,12 +1397,12 @@ bundles:
         prompt_parts.append("```yaml")
         prompt_parts.append("global:")
         prompt_parts.append("  global_excludes:")
+        prompt_parts.append("    - 'm1f/**'")
         prompt_parts.append("    - '**/*.lock'")
         prompt_parts.append("    - '**/LICENSE*'")
         prompt_parts.append("    - '**/CLAUDE.md'")
-        prompt_parts.append("    - '**/.cursorrules'")
-        prompt_parts.append("    - '**/node_modules/**'")
-        prompt_parts.append("    - '**/.git/**'")
+        prompt_parts.append("    - '**/node_modules/**'  # if not in .gitignore")
+        prompt_parts.append("    - '**/vendor/**'       # if not in .gitignore")
         prompt_parts.append("  global_settings:")
         prompt_parts.append("    security_check: 'warn'")
         prompt_parts.append("    exclude_paths_file: '.gitignore'")
