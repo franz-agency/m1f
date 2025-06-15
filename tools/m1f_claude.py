@@ -1245,34 +1245,26 @@ I'll analyze your project and create an optimal m1f configuration that:
         print(f"\n🤖 Creating Topic-Specific Bundles")
         print("─" * 50)
         print(f"Claude will analyze your project and create focused bundles.")
-            
-            # Create segmentation prompt focused on advanced bundling
-            segmentation_prompt = self._create_segmentation_prompt(context)
-            
-            try:
-                # Use subprocess directly for initialization to ensure stable session
-                response = self.send_to_claude_code_subprocess(segmentation_prompt)
-                if response and response != "Manual execution required - see instructions above":
-                    print(f"\n✅ Advanced segmentation complete!")
-                    print(f"📝 Claude has analyzed your project and added topic-specific bundles.")
-                else:
-                    # Manual execution was required - adjust the message
-                    print(f"\n✅ Instructions for advanced segmentation displayed!")
-                    print(f"📝 After running the command above, Claude will:")
-                    print(f"   • Analyze your project structure in detail")
-                    print(f"   • Create topic-specific bundles (components, api, etc.)")
-                    print(f"   • Add them to your existing .m1f.config.yml")
-            except Exception as e:
-                print(f"\n❌ Error during advanced segmentation: {e}")
-                print(f"\nYou can manually run: m1f-claude 'Help me segment my project into topic bundles'")
-                    print(f"\n✅ Instructions for advanced segmentation displayed!")
-                    print(f"📝 After running the command above, Claude will:")
-                    print(f"   • Analyze your project structure in detail")
-                    print(f"   • Create topic-specific bundles (components, api, etc.)")
-                    print(f"   • Add them to your existing .m1f.config.yml")
-            except Exception as e:
-                print(f"\n❌ Error during advanced segmentation: {e}")
-                print(f"\nYou can manually run: m1f-claude 'Help me segment my project into topic bundles'")
+        
+        # Create segmentation prompt focused on advanced bundling
+        segmentation_prompt = self._create_segmentation_prompt(context)
+        
+        try:
+            # Use subprocess directly for initialization to ensure stable session
+            response = self.send_to_claude_code_subprocess(segmentation_prompt)
+            if response and response != "Manual execution required - see instructions above":
+                print(f"\n✅ Advanced segmentation complete!")
+                print(f"📝 Claude has analyzed your project and added topic-specific bundles.")
+            else:
+                # Manual execution was required - adjust the message
+                print(f"\n✅ Instructions for advanced segmentation displayed!")
+                print(f"📝 After running the command above, Claude will:")
+                print(f"   • Analyze your project structure in detail")
+                print(f"   • Create topic-specific bundles (components, api, etc.)")
+                print(f"   • Add them to your existing .m1f.config.yml")
+        except Exception as e:
+            print(f"\n❌ Error during advanced segmentation: {e}")
+            print(f"\nYou can manually run: m1f-claude 'Help me segment my project into topic bundles'")
         
         print(f"\n🚀 Next steps:")
         print(f"• Check your updated .m1f.config.yml")
