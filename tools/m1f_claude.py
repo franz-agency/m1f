@@ -1501,7 +1501,14 @@ bundles:
             "Now create additional topic-specific bundles to segment the project."
         )
         prompt_parts.append("")
-        prompt_parts.append("READ: @m1f/m1f.txt for bundle configuration syntax")
+        
+        # CRITICAL: Add references to the files Claude needs to read
+        prompt_parts.append("📚 REQUIRED READING:")
+        prompt_parts.append("1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax")
+        prompt_parts.append("2. READ: @m1f/project_analysis_filelist.txt for complete file listing")
+        prompt_parts.append("3. READ: @m1f/project_analysis_dirlist.txt for directory structure")
+        prompt_parts.append("")
+        prompt_parts.append("⚠️ IMPORTANT: Read ALL three files above before proceeding!")
         prompt_parts.append("")
 
         prompt_parts.append("📋 ALREADY CREATED BUNDLES:")
@@ -1511,7 +1518,7 @@ bundles:
 
         prompt_parts.append("🎯 YOUR TASK:")
         prompt_parts.append(
-            "Add topic-specific bundles to the existing .m1f.config.yml based on the project structure."
+            "Analyze the project structure from the file/directory lists and add topic-specific bundles to .m1f.config.yml."
         )
         prompt_parts.append("DO NOT modify the existing 'complete' and 'docs' bundles.")
         prompt_parts.append("")
@@ -1532,7 +1539,7 @@ bundles:
 
         # Add project-specific context
         if project_context:
-            prompt_parts.append("📊 PROJECT ANALYSIS:")
+            prompt_parts.append("📊 PROJECT ANALYSIS SUMMARY:")
             prompt_parts.append(
                 f"- Project Type: {project_context.get('type', 'Unknown')}"
             )
@@ -1549,20 +1556,22 @@ bundles:
                     prompt_parts.append(f"- {code_dir}")
             prompt_parts.append("")
 
-        prompt_parts.append("⚙️ IMPLEMENTATION:")
-        prompt_parts.append("1. Read the existing .m1f.config.yml")
+        prompt_parts.append("⚙️ IMPLEMENTATION STEPS:")
+        prompt_parts.append("1. First, read all three required files listed above")
+        prompt_parts.append("2. Analyze the file and directory lists to understand project structure")
+        prompt_parts.append("3. Read the existing .m1f.config.yml")
         prompt_parts.append(
-            "2. Keep the existing 'complete' and 'docs' bundles unchanged"
+            "4. Keep the existing 'complete' and 'docs' bundles unchanged"
         )
-        prompt_parts.append("3. Add new topic-specific bundles after the docs bundle")
+        prompt_parts.append("5. Add new topic-specific bundles after the docs bundle")
         prompt_parts.append(
-            "4. Use appropriate include/exclude patterns for each bundle"
+            "6. Use appropriate include/exclude patterns based on the file analysis"
         )
-        prompt_parts.append("5. Ensure bundles don't overlap unnecessarily")
-        prompt_parts.append("6. Use the MultiEdit tool to add all new bundles at once")
+        prompt_parts.append("7. Ensure bundles don't overlap unnecessarily")
+        prompt_parts.append("8. Use the MultiEdit tool to add all new bundles at once")
         prompt_parts.append("")
         prompt_parts.append(
-            "Remember: Only add bundles that make sense for THIS specific project!"
+            "Remember: Base your bundle decisions on the actual files found in the project!"
         )
 
         return "\n".join(prompt_parts)
