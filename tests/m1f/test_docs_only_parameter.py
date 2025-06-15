@@ -31,7 +31,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         """Create test files with various extensions."""
         files_dir = temp_dir / "test_docs_only"
         files_dir.mkdir()
-        
+
         # Documentation files (should be included)
         doc_files = [
             "README.md",
@@ -54,7 +54,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
             "story.1st",
             "changes.changelog",
         ]
-        
+
         # Non-documentation files (should be excluded)
         non_doc_files = [
             "script.py",
@@ -68,24 +68,24 @@ class TestDocsOnlyParameter(BaseM1FTest):
             "archive.zip",
             "database.db",
         ]
-        
+
         # Create documentation files
         for filename in doc_files:
             file_path = files_dir / filename
             file_path.write_text(f"Documentation content in {filename}\n")
-        
+
         # Create non-documentation files
         for filename in non_doc_files:
             file_path = files_dir / filename
             file_path.write_text(f"Non-doc content in {filename}\n")
-        
+
         return files_dir
 
     @pytest.mark.unit
     def test_docs_only_basic(self, run_m1f, test_files_dir, temp_dir):
         """Test basic --docs-only functionality."""
         output_file = temp_dir / "docs_only_output.txt"
-        
+
         # Run m1f with --docs-only
         exit_code, log_output = run_m1f(
             [
@@ -97,14 +97,14 @@ class TestDocsOnlyParameter(BaseM1FTest):
                 "--force",
             ]
         )
-        
+
         # Verify success
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
         assert output_file.exists(), "Output file was not created"
-        
+
         # Read output content
         content = output_file.read_text()
-        
+
         # Check that documentation files are included
         assert "README.md" in content
         assert "guide.txt" in content
@@ -113,7 +113,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert "CHANGELOG.md" in content
         assert "help.1" in content
         assert "config.5" in content
-        
+
         # Check that non-documentation files are excluded
         assert "script.py" not in content
         assert "app.js" not in content
@@ -122,10 +122,12 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert "image.png" not in content
 
     @pytest.mark.unit
-    def test_docs_only_with_include_extensions_intersection(self, run_m1f, test_files_dir, temp_dir):
+    def test_docs_only_with_include_extensions_intersection(
+        self, run_m1f, test_files_dir, temp_dir
+    ):
         """Test that --docs-only and --include-extensions create an intersection."""
         output_file = temp_dir / "docs_intersection_output.txt"
-        
+
         # Run m1f with both --docs-only and --include-extensions
         # This should only include files that are BOTH documentation files AND have .md extension
         exit_code, log_output = run_m1f(
@@ -135,27 +137,29 @@ class TestDocsOnlyParameter(BaseM1FTest):
                 "--output-file",
                 str(output_file),
                 "--docs-only",
-                "--include-extensions", ".md", ".txt",  # Only these doc extensions
+                "--include-extensions",
+                ".md",
+                ".txt",  # Only these doc extensions
                 "--force",
             ]
         )
-        
+
         # Verify success
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
-        
+
         # Read output content
         content = output_file.read_text()
-        
+
         # Check that only .md and .txt documentation files are included
         assert "README.md" in content
         assert "guide.txt" in content
         assert "CHANGELOG.md" in content
-        
+
         # Other documentation files should be excluded due to extension filter
         assert "api.rst" not in content
         assert "manual.adoc" not in content
         assert "help.1" not in content
-        
+
         # Non-documentation files should definitely be excluded
         assert "script.py" not in content
         assert "app.js" not in content
@@ -164,7 +168,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
     def test_docs_only_with_excludes(self, run_m1f, test_files_dir, temp_dir):
         """Test --docs-only with exclude patterns."""
         output_file = temp_dir / "docs_exclude_output.txt"
-        
+
         # Run m1f with --docs-only and excludes
         exit_code, log_output = run_m1f(
             [
@@ -173,21 +177,23 @@ class TestDocsOnlyParameter(BaseM1FTest):
                 "--output-file",
                 str(output_file),
                 "--docs-only",
-                "--excludes", "**/CHANGELOG*", "**/changes.*",  # Exclude changelog files
+                "--excludes",
+                "**/CHANGELOG*",
+                "**/changes.*",  # Exclude changelog files
                 "--force",
             ]
         )
-        
+
         # Verify success
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
-        
+
         # Read output content
         content = output_file.read_text()
-        
+
         # Check that documentation files are included
         assert "README.md" in content
         assert "guide.txt" in content
-        
+
         # CHANGELOG files should be excluded due to exclude pattern
         assert "CHANGELOG.md" not in content
         assert "changes.changelog" not in content
@@ -196,8 +202,8 @@ class TestDocsOnlyParameter(BaseM1FTest):
     def test_docs_only_file_count(self, run_m1f, test_files_dir, temp_dir):
         """Test that --docs-only correctly counts documentation files."""
         output_file = temp_dir / "docs_count_output.txt"
-        info_file = output_file.with_suffix('.info')
-        
+        info_file = output_file.with_suffix(".info")
+
         # Run m1f with --docs-only
         exit_code, log_output = run_m1f(
             [
@@ -209,10 +215,10 @@ class TestDocsOnlyParameter(BaseM1FTest):
                 "--force",
             ]
         )
-        
+
         # Verify success
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
-        
+
         # Check info file for file count
         if info_file.exists():
             info_content = info_file.read_text()
@@ -225,13 +231,13 @@ class TestDocsOnlyParameter(BaseM1FTest):
         # Create directory with only non-doc files
         source_dir = temp_dir / "no_docs"
         source_dir.mkdir()
-        
+
         (source_dir / "app.py").write_text("Python code")
         (source_dir / "style.css").write_text("CSS styles")
         (source_dir / "data.json").write_text('{"key": "value"}')
-        
+
         output_file = temp_dir / "no_docs_output.txt"
-        
+
         # Run m1f with --docs-only
         exit_code, log_output = run_m1f(
             [
@@ -243,10 +249,10 @@ class TestDocsOnlyParameter(BaseM1FTest):
                 "--force",
             ]
         )
-        
+
         # Should still succeed but with empty or minimal output
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
-        
+
         if output_file.exists():
             content = output_file.read_text()
             # Should not contain any of the non-doc files
@@ -258,7 +264,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
     def test_docs_only_real_project_structure(self, run_m1f, m1f_source_dir, temp_dir):
         """Test --docs-only on the actual m1f test source directory."""
         output_file = temp_dir / "real_docs_output.txt"
-        
+
         # Use the actual test source directory which has various file types
         exit_code, log_output = run_m1f(
             [
@@ -270,16 +276,16 @@ class TestDocsOnlyParameter(BaseM1FTest):
                 "--force",
             ]
         )
-        
+
         # Verify success
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
         assert output_file.exists(), "Output file was not created"
-        
+
         # Read output content
         content = output_file.read_text()
-        
+
         # Should include markdown files
         assert "README.md" in content
-        
+
         # Should exclude image files
         assert "png.png" not in content

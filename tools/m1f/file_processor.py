@@ -466,10 +466,11 @@ class FileProcessor:
         # Check if file exists
         if not file_path.exists():
             return False
-        
+
         # Check docs_only filter first (highest priority)
         if self.config.filter.docs_only:
             from .constants import DOCUMENTATION_EXTENSIONS
+
             if file_path.suffix.lower() not in DOCUMENTATION_EXTENSIONS:
                 return False
 
