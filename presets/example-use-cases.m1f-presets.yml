@@ -99,6 +99,7 @@ web_project_complete:
     # Extension-specific rules
     extensions:
       # Documentation - no security check, clean metadata
+      # NOTE: For complete documentation bundles, use docs_only: true instead
       .md:
         security_check: null
         remove_scraped_metadata: true
@@ -184,6 +185,8 @@ v3_2_features:
     # v3.2: Control UTF-8 preference
     prefer_utf8_for_text_files: false  # Use detected encoding
     
+    # v3.2+: Use --docs-only for documentation bundles
+    docs_only: true  # Include all 62 documentation extensions
     
     # v3.2: Enhanced security options
     security_check: "error"  # Strictest mode
@@ -205,8 +208,32 @@ v3_2_features:
       # Allow duplicate test fixtures
       enable_content_deduplication: false
 
+# Documentation-only bundle example
+documentation_bundle:
+  description: "Extract only documentation files using --docs-only"
+  priority: 10
+  
+  global_settings:
+    # Use the new --docs-only parameter
+    docs_only: true  # Includes 62 documentation extensions
+    
+    # Standard separator for AI consumption
+    separator_style: "Standard"
+    
+    # Documentation-specific settings
+    security_check: null  # No security check for docs
+    remove_scraped_metadata: true  # Clean metadata
+    
+    # Exclude build outputs
+    exclude_patterns:
+      - "_build/**"
+      - "build/**"
+      - "site/**"
+      - "public/**"
+
 # Usage examples:
 # m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
 # m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
 # m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
 # m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group v3_2_features
+# m1f -s . -o docs.txt --preset example-use-cases.m1f-presets.yml --preset-group documentation_bundle

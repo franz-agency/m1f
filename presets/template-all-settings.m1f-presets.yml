@@ -140,6 +140,7 @@ example_group_name:
     
     # Include only documentation files (62 extensions) (default: false)
     # Overrides include_extensions when set to true
+    # Includes: .md, .txt, .rst, .adoc, .man, .1-8, .changes, .pod, and 54 more
     docs_only: false
     
     # v3.2 features

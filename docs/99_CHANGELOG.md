@@ -27,6 +27,12 @@ and this project adheres to
   - Documentation extensions now available system-wide for all tools
 
 - **m1f-claude --init Improvements**: Enhanced project initialization process
+  - **Streamlined Workflow**: Automatic bundle creation without Claude dependency
+    - Automatically creates complete.txt bundle with all project files
+    - Automatically creates docs.txt bundle with 62 documentation extensions
+    - Uses --docs-only parameter for efficient documentation bundling
+    - Claude Code only invoked for advanced topic-specific segmentation
+    - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
   - **Verbose Mode**: Added `--verbose` flag to show prompts and command parameters
     - Displays complete Claude Code command with permissions
     - Shows full prompt being sent for debugging
@@ -98,10 +104,10 @@ and this project adheres to
 
 ### Changed
 
-- **m1f-claude --init Workflow**: Streamlined initialization process
+- **m1f-claude --init Workflow**: Completely redesigned initialization process
   - Now automatically creates complete.txt and docs.txt bundles without Claude
   - Generates .m1f.config.yml with both bundles pre-configured
-  - Includes 50+ documentation file extensions in docs bundle
+  - Uses new --docs-only parameter for documentation bundle creation
   - Claude Code only used for advanced topic-specific segmentation
   - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
 
