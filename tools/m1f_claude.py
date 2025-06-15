@@ -1233,54 +1233,116 @@ I'll analyze your project and create an optimal m1f configuration that:
             context = self._analyze_project_context()
             print(context)
         
-        # Create a basic configuration file first
+        # Always create basic complete and docs bundles first
+        print(f"\n📦 Creating Initial Bundles")
+        print("=" * 30)
+        
+        # Create complete bundle
+        print(f"Creating complete project bundle...")
+        complete_cmd = [
+            "m1f",
+            "-s", str(self.project_path),
+            "-o", str(m1f_dir / "complete.txt"),
+            "--exclude-paths-file", ".gitignore",
+            "--excludes", "m1f/",
+            "--force",
+            "--minimal-output"
+        ]
+        
+        result = subprocess.run(complete_cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"✅ Created: m1f/complete.txt")
+        else:
+            print(f"⚠️  Failed to create complete bundle: {result.stderr}")
+        
+        # Create docs bundle with all documentation file extensions
+        print(f"Creating documentation bundle...")
+        doc_extensions = [
+            ".1", ".1st", ".2", ".3", ".4", ".5", ".6", ".7", ".8",
+            ".adoc", ".asciidoc", ".changelog", ".changes", ".creole",
+            ".doc", ".faq", ".feature", ".help", ".history", ".info",
+            ".lhs", ".litcoffee", ".ltx", ".man", ".markdown", ".markdown2",
+            ".md", ".mdown", ".mdtxt", ".mdtext", ".mdwn", ".mdx", ".me",
+            ".mkd", ".mkdn", ".mkdown", ".ms", ".news", ".nfo", ".notes",
+            ".org", ".pod", ".pod6", ".qmd", ".rd", ".rdoc", ".readme",
+            ".release", ".rmd", ".roff", ".rst", ".rtf", ".so", ".story",
+            ".t", ".tex", ".texi", ".texinfo", ".text", ".textile",
+            ".todo", ".tr", ".txt", ".wiki"
+        ]
+        
+        docs_cmd = [
+            "m1f",
+            "-s", str(self.project_path),
+            "-o", str(m1f_dir / "docs.txt"),
+            "--exclude-paths-file", ".gitignore",
+            "--excludes", "m1f/",
+            "--include-extensions"
+        ] + doc_extensions + [
+            "--force",
+            "--minimal-output"
+        ]
+        
+        result = subprocess.run(docs_cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"✅ Created: m1f/docs.txt")
+        else:
+            print(f"⚠️  Failed to create docs bundle: {result.stderr}")
+        
+        # Create or update configuration file
         if not config_path.exists():
-            print(f"\n📝 Creating basic .m1f.config.yml...")
-            self._create_basic_config(config_path)
-            print(f"✅ Basic configuration created at {config_path}")
+            print(f"\n📝 Creating .m1f.config.yml with basic bundles...")
+            self._create_basic_config_with_docs(config_path, doc_extensions)
+            print(f"✅ Configuration created with complete and docs bundles")
+        else:
+            print(f"✅ Configuration already exists - basic bundles created")
         
-        # Create initialization prompt for Claude
-        init_prompt = self._create_initialization_prompt(config_path.exists(), has_claude_code, context)
-        
+        # Now offer Claude Code for advanced segmentation
         if has_claude_code:
-            print(f"\n🤖 Starting Claude Code session for project setup...")
+            print(f"\n🤖 Claude Code for Advanced Segmentation")
             print("─" * 50)
+            print(f"Basic bundles created! Now Claude can help you create topic-specific bundles.")
+            
+            # Create segmentation prompt focused on advanced bundling
+            segmentation_prompt = self._create_segmentation_prompt(context)
             
             try:
                 # Use subprocess directly for initialization to ensure stable session
-                response = self.send_to_claude_code_subprocess(init_prompt)
+                response = self.send_to_claude_code_subprocess(segmentation_prompt)
                 if response and response != "Manual execution required - see instructions above":
-                    print(f"\n✅ Initialization complete!")
-                    print(f"📝 Claude has analyzed your project and created an optimized configuration.")
-                    print(f"💡 You can now run: m1f-update")
+                    print(f"\n✅ Advanced segmentation complete!")
+                    print(f"📝 Claude has analyzed your project and added topic-specific bundles.")
                 else:
                     # Manual execution was required - adjust the message
-                    print(f"\n✅ Setup instructions displayed!")
+                    print(f"\n✅ Instructions for advanced segmentation displayed!")
                     print(f"📝 After running the command above, Claude will:")
-                    print(f"   • Read the m1f documentation")
-                    print(f"   • Analyze your project structure")
-                    print(f"   • Modify .m1f.config.yml with optimized bundles")
-                    print(f"💡 Then you can run: m1f-update")
+                    print(f"   • Analyze your project structure in detail")
+                    print(f"   • Create topic-specific bundles (components, api, etc.)")
+                    print(f"   • Add them to your existing .m1f.config.yml")
             except Exception as e:
-                print(f"\n❌ Error during initialization: {e}")
-                print(f"\n⚠️  Initialization via automation failed")
-                print(f"\nYou can manually run: m1f-claude 'Help me improve my m1f configuration'")
+                print(f"\n❌ Error during advanced segmentation: {e}")
+                print(f"\nYou can manually run: m1f-claude 'Help me segment my project into topic bundles'")
         else:
-            print(f"\n⚠️  Claude Code not available for automated setup")
-            print(f"\nTo enhance your configuration:")
+            print(f"\n💡 For Advanced Segmentation")
+            print("─" * 50)
+            print(f"Basic bundles created! To create topic-specific bundles:")
             print(f"1. Install Claude Code: npm install -g @anthropic-ai/claude-code")
-            print(f"2. Run: m1f-claude 'Help me improve my m1f configuration'")
-            print(f"3. Or manually edit the .m1f.config.yml file")
+            print(f"2. Run: m1f-claude 'Help me segment my project into topic bundles'")
+            print(f"3. Or manually add bundles to .m1f.config.yml")
         
         print(f"\n🚀 Next steps:")
-        print(f"• Run 'm1f-update' to generate your first bundles")
-        print(f"• Check the generated bundles in the m1f/ directory")
-        print(f"• Use Claude to help refine your configuration as needed")
+        print(f"• Your basic bundles are ready in m1f/")
+        print(f"  - complete.txt: Full project bundle")
+        print(f"  - docs.txt: All documentation files")
+        print(f"• Run 'm1f-update' to regenerate bundles after config changes")
+        print(f"• Use Claude to create topic-specific bundles as needed")
     
-    def _create_basic_config(self, config_path: Path) -> None:
-        """Create a minimal starter .m1f.config.yml that Claude will enhance."""
-        yaml_content = """# m1f Configuration - Generated by m1f-claude --init
-# This will be enhanced based on your project structure
+    def _create_basic_config_with_docs(self, config_path: Path, doc_extensions: List[str]) -> None:
+        """Create .m1f.config.yml with complete and docs bundles."""
+        # Format extensions for YAML list
+        formatted_extensions = '\n'.join(f'      - "{ext}"' for ext in doc_extensions)
+        
+        yaml_content = f"""# m1f Configuration - Generated by m1f-claude --init
+# Basic bundles created automatically. Use Claude to add topic-specific bundles.
 
 global:
   global_excludes:
@@ -1305,123 +1367,88 @@ bundles:
     output: "m1f/complete.txt"
     sources:
       - path: "."
+  
+  # Documentation bundle
+  docs:
+    description: "All documentation files"
+    output: "m1f/docs.txt"
+    sources:
+      - path: "."
+    include_extensions:
+{formatted_extensions}
+
+# Use 'm1f-claude' to add topic-specific bundles like:
+# - components: UI components
+# - api: API routes and endpoints
+# - config: Configuration files
+# - styles: CSS/SCSS files
+# - tests: Test files
+# - etc.
 """
         
         with open(config_path, 'w', encoding='utf-8') as f:
             f.write(yaml_content)
-
-    def _create_initialization_prompt(self, has_config: bool, has_claude_code: bool, project_context: Dict = None) -> str:
-        """Create a comprehensive initialization prompt for Claude."""
+    
+    def _create_segmentation_prompt(self, project_context: Dict) -> str:
+        """Create a prompt for advanced project segmentation."""
         prompt_parts = []
         
-        prompt_parts.append("🚀 CREATE M1F CONFIGURATION FOR THIS PROJECT")
+        prompt_parts.append("🎯 CREATE TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT")
         prompt_parts.append("=" * 60)
         prompt_parts.append("")
-        prompt_parts.append("FIRST: Read the m1f documentation at @m1f/m1f.txt to understand:")
-        prompt_parts.append("- Configuration file syntax and options")
-        prompt_parts.append("- Bundle definition patterns")
-        prompt_parts.append("- Best practices for bundle organization")
+        prompt_parts.append("The basic bundles (complete.txt and docs.txt) have already been created.")
+        prompt_parts.append("Now create additional topic-specific bundles to segment the project.")
         prompt_parts.append("")
-        prompt_parts.append("THEN: Create a proper .m1f.config.yml configuration based on the actual project structure.")
+        prompt_parts.append("READ: @m1f/m1f.txt for bundle configuration syntax")
         prompt_parts.append("")
         
-        prompt_parts.append("⚠️ CRITICAL RULES:")
-        prompt_parts.append("1. NO GLOBAL FILE SIZE LIMITS - Never set max_file_size in defaults")
-        prompt_parts.append("2. EXCLUDE META FILES - Always exclude: LICENSE*, CLAUDE.md, *.lock")
-        prompt_parts.append("3. PROJECT-SPECIFIC BUNDLES - Create bundles based on what's actually in the project")
-        prompt_parts.append("4. NO TEST BUNDLES if no tests exist in the project")
-        prompt_parts.append("5. LOGICAL SEGMENTATION - Split by: complete/docs/code/components/config/styles")
-        prompt_parts.append("6. DOT FILES/FOLDERS are excluded by default - no need to add .git, .cursorrules, etc.")
+        prompt_parts.append("📋 ALREADY CREATED BUNDLES:")
+        prompt_parts.append("- complete: Full project bundle")
+        prompt_parts.append("- docs: All documentation files")
         prompt_parts.append("")
         
-        prompt_parts.append("📋 REQUIRED BUNDLES PATTERN:")
-        prompt_parts.append("1. 'complete' - Everything except meta files (no size limit)")
-        prompt_parts.append("2. 'docs' - All documentation (*.md files in docs/ folders)")
-        prompt_parts.append("3. 'source-code' - Main application code")
-        prompt_parts.append("4. 'components' - UI components (if applicable)")
-        prompt_parts.append("5. 'config' - Configuration files (package.json, tsconfig, etc.)")
-        prompt_parts.append("6. 'styles' - CSS/SCSS files")
-        prompt_parts.append("7. ONLY add framework-specific bundles if they exist")
+        prompt_parts.append("🎯 YOUR TASK:")
+        prompt_parts.append("Add topic-specific bundles to the existing .m1f.config.yml based on the project structure.")
+        prompt_parts.append("DO NOT modify the existing 'complete' and 'docs' bundles.")
+        prompt_parts.append("")
+        
+        prompt_parts.append("💡 SUGGESTED BUNDLE TYPES (only add if they exist):")
+        prompt_parts.append("- components: UI components (for React/Vue/Angular projects)")
+        prompt_parts.append("- api: API routes, endpoints, controllers")
+        prompt_parts.append("- models: Data models, schemas, database definitions")
+        prompt_parts.append("- services: Business logic, service layers")
+        prompt_parts.append("- utils/helpers: Utility functions and helpers")
+        prompt_parts.append("- config: Configuration files (but not .env files!)")
+        prompt_parts.append("- styles: CSS, SCSS, style files")
+        prompt_parts.append("- tests: Test files (if separate from main code)")
+        prompt_parts.append("- scripts: Build scripts, automation")
         prompt_parts.append("")
         
         # Add project-specific context
         if project_context:
-            prompt_parts.append("📊 DETAILED PROJECT ANALYSIS:")
+            prompt_parts.append("📊 PROJECT ANALYSIS:")
+            prompt_parts.append(f"- Project Type: {project_context.get('type', 'Unknown')}")
+            prompt_parts.append(f"- Languages: {project_context.get('languages', 'Unknown')}")
             prompt_parts.append(f"- Total Files: {project_context.get('total_files', 'Unknown')}")
-            prompt_parts.append(f"- Total Directories: {project_context.get('total_dirs', 'Unknown')}")
-            prompt_parts.append(f"- Project Type: {project_context.get('type', 'Not specified')}")
-            prompt_parts.append(f"- Main Language(s): {project_context.get('languages', 'Not specified')}")
-            prompt_parts.append(f"- Size: {project_context.get('size', 'Not specified')}")
-            prompt_parts.append(f"- Recommendation: {project_context.get('recommendation', 'Create focused bundles')}")
-            
-            if project_context.get('documentation_files'):
-                prompt_parts.append(f"\n**Documentation Files:**")
-                for doc_file in project_context['documentation_files'][:5]:
-                    prompt_parts.append(f"- {doc_file}")
             
             if project_context.get('main_code_dirs'):
                 prompt_parts.append(f"\n**Main Code Directories:**")
-                for code_dir in project_context['main_code_dirs'][:5]:
+                for code_dir in project_context['main_code_dirs'][:10]:
                     prompt_parts.append(f"- {code_dir}")
-            
-            if project_context.get('test_dirs'):
-                prompt_parts.append(f"\n**Test Directories:**")
-                for test_dir in project_context['test_dirs'][:3]:
-                    prompt_parts.append(f"- {test_dir}")
-            
-            if project_context.get('config_files'):
-                prompt_parts.append(f"\n**Configuration Files:**")
-                for config_file in project_context['config_files']:
-                    prompt_parts.append(f"- {config_file}")
-            
             prompt_parts.append("")
-        else:
-            # Fallback to basic analysis
-            context = self._analyze_project_context()
-            if context.strip():
-                prompt_parts.append("📊 CURRENT PROJECT CONTEXT:")
-                prompt_parts.append(context)
-                prompt_parts.append("")
         
-        prompt_parts.append("📝 EXAMPLE GLOBAL SETTINGS (adapt to project):")
-        prompt_parts.append("```yaml")
-        prompt_parts.append("global:")
-        prompt_parts.append("  global_excludes:")
-        prompt_parts.append("    - 'm1f/**'")
-        prompt_parts.append("    - '**/*.lock'")
-        prompt_parts.append("    - '**/LICENSE*'")
-        prompt_parts.append("    - '**/CLAUDE.md'")
-        prompt_parts.append("    - '**/node_modules/**'  # if not in .gitignore")
-        prompt_parts.append("    - '**/vendor/**'       # if not in .gitignore")
-        prompt_parts.append("  global_settings:")
-        prompt_parts.append("    security_check: 'warn'")
-        prompt_parts.append("    exclude_paths_file: '.gitignore'")
-        prompt_parts.append("  defaults:")
-        prompt_parts.append("    force_overwrite: true")
-        prompt_parts.append("    minimal_output: true")
-        prompt_parts.append("    # NO max_file_size here!")
-        prompt_parts.append("```")
+        prompt_parts.append("⚙️ IMPLEMENTATION:")
+        prompt_parts.append("1. Read the existing .m1f.config.yml")
+        prompt_parts.append("2. Keep the existing 'complete' and 'docs' bundles unchanged")
+        prompt_parts.append("3. Add new topic-specific bundles after the docs bundle")
+        prompt_parts.append("4. Use appropriate include/exclude patterns for each bundle")
+        prompt_parts.append("5. Ensure bundles don't overlap unnecessarily")
+        prompt_parts.append("6. Use the MultiEdit tool to add all new bundles at once")
         prompt_parts.append("")
-        
-        prompt_parts.append("⚙️ IMPLEMENTATION STEPS:")
-        prompt_parts.append("1. READ @m1f/m1f.txt - especially the auto-bundling configuration section")
-        prompt_parts.append("2. Read the existing .m1f.config.yml - it's just a BASIC STARTER!")
-        prompt_parts.append("3. The current config only has ONE 'complete' bundle - this is NOT enough!")
-        prompt_parts.append("4. You MUST add multiple bundles based on the project structure")
-        prompt_parts.append("5. Use the Edit or MultiEdit tool to REPLACE the entire bundles section")
-        prompt_parts.append("6. Add at least 3-5 bundles that match the actual project content")
-        prompt_parts.append("")
-        
-        prompt_parts.append("🎯 For this specific project, create bundles that match its structure!")
-        prompt_parts.append("If it's a Next.js app, create bundles for pages/components/api/etc.")
-        prompt_parts.append("If it has multiple sub-projects, create bundles for each.")
-        prompt_parts.append("")
-        
-        prompt_parts.append("⚠️ CRITICAL: You MUST use Edit/MultiEdit to MODIFY .m1f.config.yml!")
-        prompt_parts.append("The file exists but only has a basic 'complete' bundle.")
-        prompt_parts.append("Replace the entire bundles section with project-specific bundles!")
+        prompt_parts.append("Remember: Only add bundles that make sense for THIS specific project!")
         
         return "\n".join(prompt_parts)
+
 
     def _send_with_session(self, prompt: str, session_id: Optional[str] = None) -> tuple[Optional[str], Optional[str]]:
         """Send prompt to Claude Code, managing session continuity.

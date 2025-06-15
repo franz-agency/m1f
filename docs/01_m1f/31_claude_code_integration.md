@@ -63,7 +63,7 @@ Create `.claude/settings.json` in the project root:
 The `m1f-claude --init` command provides an intelligent way to set up m1f for your project:
 
 ```bash
-# Initialize m1f configuration with AI assistance
+# Initialize m1f configuration with basic bundles
 m1f-claude --init
 
 # With verbose output to see what's happening
@@ -78,22 +78,22 @@ m1f-claude --init --verbose
    - Respects .gitignore patterns and excludes m1f/ directory
    - Analyzes project type, languages, and structure
 
-2. **Basic Config Creation**
-   - Creates a minimal `.m1f.config.yml` with sensible defaults
+2. **Automatic Bundle Creation**
+   - **complete.txt**: Full project bundle (excluding meta files)
+   - **docs.txt**: All documentation files with 50+ supported extensions
+   - Both bundles are created immediately without Claude Code
+
+3. **Configuration File**
+   - Creates `.m1f.config.yml` with complete and docs bundles configured
+   - Includes all documentation extensions (.md, .txt, .rst, .adoc, etc.)
    - No global file size limits
    - Proper meta file exclusions (LICENSE*, CLAUDE.md, *.lock)
-   - Basic "complete" bundle as a starting point
 
-3. **AI Enhancement**
-   - Claude Code reads the m1f documentation (@m1f/m1f.txt)
-   - Analyzes your specific project structure
-   - Creates project-specific bundles (docs, components, styles, etc.)
-   - Replaces the basic config with an optimized configuration
-
-4. **File Permissions**
+4. **Advanced Segmentation (Optional)**
+   - If Claude Code is installed, offers to create topic-specific bundles
+   - Analyzes project structure for components, API, styles, etc.
+   - Adds these bundles to your existing configuration
    - Uses `--allowedTools Read,Write,Edit,MultiEdit` for file operations
-   - Adds `--add-dir` for project directory access
-   - Ensures Claude can read and modify the configuration
 
 #### Example Output:
 
@@ -115,17 +115,31 @@ Analyzing project structure with m1f...
 💻 Languages: JavaScript (37 files), TypeScript (30 files)
 📂 Code Dirs: src/app, src/components, src/lib
 
-📝 Creating basic .m1f.config.yml...
-✅ Basic configuration created at .m1f.config.yml
+📦 Creating Initial Bundles
+==============================
+Creating complete project bundle...
+✅ Created: m1f/complete.txt
+Creating documentation bundle...
+✅ Created: m1f/docs.txt
 
-🤖 Starting Claude Code session for project setup...
+📝 Creating .m1f.config.yml with basic bundles...
+✅ Configuration created with complete and docs bundles
+
+🤖 Claude Code for Advanced Segmentation
 ──────────────────────────────────────────────────
+Basic bundles created! Now Claude can help you create topic-specific bundles.
 
-[Claude analyzes and enhances your configuration]
+[Claude analyzes and adds topic-specific bundles]
 
-✅ Initialization complete!
-📝 Claude has analyzed your project and created an optimized configuration.
-💡 You can now run: m1f-update
+✅ Advanced segmentation complete!
+📝 Claude has analyzed your project and added topic-specific bundles.
+
+🚀 Next steps:
+• Your basic bundles are ready in m1f/
+  - complete.txt: Full project bundle
+  - docs.txt: All documentation files
+• Run 'm1f-update' to regenerate bundles after config changes
+• Use Claude to create topic-specific bundles as needed
 ```
 
 #### Troubleshooting:

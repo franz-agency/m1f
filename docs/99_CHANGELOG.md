@@ -82,6 +82,13 @@ and this project adheres to
 
 ### Changed
 
+- **m1f-claude --init Workflow**: Streamlined initialization process
+  - Now automatically creates complete.txt and docs.txt bundles without Claude
+  - Generates .m1f.config.yml with both bundles pre-configured
+  - Includes 50+ documentation file extensions in docs bundle
+  - Claude Code only used for advanced topic-specific segmentation
+  - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
+
 - **Dependencies**: Updated claude-code-sdk to use flexible version constraint
   - Changed from `claude-code-sdk==0.0.10` to `claude-code-sdk>=0.0.10`
   - Ensures automatic updates to latest compatible versions
@@ -101,6 +108,7 @@ and this project adheres to
   - Implemented fallback to display manual command when subprocess hangs
   - Now shows clear instructions for manual execution with proper parameters
   - Ensures Claude has directory access permissions for file operations
+
 
 - **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
   - Created m1f_aliases.ps1 with all PowerShell functions and aliases
