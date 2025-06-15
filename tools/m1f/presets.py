@@ -127,6 +127,7 @@ class GlobalSettings:
     include_binary_files: Optional[bool] = None
     include_symlinks: Optional[bool] = None
     no_default_excludes: Optional[bool] = None
+    docs_only: Optional[bool] = None
     max_file_size: Optional[str] = None  # e.g., "50KB", "10MB"
     exclude_paths_file: Optional[Union[str, List[str]]] = None
     include_paths_file: Optional[Union[str, List[str]]] = None

@@ -466,6 +466,12 @@ class FileProcessor:
         # Check if file exists
         if not file_path.exists():
             return False
+        
+        # Check docs_only filter first (highest priority)
+        if self.config.filter.docs_only:
+            from .constants import DOCUMENTATION_EXTENSIONS
+            if file_path.suffix.lower() not in DOCUMENTATION_EXTENSIONS:
+                return False
 
         # If explicitly included (from -i file), skip most filters but still check binary
         if explicitly_included:

@@ -10,6 +10,13 @@ and this project adheres to
 
 ### Added
 
+- **--docs-only Parameter**: New command-line flag for documentation-only bundles
+  - Filters to include only 62 documentation file extensions
+  - Simplifies command: `m1f -s . -o docs.txt --docs-only`
+  - Replaces verbose `--include-extensions` with 62 extensions
+  - Available in presets via `docs_only: true` configuration
+  - Overrides include-extensions when set
+
 - **Documentation File Extensions**: Centralized definition in constants.py
   - Added DOCUMENTATION_EXTENSIONS constant with 62 file extensions
   - Added UTF8_PREFERRED_EXTENSIONS constant with 45 UTF-8 preferred formats

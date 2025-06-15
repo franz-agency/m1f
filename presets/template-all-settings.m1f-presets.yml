@@ -138,6 +138,10 @@ example_group_name:
     # Disable default exclusions like node_modules, .git, etc (default: false)
     no_default_excludes: false
     
+    # Include only documentation files (62 extensions) (default: false)
+    # Overrides include_extensions when set to true
+    docs_only: false
+    
     # v3.2 features
     enable_content_deduplication: true  # Deduplicate files by content
     prefer_utf8_for_text_files: true    # Prefer UTF-8 for .md, .txt files

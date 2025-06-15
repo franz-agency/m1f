@@ -229,6 +229,12 @@ Perfect for:
     )
 
     filter_group.add_argument(
+        "--docs-only",
+        action="store_true",
+        help="Include only documentation files (62 extensions including .md, .txt, .rst, etc.)",
+    )
+
+    filter_group.add_argument(
         "--include-dot-paths",
         action="store_true",
         help="Include files and directories starting with a dot",
