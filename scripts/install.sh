@@ -75,7 +75,7 @@ fi
 # Step 3: Generate initial m1f bundles
 echo
 echo -e "${GREEN}Step 3: Generating initial m1f bundles...${NC}"
-m1f-update --quiet
+source .venv/bin/activate && python -m tools.m1f auto-bundle --quiet
 echo -e "${GREEN}✓ Initial bundles generated${NC}"
 
 # Step 4: Setup PATH
