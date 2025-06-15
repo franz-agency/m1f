@@ -1194,22 +1194,30 @@ I'll analyze your project and create an optimal m1f configuration that:
         import tempfile
         
         print("Analyzing project structure with m1f...")
-        with tempfile.NamedTemporaryFile(prefix="m1f_analysis_", suffix=".txt", delete=False) as tmp:
-            tmp_path = tmp.name
+        
+        # Create m1f directory if it doesn't exist
+        m1f_dir = self.project_path / "m1f"
+        if not m1f_dir.exists():
+            m1f_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Use a file in the m1f directory for analysis
+        analysis_path = m1f_dir / "project_analysis.txt"
         
         try:
             # Run m1f with --skip-output-file to generate only auxiliary files
             cmd = [
                 "m1f",
                 "-s", str(self.project_path),
-                "-o", tmp_path,
-                "--skip-output-file"
+                "-o", str(analysis_path),
+                "--skip-output-file",
+                "--exclude-paths-file", ".gitignore",
+                "--excludes", "m1f/"  # Ensure m1f directory is excluded
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True)
             
             # The auxiliary files use the pattern: {basename}_filelist.txt and {basename}_dirlist.txt
-            base_name = os.path.splitext(tmp_path)[0]  # Remove .txt extension
+            base_name = str(analysis_path).replace('.txt', '')
             filelist_path = Path(f"{base_name}_filelist.txt")
             dirlist_path = Path(f"{base_name}_dirlist.txt")
             
@@ -1220,21 +1228,16 @@ I'll analyze your project and create an optimal m1f configuration that:
                 content = filelist_path.read_text().strip()
                 if content:
                     files_list = content.split('\n')
-                filelist_path.unlink()  # Clean up
+                print(f"📄 Created file list: {filelist_path.name}")
             
             if dirlist_path.exists():
                 content = dirlist_path.read_text().strip()
                 if content:
                     dirs_list = content.split('\n')
-                dirlist_path.unlink()  # Clean up
+                print(f"📁 Created directory list: {dirlist_path.name}")
             
-            # Clean up temp file
-            Path(tmp_path).unlink(missing_ok=True)
-            
-            # Also clean up potential log file
-            log_path = Path(f"{base_name}.log")
-            if log_path.exists():
-                log_path.unlink()
+            # Note: We keep the analysis files in m1f/ directory for reference
+            # No cleanup needed - these are useful project analysis artifacts
             
             # Analyze the file and directory lists to determine project type
             context = self._analyze_project_files(files_list, dirs_list)
