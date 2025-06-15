@@ -10,6 +10,31 @@ and this project adheres to
 
 ### Added
 
+- **m1f-claude --init Improvements**: Enhanced project initialization process
+  - **Verbose Mode**: Added `--verbose` flag to show prompts and command parameters
+    - Displays complete Claude Code command with permissions
+    - Shows full prompt being sent for debugging
+    - Helps troubleshoot initialization issues
+  - **Project Analysis Files**: Create and preserve analysis artifacts in m1f/ directory
+    - Generates `project_analysis_filelist.txt` with all project files
+    - Generates `project_analysis_dirlist.txt` with directory structure
+    - Files are kept for reference (no cleanup)
+    - Respects .gitignore patterns during analysis
+    - Explicitly excludes m1f/ directory to prevent recursion
+  - **Better Bundle Strategy**: Improved initialization prompts for project-specific configs
+    - Explicit instruction to read @m1f/m1f.txt documentation first
+    - Removed global file size limits from defaults
+    - Added proper meta file exclusions (LICENSE*, CLAUDE.md, *.lock)
+    - Clear rules against creating test bundles when no tests exist
+    - Emphasis on logical segmentation (complete/docs/code/components/config/styles)
+    - Clarified that dotfiles are excluded by default
+    - Added vendor/ to example excludes for PHP projects
+  - **Clearer Instructions**: Made prompts more explicit about modifying files
+    - Emphasizes that basic config is just a starter needing enhancement
+    - Requires 3-5 project-specific bundles minimum
+    - Explicit instruction to use Edit/MultiEdit tools
+    - Stronger language about actually modifying the config file
+
 - **m1f-claude Enhancements**: Major improvements for intelligent m1f setup assistance
   - **Session Persistence**: Implemented proper conversation continuity using Claude CLI's `-r` flag
     - Each conversation maintains its own session ID
@@ -66,6 +91,7 @@ and this project adheres to
   - Uses Claude CLI directly with proper session management
   - More reliable than the SDK for interactive sessions
   - Better error handling and fallback mechanisms
+  - Removed misleading "subprocess fallback" message (it's the primary method now)
 
 ### Fixed
 
