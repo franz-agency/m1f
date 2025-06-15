@@ -187,23 +187,23 @@ cd /your/project
 m1f-link
 ```
 
-This creates `m1f/m1f-docs.txt` - a symlink to the complete m1f documentation
+This creates `m1f/m1f.txt` - a symlink to the complete m1f documentation
 that AI tools can read.
 
 #### Example AI Prompts:
 
 ```bash
 # Ask Claude Code to create a configuration
-"Please read @m1f/m1f-docs.txt and create a .m1f.config.yml
+"Please read @m1f/m1f.txt and create a .m1f.config.yml
 for my Python web project"
 
 # Get help with specific use cases
-"Based on @m1f/m1f-docs.txt, how do I exclude all test
+"Based on @m1f/m1f.txt, how do I exclude all test
 files but include fixture data?"
 
 # Troubleshoot issues
 "I'm getting this error: [error message]. Can you check
-@m1f/m1f-docs.txt to help me fix it?"
+@m1f/m1f.txt to help me fix it?"
 ```
 
 The AI will understand:

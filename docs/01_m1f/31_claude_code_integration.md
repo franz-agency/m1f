@@ -56,6 +56,85 @@ Create `.claude/settings.json` in the project root:
 }
 ```
 
+## m1f-claude Tool
+
+### Quick Project Setup with --init
+
+The `m1f-claude --init` command provides an intelligent way to set up m1f for your project:
+
+```bash
+# Initialize m1f configuration with AI assistance
+m1f-claude --init
+
+# With verbose output to see what's happening
+m1f-claude --init --verbose
+```
+
+#### What --init Does:
+
+1. **Project Analysis**
+   - Runs m1f to create file and directory lists in `m1f/` directory
+   - Creates `project_analysis_filelist.txt` and `project_analysis_dirlist.txt`
+   - Respects .gitignore patterns and excludes m1f/ directory
+   - Analyzes project type, languages, and structure
+
+2. **Basic Config Creation**
+   - Creates a minimal `.m1f.config.yml` with sensible defaults
+   - No global file size limits
+   - Proper meta file exclusions (LICENSE*, CLAUDE.md, *.lock)
+   - Basic "complete" bundle as a starting point
+
+3. **AI Enhancement**
+   - Claude Code reads the m1f documentation (@m1f/m1f.txt)
+   - Analyzes your specific project structure
+   - Creates project-specific bundles (docs, components, styles, etc.)
+   - Replaces the basic config with an optimized configuration
+
+4. **File Permissions**
+   - Uses `--allowedTools Read,Write,Edit,MultiEdit` for file operations
+   - Adds `--add-dir` for project directory access
+   - Ensures Claude can read and modify the configuration
+
+#### Example Output:
+
+```
+🚀 Initializing m1f for your project...
+==================================================
+✅ Git repository detected: /home/user/my-project
+✅ m1f documentation already available
+⚠️  No m1f configuration found - will help you create one
+✅ Claude Code is available
+
+📊 Project Analysis
+==============================
+Analyzing project structure with m1f...
+📄 Created file list: project_analysis_filelist.txt
+📁 Created directory list: project_analysis_dirlist.txt
+✅ Found 127 files in 59 directories
+📁 Project Type: Next.js Application
+💻 Languages: JavaScript (37 files), TypeScript (30 files)
+📂 Code Dirs: src/app, src/components, src/lib
+
+📝 Creating basic .m1f.config.yml...
+✅ Basic configuration created at .m1f.config.yml
+
+🤖 Starting Claude Code session for project setup...
+──────────────────────────────────────────────────
+
+[Claude analyzes and enhances your configuration]
+
+✅ Initialization complete!
+📝 Claude has analyzed your project and created an optimized configuration.
+💡 You can now run: m1f-update
+```
+
+#### Troubleshooting:
+
+- **Use --verbose** to see the full prompt and command parameters
+- **Check file permissions** if config isn't being modified
+- **Ensure Claude Code is installed**: `npm install -g @anthropic-ai/claude-code`
+- **Analysis files are kept** in m1f/ directory for reference
+
 ## Using Claude Code with m1f Tools
 
 ### Basic Commands

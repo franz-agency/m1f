@@ -6,6 +6,121 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **m1f-claude --init Improvements**: Enhanced project initialization process
+  - **Verbose Mode**: Added `--verbose` flag to show prompts and command parameters
+    - Displays complete Claude Code command with permissions
+    - Shows full prompt being sent for debugging
+    - Helps troubleshoot initialization issues
+  - **Project Analysis Files**: Create and preserve analysis artifacts in m1f/ directory
+    - Generates `project_analysis_filelist.txt` with all project files
+    - Generates `project_analysis_dirlist.txt` with directory structure
+    - Files are kept for reference (no cleanup)
+    - Respects .gitignore patterns during analysis
+    - Explicitly excludes m1f/ directory to prevent recursion
+  - **Better Bundle Strategy**: Improved initialization prompts for project-specific configs
+    - Explicit instruction to read @m1f/m1f.txt documentation first
+    - Removed global file size limits from defaults
+    - Added proper meta file exclusions (LICENSE*, CLAUDE.md, *.lock)
+    - Clear rules against creating test bundles when no tests exist
+    - Emphasis on logical segmentation (complete/docs/code/components/config/styles)
+    - Clarified that dotfiles are excluded by default
+    - Added vendor/ to example excludes for PHP projects
+  - **Clearer Instructions**: Made prompts more explicit about modifying files
+    - Emphasizes that basic config is just a starter needing enhancement
+    - Requires 3-5 project-specific bundles minimum
+    - Explicit instruction to use Edit/MultiEdit tools
+    - Stronger language about actually modifying the config file
+
+- **m1f-claude Enhancements**: Major improvements for intelligent m1f setup assistance
+  - **Session Persistence**: Implemented proper conversation continuity using Claude CLI's `-r` flag
+    - Each conversation maintains its own session ID
+    - Multiple users can work in the same directory simultaneously
+    - Session IDs are extracted from JSON responses and reused
+  - **Streaming Output**: Real-time feedback with `--output-format stream-json`
+    - Shows Claude's responses as they arrive
+    - Displays tool usage in debug mode
+    - Provides immediate visual feedback during processing
+  - **Tool Permissions**: Added `--allowedTools` parameter with sensible defaults
+    - Default tools: Read, Edit, MultiEdit, Write, Glob, Grep, Bash
+    - Customizable via `--allowed-tools` command line argument
+    - Enables file operations and project analysis
+  - **Enhanced Prompt System**: Sophisticated prompt enhancement for m1f setup
+    - Deep thinking task list approach for systematic m1f configuration
+    - Detects when users want to set up m1f (various phrase patterns)
+    - Provides 5-phase task list: Analysis, Documentation Study, Design, Implementation, Validation
+    - Always references @m1f/m1f.txt documentation (5+ references per prompt)
+    - Detects and prioritizes AI context files (CLAUDE.md, .cursorrules, .windsurfrules)
+    - Project-aware recommendations based on detected frameworks
+    - Line-specific documentation references for key sections
+  - **Debug Mode**: Added `--debug` flag for detailed output
+    - Shows session IDs, costs, and API usage
+    - Displays tool invocations and responses
+    - Helps troubleshoot issues and monitor usage
+  - **Interactive Mode UX**: Improved visual feedback
+    - "Claude is thinking..." indicator during processing
+    - Tool usage notifications: `[🔧 Using tool: Read]`
+    - Response completion indicator: `[✅ Response complete]`
+    - Better prompt spacing with newlines before "You:"
+    - Clear separation between responses and new prompts
+    - Interaction counter: prompts to continue after every 10 exchanges
+    - Ctrl-C signal handling for graceful cancellation
+    - Tool output preview: shows abbreviated results from Claude's tool usage
+    - Emphasis on Standard separator (not Markdown) for AI-optimized bundles
+  - **Exit Command**: Added `/e` command support like Claude CLI
+    - Works alongside 'quit', 'exit', and 'q' commands
+    - Updated help text and keyboard interrupt messages
+  - **Initialization Command**: Fixed `--init` command async/await issues
+    - Resolved RuntimeError with cancel scope in different task
+    - Added graceful handling of missing 'cost_usd' field in Claude SDK responses
+    - Implemented proper anyio task group management for async operations
+    - Enhanced error handling with debug logging for SDK issues
+    - Fixed subprocess hanging by displaying prompts for manual use instead of programmatic execution
+
+### Changed
+
+- **Dependencies**: Updated claude-code-sdk to use flexible version constraint
+  - Changed from `claude-code-sdk==0.0.10` to `claude-code-sdk>=0.0.10`
+  - Ensures automatic updates to latest compatible versions
+  - Maintains backward compatibility with current version
+
+- **m1f-claude Architecture**: Switched from SDK to subprocess for better control
+  - Uses Claude CLI directly with proper session management
+  - More reliable than the SDK for interactive sessions
+  - Better error handling and fallback mechanisms
+  - Removed misleading "subprocess fallback" message (it's the primary method now)
+
+### Fixed
+
+- **m1f-claude --init Command**: Fixed Claude Code subprocess execution
+  - Resolved parameter ordering issue with `--add-dir` flag
+  - Changed from stdin-based prompt delivery to `-p` parameter method
+  - Implemented fallback to display manual command when subprocess hangs
+  - Now shows clear instructions for manual execution with proper parameters
+  - Ensures Claude has directory access permissions for file operations
+
+- **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
+  - Created m1f_aliases.ps1 with all PowerShell functions and aliases
+  - Added file existence check in setup_m1f_aliases.ps1 before sourcing
+  - Fixed hardcoded path issue that caused PowerShell profile errors
+  - Now uses correct relative paths based on actual m1f installation location
+  - Added PowerShell profile path to warning message for easier debugging
+
+- **m1f-claude Project Name Extraction**: Fixed regex patterns that were failing to extract project names
+  - Replaced complex regex patterns with backreferences that were causing incorrect matches
+  - Added simpler, more specific patterns for different name formats (quoted, unquoted, possessive)
+  - Fixed issue where project names were always extracted as empty strings
+  - Now correctly handles formats like "project called 'awesome-app'", "project named MyWebApp", "company's main project"
+
+### Dependencies
+
+- Added required dependencies for m1f-claude:
+  - anyio==4.9.0 (async support)
+  - claude-code-sdk==0.0.10 (Claude integration)
+
 ## [3.2.2] - 2025-07-06
 
 ### Changed

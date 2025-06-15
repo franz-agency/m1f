@@ -196,3 +196,12 @@ CLAUDE.md
 
 # Scrapes directory for mf1-html2md workflow
 .scrapes/
+
+# Vim swap files
+*.swp
+
+# bat files for powershell
+/batch/
+
+# symlink to doc
+m1f/m1f.txt
