@@ -1407,29 +1407,36 @@ I'll analyze your project and create an optimal m1f configuration that:
         # Create segmentation prompt focused on advanced bundling
         segmentation_prompt = self._create_segmentation_prompt(context)
 
+        # Execute Claude directly with the prompt
+        print(f"\n🤖 Sending to Claude Code...")
+        print(f"⏳ Claude will now analyze your project and create topic-specific bundles...\n")
+        
         try:
-            # Use subprocess directly for initialization to ensure stable session
-            response = self.send_to_claude_code_subprocess(segmentation_prompt)
-            if (
-                response
-                and response != "Manual execution required - see instructions above"
-            ):
+            # Run Claude with the prompt directly
+            cmd = [
+                "claude",
+                "-p", segmentation_prompt,
+                "--add-dir", str(self.project_path),
+                "--allowedTools", "Read,Write,Edit,MultiEdit,Glob,Grep"
+            ]
+            
+            # Execute Claude
+            result = subprocess.run(cmd, cwd=self.project_path, capture_output=False, text=True)
+            
+            if result.returncode == 0:
                 print(f"\n✅ Advanced segmentation complete!")
-                print(
-                    f"📝 Claude has analyzed your project and added topic-specific bundles."
-                )
+                print(f"📝 Claude has analyzed your project and added topic-specific bundles.")
             else:
-                # Manual execution was required - adjust the message
-                print(f"\n✅ Instructions for advanced segmentation displayed!")
-                print(f"📝 After running the command above, Claude will:")
-                print(f"   • Analyze your project structure in detail")
-                print(f"   • Create topic-specific bundles (components, api, etc.)")
-                print(f"   • Add them to your existing .m1f.config.yml")
+                print(f"\n⚠️  Claude exited with code {result.returncode}")
+                print(f"Please check your .m1f.config.yml manually.")
+                
+        except FileNotFoundError:
+            print(f"\n❌ Claude Code not found. Please install it first:")
+            print(f"npm install -g @anthropic-ai/claude-code")
         except Exception as e:
-            print(f"\n❌ Error during advanced segmentation: {e}")
-            print(
-                f"\nYou can manually run: m1f-claude 'Help me segment my project into topic bundles'"
-            )
+            print(f"\n❌ Error running Claude: {e}")
+            # Fall back to showing manual instructions
+            self.send_to_claude_code_subprocess(segmentation_prompt)
 
         print(f"\n🚀 Next steps:")
         print(f"• Check your updated .m1f.config.yml")
