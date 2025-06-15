@@ -77,6 +77,24 @@ DOCUMENTATION_EXTENSIONS: Set[str] = {
     ".todo", ".tr", ".txt", ".wiki"
 }
 
+# Documentation extensions that are typically UTF-8 encoded
+UTF8_PREFERRED_EXTENSIONS: Set[str] = {
+    # Markdown variants
+    ".md", ".markdown", ".markdown2", ".mdown", ".mdtxt", ".mdtext", 
+    ".mdwn", ".mdx", ".mkd", ".mkdn", ".mkdown", ".rmd", ".qmd",
+    # Plain text
+    ".txt", ".text", ".readme", ".changelog", ".changes", ".todo", 
+    ".notes", ".history", ".news", ".release",
+    # Structured text formats
+    ".rst", ".asciidoc", ".adoc", ".org", ".textile", ".creole", ".wiki",
+    # Developer documentation
+    ".pod", ".pod6", ".rdoc", ".rd",
+    # Code documentation
+    ".lhs", ".litcoffee",
+    # Other UTF-8 common formats
+    ".faq", ".help", ".info", ".feature", ".story"
+}
+
 # ANSI color codes
 ANSI_COLORS = {
     "HEADER": "\033[95m",

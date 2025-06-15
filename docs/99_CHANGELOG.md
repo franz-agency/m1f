@@ -11,10 +11,12 @@ and this project adheres to
 ### Added
 
 - **Documentation File Extensions**: Centralized definition in constants.py
-  - Added DOCUMENTATION_EXTENSIONS constant with 45+ file extensions
+  - Added DOCUMENTATION_EXTENSIONS constant with 62 file extensions
+  - Added UTF8_PREFERRED_EXTENSIONS constant with 45 UTF-8 preferred formats
   - Includes man pages, markup formats, text files, and developer docs
   - Removed binary formats (.doc, .so) that were incorrectly included
   - Added is_documentation_file() utility function for consistent checks
+  - Updated encoding handler to use centralized UTF-8 preference list
   - Documentation extensions now available system-wide for all tools
 
 - **m1f-claude --init Improvements**: Enhanced project initialization process
