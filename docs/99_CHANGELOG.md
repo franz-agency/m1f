@@ -10,6 +10,13 @@ and this project adheres to
 
 ### Added
 
+- **Documentation File Extensions**: Centralized definition in constants.py
+  - Added DOCUMENTATION_EXTENSIONS constant with 45+ file extensions
+  - Includes man pages, markup formats, text files, and developer docs
+  - Removed binary formats (.doc, .so) that were incorrectly included
+  - Added is_documentation_file() utility function for consistent checks
+  - Documentation extensions now available system-wide for all tools
+
 - **m1f-claude --init Improvements**: Enhanced project initialization process
   - **Verbose Mode**: Added `--verbose` flag to show prompts and command parameters
     - Displays complete Claude Code command with permissions
