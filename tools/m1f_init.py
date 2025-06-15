@@ -320,6 +320,7 @@ class M1FInit:
             "-o", str(m1f_dir / f"{project_name}_complete.txt"),
             "--exclude-paths-file", ".gitignore",
             "--excludes", "m1f/",
+            "--separator", "Standard",
             "--force"
         ]
         
@@ -345,6 +346,7 @@ class M1FInit:
             "--exclude-paths-file", ".gitignore",
             "--excludes", "m1f/",
             "--docs-only",
+            "--separator", "Standard",
             "--force"
         ]
         
@@ -394,6 +396,7 @@ bundles:
     output: "m1f/{project_name}_complete.txt"
     sources:
       - path: "."
+    separator: "Standard"
   
   # Documentation bundle (62 file extensions)
   docs:
@@ -402,6 +405,7 @@ bundles:
     sources:
       - path: "."
     docs_only: true
+    separator: "Standard"
 
 # Use 'm1f-update' to regenerate bundles after making changes
 """
