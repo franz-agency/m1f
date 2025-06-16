@@ -25,6 +25,7 @@ tests/html2md_server/static
 tests/html2md_server/templates
 tests/html2md_server/test_pages
 tools/html2md_tool/config
+tools/html2md_tool/prompts
 tools/scrape_tool/scrapers
 tests/html2md/source/html
 tests/html2md_server/static/css

@@ -128,6 +128,27 @@ def add_convert_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--extractor", type=Path, help="Path to custom extractor Python file"
     )
+    
+    # Claude AI conversion options
+    parser.add_argument(
+        "--claude", 
+        action="store_true", 
+        help="Use Claude AI to convert HTML to Markdown (content only, no headers/navigation)"
+    )
+    
+    parser.add_argument(
+        "--model",
+        choices=["opus", "sonnet"],
+        default="sonnet",
+        help="Claude model to use (default: sonnet)"
+    )
+    
+    parser.add_argument(
+        "--sleep",
+        type=float,
+        default=1.0,
+        help="Sleep time in seconds between Claude API calls (default: 1.0)"
+    )
 
 
 def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
@@ -182,6 +203,11 @@ def add_config_arguments(parser: argparse.ArgumentParser) -> None:
 
 def handle_convert(args: argparse.Namespace) -> None:
     """Handle convert command."""
+    # If --claude flag is set, use Claude for conversion
+    if args.claude:
+        _handle_claude_convert(args)
+        return
+    
     # Load configuration
     if args.config:
         from .config import load_config
@@ -669,6 +695,145 @@ def _suggest_selectors(parsed_files):
                     suggestions["ignore"].append(pattern)
 
     return suggestions
+
+
+def _handle_claude_convert(args: argparse.Namespace) -> None:
+    """Handle conversion using Claude AI."""
+    import subprocess
+    import time
+    from pathlib import Path
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from m1f.utils import validate_path_traversal
+    
+    console.print(f"\n[bold]Using Claude AI to convert HTML to Markdown...[/bold]")
+    console.print(f"Model: {args.model}")
+    console.print(f"Sleep between calls: {args.sleep} seconds")
+    
+    # Find all HTML files in source directory
+    source_path = args.source
+    if not source_path.exists():
+        console.print(f"❌ Source path not found: {source_path}", style="red")
+        sys.exit(1)
+    
+    html_files = []
+    if source_path.is_file():
+        if source_path.suffix.lower() in ['.html', '.htm']:
+            html_files.append(source_path)
+        else:
+            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
+            sys.exit(1)
+    elif source_path.is_dir():
+        # Find all HTML files recursively
+        html_files = list(source_path.rglob("*.html")) + list(source_path.rglob("*.htm"))
+        console.print(f"Found {len(html_files)} HTML files in {source_path}")
+    
+    if not html_files:
+        console.print("❌ No HTML files found to convert", style="red")
+        sys.exit(1)
+    
+    # Prepare output directory
+    output_path = args.output
+    if output_path.exists() and output_path.is_file():
+        console.print(f"❌ Output path is a file, expected directory: {output_path}", style="red")
+        sys.exit(1)
+    
+    if not output_path.exists():
+        output_path.mkdir(parents=True, exist_ok=True)
+        console.print(f"Created output directory: {output_path}")
+    
+    # Load conversion prompt
+    prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
+    if not prompt_path.exists():
+        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
+        sys.exit(1)
+    
+    prompt_template = prompt_path.read_text()
+    
+    # Map model names to Claude CLI model parameters
+    model_map = {
+        "opus": "claude-3-opus-20240229",
+        "sonnet": "claude-3-5-sonnet-20241022"
+    }
+    
+    model_param = model_map.get(args.model, "claude-3-5-sonnet-20241022")
+    
+    # Process each HTML file
+    converted_count = 0
+    failed_count = 0
+    
+    for i, html_file in enumerate(html_files):
+        try:
+            # Validate path to prevent traversal attacks
+            validated_path = validate_path_traversal(
+                html_file,
+                base_path=source_path if source_path.is_dir() else source_path.parent,
+                allow_outside=False
+            )
+            
+            # Read HTML content
+            html_content = validated_path.read_text(encoding='utf-8')
+            
+            # Prepare the prompt with HTML content
+            prompt = prompt_template.replace("{html_content}", html_content)
+            
+            # Determine output file path
+            if source_path.is_file():
+                # Single file conversion
+                output_file = output_path / html_file.with_suffix('.md').name
+            else:
+                # Directory conversion - maintain structure
+                relative_path = html_file.relative_to(source_path)
+                output_file = output_path / relative_path.with_suffix('.md')
+            
+            # Create output directory if needed
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            console.print(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
+            
+            # Call Claude with the prompt
+            cmd = [
+                "claude",
+                "-p", prompt,
+                "--model", model_param
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
+            # Save the markdown output
+            markdown_content = result.stdout.strip()
+            output_file.write_text(markdown_content, encoding='utf-8')
+            
+            console.print(f"✅ Converted to: {output_file}", style="green")
+            converted_count += 1
+            
+            # Sleep between API calls (except for the last one)
+            if i < len(html_files) - 1 and args.sleep > 0:
+                console.print(f"Sleeping for {args.sleep} seconds...", style="dim")
+                time.sleep(args.sleep)
+            
+        except subprocess.CalledProcessError as e:
+            console.print(f"❌ Claude conversion failed: {e}", style="red")
+            if e.stderr:
+                console.print(f"Error: {e.stderr}", style="red")
+            failed_count += 1
+        except Exception as e:
+            console.print(f"❌ Error processing {html_file}: {e}", style="red")
+            failed_count += 1
+    
+    # Summary
+    console.print(f"\n[bold]Conversion Summary:[/bold]")
+    console.print(f"✅ Successfully converted: {converted_count} files", style="green")
+    if failed_count > 0:
+        console.print(f"❌ Failed to convert: {failed_count} files", style="red")
+    
+    if converted_count == 0:
+        sys.exit(1)
 
 
 def handle_config(args: argparse.Namespace) -> None:
