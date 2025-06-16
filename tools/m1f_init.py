@@ -156,7 +156,8 @@ class M1FInit:
         m1f_dir.mkdir(exist_ok=True)
 
         # Run m1f to generate file and directory lists
-        analysis_path = m1f_dir / "project_analysis.txt"
+        project_name = self.project_path.name
+        analysis_path = m1f_dir / f"{project_name}_analysis.txt"
 
         try:
             cmd = [
