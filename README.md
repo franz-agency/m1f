@@ -65,9 +65,7 @@ Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
 
 ### 🎯 **m1f** - The Bundler
 
-Combines multiple files into a single, AI-friendly mega-file. Smart enough to
-deduplicate content, handle any encoding, and even scan for secrets. Because
-nobody wants their API keys in a ChatGPT conversation.
+Combines multiple files into a single, AI-friendly mega-file. Smart enough to deduplicate content, handle any encoding, and even scan for secrets. Because nobody wants their API keys in a ChatGPT conversation.
 
 ```bash
 # Bundle your entire project (but smart about it)
@@ -76,8 +74,7 @@ m1f -s ./your-project -o context.txt --preset presets/wordpress.m1f-presets.yml
 
 ### ✂️ **m1f-s1f** - The Splitter
 
-Extracts files back from bundles. Perfect for when your AI assistant generates
-that perfect codebase and you need it back in actual files.
+Extracts files back from bundles. Perfect for when your AI assistant generates that perfect codebase and you need it back in actual files.
 
 ```bash
 # Unbundle that AI-generated masterpiece
@@ -86,11 +83,10 @@ m1f-s1f -i bundle.txt -d ./extracted
 
 ### 🌐 **m1f-scrape** - The Collector
 
-Downloads entire websites for offline processing. Multiple backends for
-different scenarios - from simple HTML to JavaScript-heavy SPAs.
+Downloads entire websites for offline processing. Multiple backends for different scenarios - from simple HTML to JavaScript-heavy SPAs.
 
 ```bash
-# Example: Scrape Claude Code docs (not available via git)
+# Scrape documentation sites for offline reference
 m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs \
   --scraper playwright \
   --max-pages 50 \
@@ -100,18 +96,21 @@ m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs 
 
 ### 📝 **m1f-html2md** - The Converter
 
-Transforms HTML into clean Markdown. Analyzes structure, suggests optimal
-selectors, and handles even the messiest enterprise documentation.
+Transforms HTML into clean Markdown. Use AI to analyze structure and suggest optimal selectors, then convert with precision.
 
 ```bash
-# Make it readable
-m1f-html2md convert ./html -o ./markdown --content-selector "article"
+# AI-powered analysis to find best selectors
+m1f-html2md analyze ./html --claude
+
+# Convert using the suggested selectors
+m1f-html2md convert ./html -o ./markdown \
+  --content-selector "main, article" \
+  --ignore-selectors "nav, .sidebar"
 ```
 
 ### 🔢 **m1f-token-counter** - The Calculator
 
-Counts tokens before you hit those pesky context limits. Support for all major
-LLM encodings.
+Counts tokens before you hit those pesky context limits. Support for all major LLM encodings.
 
 ```bash
 # Will it fit?
@@ -123,9 +122,12 @@ m1f-token-counter ./bundle.txt
 ### Feed Documentation to Your AI Assistant
 
 ```bash
-# Download → Convert → Bundle → Profit
+# Download → Analyze → Convert → Bundle → Profit
 m1f-scrape https://react.dev -o ./react-html
-m1f-html2md convert ./react-html -o ./react-md
+m1f-html2md analyze ./react-html --claude
+m1f-html2md convert ./react-html -o ./react-md \
+  --content-selector "main, article" \
+  --ignore-selectors "nav, .sidebar"
 m1f -s ./react-md -o react-docs-for-claude.txt
 ```
 
@@ -209,24 +211,23 @@ m1f-scrape https://docs.anthropic.com -o ./claude-docs-html \
   --max-depth 4 \
   --request-delay 1.0
 
-# 2. Analyze the HTML structure to find the best selectors
-m1f-html2md analyze ./claude-docs-html/*.html --suggest-selectors
+# 2. Analyze HTML structure with AI to get optimal selectors
+m1f-html2md analyze ./claude-docs-html --claude
 
-# 3. Convert to clean Markdown (adjust selectors based on analysis)
+# 3. Convert to clean Markdown using the suggested selectors
 m1f-html2md convert ./claude-docs-html -o ./claude-docs-md \
   --content-selector "main.docs-content, article.documentation" \
   --ignore-selectors "nav" ".sidebar" ".footer" ".search-box"
 
 # 4. Create the mega-bundle for Claude
 m1f -s ./claude-docs-md -o claude-documentation.txt \
-  --remove-scraped-metadata \
-  --separator-style MachineReadable
+  --remove-scraped-metadata
 
 # 5. Check if it fits (Claude can handle 200k tokens)
 m1f-token-counter ./claude-documentation.txt
 ```
 
-### Or Use the One-Liner Pro Move™
+### Or Use Auto-Bundle for Regular Updates
 
 ```bash
 # Configure once
@@ -238,12 +239,11 @@ bundles:
     sources:
       - path: "./claude-docs-md"
         include_extensions: [".md"]
-    separator_style: "MachineReadable"
     priority: "high"
 EOF
 
 # Then auto-bundle whenever you need fresh docs
-./scripts/auto_bundle.sh claude-docs
+m1f-update claude-docs
 ```
 
 ### The Result?
@@ -285,7 +285,8 @@ m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-html 
   --follow-links \
   --request-delay 1.0
 
-# 2. Convert to Markdown
+# 2. Analyze and convert to Markdown
+m1f-html2md analyze ./claude-code-html --claude
 m1f-html2md convert ./claude-code-html -o ./claude-code-md \
   --content-selector "main, article" \
   --ignore-selectors "nav, .sidebar"
@@ -304,10 +305,10 @@ m1f isn't just for feeding LLMs. Here's what else you can do:
 Bundle your project → timestamp it → instant versioned backups. Extract anywhere, anytime with m1f-s1f.
 
 ### 🎨 **CSS/JS Bundler**
-Poor man's webpack? Bundle all your CSS and JS files into one. Add `--minify` if you're feeling frisky.
+Poor man's webpack? Bundle all your CSS and JS files into one. Perfect for simple projects that don't need the complexity of modern build tools.
 
 ### 🔄 **Universal File Converter**
-Got a mess of encodings? Latin-1, UTF-16, Windows-1252? m1f auto-detects and converts everything to UTF-8 (or whatever you want). One command, all files normalized.
+Got mixed encodings? Latin-1, UTF-16, Windows-1252? m1f auto-detects and converts everything to UTF-8 (or whatever you want). One command, all files normalized.
 
 ### 🚚 **Project Migration**
 Bundle on machine A → transfer one file → extract on machine B. All paths, permissions, and metadata preserved. Like tar, but smarter.
