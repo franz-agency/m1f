@@ -1406,6 +1406,14 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Create segmentation prompt focused on advanced bundling
         segmentation_prompt = self._create_segmentation_prompt(context)
+        
+        # Show prompt in verbose mode
+        if self.verbose:
+            print(f"\n📝 PHASE 1 PROMPT (Segmentation):")
+            print("=" * 80)
+            print(segmentation_prompt)
+            print("=" * 80)
+            print()
 
         # Execute Claude directly with the prompt
         print(f"\n🤖 Sending to Claude Code...")
@@ -1457,6 +1465,14 @@ I'll analyze your project and create an optimal m1f configuration that:
             
             # Create verification prompt
             verification_prompt = self._create_verification_prompt(context)
+            
+            # Show prompt in verbose mode
+            if self.verbose:
+                print(f"\n📝 PHASE 2 PROMPT (Verification):")
+                print("=" * 80)
+                print(verification_prompt)
+                print("=" * 80)
+                print()
             
             print(f"\n🤖 Phase 2: Claude will now verify and improve the configuration...")
             print(f"⏳ This includes checking bundle quality and fixing any issues...\n")
