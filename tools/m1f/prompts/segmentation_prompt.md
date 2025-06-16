@@ -30,6 +30,15 @@ Now create additional topic-specific bundles following BEST PRACTICES.
      - path: "shared"
        includes: ["auth-utils.ts", "auth-types.ts"]
    ```
+   
+   For documentation chapters/sections:
+   ```yaml
+   sources:
+     - path: "src"  # Use "src" not "src/" 
+       includes: ["ch04-*.md", "chapter-04/*.md"]
+     - path: "."    # Use "." for root directory
+       includes: ["README.md", "CONTRIBUTING.md"]
+   ```
 
 4. **HIERARCHICAL NAMING** - Use category-number-topic pattern:
    - api-01-core-basics
@@ -47,6 +56,8 @@ Now create additional topic-specific bundles following BEST PRACTICES.
 3. NO IMAGE/BINARY BUNDLES
 4. MAXIMUM 30-40 bundles (more granular = better for targeted AI assistance)
 5. Each bundle should be SELF-CONTAINED and appropriately sized for its purpose
+6. ALWAYS TEST YOUR PATHS - Verify directories exist before adding to config
+7. USE RELATIVE PATHS from project root (not absolute paths)
 
 📋 ALREADY CREATED BUNDLES:
 - complete: Full project bundle
@@ -120,11 +131,19 @@ common-errors:
 
 ⚡ ACTION PLAN:
 1. Read all required files thoroughly
-2. Estimate content sizes and plan bundles based on purpose
-3. Design bundles with PRECISE INCLUDES (not broad excludes)
-4. Use hierarchical naming (category-number-topic)
-5. Create essential bundles (quick-ref, errors, best-practices)
-6. Keep focused task bundles under 180KB for Claude Code when practical
-7. Add all bundles with MultiEdit in one operation
+2. VERIFY PATHS: Check project_analysis_dirlist.txt to ensure all paths exist
+3. Estimate content sizes and plan bundles based on purpose
+4. Design bundles with PRECISE INCLUDES (not broad excludes)
+5. Use hierarchical naming (category-number-topic)
+6. Create essential bundles (quick-ref, errors, best-practices)
+7. Keep focused task bundles under 180KB for Claude Code when practical
+8. Add all bundles with MultiEdit in one operation
+
+⚠️ COMMON MISTAKES TO AVOID:
+- Don't use paths like "dot" when you mean "." 
+- Don't create bundles for non-existent directories
+- Don't forget to check if files actually exist in the paths
+- Don't use absolute paths like "/home/user/project"
+- Don't create bundles smaller than 10KB (they likely have path errors)
 
 Remember: Each bundle should answer "What would I need to understand this module?" - size appropriately based on the use case!

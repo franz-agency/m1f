@@ -117,4 +117,15 @@ some-bundle:
 ```
 
 🔍 FINAL VERIFICATION:
-After making any changes, run `m1f-update` again and verify all bundles are under 180KB!
+After making any changes, run `m1f-update` again and verify:
+1. All bundles generate without errors
+2. No bundles are under 10KB (unless intentionally small)
+3. Task-focused bundles are ideally under 180KB
+4. The configuration follows best practices
+
+⚠️ PATH VERIFICATION CHECKLIST:
+Before finalizing, double-check:
+- All paths in sources exist in the project
+- Paths use relative format (e.g., "src/api" not "/home/user/src/api")
+- Include patterns match actual files (check with `ls` command)
+- No typos in directory names (e.g., "dot" vs ".")
