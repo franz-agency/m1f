@@ -37,9 +37,15 @@ If you find issues:
    - Task-focused bundles: Ideally < 180KB for Claude Code
    - Reference bundles: Ideally < 5MB for Claude AI
    - Complete/full bundles: Can be much larger (40MB+ is fine)
+   - TOO SMALL: Bundles under 10KB likely have configuration errors
 3. Check for m1f-update errors in the output above
 4. Read the complete bundle (e.g., @m1f/{project_name}_complete.txt) to verify content inclusion
 5. Ensure each bundle serves a clear, distinct purpose
+6. CRITICAL: Check for bundles under 10KB - these often indicate:
+   - Wrong file paths in includes
+   - Non-existent directories
+   - Incorrect glob patterns
+   Action: Remove these bundle sections from the config!
 
 ⚠️ SIZE OPTIMIZATION GUIDELINES:
 For bundles intended for Claude Code that exceed 180KB:
@@ -90,6 +96,24 @@ api-03-endpoints:
   sources:
     - path: "docs/api"
       includes: ["endpoints/*.md", "routes*.md"]
+```
+
+For bundles that are too small (<10KB):
+```yaml
+# If you see this in ls -lah output:
+# 108   m1f/some-bundle.txt
+# 2.1K  m1f/another-bundle.txt
+
+# Check the bundle content:
+cat m1f/some-bundle.txt
+# Output: "# No files processed from /path/to/nowhere"
+
+# ACTION: Remove the bundle from config:
+# DELETE this entire section:
+some-bundle:
+  description: "..."
+  sources:
+    - path: "nonexistent/path"  # <-- This path doesn't exist!
 ```
 
 🔍 FINAL VERIFICATION:
