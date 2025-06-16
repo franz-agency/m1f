@@ -18,7 +18,7 @@ cd tailwindcss && m1f-init
 m1f-claude --advanced-setup
 ```
 
-Boom. Now Claude knows everything about Tailwind 4.0. Your AI assistant just became an expert on bleeding-edge tech that didn't exist when it was trained. That's the power of m1f.
+Boom. Now Claude knows everything about Tailwind 4.0. The bundles are created in the `m1f/` directory - you can reference them in Claude with `@m1f/tailwind_complete.txt` or `@m1f/tailwind_docs.txt`. Your AI assistant just became an expert on bleeding-edge tech that didn't exist when it was trained. That's the power of m1f.
 
 > **🔐 Security Note**: m1f automatically scans for secrets (API keys, passwords, tokens) using [`detect-secrets`](https://github.com/Yelp/detect-secrets) to prevent accidental exposure to LLMs. It'll warn you before bundling sensitive data!
 
