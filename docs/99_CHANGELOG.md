@@ -22,6 +22,27 @@ and this project adheres to
 
 ### Added
 
+- **m1f-html2md Claude AI Integration**: Intelligent HTML analysis and conversion using Claude
+  - **Analyze Command Enhancement**: Added `--claude` flag for AI-powered analysis
+    - Automatically finds all HTML files in directories (no need to specify individual files)
+    - Uses Claude to intelligently select 5 representative files from scraped documentation
+    - Analyzes HTML structure and suggests optimal CSS selectors for content extraction
+    - Excludes navigation, headers, footers, sidebars, and advertisements
+    - Runs `m1f-init` automatically in the analysis directory
+    - Outputs YAML configuration with content and ignore selectors
+  - **Convert Command Enhancement**: Added `--claude` flag for batch HTML to Markdown conversion
+    - Converts all HTML files in a directory to clean Markdown using Claude AI
+    - Supports model selection with `--model` parameter (opus or sonnet)
+    - Configurable sleep delay between API calls with `--sleep` parameter
+    - Maintains directory structure in output
+    - Progress tracking with conversion summary
+  - **Prompt Templates**: All prompts stored as markdown files in `prompts/` directory
+    - `select_files_simple.md` - Selects representative HTML files
+    - `analyze_html_simple.md` - Analyzes HTML and suggests CSS selectors
+    - `convert_html_to_md.md` - Converts HTML to clean Markdown
+  - **Security**: Path traversal protection using existing `validate_path_traversal` function
+  - **Import Fix**: Fixed ModuleNotFoundError with try/except import pattern
+
 - **--docs-only Parameter**: New command-line flag for documentation-only
   bundles
 
