@@ -8,6 +8,18 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Documentation
+
+- **README.md Enhancements**: Major improvements to project documentation
+  - Added clear explanation of what m1f is (Make One File)
+  - Added Tailwind CSS 4.0 example demonstrating real-world usage
+  - Added concise tool suite overview with links to docs and m1f.dev
+  - Added comprehensive feature list emphasizing dynamic/auto-updating capabilities
+  - Added security note about detect-secrets with link to GitHub repository
+  - Added "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
+  - Added bundle location and Claude reference syntax explanation
+  - Improved overall structure with developer-friendly tone
+
 ### Added
 
 - **--docs-only Parameter**: New command-line flag for documentation-only
