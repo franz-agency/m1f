@@ -750,19 +750,15 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     
     prompt_template = prompt_path.read_text()
     
-    # Map model names to Claude CLI model parameters
-    model_map = {
-        "opus": "claude-3-opus-20240229",
-        "sonnet": "claude-3-5-sonnet-20241022"
-    }
-    
-    model_param = model_map.get(args.model, "claude-3-5-sonnet-20241022")
+    # Model parameter for Claude CLI (just use the short names)
+    model_param = args.model
     
     # Process each HTML file
     converted_count = 0
     failed_count = 0
     
     for i, html_file in enumerate(html_files):
+        tmp_html_path = None
         try:
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
@@ -773,9 +769,6 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             
             # Read HTML content
             html_content = validated_path.read_text(encoding='utf-8')
-            
-            # Prepare the prompt with HTML content
-            prompt = prompt_template.replace("{html_content}", html_content)
             
             # Determine output file path
             if source_path.is_file():
@@ -791,7 +784,16 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             
             console.print(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
             
-            # Call Claude with the prompt
+            # Create a temporary file with the HTML content
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as tmp_html:
+                tmp_html.write(html_content)
+                tmp_html_path = tmp_html.name
+            
+            # Prepare the prompt for the temporary file
+            prompt = prompt_template.replace("{html_content}", f"@{tmp_html_path}")
+            
+            # Call Claude with the prompt referencing the file
             cmd = [
                 "claude",
                 "-p", prompt,
@@ -825,6 +827,13 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
         except Exception as e:
             console.print(f"❌ Error processing {html_file}: {e}", style="red")
             failed_count += 1
+        finally:
+            # Clean up temporary file
+            if tmp_html_path:
+                try:
+                    Path(tmp_html_path).unlink()
+                except:
+                    pass
     
     # Summary
     console.print(f"\n[bold]Conversion Summary:[/bold]")
