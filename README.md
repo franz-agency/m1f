@@ -71,7 +71,7 @@ nobody wants their API keys in a ChatGPT conversation.
 
 ```bash
 # Bundle your entire project (but smart about it)
-m1f -s ./your-project -o context.txt --preset wordpress
+m1f -s ./your-project -o context.txt --preset presets/wordpress.m1f-presets.yml
 ```
 
 ### ✂️ **m1f-s1f** - The Splitter
@@ -90,8 +90,12 @@ Downloads entire websites for offline processing. Multiple backends for
 different scenarios - from simple HTML to JavaScript-heavy SPAs.
 
 ```bash
-# Grab those docs
-m1f-scrape https://docs.example.com -o ./html --scraper playwright
+# Example: Scrape Claude Code docs (not available via git)
+m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs \
+  --scraper playwright \
+  --max-pages 50 \
+  --follow-links \
+  --request-delay 1.0
 ```
 
 ### 📝 **m1f-html2md** - The Converter
@@ -155,7 +159,7 @@ m1f-update
 ### Linux/macOS (3 commands)
 
 ```bash
-git clone https://github.com/franzundfriends/m1f.git
+git clone https://github.com/franz-agency/m1f.git
 cd m1f
 source ./scripts/install.sh
 ```
@@ -163,7 +167,7 @@ source ./scripts/install.sh
 ### Windows (3 commands + restart)
 
 ```powershell
-git clone https://github.com/franzundfriends/m1f.git
+git clone https://github.com/franz-agency/m1f.git
 cd m1f
 .\scripts\install.ps1
 # Restart PowerShell or run: . $PROFILE
@@ -268,6 +272,29 @@ Set up a weekly cron job to re-scrape and rebuild:
 ```
 
 Where `scrape-claude-docs.sh` contains the full pipeline above.
+
+### Bonus: Offline Claude Code Documentation 🤖
+
+Since Claude Code docs aren't on GitHub, here's how to get them offline:
+
+```bash
+# 1. Scrape the Claude Code section (uses Playwright for JS-heavy site)
+m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-html \
+  --scraper playwright \
+  --max-pages 50 \
+  --follow-links \
+  --request-delay 1.0
+
+# 2. Convert to Markdown
+m1f-html2md convert ./claude-code-html -o ./claude-code-md \
+  --content-selector "main, article" \
+  --ignore-selectors "nav, .sidebar"
+
+# 3. Bundle for offline reference
+m1f -s ./claude-code-md -o claude-code-offline.txt --docs-only
+
+# Now you have the entire Claude Code documentation offline!
+```
 
 ## Beyond AI: Other Cool Uses
 
