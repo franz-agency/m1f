@@ -34548,126 +34548,132 @@ class Html2mdConverter:
 
         # Apply custom extractor postprocessing
         markdown = self._extractor.postprocess(markdown, self.config.__dict__)
-        
+
         # Convert absolute file paths to relative links
-        if source_file and hasattr(self.config, 'destination'):
-            markdown = self._convert_absolute_paths_to_relative(markdown, source_file, self.config.destination)
+        if source_file and hasattr(self.config, "destination"):
+            markdown = self._convert_absolute_paths_to_relative(
+                markdown, source_file, self.config.destination
+            )
 
         return markdown
-    
-    def _convert_absolute_paths_to_relative(self, markdown: str, source_file: str, destination: Path) -> str:
+
+    def _convert_absolute_paths_to_relative(
+        self, markdown: str, source_file: str, destination: Path
+    ) -> str:
         """Convert absolute file paths in markdown to relative paths.
-        
+
         Args:
             markdown: Markdown content
             source_file: Source HTML file path
             destination: Destination directory
-            
+
         Returns:
             Markdown with relative paths
         """
         import re
         from pathlib import Path
-        
+
         # Convert source_file to Path if it's a string
         if isinstance(source_file, str):
             source_file = Path(source_file)
-        
+
         # Get the source directory
         source_dir = source_file.parent
-        
+
         # Find all markdown links with absolute paths
         # Match patterns like [text](/absolute/path) or [text](file:///absolute/path)
         def replace_link(match):
             text = match.group(1)
             link = match.group(2)
-            
+
             # Skip if it's already a relative link or external URL
-            if link.startswith(('http://', 'https://', '#', 'mailto:', '../', './')):
+            if link.startswith(("http://", "https://", "#", "mailto:", "../", "./")):
                 return match.group(0)
-            
+
             # Handle file:// URLs
-            if link.startswith('file://'):
+            if link.startswith("file://"):
                 link = link[7:]  # Remove file://
                 # On Windows, file URLs might have an extra slash
-                if link.startswith('/') and len(link) > 2 and link[2] == ':':
+                if link.startswith("/") and len(link) > 2 and link[2] == ":":
                     link = link[1:]
-            
+
             # Handle paths starting with / (like /kb/1337/policy-syntax)
             # These should be converted to relative paths
-            if link.startswith('/') and not link.startswith('//'):
+            if link.startswith("/") and not link.startswith("//"):
                 # Remove leading slash
                 link_without_slash = link[1:]
-                
+
                 # Special handling for /kb/ links - remove the kb/ prefix if present
-                if link_without_slash.startswith('kb/'):
+                if link_without_slash.startswith("kb/"):
                     link_without_slash = link_without_slash[3:]  # Remove 'kb/'
-                
+
                 # Check if this should point to an index.md file
                 # If the path ends with a directory name (no extension), add /index.md
-                parts = link_without_slash.split('/')
-                last_part = parts[-1] if parts else ''
-                if '.' not in last_part and link_without_slash:
+                parts = link_without_slash.split("/")
+                last_part = parts[-1] if parts else ""
+                if "." not in last_part and link_without_slash:
                     # This looks like a directory reference
-                    link_without_slash = link_without_slash.rstrip('/') + '/index.md'
-                elif not link_without_slash.endswith('.md') and '.' not in last_part:
+                    link_without_slash = link_without_slash.rstrip("/") + "/index.md"
+                elif not link_without_slash.endswith(".md") and "." not in last_part:
                     # Add .md extension for files
-                    link_without_slash = link_without_slash + '.md'
-                
+                    link_without_slash = link_without_slash + ".md"
+
                 # Get current file's location relative to destination root
                 current_file_path = Path(source_file)
-                if hasattr(self, 'config') and hasattr(self.config, 'source'):
+                if hasattr(self, "config") and hasattr(self.config, "source"):
                     try:
                         if current_file_path.is_relative_to(self.config.source):
-                            current_rel = current_file_path.relative_to(self.config.source)
+                            current_rel = current_file_path.relative_to(
+                                self.config.source
+                            )
                             current_dir = current_rel.parent
-                            
+
                             # Get the target path
                             target_path = Path(link_without_slash)
-                            
+
                             # Calculate relative path from current directory to target
-                            if str(current_dir) != '.':
+                            if str(current_dir) != ".":
                                 # Count how many levels up we need to go
                                 levels_up = len(current_dir.parts)
                                 # Create the relative path
-                                relative_path = Path('../' * levels_up) / target_path
-                                link = str(relative_path).replace('\\', '/')
+                                relative_path = Path("../" * levels_up) / target_path
+                                link = str(relative_path).replace("\\", "/")
                             else:
                                 # We're at the root, so just use the path as-is
-                                link = './' + link_without_slash
+                                link = "./" + link_without_slash
                         else:
                             # Can't determine relative path, use simple approach
-                            link = './' + link_without_slash
+                            link = "./" + link_without_slash
                     except Exception:
                         # Fallback to simple relative path
-                        link = './' + link_without_slash
+                        link = "./" + link_without_slash
                 else:
                     # No config available, use simple approach
-                    link = './' + link_without_slash
-                
-                return f'[{text}]({link})'
-            
+                    link = "./" + link_without_slash
+
+                return f"[{text}]({link})"
+
             # Convert to Path
             try:
                 link_path = Path(link)
-                
+
                 # If it's an absolute path
                 if link_path.is_absolute():
                     # Calculate relative path from destination to the linked file
                     # We need to go from where the markdown will be to where the linked file is
-                    
+
                     # First, get the output file path
                     relative_source = source_file.relative_to(source_dir.parent)
-                    output_file = destination / relative_source.with_suffix('.md')
+                    output_file = destination / relative_source.with_suffix(".md")
                     output_dir = output_file.parent
-                    
+
                     # Check if the linked file exists with .md extension
                     # (it's probably been converted from .html to .md)
-                    md_link = link_path.with_suffix('.md')
-                    if md_link.exists() or link_path.suffix in ['.html', '.htm']:
+                    md_link = link_path.with_suffix(".md")
+                    if md_link.exists() or link_path.suffix in [".html", ".htm"]:
                         # Use .md extension for converted files
-                        link_path = link_path.with_suffix('.md')
-                    
+                        link_path = link_path.with_suffix(".md")
+
                     # Calculate relative path from output directory to linked file
                     try:
                         # If the linked file is also in the destination
@@ -34678,39 +34684,43 @@ class Html2mdConverter:
                             # This handles cases where the link points to another HTML file
                             # that will also be converted
                             link_in_source = None
-                            for ext in ['.html', '.htm', '']:
+                            for ext in [".html", ".htm", ""]:
                                 test_path = source_dir.parent / link_path.name
                                 if ext:
                                     test_path = test_path.with_suffix(ext)
                                 if test_path.exists():
                                     link_in_source = test_path
                                     break
-                            
+
                             if link_in_source:
                                 # Map to destination structure
-                                relative_in_source = link_in_source.relative_to(source_dir.parent)
-                                link_in_dest = destination / relative_in_source.with_suffix('.md')
+                                relative_in_source = link_in_source.relative_to(
+                                    source_dir.parent
+                                )
+                                link_in_dest = (
+                                    destination / relative_in_source.with_suffix(".md")
+                                )
                                 relative_link = link_in_dest.relative_to(output_dir)
                             else:
                                 # Fallback: try to make it relative if possible
                                 relative_link = link_path.relative_to(output_dir)
-                        
+
                         # Convert to string with forward slashes
-                        link = str(relative_link).replace('\\', '/')
-                        
+                        link = str(relative_link).replace("\\", "/")
+
                     except ValueError:
                         # Can't make relative - keep as is but remove file://
                         link = str(link_path)
-                
+
             except Exception:
                 # If anything goes wrong, return original match
                 return match.group(0)
-            
-            return f'[{text}]({link})'
-        
+
+            return f"[{text}]({link})"
+
         # Replace markdown links
-        markdown = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', replace_link, markdown)
-        
+        markdown = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", replace_link, markdown)
+
         return markdown
 
     async def convert_directory_from_urls(self, urls: List[str]) -> List[Path]:
@@ -34741,7 +34751,7 @@ class Html2mdConverter:
         """
         # Validate path to prevent traversal attacks
         file_path = self._validate_path(file_path, self.config.source)
-        
+
         logger.debug(f"Converting {file_path}")
 
         # Read file content
@@ -34773,14 +34783,16 @@ class Html2mdConverter:
         markdown = self.convert_html(
             html_content,
             base_url=base_url,
-            source_file=str(file_path),  # Pass full path for proper relative link calculation
+            source_file=str(
+                file_path
+            ),  # Pass full path for proper relative link calculation
         )
 
         # Determine output path
         # Resolve both paths to handle cases where source is "."
         resolved_file = file_path.resolve()
         resolved_source = self.config.source.resolve()
-        
+
         try:
             # Try to get relative path from resolved paths
             rel_path = resolved_file.relative_to(resolved_source)
@@ -34797,10 +34809,10 @@ class Html2mdConverter:
                 rel_path = Path(file_path.name if file_path.name else "output")
 
         output_path = self.config.destination / Path(rel_path).with_suffix(".md")
-        
+
         # Validate output path to ensure it stays within destination directory
         output_path = self._validate_output_path(output_path, self.config.destination)
-        
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write file
@@ -34822,7 +34834,7 @@ class Html2mdConverter:
             List of generated Markdown files
         """
         source_dir = source_dir or self.config.source
-        
+
         # Validate source directory
         source_dir = self._validate_path(source_dir, self.config.source)
 
@@ -34978,7 +34990,7 @@ class Html2mdConverter:
         try:
             # Validate input path
             file_path = self._validate_path(file_path, self.config.source)
-            
+
             # Re-initialize parser and converter in worker process
             parser = HTMLParser(self.config.extractor)
             converter = MarkdownConverter(self.config.processor)
@@ -34990,7 +35002,7 @@ class Html2mdConverter:
             # Resolve both paths to handle cases where source is "."
             resolved_file = file_path.resolve()
             resolved_source = self.config.source.resolve()
-            
+
             try:
                 # Try to get relative path from resolved paths
                 rel_path = resolved_file.relative_to(resolved_source)
@@ -35007,10 +35019,12 @@ class Html2mdConverter:
                     rel_path = Path(file_path.name if file_path.name else "output")
 
             output_path = self.config.destination / Path(rel_path).with_suffix(".md")
-            
+
             # Validate output path
-            output_path = self._validate_output_path(output_path, self.config.destination)
-            
+            output_path = self._validate_output_path(
+                output_path, self.config.destination
+            )
+
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(markdown, encoding=self.config.target_encoding)
 
@@ -35040,34 +35054,34 @@ class Html2mdConverter:
 
         logger.info(f"Created m1f bundle: {bundle_path}")
         return bundle_path
-    
+
     def _validate_path(self, path: Path, base_path: Path) -> Path:
         """Validate that a path does not traverse outside allowed directories.
-        
+
         Args:
             path: The path to validate
             base_path: The base directory that the path must be within
-            
+
         Returns:
             The validated resolved path
-            
+
         Raises:
             ValueError: If the path attempts directory traversal
         """
         # Resolve both paths to absolute
         resolved_path = path.resolve()
         resolved_base = base_path.resolve()
-        
+
         # Check for suspicious traversal patterns in the original path
         path_str = str(path)
-        
+
         # Check for excessive parent directory traversals
         parent_traversals = path_str.count("../")
         if parent_traversals >= 3:
             raise ValueError(
                 f"Path traversal detected: '{path}' contains suspicious '..' patterns"
             )
-        
+
         # Ensure the resolved path is within the base directory
         try:
             resolved_path.relative_to(resolved_base)
@@ -35080,29 +35094,29 @@ class Html2mdConverter:
             ):
                 # Allow temporary test directories
                 return resolved_path
-            
+
             raise ValueError(
                 f"Path traversal detected: '{path}' resolves to '{resolved_path}' "
                 f"which is outside the allowed directory '{resolved_base}'"
             )
-    
+
     def _validate_output_path(self, output_path: Path, destination_base: Path) -> Path:
         """Validate that an output path stays within the destination directory.
-        
+
         Args:
             output_path: The output path to validate
             destination_base: The destination base directory
-            
+
         Returns:
             The validated resolved path
-            
+
         Raises:
             ValueError: If the path would escape the destination directory
         """
         # Resolve both paths
         resolved_output = output_path.resolve()
         resolved_dest = destination_base.resolve()
-        
+
         # Ensure output is within destination
         try:
             resolved_output.relative_to(resolved_dest)
@@ -35114,7 +35128,7 @@ class Html2mdConverter:
                 for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
             ):
                 return resolved_output
-                
+
             raise ValueError(
                 f"Output path '{output_path}' would escape destination directory '{resolved_dest}'"
             )
@@ -35288,13 +35302,15 @@ Examples:
 
     # Convert command
     convert_parser = subparsers.add_parser(
-        "convert", help="Convert HTML files to Markdown (supports Claude AI with --claude)"
+        "convert",
+        help="Convert HTML files to Markdown (supports Claude AI with --claude)",
     )
     add_convert_arguments(convert_parser)
 
     # Analyze command
     analyze_parser = subparsers.add_parser(
-        "analyze", help="Analyze HTML structure for selector suggestions (supports Claude AI with --claude)"
+        "analyze",
+        help="Analyze HTML structure for selector suggestions (supports Claude AI with --claude)",
     )
     add_analyze_arguments(analyze_parser)
 
@@ -35342,26 +35358,26 @@ def add_convert_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--extractor", type=Path, help="Path to custom extractor Python file"
     )
-    
+
     # Claude AI conversion options
     parser.add_argument(
-        "--claude", 
-        action="store_true", 
-        help="Use Claude AI to convert HTML to Markdown (content only, no headers/navigation)"
+        "--claude",
+        action="store_true",
+        help="Use Claude AI to convert HTML to Markdown (content only, no headers/navigation)",
     )
-    
+
     parser.add_argument(
         "--model",
         choices=["opus", "sonnet"],
         default="sonnet",
-        help="Claude model to use (default: sonnet)"
+        help="Claude model to use (default: sonnet)",
     )
-    
+
     parser.add_argument(
         "--sleep",
         type=float,
         default=1.0,
-        help="Sleep time in seconds between Claude API calls (default: 1.0)"
+        help="Sleep time in seconds between Claude API calls (default: 1.0)",
     )
 
 
@@ -35389,7 +35405,7 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Suggest CSS selectors for content extraction",
     )
-    
+
     parser.add_argument(
         "--claude",
         action="store_true",
@@ -35421,26 +35437,27 @@ def handle_convert(args: argparse.Namespace) -> None:
     if args.claude:
         _handle_claude_convert(args)
         return
-    
+
     # Load configuration
     from .config import Config
+
     if args.config:
         from .config import load_config
         import yaml
 
         # Load the config file to check its contents
-        with open(args.config, 'r') as f:
+        with open(args.config, "r") as f:
             config_data = yaml.safe_load(f)
-        
+
         # If the config only contains extractor settings (from Claude analysis),
         # create a full config with source and destination from CLI
-        if 'source' not in config_data and 'destination' not in config_data:
+        if "source" not in config_data and "destination" not in config_data:
             source_path = args.source.parent if args.source.is_file() else args.source
             config = Config(source=source_path, destination=args.output)
-            
+
             # Apply extractor settings from the config file
-            if 'extractor' in config_data:
-                for key, value in config_data['extractor'].items():
+            if "extractor" in config_data:
+                for key, value in config_data["extractor"].items():
                     if hasattr(config.extractor, key):
                         setattr(config.extractor, key, value)
         else:
@@ -35506,10 +35523,10 @@ def handle_analyze(args: argparse.Namespace) -> None:
         if not path.exists():
             console.print(f"‚ùå Path not found: {path}", style="red")
             continue
-        
+
         if path.is_file():
             # Single file
-            if path.suffix.lower() in ['.html', '.htm']:
+            if path.suffix.lower() in [".html", ".htm"]:
                 html_files.append(path)
             else:
                 console.print(f"‚ö†Ô∏è  Skipping non-HTML file: {path}", style="yellow")
@@ -35518,20 +35535,22 @@ def handle_analyze(args: argparse.Namespace) -> None:
             found_files = list(path.rglob("*.html")) + list(path.rglob("*.htm"))
             if found_files:
                 html_files.extend(found_files)
-                console.print(f"Found {len(found_files)} HTML files in {path}", style="blue")
+                console.print(
+                    f"Found {len(found_files)} HTML files in {path}", style="blue"
+                )
             else:
                 console.print(f"‚ö†Ô∏è  No HTML files found in {path}", style="yellow")
-    
+
     if not html_files:
         console.print("‚ùå No HTML files to analyze", style="red")
         sys.exit(1)
-    
+
     # If --claude flag is set, use Claude AI for analysis
     if args.claude:
         console.print(f"\nFound {len(html_files)} HTML files total")
         _handle_claude_analysis(html_files)
         return
-    
+
     # Otherwise, do local analysis
     console.print(f"\nAnalyzing {len(html_files)} HTML files...")
 
@@ -35666,56 +35685,63 @@ def _handle_claude_analysis(html_files):
     import tempfile
     from pathlib import Path
     import sys
+
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
-    
+
     console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
-    
+
     # Find the common parent directory of all HTML files
     if html_files:
-        common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
+        common_parent = Path(
+            os.path.commonpath([str(f.absolute()) for f in html_files])
+        )
         console.print(f"Analysis directory: {common_parent}")
         console.print(f"Total files to analyze: {len(html_files)}")
     else:
         console.print("‚ùå No HTML files to analyze", style="red")
         return
-    
+
     # We'll work from the current directory and use --add-dir for Claude
     original_dir = Path.cwd()
-    
+
     # Step 1: Create m1f directory if it doesn't exist
     m1f_dir = common_parent / "m1f"
     m1f_dir.mkdir(exist_ok=True)
-        
+
     # Create a filelist with all HTML files using m1f
     console.print("\nüîß Creating HTML file list using m1f...")
     console.print(f"Working with HTML directory: {common_parent}")
-    
+
     # Run m1f to create only the filelist (not the content)
     m1f_cmd = [
         "m1f",
-        "-s", str(common_parent),
-        "-o", str(m1f_dir / "all_html_files.txt"),
-        "--include-extensions", ".html", ".htm",
+        "-s",
+        str(common_parent),
+        "-o",
+        str(m1f_dir / "all_html_files.txt"),
+        "--include-extensions",
+        ".html",
+        ".htm",
         "--skip-output-file",  # This creates only the filelist, not the content
-        "--force"
+        "--force",
     ]
-    
+
     try:
         result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
-        
+
         # The filelist will be created with this name
         html_filelist = m1f_dir / "all_html_files_filelist.txt"
         if not html_filelist.exists():
             console.print("‚ùå m1f filelist not created", style="red")
             return
-            
+
         console.print(f"‚úÖ Created HTML file list: {html_filelist}")
-            
+
     except subprocess.CalledProcessError as e:
         console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
         return
-    
+
     # Get relative paths from the common parent (still needed for filtering)
     relative_paths = []
     for f in html_files:
@@ -35724,71 +35750,75 @@ def _handle_claude_analysis(html_files):
             relative_paths.append(str(rel_path))
         except ValueError:
             relative_paths.append(str(f))
-    
+
     # Step 1: Load the file selection prompt
     prompt_dir = Path(__file__).parent / "prompts"
     select_prompt_path = prompt_dir / "select_files_from_project.md"
-    
+
     if not select_prompt_path.exists():
         console.print(f"‚ùå Prompt file not found: {select_prompt_path}", style="red")
         return
-    
+
     # Load the prompt from external file
     simple_prompt = select_prompt_path.read_text()
-    
+
     console.print("\nAsking Claude to select representative files...")
-    
+
     try:
-            # Run claude using the same approach as m1f-claude
-            cmd = [
-                "claude",
-                "--print",  # Use --print instead of -p
-                "--allowedTools", "Read,Glob,Grep,Write",  # Allow file reading and writing tools
-                "--add-dir", str(common_parent)  # Give Claude access to the HTML directory
-            ]
-            
-            # Execute with Popen for better control
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
+        # Run claude using the same approach as m1f-claude
+        cmd = [
+            "claude",
+            "--print",  # Use --print instead of -p
+            "--allowedTools",
+            "Read,Glob,Grep,Write",  # Allow file reading and writing tools
+            "--add-dir",
+            str(common_parent),  # Give Claude access to the HTML directory
+        ]
+
+        # Execute with Popen for better control
+        process = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        # Send prompt via stdin and get response
+        stdout, stderr = process.communicate(input=simple_prompt)
+
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(
+                process.returncode, cmd, output=stdout, stderr=stderr
             )
-            
-            # Send prompt via stdin and get response
-            stdout, stderr = process.communicate(input=simple_prompt)
-            
-            if process.returncode != 0:
-                raise subprocess.CalledProcessError(
-                    process.returncode, cmd, output=stdout, stderr=stderr
-                )
-            
-            result = subprocess.CompletedProcess(
-                cmd, process.returncode, stdout=stdout, stderr=stderr
-            )
-            selected_files = result.stdout.strip().split('\n')
-            selected_files = [f.strip() for f in selected_files if f.strip()]
-            
-            console.print(f"\nClaude selected {len(selected_files)} files:")
-            for f in selected_files:
-                console.print(f"  - {f}", style="blue")
-        
+
+        result = subprocess.CompletedProcess(
+            cmd, process.returncode, stdout=stdout, stderr=stderr
+        )
+        selected_files = result.stdout.strip().split("\n")
+        selected_files = [f.strip() for f in selected_files if f.strip()]
+
+        console.print(f"\nClaude selected {len(selected_files)} files:")
+        for f in selected_files:
+            console.print(f"  - {f}", style="blue")
+
     except subprocess.CalledProcessError as e:
         console.print(f"‚ùå Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
         return
     except FileNotFoundError:
-        console.print("‚ùå claude command not found. Please install Claude CLI.", style="red")
+        console.print(
+            "‚ùå claude command not found. Please install Claude CLI.", style="red"
+        )
         return
-    
+
     # Step 2: Verify the selected files exist and save to file
     console.print("\nVerifying selected HTML files...")
     verified_files = []
-    
+
     for file_path in selected_files[:5]:  # Limit to 5 files
         file_path = file_path.strip()
-        
+
         # Check if file exists (relative to common_parent)
         full_path = common_parent / file_path
         if full_path.exists():
@@ -35796,116 +35826,144 @@ def _handle_claude_analysis(html_files):
             console.print(f"‚úÖ Found: {file_path}", style="green")
         else:
             console.print(f"‚ö†Ô∏è  Not found: {file_path}", style="yellow")
-    
+
     if not verified_files:
         console.print("‚ùå No HTML files could be verified", style="red")
         return
-    
+
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
-    with open(selected_files_path, 'w') as f:
+    with open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
     console.print(f"‚úÖ Wrote selected files list to: {selected_files_path}")
-    
+
     # Step 3: Load analyze prompt from external file
     console.print("\nAsking Claude to analyze HTML structure and suggest selectors...")
-    
+
     # Load the analyze prompt from external file
     analyze_prompt_path = prompt_dir / "analyze_selected_files.md"
-    
+
     if not analyze_prompt_path.exists():
         console.print(f"‚ùå Prompt file not found: {analyze_prompt_path}", style="red")
         return
-    
+
     simple_analyze_prompt = analyze_prompt_path.read_text()
-    
+
     try:
         # Run claude using the same approach as m1f-claude
         cmd = [
             "claude",
             "--print",  # Use --print instead of -p
-            "--allowedTools", "Read,Glob,Grep,Write",  # Allow file reading and writing tools
-            "--add-dir", str(common_parent)  # Give Claude access to the HTML directory
+            "--allowedTools",
+            "Read,Glob,Grep,Write",  # Allow file reading and writing tools
+            "--add-dir",
+            str(common_parent),  # Give Claude access to the HTML directory
         ]
-        
+
         # Execute with Popen for better control
         process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
-        
+
         # Send prompt via stdin and get response
         stdout, stderr = process.communicate(input=simple_analyze_prompt)
-        
+
         if process.returncode != 0:
             raise subprocess.CalledProcessError(
                 process.returncode, cmd, output=stdout, stderr=stderr
             )
-        
+
         result = subprocess.CompletedProcess(
             cmd, process.returncode, stdout=stdout, stderr=stderr
         )
-        
+
         console.print("\n[bold]Claude's Analysis:[/bold]")
         console.print(result.stdout)
-        
+
         # Try to parse the YAML config from Claude's output
         import yaml
+
         try:
             # Extract YAML from the output (between ```yaml and ```)
             output = result.stdout
             yaml_start = output.find("```yaml")
             yaml_end = output.find("```", yaml_start + 6)
-            
+
             if yaml_start != -1 and yaml_end != -1:
-                yaml_content = output[yaml_start + 7:yaml_end].strip()
+                yaml_content = output[yaml_start + 7 : yaml_end].strip()
                 config_data = yaml.safe_load(yaml_content)
-                
+
                 # Clean up the config - remove empty strings
-                if 'extractor' in config_data:
-                    extractor = config_data['extractor']
-                    if 'alternative_selectors' in extractor:
-                        extractor['alternative_selectors'] = [s for s in extractor['alternative_selectors'] if s]
-                    if 'ignore_selectors' in extractor:
-                        extractor['ignore_selectors'] = [s for s in extractor['ignore_selectors'] if s]
-                
+                if "extractor" in config_data:
+                    extractor = config_data["extractor"]
+                    if "alternative_selectors" in extractor:
+                        extractor["alternative_selectors"] = [
+                            s for s in extractor["alternative_selectors"] if s
+                        ]
+                    if "ignore_selectors" in extractor:
+                        extractor["ignore_selectors"] = [
+                            s for s in extractor["ignore_selectors"] if s
+                        ]
+
                 # Save the config to a file
                 config_file = common_parent / "html2md_config.yaml"
-                with open(config_file, 'w') as f:
+                with open(config_file, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
-                
-                console.print(f"\n‚úÖ Saved configuration to: {config_file}", style="green")
-                
+
+                console.print(
+                    f"\n‚úÖ Saved configuration to: {config_file}", style="green"
+                )
+
                 # Show the user how to use it
                 console.print("\n[bold]Next Step:[/bold]")
-                console.print(f"To convert your HTML files using this configuration, run:\n")
-                console.print(f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n")
-                console.print("This will extract only the main content based on Claude's analysis.")
-                
+                console.print(
+                    f"To convert your HTML files using this configuration, run:\n"
+                )
+                console.print(
+                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n"
+                )
+                console.print(
+                    "This will extract only the main content based on Claude's analysis."
+                )
+
                 console.print("\n[bold]Alternative:[/bold]")
-                console.print("For AI-powered conversion (extracts clean content automatically):")
-                console.print(f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]")
+                console.print(
+                    "For AI-powered conversion (extracts clean content automatically):"
+                )
+                console.print(
+                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]"
+                )
             else:
-                console.print("\n‚ö†Ô∏è  Could not extract YAML configuration from Claude's response", style="yellow")
-                console.print("You can manually create a config file based on the analysis above.")
-                
+                console.print(
+                    "\n‚ö†Ô∏è  Could not extract YAML configuration from Claude's response",
+                    style="yellow",
+                )
+                console.print(
+                    "You can manually create a config file based on the analysis above."
+                )
+
         except Exception as e:
             console.print(f"\n‚ö†Ô∏è  Could not save configuration: {e}", style="yellow")
-            console.print("You can manually create a config file based on the analysis above.")
-        
+            console.print(
+                "You can manually create a config file based on the analysis above."
+            )
+
     except subprocess.CalledProcessError as e:
         console.print(f"‚ùå Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
-        
+
     # Ask if temporary analysis files should be deleted
     console.print("\n[bold]Cleanup:[/bold]")
-    cleanup = console.input("Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
-    
-    if cleanup.lower() != 'n':
+    cleanup = console.input(
+        "Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: "
+    )
+
+    if cleanup.lower() != "n":
         # Delete analysis files
         deleted_count = 0
         for i in range(1, 6):
@@ -35915,12 +35973,18 @@ def _handle_claude_analysis(html_files):
                     analysis_file.unlink()
                     deleted_count += 1
                 except Exception as e:
-                    console.print(f"‚ö†Ô∏è  Could not delete {analysis_file.name}: {e}", style="yellow")
-        
+                    console.print(
+                        f"‚ö†Ô∏è  Could not delete {analysis_file.name}: {e}", style="yellow"
+                    )
+
         if deleted_count > 0:
-            console.print(f"‚úÖ Deleted {deleted_count} temporary analysis files", style="green")
+            console.print(
+                f"‚úÖ Deleted {deleted_count} temporary analysis files", style="green"
+            )
     else:
-        console.print("‚ÑπÔ∏è  Temporary analysis files kept in m1f/ directory", style="blue")
+        console.print(
+            "‚ÑπÔ∏è  Temporary analysis files kept in m1f/ directory", style="blue"
+        )
 
 
 def _suggest_selectors(parsed_files):
@@ -35993,60 +36057,65 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     import time
     from pathlib import Path
     import sys
+
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
-    
+
     console.print(f"\n[bold]Using Claude AI to convert HTML to Markdown...[/bold]")
     console.print(f"Model: {args.model}")
     console.print(f"Sleep between calls: {args.sleep} seconds")
-    
+
     # Find all HTML files in source directory
     source_path = args.source
     if not source_path.exists():
         console.print(f"‚ùå Source path not found: {source_path}", style="red")
         sys.exit(1)
-    
+
     html_files = []
     if source_path.is_file():
-        if source_path.suffix.lower() in ['.html', '.htm']:
+        if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
             console.print(f"‚ùå Source file is not HTML: {source_path}", style="red")
             sys.exit(1)
     elif source_path.is_dir():
         # Find all HTML files recursively
-        html_files = list(source_path.rglob("*.html")) + list(source_path.rglob("*.htm"))
+        html_files = list(source_path.rglob("*.html")) + list(
+            source_path.rglob("*.htm")
+        )
         console.print(f"Found {len(html_files)} HTML files in {source_path}")
-    
+
     if not html_files:
         console.print("‚ùå No HTML files found to convert", style="red")
         sys.exit(1)
-    
+
     # Prepare output directory
     output_path = args.output
     if output_path.exists() and output_path.is_file():
-        console.print(f"‚ùå Output path is a file, expected directory: {output_path}", style="red")
+        console.print(
+            f"‚ùå Output path is a file, expected directory: {output_path}", style="red"
+        )
         sys.exit(1)
-    
+
     if not output_path.exists():
         output_path.mkdir(parents=True, exist_ok=True)
         console.print(f"Created output directory: {output_path}")
-    
+
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
     if not prompt_path.exists():
         console.print(f"‚ùå Prompt file not found: {prompt_path}", style="red")
         sys.exit(1)
-    
+
     prompt_template = prompt_path.read_text()
-    
+
     # Model parameter for Claude CLI (just use the short names)
     model_param = args.model
-    
+
     # Process each HTML file
     converted_count = 0
     failed_count = 0
-    
+
     for i, html_file in enumerate(html_files):
         tmp_html_path = None
         try:
@@ -36054,61 +36123,55 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             validated_path = validate_path_traversal(
                 html_file,
                 base_path=source_path if source_path.is_dir() else source_path.parent,
-                allow_outside=False
+                allow_outside=False,
             )
-            
+
             # Read HTML content
-            html_content = validated_path.read_text(encoding='utf-8')
-            
+            html_content = validated_path.read_text(encoding="utf-8")
+
             # Determine output file path
             if source_path.is_file():
                 # Single file conversion
-                output_file = output_path / html_file.with_suffix('.md').name
+                output_file = output_path / html_file.with_suffix(".md").name
             else:
                 # Directory conversion - maintain structure
                 relative_path = html_file.relative_to(source_path)
-                output_file = output_path / relative_path.with_suffix('.md')
-            
+                output_file = output_path / relative_path.with_suffix(".md")
+
             # Create output directory if needed
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            
+
             console.print(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
-            
+
             # Create a temporary file with the HTML content
             import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as tmp_html:
+
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False, encoding="utf-8"
+            ) as tmp_html:
                 tmp_html.write(html_content)
                 tmp_html_path = tmp_html.name
-            
+
             # Prepare the prompt for the temporary file
             prompt = prompt_template.replace("{html_content}", f"@{tmp_html_path}")
-            
+
             # Call Claude with the prompt referencing the file
-            cmd = [
-                "claude",
-                "-p", prompt,
-                "--model", model_param
-            ]
-            
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            
+            cmd = ["claude", "-p", prompt, "--model", model_param]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
             # Save the markdown output
             markdown_content = result.stdout.strip()
-            output_file.write_text(markdown_content, encoding='utf-8')
-            
+            output_file.write_text(markdown_content, encoding="utf-8")
+
             console.print(f"‚úÖ Converted to: {output_file}", style="green")
             converted_count += 1
-            
+
             # Sleep between API calls (except for the last one)
             if i < len(html_files) - 1 and args.sleep > 0:
                 console.print(f"Sleeping for {args.sleep} seconds...", style="dim")
                 time.sleep(args.sleep)
-            
+
         except subprocess.CalledProcessError as e:
             console.print(f"‚ùå Claude conversion failed: {e}", style="red")
             if e.stderr:
@@ -36124,13 +36187,13 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
                     Path(tmp_html_path).unlink()
                 except:
                     pass
-    
+
     # Summary
     console.print(f"\n[bold]Conversion Summary:[/bold]")
     console.print(f"‚úÖ Successfully converted: {converted_count} files", style="green")
     if failed_count > 0:
         console.print(f"‚ùå Failed to convert: {failed_count} files", style="red")
-    
+
     if converted_count == 0:
         sys.exit(1)
 

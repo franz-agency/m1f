@@ -185,126 +185,132 @@ class Html2mdConverter:
 
         # Apply custom extractor postprocessing
         markdown = self._extractor.postprocess(markdown, self.config.__dict__)
-        
+
         # Convert absolute file paths to relative links
-        if source_file and hasattr(self.config, 'destination'):
-            markdown = self._convert_absolute_paths_to_relative(markdown, source_file, self.config.destination)
+        if source_file and hasattr(self.config, "destination"):
+            markdown = self._convert_absolute_paths_to_relative(
+                markdown, source_file, self.config.destination
+            )
 
         return markdown
-    
-    def _convert_absolute_paths_to_relative(self, markdown: str, source_file: str, destination: Path) -> str:
+
+    def _convert_absolute_paths_to_relative(
+        self, markdown: str, source_file: str, destination: Path
+    ) -> str:
         """Convert absolute file paths in markdown to relative paths.
-        
+
         Args:
             markdown: Markdown content
             source_file: Source HTML file path
             destination: Destination directory
-            
+
         Returns:
             Markdown with relative paths
         """
         import re
         from pathlib import Path
-        
+
         # Convert source_file to Path if it's a string
         if isinstance(source_file, str):
             source_file = Path(source_file)
-        
+
         # Get the source directory
         source_dir = source_file.parent
-        
+
         # Find all markdown links with absolute paths
         # Match patterns like [text](/absolute/path) or [text](file:///absolute/path)
         def replace_link(match):
             text = match.group(1)
             link = match.group(2)
-            
+
             # Skip if it's already a relative link or external URL
-            if link.startswith(('http://', 'https://', '#', 'mailto:', '../', './')):
+            if link.startswith(("http://", "https://", "#", "mailto:", "../", "./")):
                 return match.group(0)
-            
+
             # Handle file:// URLs
-            if link.startswith('file://'):
+            if link.startswith("file://"):
                 link = link[7:]  # Remove file://
                 # On Windows, file URLs might have an extra slash
-                if link.startswith('/') and len(link) > 2 and link[2] == ':':
+                if link.startswith("/") and len(link) > 2 and link[2] == ":":
                     link = link[1:]
-            
+
             # Handle paths starting with / (like /kb/1337/policy-syntax)
             # These should be converted to relative paths
-            if link.startswith('/') and not link.startswith('//'):
+            if link.startswith("/") and not link.startswith("//"):
                 # Remove leading slash
                 link_without_slash = link[1:]
-                
+
                 # Special handling for /kb/ links - remove the kb/ prefix if present
-                if link_without_slash.startswith('kb/'):
+                if link_without_slash.startswith("kb/"):
                     link_without_slash = link_without_slash[3:]  # Remove 'kb/'
-                
+
                 # Check if this should point to an index.md file
                 # If the path ends with a directory name (no extension), add /index.md
-                parts = link_without_slash.split('/')
-                last_part = parts[-1] if parts else ''
-                if '.' not in last_part and link_without_slash:
+                parts = link_without_slash.split("/")
+                last_part = parts[-1] if parts else ""
+                if "." not in last_part and link_without_slash:
                     # This looks like a directory reference
-                    link_without_slash = link_without_slash.rstrip('/') + '/index.md'
-                elif not link_without_slash.endswith('.md') and '.' not in last_part:
+                    link_without_slash = link_without_slash.rstrip("/") + "/index.md"
+                elif not link_without_slash.endswith(".md") and "." not in last_part:
                     # Add .md extension for files
-                    link_without_slash = link_without_slash + '.md'
-                
+                    link_without_slash = link_without_slash + ".md"
+
                 # Get current file's location relative to destination root
                 current_file_path = Path(source_file)
-                if hasattr(self, 'config') and hasattr(self.config, 'source'):
+                if hasattr(self, "config") and hasattr(self.config, "source"):
                     try:
                         if current_file_path.is_relative_to(self.config.source):
-                            current_rel = current_file_path.relative_to(self.config.source)
+                            current_rel = current_file_path.relative_to(
+                                self.config.source
+                            )
                             current_dir = current_rel.parent
-                            
+
                             # Get the target path
                             target_path = Path(link_without_slash)
-                            
+
                             # Calculate relative path from current directory to target
-                            if str(current_dir) != '.':
+                            if str(current_dir) != ".":
                                 # Count how many levels up we need to go
                                 levels_up = len(current_dir.parts)
                                 # Create the relative path
-                                relative_path = Path('../' * levels_up) / target_path
-                                link = str(relative_path).replace('\\', '/')
+                                relative_path = Path("../" * levels_up) / target_path
+                                link = str(relative_path).replace("\\", "/")
                             else:
                                 # We're at the root, so just use the path as-is
-                                link = './' + link_without_slash
+                                link = "./" + link_without_slash
                         else:
                             # Can't determine relative path, use simple approach
-                            link = './' + link_without_slash
+                            link = "./" + link_without_slash
                     except Exception:
                         # Fallback to simple relative path
-                        link = './' + link_without_slash
+                        link = "./" + link_without_slash
                 else:
                     # No config available, use simple approach
-                    link = './' + link_without_slash
-                
-                return f'[{text}]({link})'
-            
+                    link = "./" + link_without_slash
+
+                return f"[{text}]({link})"
+
             # Convert to Path
             try:
                 link_path = Path(link)
-                
+
                 # If it's an absolute path
                 if link_path.is_absolute():
                     # Calculate relative path from destination to the linked file
                     # We need to go from where the markdown will be to where the linked file is
-                    
+
                     # First, get the output file path
                     relative_source = source_file.relative_to(source_dir.parent)
-                    output_file = destination / relative_source.with_suffix('.md')
+                    output_file = destination / relative_source.with_suffix(".md")
                     output_dir = output_file.parent
-                    
+
                     # Check if the linked file exists with .md extension
                     # (it's probably been converted from .html to .md)
-                    md_link = link_path.with_suffix('.md')
-                    if md_link.exists() or link_path.suffix in ['.html', '.htm']:
+                    md_link = link_path.with_suffix(".md")
+                    if md_link.exists() or link_path.suffix in [".html", ".htm"]:
                         # Use .md extension for converted files
-                        link_path = link_path.with_suffix('.md')
-                    
+                        link_path = link_path.with_suffix(".md")
+
                     # Calculate relative path from output directory to linked file
                     try:
                         # If the linked file is also in the destination
@@ -315,39 +321,43 @@ class Html2mdConverter:
                             # This handles cases where the link points to another HTML file
                             # that will also be converted
                             link_in_source = None
-                            for ext in ['.html', '.htm', '']:
+                            for ext in [".html", ".htm", ""]:
                                 test_path = source_dir.parent / link_path.name
                                 if ext:
                                     test_path = test_path.with_suffix(ext)
                                 if test_path.exists():
                                     link_in_source = test_path
                                     break
-                            
+
                             if link_in_source:
                                 # Map to destination structure
-                                relative_in_source = link_in_source.relative_to(source_dir.parent)
-                                link_in_dest = destination / relative_in_source.with_suffix('.md')
+                                relative_in_source = link_in_source.relative_to(
+                                    source_dir.parent
+                                )
+                                link_in_dest = (
+                                    destination / relative_in_source.with_suffix(".md")
+                                )
                                 relative_link = link_in_dest.relative_to(output_dir)
                             else:
                                 # Fallback: try to make it relative if possible
                                 relative_link = link_path.relative_to(output_dir)
-                        
+
                         # Convert to string with forward slashes
-                        link = str(relative_link).replace('\\', '/')
-                        
+                        link = str(relative_link).replace("\\", "/")
+
                     except ValueError:
                         # Can't make relative - keep as is but remove file://
                         link = str(link_path)
-                
+
             except Exception:
                 # If anything goes wrong, return original match
                 return match.group(0)
-            
-            return f'[{text}]({link})'
-        
+
+            return f"[{text}]({link})"
+
         # Replace markdown links
-        markdown = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', replace_link, markdown)
-        
+        markdown = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", replace_link, markdown)
+
         return markdown
 
     async def convert_directory_from_urls(self, urls: List[str]) -> List[Path]:
@@ -378,7 +388,7 @@ class Html2mdConverter:
         """
         # Validate path to prevent traversal attacks
         file_path = self._validate_path(file_path, self.config.source)
-        
+
         logger.debug(f"Converting {file_path}")
 
         # Read file content
@@ -410,14 +420,16 @@ class Html2mdConverter:
         markdown = self.convert_html(
             html_content,
             base_url=base_url,
-            source_file=str(file_path),  # Pass full path for proper relative link calculation
+            source_file=str(
+                file_path
+            ),  # Pass full path for proper relative link calculation
         )
 
         # Determine output path
         # Resolve both paths to handle cases where source is "."
         resolved_file = file_path.resolve()
         resolved_source = self.config.source.resolve()
-        
+
         try:
             # Try to get relative path from resolved paths
             rel_path = resolved_file.relative_to(resolved_source)
@@ -434,10 +446,10 @@ class Html2mdConverter:
                 rel_path = Path(file_path.name if file_path.name else "output")
 
         output_path = self.config.destination / Path(rel_path).with_suffix(".md")
-        
+
         # Validate output path to ensure it stays within destination directory
         output_path = self._validate_output_path(output_path, self.config.destination)
-        
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write file
@@ -459,7 +471,7 @@ class Html2mdConverter:
             List of generated Markdown files
         """
         source_dir = source_dir or self.config.source
-        
+
         # Validate source directory
         source_dir = self._validate_path(source_dir, self.config.source)
 
@@ -615,7 +627,7 @@ class Html2mdConverter:
         try:
             # Validate input path
             file_path = self._validate_path(file_path, self.config.source)
-            
+
             # Re-initialize parser and converter in worker process
             parser = HTMLParser(self.config.extractor)
             converter = MarkdownConverter(self.config.processor)
@@ -627,7 +639,7 @@ class Html2mdConverter:
             # Resolve both paths to handle cases where source is "."
             resolved_file = file_path.resolve()
             resolved_source = self.config.source.resolve()
-            
+
             try:
                 # Try to get relative path from resolved paths
                 rel_path = resolved_file.relative_to(resolved_source)
@@ -644,10 +656,12 @@ class Html2mdConverter:
                     rel_path = Path(file_path.name if file_path.name else "output")
 
             output_path = self.config.destination / Path(rel_path).with_suffix(".md")
-            
+
             # Validate output path
-            output_path = self._validate_output_path(output_path, self.config.destination)
-            
+            output_path = self._validate_output_path(
+                output_path, self.config.destination
+            )
+
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(markdown, encoding=self.config.target_encoding)
 
@@ -677,34 +691,34 @@ class Html2mdConverter:
 
         logger.info(f"Created m1f bundle: {bundle_path}")
         return bundle_path
-    
+
     def _validate_path(self, path: Path, base_path: Path) -> Path:
         """Validate that a path does not traverse outside allowed directories.
-        
+
         Args:
             path: The path to validate
             base_path: The base directory that the path must be within
-            
+
         Returns:
             The validated resolved path
-            
+
         Raises:
             ValueError: If the path attempts directory traversal
         """
         # Resolve both paths to absolute
         resolved_path = path.resolve()
         resolved_base = base_path.resolve()
-        
+
         # Check for suspicious traversal patterns in the original path
         path_str = str(path)
-        
+
         # Check for excessive parent directory traversals
         parent_traversals = path_str.count("../")
         if parent_traversals >= 3:
             raise ValueError(
                 f"Path traversal detected: '{path}' contains suspicious '..' patterns"
             )
-        
+
         # Ensure the resolved path is within the base directory
         try:
             resolved_path.relative_to(resolved_base)
@@ -717,29 +731,29 @@ class Html2mdConverter:
             ):
                 # Allow temporary test directories
                 return resolved_path
-            
+
             raise ValueError(
                 f"Path traversal detected: '{path}' resolves to '{resolved_path}' "
                 f"which is outside the allowed directory '{resolved_base}'"
             )
-    
+
     def _validate_output_path(self, output_path: Path, destination_base: Path) -> Path:
         """Validate that an output path stays within the destination directory.
-        
+
         Args:
             output_path: The output path to validate
             destination_base: The destination base directory
-            
+
         Returns:
             The validated resolved path
-            
+
         Raises:
             ValueError: If the path would escape the destination directory
         """
         # Resolve both paths
         resolved_output = output_path.resolve()
         resolved_dest = destination_base.resolve()
-        
+
         # Ensure output is within destination
         try:
             resolved_output.relative_to(resolved_dest)
@@ -751,7 +765,7 @@ class Html2mdConverter:
                 for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
             ):
                 return resolved_output
-                
+
             raise ValueError(
                 f"Output path '{output_path}' would escape destination directory '{resolved_dest}'"
             )
