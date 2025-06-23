@@ -4875,18 +4875,6 @@ def _handle_claude_analysis(html_files):
         os.chdir(common_parent)
         console.print(f"Changed to directory: {common_parent}")
         
-        # Run m1f-init to prepare the directory
-        console.print("\nRunning m1f-init...")
-        try:
-            subprocess.run(["m1f-init"], check=True)
-            console.print("✅ m1f-init completed successfully", style="green")
-        except subprocess.CalledProcessError as e:
-            console.print(f"❌ m1f-init failed: {e}", style="red")
-            return
-        except FileNotFoundError:
-            console.print("❌ m1f-init command not found", style="red")
-            return
-        
         # Get relative paths from the common parent
         relative_paths = []
         for f in html_files:
@@ -4920,10 +4908,11 @@ def _handle_claude_analysis(html_files):
         simple_prompt = simple_prompt.replace("{file_list}", file_list)
         
         try:
-            # Run claude with prompt directly (like m1f_claude does)
+            # Run claude with prompt directly and give it access to current directory
             cmd = [
                 "claude",
-                "-p", simple_prompt
+                "-p", simple_prompt,
+                "-a", "."  # Give Claude access to current directory
             ]
             
             result = subprocess.run(
@@ -5027,10 +5016,11 @@ def _handle_claude_analysis(html_files):
         simple_analyze_prompt = simple_analyze_prompt.replace("{html_content}", html_content_str)
         
         try:
-            # Run claude with prompt directly (like m1f_claude does)
+            # Run claude with prompt directly and give it access to current directory
             cmd = [
                 "claude",
-                "-p", simple_analyze_prompt
+                "-p", simple_analyze_prompt,
+                "-a", "."  # Give Claude access to current directory
             ]
             
             result = subprocess.run(
