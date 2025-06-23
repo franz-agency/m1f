@@ -212,10 +212,29 @@ def handle_convert(args: argparse.Namespace) -> None:
         return
     
     # Load configuration
+    from .config import Config
     if args.config:
         from .config import load_config
+        import yaml
 
-        config = load_config(args.config)
+        # Load the config file to check its contents
+        with open(args.config, 'r') as f:
+            config_data = yaml.safe_load(f)
+        
+        # If the config only contains extractor settings (from Claude analysis),
+        # create a full config with source and destination from CLI
+        if 'source' not in config_data and 'destination' not in config_data:
+            source_path = args.source.parent if args.source.is_file() else args.source
+            config = Config(source=source_path, destination=args.output)
+            
+            # Apply extractor settings from the config file
+            if 'extractor' in config_data:
+                for key, value in config_data['extractor'].items():
+                    if hasattr(config.extractor, key):
+                        setattr(config.extractor, key, value)
+        else:
+            # Full config file - load it normally
+            config = load_config(args.config)
     else:
         # When source is a file, use its parent directory as the source
         source_path = args.source.parent if args.source.is_file() else args.source
