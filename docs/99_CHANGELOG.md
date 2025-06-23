@@ -22,7 +22,13 @@ and this project adheres to
 
 ### Added
 
-<<<<<<< HEAD
+- **WebScraper Subdirectory Restriction**: Automatic crawling restriction to specified paths
+  - When URL contains a path (e.g., `https://example.com/docs`), only pages under that path are scraped
+  - Prevents crawling outside the specified subdirectory (e.g., won't scrape `/products` when `/docs` is specified)
+  - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
+  - Useful for downloading specific documentation sections without the entire website
+  - Example: `m1f-scrape https://api.example.com/v2/reference` only scrapes pages under `/v2/reference`
+
 - **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
   - **SQLite Database Tracking**: Automatically tracks scraped URLs in `scrape_tracker.db`
     - Stores URL, status code, target filename, timestamp, and errors

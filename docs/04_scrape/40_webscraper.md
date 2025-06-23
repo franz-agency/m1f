@@ -25,6 +25,7 @@ optimal LLM context usage.
   files
 - **Domain Restriction**: Automatically restricts crawling to the starting
   domain
+- **Subdirectory Restriction**: When URL contains a path, only scrapes within that subdirectory
 - **Rate Limiting**: Configurable delays between requests
 - **Progress Tracking**: Real-time download progress with file listing
 - **Resume Support**: Interrupt and resume scraping sessions with SQLite tracking
@@ -145,6 +146,21 @@ m1f-scrape https://docs.example.com -o ./docs_html
 
 # Download with verbose output
 m1f-scrape https://docs.example.com -o ./docs_html -v
+```
+
+### Subdirectory Restriction
+
+When you specify a URL with a path, the scraper automatically restricts crawling to that subdirectory:
+
+```bash
+# Only scrape pages under /docs subdirectory
+m1f-scrape https://example.com/docs -o ./docs_only
+
+# Only scrape API documentation pages
+m1f-scrape https://api.example.com/v2/reference -o ./api_docs
+
+# This will NOT scrape /products, /blog, etc. - only /tutorials/*
+m1f-scrape https://learn.example.com/tutorials -o ./tutorials_only
 ```
 
 ### Controlled Crawling

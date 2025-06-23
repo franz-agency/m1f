@@ -196,6 +196,11 @@ class BeautifulSoupScraper(WebScraperBase):
         # Parse start URL to get base domain
         start_parsed = urlparse(start_url)
         base_domain = start_parsed.netloc
+        
+        # Store the base path for subdirectory restriction
+        base_path = start_parsed.path.rstrip('/')
+        if base_path:
+            logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # If no allowed domains specified, restrict to start domain
         if not self.config.allowed_domains:
@@ -233,6 +238,13 @@ class BeautifulSoupScraper(WebScraperBase):
                 # Validate URL
                 if not await self.validate_url(url):
                     continue
+
+                # Check subdirectory restriction
+                if base_path:
+                    url_parsed = urlparse(url)
+                    if not url_parsed.path.startswith(base_path + '/') and url_parsed.path != base_path:
+                        logger.debug(f"Skipping {url} - outside subdirectory {base_path}")
+                        continue
 
                 # Check robots.txt
                 if not await self.can_fetch(url):

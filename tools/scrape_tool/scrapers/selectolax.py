@@ -190,6 +190,11 @@ class SelectolaxScraper(WebScraperBase):
         # Parse start URL to get base domain
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
+        
+        # Store the base path for subdirectory restriction
+        base_path = parsed_start.path.rstrip('/')
+        if base_path:
+            logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # Initialize queue with start URL
         queue = asyncio.Queue()
@@ -238,6 +243,11 @@ class SelectolaxScraper(WebScraperBase):
                                     continue
                             elif parsed_url.netloc != base_domain:
                                 continue
+
+                            # Check subdirectory restriction
+                            if base_path:
+                                if not parsed_url.path.startswith(base_path + '/') and parsed_url.path != base_path:
+                                    continue
 
                             # Skip if matches exclude pattern
                             if self.config.exclude_patterns:

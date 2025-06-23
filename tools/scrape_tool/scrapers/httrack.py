@@ -225,14 +225,25 @@ class HTTrackScraper(WebScraperBase):
             "--min-rate=1000",  # Minimum 1KB/s
         ]
 
+        # Parse start URL for domain and path restrictions
+        parsed = urlparse(start_url)
+        base_path = parsed.path.rstrip('/')
+        
         # Add domain restrictions
         if self.config.allowed_domains:
             for domain in self.config.allowed_domains:
                 cmd.extend(["+*" + domain + "*"])
         else:
             # Restrict to same domain by default
-            parsed = urlparse(start_url)
             cmd.extend(["+*" + parsed.netloc + "*"])
+        
+        # Add subdirectory restriction if path is specified
+        if base_path:
+            logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
+            # Allow the base path and everything under it
+            cmd.extend([f"+*{parsed.netloc}{base_path}/*"])
+            # Exclude everything else on the same domain
+            cmd.extend([f"-*{parsed.netloc}/*"])
 
         # Add exclusions
         if self.config.exclude_patterns:
