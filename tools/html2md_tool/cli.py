@@ -537,31 +537,31 @@ def _handle_claude_analysis(html_files):
             ]
             
             # Execute with Popen for better control
-        process = subprocess.Popen(
-            cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        
-        # Send prompt via stdin and get response
-        stdout, stderr = process.communicate(input=simple_prompt)
-        
-        if process.returncode != 0:
-            raise subprocess.CalledProcessError(
-                process.returncode, cmd, output=stdout, stderr=stderr
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
             )
-        
-        result = subprocess.CompletedProcess(
-            cmd, process.returncode, stdout=stdout, stderr=stderr
-        )
-        selected_files = result.stdout.strip().split('\n')
-        selected_files = [f.strip() for f in selected_files if f.strip()]
-        
-        console.print(f"\nClaude selected {len(selected_files)} files:")
-        for f in selected_files:
-            console.print(f"  - {f}", style="blue")
+            
+            # Send prompt via stdin and get response
+            stdout, stderr = process.communicate(input=simple_prompt)
+            
+            if process.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    process.returncode, cmd, output=stdout, stderr=stderr
+                )
+            
+            result = subprocess.CompletedProcess(
+                cmd, process.returncode, stdout=stdout, stderr=stderr
+            )
+            selected_files = result.stdout.strip().split('\n')
+            selected_files = [f.strip() for f in selected_files if f.strip()]
+            
+            console.print(f"\nClaude selected {len(selected_files)} files:")
+            for f in selected_files:
+                console.print(f"  - {f}", style="blue")
         
     except subprocess.CalledProcessError as e:
         console.print(f"❌ Claude command failed: {e}", style="red")
