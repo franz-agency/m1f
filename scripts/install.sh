@@ -76,6 +76,13 @@ fi
 echo
 echo -e "${GREEN}Step 3: Generating initial m1f bundles...${NC}"
 source .venv/bin/activate && python -m tools.m1f auto-bundle --quiet
+
+# Create symlink for main documentation
+if [ -f "m1f/m1f/87_m1f_only_docs.txt" ] && [ ! -e "m1f/m1f.txt" ]; then
+    ln -sf "m1f/87_m1f_only_docs.txt" "m1f/m1f.txt"
+    echo -e "${GREEN}✓ Created m1f.txt symlink to main documentation${NC}"
+fi
+
 echo -e "${GREEN}✓ Initial bundles generated${NC}"
 
 # Step 4: Setup PATH
