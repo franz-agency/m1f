@@ -22,6 +22,51 @@ and this project adheres to
 
 ### Added
 
+- **HTML2MD Claude AI Integration Enhancements**: Major improvements to AI-powered HTML analysis
+  - **External Prompt System**: All prompts now loaded from external markdown files in `prompts/` directory
+    - `select_files_from_project.md`: Strategic selection of 5 representative HTML files
+    - `analyze_selected_files.md`: Task-based analysis workflow with individual file processing
+    - `convert_html_to_md.md`: Enhanced HTML to Markdown conversion with quality standards
+    - Improved maintainability and customization of AI prompts
+  - **Task-Based Analysis Workflow**: Multi-phase analysis for better accuracy
+    - Phase 1: Individual file analysis with detailed findings saved to separate files
+    - Phase 2: Synthesis of all analyses to create optimal configuration
+    - Deep structural analysis with content boundaries, navigation elements, and special content types
+    - Creates temporary analysis files in m1f directory for transparency
+  - **Write Tool Permission**: Claude now has write permissions for creating analysis files
+    - Automatically creates individual analysis files (html_analysis_1.txt through html_analysis_5.txt)
+    - Enables iterative analysis and refinement process
+    - Includes cleanup functionality to remove temporary files after user confirmation
+  - **Directory Access Improvements**: Enhanced Claude integration workflow
+    - Uses `--add-dir` parameter instead of changing directories
+    - Maintains clean working directory structure
+    - Prevents directory traversal issues during analysis
+  - **Improved Error Handling**: Better subprocess management and error reporting
+    - Fixed indentation errors in subprocess.Popen calls
+    - Applied black formatting for consistent code style
+    - Enhanced logging and progress indicators
+
+- **WebScraper Content Deduplication**: Memory-efficient duplicate prevention system (enabled by default)
+  - **Database-Backed Deduplication**: Optimized for large scraping sessions
+    - Uses SQLite queries instead of loading all checksums into memory
+    - Stores checksums in `content_checksums` table with first URL and timestamp
+    - Scrapers use callback mechanism to check checksums via database
+    - Significantly reduces memory usage for large scraping sessions
+    - Maintains deduplication state across resume operations
+  - **Content-Based Detection**: SHA-256 checksums of normalized plain text
+    - Extracts plain text from HTML (removes all tags, scripts, styles)
+    - Decodes HTML entities (&nbsp;, &lt;, etc.)
+    - Normalizes whitespace (multiple spaces become single space)
+    - Skips pages with identical text content
+  - **Three-Layer Deduplication System**:
+    1. Canonical URL checking (default: enabled) - Use `--ignore-canonical` to disable
+    2. Content deduplication (default: enabled) - Use `--ignore-duplicates` to disable
+    3. GET parameter normalization (default: disabled) - Use `--ignore-get-params` to enable
+  - **Improved Logging**: Graceful handling of duplicate detection
+    - No longer logs duplicates as "unexpected errors"
+    - Clear informational messages when skipping duplicate content
+    - Transparent reporting of deduplication effectiveness
+
 - **WebScraper Subdirectory Restriction**: Automatic crawling restriction to specified paths
   - When URL contains a path (e.g., `https://example.com/docs`), only pages under that path are scraped
   - Prevents crawling outside the specified subdirectory (e.g., won't scrape `/products` when `/docs` is specified)
@@ -53,31 +98,6 @@ and this project adheres to
     - E-commerce sites with product URLs containing tracking parameters
     - News sites with print and mobile versions of articles
 
-- **WebScraper Content Deduplication**: Automatically skip pages with duplicate content (enabled by default)
-  - **Default Behavior**: Content-based duplicate detection is now enabled by default
-    - Extracts plain text from HTML (removes all tags, scripts, styles)
-    - Calculates SHA-256 checksum of normalized text content
-    - Skips pages with identical text content
-    - Works together with canonical URL checking for comprehensive deduplication
-    - Prevents downloading multiple copies of template-heavy pages
-  - **--ignore-duplicates Flag**: Disable content deduplication when needed
-    - Use when you need all page versions regardless of content similarity
-    - Example: `m1f-scrape https://example.com -o ./html --ignore-duplicates`
-  - **Text Extraction Process**:
-    - Removes `<script>` and `<style>` blocks completely
-    - Strips all HTML tags
-    - Decodes HTML entities (&nbsp;, &lt;, etc.)
-    - Normalizes whitespace (multiple spaces become single space)
-  - **Three-Layer Deduplication System**:
-    1. Canonical URL checking (default: enabled) - Use `--ignore-canonical` to disable
-    2. Content deduplication (default: enabled) - Use `--ignore-duplicates` to disable
-    3. GET parameter normalization (default: disabled) - Use `--ignore-get-params` to enable
-  - **Database-Backed Deduplication**: Memory-efficient content deduplication
-    - Uses SQLite queries instead of loading all checksums into memory
-    - Stores checksums in `content_checksums` table with first URL and timestamp
-    - Scrapers use callback mechanism to check checksums via database
-    - Significantly reduces memory usage for large scraping sessions
-    - Maintains deduplication state across resume operations
 
 - **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
   - **SQLite Database Tracking**: Automatically tracks scraped URLs in `scrape_tracker.db`
