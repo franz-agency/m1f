@@ -70,6 +70,9 @@ class WebCrawler:
             "request_delay": self.config.request_delay,
             "timeout": float(self.config.timeout),
             "follow_redirects": True,  # Always follow redirects
+            "ignore_get_params": self.config.ignore_get_params,
+            "check_canonical": self.config.check_canonical,
+            "check_content_duplicates": self.config.check_content_duplicates,
         }
 
         # Only add user_agent if it's not None
@@ -109,10 +112,22 @@ class WebCrawler:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS scraped_urls (
                 url TEXT PRIMARY KEY,
+                normalized_url TEXT,
+                canonical_url TEXT,
+                content_checksum TEXT,
                 status_code INTEGER,
                 target_filename TEXT,
                 scraped_at TIMESTAMP,
                 error TEXT
+            )
+        """)
+        
+        # Create table for content checksums
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS content_checksums (
+                checksum TEXT PRIMARY KEY,
+                first_url TEXT,
+                first_seen TIMESTAMP
             )
         """)
         self._db_conn.commit()
@@ -156,9 +171,67 @@ class WebCrawler:
         urls = {row[0] for row in cursor.fetchall()}
         cursor.close()
         return urls
+    
+    def _get_content_checksums(self) -> Set[str]:
+        """Get all content checksums from previous scraping.
+
+        Returns:
+            Set of content checksums
+        """
+        if not self._db_conn:
+            return set()
+            
+        cursor = self._db_conn.cursor()
+        cursor.execute("SELECT checksum FROM content_checksums")
+        checksums = {row[0] for row in cursor.fetchall()}
+        cursor.close()
+        return checksums
+    
+    def _record_content_checksum(self, checksum: str, url: str) -> None:
+        """Record a content checksum in the database.
+
+        Args:
+            checksum: Content checksum
+            url: First URL where this content was seen
+        """
+        if not self._db_conn:
+            return
+            
+        cursor = self._db_conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO content_checksums (checksum, first_url, first_seen)
+                VALUES (?, ?, ?)
+            """, (checksum, url, datetime.now()))
+            self._db_conn.commit()
+        except sqlite3.IntegrityError:
+            # Checksum already exists
+            pass
+        cursor.close()
+    
+    def _is_content_checksum_exists(self, checksum: str) -> bool:
+        """Check if a content checksum already exists in the database.
+
+        Args:
+            checksum: Content checksum to check
+
+        Returns:
+            True if checksum exists, False otherwise
+        """
+        if not self._db_conn:
+            return False
+            
+        cursor = self._db_conn.cursor()
+        cursor.execute("SELECT 1 FROM content_checksums WHERE checksum = ?", (checksum,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result is not None
 
     def _record_scraped_url(self, url: str, status_code: Optional[int], 
-                          target_filename: str, error: Optional[str] = None) -> None:
+                          target_filename: str, error: Optional[str] = None,
+                          normalized_url: Optional[str] = None,
+                          canonical_url: Optional[str] = None,
+                          content_checksum: Optional[str] = None) -> None:
         """Record a scraped URL in the database.
 
         Args:
@@ -166,6 +239,9 @@ class WebCrawler:
             status_code: HTTP status code
             target_filename: Path to the saved file
             error: Error message if scraping failed
+            normalized_url: URL after GET parameter normalization
+            canonical_url: Canonical URL from the page
+            content_checksum: SHA-256 checksum of text content
         """
         if not self._db_conn:
             return
@@ -173,9 +249,11 @@ class WebCrawler:
         cursor = self._db_conn.cursor()
         cursor.execute("""
             INSERT OR REPLACE INTO scraped_urls 
-            (url, status_code, target_filename, scraped_at, error)
-            VALUES (?, ?, ?, ?, ?)
-        """, (url, status_code, target_filename, datetime.now(), error))
+            (url, normalized_url, canonical_url, content_checksum, 
+             status_code, target_filename, scraped_at, error)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (url, normalized_url, canonical_url, content_checksum,
+              status_code, target_filename, datetime.now(), error))
         self._db_conn.commit()
         cursor.close()
 
@@ -248,6 +326,13 @@ class WebCrawler:
                 if hasattr(scraper, '_visited_urls'):
                     scraper._visited_urls.update(scraped_urls)
                 
+                # Set up checksum callback if deduplication is enabled
+                if self._scraper_config.check_content_duplicates:
+                    # Pass the database connection to the scraper for checksum queries
+                    if hasattr(scraper, 'set_checksum_callback'):
+                        scraper.set_checksum_callback(self._is_content_checksum_exists)
+                        logger.info("Enabled database-backed content deduplication")
+                
                 # Pass information about scraped pages for resume functionality
                 if scraped_urls and hasattr(scraper, 'set_resume_info'):
                     pages_info = self._get_scraped_pages_info()
@@ -280,12 +365,19 @@ class WebCrawler:
                     # Save page to disk
                     try:
                         file_path = await self._save_page(page, site_dir)
-                        # Record successful scrape
+                        # Record successful scrape with all metadata
                         self._record_scraped_url(
                             page.url, 
                             page.status_code, 
-                            str(file_path.relative_to(output_dir))
+                            str(file_path.relative_to(output_dir)),
+                            error=None,
+                            normalized_url=page.normalized_url,
+                            canonical_url=page.canonical_url,
+                            content_checksum=page.content_checksum
                         )
+                        # Record content checksum if present
+                        if page.content_checksum and self._scraper_config.check_content_duplicates:
+                            self._record_content_checksum(page.content_checksum, page.url)
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})

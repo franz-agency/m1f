@@ -40,6 +40,19 @@ class BeautifulSoupScraper(WebScraperBase):
         self.session: Optional[aiohttp.ClientSession] = None
         self._semaphore = asyncio.Semaphore(config.concurrent_requests)
         self._resume_info: List[Dict[str, str]] = []
+    
+    def _normalize_url(self, url: str) -> str:
+        """Normalize URL by removing GET parameters if configured.
+        
+        Args:
+            url: URL to normalize
+            
+        Returns:
+            Normalized URL
+        """
+        if self.config.ignore_get_params and "?" in url:
+            return url.split("?")[0]
+        return url
 
     async def __aenter__(self):
         """Create aiohttp session on entry."""
@@ -125,6 +138,36 @@ class BeautifulSoupScraper(WebScraperBase):
 
                     # Parse with BeautifulSoup
                     soup = BeautifulSoup(content, "html.parser")
+                    
+                    # Store metadata for database
+                    normalized_url = self._normalize_url(str(response.url))
+                    canonical_url = None
+                    content_checksum = None
+                    
+                    # Order: 1. GET parameter normalization (already done in _normalize_url)
+                    # 2. Canonical URL check
+                    if self.config.check_canonical:
+                        canonical_link = soup.find("link", {"rel": "canonical"})
+                        if canonical_link and canonical_link.get("href"):
+                            canonical_url = canonical_link["href"]
+                            # Make canonical URL absolute
+                            canonical_url = urljoin(url, canonical_url)
+                            # Normalize canonical URL too
+                            normalized_canonical = self._normalize_url(canonical_url)
+                            
+                            if normalized_url != normalized_canonical:
+                                logger.info(f"Skipping {url} - canonical URL differs: {canonical_url}")
+                                return None  # Return None to indicate skip, not an error
+                    
+                    # 3. Content duplicate check
+                    if self.config.check_content_duplicates:
+                        from ..utils import calculate_content_checksum
+                        content_checksum = calculate_content_checksum(content)
+                        
+                        # Check if checksum exists using callback or fall back to database query
+                        if self._checksum_callback and self._checksum_callback(content_checksum):
+                            logger.info(f"Skipping {url} - duplicate content detected")
+                            return None  # Return None to indicate skip, not an error
 
                     # Extract metadata
                     title = soup.find("title")
@@ -140,6 +183,9 @@ class BeautifulSoupScraper(WebScraperBase):
                         encoding=encoding,
                         status_code=status_code,
                         headers=headers,
+                        normalized_url=normalized_url,
+                        canonical_url=canonical_url,
+                        content_checksum=content_checksum,
                     )
 
             except asyncio.TimeoutError:
@@ -176,12 +222,13 @@ class BeautifulSoupScraper(WebScraperBase):
         if current_depth < self.config.max_depth:
             new_urls = self._extract_links(content, url)
             for new_url in new_urls:
-                if (new_url not in self._visited_urls 
-                    and new_url not in to_visit):
-                    to_visit.add(new_url)
-                    depth_map[new_url] = current_depth + 1
+                normalized_new_url = self._normalize_url(new_url)
+                if (normalized_new_url not in self._visited_urls 
+                    and normalized_new_url not in to_visit):
+                    to_visit.add(normalized_new_url)
+                    depth_map[normalized_new_url] = current_depth + 1
                     logger.debug(
-                        f"Added URL to queue: {new_url} (depth: {current_depth + 1})"
+                        f"Added URL to queue: {normalized_new_url} (depth: {current_depth + 1})"
                     )
 
     async def scrape_site(self, start_url: str) -> AsyncGenerator[ScrapedPage, None]:
@@ -231,8 +278,9 @@ class BeautifulSoupScraper(WebScraperBase):
                 # Get next URL
                 url = to_visit.pop()
 
-                # Skip if already visited
-                if self.is_visited(url):
+                # Skip if already visited (normalize URL first)
+                normalized_url = self._normalize_url(url)
+                if self.is_visited(normalized_url):
                     continue
 
                 # Validate URL
@@ -260,11 +308,16 @@ class BeautifulSoupScraper(WebScraperBase):
                     continue
 
                 # Mark as visited
-                self.mark_visited(url)
+                self.mark_visited(normalized_url)
 
                 try:
                     # Scrape the page
                     page = await self.scrape_url(url)
+                    
+                    # Skip if page is None (duplicate content or canonical mismatch)
+                    if page is None:
+                        continue
+                        
                     yield page
 
                     # Extract links if not at max depth
@@ -349,6 +402,11 @@ class BeautifulSoupScraper(WebScraperBase):
                         absolute_url = urljoin(base_url, href)
                         # Remove fragment
                         absolute_url = absolute_url.split("#")[0]
+                        
+                        # Remove GET parameters if configured to do so
+                        if self.config.ignore_get_params and "?" in absolute_url:
+                            absolute_url = absolute_url.split("?")[0]
+                        
                         if absolute_url:
                             # Skip non-HTML resources
                             if not any(

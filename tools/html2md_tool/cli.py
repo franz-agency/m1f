@@ -510,11 +510,10 @@ def _handle_claude_analysis(html_files):
         simple_prompt = simple_prompt.replace("{file_list}", file_list)
         
         try:
-            # Run claude with prompt directly and give it access to current directory
+            # Run claude with prompt directly
             cmd = [
                 "claude",
-                "-p", simple_prompt,
-                "-a", "."  # Give Claude access to current directory
+                "-p", simple_prompt
             ]
             
             result = subprocess.run(
@@ -618,11 +617,10 @@ def _handle_claude_analysis(html_files):
         simple_analyze_prompt = simple_analyze_prompt.replace("{html_content}", html_content_str)
         
         try:
-            # Run claude with prompt directly and give it access to current directory
+            # Run claude with prompt directly
             cmd = [
                 "claude",
-                "-p", simple_analyze_prompt,
-                "-a", "."  # Give Claude access to current directory
+                "-p", simple_analyze_prompt
             ]
             
             result = subprocess.run(

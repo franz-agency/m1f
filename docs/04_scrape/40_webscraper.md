@@ -21,6 +21,10 @@ optimal LLM context usage.
 - **Async I/O**: High-performance concurrent downloading
 - **Intelligent Crawling**: Automatically respects robots.txt, follows
   redirects, handles encoding
+- **Duplicate Prevention**: Three-layer deduplication system:
+  - Canonical URL checking (enabled by default)
+  - Content-based deduplication (enabled by default)
+  - GET parameter normalization (optional with `--ignore-get-params`)
 - **Metadata Preservation**: Saves HTTP headers and metadata alongside HTML
   files
 - **Domain Restriction**: Automatically restricts crawling to the starting
@@ -76,6 +80,9 @@ m1f-scrape <url> -o <output> [options]
 | `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
 | `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
+| `--ignore-get-params`   | Ignore GET parameters in URLs (e.g., ?tab=linux)             | False         |
+| `--ignore-canonical`    | Ignore canonical URL tags (checking is enabled by default)    | False         |
+| `--ignore-duplicates`   | Ignore duplicate content detection (enabled by default)       | False         |
 | `--list-files`          | List all downloaded files after completion                    | False         |
 | `-v, --verbose`         | Enable verbose output                                         | False         |
 | `-q, --quiet`           | Suppress all output except errors                             | False         |
@@ -147,6 +154,58 @@ m1f-scrape https://docs.example.com -o ./docs_html
 # Download with verbose output
 m1f-scrape https://docs.example.com -o ./docs_html -v
 ```
+
+### Canonical URL Checking
+
+By default, the scraper checks for canonical URLs to avoid downloading duplicate content:
+
+```bash
+# Pages with different canonical URLs are automatically skipped
+m1f-scrape https://example.com -o ./html
+
+# Ignore canonical tags if you want all page versions
+m1f-scrape https://example.com -o ./html --ignore-canonical
+```
+
+When enabled (default), the scraper:
+- Checks the `<link rel="canonical">` tag on each page
+- Skips pages where the canonical URL differs from the current URL
+- Prevents downloading duplicate content (e.g., print versions, mobile versions)
+- Logs skipped pages with their canonical URLs for transparency
+
+This is especially useful for sites that have multiple URLs pointing to the same content.
+
+### Content Deduplication
+
+By default, the scraper detects and skips pages with duplicate content based on text-only checksums:
+
+```bash
+# Content deduplication is enabled by default
+m1f-scrape https://example.com -o ./html
+
+# Disable content deduplication if needed
+m1f-scrape https://example.com -o ./html --ignore-duplicates
+```
+
+This feature:
+- Enabled by default to avoid downloading duplicate content
+- Extracts plain text from HTML (removes all tags, scripts, styles)
+- Calculates SHA-256 checksum of the normalized text
+- Skips pages with identical text content
+- Useful for sites with multiple URLs serving the same content
+- Works together with canonical URL checking for thorough deduplication
+
+The scraper now has three levels of duplicate prevention, applied in this order:
+1. **GET parameter normalization** (default: disabled) - Use `--ignore-get-params` to enable
+2. **Canonical URL checking** (default: enabled) - Respects `<link rel="canonical">`
+3. **Content deduplication** (default: enabled) - Compares text content
+
+**Important**: All deduplication data is stored in the SQLite database (`scrape_tracker.db`), which means:
+- Content checksums persist across resume operations
+- Canonical URL information is saved for each page
+- The deduplication works correctly even when resuming interrupted scrapes
+- Memory-efficient: checksums are queried from database, not loaded into memory
+- Scales to large websites without excessive memory usage
 
 ### Subdirectory Restriction
 

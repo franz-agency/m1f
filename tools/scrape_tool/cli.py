@@ -170,6 +170,24 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("--user-agent", type=str, help="Custom user agent string")
+    
+    parser.add_argument(
+        "--ignore-get-params",
+        action="store_true",
+        help="Ignore GET parameters in URLs (e.g., ?tab=linux) to avoid duplicate content",
+    )
+    
+    parser.add_argument(
+        "--ignore-canonical",
+        action="store_true",
+        help="Ignore canonical URL tags (by default, pages with different canonical URLs are skipped)",
+    )
+    
+    parser.add_argument(
+        "--ignore-duplicates",
+        action="store_true",
+        help="Ignore duplicate content detection (by default, pages with identical text are skipped)",
+    )
 
     # Output options
     parser.add_argument(
@@ -214,6 +232,10 @@ def main() -> None:
 
     if args.user_agent:
         config.crawler.user_agent = args.user_agent
+    
+    config.crawler.ignore_get_params = args.ignore_get_params
+    config.crawler.check_canonical = not args.ignore_canonical
+    config.crawler.check_content_duplicates = not args.ignore_duplicates
 
     # Load scraper-specific config if provided
     if args.scraper_config:

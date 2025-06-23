@@ -29,6 +29,56 @@ and this project adheres to
   - Useful for downloading specific documentation sections without the entire website
   - Example: `m1f-scrape https://api.example.com/v2/reference` only scrapes pages under `/v2/reference`
 
+- **WebScraper Ignore GET Parameters**: New option to prevent duplicate content from URLs with different query strings
+  - **--ignore-get-params Flag**: Strips GET parameters from URLs during scraping
+    - Prevents duplicate downloads from URLs like `page.html?tab=linux` and `page.html?tab=windows`
+    - Normalized URLs are used for visited tracking and file saving
+    - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
+    - HTTrack uses `-N0` flag to disable query string parsing
+    - Useful for documentation sites that use GET parameters for UI state
+  - **Example**: `m1f-scrape https://docs.example.com -o ./html --ignore-get-params`
+    - Will treat `docs.html?version=1` and `docs.html?version=2` as the same page
+
+- **WebScraper Canonical URL Checking**: Automatically skip duplicate pages based on canonical URLs
+  - **Default Behavior**: Checks `<link rel="canonical">` tags on every page
+    - Skips pages where canonical URL differs from current URL
+    - Prevents downloading duplicate content (print versions, mobile versions, etc.)
+    - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
+    - Logs skipped pages with their canonical URLs for transparency
+  - **--ignore-canonical Flag**: Ignore canonical tags when needed
+    - Use when you want all page versions regardless of canonical tags
+    - Example: `m1f-scrape https://example.com -o ./html --ignore-canonical`
+  - **Use Cases**:
+    - Documentation sites with multiple URL formats for same content
+    - E-commerce sites with product URLs containing tracking parameters
+    - News sites with print and mobile versions of articles
+
+- **WebScraper Content Deduplication**: Automatically skip pages with duplicate content (enabled by default)
+  - **Default Behavior**: Content-based duplicate detection is now enabled by default
+    - Extracts plain text from HTML (removes all tags, scripts, styles)
+    - Calculates SHA-256 checksum of normalized text content
+    - Skips pages with identical text content
+    - Works together with canonical URL checking for comprehensive deduplication
+    - Prevents downloading multiple copies of template-heavy pages
+  - **--ignore-duplicates Flag**: Disable content deduplication when needed
+    - Use when you need all page versions regardless of content similarity
+    - Example: `m1f-scrape https://example.com -o ./html --ignore-duplicates`
+  - **Text Extraction Process**:
+    - Removes `<script>` and `<style>` blocks completely
+    - Strips all HTML tags
+    - Decodes HTML entities (&nbsp;, &lt;, etc.)
+    - Normalizes whitespace (multiple spaces become single space)
+  - **Three-Layer Deduplication System**:
+    1. Canonical URL checking (default: enabled) - Use `--ignore-canonical` to disable
+    2. Content deduplication (default: enabled) - Use `--ignore-duplicates` to disable
+    3. GET parameter normalization (default: disabled) - Use `--ignore-get-params` to enable
+  - **Database-Backed Deduplication**: Memory-efficient content deduplication
+    - Uses SQLite queries instead of loading all checksums into memory
+    - Stores checksums in `content_checksums` table with first URL and timestamp
+    - Scrapers use callback mechanism to check checksums via database
+    - Significantly reduces memory usage for large scraping sessions
+    - Maintains deduplication state across resume operations
+
 - **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
   - **SQLite Database Tracking**: Automatically tracks scraped URLs in `scrape_tracker.db`
     - Stores URL, status code, target filename, timestamp, and errors
