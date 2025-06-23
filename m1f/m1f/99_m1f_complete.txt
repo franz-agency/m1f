@@ -35692,29 +35692,29 @@ def _handle_claude_analysis(html_files):
         m1f_dir = common_parent / "m1f"
         m1f_dir.mkdir(exist_ok=True)
         
-        # Create a file with all HTML files using m1f
+        # Create a filelist with all HTML files using m1f
         console.print("\nüîß Creating HTML file list using m1f...")
-        html_list_file = m1f_dir / "all_html_files.txt"
         
-        # Run m1f to create a file containing all HTML files
+        # Run m1f to create only the filelist (not the content)
         m1f_cmd = [
             "m1f",
             "-s", str(common_parent),
-            "-o", str(html_list_file),
+            "-o", str(m1f_dir / "all_html_files.txt"),
             "--include-extensions", ".html", ".htm",
-            "--separator-style", "Standard",
+            "--skip-output-file",  # This creates only the filelist, not the content
             "--force"
         ]
         
         try:
             result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
-            console.print(f"‚úÖ Created HTML file list: {html_list_file}")
             
-            # Also get the filelist that m1f creates
+            # The filelist will be created with this name
             html_filelist = m1f_dir / "all_html_files_filelist.txt"
             if not html_filelist.exists():
                 console.print("‚ùå m1f filelist not created", style="red")
                 return
+                
+            console.print(f"‚úÖ Created HTML file list: {html_filelist}")
                 
         except subprocess.CalledProcessError as e:
             console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
@@ -35747,7 +35747,7 @@ def _handle_claude_analysis(html_files):
             cmd = [
                 "claude",
                 "--print",  # Use --print instead of -p
-                "--allowedTools", "Read,Glob,Grep"  # Allow file reading tools
+                "--allowedTools", "Read,Glob,Grep,Write"  # Allow file reading and writing tools
             ]
             
             # Execute with Popen for better control
@@ -35785,68 +35785,28 @@ def _handle_claude_analysis(html_files):
             console.print("‚ùå claude command not found. Please install Claude CLI.", style="red")
             return
         
-        # Step 2: Verify the selected files exist
+        # Step 2: Verify the selected files exist and save to file
         console.print("\nVerifying selected HTML files...")
         verified_files = []
+        
         for file_path in selected_files[:5]:  # Limit to 5 files
-            # Claude might return paths with redundant directory prefixes
-            # since we already changed to common_parent directory
             file_path = file_path.strip()
             
-            # Try to find the file
-            full_path = None
-            
-            # Method 1: Direct path from current directory (where m1f-init ran)
+            # Check if file exists in current directory
             if Path(file_path).exists():
-                full_path = Path(file_path)
-            # Method 2: Go back to original directory and try
-            elif (original_dir / file_path).exists():
-                full_path = original_dir / file_path
-            # Method 3: Strip the leading directories that match our current location
+                verified_files.append(file_path)
+                console.print(f"‚úÖ Found: {file_path}", style="green")
             else:
-                # If the path starts with parts of our current directory name, remove them
-                path_parts = file_path.split('/')
-                # Look for where the actual file path begins
-                for i in range(len(path_parts)):
-                    test_path = '/'.join(path_parts[i:])
-                    if Path(test_path).exists():
-                        full_path = Path(test_path)
-                        break
-                    elif (original_dir / test_path).exists():
-                        full_path = original_dir / test_path
-                        break
-            
-            if full_path and full_path.exists():
-                try:
-                    # Validate path to prevent traversal attacks
-                    validated_path = validate_path_traversal(
-                        full_path, 
-                        base_path=original_dir,
-                        allow_outside=False
-                    )
-                    content = validated_path.read_text(encoding='utf-8')
-                    # Limit content size to avoid overwhelming the prompt
-                    if len(content) > 10000:
-                        content = content[:10000] + "\n... (truncated)"
-                    html_contents.append(f"### File: {file_path}\n```html\n{content}\n```\n")
-                    console.print(f"‚úÖ Read: {file_path}", style="green")
-                except ValueError as e:
-                    # Path traversal attempt
-                    console.print(f"‚ùå Security error for {file_path}: {e}", style="red")
-                except Exception as e:
-                    console.print(f"‚ùå Error reading {file_path}: {e}", style="red")
-            else:
-                console.print(f"‚ùå File not found: {file_path}", style="red")
-                console.print(f"   Tried: {common_parent / file_path}", style="yellow")
+                console.print(f"‚ö†Ô∏è  Not found: {file_path}", style="yellow")
         
-        if not html_contents:
-            console.print("‚ùå No HTML files could be read", style="red")
+        if not verified_files:
+            console.print("‚ùå No HTML files could be verified", style="red")
             return
         
-        # Write the selected files to a reference list
+        # Write the verified files to a reference list
         selected_files_path = m1f_dir / "selected_html_files.txt"
         with open(selected_files_path, 'w') as f:
-            for file_path in selected_files[:5]:
+            for file_path in verified_files:
                 f.write(f"{file_path}\n")
         console.print(f"‚úÖ Wrote selected files list to: {selected_files_path}")
         
@@ -35867,7 +35827,7 @@ def _handle_claude_analysis(html_files):
             cmd = [
                 "claude",
                 "--print",  # Use --print instead of -p
-                "--allowedTools", "Read,Glob,Grep"  # Allow file reading tools
+                "--allowedTools", "Read,Glob,Grep,Write"  # Allow file reading and writing tools
             ]
             
             # Execute with Popen for better control
@@ -35941,6 +35901,27 @@ def _handle_claude_analysis(html_files):
         except subprocess.CalledProcessError as e:
             console.print(f"‚ùå Claude command failed: {e}", style="red")
             console.print(f"Error output: {e.stderr}", style="red")
+            
+        # Ask if temporary analysis files should be deleted
+        console.print("\n[bold]Cleanup:[/bold]")
+        cleanup = console.input("Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
+        
+        if cleanup.lower() != 'n':
+            # Delete analysis files
+            deleted_count = 0
+            for i in range(1, 6):
+                analysis_file = m1f_dir / f"html_analysis_{i}.txt"
+                if analysis_file.exists():
+                    try:
+                        analysis_file.unlink()
+                        deleted_count += 1
+                    except Exception as e:
+                        console.print(f"‚ö†Ô∏è  Could not delete {analysis_file.name}: {e}", style="yellow")
+            
+            if deleted_count > 0:
+                console.print(f"‚úÖ Deleted {deleted_count} temporary analysis files", style="green")
+        else:
+            console.print("‚ÑπÔ∏è  Temporary analysis files kept in m1f/ directory", style="blue")
             
     finally:
         # Change back to original directory
@@ -49935,131 +49916,161 @@ class Config:
 ======= tools/html2md_tool/prompts/analyze_selected_files.md ======
 # HTML Structure Analysis for Optimal Content Extraction
 
+<deep-thinking>
+The user wants a more systematic approach:
+1. Create a task list
+2. Analyze each file individually and save results
+3. Then synthesize all analyses into final config
+This will produce much better results than trying to analyze all files at once.
+</deep-thinking>
+
+## Context
 The file @m1f/selected_html_files.txt contains 5 representative HTML files from the documentation site.
 
-## Your Task:
+## Task List
 
-### 1. Deep Analysis of Each File
-Read each of the 5 HTML files using the Read tool and perform a thorough structural analysis:
+### Phase 1: Individual File Analysis
+For each HTML file listed in @m1f/selected_html_files.txt:
 
-**Main Content Detection:**
-- Identify the exact element(s) containing the primary documentation content
-- Look for semantic HTML5 tags (main, article, section with specific roles)
-- Check for content-specific class names (e.g., .doc-content, .markdown-body, .prose)
-- Note if content is split across multiple containers
+1. **Read the file** using the Read tool
+2. **Perform deep structural analysis** (see analysis criteria below)
+3. **Write detailed findings** to a separate analysis file:
+   - File 1 → Write analysis to @m1f/html_analysis_1.txt
+   - File 2 → Write analysis to @m1f/html_analysis_2.txt
+   - File 3 → Write analysis to @m1f/html_analysis_3.txt
+   - File 4 → Write analysis to @m1f/html_analysis_4.txt
+   - File 5 → Write analysis to @m1f/html_analysis_5.txt
 
-**Navigation & UI Elements to Exclude:**
-- Global navigation (top nav, breadcrumbs, sidebar navigation)
-- Page metadata (author info, last updated, edit buttons)
-- Interactive elements (search boxes, theme toggles, language selectors)
-- Social sharing buttons and feedback widgets
-- Table of contents (if separate from main content)
-- Footer links and copyright notices
+### Phase 2: Synthesis
+4. **Read all 5 analysis files** (@m1f/html_analysis_1.txt through @m1f/html_analysis_5.txt)
+5. **Identify common patterns** across all analyses
+6. **Create final YAML configuration** based on the synthesized findings
 
-**Dynamic Content Patterns:**
-- Code syntax highlighting wrappers
-- Collapsible sections or tabs
-- Alert/callout boxes that should be preserved
-- Embedded examples or demos
+## Deep Analysis Criteria for Each File
 
-### 2. Pattern Recognition Across Files
-After analyzing all files, identify:
+When analyzing each HTML file, document:
 
-**Consistency Check:**
-- Which selectors work on ALL 5 files?
-- Which selectors work on most files (note the exceptions)?
-- Are there different layouts for different content types?
+### 1. Content Structure
+```
+Main Content Location:
+- Primary container: [exact selector]
+- Parent hierarchy: [body > ... > main]
+- Semantic tags used: [main, article, section, etc.]
+- Content-specific classes: [.content, .prose, .markdown-body, etc.]
+- Content boundaries: [where content starts/ends]
+```
 
-**Selector Robustness:**
-- Prefer semantic selectors over class-based when possible
-- Use combination selectors for precision (e.g., main > article)
-- Identify parent containers that reliably wrap content
+### 2. Navigation & UI Elements
+```
+Elements to Exclude:
+- Header/Navigation: [selectors]
+- Sidebar: [selectors]
+- Footer: [selectors]
+- Breadcrumbs: [selectors]
+- TOC/Page outline: [selectors]
+- Meta information: [selectors]
+- Interactive widgets: [selectors]
+```
 
-**Edge Cases:**
-- Landing pages vs. documentation pages
-- API reference vs. guides
-- Pages with multiple content sections
+### 3. Special Content Types
+```
+Within Main Content:
+- Code blocks: [how they're marked]
+- Callout boxes: [info, warning, tip patterns]
+- Tables: [table wrapper classes]
+- Images/Media: [figure elements, wrappers]
+- Examples/Demos: [interactive elements to preserve]
+```
 
-### 3. Build Intelligent Selector Strategy
+### 4. Page-Specific Observations
+```
+Page Type: [landing/guide/api/reference]
+Unique Patterns: [anything specific to this page]
+Potential Issues: [edge cases noticed]
+```
 
-## Output:
+## Analysis File Format
 
-Create a YAML configuration with carefully chosen selectors:
+Each analysis file (@m1f/html_analysis_N.txt) should follow this format:
+
+```
+FILE: [filename]
+URL PATH: [relative path]
+
+CONTENT STRUCTURE:
+- Main container: [selector]
+- Backup selectors: [alternatives if main doesn't work]
+- Content confidence: [High/Medium/Low]
+
+EXCLUDE PATTERNS:
+- Navigation: [selectors]
+- UI Chrome: [selectors]
+- Metadata: [selectors]
+
+SPECIAL FINDINGS:
+- [Any unique patterns]
+- [Edge cases]
+- [Warnings]
+
+SUGGESTED SELECTORS:
+content_selector: "[primary selector]"
+alternative_selectors:
+  - "[fallback 1]"
+  - "[fallback 2]"
+ignore_selectors:
+  - "[exclude 1]"
+  - "[exclude 2]"
+  - "[exclude 3]"
+```
+
+## Final Output
+
+After analyzing all 5 files and reading the analysis results, create:
 
 ```yaml
 extractor:
-  # Primary selector - should capture main content on most pages
-  content_selector: "main.documentation-content, article.markdown-body"
+  # Primary selector that works across most/all analyzed files
+  content_selector: "main.content, article.documentation"
   
-  # Fallback selectors - tried in order if primary fails
+  # Fallback selectors in priority order
   alternative_selectors:
-    - "div[role='main'] > .content"
-    - "#main-content article"
-    - ".docs-content > .inner"
-    - "section.content-section"
-    - ".page-content"  # Generic fallback
+    - "[selector that works on 4/5 files]"
+    - "[selector that works on 3/5 files]"
+    - "[generic but safe fallback]"
   
-  # Elements to remove - be specific to avoid over-removal
+  # Exclusions that apply across all files
   ignore_selectors:
-    # Navigation
+    # Navigation (found in X/5 files)
     - "nav"
     - ".navigation"
-    - ".sidebar-nav"
-    - ".breadcrumb"
     
-    # Headers/Footers (but not article headers!)
-    - "body > header"
-    - "body > footer"
-    - ".site-header"
-    - ".site-footer"
+    # Headers/Footers (found in X/5 files)
+    - "header.site-header"
+    - "footer.site-footer"
     
-    # Page metadata
-    - ".page-meta"
-    - ".doc-tags"
-    - ".last-updated"
-    - ".edit-link"
-    
-    # Interactive elements
-    - ".search-box"
-    - ".theme-toggle"
-    - ".language-selector"
-    
-    # Promotional/External
-    - ".advertisement"
-    - ".cookie-notice"
-    - ".newsletter-signup"
-    
-    # Social/Sharing
-    - ".social-share"
-    - ".feedback-widget"
-    
-    # Table of contents (if separate)
-    - ".toc-sidebar"
-    - "aside.toc"
+    # [Continue with all common exclusions]
 
-# Provide detailed analysis notes
+# Synthesis notes
 notes: |
-  Selector Strategy:
-  - Primary selector targets: [describe what it matches]
-  - Alternative selectors cover: [explain fallback scenarios]
+  Analysis Summary:
+  - Analyzed 5 files representing different page types
+  - Primary selector works on X/5 files
+  - Fallback selectors provide Y% coverage
   
-  Content Patterns Observed:
-  - [Pattern 1]: [Description]
-  - [Pattern 2]: [Description]
+  Key Findings:
+  - [Main pattern discovered]
+  - [Secondary pattern]
+  - [Edge cases to watch]
   
-  Special Considerations:
-  - [Any special handling needed]
-  - [Warnings about edge cases]
-  
-  Confidence Level: [High/Medium/Low] - [Explain why]
+  Confidence: [High/Medium/Low] based on consistency across files
 ```
 
-**CRITICAL REQUIREMENTS:**
-1. Test each selector mentally against ALL 5 files
-2. Prefer specific selectors that won't capture unwanted content
-3. Order alternative selectors from most specific to most generic
-4. Ensure ignore_selectors are specific enough to not remove actual content
-5. Document your reasoning in the notes section
+**CRITICAL REQUIREMENTS**:
+1. Complete ALL tasks in the task list sequentially
+2. The individual analysis files are crucial for creating an accurate final configuration
+3. **NEVER use empty strings** ("") as selectors - every selector must have actual content
+4. **Remove any empty or whitespace-only selectors** from lists before outputting
+5. **Validate all selectors** are non-empty and properly formatted CSS selectors
 
 ======= tools/html2md_tool/prompts/convert_html_to_md.md ======
 # Convert HTML to Clean, High-Quality Markdown

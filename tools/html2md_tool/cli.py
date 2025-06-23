@@ -481,29 +481,29 @@ def _handle_claude_analysis(html_files):
         m1f_dir = common_parent / "m1f"
         m1f_dir.mkdir(exist_ok=True)
         
-        # Create a file with all HTML files using m1f
+        # Create a filelist with all HTML files using m1f
         console.print("\n🔧 Creating HTML file list using m1f...")
-        html_list_file = m1f_dir / "all_html_files.txt"
         
-        # Run m1f to create a file containing all HTML files
+        # Run m1f to create only the filelist (not the content)
         m1f_cmd = [
             "m1f",
             "-s", str(common_parent),
-            "-o", str(html_list_file),
+            "-o", str(m1f_dir / "all_html_files.txt"),
             "--include-extensions", ".html", ".htm",
-            "--separator-style", "Standard",
+            "--skip-output-file",  # This creates only the filelist, not the content
             "--force"
         ]
         
         try:
             result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
-            console.print(f"✅ Created HTML file list: {html_list_file}")
             
-            # Also get the filelist that m1f creates
+            # The filelist will be created with this name
             html_filelist = m1f_dir / "all_html_files_filelist.txt"
             if not html_filelist.exists():
                 console.print("❌ m1f filelist not created", style="red")
                 return
+                
+            console.print(f"✅ Created HTML file list: {html_filelist}")
                 
         except subprocess.CalledProcessError as e:
             console.print(f"❌ Failed to create HTML file list: {e.stderr}", style="red")
@@ -536,7 +536,7 @@ def _handle_claude_analysis(html_files):
             cmd = [
                 "claude",
                 "--print",  # Use --print instead of -p
-                "--allowedTools", "Read,Glob,Grep"  # Allow file reading tools
+                "--allowedTools", "Read,Glob,Grep,Write"  # Allow file reading and writing tools
             ]
             
             # Execute with Popen for better control
@@ -574,68 +574,28 @@ def _handle_claude_analysis(html_files):
             console.print("❌ claude command not found. Please install Claude CLI.", style="red")
             return
         
-        # Step 2: Verify the selected files exist
+        # Step 2: Verify the selected files exist and save to file
         console.print("\nVerifying selected HTML files...")
         verified_files = []
+        
         for file_path in selected_files[:5]:  # Limit to 5 files
-            # Claude might return paths with redundant directory prefixes
-            # since we already changed to common_parent directory
             file_path = file_path.strip()
             
-            # Try to find the file
-            full_path = None
-            
-            # Method 1: Direct path from current directory (where m1f-init ran)
+            # Check if file exists in current directory
             if Path(file_path).exists():
-                full_path = Path(file_path)
-            # Method 2: Go back to original directory and try
-            elif (original_dir / file_path).exists():
-                full_path = original_dir / file_path
-            # Method 3: Strip the leading directories that match our current location
+                verified_files.append(file_path)
+                console.print(f"✅ Found: {file_path}", style="green")
             else:
-                # If the path starts with parts of our current directory name, remove them
-                path_parts = file_path.split('/')
-                # Look for where the actual file path begins
-                for i in range(len(path_parts)):
-                    test_path = '/'.join(path_parts[i:])
-                    if Path(test_path).exists():
-                        full_path = Path(test_path)
-                        break
-                    elif (original_dir / test_path).exists():
-                        full_path = original_dir / test_path
-                        break
-            
-            if full_path and full_path.exists():
-                try:
-                    # Validate path to prevent traversal attacks
-                    validated_path = validate_path_traversal(
-                        full_path, 
-                        base_path=original_dir,
-                        allow_outside=False
-                    )
-                    content = validated_path.read_text(encoding='utf-8')
-                    # Limit content size to avoid overwhelming the prompt
-                    if len(content) > 10000:
-                        content = content[:10000] + "\n... (truncated)"
-                    html_contents.append(f"### File: {file_path}\n```html\n{content}\n```\n")
-                    console.print(f"✅ Read: {file_path}", style="green")
-                except ValueError as e:
-                    # Path traversal attempt
-                    console.print(f"❌ Security error for {file_path}: {e}", style="red")
-                except Exception as e:
-                    console.print(f"❌ Error reading {file_path}: {e}", style="red")
-            else:
-                console.print(f"❌ File not found: {file_path}", style="red")
-                console.print(f"   Tried: {common_parent / file_path}", style="yellow")
+                console.print(f"⚠️  Not found: {file_path}", style="yellow")
         
-        if not html_contents:
-            console.print("❌ No HTML files could be read", style="red")
+        if not verified_files:
+            console.print("❌ No HTML files could be verified", style="red")
             return
         
-        # Write the selected files to a reference list
+        # Write the verified files to a reference list
         selected_files_path = m1f_dir / "selected_html_files.txt"
         with open(selected_files_path, 'w') as f:
-            for file_path in selected_files[:5]:
+            for file_path in verified_files:
                 f.write(f"{file_path}\n")
         console.print(f"✅ Wrote selected files list to: {selected_files_path}")
         
@@ -656,7 +616,7 @@ def _handle_claude_analysis(html_files):
             cmd = [
                 "claude",
                 "--print",  # Use --print instead of -p
-                "--allowedTools", "Read,Glob,Grep"  # Allow file reading tools
+                "--allowedTools", "Read,Glob,Grep,Write"  # Allow file reading and writing tools
             ]
             
             # Execute with Popen for better control
@@ -730,6 +690,27 @@ def _handle_claude_analysis(html_files):
         except subprocess.CalledProcessError as e:
             console.print(f"❌ Claude command failed: {e}", style="red")
             console.print(f"Error output: {e.stderr}", style="red")
+            
+        # Ask if temporary analysis files should be deleted
+        console.print("\n[bold]Cleanup:[/bold]")
+        cleanup = console.input("Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
+        
+        if cleanup.lower() != 'n':
+            # Delete analysis files
+            deleted_count = 0
+            for i in range(1, 6):
+                analysis_file = m1f_dir / f"html_analysis_{i}.txt"
+                if analysis_file.exists():
+                    try:
+                        analysis_file.unlink()
+                        deleted_count += 1
+                    except Exception as e:
+                        console.print(f"⚠️  Could not delete {analysis_file.name}: {e}", style="yellow")
+            
+            if deleted_count > 0:
+                console.print(f"✅ Deleted {deleted_count} temporary analysis files", style="green")
+        else:
+            console.print("ℹ️  Temporary analysis files kept in m1f/ directory", style="blue")
             
     finally:
         # Change back to original directory

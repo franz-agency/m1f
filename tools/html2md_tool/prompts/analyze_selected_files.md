@@ -1,127 +1,157 @@
 # HTML Structure Analysis for Optimal Content Extraction
 
+<deep-thinking>
+The user wants a more systematic approach:
+1. Create a task list
+2. Analyze each file individually and save results
+3. Then synthesize all analyses into final config
+This will produce much better results than trying to analyze all files at once.
+</deep-thinking>
+
+## Context
 The file @m1f/selected_html_files.txt contains 5 representative HTML files from the documentation site.
 
-## Your Task:
+## Task List
 
-### 1. Deep Analysis of Each File
-Read each of the 5 HTML files using the Read tool and perform a thorough structural analysis:
+### Phase 1: Individual File Analysis
+For each HTML file listed in @m1f/selected_html_files.txt:
 
-**Main Content Detection:**
-- Identify the exact element(s) containing the primary documentation content
-- Look for semantic HTML5 tags (main, article, section with specific roles)
-- Check for content-specific class names (e.g., .doc-content, .markdown-body, .prose)
-- Note if content is split across multiple containers
+1. **Read the file** using the Read tool
+2. **Perform deep structural analysis** (see analysis criteria below)
+3. **Write detailed findings** to a separate analysis file:
+   - File 1 → Write analysis to @m1f/html_analysis_1.txt
+   - File 2 → Write analysis to @m1f/html_analysis_2.txt
+   - File 3 → Write analysis to @m1f/html_analysis_3.txt
+   - File 4 → Write analysis to @m1f/html_analysis_4.txt
+   - File 5 → Write analysis to @m1f/html_analysis_5.txt
 
-**Navigation & UI Elements to Exclude:**
-- Global navigation (top nav, breadcrumbs, sidebar navigation)
-- Page metadata (author info, last updated, edit buttons)
-- Interactive elements (search boxes, theme toggles, language selectors)
-- Social sharing buttons and feedback widgets
-- Table of contents (if separate from main content)
-- Footer links and copyright notices
+### Phase 2: Synthesis
+4. **Read all 5 analysis files** (@m1f/html_analysis_1.txt through @m1f/html_analysis_5.txt)
+5. **Identify common patterns** across all analyses
+6. **Create final YAML configuration** based on the synthesized findings
 
-**Dynamic Content Patterns:**
-- Code syntax highlighting wrappers
-- Collapsible sections or tabs
-- Alert/callout boxes that should be preserved
-- Embedded examples or demos
+## Deep Analysis Criteria for Each File
 
-### 2. Pattern Recognition Across Files
-After analyzing all files, identify:
+When analyzing each HTML file, document:
 
-**Consistency Check:**
-- Which selectors work on ALL 5 files?
-- Which selectors work on most files (note the exceptions)?
-- Are there different layouts for different content types?
+### 1. Content Structure
+```
+Main Content Location:
+- Primary container: [exact selector]
+- Parent hierarchy: [body > ... > main]
+- Semantic tags used: [main, article, section, etc.]
+- Content-specific classes: [.content, .prose, .markdown-body, etc.]
+- Content boundaries: [where content starts/ends]
+```
 
-**Selector Robustness:**
-- Prefer semantic selectors over class-based when possible
-- Use combination selectors for precision (e.g., main > article)
-- Identify parent containers that reliably wrap content
+### 2. Navigation & UI Elements
+```
+Elements to Exclude:
+- Header/Navigation: [selectors]
+- Sidebar: [selectors]
+- Footer: [selectors]
+- Breadcrumbs: [selectors]
+- TOC/Page outline: [selectors]
+- Meta information: [selectors]
+- Interactive widgets: [selectors]
+```
 
-**Edge Cases:**
-- Landing pages vs. documentation pages
-- API reference vs. guides
-- Pages with multiple content sections
+### 3. Special Content Types
+```
+Within Main Content:
+- Code blocks: [how they're marked]
+- Callout boxes: [info, warning, tip patterns]
+- Tables: [table wrapper classes]
+- Images/Media: [figure elements, wrappers]
+- Examples/Demos: [interactive elements to preserve]
+```
 
-### 3. Build Intelligent Selector Strategy
+### 4. Page-Specific Observations
+```
+Page Type: [landing/guide/api/reference]
+Unique Patterns: [anything specific to this page]
+Potential Issues: [edge cases noticed]
+```
 
-## Output:
+## Analysis File Format
 
-Create a YAML configuration with carefully chosen selectors:
+Each analysis file (@m1f/html_analysis_N.txt) should follow this format:
+
+```
+FILE: [filename]
+URL PATH: [relative path]
+
+CONTENT STRUCTURE:
+- Main container: [selector]
+- Backup selectors: [alternatives if main doesn't work]
+- Content confidence: [High/Medium/Low]
+
+EXCLUDE PATTERNS:
+- Navigation: [selectors]
+- UI Chrome: [selectors]
+- Metadata: [selectors]
+
+SPECIAL FINDINGS:
+- [Any unique patterns]
+- [Edge cases]
+- [Warnings]
+
+SUGGESTED SELECTORS:
+content_selector: "[primary selector]"
+alternative_selectors:
+  - "[fallback 1]"
+  - "[fallback 2]"
+ignore_selectors:
+  - "[exclude 1]"
+  - "[exclude 2]"
+  - "[exclude 3]"
+```
+
+## Final Output
+
+After analyzing all 5 files and reading the analysis results, create:
 
 ```yaml
 extractor:
-  # Primary selector - should capture main content on most pages
-  content_selector: "main.documentation-content, article.markdown-body"
+  # Primary selector that works across most/all analyzed files
+  content_selector: "main.content, article.documentation"
   
-  # Fallback selectors - tried in order if primary fails
+  # Fallback selectors in priority order
   alternative_selectors:
-    - "div[role='main'] > .content"
-    - "#main-content article"
-    - ".docs-content > .inner"
-    - "section.content-section"
-    - ".page-content"  # Generic fallback
+    - "[selector that works on 4/5 files]"
+    - "[selector that works on 3/5 files]"
+    - "[generic but safe fallback]"
   
-  # Elements to remove - be specific to avoid over-removal
+  # Exclusions that apply across all files
   ignore_selectors:
-    # Navigation
+    # Navigation (found in X/5 files)
     - "nav"
     - ".navigation"
-    - ".sidebar-nav"
-    - ".breadcrumb"
     
-    # Headers/Footers (but not article headers!)
-    - "body > header"
-    - "body > footer"
-    - ".site-header"
-    - ".site-footer"
+    # Headers/Footers (found in X/5 files)
+    - "header.site-header"
+    - "footer.site-footer"
     
-    # Page metadata
-    - ".page-meta"
-    - ".doc-tags"
-    - ".last-updated"
-    - ".edit-link"
-    
-    # Interactive elements
-    - ".search-box"
-    - ".theme-toggle"
-    - ".language-selector"
-    
-    # Promotional/External
-    - ".advertisement"
-    - ".cookie-notice"
-    - ".newsletter-signup"
-    
-    # Social/Sharing
-    - ".social-share"
-    - ".feedback-widget"
-    
-    # Table of contents (if separate)
-    - ".toc-sidebar"
-    - "aside.toc"
+    # [Continue with all common exclusions]
 
-# Provide detailed analysis notes
+# Synthesis notes
 notes: |
-  Selector Strategy:
-  - Primary selector targets: [describe what it matches]
-  - Alternative selectors cover: [explain fallback scenarios]
+  Analysis Summary:
+  - Analyzed 5 files representing different page types
+  - Primary selector works on X/5 files
+  - Fallback selectors provide Y% coverage
   
-  Content Patterns Observed:
-  - [Pattern 1]: [Description]
-  - [Pattern 2]: [Description]
+  Key Findings:
+  - [Main pattern discovered]
+  - [Secondary pattern]
+  - [Edge cases to watch]
   
-  Special Considerations:
-  - [Any special handling needed]
-  - [Warnings about edge cases]
-  
-  Confidence Level: [High/Medium/Low] - [Explain why]
+  Confidence: [High/Medium/Low] based on consistency across files
 ```
 
-**CRITICAL REQUIREMENTS:**
-1. Test each selector mentally against ALL 5 files
-2. Prefer specific selectors that won't capture unwanted content
-3. Order alternative selectors from most specific to most generic
-4. Ensure ignore_selectors are specific enough to not remove actual content
-5. Document your reasoning in the notes section
+**CRITICAL REQUIREMENTS**:
+1. Complete ALL tasks in the task list sequentially
+2. The individual analysis files are crucial for creating an accurate final configuration
+3. **NEVER use empty strings** ("") as selectors - every selector must have actual content
+4. **Remove any empty or whitespace-only selectors** from lists before outputting
+5. **Validate all selectors** are non-empty and properly formatted CSS selectors
