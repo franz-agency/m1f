@@ -230,6 +230,46 @@ class Html2mdConverter:
                 if link.startswith('/') and len(link) > 2 and link[2] == ':':
                     link = link[1:]
             
+            # Handle paths starting with / (like /kb/1337/policy-syntax)
+            # These should be converted to relative paths
+            if link.startswith('/') and not link.startswith('//'):
+                # Remove leading slash
+                link_without_slash = link[1:]
+                
+                # Add .md extension if it doesn't have one
+                if not link_without_slash.endswith('.md') and '.' not in link_without_slash.split('/')[-1]:
+                    link_without_slash = link_without_slash + '.md'
+                
+                # Get current file's location relative to source root
+                current_file_path = Path(source_file)
+                if current_file_path.is_relative_to(self.config.source):
+                    current_rel = current_file_path.relative_to(self.config.source)
+                    current_dir = current_rel.parent
+                    
+                    # Get the target path
+                    target_path = Path(link_without_slash)
+                    
+                    # Calculate relative path from current directory to target
+                    try:
+                        # If we're in a subdirectory, we need to calculate the relative path
+                        if str(current_dir) != '.':
+                            # Count how many levels up we need to go
+                            levels_up = len(current_dir.parts)
+                            # Create the relative path
+                            relative_path = Path('../' * levels_up) / target_path
+                            link = str(relative_path).replace('\\', '/')
+                        else:
+                            # We're at the root, so just use the path as-is
+                            link = './' + link_without_slash
+                    except:
+                        # Fallback to simple relative path
+                        link = './' + link_without_slash
+                else:
+                    # Can't determine relative path, use simple approach
+                    link = './' + link_without_slash
+                
+                return f'[{text}]({link})'
+            
             # Convert to Path
             try:
                 link_path = Path(link)
@@ -356,7 +396,7 @@ class Html2mdConverter:
         markdown = self.convert_html(
             html_content,
             base_url=base_url,
-            source_file=str(file_name if file_name else "input"),
+            source_file=str(file_path),  # Pass full path for proper relative link calculation
         )
 
         # Determine output path
