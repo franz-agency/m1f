@@ -766,7 +766,7 @@ limitations under the License.
   },
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
@@ -888,7 +888,7 @@ exclude_lines =
     @abstractmethod
 
 ======= requirements.txt ======
-aiohttp==3.10.11
+aiohttp==3.12.13
 application_properties==0.8.2
 black==25.1.0
 certifi==2025.4.26
@@ -915,13 +915,13 @@ pytest-timeout==2.4.0
 pytest-asyncio==0.25.2
 PyYAML==6.0.2
 regex==2024.11.6
-requests==2.32.3
+requests==2.32.4
 rich==13.7.0
 tiktoken==0.9.0
 tomli==2.2.1
 toolz==1.0.0
 typing_extensions==4.13.2
-urllib3==2.4.0
+urllib3==2.5.0
 wcwidth==0.2.13
 
 # Async file operations
@@ -944,7 +944,7 @@ playwright==1.50.0
 
 # Test server dependencies
 flask==3.1.1
-flask-cors==6.0.0
+flask-cors==6.0.1
 
 ======= SETUP.md ======
 # m1f Setup Guide
@@ -1213,6 +1213,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
 
+# Add project root to PYTHONPATH so tools module can be found
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
 # Go back to original directory and run m1f
 cd "$ORIGINAL_DIR" && exec python -m tools.m1f "$@"
 
@@ -1230,6 +1233,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
+
+# Add project root to PYTHONPATH so tools module can be found
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run m1f-claude
 cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/m1f_claude.py" "$@"
@@ -1288,7 +1294,7 @@ BIN_DIR="$(dirname "$SCRIPT_PATH")"
 PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Path to the m1f documentation bundle
-M1F_DOCS="$PROJECT_ROOT/m1f/m1f.txt"
+M1F_DOCS="$PROJECT_ROOT/m1f/m1f/87_m1f_only_docs.txt"
 
 # Make sure we're in the original directory
 cd "$ORIGINAL_DIR"
@@ -1368,6 +1374,9 @@ PROJECT_ROOT="$(dirname "$BIN_DIR")"
 
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
+
+# Add project root to PYTHONPATH so tools module can be found
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run token-counter
 cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/token_counter.py" "$@"
@@ -4297,7 +4306,8 @@ if (Test-Path "requirements.txt") {
 # Step 3: Generate initial m1f bundles
 Write-Host
 Write-ColorOutput "Step 3: Generating initial m1f bundles..." -Color $colors.Green
-m1f-update --quiet
+$m1fUpdatePath = Join-Path $projectRoot "bin\m1f-update"
+& python $m1fUpdatePath --quiet
 Write-ColorOutput "✓ Initial bundles generated" -Color $colors.Green
 
 # Step 4: Setup PowerShell functions
@@ -8418,7 +8428,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.2.2"
+__version__ = "3.2.3"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -8646,8 +8656,8 @@ class M1FClaude:
         self.m1f_root = Path(__file__).parent.parent
 
         # Check for m1f documentation in various locations
-        self.m1f_docs_link = self.project_path / "m1f" / "m1f-docs.txt"
-        self.m1f_docs_direct = self.project_path / "m1f" / "m1f-docs.txt"
+        self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
+        self.m1f_docs_direct = self.project_path / "m1f" / "m1f.txt"
 
         # Check if m1f-link has been run or docs exist directly
         self.has_m1f_docs = self.m1f_docs_link.exists() or self.m1f_docs_direct.exists()
@@ -9461,7 +9471,7 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
-            "m1f=m1f_refactored:main",
+            "m1f=m1f:main",
         ],
     },
     python_requires=">=3.10",
@@ -12902,22 +12912,22 @@ by creating a symlink to the complete m1f documentation.
    m1f-link
    ```
 
-   This creates: `.m1f/m1f.txt -> /path/to/m1f/.m1f/m1f-doc/99_m1fdocs.txt`
+   This creates: `m1f/m1f.txt -> /path/to/m1f/m1f/m1f/87_m1f_only_docs.txt`
 
 3. Reference the documentation in your AI tool:
 
    ```bash
    # For Claude Code, Cursor, or similar AI assistants:
-   @.m1f/m1f.txt
+   @m1f/m1f.txt
 
    # Example prompts:
-   "Please read @.m1f/m1f.txt and help me create a .m1f.config.yml
+   "Please read @m1f/m1f.txt and help me create a .m1f.config.yml
    for bundling my Python project"
 
-   "Based on @.m1f/m1f.txt, what's the best way to exclude test
+   "Based on @m1f/m1f.txt, what's the best way to exclude test
    files while keeping documentation?"
 
-   "Using @.m1f/m1f.txt as reference, help me set up auto-bundling
+   "Using @m1f/m1f.txt as reference, help me set up auto-bundling
    for a WordPress theme"
    ```
 

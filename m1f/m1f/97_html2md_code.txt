@@ -21,7 +21,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.2.2"
+__version__ = "3.2.3"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= html2md.py ======
@@ -249,8 +249,8 @@ class M1FClaude:
         self.m1f_root = Path(__file__).parent.parent
 
         # Check for m1f documentation in various locations
-        self.m1f_docs_link = self.project_path / "m1f" / "m1f-docs.txt"
-        self.m1f_docs_direct = self.project_path / "m1f" / "m1f-docs.txt"
+        self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
+        self.m1f_docs_direct = self.project_path / "m1f" / "m1f.txt"
 
         # Check if m1f-link has been run or docs exist directly
         self.has_m1f_docs = self.m1f_docs_link.exists() or self.m1f_docs_direct.exists()
@@ -1064,7 +1064,7 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
-            "m1f=m1f_refactored:main",
+            "m1f=m1f:main",
         ],
     },
     python_requires=">=3.10",
