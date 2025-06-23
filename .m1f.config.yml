@@ -55,21 +55,21 @@ bundles:
   m1f-docs:
     description: "m1f docs"
     group: "documentation"
-    output: "m1f/87_m1f_only_docs.txt"
+    output: "m1f/m1f/87_m1f_only_docs.txt"
     sources:
       - path: "docs/01_m1f"
 
   html2md-docs:
     description: "html2md docs"
     group: "documentation"
-    output: "m1f/88_html2md_docs.txt"
+    output: "m1f/m1f/88_html2md_docs.txt"
     sources:
       - path: "docs/03_html2md"
 
   scraper-docs:
     description: "m1f-scrape docs"
     group: "documentation"
-    output: "m1f/89_scraper_docs.txt"
+    output: "m1f/m1f/89_scraper_docs.txt"
     sources:
       - path: "docs/04_scrape"
       - path: "tools/scrape_tool"
@@ -88,7 +88,7 @@ bundles:
   m1f-code:
     description: "m1f complete code"
     group: "source"
-    output: "m1f/94_code.txt"
+    output: "m1f/m1f/94_code.txt"
     sources:
       - path: "."
         includes: ["README.md", "SETUP.md", "requirements.txt", "tools/**", "scripts/**"]
@@ -98,7 +98,7 @@ bundles:
   m1f-test-code:
     description: "m1f test suite code"
     group: "source"
-    output: "m1f/95_test_code.txt"
+    output: "m1f/m1f/95_test_code.txt"
     sources:
       - path: "tests/"
         excludes: ["**/tests/**/source/**", "**/tests/**/extracted/**", "**/tests/**/output/**", "**/tests/**/expected/**", "**/tests/**/scraped_examples/**"]
@@ -106,7 +106,7 @@ bundles:
   mf1-tool-code:
     description: "mf1 complete code"
     group: "source"
-    output: "m1f/95_mf1_code.txt"
+    output: "m1f/m1f/95_mf1_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
@@ -115,7 +115,7 @@ bundles:
   s1f-code:
     description: "s1f complete code"
     group: "source"
-    output: "m1f/96_s1f_code.txt"
+    output: "m1f/m1f/96_s1f_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
@@ -124,7 +124,7 @@ bundles:
   html2md-code:
     description: "html2md complete code"
     group: "source"
-    output: "m1f/97_html2md_code.txt"
+    output: "m1f/m1f/97_html2md_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
@@ -133,7 +133,7 @@ bundles:
   scraper-code:
     description: "m1f-scrape complete code"
     group: "source"
-    output: "m1f/98_scraper_code.txt"
+    output: "m1f/m1f/98_scraper_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
@@ -143,7 +143,7 @@ bundles:
   all:
     description: "All 1 One"
     group: "complete"
-    output: "m1f/99_m1f_complete.txt"
+    output: "m1f/m1f/99_m1f_complete.txt"
     sources:
       - path: "."
         
