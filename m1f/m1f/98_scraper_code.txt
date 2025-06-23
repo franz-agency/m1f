@@ -5158,253 +5158,247 @@ def _handle_claude_analysis(html_files):
         console.print("‚ùå No HTML files to analyze", style="red")
         return
     
-    # Save current directory
+    # We'll work from the current directory and use --add-dir for Claude
     original_dir = Path.cwd()
     
+    # Step 1: Create m1f directory if it doesn't exist
+    m1f_dir = common_parent / "m1f"
+    m1f_dir.mkdir(exist_ok=True)
+        
+    # Create a filelist with all HTML files using m1f
+    console.print("\nüîß Creating HTML file list using m1f...")
+    console.print(f"Working with HTML directory: {common_parent}")
+    
+    # Run m1f to create only the filelist (not the content)
+    m1f_cmd = [
+        "m1f",
+        "-s", str(common_parent),
+        "-o", str(m1f_dir / "all_html_files.txt"),
+        "--include-extensions", ".html", ".htm",
+        "--skip-output-file",  # This creates only the filelist, not the content
+        "--force"
+    ]
+    
     try:
-        # Change to the common parent directory
-        os.chdir(common_parent)
-        console.print(f"Changed to directory: {common_parent}")
+        result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
         
-        # Step 1: Create m1f directory if it doesn't exist
-        m1f_dir = common_parent / "m1f"
-        m1f_dir.mkdir(exist_ok=True)
+        # The filelist will be created with this name
+        html_filelist = m1f_dir / "all_html_files_filelist.txt"
+        if not html_filelist.exists():
+            console.print("‚ùå m1f filelist not created", style="red")
+            return
+            
+        console.print(f"‚úÖ Created HTML file list: {html_filelist}")
+            
+    except subprocess.CalledProcessError as e:
+        console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
+        return
+    
+    # Get relative paths from the common parent (still needed for filtering)
+    relative_paths = []
+    for f in html_files:
+        try:
+            rel_path = f.relative_to(common_parent)
+            relative_paths.append(str(rel_path))
+        except ValueError:
+            relative_paths.append(str(f))
+    
+    # Step 1: Load the file selection prompt
+    prompt_dir = Path(__file__).parent / "prompts"
+    select_prompt_path = prompt_dir / "select_files_from_project.md"
+    
+    if not select_prompt_path.exists():
+        console.print(f"‚ùå Prompt file not found: {select_prompt_path}", style="red")
+        return
+    
+    # Load the prompt from external file
+    simple_prompt = select_prompt_path.read_text()
+    
+    console.print("\nAsking Claude to select representative files...")
+    
+    try:
+            # Run claude using the same approach as m1f-claude
+            cmd = [
+                "claude",
+                "--print",  # Use --print instead of -p
+                "--allowedTools", "Read,Glob,Grep,Write",  # Allow file reading and writing tools
+                "--add-dir", str(common_parent)  # Give Claude access to the HTML directory
+            ]
+            
+            # Execute with Popen for better control
+        process = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         
-        # Create a filelist with all HTML files using m1f
-        console.print("\nüîß Creating HTML file list using m1f...")
+        # Send prompt via stdin and get response
+        stdout, stderr = process.communicate(input=simple_prompt)
         
-        # Run m1f to create only the filelist (not the content)
-        m1f_cmd = [
-            "m1f",
-            "-s", str(common_parent),
-            "-o", str(m1f_dir / "all_html_files.txt"),
-            "--include-extensions", ".html", ".htm",
-            "--skip-output-file",  # This creates only the filelist, not the content
-            "--force"
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(
+                process.returncode, cmd, output=stdout, stderr=stderr
+            )
+        
+        result = subprocess.CompletedProcess(
+            cmd, process.returncode, stdout=stdout, stderr=stderr
+        )
+        selected_files = result.stdout.strip().split('\n')
+        selected_files = [f.strip() for f in selected_files if f.strip()]
+        
+        console.print(f"\nClaude selected {len(selected_files)} files:")
+        for f in selected_files:
+            console.print(f"  - {f}", style="blue")
+        
+    except subprocess.CalledProcessError as e:
+        console.print(f"‚ùå Claude command failed: {e}", style="red")
+        console.print(f"Error output: {e.stderr}", style="red")
+        return
+    except FileNotFoundError:
+        console.print("‚ùå claude command not found. Please install Claude CLI.", style="red")
+        return
+    
+    # Step 2: Verify the selected files exist and save to file
+    console.print("\nVerifying selected HTML files...")
+    verified_files = []
+    
+    for file_path in selected_files[:5]:  # Limit to 5 files
+        file_path = file_path.strip()
+        
+        # Check if file exists (relative to common_parent)
+        full_path = common_parent / file_path
+        if full_path.exists():
+            verified_files.append(file_path)
+            console.print(f"‚úÖ Found: {file_path}", style="green")
+        else:
+            console.print(f"‚ö†Ô∏è  Not found: {file_path}", style="yellow")
+    
+    if not verified_files:
+        console.print("‚ùå No HTML files could be verified", style="red")
+        return
+    
+    # Write the verified files to a reference list
+    selected_files_path = m1f_dir / "selected_html_files.txt"
+    with open(selected_files_path, 'w') as f:
+        for file_path in verified_files:
+            f.write(f"{file_path}\n")
+    console.print(f"‚úÖ Wrote selected files list to: {selected_files_path}")
+    
+    # Step 3: Load analyze prompt from external file
+    console.print("\nAsking Claude to analyze HTML structure and suggest selectors...")
+    
+    # Load the analyze prompt from external file
+    analyze_prompt_path = prompt_dir / "analyze_selected_files.md"
+    
+    if not analyze_prompt_path.exists():
+        console.print(f"‚ùå Prompt file not found: {analyze_prompt_path}", style="red")
+        return
+    
+    simple_analyze_prompt = analyze_prompt_path.read_text()
+    
+    try:
+        # Run claude using the same approach as m1f-claude
+        cmd = [
+            "claude",
+            "--print",  # Use --print instead of -p
+            "--allowedTools", "Read,Glob,Grep,Write",  # Allow file reading and writing tools
+            "--add-dir", str(common_parent)  # Give Claude access to the HTML directory
         ]
         
-        try:
-            result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
-            
-            # The filelist will be created with this name
-            html_filelist = m1f_dir / "all_html_files_filelist.txt"
-            if not html_filelist.exists():
-                console.print("‚ùå m1f filelist not created", style="red")
-                return
-                
-            console.print(f"‚úÖ Created HTML file list: {html_filelist}")
-                
-        except subprocess.CalledProcessError as e:
-            console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
-            return
+        # Execute with Popen for better control
+        process = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         
-        # Get relative paths from the common parent (still needed for filtering)
-        relative_paths = []
-        for f in html_files:
-            try:
-                rel_path = f.relative_to(common_parent)
-                relative_paths.append(str(rel_path))
-            except ValueError:
-                relative_paths.append(str(f))
+        # Send prompt via stdin and get response
+        stdout, stderr = process.communicate(input=simple_analyze_prompt)
         
-        # Step 1: Load the file selection prompt
-        prompt_dir = Path(__file__).parent / "prompts"
-        select_prompt_path = prompt_dir / "select_files_from_project.md"
-        
-        if not select_prompt_path.exists():
-            console.print(f"‚ùå Prompt file not found: {select_prompt_path}", style="red")
-            return
-        
-        # Load the prompt from external file
-        simple_prompt = select_prompt_path.read_text()
-        
-        console.print("\nAsking Claude to select representative files...")
-        
-        try:
-            # Run claude using the same approach as m1f-claude
-            cmd = [
-                "claude",
-                "--print",  # Use --print instead of -p
-                "--allowedTools", "Read,Glob,Grep,Write"  # Allow file reading and writing tools
-            ]
-            
-            # Execute with Popen for better control
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(
+                process.returncode, cmd, output=stdout, stderr=stderr
             )
-            
-            # Send prompt via stdin and get response
-            stdout, stderr = process.communicate(input=simple_prompt)
-            
-            if process.returncode != 0:
-                raise subprocess.CalledProcessError(
-                    process.returncode, cmd, output=stdout, stderr=stderr
-                )
-            
-            result = subprocess.CompletedProcess(
-                cmd, process.returncode, stdout=stdout, stderr=stderr
-            )
-            selected_files = result.stdout.strip().split('\n')
-            selected_files = [f.strip() for f in selected_files if f.strip()]
-            
-            console.print(f"\nClaude selected {len(selected_files)} files:")
-            for f in selected_files:
-                console.print(f"  - {f}", style="blue")
-            
-        except subprocess.CalledProcessError as e:
-            console.print(f"‚ùå Claude command failed: {e}", style="red")
-            console.print(f"Error output: {e.stderr}", style="red")
-            return
-        except FileNotFoundError:
-            console.print("‚ùå claude command not found. Please install Claude CLI.", style="red")
-            return
         
-        # Step 2: Verify the selected files exist and save to file
-        console.print("\nVerifying selected HTML files...")
-        verified_files = []
+        result = subprocess.CompletedProcess(
+            cmd, process.returncode, stdout=stdout, stderr=stderr
+        )
         
-        for file_path in selected_files[:5]:  # Limit to 5 files
-            file_path = file_path.strip()
+        console.print("\n[bold]Claude's Analysis:[/bold]")
+        console.print(result.stdout)
+        
+        # Try to parse the YAML config from Claude's output
+        import yaml
+        try:
+            # Extract YAML from the output (between ```yaml and ```)
+            output = result.stdout
+            yaml_start = output.find("```yaml")
+            yaml_end = output.find("```", yaml_start + 6)
             
-            # Check if file exists in current directory
-            if Path(file_path).exists():
-                verified_files.append(file_path)
-                console.print(f"‚úÖ Found: {file_path}", style="green")
+            if yaml_start != -1 and yaml_end != -1:
+                yaml_content = output[yaml_start + 7:yaml_end].strip()
+                config_data = yaml.safe_load(yaml_content)
+                
+                # Clean up the config - remove empty strings
+                if 'extractor' in config_data:
+                    extractor = config_data['extractor']
+                    if 'alternative_selectors' in extractor:
+                        extractor['alternative_selectors'] = [s for s in extractor['alternative_selectors'] if s]
+                    if 'ignore_selectors' in extractor:
+                        extractor['ignore_selectors'] = [s for s in extractor['ignore_selectors'] if s]
+                
+                # Save the config to a file
+                config_file = common_parent / "html2md_config.yaml"
+                with open(config_file, 'w') as f:
+                    yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
+                
+                console.print(f"\n‚úÖ Saved configuration to: {config_file}", style="green")
+                
+                # Show the user how to use it
+                console.print("\n[bold]Next Step:[/bold]")
+                console.print(f"To convert your HTML files using this configuration, run:\n")
+                console.print(f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n")
+                console.print("This will extract only the main content based on Claude's analysis.")
+                
+                console.print("\n[bold]Alternative:[/bold]")
+                console.print("For AI-powered conversion (extracts clean content automatically):")
+                console.print(f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]")
             else:
-                console.print(f"‚ö†Ô∏è  Not found: {file_path}", style="yellow")
-        
-        if not verified_files:
-            console.print("‚ùå No HTML files could be verified", style="red")
-            return
-        
-        # Write the verified files to a reference list
-        selected_files_path = m1f_dir / "selected_html_files.txt"
-        with open(selected_files_path, 'w') as f:
-            for file_path in verified_files:
-                f.write(f"{file_path}\n")
-        console.print(f"‚úÖ Wrote selected files list to: {selected_files_path}")
-        
-        # Step 3: Load analyze prompt from external file
-        console.print("\nAsking Claude to analyze HTML structure and suggest selectors...")
-        
-        # Load the analyze prompt from external file
-        analyze_prompt_path = prompt_dir / "analyze_selected_files.md"
-        
-        if not analyze_prompt_path.exists():
-            console.print(f"‚ùå Prompt file not found: {analyze_prompt_path}", style="red")
-            return
-        
-        simple_analyze_prompt = analyze_prompt_path.read_text()
-        
-        try:
-            # Run claude using the same approach as m1f-claude
-            cmd = [
-                "claude",
-                "--print",  # Use --print instead of -p
-                "--allowedTools", "Read,Glob,Grep,Write"  # Allow file reading and writing tools
-            ]
-            
-            # Execute with Popen for better control
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            
-            # Send prompt via stdin and get response
-            stdout, stderr = process.communicate(input=simple_analyze_prompt)
-            
-            if process.returncode != 0:
-                raise subprocess.CalledProcessError(
-                    process.returncode, cmd, output=stdout, stderr=stderr
-                )
-            
-            result = subprocess.CompletedProcess(
-                cmd, process.returncode, stdout=stdout, stderr=stderr
-            )
-            
-            console.print("\n[bold]Claude's Analysis:[/bold]")
-            console.print(result.stdout)
-            
-            # Try to parse the YAML config from Claude's output
-            import yaml
-            try:
-                # Extract YAML from the output (between ```yaml and ```)
-                output = result.stdout
-                yaml_start = output.find("```yaml")
-                yaml_end = output.find("```", yaml_start + 6)
-                
-                if yaml_start != -1 and yaml_end != -1:
-                    yaml_content = output[yaml_start + 7:yaml_end].strip()
-                    config_data = yaml.safe_load(yaml_content)
-                    
-                    # Clean up the config - remove empty strings
-                    if 'extractor' in config_data:
-                        extractor = config_data['extractor']
-                        if 'alternative_selectors' in extractor:
-                            extractor['alternative_selectors'] = [s for s in extractor['alternative_selectors'] if s]
-                        if 'ignore_selectors' in extractor:
-                            extractor['ignore_selectors'] = [s for s in extractor['ignore_selectors'] if s]
-                    
-                    # Save the config to a file
-                    config_file = common_parent / "html2md_config.yaml"
-                    with open(config_file, 'w') as f:
-                        yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
-                    
-                    console.print(f"\n‚úÖ Saved configuration to: {config_file}", style="green")
-                    
-                    # Show the user how to use it
-                    console.print("\n[bold]Next Step:[/bold]")
-                    console.print(f"To convert your HTML files using this configuration, run:\n")
-                    console.print(f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n")
-                    console.print("This will extract only the main content based on Claude's analysis.")
-                    
-                    console.print("\n[bold]Alternative:[/bold]")
-                    console.print("For AI-powered conversion (extracts clean content automatically):")
-                    console.print(f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]")
-                else:
-                    console.print("\n‚ö†Ô∏è  Could not extract YAML configuration from Claude's response", style="yellow")
-                    console.print("You can manually create a config file based on the analysis above.")
-                    
-            except Exception as e:
-                console.print(f"\n‚ö†Ô∏è  Could not save configuration: {e}", style="yellow")
+                console.print("\n‚ö†Ô∏è  Could not extract YAML configuration from Claude's response", style="yellow")
                 console.print("You can manually create a config file based on the analysis above.")
-            
-        except subprocess.CalledProcessError as e:
-            console.print(f"‚ùå Claude command failed: {e}", style="red")
-            console.print(f"Error output: {e.stderr}", style="red")
-            
-        # Ask if temporary analysis files should be deleted
-        console.print("\n[bold]Cleanup:[/bold]")
-        cleanup = console.input("Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
+                
+        except Exception as e:
+            console.print(f"\n‚ö†Ô∏è  Could not save configuration: {e}", style="yellow")
+            console.print("You can manually create a config file based on the analysis above.")
         
-        if cleanup.lower() != 'n':
-            # Delete analysis files
-            deleted_count = 0
-            for i in range(1, 6):
-                analysis_file = m1f_dir / f"html_analysis_{i}.txt"
-                if analysis_file.exists():
-                    try:
-                        analysis_file.unlink()
-                        deleted_count += 1
-                    except Exception as e:
-                        console.print(f"‚ö†Ô∏è  Could not delete {analysis_file.name}: {e}", style="yellow")
-            
-            if deleted_count > 0:
-                console.print(f"‚úÖ Deleted {deleted_count} temporary analysis files", style="green")
-        else:
-            console.print("‚ÑπÔ∏è  Temporary analysis files kept in m1f/ directory", style="blue")
-            
-    finally:
-        # Change back to original directory
-        os.chdir(original_dir)
-        console.print(f"\nReturned to original directory: {original_dir}")
+    except subprocess.CalledProcessError as e:
+        console.print(f"‚ùå Claude command failed: {e}", style="red")
+        console.print(f"Error output: {e.stderr}", style="red")
+        
+    # Ask if temporary analysis files should be deleted
+    console.print("\n[bold]Cleanup:[/bold]")
+    cleanup = console.input("Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
+    
+    if cleanup.lower() != 'n':
+        # Delete analysis files
+        deleted_count = 0
+        for i in range(1, 6):
+            analysis_file = m1f_dir / f"html_analysis_{i}.txt"
+            if analysis_file.exists():
+                try:
+                    analysis_file.unlink()
+                    deleted_count += 1
+                except Exception as e:
+                    console.print(f"‚ö†Ô∏è  Could not delete {analysis_file.name}: {e}", style="yellow")
+        
+        if deleted_count > 0:
+            console.print(f"‚úÖ Deleted {deleted_count} temporary analysis files", style="green")
+    else:
+        console.print("‚ÑπÔ∏è  Temporary analysis files kept in m1f/ directory", style="blue")
 
 
 def _suggest_selectors(parsed_files):

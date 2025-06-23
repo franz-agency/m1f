@@ -9,24 +9,24 @@ This will produce much better results than trying to analyze all files at once.
 </deep-thinking>
 
 ## Context
-The file @m1f/selected_html_files.txt contains 5 representative HTML files from the documentation site.
+The file m1f/selected_html_files.txt contains 5 representative HTML files from the documentation site.
 
 ## Task List
 
 ### Phase 1: Individual File Analysis
-For each HTML file listed in @m1f/selected_html_files.txt:
+For each HTML file listed in m1f/selected_html_files.txt:
 
 1. **Read the file** using the Read tool
 2. **Perform deep structural analysis** (see analysis criteria below)
 3. **Write detailed findings** to a separate analysis file:
-   - File 1 → Write analysis to @m1f/html_analysis_1.txt
-   - File 2 → Write analysis to @m1f/html_analysis_2.txt
-   - File 3 → Write analysis to @m1f/html_analysis_3.txt
-   - File 4 → Write analysis to @m1f/html_analysis_4.txt
-   - File 5 → Write analysis to @m1f/html_analysis_5.txt
+   - File 1 → Write analysis to m1f/html_analysis_1.txt
+   - File 2 → Write analysis to m1f/html_analysis_2.txt
+   - File 3 → Write analysis to m1f/html_analysis_3.txt
+   - File 4 → Write analysis to m1f/html_analysis_4.txt
+   - File 5 → Write analysis to m1f/html_analysis_5.txt
 
 ### Phase 2: Synthesis
-4. **Read all 5 analysis files** (@m1f/html_analysis_1.txt through @m1f/html_analysis_5.txt)
+4. **Read all 5 analysis files** (m1f/html_analysis_1.txt through m1f/html_analysis_5.txt)
 5. **Identify common patterns** across all analyses
 6. **Create final YAML configuration** based on the synthesized findings
 
@@ -75,7 +75,7 @@ Potential Issues: [edge cases noticed]
 
 ## Analysis File Format
 
-Each analysis file (@m1f/html_analysis_N.txt) should follow this format:
+Each analysis file (m1f/html_analysis_N.txt) should follow this format:
 
 ```
 FILE: [filename]
