@@ -896,8 +896,8 @@ def create_simple_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     """Main entry point."""
-    # Check if running in simple mode (for tests)
-    if len(sys.argv) > 1 and sys.argv[1] in ["--help", "--version", "--source-dir"]:
+    # Check if running in simple mode (for tests) - but NOT for --help or --version
+    if len(sys.argv) > 1 and sys.argv[1] in ["--source-dir"]:
         parser = create_simple_parser()
         args = parser.parse_args()
 
