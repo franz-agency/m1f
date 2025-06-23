@@ -5033,6 +5033,50 @@ def _handle_claude_analysis(html_files):
             console.print("\n[bold]Claude's Analysis:[/bold]")
             console.print(result.stdout)
             
+            # Try to parse the YAML config from Claude's output
+            import yaml
+            try:
+                # Extract YAML from the output (between ```yaml and ```)
+                output = result.stdout
+                yaml_start = output.find("```yaml")
+                yaml_end = output.find("```", yaml_start + 6)
+                
+                if yaml_start != -1 and yaml_end != -1:
+                    yaml_content = output[yaml_start + 7:yaml_end].strip()
+                    config_data = yaml.safe_load(yaml_content)
+                    
+                    # Clean up the config - remove empty strings
+                    if 'extractor' in config_data:
+                        extractor = config_data['extractor']
+                        if 'alternative_selectors' in extractor:
+                            extractor['alternative_selectors'] = [s for s in extractor['alternative_selectors'] if s]
+                        if 'ignore_selectors' in extractor:
+                            extractor['ignore_selectors'] = [s for s in extractor['ignore_selectors'] if s]
+                    
+                    # Save the config to a file
+                    config_file = common_parent / "html2md_config.yaml"
+                    with open(config_file, 'w') as f:
+                        yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
+                    
+                    console.print(f"\n✅ Saved configuration to: {config_file}", style="green")
+                    
+                    # Show the user how to use it
+                    console.print("\n[bold]Next Step:[/bold]")
+                    console.print(f"To convert your HTML files using this configuration, run:\n")
+                    console.print(f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n")
+                    console.print("This will extract only the main content based on Claude's analysis.")
+                    
+                    console.print("\n[bold]Alternative:[/bold]")
+                    console.print("For AI-powered conversion (extracts clean content automatically):")
+                    console.print(f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]")
+                else:
+                    console.print("\n⚠️  Could not extract YAML configuration from Claude's response", style="yellow")
+                    console.print("You can manually create a config file based on the analysis above.")
+                    
+            except Exception as e:
+                console.print(f"\n⚠️  Could not save configuration: {e}", style="yellow")
+                console.print("You can manually create a config file based on the analysis above.")
+            
         except subprocess.CalledProcessError as e:
             console.print(f"❌ Claude command failed: {e}", style="red")
             console.print(f"Error output: {e.stderr}", style="red")
