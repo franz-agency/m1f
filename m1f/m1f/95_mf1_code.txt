@@ -4450,7 +4450,7 @@ def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser."""
     parser = argparse.ArgumentParser(
         prog="m1f-html2md",
-        description="Convert HTML files to Markdown format with advanced options",
+        description="Convert HTML files to Markdown format with advanced options and optional Claude AI integration",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -4494,13 +4494,13 @@ Examples:
 
     # Convert command
     convert_parser = subparsers.add_parser(
-        "convert", help="Convert HTML files to Markdown"
+        "convert", help="Convert HTML files to Markdown (supports Claude AI with --claude)"
     )
     add_convert_arguments(convert_parser)
 
     # Analyze command
     analyze_parser = subparsers.add_parser(
-        "analyze", help="Analyze HTML structure for selector suggestions"
+        "analyze", help="Analyze HTML structure for selector suggestions (supports Claude AI with --claude)"
     )
     add_analyze_arguments(analyze_parser)
 
