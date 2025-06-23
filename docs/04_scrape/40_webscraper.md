@@ -78,6 +78,9 @@ m1f-scrape <url> -o <output> [options]
 | `--list-files`          | List all downloaded files after completion                    | False         |
 | `-v, --verbose`         | Enable verbose output                                         | False         |
 | `-q, --quiet`           | Suppress all output except errors                             | False         |
+| `--show-db-stats`       | Show scraping statistics from the database                    | False         |
+| `--show-errors`         | Show URLs that had errors during scraping                     | False         |
+| `--show-scraped-urls`   | List all scraped URLs from the database                       | False         |
 | `--version`             | Show version information and exit                             | -             |
 
 ## Scraper Backends
@@ -306,14 +309,17 @@ m1f-scrape https://docs.example.com -o ./docs --max-pages 100 -v
 ### Database Inspection
 
 ```bash
-# View scraped URLs
-sqlite3 docs/scrape_tracker.db "SELECT url, status_code FROM scraped_urls;"
+# Show scraping statistics
+m1f-scrape -o docs/ --show-db-stats
 
-# Count pages
-sqlite3 docs/scrape_tracker.db "SELECT COUNT(*) FROM scraped_urls;"
+# View all scraped URLs with status codes
+m1f-scrape -o docs/ --show-scraped-urls
 
-# Check errors
-sqlite3 docs/scrape_tracker.db "SELECT url, error FROM scraped_urls WHERE error IS NOT NULL;"
+# Check for errors
+m1f-scrape -o docs/ --show-errors
+
+# Combine multiple queries
+m1f-scrape -o docs/ --show-db-stats --show-errors
 ```
 
 ## Best Practices
