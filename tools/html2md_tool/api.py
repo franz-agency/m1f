@@ -236,36 +236,50 @@ class Html2mdConverter:
                 # Remove leading slash
                 link_without_slash = link[1:]
                 
-                # Add .md extension if it doesn't have one
-                if not link_without_slash.endswith('.md') and '.' not in link_without_slash.split('/')[-1]:
+                # Special handling for /kb/ links - remove the kb/ prefix if present
+                if link_without_slash.startswith('kb/'):
+                    link_without_slash = link_without_slash[3:]  # Remove 'kb/'
+                
+                # Check if this should point to an index.md file
+                # If the path ends with a directory name (no extension), add /index.md
+                parts = link_without_slash.split('/')
+                last_part = parts[-1] if parts else ''
+                if '.' not in last_part and link_without_slash:
+                    # This looks like a directory reference
+                    link_without_slash = link_without_slash.rstrip('/') + '/index.md'
+                elif not link_without_slash.endswith('.md') and '.' not in last_part:
+                    # Add .md extension for files
                     link_without_slash = link_without_slash + '.md'
                 
-                # Get current file's location relative to source root
+                # Get current file's location relative to destination root
                 current_file_path = Path(source_file)
-                if current_file_path.is_relative_to(self.config.source):
-                    current_rel = current_file_path.relative_to(self.config.source)
-                    current_dir = current_rel.parent
-                    
-                    # Get the target path
-                    target_path = Path(link_without_slash)
-                    
-                    # Calculate relative path from current directory to target
+                if hasattr(self, 'config') and hasattr(self.config, 'source'):
                     try:
-                        # If we're in a subdirectory, we need to calculate the relative path
-                        if str(current_dir) != '.':
-                            # Count how many levels up we need to go
-                            levels_up = len(current_dir.parts)
-                            # Create the relative path
-                            relative_path = Path('../' * levels_up) / target_path
-                            link = str(relative_path).replace('\\', '/')
+                        if current_file_path.is_relative_to(self.config.source):
+                            current_rel = current_file_path.relative_to(self.config.source)
+                            current_dir = current_rel.parent
+                            
+                            # Get the target path
+                            target_path = Path(link_without_slash)
+                            
+                            # Calculate relative path from current directory to target
+                            if str(current_dir) != '.':
+                                # Count how many levels up we need to go
+                                levels_up = len(current_dir.parts)
+                                # Create the relative path
+                                relative_path = Path('../' * levels_up) / target_path
+                                link = str(relative_path).replace('\\', '/')
+                            else:
+                                # We're at the root, so just use the path as-is
+                                link = './' + link_without_slash
                         else:
-                            # We're at the root, so just use the path as-is
+                            # Can't determine relative path, use simple approach
                             link = './' + link_without_slash
-                    except:
+                    except Exception:
                         # Fallback to simple relative path
                         link = './' + link_without_slash
                 else:
-                    # Can't determine relative path, use simple approach
+                    # No config available, use simple approach
                     link = './' + link_without_slash
                 
                 return f'[{text}]({link})'
@@ -365,7 +379,7 @@ class Html2mdConverter:
         # Validate path to prevent traversal attacks
         file_path = self._validate_path(file_path, self.config.source)
         
-        logger.info(f"Converting {file_path}")
+        logger.debug(f"Converting {file_path}")
 
         # Read file content
         try:
@@ -400,17 +414,24 @@ class Html2mdConverter:
         )
 
         # Determine output path
-        if file_path.is_relative_to(self.config.source):
-            rel_path = file_path.relative_to(self.config.source)
-        else:
-            # Handle case where file_path might be "." or have empty name
-            rel_path = (
-                Path(file_path.name)
-                if file_path.name
-                else Path(file_path).resolve().name
-            )
-            if not rel_path or str(rel_path) == ".":
-                rel_path = Path(file_path).resolve().name
+        # Resolve both paths to handle cases where source is "."
+        resolved_file = file_path.resolve()
+        resolved_source = self.config.source.resolve()
+        
+        try:
+            # Try to get relative path from resolved paths
+            rel_path = resolved_file.relative_to(resolved_source)
+        except ValueError:
+            # If that fails, try with the original paths
+            try:
+                if file_path.is_relative_to(self.config.source):
+                    rel_path = file_path.relative_to(self.config.source)
+                else:
+                    # Last resort - just use the filename
+                    rel_path = Path(file_path.name)
+            except:
+                # Ultimate fallback
+                rel_path = Path(file_path.name if file_path.name else "output")
 
         output_path = self.config.destination / Path(rel_path).with_suffix(".md")
         
@@ -464,7 +485,8 @@ class Html2mdConverter:
                     filtered.append(file)
             html_files = filtered
 
-        logger.info(f"Found {len(html_files)} files to convert")
+        if not self.config.quiet:
+            logger.info(f"Found {len(html_files)} files to convert")
 
         # Convert files
         if self.config.parallel and len(html_files) > 1:
@@ -602,17 +624,24 @@ class Html2mdConverter:
             markdown = converter.convert(parsed)
 
             # Determine output path
-            if file_path.is_relative_to(self.config.source):
-                rel_path = file_path.relative_to(self.config.source)
-            else:
-                # Handle case where file_path might be "." or have empty name
-                rel_path = (
-                    Path(file_path.name)
-                    if file_path.name
-                    else Path(file_path).resolve().name
-                )
-                if not rel_path or str(rel_path) == ".":
-                    rel_path = Path(file_path).resolve().name
+            # Resolve both paths to handle cases where source is "."
+            resolved_file = file_path.resolve()
+            resolved_source = self.config.source.resolve()
+            
+            try:
+                # Try to get relative path from resolved paths
+                rel_path = resolved_file.relative_to(resolved_source)
+            except ValueError:
+                # If that fails, try with the original paths
+                try:
+                    if file_path.is_relative_to(self.config.source):
+                        rel_path = file_path.relative_to(self.config.source)
+                    else:
+                        # Last resort - just use the filename
+                        rel_path = Path(file_path.name)
+                except:
+                    # Ultimate fallback
+                    rel_path = Path(file_path.name if file_path.name else "output")
 
             output_path = self.config.destination / Path(rel_path).with_suffix(".md")
             
