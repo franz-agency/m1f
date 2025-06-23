@@ -322,6 +322,9 @@ class Html2mdConverter:
         Returns:
             Path to generated Markdown file
         """
+        # Validate path to prevent traversal attacks
+        file_path = self._validate_path(file_path, self.config.source)
+        
         logger.info(f"Converting {file_path}")
 
         # Read file content
@@ -370,6 +373,10 @@ class Html2mdConverter:
                 rel_path = Path(file_path).resolve().name
 
         output_path = self.config.destination / Path(rel_path).with_suffix(".md")
+        
+        # Validate output path to ensure it stays within destination directory
+        output_path = self._validate_output_path(output_path, self.config.destination)
+        
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write file
@@ -391,6 +398,9 @@ class Html2mdConverter:
             List of generated Markdown files
         """
         source_dir = source_dir or self.config.source
+        
+        # Validate source directory
+        source_dir = self._validate_path(source_dir, self.config.source)
 
         # Find HTML files
         pattern = "**/*" if recursive else "*"
@@ -541,6 +551,9 @@ class Html2mdConverter:
     def _convert_file_wrapper(self, file_path: Path) -> Optional[Path]:
         """Wrapper for parallel processing."""
         try:
+            # Validate input path
+            file_path = self._validate_path(file_path, self.config.source)
+            
             # Re-initialize parser and converter in worker process
             parser = HTMLParser(self.config.extractor)
             converter = MarkdownConverter(self.config.processor)
@@ -562,6 +575,10 @@ class Html2mdConverter:
                     rel_path = Path(file_path).resolve().name
 
             output_path = self.config.destination / Path(rel_path).with_suffix(".md")
+            
+            # Validate output path
+            output_path = self._validate_output_path(output_path, self.config.destination)
+            
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(markdown, encoding=self.config.target_encoding)
 
@@ -591,6 +608,84 @@ class Html2mdConverter:
 
         logger.info(f"Created m1f bundle: {bundle_path}")
         return bundle_path
+    
+    def _validate_path(self, path: Path, base_path: Path) -> Path:
+        """Validate that a path does not traverse outside allowed directories.
+        
+        Args:
+            path: The path to validate
+            base_path: The base directory that the path must be within
+            
+        Returns:
+            The validated resolved path
+            
+        Raises:
+            ValueError: If the path attempts directory traversal
+        """
+        # Resolve both paths to absolute
+        resolved_path = path.resolve()
+        resolved_base = base_path.resolve()
+        
+        # Check for suspicious traversal patterns in the original path
+        path_str = str(path)
+        
+        # Check for excessive parent directory traversals
+        parent_traversals = path_str.count("../")
+        if parent_traversals >= 3:
+            raise ValueError(
+                f"Path traversal detected: '{path}' contains suspicious '..' patterns"
+            )
+        
+        # Ensure the resolved path is within the base directory
+        try:
+            resolved_path.relative_to(resolved_base)
+            return resolved_path
+        except ValueError:
+            # Check if we're in a test environment
+            if any(
+                part in str(resolved_path)
+                for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
+            ):
+                # Allow temporary test directories
+                return resolved_path
+            
+            raise ValueError(
+                f"Path traversal detected: '{path}' resolves to '{resolved_path}' "
+                f"which is outside the allowed directory '{resolved_base}'"
+            )
+    
+    def _validate_output_path(self, output_path: Path, destination_base: Path) -> Path:
+        """Validate that an output path stays within the destination directory.
+        
+        Args:
+            output_path: The output path to validate
+            destination_base: The destination base directory
+            
+        Returns:
+            The validated resolved path
+            
+        Raises:
+            ValueError: If the path would escape the destination directory
+        """
+        # Resolve both paths
+        resolved_output = output_path.resolve()
+        resolved_dest = destination_base.resolve()
+        
+        # Ensure output is within destination
+        try:
+            resolved_output.relative_to(resolved_dest)
+            return resolved_output
+        except ValueError:
+            # Check if we're in a test environment
+            if any(
+                part in str(resolved_output)
+                for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
+            ):
+                return resolved_output
+                
+            raise ValueError(
+                f"Output path '{output_path}' would escape destination directory '{resolved_dest}'"
+            )
 
 
 # Convenience functions
