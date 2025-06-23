@@ -10,6 +10,28 @@ and this project adheres to
 
 ### Added
 
+- **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
+  - **SQLite Database Tracking**: Automatically tracks scraped URLs in `scrape_tracker.db`
+    - Stores URL, status code, target filename, timestamp, and errors
+    - Enables resuming interrupted scraping sessions
+    - Database created in output directory for each scraping job
+  - **Progress Display**: Real-time display of currently processed URLs
+    - Shows "Processing: <URL> (page X)" for each page
+    - Verbose mode displays detailed logging information
+    - Resume shows "Resuming crawl - found X previously scraped URLs"
+  - **Graceful Interruption**: Clean handling of Ctrl+C
+    - Shows friendly message: "⚠️ Scraping interrupted by user"
+    - Instructions to resume: "Run the same command again to resume where you left off"
+    - No Python stack traces on interruption
+  - **Smart Resume Strategy**: Analyzes previously scraped pages
+    - Reads first 20 scraped pages to extract links
+    - Populates URL queue with unvisited links from scraped pages
+    - Shows "Found X URLs to visit after analyzing scraped pages"
+  - **Enhanced CLI**: Better user experience
+    - Added hint "Press Ctrl+C to interrupt and resume later" at startup
+    - Logging configuration with `-v` flag for progress visibility
+    - Fixed asyncio "Unclosed client session" warnings
+
 - **m1f-claude --init Improvements**: Enhanced project initialization process
   - **Verbose Mode**: Added `--verbose` flag to show prompts and command parameters
     - Displays complete Claude Code command with permissions

@@ -15,6 +15,7 @@
 """Command-line interface for m1f-scrape."""
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 from typing import Optional
@@ -142,12 +143,25 @@ def main() -> None:
     config.verbose = args.verbose
     config.quiet = args.quiet
 
+    # Set up logging
+    if args.verbose:
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+    elif not args.quiet:
+        logging.basicConfig(
+            level=logging.WARNING,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+
     # Create output directory
     args.output.mkdir(parents=True, exist_ok=True)
 
     console.print(f"Scraping website: {args.url}")
     console.print(f"Using scraper backend: {args.scraper}")
     console.print("This may take a while...")
+    console.print("[dim]Press Ctrl+C to interrupt and resume later[/dim]\n")
 
     try:
         # Create crawler and download the website
@@ -169,6 +183,10 @@ def main() -> None:
                 rel_path = html_file.relative_to(site_dir)
                 console.print(f"  - {rel_path}")
 
+    except KeyboardInterrupt:
+        console.print("\n[yellow]⚠️  Scraping interrupted by user[/yellow]")
+        console.print("[dim]Run the same command again to resume where you left off[/dim]")
+        sys.exit(0)
     except Exception as e:
         console.print(f"❌ Error during scraping: {e}", style="red")
         if config.verbose:

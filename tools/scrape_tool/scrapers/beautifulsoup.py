@@ -16,7 +16,7 @@
 
 import asyncio
 import logging
-from typing import Set, AsyncGenerator, Optional, Dict
+from typing import Set, AsyncGenerator, Optional, Dict, List
 from urllib.parse import urljoin, urlparse, unquote
 import aiohttp
 from bs4 import BeautifulSoup
@@ -39,6 +39,7 @@ class BeautifulSoupScraper(WebScraperBase):
         super().__init__(config)
         self.session: Optional[aiohttp.ClientSession] = None
         self._semaphore = asyncio.Semaphore(config.concurrent_requests)
+        self._resume_info: List[Dict[str, str]] = []
 
     async def __aenter__(self):
         """Create aiohttp session on entry."""
@@ -151,6 +152,38 @@ class BeautifulSoupScraper(WebScraperBase):
                 logger.error(f"Unexpected error while scraping {url}: {e}")
                 raise
 
+    def set_resume_info(self, resume_info: List[Dict[str, str]]) -> None:
+        """Set resume information for continuing a crawl.
+        
+        Args:
+            resume_info: List of dicts with 'url' and 'content' keys
+        """
+        self._resume_info = resume_info
+        logger.info(f"Loaded {len(resume_info)} previously scraped pages for link extraction")
+
+    async def populate_queue_from_content(self, content: str, url: str, 
+                                        to_visit: Set[str], depth_map: Dict[str, int],
+                                        current_depth: int) -> None:
+        """Extract links from content and add to queue.
+        
+        Args:
+            content: HTML content to extract links from
+            url: URL of the page
+            to_visit: Set of URLs to visit
+            depth_map: Mapping of URLs to their depth
+            current_depth: Current crawl depth
+        """
+        if current_depth < self.config.max_depth:
+            new_urls = self._extract_links(content, url)
+            for new_url in new_urls:
+                if (new_url not in self._visited_urls 
+                    and new_url not in to_visit):
+                    to_visit.add(new_url)
+                    depth_map[new_url] = current_depth + 1
+                    logger.debug(
+                        f"Added URL to queue: {new_url} (depth: {current_depth + 1})"
+                    )
+
     async def scrape_site(self, start_url: str) -> AsyncGenerator[ScrapedPage, None]:
         """Scrape entire website starting from URL.
 
@@ -173,7 +206,22 @@ class BeautifulSoupScraper(WebScraperBase):
         to_visit: Set[str] = {start_url}
         depth_map: Dict[str, int] = {start_url: 0}
 
-        async with self:
+        # Check if we're already in a context manager
+        should_close_session = False
+        if not self.session:
+            await self.__aenter__()
+            should_close_session = True
+
+        try:
+            # If we have resume info, populate the queue from previously scraped pages
+            if self._resume_info:
+                logger.info("Populating queue from previously scraped pages...")
+                for page_info in self._resume_info:
+                    url = page_info['url']
+                    content = page_info['content']
+                    # Assume depth 0 for scraped pages, their links will be depth 1
+                    await self.populate_queue_from_content(content, url, to_visit, depth_map, 0)
+                logger.info(f"Found {len(to_visit)} URLs to visit after analyzing scraped pages")
             while to_visit and len(self._visited_urls) < self.config.max_pages:
                 # Get next URL
                 url = to_visit.pop()
@@ -208,18 +256,9 @@ class BeautifulSoupScraper(WebScraperBase):
                     yield page
 
                     # Extract links if not at max depth
-                    if current_depth < self.config.max_depth:
-                        new_urls = self._extract_links(page.content, url)
-                        for new_url in new_urls:
-                            if (
-                                new_url not in self._visited_urls
-                                and new_url not in to_visit
-                            ):
-                                to_visit.add(new_url)
-                                depth_map[new_url] = current_depth + 1
-                                logger.debug(
-                                    f"Added URL to queue: {new_url} (depth: {current_depth + 1})"
-                                )
+                    await self.populate_queue_from_content(
+                        page.content, url, to_visit, depth_map, current_depth
+                    )
 
                     # Respect rate limit
                     if self.config.request_delay > 0:
@@ -229,6 +268,11 @@ class BeautifulSoupScraper(WebScraperBase):
                     logger.error(f"Error processing {url}: {e}")
                     # Continue with other URLs
                     continue
+
+        finally:
+            # Clean up session if we created it
+            if should_close_session:
+                await self.__aexit__(None, None, None)
 
         logger.info(f"Crawl complete. Visited {len(self._visited_urls)} pages")
 

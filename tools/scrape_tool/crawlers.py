@@ -17,8 +17,10 @@
 
 import asyncio
 import logging
+import sqlite3
+from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 from urllib.parse import urlparse
 
 from .scrapers import create_scraper, ScraperConfig, ScrapedPage
@@ -38,6 +40,8 @@ class WebCrawler:
         """
         self.config = config
         self._scraper_config = self._create_scraper_config()
+        self._db_path: Optional[Path] = None
+        self._db_conn: Optional[sqlite3.Connection] = None
 
     def _create_scraper_config(self) -> ScraperConfig:
         """Create scraper configuration from crawler config.
@@ -91,6 +95,109 @@ class WebCrawler:
 
         return scraper_config
 
+    def _init_database(self, output_dir: Path) -> None:
+        """Initialize SQLite database for tracking scraped URLs.
+
+        Args:
+            output_dir: Directory where the database will be created
+        """
+        self._db_path = output_dir / "scrape_tracker.db"
+        self._db_conn = sqlite3.connect(str(self._db_path))
+        
+        # Create table if it doesn't exist
+        cursor = self._db_conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS scraped_urls (
+                url TEXT PRIMARY KEY,
+                status_code INTEGER,
+                target_filename TEXT,
+                scraped_at TIMESTAMP,
+                error TEXT
+            )
+        """)
+        self._db_conn.commit()
+        cursor.close()
+
+    def _close_database(self) -> None:
+        """Close the database connection."""
+        if self._db_conn:
+            self._db_conn.close()
+            self._db_conn = None
+
+    def _is_url_scraped(self, url: str) -> bool:
+        """Check if a URL has already been scraped.
+
+        Args:
+            url: URL to check
+
+        Returns:
+            True if URL has been scraped, False otherwise
+        """
+        if not self._db_conn:
+            return False
+            
+        cursor = self._db_conn.cursor()
+        cursor.execute("SELECT 1 FROM scraped_urls WHERE url = ?", (url,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result is not None
+
+    def _get_scraped_urls(self) -> Set[str]:
+        """Get all URLs that have been scraped.
+
+        Returns:
+            Set of scraped URLs
+        """
+        if not self._db_conn:
+            return set()
+            
+        cursor = self._db_conn.cursor()
+        cursor.execute("SELECT url FROM scraped_urls")
+        urls = {row[0] for row in cursor.fetchall()}
+        cursor.close()
+        return urls
+
+    def _record_scraped_url(self, url: str, status_code: Optional[int], 
+                          target_filename: str, error: Optional[str] = None) -> None:
+        """Record a scraped URL in the database.
+
+        Args:
+            url: URL that was scraped
+            status_code: HTTP status code
+            target_filename: Path to the saved file
+            error: Error message if scraping failed
+        """
+        if not self._db_conn:
+            return
+            
+        cursor = self._db_conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO scraped_urls 
+            (url, status_code, target_filename, scraped_at, error)
+            VALUES (?, ?, ?, ?, ?)
+        """, (url, status_code, target_filename, datetime.now(), error))
+        self._db_conn.commit()
+        cursor.close()
+
+    def _get_scraped_pages_info(self) -> List[Dict[str, Any]]:
+        """Get information about previously scraped pages.
+
+        Returns:
+            List of dictionaries with url and target_filename
+        """
+        if not self._db_conn:
+            return []
+            
+        cursor = self._db_conn.cursor()
+        cursor.execute("""
+            SELECT url, target_filename 
+            FROM scraped_urls 
+            WHERE error IS NULL AND target_filename != ''
+        """)
+        pages = [{"url": row[0], "filename": row[1]} for row in cursor.fetchall()]
+        cursor.close()
+        return pages
+
     async def crawl(self, start_url: str, output_dir: Path) -> Dict[str, Any]:
         """Crawl a website using the configured scraper backend.
 
@@ -120,6 +227,14 @@ class WebCrawler:
         site_dir = output_dir / domain
         site_dir.mkdir(exist_ok=True)
 
+        # Initialize database for tracking
+        self._init_database(output_dir)
+        
+        # Check if this is a resume operation
+        scraped_urls = self._get_scraped_urls()
+        if scraped_urls:
+            logger.info(f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs")
+
         # Create scraper instance
         backend_name = self.config.scraper_backend.value
         scraper = create_scraper(backend_name, self._scraper_config)
@@ -129,20 +244,66 @@ class WebCrawler:
 
         try:
             async with scraper:
+                # Pass already scraped URLs to the scraper if it supports it
+                if hasattr(scraper, '_visited_urls'):
+                    scraper._visited_urls.update(scraped_urls)
+                
+                # Pass information about scraped pages for resume functionality
+                if scraped_urls and hasattr(scraper, 'set_resume_info'):
+                    pages_info = self._get_scraped_pages_info()
+                    resume_info = []
+                    for page_info in pages_info[:20]:  # Read first 20 pages for links
+                        try:
+                            file_path = output_dir / page_info['filename']
+                            if file_path.exists():
+                                content = file_path.read_text(encoding='utf-8')
+                                resume_info.append({
+                                    'url': page_info['url'],
+                                    'content': content
+                                })
+                        except Exception as e:
+                            logger.warning(f"Failed to read {page_info['filename']}: {e}")
+                    
+                    if resume_info:
+                        scraper.set_resume_info(resume_info)
+                    
                 async for page in scraper.scrape_site(start_url):
+                    # Skip if already scraped
+                    if self._is_url_scraped(page.url):
+                        logger.info(f"Skipping already scraped URL: {page.url}")
+                        continue
+                        
+                    # Log progress - show current URL being scraped
+                    logger.info(f"Processing: {page.url} (page {len(pages) + 1})")
                     pages.append(page)
 
                     # Save page to disk
                     try:
-                        await self._save_page(page, site_dir)
+                        file_path = await self._save_page(page, site_dir)
+                        # Record successful scrape
+                        self._record_scraped_url(
+                            page.url, 
+                            page.status_code, 
+                            str(file_path.relative_to(output_dir))
+                        )
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})
+                        # Record failed scrape
+                        self._record_scraped_url(
+                            page.url,
+                            page.status_code if hasattr(page, 'status_code') else None,
+                            "",
+                            str(e)
+                        )
                         # Continue with other pages despite the error
 
         except Exception as e:
             logger.error(f"Crawl failed: {e}")
             raise
+        finally:
+            # Always close database connection
+            self._close_database()
 
         logger.info(
             f"Crawl completed. Scraped {len(pages)} pages with {len(errors)} errors"
@@ -289,6 +450,10 @@ class WebCrawler:
         Returns:
             Path to site directory
         """
-        # Run async crawl using asyncio.run()
-        result = asyncio.run(self.crawl(start_url, output_dir))
-        return result["output_dir"]
+        try:
+            # Run async crawl using asyncio.run()
+            result = asyncio.run(self.crawl(start_url, output_dir))
+            return result["output_dir"]
+        except KeyboardInterrupt:
+            # Re-raise to let CLI handle it gracefully
+            raise
