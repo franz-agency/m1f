@@ -477,7 +477,15 @@ def _handle_claude_analysis(html_files):
         os.chdir(common_parent)
         console.print(f"Changed to directory: {common_parent}")
         
-        # Get relative paths from the common parent
+        # Step 1: Create m1f directory if it doesn't exist
+        m1f_dir = common_parent / "m1f"
+        m1f_dir.mkdir(exist_ok=True)
+        
+        # For HTML analysis, we don't need to run m1f-init since we're dealing
+        # with scraped HTML files, not a code project
+        console.print("\n🔧 Preparing for HTML analysis...")
+        
+        # Get relative paths from the common parent (still needed for filtering)
         relative_paths = []
         for f in html_files:
             try:
@@ -488,39 +496,44 @@ def _handle_claude_analysis(html_files):
         
         # Step 1: Load the file selection prompt
         prompt_dir = Path(__file__).parent / "prompts"
-        select_prompt_path = prompt_dir / "select_files_prompt.md"
+        select_prompt_path = prompt_dir / "select_files_from_project.md"
         
         if not select_prompt_path.exists():
             console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
             return
         
-        select_prompt = select_prompt_path.read_text()
-        file_list = "\n".join(relative_paths)
-        select_prompt = select_prompt.replace("{file_list}", file_list)
+        # Load the prompt from external file
+        simple_prompt = select_prompt_path.read_text()
         
         console.print("\nAsking Claude to select representative files...")
         
-        # Load the simple select prompt
-        simple_prompt_path = prompt_dir / "select_files_simple.md"
-        if not simple_prompt_path.exists():
-            console.print(f"❌ Simple prompt file not found: {simple_prompt_path}", style="red")
-            return
-        
-        simple_prompt = simple_prompt_path.read_text()
-        simple_prompt = simple_prompt.replace("{file_list}", file_list)
-        
         try:
-            # Run claude with prompt directly
+            # Run claude using the same approach as m1f-claude
             cmd = [
                 "claude",
-                "-p", simple_prompt
+                "--print",  # Use --print instead of -p
+                "--allowedTools", "Read,Glob,Grep"  # Allow file reading tools
             ]
             
-            result = subprocess.run(
+            # Execute with Popen for better control
+            process = subprocess.Popen(
                 cmd,
-                capture_output=True,
-                text=True,
-                check=True
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Send prompt via stdin and get response
+            stdout, stderr = process.communicate(input=simple_prompt)
+            
+            if process.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    process.returncode, cmd, output=stdout, stderr=stderr
+                )
+            
+            result = subprocess.CompletedProcess(
+                cmd, process.returncode, stdout=stdout, stderr=stderr
             )
             selected_files = result.stdout.strip().split('\n')
             selected_files = [f.strip() for f in selected_files if f.strip()]
@@ -537,9 +550,9 @@ def _handle_claude_analysis(html_files):
             console.print("❌ claude command not found. Please install Claude CLI.", style="red")
             return
         
-        # Step 2: Read the selected HTML files
-        console.print("\nReading selected HTML files...")
-        html_contents = []
+        # Step 2: Verify the selected files exist
+        console.print("\nVerifying selected HTML files...")
+        verified_files = []
         for file_path in selected_files[:5]:  # Limit to 5 files
             # Claude might return paths with redundant directory prefixes
             # since we already changed to common_parent directory
@@ -595,39 +608,52 @@ def _handle_claude_analysis(html_files):
             console.print("❌ No HTML files could be read", style="red")
             return
         
-        # Step 3: Load the analysis prompt
-        analyze_prompt_path = prompt_dir / "analyze_html_prompt.md"
+        # Write the selected files to a reference list
+        selected_files_path = m1f_dir / "selected_html_files.txt"
+        with open(selected_files_path, 'w') as f:
+            for file_path in selected_files[:5]:
+                f.write(f"{file_path}\n")
+        console.print(f"✅ Wrote selected files list to: {selected_files_path}")
+        
+        # Step 3: Load analyze prompt from external file
+        console.print("\nAsking Claude to analyze HTML structure and suggest selectors...")
+        
+        # Load the analyze prompt from external file
+        analyze_prompt_path = prompt_dir / "analyze_selected_files.md"
+        
         if not analyze_prompt_path.exists():
             console.print(f"❌ Prompt file not found: {analyze_prompt_path}", style="red")
             return
         
-        analyze_prompt = analyze_prompt_path.read_text()
-        html_content_str = "\n".join(html_contents)
-        analyze_prompt = analyze_prompt.replace("{html_content}", html_content_str)
-        
-        console.print("\nAsking Claude to analyze HTML structure and suggest selectors...")
-        
-        # Load the simple analyze prompt
-        simple_analyze_path = prompt_dir / "analyze_html_simple.md"
-        if not simple_analyze_path.exists():
-            console.print(f"❌ Simple analyze prompt file not found: {simple_analyze_path}", style="red")
-            return
-        
-        simple_analyze_prompt = simple_analyze_path.read_text()
-        simple_analyze_prompt = simple_analyze_prompt.replace("{html_content}", html_content_str)
+        simple_analyze_prompt = analyze_prompt_path.read_text()
         
         try:
-            # Run claude with prompt directly
+            # Run claude using the same approach as m1f-claude
             cmd = [
                 "claude",
-                "-p", simple_analyze_prompt
+                "--print",  # Use --print instead of -p
+                "--allowedTools", "Read,Glob,Grep"  # Allow file reading tools
             ]
             
-            result = subprocess.run(
+            # Execute with Popen for better control
+            process = subprocess.Popen(
                 cmd,
-                capture_output=True,
-                text=True,
-                check=True
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Send prompt via stdin and get response
+            stdout, stderr = process.communicate(input=simple_analyze_prompt)
+            
+            if process.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    process.returncode, cmd, output=stdout, stderr=stderr
+                )
+            
+            result = subprocess.CompletedProcess(
+                cmd, process.returncode, stdout=stdout, stderr=stderr
             )
             
             console.print("\n[bold]Claude's Analysis:[/bold]")
