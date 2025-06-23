@@ -1,4 +1,4 @@
-aiohttp==3.10.11
+aiohttp==3.12.13
 application_properties==0.8.2
 black==25.1.0
 certifi==2025.4.26
@@ -31,7 +31,7 @@ tiktoken==0.9.0
 tomli==2.2.1
 toolz==1.0.0
 typing_extensions==4.13.2
-urllib3==2.4.0
+urllib3==2.5.0
 wcwidth==0.2.13
 
 # Async file operations
@@ -58,4 +58,4 @@ playwright==1.50.0
 
 # Test server dependencies
 flask==3.1.1
-flask-cors==6.0.0
+flask-cors==6.0.1
