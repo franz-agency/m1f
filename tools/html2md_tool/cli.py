@@ -560,7 +560,9 @@ def _handle_claude_analysis(html_files):
         )
 
         # Send prompt via stdin and get response
-        stdout, stderr = process.communicate(input=simple_prompt)
+        stdout, stderr = process.communicate(
+            input=simple_prompt, timeout=300
+        )  # 5 minute timeout
 
         if process.returncode != 0:
             raise subprocess.CalledProcessError(
@@ -577,6 +579,10 @@ def _handle_claude_analysis(html_files):
         for f in selected_files:
             console.print(f"  - {f}", style="blue")
 
+    except subprocess.TimeoutExpired:
+        console.print("⏰ Timeout selecting files (5 minutes)", style="yellow")
+        process.kill()
+        return
     except subprocess.CalledProcessError as e:
         console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
@@ -613,30 +619,92 @@ def _handle_claude_analysis(html_files):
             f.write(f"{file_path}\n")
     console.print(f"✅ Wrote selected files list to: {selected_files_path}")
 
-    # Step 3: Load analyze prompt from external file
-    console.print("\nAsking Claude to analyze HTML structure and suggest selectors...")
+    # Step 3: Analyze each file individually with Claude
+    console.print("\nAnalyzing each file individually with Claude...")
 
-    # Load the analyze prompt from external file
-    analyze_prompt_path = prompt_dir / "analyze_selected_files.md"
+    # Load the individual analysis prompt template
+    individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
-    if not analyze_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {analyze_prompt_path}", style="red")
+    if not individual_prompt_path.exists():
+        console.print(
+            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
+        )
         return
 
-    simple_analyze_prompt = analyze_prompt_path.read_text()
+    individual_prompt_template = individual_prompt_path.read_text()
+
+    # Analyze each of the 5 selected files
+    for i, file_path in enumerate(verified_files, 1):
+        console.print(f"\n📋 Analyzing file {i}/5: {file_path}")
+
+        # Customize prompt for this specific file
+        individual_prompt = individual_prompt_template.replace("{filename}", file_path)
+        individual_prompt = individual_prompt.replace("{file_number}", str(i))
+
+        try:
+            # Run claude for this individual file
+            cmd = [
+                "claude",
+                "--print",
+                "--allowedTools",
+                "Read,Glob,Grep,Write",
+                "--add-dir",
+                str(common_parent),
+            ]
+
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            stdout, stderr = process.communicate(
+                input=individual_prompt, timeout=300
+            )  # 5 minute timeout
+
+            if process.returncode != 0:
+                console.print(
+                    f"❌ Analysis failed for {file_path}: {stderr}", style="red"
+                )
+                continue
+
+            console.print(f"✅ Analysis completed for file {i}")
+
+        except subprocess.TimeoutExpired:
+            console.print(
+                f"⏰ Timeout analyzing {file_path} (5 minutes)", style="yellow"
+            )
+            process.kill()
+            continue
+        except Exception as e:
+            console.print(f"❌ Error analyzing {file_path}: {e}", style="red")
+            continue
+
+    # Step 4: Synthesize all analyses into final config
+    console.print("\n🔬 Synthesizing analyses into final configuration...")
+
+    # Load the synthesis prompt
+    synthesis_prompt_path = prompt_dir / "synthesize_config.md"
+
+    if not synthesis_prompt_path.exists():
+        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
+        return
+
+    synthesis_prompt = synthesis_prompt_path.read_text()
 
     try:
-        # Run claude using the same approach as m1f-claude
+        # Run claude for synthesis
         cmd = [
             "claude",
-            "--print",  # Use --print instead of -p
+            "--print",
             "--allowedTools",
-            "Read,Glob,Grep,Write",  # Allow file reading and writing tools
+            "Read,Glob,Grep,Write",
             "--add-dir",
-            str(common_parent),  # Give Claude access to the HTML directory
+            str(common_parent),
         ]
 
-        # Execute with Popen for better control
         process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
@@ -645,8 +713,9 @@ def _handle_claude_analysis(html_files):
             text=True,
         )
 
-        # Send prompt via stdin and get response
-        stdout, stderr = process.communicate(input=simple_analyze_prompt)
+        stdout, stderr = process.communicate(
+            input=synthesis_prompt, timeout=300
+        )  # 5 minute timeout
 
         if process.returncode != 0:
             raise subprocess.CalledProcessError(
@@ -657,7 +726,7 @@ def _handle_claude_analysis(html_files):
             cmd, process.returncode, stdout=stdout, stderr=stderr
         )
 
-        console.print("\n[bold]Claude's Analysis:[/bold]")
+        console.print("\n[bold]Claude's Final Configuration:[/bold]")
         console.print(result.stdout)
 
         # Try to parse the YAML config from Claude's output
@@ -728,6 +797,11 @@ def _handle_claude_analysis(html_files):
                 "You can manually create a config file based on the analysis above."
             )
 
+    except subprocess.TimeoutExpired:
+        console.print(
+            "⏰ Timeout synthesizing configuration (5 minutes)", style="yellow"
+        )
+        process.kill()
     except subprocess.CalledProcessError as e:
         console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
