@@ -4449,25 +4449,22 @@ console = Console()
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser."""
     parser = argparse.ArgumentParser(
-        prog="mf1-html2md",
+        prog="m1f-html2md",
         description="Convert HTML files to Markdown format with advanced options",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Convert a single file
-  mf1-html2md convert file.html -o file.md
+  m1f-html2md convert file.html -o file.md
   
   # Convert entire directory
-  mf1-html2md convert ./docs/html/ -o ./docs/markdown/
-  
-  # Convert a website
-  mf1-html2md crawl https://example.com -o ./example-docs/
+  m1f-html2md convert ./docs/html/ -o ./docs/markdown/
   
   # Use configuration file
-  mf1-html2md convert ./html/ -c config.yaml
+  m1f-html2md convert ./html/ -c config.yaml
   
   # Extract specific content
-  mf1-html2md convert ./html/ -o ./md/ --content-selector "article.post"
+  m1f-html2md convert ./html/ -o ./md/ --content-selector "article.post"
 """,
     )
 
@@ -4574,7 +4571,7 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         "paths",
         nargs="+",
         type=Path,
-        help="HTML files or directories to analyze (automatically finds all .html files in directories)",
+        help="HTML files or directories to analyze (automatically finds all HTML files in directories)",
     )
 
     parser.add_argument(
@@ -5296,7 +5293,7 @@ def handle_config(args: argparse.Namespace) -> None:
 def create_simple_parser() -> argparse.ArgumentParser:
     """Create a simple parser for test compatibility."""
     parser = argparse.ArgumentParser(
-        prog="mf1-html2md", description="Convert HTML to Markdown"
+        prog="m1f-html2md", description="Convert HTML to Markdown"
     )
 
     parser.add_argument(
