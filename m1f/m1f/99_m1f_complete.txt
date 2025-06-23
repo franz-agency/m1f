@@ -34878,6 +34878,12 @@ Examples:
   
   # Extract specific content
   m1f-html2md convert ./html/ -o ./md/ --content-selector "article.post"
+  
+  # Analyze HTML structure with AI assistance
+  m1f-html2md analyze ./html/ --claude
+  
+  # Convert HTML to clean Markdown using AI
+  m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus
 """,
     )
 
