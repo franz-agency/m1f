@@ -1402,9 +1402,10 @@ class TestCLI:
         )
 
         assert result.returncode == 0
-        assert "--source-dir" in result.stdout
-        assert "--destination-dir" in result.stdout
-        assert "--outermost-selector" in result.stdout
+        assert "convert" in result.stdout
+        assert "analyze" in result.stdout
+        assert "config" in result.stdout
+        assert "Claude AI" in result.stdout
 
     def test_cli_basic_conversion(self, test_server, temp_output_dir):
         """Test basic CLI conversion."""
