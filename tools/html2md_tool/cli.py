@@ -458,6 +458,7 @@ def _handle_claude_analysis(html_files):
     import subprocess
     import os
     import tempfile
+    import time
     from pathlib import Path
     import sys
 
@@ -636,6 +637,9 @@ def _handle_claude_analysis(html_files):
     # Analyze each of the 5 selected files
     for i, file_path in enumerate(verified_files, 1):
         console.print(f"\n📋 Analyzing file {i}/5: {file_path}")
+        console.print(
+            f"⏱️  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
+        )
 
         # Customize prompt for this specific file
         individual_prompt = individual_prompt_template.replace("{filename}", file_path)
@@ -664,11 +668,20 @@ def _handle_claude_analysis(html_files):
                 input=individual_prompt, timeout=300
             )  # 5 minute timeout
 
+            # Debug: Show process details
+            console.print(f"🔍 Process return code: {process.returncode}", style="dim")
+            if stderr:
+                console.print(f"🔍 stderr: {stderr[:200]}...", style="dim")
+
             if process.returncode != 0:
                 console.print(
                     f"❌ Analysis failed for {file_path}: {stderr}", style="red"
                 )
                 continue
+
+            # Show Claude's response for transparency
+            if stdout.strip():
+                console.print(f"📄 Claude: {stdout.strip()}", style="dim")
 
             console.print(f"✅ Analysis completed for file {i}")
 
