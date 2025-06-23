@@ -35692,9 +35692,33 @@ def _handle_claude_analysis(html_files):
         m1f_dir = common_parent / "m1f"
         m1f_dir.mkdir(exist_ok=True)
         
-        # For HTML analysis, we don't need to run m1f-init since we're dealing
-        # with scraped HTML files, not a code project
-        console.print("\nüîß Preparing for HTML analysis...")
+        # Create a file with all HTML files using m1f
+        console.print("\nüîß Creating HTML file list using m1f...")
+        html_list_file = m1f_dir / "all_html_files.txt"
+        
+        # Run m1f to create a file containing all HTML files
+        m1f_cmd = [
+            "m1f",
+            "-s", str(common_parent),
+            "-o", str(html_list_file),
+            "--include-extensions", ".html", ".htm",
+            "--separator-style", "Standard",
+            "--force"
+        ]
+        
+        try:
+            result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
+            console.print(f"‚úÖ Created HTML file list: {html_list_file}")
+            
+            # Also get the filelist that m1f creates
+            html_filelist = m1f_dir / "all_html_files_filelist.txt"
+            if not html_filelist.exists():
+                console.print("‚ùå m1f filelist not created", style="red")
+                return
+                
+        except subprocess.CalledProcessError as e:
+            console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
+            return
         
         # Get relative paths from the common parent (still needed for filtering)
         relative_paths = []
@@ -49909,42 +49933,277 @@ class Config:
             )
 
 ======= tools/html2md_tool/prompts/analyze_selected_files.md ======
-# Analyze Selected HTML Files
+# HTML Structure Analysis for Optimal Content Extraction
 
-Please analyze the HTML files listed in @m1f/selected_html_files.txt and suggest CSS selectors for content extraction.
+The file @m1f/selected_html_files.txt contains 5 representative HTML files from the documentation site.
 
-For each file in the list:
-1. Read the HTML file
-2. Identify the main content area
-3. Identify navigation, headers, footers, sidebars that should be excluded
+## Your Task:
 
-Then provide a YAML configuration with:
-- content_selector: CSS selector(s) for the main content
-- ignore_selectors: List of CSS selectors for elements to exclude
+### 1. Deep Analysis of Each File
+Read each of the 5 HTML files using the Read tool and perform a thorough structural analysis:
 
-The selectors should work across all the analyzed files.
+**Main Content Detection:**
+- Identify the exact element(s) containing the primary documentation content
+- Look for semantic HTML5 tags (main, article, section with specific roles)
+- Check for content-specific class names (e.g., .doc-content, .markdown-body, .prose)
+- Note if content is split across multiple containers
+
+**Navigation & UI Elements to Exclude:**
+- Global navigation (top nav, breadcrumbs, sidebar navigation)
+- Page metadata (author info, last updated, edit buttons)
+- Interactive elements (search boxes, theme toggles, language selectors)
+- Social sharing buttons and feedback widgets
+- Table of contents (if separate from main content)
+- Footer links and copyright notices
+
+**Dynamic Content Patterns:**
+- Code syntax highlighting wrappers
+- Collapsible sections or tabs
+- Alert/callout boxes that should be preserved
+- Embedded examples or demos
+
+### 2. Pattern Recognition Across Files
+After analyzing all files, identify:
+
+**Consistency Check:**
+- Which selectors work on ALL 5 files?
+- Which selectors work on most files (note the exceptions)?
+- Are there different layouts for different content types?
+
+**Selector Robustness:**
+- Prefer semantic selectors over class-based when possible
+- Use combination selectors for precision (e.g., main > article)
+- Identify parent containers that reliably wrap content
+
+**Edge Cases:**
+- Landing pages vs. documentation pages
+- API reference vs. guides
+- Pages with multiple content sections
+
+### 3. Build Intelligent Selector Strategy
+
+## Output:
+
+Create a YAML configuration with carefully chosen selectors:
+
+```yaml
+extractor:
+  # Primary selector - should capture main content on most pages
+  content_selector: "main.documentation-content, article.markdown-body"
+  
+  # Fallback selectors - tried in order if primary fails
+  alternative_selectors:
+    - "div[role='main'] > .content"
+    - "#main-content article"
+    - ".docs-content > .inner"
+    - "section.content-section"
+    - ".page-content"  # Generic fallback
+  
+  # Elements to remove - be specific to avoid over-removal
+  ignore_selectors:
+    # Navigation
+    - "nav"
+    - ".navigation"
+    - ".sidebar-nav"
+    - ".breadcrumb"
+    
+    # Headers/Footers (but not article headers!)
+    - "body > header"
+    - "body > footer"
+    - ".site-header"
+    - ".site-footer"
+    
+    # Page metadata
+    - ".page-meta"
+    - ".doc-tags"
+    - ".last-updated"
+    - ".edit-link"
+    
+    # Interactive elements
+    - ".search-box"
+    - ".theme-toggle"
+    - ".language-selector"
+    
+    # Promotional/External
+    - ".advertisement"
+    - ".cookie-notice"
+    - ".newsletter-signup"
+    
+    # Social/Sharing
+    - ".social-share"
+    - ".feedback-widget"
+    
+    # Table of contents (if separate)
+    - ".toc-sidebar"
+    - "aside.toc"
+
+# Provide detailed analysis notes
+notes: |
+  Selector Strategy:
+  - Primary selector targets: [describe what it matches]
+  - Alternative selectors cover: [explain fallback scenarios]
+  
+  Content Patterns Observed:
+  - [Pattern 1]: [Description]
+  - [Pattern 2]: [Description]
+  
+  Special Considerations:
+  - [Any special handling needed]
+  - [Warnings about edge cases]
+  
+  Confidence Level: [High/Medium/Low] - [Explain why]
+```
+
+**CRITICAL REQUIREMENTS:**
+1. Test each selector mentally against ALL 5 files
+2. Prefer specific selectors that won't capture unwanted content
+3. Order alternative selectors from most specific to most generic
+4. Ensure ignore_selectors are specific enough to not remove actual content
+5. Document your reasoning in the notes section
 
 ======= tools/html2md_tool/prompts/convert_html_to_md.md ======
-# Convert HTML to Markdown
+# Convert HTML to Clean, High-Quality Markdown
 
-Please convert this HTML file to a clean Markdown file. Extract only the main content - no headers, navigation, footers, or other non-content elements.
+## Context:
+You are converting scraped documentation HTML to clean Markdown. The HTML may contain navigation, ads, and other non-content elements that must be excluded.
+
+## Content Extraction Rules:
+
+### INCLUDE:
+- Main article/documentation content
+- Headings within the content area
+- Code blocks and inline code
+- Lists (ordered and unordered)
+- Tables
+- Images with their alt text
+- Links (convert to Markdown format)
+- Blockquotes
+- Important callouts/alerts within content
+
+### EXCLUDE:
+- Site navigation (top nav, sidebars, breadcrumbs)
+- Headers and footers outside main content
+- "Edit this page" or "Improve this doc" links
+- Social sharing buttons
+- Comment sections
+- Related articles/suggestions
+- Newsletter signup forms
+- Cookie notices
+- JavaScript-rendered placeholders
+- Meta information (unless part of the content flow)
+- Table of contents (unless embedded in content)
+- Page view counters
+- Advertisements
+
+## Markdown Quality Standards:
+
+### 1. Structure Preservation
+- Maintain the original heading hierarchy
+- Don't skip heading levels
+- Preserve the logical flow of information
+
+### 2. Code Formatting
+```markdown
+# Inline code
+Use `backticks` for inline code, commands, or file names
+
+# Code blocks
+​```language
+code here
+​```
+
+# Shell commands
+​```bash
+$ command here
+​```
+```
+
+### 3. Special Content Types
+
+**API Endpoints:**
+Format as inline code: `GET /api/v1/users`
+
+**File Paths:**
+Format as inline code: `/etc/config.yaml`
+
+**Callout Boxes:**
+Convert to blockquotes with type indicators:
+> **Note:** Important information
+> **Warning:** Critical warning
+> **Tip:** Helpful suggestion
+
+**Tables:**
+Use clean Markdown table syntax with proper alignment
+
+### 4. Link Handling
+- Convert relative links to proper Markdown: `[text](url)`
+- Preserve anchor links: `[Section](#section-id)`
+- Remove dead or navigation-only links
+
+### 5. Image Handling
+- Use descriptive alt text: `![Description of image](image-url)`
+- If no alt text exists, describe the image content
+- Skip purely decorative images
+
+## Final Quality Checklist:
+- ✓ No HTML tags remaining
+- ✓ No broken Markdown syntax  
+- ✓ Clean, readable formatting
+- ✓ Proper spacing between sections
+- ✓ Consistent code block language tags
+- ✓ No duplicate content
+- ✓ No navigation elements
+- ✓ Logical content flow preserved
 
 {html_content}
 
 ======= tools/html2md_tool/prompts/select_files_from_project.md ======
-# Select HTML Files from Project
+# Strategic HTML File Selection for CSS Selector Analysis
 
-Use the Glob tool to find all HTML files (*.html and *.htm) in the current directory and subdirectories. Then select exactly 5 representative HTML files from the results.
+The file @m1f/all_html_files_filelist.txt contains all HTML files from the scraped documentation site.
 
-Look for files with .html or .htm extension. These are scraped documentation pages.
+## Your Mission:
+Select exactly 5 HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
 
-The files should be from different sections/categories to ensure we capture various page layouts and content types.
+## Selection Strategy:
 
-Important: 
-- Return ONLY the file paths, one per line
-- Select files with .html or .htm extension only
-- Choose files from different directories/sections
-- No additional text, explanation, or formatting
+### 1. Diversity is Key
+Choose files that represent different:
+- **Sections**: API docs, guides, tutorials, references, landing pages
+- **Depths**: Root level, deeply nested, mid-level pages  
+- **Layouts**: Different page templates if identifiable from paths
+
+### 2. Pattern Recognition
+Look for URL patterns that suggest content types:
+- `/api/` or `/reference/` → API documentation
+- `/guide/` or `/tutorial/` → Step-by-step content
+- `/docs/` → General documentation
+- `/blog/` or `/changelog/` → Time-based content
+- `index.html` → Section landing pages
+- Long paths with multiple segments → Detailed topic pages
+
+### 3. Avoid Redundancy
+Skip:
+- Multiple files from the same directory pattern
+- Obviously auto-generated sequences (e.g., /api/v1/method1, /api/v1/method2)
+- Redirect or error pages if identifiable
+
+### 4. Prioritize High-Value Pages
+Select files that likely have:
+- Rich content structure (not just navigation pages)
+- Different content layouts
+- Representative examples of the site's documentation style
+
+## Output Format:
+Return EXACTLY 5 file paths, one per line.
+No explanations, no formatting, no numbering.
+
+Example format:
+docs/getting-started/index.html
+api/reference/authentication.html
+guides/advanced/performance-tuning.html
+tutorials/quickstart.html
+concepts/architecture/overview.html
 
 ======= tools/m1f/prompts/segmentation_prompt.md ======
 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT

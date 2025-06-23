@@ -5170,9 +5170,33 @@ def _handle_claude_analysis(html_files):
         m1f_dir = common_parent / "m1f"
         m1f_dir.mkdir(exist_ok=True)
         
-        # For HTML analysis, we don't need to run m1f-init since we're dealing
-        # with scraped HTML files, not a code project
-        console.print("\nüîß Preparing for HTML analysis...")
+        # Create a file with all HTML files using m1f
+        console.print("\nüîß Creating HTML file list using m1f...")
+        html_list_file = m1f_dir / "all_html_files.txt"
+        
+        # Run m1f to create a file containing all HTML files
+        m1f_cmd = [
+            "m1f",
+            "-s", str(common_parent),
+            "-o", str(html_list_file),
+            "--include-extensions", ".html", ".htm",
+            "--separator-style", "Standard",
+            "--force"
+        ]
+        
+        try:
+            result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
+            console.print(f"‚úÖ Created HTML file list: {html_list_file}")
+            
+            # Also get the filelist that m1f creates
+            html_filelist = m1f_dir / "all_html_files_filelist.txt"
+            if not html_filelist.exists():
+                console.print("‚ùå m1f filelist not created", style="red")
+                return
+                
+        except subprocess.CalledProcessError as e:
+            console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
+            return
         
         # Get relative paths from the common parent (still needed for filtering)
         relative_paths = []
