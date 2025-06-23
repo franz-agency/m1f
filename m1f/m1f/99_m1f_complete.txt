@@ -34439,7 +34439,115 @@ class Html2mdConverter:
 
         # Apply custom extractor postprocessing
         markdown = self._extractor.postprocess(markdown, self.config.__dict__)
+        
+        # Convert absolute file paths to relative links
+        if source_file and hasattr(self.config, 'destination'):
+            markdown = self._convert_absolute_paths_to_relative(markdown, source_file, self.config.destination)
 
+        return markdown
+    
+    def _convert_absolute_paths_to_relative(self, markdown: str, source_file: str, destination: Path) -> str:
+        """Convert absolute file paths in markdown to relative paths.
+        
+        Args:
+            markdown: Markdown content
+            source_file: Source HTML file path
+            destination: Destination directory
+            
+        Returns:
+            Markdown with relative paths
+        """
+        import re
+        from pathlib import Path
+        
+        # Convert source_file to Path if it's a string
+        if isinstance(source_file, str):
+            source_file = Path(source_file)
+        
+        # Get the source directory
+        source_dir = source_file.parent
+        
+        # Find all markdown links with absolute paths
+        # Match patterns like [text](/absolute/path) or [text](file:///absolute/path)
+        def replace_link(match):
+            text = match.group(1)
+            link = match.group(2)
+            
+            # Skip if it's already a relative link or external URL
+            if link.startswith(('http://', 'https://', '#', 'mailto:', '../', './')):
+                return match.group(0)
+            
+            # Handle file:// URLs
+            if link.startswith('file://'):
+                link = link[7:]  # Remove file://
+                # On Windows, file URLs might have an extra slash
+                if link.startswith('/') and len(link) > 2 and link[2] == ':':
+                    link = link[1:]
+            
+            # Convert to Path
+            try:
+                link_path = Path(link)
+                
+                # If it's an absolute path
+                if link_path.is_absolute():
+                    # Calculate relative path from destination to the linked file
+                    # We need to go from where the markdown will be to where the linked file is
+                    
+                    # First, get the output file path
+                    relative_source = source_file.relative_to(source_dir.parent)
+                    output_file = destination / relative_source.with_suffix('.md')
+                    output_dir = output_file.parent
+                    
+                    # Check if the linked file exists with .md extension
+                    # (it's probably been converted from .html to .md)
+                    md_link = link_path.with_suffix('.md')
+                    if md_link.exists() or link_path.suffix in ['.html', '.htm']:
+                        # Use .md extension for converted files
+                        link_path = link_path.with_suffix('.md')
+                    
+                    # Calculate relative path from output directory to linked file
+                    try:
+                        # If the linked file is also in the destination
+                        if str(link_path).startswith(str(destination)):
+                            relative_link = link_path.relative_to(output_dir)
+                        else:
+                            # Try to map it based on source structure
+                            # This handles cases where the link points to another HTML file
+                            # that will also be converted
+                            link_in_source = None
+                            for ext in ['.html', '.htm', '']:
+                                test_path = source_dir.parent / link_path.name
+                                if ext:
+                                    test_path = test_path.with_suffix(ext)
+                                if test_path.exists():
+                                    link_in_source = test_path
+                                    break
+                            
+                            if link_in_source:
+                                # Map to destination structure
+                                relative_in_source = link_in_source.relative_to(source_dir.parent)
+                                link_in_dest = destination / relative_in_source.with_suffix('.md')
+                                relative_link = link_in_dest.relative_to(output_dir)
+                            else:
+                                # Fallback: try to make it relative if possible
+                                relative_link = link_path.relative_to(output_dir)
+                        
+                        # Convert to string with forward slashes
+                        link = str(relative_link).replace('\\', '/')
+                        
+                    except ValueError:
+                        # Can't make relative - keep as is but remove file://
+                        link = str(link_path)
+                
+            except Exception:
+                # If anything goes wrong, return original match
+                return match.group(0)
+            
+            return f'[{text}]({link})'
+        
+        # Replace markdown links
+        markdown = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', replace_link, markdown)
+        
         return markdown
 
     async def convert_directory_from_urls(self, urls: List[str]) -> List[Path]:
@@ -35920,11 +36028,12 @@ class HTMLParser:
 
         return soup
 
-    def parse_file(self, file_path) -> BeautifulSoup:
+    def parse_file(self, file_path, output_path=None) -> BeautifulSoup:
         """Parse HTML file.
 
         Args:
             file_path: Path to HTML file
+            output_path: Optional output path for relative link resolution
 
         Returns:
             BeautifulSoup object
@@ -35952,8 +36061,9 @@ class HTMLParser:
                     self.config.encoding, errors=self.config.decode_errors
                 )
 
-        # Get base URL from file path for relative URL resolution
-        base_url = file_path.as_uri()
+        # Don't use file:// URLs - they cause absolute path issues
+        # Instead, we'll handle relative links in a post-processing step
+        base_url = None
 
         return self.parse(html_content, base_url)
 
