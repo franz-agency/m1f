@@ -64,7 +64,7 @@ After installation, these commands are available globally:
 - `m1f-scrape` - Download websites for offline viewing
 - `m1f-token-counter` - Count tokens in files
 - `m1f-update` - Regenerate all m1f bundles
-- `m1f-link` - Link m1f documentation for AI tools (Claude Code, etc.)
+- `m1f-init` - Initialize m1f for your project (replaces m1f-link)
 - `m1f-claude` - Enhance prompts with m1f knowledge for Claude
 - `m1f-help` - Show help for all commands
 
@@ -178,17 +178,48 @@ Create similar batch files for:
 
 ### Quick Setup for AI-Assisted Development
 
-When using AI tools like Claude Code, Cursor, or GitHub Copilot in your project,
-they need to understand how m1f works to help you effectively. The `m1f-link`
-command provides this context:
+When starting a new project with m1f, use the `m1f-init` command for quick
+setup:
 
 ```bash
 cd /your/project
-m1f-link
+m1f-init
 ```
 
-This creates `m1f/m1f.txt` - a symlink to the complete m1f documentation
-that AI tools can read.
+This command:
+
+- Creates `m1f/m1f.txt` - a symlink to the complete m1f documentation
+- Analyzes your project structure
+- Generates initial bundles with auxiliary files:
+  - `m1f/<project>_complete.txt` - Full project bundle
+  - `m1f/<project>_complete_filelist.txt` - List of all included files
+  - `m1f/<project>_complete_dirlist.txt` - List of all directories
+  - `m1f/<project>_docs.txt` - Documentation bundle
+  - `m1f/<project>_docs_filelist.txt` - List of documentation files
+  - `m1f/<project>_docs_dirlist.txt` - Documentation directories
+- Creates a basic `.m1f.config.yml`
+- Shows platform-specific next steps
+
+#### Working with Generated File Lists
+
+The file lists created by `m1f-init` can be edited to customize future bundles:
+
+```bash
+# Edit the complete file list to remove unwanted files
+vi m1f/<project>_complete_filelist.txt
+
+# Use the edited list to create a custom bundle
+m1f -i m1f/<project>_complete_filelist.txt -o m1f/custom_bundle.txt
+
+# Create a bundle from specific directories (edit dirlist first)
+m1f -s . -i m1f/selected_dirs.txt -o m1f/specific_areas.txt
+```
+
+For advanced setup with topic-specific bundles (Linux/macOS only):
+
+```bash
+m1f-claude --advanced-setup
+```
 
 #### Example AI Prompts:
 

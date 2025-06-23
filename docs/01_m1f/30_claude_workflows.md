@@ -23,11 +23,21 @@ First, let's get Claude up to speed on what m1f can do:
 
 ```bash
 cd /your/awesome/project
-m1f-link  # Creates m1f/m1f.txt symlink
+m1f-init  # Quick setup: links docs, analyzes project, creates bundles
 ```
 
-Boom! 💥 Now you've got the complete m1f documentation sitting in your project.
-Claude can read this and instantly become an m1f expert.
+Boom! 💥 This command:
+
+- Creates m1f/m1f.txt symlink to the complete documentation
+- Analyzes your project structure
+- Generates initial bundles (complete and docs)
+- Creates a basic .m1f.config.yml
+
+For advanced setup with topic-specific bundles (Linux/macOS only):
+
+```bash
+m1f-claude --advanced-setup
+```
 
 ### Step 2: Start the Conversation
 
@@ -93,40 +103,46 @@ Using m1f v3.2's preset system:
 Make it so I can just run: m1f --preset env.yml --preset-group production
 ```
 
-## Using m1f-claude: The Smart Assistant 🧠
+## Using m1f-claude: Advanced Project Setup 🧠
 
-We've supercharged Claude with m1f knowledge. Here's how to use it:
+For advanced project-specific configuration, use m1f-claude (Linux/macOS only):
 
 ```bash
-# Basic usage - Claude already knows about m1f!
-m1f-claude "Bundle my Python project for code review"
+# First, run the quick setup
+m1f-init
 
-# Interactive mode - have a conversation
-m1f-claude -i
-> Help me organize my WordPress theme files
-> Now create a bundle for just the custom post types
-> Can you exclude all the vendor files?
+# Then for advanced configuration with Claude's help
+m1f-claude --advanced-setup
 ```
 
 ### What Makes m1f-claude Special?
 
-When you use `m1f-claude`, it automatically:
+When you use `m1f-claude --advanced-setup`, it:
 
-- Knows where to find m1f documentation
-- Understands your project structure
-- Suggests optimal parameters
-- Can execute commands directly (with your permission)
+- Analyzes your project in detail with Claude's assistance
+- Creates topic-specific bundles (components, API, tests, etc.)
+- Optimizes configuration for your specific project type
+- Provides intelligent suggestions based on your codebase
+
+**Note**: m1f-claude requires Claude Code SDK and is not available on Windows.
+Windows users can manually customize their .m1f.config.yml after running
+m1f-init.
 
 ### 💡 Important: Claude Code Subscription Recommended
 
-**We strongly recommend using Claude Code with a subscription plan** when using m1f-claude for project setup. Setting up m1f with Claude's assistance can involve:
+**We strongly recommend using Claude Code with a subscription plan** when using
+m1f-claude for project setup. Setting up m1f with Claude's assistance can
+involve:
 
 - Multiple file reads to analyze your project structure
 - Creating and editing configuration files
 - Running various commands to test configurations
 - Iterative refinement of bundles
 
-Since we don't know exactly how many tokens this process will consume, a subscription ensures you won't run into usage limits during critical setup phases. The investment pays off quickly through the time saved in properly configuring your project.
+Since we don't know exactly how many tokens this process will consume, a
+subscription ensures you won't run into usage limits during critical setup
+phases. The investment pays off quickly through the time saved in properly
+configuring your project.
 
 ## Working with Claude Code
 

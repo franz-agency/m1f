@@ -11,8 +11,8 @@ context for AI interactions. The system includes:
 3. **Preset System** - Apply file-specific processing rules
 4. **Watch Mode** - Automatically regenerate bundles when files change
 
-Using the `m1f` tool and auto-bundling scripts, you can create optimized
-context files for AI assistants.
+Using the `m1f` tool and auto-bundling scripts, you can create optimized context
+files for AI assistants.
 
 ## VS Code Setup
 
@@ -418,8 +418,8 @@ wp-content/plugins/UtilityPlugin/includes/cpt-slides.php
 
 ### 3. Generate the Combined Context File
 
-Run `m1f` from your terminal, pointing to your input file list and specifying
-an output file. It's recommended to use the `MachineReadable` separator style.
+Run `m1f` from your terminal, pointing to your input file list and specifying an
+output file. It's recommended to use the `MachineReadable` separator style.
 
 ```bash
 m1f \
@@ -535,9 +535,8 @@ development tasks.
 
 When dealing with a project that contains hundreds or thousands of files, start
 by generating a complete file and directory listing without creating the merged
-context file. Run the **Project Review: Generate Lists** task. It calls
-`m1f` with `--skip-output-file` and saves two inventory files to the
-`m1f` directory:
+context file. Run the **Project Review: Generate Lists** task. It calls `m1f`
+with `--skip-output-file` and saves two inventory files to the `m1f` directory:
 
 - `m1f/project_review_filelist.txt`
 - `m1f/project_review_dirlist.txt`

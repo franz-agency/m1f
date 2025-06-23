@@ -7,6 +7,11 @@ HTML to Markdown converter - wrapper script.
 """
 
 if __name__ == "__main__":
-    from html2md_tool.cli import main
+    # Try absolute imports first (for module execution), fall back to relative
+    try:
+        from tools.html2md_tool.cli import main
+    except ImportError:
+        # Fallback for direct script execution
+        from html2md_tool.cli import main
 
     main()

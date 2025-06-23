@@ -1,15 +1,23 @@
 # m1f Configuration Examples
 
-This guide provides comprehensive examples of `.m1f.config.yml` files for different project types. Each example includes detailed comments explaining the configuration choices.
+This guide provides comprehensive examples of `.m1f.config.yml` files for
+different project types. Each example includes detailed comments explaining the
+configuration choices.
 
-> **⚠️ IMPORTANT**: m1f automatically excludes many common directories (node_modules, .git, __pycache__, etc.). See the [Default Excludes Guide](./26_default_excludes_guide.md) for the complete list. **Only add project-specific excludes to keep your configs minimal!**
+> **⚠️ IMPORTANT**: m1f automatically excludes many common directories
+> (node_modules, .git, **pycache**, etc.). See the
+> [Default Excludes Guide](./26_default_excludes_guide.md) for the complete
+> list. **Only add project-specific excludes to keep your configs minimal!**
 
 ## 🚨 IMPORTANT: Use Standard Separator for AI Bundles!
 
-**The primary purpose of m1f bundles is to provide context to AI assistants like Claude, NOT for human reading in Markdown!**
+**The primary purpose of m1f bundles is to provide context to AI assistants like
+Claude, NOT for human reading in Markdown!**
 
-- ✅ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the default)
-- ❌ **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language blocks)
+- ✅ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
+  default)
+- ❌ **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
+  blocks)
 - 🎯 **Why**: Standard format is clean and optimal for AI consumption
 
 ```yaml
@@ -17,14 +25,15 @@ This guide provides comprehensive examples of `.m1f.config.yml` files for differ
 bundles:
   - name: my-bundle
     separator_style: Standard  # ← This is optimal (or just omit it)
-    
+
 # AVOID - Adds unnecessary markdown formatting:
 bundles:
   - name: my-bundle
     separator_style: Markdown  # ← Don't use for AI bundles!
 ```
 
-**Note**: `MachineReadable` is only needed when you plan to use `s1f` to split the bundle back into individual files.
+**Note**: `MachineReadable` is only needed when you plan to use `s1f` to split
+the bundle back into individual files.
 
 ## Minimal vs Verbose Configurations
 
@@ -34,20 +43,20 @@ bundles:
 global:
   global_excludes:
     # ❌ ALL of these are already excluded by default!
-    - "**/node_modules/**"     # Auto-excluded
-    - "**/vendor/**"           # Auto-excluded
-    - "**/__pycache__/**"      # Auto-excluded
-    - "**/build/**"            # Auto-excluded
-    - "**/dist/**"             # Auto-excluded
-    - "**/.git/**"             # Auto-excluded
-    - "**/cache/**"            # Auto-excluded
-    - "**/.vscode/**"          # Auto-excluded
-    - "**/.idea/**"            # Auto-excluded
-    
+    - "**/node_modules/**" # Auto-excluded
+    - "**/vendor/**" # Auto-excluded
+    - "**/__pycache__/**" # Auto-excluded
+    - "**/build/**" # Auto-excluded
+    - "**/dist/**" # Auto-excluded
+    - "**/.git/**" # Auto-excluded
+    - "**/cache/**" # Auto-excluded
+    - "**/.vscode/**" # Auto-excluded
+    - "**/.idea/**" # Auto-excluded
+
     # ✅ Only these are needed (project-specific)
-    - "**/logs/**"             
-    - "**/tmp/**"              
-    - "/m1f/**"                
+    - "**/logs/**"
+    - "**/tmp/**"
+    - "/m1f/**"
 ```
 
 ### ✅ GOOD Example - Minimal Configuration
@@ -56,10 +65,10 @@ global:
 global:
   global_excludes:
     # Only project-specific excludes
-    - "**/logs/**"             # Your log files
-    - "**/tmp/**"              # Your temp files
-    - "/m1f/**"                # Output directory
-    
+    - "**/logs/**" # Your log files
+    - "**/tmp/**" # Your temp files
+    - "/m1f/**" # Output directory
+
   global_settings:
     # Let .gitignore handle most excludes
     exclude_paths_file: ".gitignore"
@@ -78,7 +87,8 @@ global:
 
 ## m1f Tool Project (Current)
 
-This is the actual configuration used by the m1f project itself - a Python-based tool with comprehensive documentation.
+This is the actual configuration used by the m1f project itself - a Python-based
+tool with comprehensive documentation.
 
 ```yaml
 # m1f Auto-Bundle Configuration
@@ -87,19 +97,19 @@ This is the actual configuration used by the m1f project itself - a Python-based
 global:
   # Exclusions that apply to all bundles
   global_excludes:
-    - "/m1f/**"                         # Exclude output directory
-    - "**/*.pyc"                        # Python bytecode
-    - "**/*.log"                        # Log files
-    - "**/tmp/**"                       # Temporary directories
-    - "**/dev/**"                       # Development files
-    - "**/tests/**/source/**"           # Test input data
-    - "**/tests/**/output/**"           # Test output data
-    - "**/tests/**/expected/**"         # Expected test results
+    - "/m1f/**" # Exclude output directory
+    - "**/*.pyc" # Python bytecode
+    - "**/*.log" # Log files
+    - "**/tmp/**" # Temporary directories
+    - "**/dev/**" # Development files
+    - "**/tests/**/source/**" # Test input data
+    - "**/tests/**/output/**" # Test output data
+    - "**/tests/**/expected/**" # Expected test results
     - "**/tests/**/scraped_examples/**" # Scraped test examples
 
   global_settings:
     # Default security setting for all files
-    security_check: "warn"              # Strict by default
+    security_check: "warn" # Strict by default
     # Use .gitignore as exclude file (can be single file or list)
     exclude_paths_file:
       - ".gitignore"
@@ -108,14 +118,14 @@ global:
     # Per-extension overrides
     extensions:
       .py:
-        security_check: "abort"         # Strict for Python files
+        security_check: "abort" # Strict for Python files
 
   # Default settings for all bundles
   defaults:
     force_overwrite: true
     max_file_size: "1MB"
     minimal_output: false
-    
+
   # File watcher settings for auto-update
   watcher:
     enabled: true
@@ -151,9 +161,21 @@ bundles:
     output: "m1f/m1f/94_code.txt"
     sources:
       - path: "."
-        includes: ["README.md", "SETUP.md", "requirements.txt", "tools/**", "scripts/**"]
+        includes:
+          [
+            "README.md",
+            "SETUP.md",
+            "requirements.txt",
+            "tools/**",
+            "scripts/**",
+          ]
       - path: "tests/"
-        excludes: ["**/tests/**/source/**", "**/tests/**/extracted/**", "**/tests/**/output/**"]
+        excludes:
+          [
+            "**/tests/**/source/**",
+            "**/tests/**/extracted/**",
+            "**/tests/**/output/**",
+          ]
 
   # Complete project bundle
   all:
@@ -175,26 +197,26 @@ global:
   global_excludes:
     # ⚠️ MINIMAL CONFIG - Only project-specific excludes!
     # DON'T add node_modules, dist, build - they're auto-excluded!
-    
+
     # Next.js specific (not in defaults)
-    - "**/.next/**"                     # Next.js build cache
-    - "**/coverage/**"                  # Test coverage reports
-    
+    - "**/.next/**" # Next.js build cache
+    - "**/coverage/**" # Test coverage reports
+
     # Log and temp files
     - "**/*.log"
-    - "**/*.map"                        # Source maps
+    - "**/*.map" # Source maps
     - "**/.DS_Store"
     - "**/Thumbs.db"
 
   global_settings:
     security_check: "warn"
     exclude_paths_file: [".gitignore", ".eslintignore"]
-    
+
     # JavaScript/TypeScript specific processing
     extensions:
       .js:
-        minify: true                    # Minify for AI context
-        remove_comments: true           # Clean comments
+        minify: true # Minify for AI context
+        remove_comments: true # Clean comments
       .jsx:
         minify: true
         remove_comments: true
@@ -205,14 +227,14 @@ global:
         minify: true
         remove_comments: true
       .json:
-        minify: true                    # Compact JSON
+        minify: true # Compact JSON
       .env:
-        security_check: "abort"         # Never include env files
+        security_check: "abort" # Never include env files
 
   defaults:
     force_overwrite: true
-    max_file_size: "500KB"              # Smaller for JS files
-    minimal_output: true                # Compact output
+    max_file_size: "500KB" # Smaller for JS files
+    minimal_output: true # Compact output
 
 bundles:
   # Application source code
@@ -264,15 +286,16 @@ bundles:
     output: "m1f/20_config.txt"
     sources:
       - path: "."
-        includes: [
-          "package.json",
-          "tsconfig.json",
-          "webpack.config.js",
-          "vite.config.js",
-          ".eslintrc.*",
-          ".prettierrc.*",
-          "babel.config.*"
-        ]
+        includes:
+          [
+            "package.json",
+            "tsconfig.json",
+            "webpack.config.js",
+            "vite.config.js",
+            ".eslintrc.*",
+            ".prettierrc.*",
+            "babel.config.*",
+          ]
 
   # Tests
   app-tests:
@@ -281,7 +304,8 @@ bundles:
     output: "m1f/30_tests.txt"
     sources:
       - path: "src"
-        includes: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
+        includes:
+          ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
       - path: "__tests__"
       - path: "cypress/integration"
         include_extensions: [".js", ".ts"]
@@ -302,11 +326,11 @@ bundles:
     description: "Key files for quick AI context"
     group: "reference"
     output: "m1f/00_quick_reference.txt"
-    max_file_size: "100KB"              # Keep small for quick loading
+    max_file_size: "100KB" # Keep small for quick loading
     sources:
       - path: "."
         includes: ["package.json", "README.md", "src/App.tsx", "src/index.tsx"]
-      - path: "src/types"               # TypeScript types
+      - path: "src/types" # TypeScript types
 ```
 
 ## Python/Django Project
@@ -319,39 +343,39 @@ Configuration for a Django web application with REST API.
 global:
   global_excludes:
     # ⚠️ MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
-    
+
     # Python bytecode (not in defaults)
     - "**/*.pyc"
     - "**/*.pyo"
     - "**/*.pyd"
-    
+
     # Virtual environments (common names)
     - "**/venv/**"
     - "**/.venv/**"
     - "**/env/**"
-    
+
     # Django specific
-    - "**/migrations/**"                # Database migrations
-    - "**/media/**"                     # User uploads
-    - "**/static/**"                    # Collected static files
+    - "**/migrations/**" # Database migrations
+    - "**/media/**" # User uploads
+    - "**/static/**" # Collected static files
     - "**/staticfiles/**"
-    - "**/*.sqlite3"                    # SQLite database
+    - "**/*.sqlite3" # SQLite database
     - "**/celerybeat-schedule"
 
   global_settings:
-    security_check: "abort"             # Strict for web apps
+    security_check: "abort" # Strict for web apps
     exclude_paths_file: ".gitignore"
-    
+
     extensions:
       .py:
-        remove_docstrings: false        # Keep docstrings for API
-        remove_comments: true           # Remove inline comments
+        remove_docstrings: false # Keep docstrings for API
+        remove_comments: true # Remove inline comments
       .html:
-        minify: true                    # Minify templates
+        minify: true # Minify templates
       .env:
-        security_check: "abort"         # Never include
+        security_check: "abort" # Never include
       .yml:
-        security_check: "warn"          # Check for secrets
+        security_check: "warn" # Check for secrets
 
   defaults:
     force_overwrite: true
@@ -391,9 +415,10 @@ bundles:
     group: "config"
     output: "m1f/10_settings.txt"
     sources:
-      - path: "config/"                 # Settings module
+      - path: "config/" # Settings module
       - path: "."
-        includes: ["manage.py", "requirements*.txt", "Dockerfile", "docker-compose.yml"]
+        includes:
+          ["manage.py", "requirements*.txt", "Dockerfile", "docker-compose.yml"]
 
   # Models across all apps
   django-models:
@@ -449,12 +474,13 @@ bundles:
     max_file_size: "100KB"
     sources:
       - path: "."
-        includes: [
-          "README.md",
-          "requirements.txt",
-          "config/settings/base.py",
-          "config/urls.py"
-        ]
+        includes:
+          [
+            "README.md",
+            "requirements.txt",
+            "config/settings/base.py",
+            "config/urls.py",
+          ]
 ```
 
 ## WordPress Theme
@@ -467,30 +493,30 @@ Configuration for a custom WordPress theme with modern build tools.
 global:
   global_excludes:
     # ⚠️ MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
-    
+
     # WordPress specific (not in defaults)
-    - "wp-admin/**"                     # Core files
-    - "wp-includes/**"                  # Core files
-    - "wp-content/uploads/**"           # User uploads
-    - "wp-content/cache/**"             # Cache plugins
-    - "wp-content/backup/**"            # Backup files
-    - "wp-content/upgrade/**"           # Updates
-    
+    - "wp-admin/**" # Core files
+    - "wp-includes/**" # Core files
+    - "wp-content/uploads/**" # User uploads
+    - "wp-content/cache/**" # Cache plugins
+    - "wp-content/backup/**" # Backup files
+    - "wp-content/upgrade/**" # Updates
+
     # Sass cache (not in defaults)
     - "**/.sass-cache/**"
-    - "**/*.map"                        # Source maps
-    - "**/*.log"                        # Log files
+    - "**/*.map" # Source maps
+    - "**/*.log" # Log files
 
   global_settings:
     security_check: "warn"
     exclude_paths_file: [".gitignore", ".wpignore"]
-    
+
     # Use WordPress preset for optimal processing
     preset: "wordpress"
-    
+
     extensions:
       .php:
-        remove_comments: true           # Clean PHP comments
+        remove_comments: true # Clean PHP comments
       .js:
         minify: true
       .css:
@@ -511,15 +537,15 @@ bundles:
     sources:
       - path: "."
         includes: [
-          "style.css",                  # Theme header
-          "functions.php",
-          "index.php",
-          "header.php",
-          "footer.php",
-          "sidebar.php",
-          "searchform.php",
-          "404.php"
-        ]
+            "style.css", # Theme header
+            "functions.php",
+            "index.php",
+            "header.php",
+            "footer.php",
+            "sidebar.php",
+            "searchform.php",
+            "404.php",
+          ]
 
   # Template files
   theme-templates:
@@ -528,16 +554,17 @@ bundles:
     output: "m1f/02_templates.txt"
     sources:
       - path: "."
-        includes: [
-          "single*.php",
-          "page*.php",
-          "archive*.php",
-          "category*.php",
-          "tag*.php",
-          "taxonomy*.php",
-          "front-page.php",
-          "home.php"
-        ]
+        includes:
+          [
+            "single*.php",
+            "page*.php",
+            "archive*.php",
+            "category*.php",
+            "tag*.php",
+            "taxonomy*.php",
+            "front-page.php",
+            "home.php",
+          ]
       - path: "template-parts/"
       - path: "templates/"
 
@@ -569,7 +596,7 @@ bundles:
     group: "functionality"
     output: "m1f/11_acf_fields.txt"
     sources:
-      - path: "acf-json/"               # ACF JSON exports
+      - path: "acf-json/" # ACF JSON exports
       - path: "."
         includes: ["**/acf-fields/*.php", "**/acf/*.php"]
 
@@ -583,13 +610,14 @@ bundles:
         include_extensions: [".js", ".jsx", ".scss", ".css"]
       - path: "assets/src/"
       - path: "."
-        includes: [
-          "webpack.config.js",
-          "gulpfile.js",
-          "package.json",
-          ".babelrc",
-          "postcss.config.js"
-        ]
+        includes:
+          [
+            "webpack.config.js",
+            "gulpfile.js",
+            "package.json",
+            ".babelrc",
+            "postcss.config.js",
+          ]
 
   # WooCommerce integration
   theme-woocommerce:
@@ -619,17 +647,13 @@ bundles:
     max_file_size: "100KB"
     sources:
       - path: "."
-        includes: [
-          "style.css",
-          "functions.php",
-          "README.md",
-          "package.json"
-        ]
+        includes: ["style.css", "functions.php", "README.md", "package.json"]
 ```
 
 ## Documentation Site
 
-Configuration for a documentation website using Markdown and static site generators.
+Configuration for a documentation website using Markdown and static site
+generators.
 
 ```yaml
 # Documentation Site m1f Configuration
@@ -641,25 +665,25 @@ global:
     - "public/**"
     - "dist/**"
     - ".cache/**"
-    
+
     # Development
     - "**/node_modules/**"
     - "**/.sass-cache/**"
     - "**/tmp/**"
 
   global_settings:
-    security_check: "skip"              # Docs are public
+    security_check: "skip" # Docs are public
     exclude_paths_file: ".gitignore"
-    
+
     # Optimize for documentation
     extensions:
       .md:
-        preserve_formatting: true       # Keep Markdown formatting
-        max_file_size: "2MB"           # Allow larger docs
+        preserve_formatting: true # Keep Markdown formatting
+        max_file_size: "2MB" # Allow larger docs
       .mdx:
         preserve_formatting: true
       .yml:
-        minify: false                  # Keep YAML readable
+        minify: false # Keep YAML readable
       .json:
         minify: true
 
@@ -715,17 +739,17 @@ bundles:
     sources:
       - path: "."
         includes: [
-          "config*.yml",
-          "config*.yaml",
-          "config*.toml",
-          "config*.json",
-          "_config.yml",              # Jekyll
-          "docusaurus.config.js",     # Docusaurus
-          "gatsby-config.js",         # Gatsby
-          "mkdocs.yml",              # MkDocs
-          ".vuepress/config.js"      # VuePress
-        ]
-      - path: "data/"                # Data files
+            "config*.yml",
+            "config*.yaml",
+            "config*.toml",
+            "config*.json",
+            "_config.yml", # Jekyll
+            "docusaurus.config.js", # Docusaurus
+            "gatsby-config.js", # Gatsby
+            "mkdocs.yml", # MkDocs
+            ".vuepress/config.js", # VuePress
+          ]
+      - path: "data/" # Data files
         include_extensions: [".yml", ".yaml", ".json"]
 
   # Theme and layouts
@@ -734,9 +758,9 @@ bundles:
     group: "theme"
     output: "m1f/11_theme.txt"
     sources:
-      - path: "_layouts/"             # Jekyll
+      - path: "_layouts/" # Jekyll
       - path: "_includes/"
-      - path: "layouts/"              # Hugo
+      - path: "layouts/" # Hugo
       - path: "themes/"
       - path: "src/theme/"
       - path: "src/components/"
@@ -789,7 +813,8 @@ bundles:
 
 ## Mixed Language Project
 
-Configuration for a project with multiple programming languages (e.g., Python backend, React frontend, Go microservices).
+Configuration for a project with multiple programming languages (e.g., Python
+backend, React frontend, Go microservices).
 
 ```yaml
 # Mixed Language Project m1f Configuration
@@ -797,14 +822,14 @@ Configuration for a project with multiple programming languages (e.g., Python ba
 global:
   global_excludes:
     # Language-specific build artifacts
-    - "**/node_modules/**"              # JavaScript
-    - "**/__pycache__/**"              # Python
+    - "**/node_modules/**" # JavaScript
+    - "**/__pycache__/**" # Python
     - "**/venv/**"
-    - "**/vendor/**"                    # Go/PHP
-    - "**/target/**"                    # Rust/Java
-    - "**/bin/**"                       # Binaries
-    - "**/obj/**"                       # .NET
-    
+    - "**/vendor/**" # Go/PHP
+    - "**/target/**" # Rust/Java
+    - "**/bin/**" # Binaries
+    - "**/obj/**" # .NET
+
     # Common excludes
     - "**/dist/**"
     - "**/build/**"
@@ -815,7 +840,7 @@ global:
   global_settings:
     security_check: "warn"
     exclude_paths_file: [".gitignore", ".dockerignore"]
-    
+
     # Language-specific processing
     extensions:
       # Frontend
@@ -829,7 +854,7 @@ global:
         minify: true
       .tsx:
         minify: true
-      
+
       # Backend
       .py:
         remove_comments: true
@@ -840,7 +865,7 @@ global:
         remove_comments: true
       .rs:
         remove_comments: true
-      
+
       # Config files
       .env:
         security_check: "abort"
@@ -868,7 +893,8 @@ bundles:
     output: "m1f/frontend/02_config.txt"
     sources:
       - path: "frontend/"
-        includes: ["package.json", "tsconfig.json", "webpack.config.js", ".eslintrc.*"]
+        includes:
+          ["package.json", "tsconfig.json", "webpack.config.js", ".eslintrc.*"]
 
   # Backend - Python/FastAPI
   backend-api:
@@ -989,13 +1015,14 @@ bundles:
     max_file_size: "100KB"
     sources:
       - path: "."
-        includes: [
-          "README.md",
-          "docker-compose.yml",
-          "frontend/package.json",
-          "backend/requirements.txt",
-          "services/auth/go.mod"
-        ]
+        includes:
+          [
+            "README.md",
+            "docker-compose.yml",
+            "frontend/package.json",
+            "backend/requirements.txt",
+            "services/auth/go.mod",
+          ]
 ```
 
 ## Microservices Architecture
@@ -1018,9 +1045,9 @@ global:
     - "**/*.log"
 
   global_settings:
-    security_check: "abort"             # Strict for microservices
+    security_check: "abort" # Strict for microservices
     exclude_paths_file: [".gitignore", ".dockerignore"]
-    
+
     # Process by file type
     extensions:
       .env:
@@ -1030,11 +1057,11 @@ global:
       .json:
         minify: true
       .proto:
-        preserve_formatting: true       # Keep protobuf readable
+        preserve_formatting: true # Keep protobuf readable
 
   defaults:
     force_overwrite: true
-    max_file_size: "500KB"              # Smaller for services
+    max_file_size: "500KB" # Smaller for services
 
   # Watch for changes in all services
   watcher:
@@ -1164,12 +1191,13 @@ bundles:
     max_file_size: "150KB"
     sources:
       - path: "."
-        includes: [
-          "README.md",
-          "ARCHITECTURE.md",
-          "docker-compose.yml",
-          "services/*/README.md"
-        ]
+        includes:
+          [
+            "README.md",
+            "ARCHITECTURE.md",
+            "docker-compose.yml",
+            "services/*/README.md",
+          ]
 ```
 
 ## Mobile App Project
@@ -1187,14 +1215,14 @@ global:
     - "**/android/build/**"
     - "**/android/.gradle/**"
     - "**/android/app/build/**"
-    
+
     # React Native / Flutter
     - "**/node_modules/**"
     - "**/.dart_tool/**"
     - "**/pubspec.lock"
     - "**/package-lock.json"
     - "**/yarn.lock"
-    
+
     # IDE and temp files
     - "**/.idea/**"
     - "**/.vscode/**"
@@ -1204,7 +1232,7 @@ global:
   global_settings:
     security_check: "warn"
     exclude_paths_file: [".gitignore", ".npmignore"]
-    
+
     extensions:
       # Mobile-specific
       .swift:
@@ -1236,8 +1264,8 @@ bundles:
     group: "app"
     output: "m1f/app/01_screens.txt"
     sources:
-      - path: "src/screens/"            # React Native
-      - path: "lib/screens/"            # Flutter
+      - path: "src/screens/" # React Native
+      - path: "lib/screens/" # Flutter
       - path: "src/pages/"
       - path: "src/navigation/"
 
@@ -1247,7 +1275,7 @@ bundles:
     output: "m1f/app/02_components.txt"
     sources:
       - path: "src/components/"
-      - path: "lib/widgets/"            # Flutter
+      - path: "lib/widgets/" # Flutter
       - path: "src/ui/"
 
   app-state:
@@ -1255,10 +1283,10 @@ bundles:
     group: "app"
     output: "m1f/app/03_state.txt"
     sources:
-      - path: "src/store/"              # Redux/MobX
-      - path: "src/context/"            # React Context
-      - path: "lib/providers/"          # Flutter Provider
-      - path: "lib/blocs/"              # Flutter BLoC
+      - path: "src/store/" # Redux/MobX
+      - path: "src/context/" # React Context
+      - path: "lib/providers/" # Flutter Provider
+      - path: "lib/blocs/" # Flutter BLoC
 
   app-services:
     description: "API and service layer"
@@ -1308,14 +1336,14 @@ bundles:
     sources:
       - path: "."
         includes: [
-          "package.json",
-          "app.json",                   # React Native
-          "metro.config.js",            # React Native
-          "babel.config.js",
-          "tsconfig.json",
-          "pubspec.yaml",               # Flutter
-          ".env.example"
-        ]
+            "package.json",
+            "app.json", # React Native
+            "metro.config.js", # React Native
+            "babel.config.js",
+            "tsconfig.json",
+            "pubspec.yaml", # Flutter
+            ".env.example",
+          ]
 
   # Tests
   app-tests:
@@ -1347,66 +1375,71 @@ bundles:
     max_file_size: "100KB"
     sources:
       - path: "."
-        includes: [
-          "README.md",
-          "package.json",
-          "app.json",
-          "src/App.js",
-          "index.js"
-        ]
+        includes:
+          ["README.md", "package.json", "app.json", "src/App.js", "index.js"]
 ```
 
 ## Best Practices
 
 When creating your `.m1f.config.yml`:
 
-1. **Group Related Files**: Create focused bundles that group related functionality
-2. **Use Meaningful Names**: Choose descriptive bundle names that indicate content
+1. **Group Related Files**: Create focused bundles that group related
+   functionality
+2. **Use Meaningful Names**: Choose descriptive bundle names that indicate
+   content
 3. **Set Size Limits**: Keep bundles under 100KB for optimal AI performance
-4. **Security First**: Always configure proper security checks for sensitive files
+4. **Security First**: Always configure proper security checks for sensitive
+   files
 5. **Leverage Presets**: Use built-in presets for common project types
-6. **Exclude Wisely**: Don't bundle generated files, dependencies, or build artifacts
+6. **Exclude Wisely**: Don't bundle generated files, dependencies, or build
+   artifacts
 7. **Document Purpose**: Add descriptions to help others understand each bundle
-8. **Test Configuration**: Run `m1f-update` and check bundle sizes with `m1f-token-counter`
+8. **Test Configuration**: Run `m1f-update` and check bundle sizes with
+   `m1f-token-counter`
 
 ## Common Patterns
 
 ### Pattern 1: Separate by Layer
+
 ```yaml
 bundles:
-  frontend:     # UI components
-  backend:      # Server logic
-  database:     # Models and migrations
-  api:          # API endpoints
-  tests:        # Test suites
+  frontend: # UI components
+  backend: # Server logic
+  database: # Models and migrations
+  api: # API endpoints
+  tests: # Test suites
 ```
 
 ### Pattern 2: Separate by Feature
+
 ```yaml
 bundles:
-  feature-auth:     # Authentication
-  feature-payment:  # Payment processing
-  feature-search:   # Search functionality
-  feature-admin:    # Admin panel
+  feature-auth: # Authentication
+  feature-payment: # Payment processing
+  feature-search: # Search functionality
+  feature-admin: # Admin panel
 ```
 
 ### Pattern 3: Separate by Purpose
+
 ```yaml
 bundles:
-  quick-reference:  # Essential files for context
-  documentation:    # All docs
-  source-code:      # Implementation
-  configuration:    # Config files
-  deployment:       # Deploy scripts
+  quick-reference: # Essential files for context
+  documentation: # All docs
+  source-code: # Implementation
+  configuration: # Config files
+  deployment: # Deploy scripts
 ```
 
 ### Pattern 4: Progressive Detail
+
 ```yaml
 bundles:
-  overview:         # High-level summary (10KB)
-  core-logic:       # Main functionality (50KB)
-  full-source:      # Complete code (100KB)
-  everything:       # All files (500KB)
+  overview: # High-level summary (10KB)
+  core-logic: # Main functionality (50KB)
+  full-source: # Complete code (100KB)
+  everything: # All files (500KB)
 ```
 
-Remember: The best configuration depends on your specific project needs and how you plan to use the bundles with AI assistants.
+Remember: The best configuration depends on your specific project needs and how
+you plan to use the bundles with AI assistants.

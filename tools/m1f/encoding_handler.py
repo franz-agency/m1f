@@ -24,6 +24,7 @@ from typing import Tuple, Optional
 from dataclasses import dataclass
 
 from .config import Config
+from .constants import UTF8_PREFERRED_EXTENSIONS
 from .exceptions import EncodingError
 from .logging import LoggerManager
 
@@ -134,10 +135,10 @@ class EncodingHandler:
                 "windows-1252": "utf-8",  # Prefer UTF-8 over Windows-1252 for better emoji support
             }
 
-            # Check if file extension suggests markdown or text files that should be UTF-8
+            # Check if file extension suggests documentation files that should be UTF-8
             if (
                 self.config.encoding.prefer_utf8_for_text_files
-                and file_path.suffix.lower() in [".md", ".markdown", ".txt", ".rst"]
+                and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
             ):
                 # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
                 # prefer UTF-8 since these files often contain UTF-8 emojis/special chars

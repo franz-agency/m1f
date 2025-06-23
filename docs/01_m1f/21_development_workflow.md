@@ -26,51 +26,87 @@ cd /path/to/your/project
 m1f -s . -o combined.txt
 ```
 
-### Method 2: Providing m1f Documentation to AI Tools (Claude Code, etc.)
+### Method 2: Quick Project Setup with m1f-init
 
-When you want to use m1f in a project with AI assistance (like Claude Code,
-Cursor, or other AI-powered development tools), the AI needs to understand how
-m1f works and what parameters are available. The `m1f-link` command solves this
-by creating a symlink to the complete m1f documentation.
+When starting a new project with m1f, use `m1f-init` for quick setup:
 
-#### Why this is important:
+```bash
+cd /path/to/your/project
+m1f-init
+```
 
-- AI tools need context to understand how to use m1f
-- The documentation contains all parameters, options, and examples
-- AI can help create custom configurations and commands
+#### What m1f-init does:
 
-#### How to use:
+1. **Links m1f documentation** (creates `m1f/m1f.txt`)
 
-1. Navigate to your project:
+   - Makes m1f docs available to AI tools
+   - Creates symlink on Linux/macOS, copies on Windows
 
-   ```bash
-   cd /path/to/your/project
-   ```
+2. **Analyzes your project**
 
-2. Create documentation symlink:
+   - Detects project type and languages
+   - Creates file and directory listings
 
-   ```bash
-   m1f-link
-   ```
+3. **Generates initial bundles with auxiliary files**
 
-   This creates: `m1f/m1f.txt -> /path/to/m1f/m1f/m1f/87_m1f_only_docs.txt`
+   - `m1f/<project>_complete.txt` - Full project bundle
+   - `m1f/<project>_complete_filelist.txt` - List of all included files
+   - `m1f/<project>_complete_dirlist.txt` - List of all directories
+   - `m1f/<project>_docs.txt` - Documentation only bundle
+   - `m1f/<project>_docs_filelist.txt` - List of documentation files
+   - `m1f/<project>_docs_dirlist.txt` - Documentation directories
 
-3. Reference the documentation in your AI tool:
+4. **Creates basic configuration**
+   - Generates `.m1f.config.yml` if not present
+   - Sets up sensible defaults
 
-   ```bash
-   # For Claude Code, Cursor, or similar AI assistants:
-   @m1f/m1f.txt
+#### Using with AI Tools:
 
-   # Example prompts:
-   "Please read @m1f/m1f.txt and help me create a .m1f.config.yml
-   for bundling my Python project"
+After running `m1f-init`, reference the documentation in your AI tool:
 
-   "Based on @m1f/m1f.txt, what's the best way to exclude test
-   files while keeping documentation?"
+```bash
+# For Claude Code, Cursor, or similar AI assistants:
+@m1f/m1f.txt
 
-   "Using @m1f/m1f.txt as reference, help me set up auto-bundling
-   for a WordPress theme"
-   ```
+# Example prompts:
+"Please read @m1f/m1f.txt and help me create custom bundles
+for my Python web application"
+
+"Based on @m1f/m1f.txt, how can I exclude test files
+while keeping fixture data?"
+
+"Using @m1f/m1f.txt as reference, help me optimize
+my .m1f.config.yml for a React project"
+```
+
+#### Advanced Setup (Linux/macOS only):
+
+For topic-specific bundles and Claude-assisted configuration:
+
+```bash
+m1f-claude --advanced-setup
+```
+
+#### Working with File Lists:
+
+The generated file lists are valuable for customizing bundles:
+
+```bash
+# View what files are included
+cat m1f/*_filelist.txt | wc -l  # Count total files
+
+# Edit file lists to customize bundles
+vi m1f/myproject_complete_filelist.txt
+# Remove lines for files you don't want
+# Add paths for files you do want
+
+# Create a custom bundle from edited list
+m1f -i m1f/myproject_complete_filelist.txt -o m1f/custom.txt
+
+# Combine multiple file lists
+cat m1f/*_docs_filelist.txt m1f/api_filelist.txt | sort -u > m1f/combined_list.txt
+m1f -i m1f/combined_list.txt -o m1f/docs_and_api.txt
+```
 
 This single documentation file contains:
 

@@ -27,6 +27,7 @@ optimal LLM context usage.
   domain
 - **Rate Limiting**: Configurable delays between requests
 - **Progress Tracking**: Real-time download progress with file listing
+- **Resume Support**: Interrupt and resume scraping sessions with SQLite tracking
 
 ## Quick Start
 
@@ -44,6 +45,9 @@ m1f-scrape https://example.com -o ./html --scraper httrack
 
 # List downloaded files after completion
 m1f-scrape https://example.com -o ./html --list-files
+
+# Resume interrupted scraping (with verbose mode to see progress)
+m1f-scrape https://example.com -o ./html -v
 ```
 
 ## Command Line Interface
@@ -173,6 +177,7 @@ Downloaded files are organized to mirror the website structure:
 
 ```
 output_directory/
+├── scrape_tracker.db         # SQLite database for resume functionality
 ├── example.com/
 │   ├── index.html
 │   ├── index.meta.json
@@ -258,6 +263,59 @@ m1f -s ./react_md -o ./react_documentation.txt
 # "Here is the React documentation: <contents of react_documentation.txt>"
 ```
 
+## Resume Functionality
+
+The scraper supports interrupting and resuming downloads, making it ideal for large websites or unreliable connections.
+
+### How It Works
+
+- **SQLite Database**: Creates `scrape_tracker.db` in the output directory to track:
+  - URL of each scraped page
+  - HTTP status code and target filename
+  - Timestamp and error messages (if any)
+- **Progress Display**: Shows real-time progress in verbose mode:
+  ```
+  Processing: https://example.com/page1 (page 1)
+  Processing: https://example.com/page2 (page 2)
+  ```
+- **Graceful Interruption**: Press Ctrl+C to interrupt cleanly:
+  ```
+  Press Ctrl+C to interrupt and resume later
+  ^C
+  ⚠️  Scraping interrupted by user
+  Run the same command again to resume where you left off
+  ```
+
+### Resume Example
+
+```bash
+# Start scraping with verbose mode
+m1f-scrape https://docs.example.com -o ./docs --max-pages 100 -v
+
+# Interrupt with Ctrl+C when needed
+# Resume by running the exact same command:
+m1f-scrape https://docs.example.com -o ./docs --max-pages 100 -v
+
+# You'll see:
+# Resuming crawl - found 25 previously scraped URLs
+# Populating queue from previously scraped pages...
+# Found 187 URLs to visit after analyzing scraped pages
+# Processing: https://docs.example.com/new-page (page 26)
+```
+
+### Database Inspection
+
+```bash
+# View scraped URLs
+sqlite3 docs/scrape_tracker.db "SELECT url, status_code FROM scraped_urls;"
+
+# Count pages
+sqlite3 docs/scrape_tracker.db "SELECT COUNT(*) FROM scraped_urls;"
+
+# Check errors
+sqlite3 docs/scrape_tracker.db "SELECT url, error FROM scraped_urls WHERE error IS NOT NULL;"
+```
+
 ## Best Practices
 
 1. **Respect robots.txt**: The tool automatically respects robots.txt files
@@ -267,6 +325,8 @@ m1f -s ./react_md -o ./react_documentation.txt
    (default: 2 connections)
 4. **Test with small crawls**: Start with `--max-pages 10` to test your settings
 5. **Check output**: Use `--list-files` to verify what was downloaded
+6. **Use verbose mode**: Add `-v` flag to see progress and resume information
+7. **Keep commands consistent**: Use the exact same command to resume a session
 
 ## Dealing with Cloudflare Protection
 

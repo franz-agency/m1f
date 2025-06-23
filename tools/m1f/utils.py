@@ -23,6 +23,8 @@ import re
 from pathlib import Path
 from typing import List, Tuple
 
+from .constants import DOCUMENTATION_EXTENSIONS
+
 
 def format_duration(seconds: float) -> str:
     """Format duration in seconds to a human-readable string."""
@@ -180,6 +182,11 @@ def is_hidden_path(path: Path) -> bool:
         if part.startswith(".") and part not in (".", ".."):
             return True
     return False
+
+
+def is_documentation_file(file_path: Path) -> bool:
+    """Check if a file is a documentation file based on its extension."""
+    return file_path.suffix.lower() in DOCUMENTATION_EXTENSIONS
 
 
 def get_relative_path(file_path: Path, base_path: Path) -> str:

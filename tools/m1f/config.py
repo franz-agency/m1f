@@ -104,6 +104,7 @@ class FilterConfig:
     include_paths_file: Optional[Union[str, List[str]]] = None
     include_extensions: Set[str] = field(default_factory=set)
     exclude_extensions: Set[str] = field(default_factory=set)
+    docs_only: bool = False
     include_dot_paths: bool = False
     include_binary_files: bool = False
     include_symlinks: bool = False
@@ -250,6 +251,7 @@ class Config:
             exclude_extensions=set(
                 normalize_extensions(getattr(args, "exclude_extensions", []))
             ),
+            docs_only=getattr(args, "docs_only", False),
             include_dot_paths=getattr(args, "include_dot_paths", False),
             include_binary_files=getattr(args, "include_binary_files", False),
             include_symlinks=getattr(args, "include_symlinks", False),

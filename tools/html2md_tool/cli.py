@@ -128,15 +128,36 @@ def add_convert_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--extractor", type=Path, help="Path to custom extractor Python file"
     )
+    
+    # Claude AI conversion options
+    parser.add_argument(
+        "--claude", 
+        action="store_true", 
+        help="Use Claude AI to convert HTML to Markdown (content only, no headers/navigation)"
+    )
+    
+    parser.add_argument(
+        "--model",
+        choices=["opus", "sonnet"],
+        default="sonnet",
+        help="Claude model to use (default: sonnet)"
+    )
+    
+    parser.add_argument(
+        "--sleep",
+        type=float,
+        default=1.0,
+        help="Sleep time in seconds between Claude API calls (default: 1.0)"
+    )
 
 
 def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for analyze command."""
     parser.add_argument(
-        "files",
+        "paths",
         nargs="+",
         type=Path,
-        help="HTML files to analyze (2-3 files recommended)",
+        help="HTML files or directories to analyze (automatically finds all .html files in directories)",
     )
 
     parser.add_argument(
@@ -153,6 +174,12 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         "--suggest-selectors",
         action="store_true",
         help="Suggest CSS selectors for content extraction",
+    )
+    
+    parser.add_argument(
+        "--claude",
+        action="store_true",
+        help="Use Claude AI to intelligently select representative files and suggest selectors",
     )
 
 
@@ -176,6 +203,11 @@ def add_config_arguments(parser: argparse.ArgumentParser) -> None:
 
 def handle_convert(args: argparse.Namespace) -> None:
     """Handle convert command."""
+    # If --claude flag is set, use Claude for conversion
+    if args.claude:
+        _handle_claude_convert(args)
+        return
+    
     # Load configuration
     if args.config:
         from .config import load_config
@@ -235,20 +267,54 @@ def handle_analyze(args: argparse.Namespace) -> None:
     from collections import Counter
     import json
 
-    console.print(f"Analyzing {len(args.files)} HTML files...")
+    # Collect all HTML files from provided paths
+    html_files = []
+    for path in args.paths:
+        if not path.exists():
+            console.print(f"❌ Path not found: {path}", style="red")
+            continue
+        
+        if path.is_file():
+            # Single file
+            if path.suffix.lower() in ['.html', '.htm']:
+                html_files.append(path)
+            else:
+                console.print(f"⚠️  Skipping non-HTML file: {path}", style="yellow")
+        elif path.is_dir():
+            # Directory - find all HTML files recursively
+            found_files = list(path.rglob("*.html")) + list(path.rglob("*.htm"))
+            if found_files:
+                html_files.extend(found_files)
+                console.print(f"Found {len(found_files)} HTML files in {path}", style="blue")
+            else:
+                console.print(f"⚠️  No HTML files found in {path}", style="yellow")
+    
+    if not html_files:
+        console.print("❌ No HTML files to analyze", style="red")
+        sys.exit(1)
+    
+    # If --claude flag is set, use Claude AI for analysis
+    if args.claude:
+        console.print(f"\nFound {len(html_files)} HTML files total")
+        _handle_claude_analysis(html_files)
+        return
+    
+    # Otherwise, do local analysis
+    console.print(f"\nAnalyzing {len(html_files)} HTML files...")
 
     # Read and parse all files
     parsed_files = []
-    for file_path in args.files:
-        if not file_path.exists():
-            console.print(f"❌ File not found: {file_path}", style="red")
-            continue
-
+    for file_path in html_files:
         try:
             content = file_path.read_text(encoding="utf-8")
             soup = BeautifulSoup(content, "html.parser")
             parsed_files.append((file_path, soup))
-            console.print(f"✅ Parsed: {file_path.name}", style="green")
+            # Show relative path from current directory for better identification
+            try:
+                relative_path = file_path.relative_to(Path.cwd())
+            except ValueError:
+                relative_path = file_path
+            console.print(f"✅ Parsed: {relative_path}", style="green")
         except Exception as e:
             console.print(f"❌ Error parsing {file_path}: {e}", style="red")
 
@@ -360,6 +426,213 @@ def _find_common_patterns(parsed_files):
         console.print(f"  <{tag}> (found {count} times)")
 
 
+def _handle_claude_analysis(html_files):
+    """Handle analysis using Claude AI."""
+    import subprocess
+    import os
+    import tempfile
+    from pathlib import Path
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from m1f.utils import validate_path_traversal
+    
+    console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
+    
+    # Find the common parent directory of all HTML files
+    if html_files:
+        common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
+        console.print(f"Analysis directory: {common_parent}")
+        console.print(f"Total files to analyze: {len(html_files)}")
+    else:
+        console.print("❌ No HTML files to analyze", style="red")
+        return
+    
+    # Save current directory
+    original_dir = Path.cwd()
+    
+    try:
+        # Change to the common parent directory
+        os.chdir(common_parent)
+        console.print(f"Changed to directory: {common_parent}")
+        
+        # Run m1f-init to prepare the directory
+        console.print("\nRunning m1f-init...")
+        try:
+            subprocess.run(["m1f-init"], check=True)
+            console.print("✅ m1f-init completed successfully", style="green")
+        except subprocess.CalledProcessError as e:
+            console.print(f"❌ m1f-init failed: {e}", style="red")
+            return
+        except FileNotFoundError:
+            console.print("❌ m1f-init command not found", style="red")
+            return
+        
+        # Get relative paths from the common parent
+        relative_paths = []
+        for f in html_files:
+            try:
+                rel_path = f.relative_to(common_parent)
+                relative_paths.append(str(rel_path))
+            except ValueError:
+                relative_paths.append(str(f))
+        
+        # Step 1: Load the file selection prompt
+        prompt_dir = Path(__file__).parent / "prompts"
+        select_prompt_path = prompt_dir / "select_files_prompt.md"
+        
+        if not select_prompt_path.exists():
+            console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
+            return
+        
+        select_prompt = select_prompt_path.read_text()
+        file_list = "\n".join(relative_paths)
+        select_prompt = select_prompt.replace("{file_list}", file_list)
+        
+        console.print("\nAsking Claude to select representative files...")
+        
+        # Load the simple select prompt
+        simple_prompt_path = prompt_dir / "select_files_simple.md"
+        if not simple_prompt_path.exists():
+            console.print(f"❌ Simple prompt file not found: {simple_prompt_path}", style="red")
+            return
+        
+        simple_prompt = simple_prompt_path.read_text()
+        simple_prompt = simple_prompt.replace("{file_list}", file_list)
+        
+        try:
+            # Run claude with prompt directly (like m1f_claude does)
+            cmd = [
+                "claude",
+                "-p", simple_prompt
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            selected_files = result.stdout.strip().split('\n')
+            selected_files = [f.strip() for f in selected_files if f.strip()]
+            
+            console.print(f"\nClaude selected {len(selected_files)} files:")
+            for f in selected_files:
+                console.print(f"  - {f}", style="blue")
+            
+        except subprocess.CalledProcessError as e:
+            console.print(f"❌ Claude command failed: {e}", style="red")
+            console.print(f"Error output: {e.stderr}", style="red")
+            return
+        except FileNotFoundError:
+            console.print("❌ claude command not found. Please install Claude CLI.", style="red")
+            return
+        
+        # Step 2: Read the selected HTML files
+        console.print("\nReading selected HTML files...")
+        html_contents = []
+        for file_path in selected_files[:5]:  # Limit to 5 files
+            # Claude might return paths with redundant directory prefixes
+            # since we already changed to common_parent directory
+            file_path = file_path.strip()
+            
+            # Try to find the file
+            full_path = None
+            
+            # Method 1: Direct path from current directory (where m1f-init ran)
+            if Path(file_path).exists():
+                full_path = Path(file_path)
+            # Method 2: Go back to original directory and try
+            elif (original_dir / file_path).exists():
+                full_path = original_dir / file_path
+            # Method 3: Strip the leading directories that match our current location
+            else:
+                # If the path starts with parts of our current directory name, remove them
+                path_parts = file_path.split('/')
+                # Look for where the actual file path begins
+                for i in range(len(path_parts)):
+                    test_path = '/'.join(path_parts[i:])
+                    if Path(test_path).exists():
+                        full_path = Path(test_path)
+                        break
+                    elif (original_dir / test_path).exists():
+                        full_path = original_dir / test_path
+                        break
+            
+            if full_path and full_path.exists():
+                try:
+                    # Validate path to prevent traversal attacks
+                    validated_path = validate_path_traversal(
+                        full_path, 
+                        base_path=original_dir,
+                        allow_outside=False
+                    )
+                    content = validated_path.read_text(encoding='utf-8')
+                    # Limit content size to avoid overwhelming the prompt
+                    if len(content) > 10000:
+                        content = content[:10000] + "\n... (truncated)"
+                    html_contents.append(f"### File: {file_path}\n```html\n{content}\n```\n")
+                    console.print(f"✅ Read: {file_path}", style="green")
+                except ValueError as e:
+                    # Path traversal attempt
+                    console.print(f"❌ Security error for {file_path}: {e}", style="red")
+                except Exception as e:
+                    console.print(f"❌ Error reading {file_path}: {e}", style="red")
+            else:
+                console.print(f"❌ File not found: {file_path}", style="red")
+                console.print(f"   Tried: {common_parent / file_path}", style="yellow")
+        
+        if not html_contents:
+            console.print("❌ No HTML files could be read", style="red")
+            return
+        
+        # Step 3: Load the analysis prompt
+        analyze_prompt_path = prompt_dir / "analyze_html_prompt.md"
+        if not analyze_prompt_path.exists():
+            console.print(f"❌ Prompt file not found: {analyze_prompt_path}", style="red")
+            return
+        
+        analyze_prompt = analyze_prompt_path.read_text()
+        html_content_str = "\n".join(html_contents)
+        analyze_prompt = analyze_prompt.replace("{html_content}", html_content_str)
+        
+        console.print("\nAsking Claude to analyze HTML structure and suggest selectors...")
+        
+        # Load the simple analyze prompt
+        simple_analyze_path = prompt_dir / "analyze_html_simple.md"
+        if not simple_analyze_path.exists():
+            console.print(f"❌ Simple analyze prompt file not found: {simple_analyze_path}", style="red")
+            return
+        
+        simple_analyze_prompt = simple_analyze_path.read_text()
+        simple_analyze_prompt = simple_analyze_prompt.replace("{html_content}", html_content_str)
+        
+        try:
+            # Run claude with prompt directly (like m1f_claude does)
+            cmd = [
+                "claude",
+                "-p", simple_analyze_prompt
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
+            console.print("\n[bold]Claude's Analysis:[/bold]")
+            console.print(result.stdout)
+            
+        except subprocess.CalledProcessError as e:
+            console.print(f"❌ Claude command failed: {e}", style="red")
+            console.print(f"Error output: {e.stderr}", style="red")
+            
+    finally:
+        # Change back to original directory
+        os.chdir(original_dir)
+        console.print(f"\nReturned to original directory: {original_dir}")
+
+
 def _suggest_selectors(parsed_files):
     """Suggest CSS selectors for content extraction."""
     suggestions = {"content": [], "ignore": []}
@@ -422,6 +695,154 @@ def _suggest_selectors(parsed_files):
                     suggestions["ignore"].append(pattern)
 
     return suggestions
+
+
+def _handle_claude_convert(args: argparse.Namespace) -> None:
+    """Handle conversion using Claude AI."""
+    import subprocess
+    import time
+    from pathlib import Path
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from m1f.utils import validate_path_traversal
+    
+    console.print(f"\n[bold]Using Claude AI to convert HTML to Markdown...[/bold]")
+    console.print(f"Model: {args.model}")
+    console.print(f"Sleep between calls: {args.sleep} seconds")
+    
+    # Find all HTML files in source directory
+    source_path = args.source
+    if not source_path.exists():
+        console.print(f"❌ Source path not found: {source_path}", style="red")
+        sys.exit(1)
+    
+    html_files = []
+    if source_path.is_file():
+        if source_path.suffix.lower() in ['.html', '.htm']:
+            html_files.append(source_path)
+        else:
+            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
+            sys.exit(1)
+    elif source_path.is_dir():
+        # Find all HTML files recursively
+        html_files = list(source_path.rglob("*.html")) + list(source_path.rglob("*.htm"))
+        console.print(f"Found {len(html_files)} HTML files in {source_path}")
+    
+    if not html_files:
+        console.print("❌ No HTML files found to convert", style="red")
+        sys.exit(1)
+    
+    # Prepare output directory
+    output_path = args.output
+    if output_path.exists() and output_path.is_file():
+        console.print(f"❌ Output path is a file, expected directory: {output_path}", style="red")
+        sys.exit(1)
+    
+    if not output_path.exists():
+        output_path.mkdir(parents=True, exist_ok=True)
+        console.print(f"Created output directory: {output_path}")
+    
+    # Load conversion prompt
+    prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
+    if not prompt_path.exists():
+        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
+        sys.exit(1)
+    
+    prompt_template = prompt_path.read_text()
+    
+    # Model parameter for Claude CLI (just use the short names)
+    model_param = args.model
+    
+    # Process each HTML file
+    converted_count = 0
+    failed_count = 0
+    
+    for i, html_file in enumerate(html_files):
+        tmp_html_path = None
+        try:
+            # Validate path to prevent traversal attacks
+            validated_path = validate_path_traversal(
+                html_file,
+                base_path=source_path if source_path.is_dir() else source_path.parent,
+                allow_outside=False
+            )
+            
+            # Read HTML content
+            html_content = validated_path.read_text(encoding='utf-8')
+            
+            # Determine output file path
+            if source_path.is_file():
+                # Single file conversion
+                output_file = output_path / html_file.with_suffix('.md').name
+            else:
+                # Directory conversion - maintain structure
+                relative_path = html_file.relative_to(source_path)
+                output_file = output_path / relative_path.with_suffix('.md')
+            
+            # Create output directory if needed
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            console.print(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
+            
+            # Create a temporary file with the HTML content
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as tmp_html:
+                tmp_html.write(html_content)
+                tmp_html_path = tmp_html.name
+            
+            # Prepare the prompt for the temporary file
+            prompt = prompt_template.replace("{html_content}", f"@{tmp_html_path}")
+            
+            # Call Claude with the prompt referencing the file
+            cmd = [
+                "claude",
+                "-p", prompt,
+                "--model", model_param
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
+            # Save the markdown output
+            markdown_content = result.stdout.strip()
+            output_file.write_text(markdown_content, encoding='utf-8')
+            
+            console.print(f"✅ Converted to: {output_file}", style="green")
+            converted_count += 1
+            
+            # Sleep between API calls (except for the last one)
+            if i < len(html_files) - 1 and args.sleep > 0:
+                console.print(f"Sleeping for {args.sleep} seconds...", style="dim")
+                time.sleep(args.sleep)
+            
+        except subprocess.CalledProcessError as e:
+            console.print(f"❌ Claude conversion failed: {e}", style="red")
+            if e.stderr:
+                console.print(f"Error: {e.stderr}", style="red")
+            failed_count += 1
+        except Exception as e:
+            console.print(f"❌ Error processing {html_file}: {e}", style="red")
+            failed_count += 1
+        finally:
+            # Clean up temporary file
+            if tmp_html_path:
+                try:
+                    Path(tmp_html_path).unlink()
+                except:
+                    pass
+    
+    # Summary
+    console.print(f"\n[bold]Conversion Summary:[/bold]")
+    console.print(f"✅ Successfully converted: {converted_count} files", style="green")
+    if failed_count > 0:
+        console.print(f"❌ Failed to convert: {failed_count} files", style="red")
+    
+    if converted_count == 0:
+        sys.exit(1)
 
 
 def handle_config(args: argparse.Namespace) -> None:
