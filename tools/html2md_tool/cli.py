@@ -589,6 +589,8 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
     # Update the prompt with the number of files
     simple_prompt_template = simple_prompt_template.replace("5 representative", f"{num_files_to_analyze} representative")
     simple_prompt_template = simple_prompt_template.replace("select 5", f"select {num_files_to_analyze}")
+    simple_prompt_template = simple_prompt_template.replace("EXACTLY 5 file paths", f"EXACTLY {num_files_to_analyze} file paths")
+    simple_prompt_template = simple_prompt_template.replace("exactly 5 representative", f"exactly {num_files_to_analyze} representative")
     
     # Add project description to the prompt
     if project_description:
@@ -624,6 +626,18 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
             )
         selected_files = result.stdout.strip().split("\n")
         selected_files = [f.strip() for f in selected_files if f.strip()]
+        
+        # Filter out any lines that are not file paths (e.g., explanations)
+        valid_files = []
+        for f in selected_files:
+            # Skip lines that look like explanations (contain "select" or start with lowercase or are too long)
+            if any(word in f.lower() for word in ["select", "based on", "analysis", "representative"]) or len(f) > 100:
+                continue
+            # Only keep lines that look like file paths (contain .html or /)
+            if ".html" in f or "/" in f:
+                valid_files.append(f)
+        
+        selected_files = valid_files
 
         console.print(f"\nClaude selected {len(selected_files)} files:")
         for f in selected_files:
@@ -631,7 +645,6 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
 
     except subprocess.TimeoutExpired:
         console.print("⏰ Timeout selecting files (1 minute)", style="yellow")
-        process.kill()
         return
     except subprocess.CalledProcessError as e:
         console.print(f"❌ Claude command failed: {e}", style="red")
@@ -739,7 +752,6 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
             console.print(
                 f"⏰ Timeout analyzing {file_path} (1 minute)", style="yellow"
             )
-            process.kill()
             continue
         except Exception as e:
             console.print(f"❌ Error analyzing {file_path}: {e}", style="red")
@@ -888,7 +900,6 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
         console.print(
             "⏰ Timeout synthesizing configuration (1 minute)", style="yellow"
         )
-        process.kill()
     except subprocess.CalledProcessError as e:
         console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")

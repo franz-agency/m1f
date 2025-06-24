@@ -37,6 +37,8 @@ Select files that likely have:
 ## Output Format:
 Return EXACTLY 5 file paths, one per line.
 No explanations, no formatting, no numbering.
+Do not include any text before or after the file paths.
+Just the file paths, nothing else.
 
 Example format:
 docs/getting-started/index.html
