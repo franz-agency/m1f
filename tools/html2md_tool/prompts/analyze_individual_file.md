@@ -4,9 +4,9 @@ You are analyzing a single HTML file to understand its structure for optimal con
 
 ## Your Task
 
-Read the HTML file: @{filename}
+Read the HTML file: {filename}
 
-Analyze this file's structure and write your findings to: @m1f/html_analysis_{file_number}.txt
+Analyze this file's structure and write your findings to: m1f/analysis/html_analysis_{file_number}.txt
 
 ## Analysis Criteria
 
@@ -53,7 +53,7 @@ Potential Issues: [edge cases noticed]
 
 ## Output Format
 
-Write your analysis to @m1f/html_analysis_{file_number}.txt in this exact format:
+Write your analysis to m1f/analysis/html_analysis_{file_number}.txt in this exact format:
 
 ```
 FILE: {filename}

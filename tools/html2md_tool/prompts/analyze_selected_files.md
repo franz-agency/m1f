@@ -1,15 +1,14 @@
 # HTML Structure Analysis for Optimal Content Extraction
 
-<deep-thinking>
+use deep thinking
 The user wants a more systematic approach:
 1. Create a task list
 2. Analyze each file individually and save results
 3. Then synthesize all analyses into final config
 This will produce much better results than trying to analyze all files at once.
-</deep-thinking>
 
 ## Context
-The file m1f/selected_html_files.txt contains 5 representative HTML files from the documentation site.
+The file m1f/selected_html_files.txt contains representative HTML files from the documentation site.
 
 ## Task List
 
@@ -19,14 +18,12 @@ For each HTML file listed in m1f/selected_html_files.txt:
 1. **Read the file** using the Read tool
 2. **Perform deep structural analysis** (see analysis criteria below)
 3. **Write detailed findings** to a separate analysis file:
-   - File 1 → Write analysis to m1f/html_analysis_1.txt
-   - File 2 → Write analysis to m1f/html_analysis_2.txt
-   - File 3 → Write analysis to m1f/html_analysis_3.txt
-   - File 4 → Write analysis to m1f/html_analysis_4.txt
-   - File 5 → Write analysis to m1f/html_analysis_5.txt
+   - File 1 → Write analysis to m1f/analysis/html_analysis_1.txt
+   - File 2 → Write analysis to m1f/analysis/html_analysis_2.txt
+   - etc. (continue for all files in the list)
 
 ### Phase 2: Synthesis
-4. **Read all 5 analysis files** (m1f/html_analysis_1.txt through m1f/html_analysis_5.txt)
+4. **Read all analysis files** (m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt where N is the number of files analyzed)
 5. **Identify common patterns** across all analyses
 6. **Create final YAML configuration** based on the synthesized findings
 
@@ -75,7 +72,7 @@ Potential Issues: [edge cases noticed]
 
 ## Analysis File Format
 
-Each analysis file (m1f/html_analysis_N.txt) should follow this format:
+Each analysis file (m1f/analysis/html_analysis_N.txt) should follow this format:
 
 ```
 FILE: [filename]
@@ -109,36 +106,78 @@ ignore_selectors:
 
 ## Final Output
 
-After analyzing all 5 files and reading the analysis results, create:
+After analyzing all files and reading the analysis results, create the file m1f_extract.yml
+
+The file should have the results of you analyses and have this structure:
 
 ```yaml
+# Complete configuration file for m1f-html2md
+# All sections are optional - only include what differs from defaults
+
+# Source and destination paths (usually provided via CLI)
+source: ./html
+destination: ./markdown
+
+# Extractor configuration - CSS selectors for content extraction
 extractor:
   # Primary selector that works across most/all analyzed files
   content_selector: "main.content, article.documentation"
   
   # Fallback selectors in priority order
   alternative_selectors:
-    - "[selector that works on 4/5 files]"
-    - "[selector that works on 3/5 files]"
+    - "[selector that works on most files]"
+    - "[selector that works on some files]"
     - "[generic but safe fallback]"
   
   # Exclusions that apply across all files
   ignore_selectors:
-    # Navigation (found in X/5 files)
+    # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
     
-    # Headers/Footers (found in X/5 files)
+    # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
     
     # [Continue with all common exclusions]
 
-# Synthesis notes
+# Conversion options - Markdown formatting preferences
+conversion:
+  strip_tags: ["script", "style", "noscript"]
+  keep_html_tags: []  # HTML tags to preserve in output
+  heading_style: "atx"  # atx (###) or setext (underlines)
+  bold_style: "**"  # ** or __
+  italic_style: "*"  # * or _
+  link_style: "inline"  # inline or reference
+  list_marker: "-"  # -, *, or +
+  code_block_style: "fenced"  # fenced (```) or indented
+  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  preserve_whitespace: false
+  wrap_width: 0  # 0 = no wrapping
+
+# Asset handling configuration
+assets:
+  download_images: false
+  image_directory: "images"
+  link_prefix: ""
+  process_links: true
+
+# File handling options
+file_extensions: [".html", ".htm"]
+exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
+target_encoding: "utf-8"
+
+# Processing options
+parallel: true  # Enable parallel processing
+max_workers: 4
+overwrite: false  # Overwrite existing files
+
+# Synthesis notes (not used by the tool, just for documentation)
 notes: |
   Analysis Summary:
-  - Analyzed 5 files representing different page types
-  - Primary selector works on X/5 files
+  - Analyzed N files representing different page types
+  - Primary selector works on X/N files
   - Fallback selectors provide Y% coverage
   
   Key Findings:
@@ -155,3 +194,10 @@ notes: |
 3. **NEVER use empty strings** ("") as selectors - every selector must have actual content
 4. **Remove any empty or whitespace-only selectors** from lists before outputting
 5. **Validate all selectors** are non-empty and properly formatted CSS selectors
+
+**FILE MANAGEMENT**:
+- Use Write tool to create analysis files in m1f/analysis/ directory as specified
+- You may create temporary files if needed for analysis
+- **IMPORTANT**: Clean up ALL temporary files you have created
+- Only keep the required analysis files: m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt (where N is the number of files analyzed)
+- Delete any .py, .sh, or other temporary files you create during analysis

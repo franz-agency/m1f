@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.3.0] - 2025-06-24
 
 ### Documentation
 
@@ -19,6 +19,11 @@ and this project adheres to
   - Added "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
   - Added bundle location and Claude reference syntax explanation
   - Improved overall structure with developer-friendly tone
+- **HTML2MD Documentation Updates**: Enhanced Claude AI integration documentation
+  - Added `--analyze-files` parameter documentation
+  - Documented project description prompt feature
+  - Added subprocess handling improvements
+  - Updated examples with new features
 
 ### Added
 
@@ -45,6 +50,15 @@ and this project adheres to
     - Fixed indentation errors in subprocess.Popen calls
     - Applied black formatting for consistent code style
     - Enhanced logging and progress indicators
+    - Changed all subprocess.Popen + communicate() to subprocess.run() for reliable Claude CLI integration
+    - Added 5-minute timeout handling for subprocess operations
+  - **User Experience Improvements**: Enhanced workflow and configuration
+    - Added `--analyze-files` parameter to specify number of files to analyze (1-20, default: 5)
+    - Project description prompt now includes tip about specifying important files
+    - Output configuration saved as `html2md_extract_config.yaml` instead of generic name
+    - Fixed file references to use m1f/ instead of @m1f directory
+    - Added debug output for transparency during analysis process
+    - Cleanup functionality removes temporary analysis files after confirmation
 
 - **WebScraper Content Deduplication**: Memory-efficient duplicate prevention system (enabled by default)
   - **Database-Backed Deduplication**: Optimized for large scraping sessions
@@ -97,6 +111,23 @@ and this project adheres to
     - Documentation sites with multiple URL formats for same content
     - E-commerce sites with product URLs containing tracking parameters
     - News sites with print and mobile versions of articles
+
+### Fixed
+
+- **HTML2MD Claude Integration Issues**: Resolved multiple issues with Claude CLI integration
+  - Fixed subprocess hanging when using `Popen` + `communicate()` with Claude CLI
+  - Fixed incorrect m1f usage (now properly uses `--skip-output-file` for filelist generation)
+  - Fixed file references from embedded content to proper @ syntax
+  - Fixed indentation errors in subprocess calls
+  - Fixed undefined variable errors (removed unused `html_contents`)
+  - Fixed test failure for outdated CLI parameters
+- **m1f Directory Structure**: Corrected nested directory configuration
+  - Fixed .m1f.config.yml to use proper m1f/m1f/ structure
+  - Removed accidental triple nesting (m1f/m1f/m1f/)
+  - Created proper symlink from m1f/m1f.txt to m1f/m1f/87_m1f_only_docs.txt
+- **WebScraper Logging**: Fixed duplicate content detection logging
+  - Duplicates no longer logged as "unexpected errors"
+  - Changed from exception-based to graceful skip-based handling
 
 
 - **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions

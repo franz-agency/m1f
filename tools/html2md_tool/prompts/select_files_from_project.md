@@ -3,7 +3,7 @@
 The file m1f/all_html_files_filelist.txt contains all HTML files from the scraped documentation site.
 
 ## Your Mission:
-Select exactly 5 HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
+Select exactly 5 representative HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
 
 ## Selection Strategy:
 

@@ -1514,7 +1514,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.3.0] - 2025-06-24
 
 ### Documentation
 
@@ -1527,6 +1527,11 @@ and this project adheres to
   - Added "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
   - Added bundle location and Claude reference syntax explanation
   - Improved overall structure with developer-friendly tone
+- **HTML2MD Documentation Updates**: Enhanced Claude AI integration documentation
+  - Added `--analyze-files` parameter documentation
+  - Documented project description prompt feature
+  - Added subprocess handling improvements
+  - Updated examples with new features
 
 ### Added
 
@@ -1553,6 +1558,15 @@ and this project adheres to
     - Fixed indentation errors in subprocess.Popen calls
     - Applied black formatting for consistent code style
     - Enhanced logging and progress indicators
+    - Changed all subprocess.Popen + communicate() to subprocess.run() for reliable Claude CLI integration
+    - Added 5-minute timeout handling for subprocess operations
+  - **User Experience Improvements**: Enhanced workflow and configuration
+    - Added `--analyze-files` parameter to specify number of files to analyze (1-20, default: 5)
+    - Project description prompt now includes tip about specifying important files
+    - Output configuration saved as `html2md_extract_config.yaml` instead of generic name
+    - Fixed file references to use m1f/ instead of @m1f directory
+    - Added debug output for transparency during analysis process
+    - Cleanup functionality removes temporary analysis files after confirmation
 
 - **WebScraper Content Deduplication**: Memory-efficient duplicate prevention system (enabled by default)
   - **Database-Backed Deduplication**: Optimized for large scraping sessions
@@ -1605,6 +1619,23 @@ and this project adheres to
     - Documentation sites with multiple URL formats for same content
     - E-commerce sites with product URLs containing tracking parameters
     - News sites with print and mobile versions of articles
+
+### Fixed
+
+- **HTML2MD Claude Integration Issues**: Resolved multiple issues with Claude CLI integration
+  - Fixed subprocess hanging when using `Popen` + `communicate()` with Claude CLI
+  - Fixed incorrect m1f usage (now properly uses `--skip-output-file` for filelist generation)
+  - Fixed file references from embedded content to proper @ syntax
+  - Fixed indentation errors in subprocess calls
+  - Fixed undefined variable errors (removed unused `html_contents`)
+  - Fixed test failure for outdated CLI parameters
+- **m1f Directory Structure**: Corrected nested directory configuration
+  - Fixed .m1f.config.yml to use proper m1f/m1f/ structure
+  - Removed accidental triple nesting (m1f/m1f/m1f/)
+  - Created proper symlink from m1f/m1f.txt to m1f/m1f/87_m1f_only_docs.txt
+- **WebScraper Logging**: Fixed duplicate content detection logging
+  - Duplicates no longer logged as "unexpected errors"
+  - Changed from exception-based to graceful skip-based handling
 
 
 - **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
@@ -12660,6 +12691,9 @@ m1f-html2md analyze ./html/*.html --show-structure --common-patterns
 # Use Claude AI to intelligently analyze HTML structure
 m1f-html2md analyze ./html/ --claude
 
+# Analyze with Claude and specify number of files to analyze (1-20)
+m1f-html2md analyze ./html/ --claude --analyze-files 10
+
 # Convert HTML to Markdown using Claude AI (clean content extraction)
 m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus --sleep 2
 
@@ -12734,6 +12768,7 @@ m1f-html2md analyze <paths> [options]
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
 | `--claude`            | Use Claude AI to intelligently select files and suggest selectors    |
+| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)           |
 | `-v, --verbose`       | Enable verbose output                                                |
 | `-q, --quiet`         | Suppress all output except errors                                    |
 
@@ -12762,12 +12797,23 @@ Use Claude to automatically select representative HTML files and suggest optimal
 # Analyze a directory of HTML files with Claude
 m1f-html2md analyze ./scraped-site/ --claude
 
+# Analyze more files for better coverage (up to 20)
+m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
+
 # Claude will:
-# 1. Select 5 representative files from the directory
-# 2. Analyze their structure
-# 3. Suggest content and ignore selectors
-# 4. Generate a YAML configuration
+# 1. Prompt for project description and important files (if applicable)
+# 2. Select representative files from the directory (default: 5)
+# 3. Analyze each file's structure individually
+# 4. Synthesize findings to suggest optimal selectors
+# 5. Generate a YAML configuration (html2md_extract_config.yaml)
 ```
+
+**Features of Claude Analysis:**
+- **Project Context**: Provides project description to help Claude understand the content
+- **Important File Priority**: Can specify important files for Claude to prioritize
+- **Multi-phase Analysis**: Individual file analysis followed by synthesis
+- **Transparent Process**: Creates temporary analysis files in m1f/ directory
+- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI integration
 
 ### AI-Powered Conversion
 
@@ -15869,9 +15915,9 @@ You are analyzing a single HTML file to understand its structure for optimal con
 
 ## Your Task
 
-Read the HTML file: @{filename}
+Read the HTML file: {filename}
 
-Analyze this file's structure and write your findings to: @m1f/html_analysis_{file_number}.txt
+Analyze this file's structure and write your findings to: m1f/analysis/html_analysis_{file_number}.txt
 
 ## Analysis Criteria
 
@@ -15918,7 +15964,7 @@ Potential Issues: [edge cases noticed]
 
 ## Output Format
 
-Write your analysis to @m1f/html_analysis_{file_number}.txt in this exact format:
+Write your analysis to m1f/analysis/html_analysis_{file_number}.txt in this exact format:
 
 ```
 FILE: {filename}
@@ -15959,16 +16005,15 @@ ignore_selectors:
 ======= tools/html2md_tool/prompts/analyze_selected_files.md ======
 # HTML Structure Analysis for Optimal Content Extraction
 
-<deep-thinking>
+use deep thinking
 The user wants a more systematic approach:
 1. Create a task list
 2. Analyze each file individually and save results
 3. Then synthesize all analyses into final config
 This will produce much better results than trying to analyze all files at once.
-</deep-thinking>
 
 ## Context
-The file m1f/selected_html_files.txt contains 5 representative HTML files from the documentation site.
+The file m1f/selected_html_files.txt contains representative HTML files from the documentation site.
 
 ## Task List
 
@@ -15978,14 +16023,12 @@ For each HTML file listed in m1f/selected_html_files.txt:
 1. **Read the file** using the Read tool
 2. **Perform deep structural analysis** (see analysis criteria below)
 3. **Write detailed findings** to a separate analysis file:
-   - File 1 → Write analysis to m1f/html_analysis_1.txt
-   - File 2 → Write analysis to m1f/html_analysis_2.txt
-   - File 3 → Write analysis to m1f/html_analysis_3.txt
-   - File 4 → Write analysis to m1f/html_analysis_4.txt
-   - File 5 → Write analysis to m1f/html_analysis_5.txt
+   - File 1 → Write analysis to m1f/analysis/html_analysis_1.txt
+   - File 2 → Write analysis to m1f/analysis/html_analysis_2.txt
+   - etc. (continue for all files in the list)
 
 ### Phase 2: Synthesis
-4. **Read all 5 analysis files** (m1f/html_analysis_1.txt through m1f/html_analysis_5.txt)
+4. **Read all analysis files** (m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt where N is the number of files analyzed)
 5. **Identify common patterns** across all analyses
 6. **Create final YAML configuration** based on the synthesized findings
 
@@ -16034,7 +16077,7 @@ Potential Issues: [edge cases noticed]
 
 ## Analysis File Format
 
-Each analysis file (m1f/html_analysis_N.txt) should follow this format:
+Each analysis file (m1f/analysis/html_analysis_N.txt) should follow this format:
 
 ```
 FILE: [filename]
@@ -16068,36 +16111,78 @@ ignore_selectors:
 
 ## Final Output
 
-After analyzing all 5 files and reading the analysis results, create:
+After analyzing all files and reading the analysis results, create the file m1f_extract.yml
+
+The file should have the results of you analyses and have this structure:
 
 ```yaml
+# Complete configuration file for m1f-html2md
+# All sections are optional - only include what differs from defaults
+
+# Source and destination paths (usually provided via CLI)
+source: ./html
+destination: ./markdown
+
+# Extractor configuration - CSS selectors for content extraction
 extractor:
   # Primary selector that works across most/all analyzed files
   content_selector: "main.content, article.documentation"
   
   # Fallback selectors in priority order
   alternative_selectors:
-    - "[selector that works on 4/5 files]"
-    - "[selector that works on 3/5 files]"
+    - "[selector that works on most files]"
+    - "[selector that works on some files]"
     - "[generic but safe fallback]"
   
   # Exclusions that apply across all files
   ignore_selectors:
-    # Navigation (found in X/5 files)
+    # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
     
-    # Headers/Footers (found in X/5 files)
+    # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
     
     # [Continue with all common exclusions]
 
-# Synthesis notes
+# Conversion options - Markdown formatting preferences
+conversion:
+  strip_tags: ["script", "style", "noscript"]
+  keep_html_tags: []  # HTML tags to preserve in output
+  heading_style: "atx"  # atx (###) or setext (underlines)
+  bold_style: "**"  # ** or __
+  italic_style: "*"  # * or _
+  link_style: "inline"  # inline or reference
+  list_marker: "-"  # -, *, or +
+  code_block_style: "fenced"  # fenced (```) or indented
+  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  preserve_whitespace: false
+  wrap_width: 0  # 0 = no wrapping
+
+# Asset handling configuration
+assets:
+  download_images: false
+  image_directory: "images"
+  link_prefix: ""
+  process_links: true
+
+# File handling options
+file_extensions: [".html", ".htm"]
+exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
+target_encoding: "utf-8"
+
+# Processing options
+parallel: true  # Enable parallel processing
+max_workers: 4
+overwrite: false  # Overwrite existing files
+
+# Synthesis notes (not used by the tool, just for documentation)
 notes: |
   Analysis Summary:
-  - Analyzed 5 files representing different page types
-  - Primary selector works on X/5 files
+  - Analyzed N files representing different page types
+  - Primary selector works on X/N files
   - Fallback selectors provide Y% coverage
   
   Key Findings:
@@ -16114,6 +16199,13 @@ notes: |
 3. **NEVER use empty strings** ("") as selectors - every selector must have actual content
 4. **Remove any empty or whitespace-only selectors** from lists before outputting
 5. **Validate all selectors** are non-empty and properly formatted CSS selectors
+
+**FILE MANAGEMENT**:
+- Use Write tool to create analysis files in m1f/analysis/ directory as specified
+- You may create temporary files if needed for analysis
+- **IMPORTANT**: Clean up ALL temporary files you have created
+- Only keep the required analysis files: m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt (where N is the number of files analyzed)
+- Delete any .py, .sh, or other temporary files you create during analysis
 
 ======= tools/html2md_tool/prompts/convert_html_to_md.md ======
 # Convert HTML to Clean, High-Quality Markdown
@@ -16217,7 +16309,7 @@ Use clean Markdown table syntax with proper alignment
 The file m1f/all_html_files_filelist.txt contains all HTML files from the scraped documentation site.
 
 ## Your Mission:
-Select exactly 5 HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
+Select exactly 5 representative HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
 
 ## Selection Strategy:
 
@@ -16262,16 +16354,16 @@ concepts/architecture/overview.html
 ======= tools/html2md_tool/prompts/synthesize_config.md ======
 # Configuration Synthesis from Individual File Analyses
 
-You have analyzed 5 HTML files individually. Now synthesize their findings into a unified configuration.
+You have analyzed multiple HTML files individually. Now synthesize their findings into a unified configuration.
 
 ## Your Task
 
-Read the 5 analysis files:
-- @m1f/html_analysis_1.txt
-- @m1f/html_analysis_2.txt  
-- @m1f/html_analysis_3.txt
-- @m1f/html_analysis_4.txt
-- @m1f/html_analysis_5.txt
+Read the analysis files:
+- m1f/analysis/html_analysis_1.txt
+- m1f/analysis/html_analysis_2.txt  
+- m1f/analysis/html_analysis_3.txt
+- m1f/analysis/html_analysis_4.txt
+- m1f/analysis/html_analysis_5.txt
 
 Based on these analyses, create an optimal YAML configuration that works across all files.
 
@@ -16288,33 +16380,73 @@ Based on these analyses, create an optimal YAML configuration that works across 
 Create a YAML configuration in this exact format:
 
 ```yaml
+# Complete configuration file for m1f-html2md
+# All sections are optional - only include what differs from defaults
+
+# Source and destination paths (usually provided via CLI)
+source: ./html
+destination: ./markdown
+
+# Extractor configuration - CSS selectors for content extraction
 extractor:
   # Primary selector that works across most/all analyzed files
   content_selector: "main.content, article.documentation"
   
   # Fallback selectors in priority order
   alternative_selectors:
-    - "[selector that works on 4/5 files]"
-    - "[selector that works on 3/5 files]"
+    - "[selector that works on most files]"
+    - "[selector that works on some files]"
     - "[generic but safe fallback]"
   
   # Exclusions that apply across all files
   ignore_selectors:
-    # Navigation (found in X/5 files)
+    # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
     
-    # Headers/Footers (found in X/5 files)
+    # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
     
     # [Continue with all common exclusions]
 
-# Synthesis notes
+# Conversion options - Markdown formatting preferences
+conversion:
+  strip_tags: ["script", "style", "noscript"]
+  keep_html_tags: []  # HTML tags to preserve in output
+  heading_style: "atx"  # atx (###) or setext (underlines)
+  bold_style: "**"  # ** or __
+  italic_style: "*"  # * or _
+  link_style: "inline"  # inline or reference
+  list_marker: "-"  # -, *, or +
+  code_block_style: "fenced"  # fenced (```) or indented
+  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  preserve_whitespace: false
+  wrap_width: 0  # 0 = no wrapping
+
+# Asset handling configuration
+assets:
+  download_images: false
+  image_directory: "images"
+  link_prefix: ""
+  process_links: true
+
+# File handling options
+file_extensions: [".html", ".htm"]
+exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
+target_encoding: "utf-8"
+
+# Processing options
+parallel: false  # Enable parallel processing
+max_workers: 4
+overwrite: false  # Overwrite existing files
+
+# Synthesis notes (not used by the tool, just for documentation)
 notes: |
   Analysis Summary:
-  - Analyzed 5 files representing different page types
-  - Primary selector works on X/5 files
+  - Analyzed N files representing different page types
+  - Primary selector works on X/N files
   - Fallback selectors provide Y% coverage
   
   Key Findings:
@@ -16328,7 +16460,7 @@ notes: |
 ## Selection Criteria
 
 **Primary Content Selector**:
-- Choose selector that works on most files (4-5 out of 5)
+- Choose selector that works on most files (80%+ coverage)
 - If no single selector works on most, combine multiple with commas
 - Prefer semantic selectors (main, article) over class-based
 
@@ -16338,9 +16470,9 @@ notes: |
 - Each should be valid CSS selector
 
 **Ignore Selectors**:
-- Include selectors found in 3+ files
+- Include selectors found in majority of files
 - Group by type (navigation, headers, footers, etc.)
-- Add comments showing coverage (found in X/5 files)
+- Add comments showing coverage (found in X/N files)
 
 **Critical Requirements**:
 1. **NEVER include empty strings** ("") in any selector list

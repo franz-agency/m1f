@@ -68,6 +68,9 @@ m1f-html2md analyze ./html/*.html --show-structure --common-patterns
 # Use Claude AI to intelligently analyze HTML structure
 m1f-html2md analyze ./html/ --claude
 
+# Analyze with Claude and specify number of files to analyze (1-20)
+m1f-html2md analyze ./html/ --claude --analyze-files 10
+
 # Convert HTML to Markdown using Claude AI (clean content extraction)
 m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus --sleep 2
 
@@ -142,6 +145,7 @@ m1f-html2md analyze <paths> [options]
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
 | `--claude`            | Use Claude AI to intelligently select files and suggest selectors    |
+| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)           |
 | `-v, --verbose`       | Enable verbose output                                                |
 | `-q, --quiet`         | Suppress all output except errors                                    |
 
@@ -170,12 +174,23 @@ Use Claude to automatically select representative HTML files and suggest optimal
 # Analyze a directory of HTML files with Claude
 m1f-html2md analyze ./scraped-site/ --claude
 
+# Analyze more files for better coverage (up to 20)
+m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
+
 # Claude will:
-# 1. Select 5 representative files from the directory
-# 2. Analyze their structure
-# 3. Suggest content and ignore selectors
-# 4. Generate a YAML configuration
+# 1. Prompt for project description and important files (if applicable)
+# 2. Select representative files from the directory (default: 5)
+# 3. Analyze each file's structure individually
+# 4. Synthesize findings to suggest optimal selectors
+# 5. Generate a YAML configuration (html2md_extract_config.yaml)
 ```
+
+**Features of Claude Analysis:**
+- **Project Context**: Provides project description to help Claude understand the content
+- **Important File Priority**: Can specify important files for Claude to prioritize
+- **Multi-phase Analysis**: Individual file analysis followed by synthesis
+- **Transparent Process**: Creates temporary analysis files in m1f/ directory
+- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI integration
 
 ### AI-Powered Conversion
 

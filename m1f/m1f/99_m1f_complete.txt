@@ -1880,7 +1880,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.3.0] - 2025-06-24
 
 ### Documentation
 
@@ -1893,6 +1893,11 @@ and this project adheres to
   - Added "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
   - Added bundle location and Claude reference syntax explanation
   - Improved overall structure with developer-friendly tone
+- **HTML2MD Documentation Updates**: Enhanced Claude AI integration documentation
+  - Added `--analyze-files` parameter documentation
+  - Documented project description prompt feature
+  - Added subprocess handling improvements
+  - Updated examples with new features
 
 ### Added
 
@@ -1919,6 +1924,15 @@ and this project adheres to
     - Fixed indentation errors in subprocess.Popen calls
     - Applied black formatting for consistent code style
     - Enhanced logging and progress indicators
+    - Changed all subprocess.Popen + communicate() to subprocess.run() for reliable Claude CLI integration
+    - Added 5-minute timeout handling for subprocess operations
+  - **User Experience Improvements**: Enhanced workflow and configuration
+    - Added `--analyze-files` parameter to specify number of files to analyze (1-20, default: 5)
+    - Project description prompt now includes tip about specifying important files
+    - Output configuration saved as `html2md_extract_config.yaml` instead of generic name
+    - Fixed file references to use m1f/ instead of @m1f directory
+    - Added debug output for transparency during analysis process
+    - Cleanup functionality removes temporary analysis files after confirmation
 
 - **WebScraper Content Deduplication**: Memory-efficient duplicate prevention system (enabled by default)
   - **Database-Backed Deduplication**: Optimized for large scraping sessions
@@ -1971,6 +1985,23 @@ and this project adheres to
     - Documentation sites with multiple URL formats for same content
     - E-commerce sites with product URLs containing tracking parameters
     - News sites with print and mobile versions of articles
+
+### Fixed
+
+- **HTML2MD Claude Integration Issues**: Resolved multiple issues with Claude CLI integration
+  - Fixed subprocess hanging when using `Popen` + `communicate()` with Claude CLI
+  - Fixed incorrect m1f usage (now properly uses `--skip-output-file` for filelist generation)
+  - Fixed file references from embedded content to proper @ syntax
+  - Fixed indentation errors in subprocess calls
+  - Fixed undefined variable errors (removed unused `html_contents`)
+  - Fixed test failure for outdated CLI parameters
+- **m1f Directory Structure**: Corrected nested directory configuration
+  - Fixed .m1f.config.yml to use proper m1f/m1f/ structure
+  - Removed accidental triple nesting (m1f/m1f/m1f/)
+  - Created proper symlink from m1f/m1f.txt to m1f/m1f/87_m1f_only_docs.txt
+- **WebScraper Logging**: Fixed duplicate content detection logging
+  - Duplicates no longer logged as "unexpected errors"
+  - Changed from exception-based to graceful skip-based handling
 
 
 - **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
@@ -19848,6 +19879,9 @@ m1f-html2md analyze ./html/*.html --show-structure --common-patterns
 # Use Claude AI to intelligently analyze HTML structure
 m1f-html2md analyze ./html/ --claude
 
+# Analyze with Claude and specify number of files to analyze (1-20)
+m1f-html2md analyze ./html/ --claude --analyze-files 10
+
 # Convert HTML to Markdown using Claude AI (clean content extraction)
 m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus --sleep 2
 
@@ -19922,6 +19956,7 @@ m1f-html2md analyze <paths> [options]
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
 | `--claude`            | Use Claude AI to intelligently select files and suggest selectors    |
+| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)           |
 | `-v, --verbose`       | Enable verbose output                                                |
 | `-q, --quiet`         | Suppress all output except errors                                    |
 
@@ -19950,12 +19985,23 @@ Use Claude to automatically select representative HTML files and suggest optimal
 # Analyze a directory of HTML files with Claude
 m1f-html2md analyze ./scraped-site/ --claude
 
+# Analyze more files for better coverage (up to 20)
+m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
+
 # Claude will:
-# 1. Select 5 representative files from the directory
-# 2. Analyze their structure
-# 3. Suggest content and ignore selectors
-# 4. Generate a YAML configuration
+# 1. Prompt for project description and important files (if applicable)
+# 2. Select representative files from the directory (default: 5)
+# 3. Analyze each file's structure individually
+# 4. Synthesize findings to suggest optimal selectors
+# 5. Generate a YAML configuration (html2md_extract_config.yaml)
 ```
+
+**Features of Claude Analysis:**
+- **Project Context**: Provides project description to help Claude understand the content
+- **Important File Priority**: Can specify important files for Claude to prioritize
+- **Multi-phase Analysis**: Individual file analysis followed by synthesis
+- **Transparent Process**: Creates temporary analysis files in m1f/ directory
+- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI integration
 
 ### AI-Powered Conversion
 
@@ -35305,8 +35351,11 @@ Examples:
   # Analyze HTML structure with AI assistance
   m1f-html2md analyze ./html/ --claude
   
+  # Analyze with more files for better coverage
+  m1f-html2md analyze ./html/ --claude --analyze-files 10
+  
   # Convert HTML to clean Markdown using AI
-  m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus
+  m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus --sleep 2
 """,
     )
 
@@ -35438,6 +35487,14 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         "--claude",
         action="store_true",
         help="Use Claude AI to intelligently select representative files and suggest selectors",
+    )
+    
+    parser.add_argument(
+        "--analyze-files",
+        type=int,
+        default=5,
+        metavar="N",
+        help="Number of files to analyze with Claude (1-20, default: 5)",
     )
 
 
@@ -35576,7 +35633,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     # If --claude flag is set, use Claude AI for analysis
     if args.claude:
         console.print(f"\nFound {len(html_files)} HTML files total")
-        _handle_claude_analysis(html_files)
+        _handle_claude_analysis(html_files, args.analyze_files)
         return
 
     # Otherwise, do local analysis
@@ -35706,7 +35763,7 @@ def _find_common_patterns(parsed_files):
         console.print(f"  <{tag}> (found {count} times)")
 
 
-def _handle_claude_analysis(html_files):
+def _handle_claude_analysis(html_files, num_files_to_analyze=5):
     """Handle analysis using Claude AI."""
     import subprocess
     import os
@@ -35721,22 +35778,39 @@ def _handle_claude_analysis(html_files):
     console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
 
     # Find the common parent directory of all HTML files
-    if html_files:
-        common_parent = Path(
-            os.path.commonpath([str(f.absolute()) for f in html_files])
-        )
-        console.print(f"Analysis directory: {common_parent}")
-        console.print(f"Total files to analyze: {len(html_files)}")
-    else:
+    if not html_files:
         console.print("‚ùå No HTML files to analyze", style="red")
+        return
+        
+    common_parent = Path(
+        os.path.commonpath([str(f.absolute()) for f in html_files])
+    )
+    console.print(f"Analysis directory: {common_parent}")
+    console.print(f"Total HTML files found: {len(html_files)}")
+    
+    # Check if we have enough files
+    if len(html_files) == 0:
+        console.print("‚ùå No HTML files found in the specified directory", style="red")
         return
 
     # We'll work from the current directory and use --add-dir for Claude
     original_dir = Path.cwd()
 
-    # Step 1: Create m1f directory if it doesn't exist
+    # Step 1: Create m1f and analysis directories if they don't exist
     m1f_dir = common_parent / "m1f"
     m1f_dir.mkdir(exist_ok=True)
+    analysis_dir = m1f_dir / "analysis"
+    analysis_dir.mkdir(exist_ok=True)
+    
+    # Clean old analysis files
+    for old_file in analysis_dir.glob("*.txt"):
+        if old_file.name != "log.txt":
+            old_file.unlink()
+    
+    # Initialize analysis log
+    from datetime import datetime
+    log_file = analysis_dir / "log.txt"
+    log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
     # Create a filelist with all HTML files using m1f
     console.print("\nüîß Creating HTML file list using m1f...")
@@ -35789,9 +35863,39 @@ def _handle_claude_analysis(html_files):
         return
 
     # Load the prompt from external file
-    simple_prompt = select_prompt_path.read_text()
+    simple_prompt_template = select_prompt_path.read_text()
+    
+    # Validate and adjust number of files to analyze
+    if num_files_to_analyze < 1:
+        num_files_to_analyze = 1
+        console.print("[yellow]Minimum is 1 file. Using 1.[/yellow]")
+    elif num_files_to_analyze > 20:
+        num_files_to_analyze = 20
+        console.print("[yellow]Maximum is 20 files. Using 20.[/yellow]")
+    
+    if num_files_to_analyze > len(html_files):
+        num_files_to_analyze = len(html_files)
+        console.print(f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]")
+    
+    # Ask user for project description
+    console.print("\n[bold]Project Context:[/bold]")
+    console.print("Please briefly describe what this HTML project contains so Claude can better understand")
+    console.print("what should be converted to Markdown. Example: 'Documentation for XY software - API section'")
+    console.print("\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]")
+    console.print("[dim]     so Claude will prioritize those files in the analysis.[/dim]")
+    project_description = console.input("\nProject description: ").strip()
+    
+    # Update the prompt with the number of files
+    simple_prompt_template = simple_prompt_template.replace("5 representative", f"{num_files_to_analyze} representative")
+    simple_prompt_template = simple_prompt_template.replace("select 5", f"select {num_files_to_analyze}")
+    
+    # Add project description to the prompt
+    if project_description:
+        simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt_template}"
+    else:
+        simple_prompt = simple_prompt_template
 
-    console.print("\nAsking Claude to select representative files...")
+    console.print(f"\nAsking Claude to select {num_files_to_analyze} representative files...")
 
     try:
         # Run claude using the same approach as m1f-claude
@@ -35804,28 +35908,19 @@ def _handle_claude_analysis(html_files):
             str(common_parent),  # Give Claude access to the HTML directory
         ]
 
-        # Execute with Popen for better control
-        process = subprocess.Popen(
+        # Use subprocess.run() which works more reliably with Claude
+        result = subprocess.run(
             cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            input=simple_prompt,
+            capture_output=True,
             text=True,
+            timeout=60
         )
-
-        # Send prompt via stdin and get response
-        stdout, stderr = process.communicate(
-            input=simple_prompt, timeout=300
-        )  # 5 minute timeout
-
-        if process.returncode != 0:
+        
+        if result.returncode != 0:
             raise subprocess.CalledProcessError(
-                process.returncode, cmd, output=stdout, stderr=stderr
+                result.returncode, cmd, output=result.stdout, stderr=result.stderr
             )
-
-        result = subprocess.CompletedProcess(
-            cmd, process.returncode, stdout=stdout, stderr=stderr
-        )
         selected_files = result.stdout.strip().split("\n")
         selected_files = [f.strip() for f in selected_files if f.strip()]
 
@@ -35834,7 +35929,7 @@ def _handle_claude_analysis(html_files):
             console.print(f"  - {f}", style="blue")
 
     except subprocess.TimeoutExpired:
-        console.print("‚è∞ Timeout selecting files (5 minutes)", style="yellow")
+        console.print("‚è∞ Timeout selecting files (1 minute)", style="yellow")
         process.kill()
         return
     except subprocess.CalledProcessError as e:
@@ -35851,7 +35946,7 @@ def _handle_claude_analysis(html_files):
     console.print("\nVerifying selected HTML files...")
     verified_files = []
 
-    for file_path in selected_files[:5]:  # Limit to 5 files
+    for file_path in selected_files[:num_files_to_analyze]:  # Limit to selected number
         file_path = file_path.strip()
 
         # Check if file exists (relative to common_parent)
@@ -35887,9 +35982,9 @@ def _handle_claude_analysis(html_files):
 
     individual_prompt_template = individual_prompt_path.read_text()
 
-    # Analyze each of the 5 selected files
+    # Analyze each of the selected files
     for i, file_path in enumerate(verified_files, 1):
-        console.print(f"\nüìã Analyzing file {i}/5: {file_path}")
+        console.print(f"\nüìã Analyzing file {i}/{len(verified_files)}: {file_path}")
         console.print(
             f"‚è±Ô∏è  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
         )
@@ -35897,6 +35992,10 @@ def _handle_claude_analysis(html_files):
         # Customize prompt for this specific file
         individual_prompt = individual_prompt_template.replace("{filename}", file_path)
         individual_prompt = individual_prompt.replace("{file_number}", str(i))
+        
+        # Add project context if provided
+        if project_description:
+            individual_prompt = f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
 
         try:
             # Run claude for this individual file
@@ -35909,38 +36008,35 @@ def _handle_claude_analysis(html_files):
                 str(common_parent),
             ]
 
-            process = subprocess.Popen(
+            # Use subprocess.run() which works more reliably with Claude
+            result = subprocess.run(
                 cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                input=individual_prompt,
+                capture_output=True,
                 text=True,
+                timeout=60
             )
 
-            stdout, stderr = process.communicate(
-                input=individual_prompt, timeout=300
-            )  # 5 minute timeout
-
             # Debug: Show process details
-            console.print(f"üîç Process return code: {process.returncode}", style="dim")
-            if stderr:
-                console.print(f"üîç stderr: {stderr[:200]}...", style="dim")
+            console.print(f"üîç Process return code: {result.returncode}", style="dim")
+            if result.stderr:
+                console.print(f"üîç stderr: {result.stderr[:200]}...", style="dim")
 
-            if process.returncode != 0:
+            if result.returncode != 0:
                 console.print(
-                    f"‚ùå Analysis failed for {file_path}: {stderr}", style="red"
+                    f"‚ùå Analysis failed for {file_path}: {result.stderr}", style="red"
                 )
                 continue
 
             # Show Claude's response for transparency
-            if stdout.strip():
-                console.print(f"üìÑ Claude: {stdout.strip()}", style="dim")
+            if result.stdout.strip():
+                console.print(f"üìÑ Claude: {result.stdout.strip()}", style="dim")
 
             console.print(f"‚úÖ Analysis completed for file {i}")
 
         except subprocess.TimeoutExpired:
             console.print(
-                f"‚è∞ Timeout analyzing {file_path} (5 minutes)", style="yellow"
+                f"‚è∞ Timeout analyzing {file_path} (1 minute)", style="yellow"
             )
             process.kill()
             continue
@@ -35959,6 +36055,39 @@ def _handle_claude_analysis(html_files):
         return
 
     synthesis_prompt = synthesis_prompt_path.read_text()
+    
+    # Update the synthesis prompt with the actual number of files analyzed
+    synthesis_prompt = synthesis_prompt.replace("analyzed 5 HTML files", f"analyzed {len(verified_files)} HTML files")
+    synthesis_prompt = synthesis_prompt.replace("You have analyzed 5 HTML files", f"You have analyzed {len(verified_files)} HTML files")
+    
+    # Build the file list dynamically
+    file_list = []
+    for i in range(1, len(verified_files) + 1):
+        file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
+    
+    # Replace the static file list with the dynamic one
+    old_file_list = """Read the 5 analysis files:
+- m1f/analysis/html_analysis_1.txt
+- m1f/analysis/html_analysis_2.txt  
+- m1f/analysis/html_analysis_3.txt
+- m1f/analysis/html_analysis_4.txt
+- m1f/analysis/html_analysis_5.txt"""
+    
+    new_file_list = f"Read the {len(verified_files)} analysis files:\n" + "\n".join(file_list)
+    synthesis_prompt = synthesis_prompt.replace(old_file_list, new_file_list)
+    
+    # Update other references to "5 files"
+    synthesis_prompt = synthesis_prompt.replace("Analyzed 5 files", f"Analyzed {len(verified_files)} files")
+    synthesis_prompt = synthesis_prompt.replace("works on X/5 files", f"works on X/{len(verified_files)} files")
+    synthesis_prompt = synthesis_prompt.replace("found in X/5 files", f"found in X/{len(verified_files)} files")
+    synthesis_prompt = synthesis_prompt.replace("(4-5 out of 5)", f"({len(verified_files)-1}-{len(verified_files)} out of {len(verified_files)})")
+    synthesis_prompt = synthesis_prompt.replace("works on 4/5 files", f"works on {max(1, len(verified_files)-1)}/{len(verified_files)} files")
+    synthesis_prompt = synthesis_prompt.replace("works on 3/5 files", f"works on {max(1, len(verified_files)//2)}/{len(verified_files)} files")
+    synthesis_prompt = synthesis_prompt.replace("found in 3+ files", f"found in {max(2, len(verified_files)//2)}+ files")
+    
+    # Add project context if provided
+    if project_description:
+        synthesis_prompt = f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
 
     try:
         # Run claude for synthesis
@@ -35971,26 +36100,19 @@ def _handle_claude_analysis(html_files):
             str(common_parent),
         ]
 
-        process = subprocess.Popen(
+        # Use subprocess.run() which works more reliably with Claude
+        result = subprocess.run(
             cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            input=synthesis_prompt,
+            capture_output=True,
             text=True,
+            timeout=60
         )
 
-        stdout, stderr = process.communicate(
-            input=synthesis_prompt, timeout=300
-        )  # 5 minute timeout
-
-        if process.returncode != 0:
+        if result.returncode != 0:
             raise subprocess.CalledProcessError(
-                process.returncode, cmd, output=stdout, stderr=stderr
+                result.returncode, cmd, output=result.stdout, stderr=result.stderr
             )
-
-        result = subprocess.CompletedProcess(
-            cmd, process.returncode, stdout=stdout, stderr=stderr
-        )
 
         console.print("\n[bold]Claude's Final Configuration:[/bold]")
         console.print(result.stdout)
@@ -36021,7 +36143,7 @@ def _handle_claude_analysis(html_files):
                         ]
 
                 # Save the config to a file
-                config_file = common_parent / "html2md_config.yaml"
+                config_file = common_parent / "html2md_extract_config.yaml"
                 with open(config_file, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
@@ -36030,23 +36152,21 @@ def _handle_claude_analysis(html_files):
                 )
 
                 # Show the user how to use it
-                console.print("\n[bold]Next Step:[/bold]")
+                console.print("\n[bold]Usage Examples:[/bold]")
+                console.print("\n1. Convert using the generated configuration:")
                 console.print(
-                    f"To convert your HTML files using this configuration, run:\n"
+                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]"
                 )
                 console.print(
-                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n"
-                )
-                console.print(
-                    "This will extract only the main content based on Claude's analysis."
+                    "   This extracts only the main content based on Claude's analysis.\n"
                 )
 
-                console.print("\n[bold]Alternative:[/bold]")
-                console.print(
-                    "For AI-powered conversion (extracts clean content automatically):"
-                )
+                console.print("2. Convert with AI assistance (Claude analyzes each file):")
                 console.print(
                     f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]"
+                )
+                console.print(
+                    "   This uses Claude to extract clean content from each file individually."
                 )
             else:
                 console.print(
@@ -36065,7 +36185,7 @@ def _handle_claude_analysis(html_files):
 
     except subprocess.TimeoutExpired:
         console.print(
-            "‚è∞ Timeout synthesizing configuration (5 minutes)", style="yellow"
+            "‚è∞ Timeout synthesizing configuration (1 minute)", style="yellow"
         )
         process.kill()
     except subprocess.CalledProcessError as e:
@@ -36081,8 +36201,8 @@ def _handle_claude_analysis(html_files):
     if cleanup.lower() != "n":
         # Delete analysis files
         deleted_count = 0
-        for i in range(1, 6):
-            analysis_file = m1f_dir / f"html_analysis_{i}.txt"
+        for i in range(1, num_files_to_analyze + 1):
+            analysis_file = analysis_dir / f"html_analysis_{i}.txt"
             if analysis_file.exists():
                 try:
                     analysis_file.unlink()
@@ -50092,9 +50212,9 @@ You are analyzing a single HTML file to understand its structure for optimal con
 
 ## Your Task
 
-Read the HTML file: @{filename}
+Read the HTML file: {filename}
 
-Analyze this file's structure and write your findings to: @m1f/html_analysis_{file_number}.txt
+Analyze this file's structure and write your findings to: m1f/analysis/html_analysis_{file_number}.txt
 
 ## Analysis Criteria
 
@@ -50141,7 +50261,7 @@ Potential Issues: [edge cases noticed]
 
 ## Output Format
 
-Write your analysis to @m1f/html_analysis_{file_number}.txt in this exact format:
+Write your analysis to m1f/analysis/html_analysis_{file_number}.txt in this exact format:
 
 ```
 FILE: {filename}
@@ -50182,16 +50302,15 @@ ignore_selectors:
 ======= tools/html2md_tool/prompts/analyze_selected_files.md ======
 # HTML Structure Analysis for Optimal Content Extraction
 
-<deep-thinking>
+use deep thinking
 The user wants a more systematic approach:
 1. Create a task list
 2. Analyze each file individually and save results
 3. Then synthesize all analyses into final config
 This will produce much better results than trying to analyze all files at once.
-</deep-thinking>
 
 ## Context
-The file m1f/selected_html_files.txt contains 5 representative HTML files from the documentation site.
+The file m1f/selected_html_files.txt contains representative HTML files from the documentation site.
 
 ## Task List
 
@@ -50201,14 +50320,12 @@ For each HTML file listed in m1f/selected_html_files.txt:
 1. **Read the file** using the Read tool
 2. **Perform deep structural analysis** (see analysis criteria below)
 3. **Write detailed findings** to a separate analysis file:
-   - File 1 → Write analysis to m1f/html_analysis_1.txt
-   - File 2 → Write analysis to m1f/html_analysis_2.txt
-   - File 3 → Write analysis to m1f/html_analysis_3.txt
-   - File 4 → Write analysis to m1f/html_analysis_4.txt
-   - File 5 → Write analysis to m1f/html_analysis_5.txt
+   - File 1 → Write analysis to m1f/analysis/html_analysis_1.txt
+   - File 2 → Write analysis to m1f/analysis/html_analysis_2.txt
+   - etc. (continue for all files in the list)
 
 ### Phase 2: Synthesis
-4. **Read all 5 analysis files** (m1f/html_analysis_1.txt through m1f/html_analysis_5.txt)
+4. **Read all analysis files** (m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt where N is the number of files analyzed)
 5. **Identify common patterns** across all analyses
 6. **Create final YAML configuration** based on the synthesized findings
 
@@ -50257,7 +50374,7 @@ Potential Issues: [edge cases noticed]
 
 ## Analysis File Format
 
-Each analysis file (m1f/html_analysis_N.txt) should follow this format:
+Each analysis file (m1f/analysis/html_analysis_N.txt) should follow this format:
 
 ```
 FILE: [filename]
@@ -50291,36 +50408,78 @@ ignore_selectors:
 
 ## Final Output
 
-After analyzing all 5 files and reading the analysis results, create:
+After analyzing all files and reading the analysis results, create the file m1f_extract.yml
+
+The file should have the results of you analyses and have this structure:
 
 ```yaml
+# Complete configuration file for m1f-html2md
+# All sections are optional - only include what differs from defaults
+
+# Source and destination paths (usually provided via CLI)
+source: ./html
+destination: ./markdown
+
+# Extractor configuration - CSS selectors for content extraction
 extractor:
   # Primary selector that works across most/all analyzed files
   content_selector: "main.content, article.documentation"
   
   # Fallback selectors in priority order
   alternative_selectors:
-    - "[selector that works on 4/5 files]"
-    - "[selector that works on 3/5 files]"
+    - "[selector that works on most files]"
+    - "[selector that works on some files]"
     - "[generic but safe fallback]"
   
   # Exclusions that apply across all files
   ignore_selectors:
-    # Navigation (found in X/5 files)
+    # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
     
-    # Headers/Footers (found in X/5 files)
+    # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
     
     # [Continue with all common exclusions]
 
-# Synthesis notes
+# Conversion options - Markdown formatting preferences
+conversion:
+  strip_tags: ["script", "style", "noscript"]
+  keep_html_tags: []  # HTML tags to preserve in output
+  heading_style: "atx"  # atx (###) or setext (underlines)
+  bold_style: "**"  # ** or __
+  italic_style: "*"  # * or _
+  link_style: "inline"  # inline or reference
+  list_marker: "-"  # -, *, or +
+  code_block_style: "fenced"  # fenced (```) or indented
+  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  preserve_whitespace: false
+  wrap_width: 0  # 0 = no wrapping
+
+# Asset handling configuration
+assets:
+  download_images: false
+  image_directory: "images"
+  link_prefix: ""
+  process_links: true
+
+# File handling options
+file_extensions: [".html", ".htm"]
+exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
+target_encoding: "utf-8"
+
+# Processing options
+parallel: true  # Enable parallel processing
+max_workers: 4
+overwrite: false  # Overwrite existing files
+
+# Synthesis notes (not used by the tool, just for documentation)
 notes: |
   Analysis Summary:
-  - Analyzed 5 files representing different page types
-  - Primary selector works on X/5 files
+  - Analyzed N files representing different page types
+  - Primary selector works on X/N files
   - Fallback selectors provide Y% coverage
   
   Key Findings:
@@ -50337,6 +50496,13 @@ notes: |
 3. **NEVER use empty strings** ("") as selectors - every selector must have actual content
 4. **Remove any empty or whitespace-only selectors** from lists before outputting
 5. **Validate all selectors** are non-empty and properly formatted CSS selectors
+
+**FILE MANAGEMENT**:
+- Use Write tool to create analysis files in m1f/analysis/ directory as specified
+- You may create temporary files if needed for analysis
+- **IMPORTANT**: Clean up ALL temporary files you have created
+- Only keep the required analysis files: m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt (where N is the number of files analyzed)
+- Delete any .py, .sh, or other temporary files you create during analysis
 
 ======= tools/html2md_tool/prompts/convert_html_to_md.md ======
 # Convert HTML to Clean, High-Quality Markdown
@@ -50440,7 +50606,7 @@ Use clean Markdown table syntax with proper alignment
 The file m1f/all_html_files_filelist.txt contains all HTML files from the scraped documentation site.
 
 ## Your Mission:
-Select exactly 5 HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
+Select exactly 5 representative HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
 
 ## Selection Strategy:
 
@@ -50485,16 +50651,16 @@ concepts/architecture/overview.html
 ======= tools/html2md_tool/prompts/synthesize_config.md ======
 # Configuration Synthesis from Individual File Analyses
 
-You have analyzed 5 HTML files individually. Now synthesize their findings into a unified configuration.
+You have analyzed multiple HTML files individually. Now synthesize their findings into a unified configuration.
 
 ## Your Task
 
-Read the 5 analysis files:
-- @m1f/html_analysis_1.txt
-- @m1f/html_analysis_2.txt  
-- @m1f/html_analysis_3.txt
-- @m1f/html_analysis_4.txt
-- @m1f/html_analysis_5.txt
+Read the analysis files:
+- m1f/analysis/html_analysis_1.txt
+- m1f/analysis/html_analysis_2.txt  
+- m1f/analysis/html_analysis_3.txt
+- m1f/analysis/html_analysis_4.txt
+- m1f/analysis/html_analysis_5.txt
 
 Based on these analyses, create an optimal YAML configuration that works across all files.
 
@@ -50511,33 +50677,73 @@ Based on these analyses, create an optimal YAML configuration that works across 
 Create a YAML configuration in this exact format:
 
 ```yaml
+# Complete configuration file for m1f-html2md
+# All sections are optional - only include what differs from defaults
+
+# Source and destination paths (usually provided via CLI)
+source: ./html
+destination: ./markdown
+
+# Extractor configuration - CSS selectors for content extraction
 extractor:
   # Primary selector that works across most/all analyzed files
   content_selector: "main.content, article.documentation"
   
   # Fallback selectors in priority order
   alternative_selectors:
-    - "[selector that works on 4/5 files]"
-    - "[selector that works on 3/5 files]"
+    - "[selector that works on most files]"
+    - "[selector that works on some files]"
     - "[generic but safe fallback]"
   
   # Exclusions that apply across all files
   ignore_selectors:
-    # Navigation (found in X/5 files)
+    # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
     
-    # Headers/Footers (found in X/5 files)
+    # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
     
     # [Continue with all common exclusions]
 
-# Synthesis notes
+# Conversion options - Markdown formatting preferences
+conversion:
+  strip_tags: ["script", "style", "noscript"]
+  keep_html_tags: []  # HTML tags to preserve in output
+  heading_style: "atx"  # atx (###) or setext (underlines)
+  bold_style: "**"  # ** or __
+  italic_style: "*"  # * or _
+  link_style: "inline"  # inline or reference
+  list_marker: "-"  # -, *, or +
+  code_block_style: "fenced"  # fenced (```) or indented
+  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  preserve_whitespace: false
+  wrap_width: 0  # 0 = no wrapping
+
+# Asset handling configuration
+assets:
+  download_images: false
+  image_directory: "images"
+  link_prefix: ""
+  process_links: true
+
+# File handling options
+file_extensions: [".html", ".htm"]
+exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
+target_encoding: "utf-8"
+
+# Processing options
+parallel: false  # Enable parallel processing
+max_workers: 4
+overwrite: false  # Overwrite existing files
+
+# Synthesis notes (not used by the tool, just for documentation)
 notes: |
   Analysis Summary:
-  - Analyzed 5 files representing different page types
-  - Primary selector works on X/5 files
+  - Analyzed N files representing different page types
+  - Primary selector works on X/N files
   - Fallback selectors provide Y% coverage
   
   Key Findings:
@@ -50551,7 +50757,7 @@ notes: |
 ## Selection Criteria
 
 **Primary Content Selector**:
-- Choose selector that works on most files (4-5 out of 5)
+- Choose selector that works on most files (80%+ coverage)
 - If no single selector works on most, combine multiple with commas
 - Prefer semantic selectors (main, article) over class-based
 
@@ -50561,9 +50767,9 @@ notes: |
 - Each should be valid CSS selector
 
 **Ignore Selectors**:
-- Include selectors found in 3+ files
+- Include selectors found in majority of files
 - Group by type (navigation, headers, footers, etc.)
-- Add comments showing coverage (found in X/5 files)
+- Add comments showing coverage (found in X/N files)
 
 **Critical Requirements**:
 1. **NEVER include empty strings** ("") in any selector list
