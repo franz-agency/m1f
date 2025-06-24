@@ -617,7 +617,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
             input=simple_prompt,
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=180  # 3 minutes for file selection
         )
         
         if result.returncode != 0:
@@ -644,7 +644,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
             console.print(f"  - {f}", style="blue")
 
     except subprocess.TimeoutExpired:
-        console.print("⏰ Timeout selecting files (1 minute)", style="yellow")
+        console.print("⏰ Timeout selecting files (3 minutes)", style="yellow")
         return
     except subprocess.CalledProcessError as e:
         console.print(f"❌ Claude command failed: {e}", style="red")
@@ -728,7 +728,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
                 input=individual_prompt,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=300  # 5 minutes per file analysis
             )
 
             # Debug: Show process details
@@ -750,7 +750,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
 
         except subprocess.TimeoutExpired:
             console.print(
-                f"⏰ Timeout analyzing {file_path} (1 minute)", style="yellow"
+                f"⏰ Timeout analyzing {file_path} (5 minutes)", style="yellow"
             )
             continue
         except Exception as e:
@@ -819,7 +819,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
             input=synthesis_prompt,
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=300  # 5 minutes for synthesis
         )
 
         if result.returncode != 0:
@@ -898,7 +898,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
 
     except subprocess.TimeoutExpired:
         console.print(
-            "⏰ Timeout synthesizing configuration (1 minute)", style="yellow"
+            "⏰ Timeout synthesizing configuration (5 minutes)", style="yellow"
         )
     except subprocess.CalledProcessError as e:
         console.print(f"❌ Claude command failed: {e}", style="red")
