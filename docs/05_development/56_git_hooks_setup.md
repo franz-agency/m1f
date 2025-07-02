@@ -5,9 +5,8 @@ in your projects.
 
 ## Overview
 
-The m1f Git pre-commit hook automatically runs `m1f-update` before each
-commit, ensuring that your bundled files are always up-to-date with your source
-code.
+The m1f Git pre-commit hook automatically runs `m1f-update` before each commit,
+ensuring that your bundled files are always up-to-date with your source code.
 
 ## Features
 

@@ -199,3 +199,9 @@ CLAUDE.md
 
 # Vim swap files
 *.swp
+
+# bat files for powershell
+/batch/
+
+# symlink to doc
+m1f/m1f.txt

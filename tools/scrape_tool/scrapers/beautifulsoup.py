@@ -16,7 +16,7 @@
 
 import asyncio
 import logging
-from typing import Set, AsyncGenerator, Optional, Dict
+from typing import Set, AsyncGenerator, Optional, Dict, List
 from urllib.parse import urljoin, urlparse, unquote
 import aiohttp
 from bs4 import BeautifulSoup
@@ -39,6 +39,20 @@ class BeautifulSoupScraper(WebScraperBase):
         super().__init__(config)
         self.session: Optional[aiohttp.ClientSession] = None
         self._semaphore = asyncio.Semaphore(config.concurrent_requests)
+        self._resume_info: List[Dict[str, str]] = []
+    
+    def _normalize_url(self, url: str) -> str:
+        """Normalize URL by removing GET parameters if configured.
+        
+        Args:
+            url: URL to normalize
+            
+        Returns:
+            Normalized URL
+        """
+        if self.config.ignore_get_params and "?" in url:
+            return url.split("?")[0]
+        return url
 
     async def __aenter__(self):
         """Create aiohttp session on entry."""
@@ -124,6 +138,36 @@ class BeautifulSoupScraper(WebScraperBase):
 
                     # Parse with BeautifulSoup
                     soup = BeautifulSoup(content, "html.parser")
+                    
+                    # Store metadata for database
+                    normalized_url = self._normalize_url(str(response.url))
+                    canonical_url = None
+                    content_checksum = None
+                    
+                    # Order: 1. GET parameter normalization (already done in _normalize_url)
+                    # 2. Canonical URL check
+                    if self.config.check_canonical:
+                        canonical_link = soup.find("link", {"rel": "canonical"})
+                        if canonical_link and canonical_link.get("href"):
+                            canonical_url = canonical_link["href"]
+                            # Make canonical URL absolute
+                            canonical_url = urljoin(url, canonical_url)
+                            # Normalize canonical URL too
+                            normalized_canonical = self._normalize_url(canonical_url)
+                            
+                            if normalized_url != normalized_canonical:
+                                logger.info(f"Skipping {url} - canonical URL differs: {canonical_url}")
+                                return None  # Return None to indicate skip, not an error
+                    
+                    # 3. Content duplicate check
+                    if self.config.check_content_duplicates:
+                        from ..utils import calculate_content_checksum
+                        content_checksum = calculate_content_checksum(content)
+                        
+                        # Check if checksum exists using callback or fall back to database query
+                        if self._checksum_callback and self._checksum_callback(content_checksum):
+                            logger.info(f"Skipping {url} - duplicate content detected")
+                            return None  # Return None to indicate skip, not an error
 
                     # Extract metadata
                     title = soup.find("title")
@@ -139,6 +183,9 @@ class BeautifulSoupScraper(WebScraperBase):
                         encoding=encoding,
                         status_code=status_code,
                         headers=headers,
+                        normalized_url=normalized_url,
+                        canonical_url=canonical_url,
+                        content_checksum=content_checksum,
                     )
 
             except asyncio.TimeoutError:
@@ -150,6 +197,39 @@ class BeautifulSoupScraper(WebScraperBase):
             except Exception as e:
                 logger.error(f"Unexpected error while scraping {url}: {e}")
                 raise
+
+    def set_resume_info(self, resume_info: List[Dict[str, str]]) -> None:
+        """Set resume information for continuing a crawl.
+        
+        Args:
+            resume_info: List of dicts with 'url' and 'content' keys
+        """
+        self._resume_info = resume_info
+        logger.info(f"Loaded {len(resume_info)} previously scraped pages for link extraction")
+
+    async def populate_queue_from_content(self, content: str, url: str, 
+                                        to_visit: Set[str], depth_map: Dict[str, int],
+                                        current_depth: int) -> None:
+        """Extract links from content and add to queue.
+        
+        Args:
+            content: HTML content to extract links from
+            url: URL of the page
+            to_visit: Set of URLs to visit
+            depth_map: Mapping of URLs to their depth
+            current_depth: Current crawl depth
+        """
+        if current_depth < self.config.max_depth:
+            new_urls = self._extract_links(content, url)
+            for new_url in new_urls:
+                normalized_new_url = self._normalize_url(new_url)
+                if (normalized_new_url not in self._visited_urls 
+                    and normalized_new_url not in to_visit):
+                    to_visit.add(normalized_new_url)
+                    depth_map[normalized_new_url] = current_depth + 1
+                    logger.debug(
+                        f"Added URL to queue: {normalized_new_url} (depth: {current_depth + 1})"
+                    )
 
     async def scrape_site(self, start_url: str) -> AsyncGenerator[ScrapedPage, None]:
         """Scrape entire website starting from URL.
@@ -163,6 +243,11 @@ class BeautifulSoupScraper(WebScraperBase):
         # Parse start URL to get base domain
         start_parsed = urlparse(start_url)
         base_domain = start_parsed.netloc
+        
+        # Store the base path for subdirectory restriction
+        base_path = start_parsed.path.rstrip('/')
+        if base_path:
+            logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # If no allowed domains specified, restrict to start domain
         if not self.config.allowed_domains:
@@ -173,18 +258,41 @@ class BeautifulSoupScraper(WebScraperBase):
         to_visit: Set[str] = {start_url}
         depth_map: Dict[str, int] = {start_url: 0}
 
-        async with self:
+        # Check if we're already in a context manager
+        should_close_session = False
+        if not self.session:
+            await self.__aenter__()
+            should_close_session = True
+
+        try:
+            # If we have resume info, populate the queue from previously scraped pages
+            if self._resume_info:
+                logger.info("Populating queue from previously scraped pages...")
+                for page_info in self._resume_info:
+                    url = page_info['url']
+                    content = page_info['content']
+                    # Assume depth 0 for scraped pages, their links will be depth 1
+                    await self.populate_queue_from_content(content, url, to_visit, depth_map, 0)
+                logger.info(f"Found {len(to_visit)} URLs to visit after analyzing scraped pages")
             while to_visit and len(self._visited_urls) < self.config.max_pages:
                 # Get next URL
                 url = to_visit.pop()
 
-                # Skip if already visited
-                if self.is_visited(url):
+                # Skip if already visited (normalize URL first)
+                normalized_url = self._normalize_url(url)
+                if self.is_visited(normalized_url):
                     continue
 
                 # Validate URL
                 if not await self.validate_url(url):
                     continue
+
+                # Check subdirectory restriction
+                if base_path:
+                    url_parsed = urlparse(url)
+                    if not url_parsed.path.startswith(base_path + '/') and url_parsed.path != base_path:
+                        logger.debug(f"Skipping {url} - outside subdirectory {base_path}")
+                        continue
 
                 # Check robots.txt
                 if not await self.can_fetch(url):
@@ -200,26 +308,22 @@ class BeautifulSoupScraper(WebScraperBase):
                     continue
 
                 # Mark as visited
-                self.mark_visited(url)
+                self.mark_visited(normalized_url)
 
                 try:
                     # Scrape the page
                     page = await self.scrape_url(url)
+                    
+                    # Skip if page is None (duplicate content or canonical mismatch)
+                    if page is None:
+                        continue
+                        
                     yield page
 
                     # Extract links if not at max depth
-                    if current_depth < self.config.max_depth:
-                        new_urls = self._extract_links(page.content, url)
-                        for new_url in new_urls:
-                            if (
-                                new_url not in self._visited_urls
-                                and new_url not in to_visit
-                            ):
-                                to_visit.add(new_url)
-                                depth_map[new_url] = current_depth + 1
-                                logger.debug(
-                                    f"Added URL to queue: {new_url} (depth: {current_depth + 1})"
-                                )
+                    await self.populate_queue_from_content(
+                        page.content, url, to_visit, depth_map, current_depth
+                    )
 
                     # Respect rate limit
                     if self.config.request_delay > 0:
@@ -229,6 +333,11 @@ class BeautifulSoupScraper(WebScraperBase):
                     logger.error(f"Error processing {url}: {e}")
                     # Continue with other URLs
                     continue
+
+        finally:
+            # Clean up session if we created it
+            if should_close_session:
+                await self.__aexit__(None, None, None)
 
         logger.info(f"Crawl complete. Visited {len(self._visited_urls)} pages")
 
@@ -293,6 +402,11 @@ class BeautifulSoupScraper(WebScraperBase):
                         absolute_url = urljoin(base_url, href)
                         # Remove fragment
                         absolute_url = absolute_url.split("#")[0]
+                        
+                        # Remove GET parameters if configured to do so
+                        if self.config.ignore_get_params and "?" in absolute_url:
+                            absolute_url = absolute_url.split("?")[0]
+                        
                         if absolute_url:
                             # Skip non-HTML resources
                             if not any(

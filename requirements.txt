@@ -36,6 +36,10 @@ wcwidth==0.2.13
 
 # Async file operations
 aiofiles==24.1.0
+anyio==4.9.0
+
+# Claude Code SDK for m1f-claude
+claude-code-sdk>=0.0.10
 
 # Optional dependencies for additional scrapers
 # Install with: pip install httpx selectolax

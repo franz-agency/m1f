@@ -75,7 +75,14 @@ fi
 # Step 3: Generate initial m1f bundles
 echo
 echo -e "${GREEN}Step 3: Generating initial m1f bundles...${NC}"
-m1f-update --quiet
+source .venv/bin/activate && python -m tools.m1f auto-bundle --quiet
+
+# Create symlink for main documentation
+if [ -f "m1f/m1f/87_m1f_only_docs.txt" ] && [ ! -e "m1f/m1f.txt" ]; then
+    ln -sf "m1f/87_m1f_only_docs.txt" "m1f/m1f.txt"
+    echo -e "${GREEN}✓ Created m1f.txt symlink to main documentation${NC}"
+fi
+
 echo -e "${GREEN}✓ Initial bundles generated${NC}"
 
 # Step 4: Setup PATH
@@ -140,8 +147,8 @@ echo "  • m1f-html2md       - Convert HTML to Markdown"
 echo "  • m1f-scrape        - Download websites for offline viewing"
 echo "  • m1f-token-counter - Count tokens in files"
 echo "  • m1f-update        - Regenerate m1f bundles"
-echo "  • m1f-link          - Link m1f documentation for AI tools"
-echo "  • m1f-claude        - Enhance prompts with m1f knowledge for Claude"
+echo "  • m1f-init          - Initialize m1f for your project"
+echo "  • m1f-claude        - Advanced setup with topic-specific bundles"
 echo "  • m1f-help          - Show available commands"
 echo
 

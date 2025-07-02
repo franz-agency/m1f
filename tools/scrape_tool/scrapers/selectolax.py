@@ -65,6 +65,19 @@ class SelectolaxScraper(WebScraperBase):
         super().__init__(config)
         self._client: Optional[httpx.AsyncClient] = None
         self._visited_urls: Set[str] = set()
+    
+    def _normalize_url(self, url: str) -> str:
+        """Normalize URL by removing GET parameters if configured.
+        
+        Args:
+            url: URL to normalize
+            
+        Returns:
+            Normalized URL
+        """
+        if self.config.ignore_get_params and "?" in url:
+            return url.split("?")[0]
+        return url
 
     async def __aenter__(self):
         """Enter async context and create HTTP client."""
@@ -115,6 +128,36 @@ class SelectolaxScraper(WebScraperBase):
 
             # Parse HTML with selectolax
             html_parser = HTMLParser(response.text)
+            
+            # Store metadata for database
+            normalized_url = self._normalize_url(str(response.url))
+            canonical_url = None
+            content_checksum = None
+            
+            # Order: 1. GET parameter normalization (already done in _normalize_url)
+            # 2. Canonical URL check
+            if self.config.check_canonical:
+                canonical_link = html_parser.css_first('link[rel="canonical"]')
+                if canonical_link and canonical_link.attributes.get("href"):
+                    canonical_url = canonical_link.attributes["href"]
+                    # Make canonical URL absolute
+                    canonical_url = urljoin(url, canonical_url)
+                    # Normalize canonical URL too
+                    normalized_canonical = self._normalize_url(canonical_url)
+                    
+                    if normalized_url != normalized_canonical:
+                        logger.info(f"Skipping {url} - canonical URL differs: {canonical_url}")
+                        return None  # Return None to indicate skip, not an error
+            
+            # 3. Content duplicate check
+            if self.config.check_content_duplicates:
+                from ..utils import calculate_content_checksum
+                content_checksum = calculate_content_checksum(response.text)
+                
+                # Check if checksum exists using callback
+                if self._checksum_callback and self._checksum_callback(content_checksum):
+                    logger.info(f"Skipping {url} - duplicate content detected")
+                    return None  # Return None to indicate skip, not an error
 
             # Extract title
             title = ""
@@ -166,6 +209,9 @@ class SelectolaxScraper(WebScraperBase):
                 status_code=response.status_code,
                 headers=dict(response.headers),
                 metadata=metadata,
+                normalized_url=normalized_url,
+                canonical_url=canonical_url,
+                content_checksum=content_checksum,
             )
 
         except httpx.HTTPError as e:
@@ -190,6 +236,11 @@ class SelectolaxScraper(WebScraperBase):
         # Parse start URL to get base domain
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
+        
+        # Store the base path for subdirectory restriction
+        base_path = parsed_start.path.rstrip('/')
+        if base_path:
+            logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # Initialize queue with start URL
         queue = asyncio.Queue()
@@ -197,7 +248,8 @@ class SelectolaxScraper(WebScraperBase):
 
         # Track visited URLs
         self._visited_urls.clear()
-        self._visited_urls.add(start_url)
+        normalized_start = self._normalize_url(start_url)
+        self._visited_urls.add(normalized_start)
 
         # Semaphore for concurrent requests
         semaphore = asyncio.Semaphore(self.config.concurrent_requests)
@@ -216,6 +268,10 @@ class SelectolaxScraper(WebScraperBase):
 
                     # Scrape the page
                     page = await self.scrape_url(url)
+                    
+                    # Skip if page is None (duplicate content or canonical mismatch)
+                    if page is None:
+                        return None
 
                     # Extract links if not at max depth
                     if depth < self.config.max_depth:
@@ -239,6 +295,11 @@ class SelectolaxScraper(WebScraperBase):
                             elif parsed_url.netloc != base_domain:
                                 continue
 
+                            # Check subdirectory restriction
+                            if base_path:
+                                if not parsed_url.path.startswith(base_path + '/') and parsed_url.path != base_path:
+                                    continue
+
                             # Skip if matches exclude pattern
                             if self.config.exclude_patterns:
                                 if any(
@@ -247,8 +308,11 @@ class SelectolaxScraper(WebScraperBase):
                                 ):
                                     continue
 
+                            # Normalize URL
+                            normalized_url = self._normalize_url(absolute_url)
+                            
                             # Skip if already visited
-                            if absolute_url in self._visited_urls:
+                            if normalized_url in self._visited_urls:
                                 continue
 
                             # Skip non-HTTP(S) URLs
@@ -256,8 +320,8 @@ class SelectolaxScraper(WebScraperBase):
                                 continue
 
                             # Add to queue
-                            self._visited_urls.add(absolute_url)
-                            await queue.put((absolute_url, depth + 1))
+                            self._visited_urls.add(normalized_url)
+                            await queue.put((normalized_url, depth + 1))
 
                     return page
 

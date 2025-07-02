@@ -6,6 +6,395 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2025-06-24
+
+### Documentation
+
+- **README.md Enhancements**: Major improvements to project documentation
+  - Added clear explanation of what m1f is (Make One File)
+  - Added Tailwind CSS 4.0 example demonstrating real-world usage
+  - Added concise tool suite overview with links to docs and m1f.dev
+  - Added comprehensive feature list emphasizing dynamic/auto-updating capabilities
+  - Added security note about detect-secrets with link to GitHub repository
+  - Added "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
+  - Added bundle location and Claude reference syntax explanation
+  - Improved overall structure with developer-friendly tone
+- **HTML2MD Documentation Updates**: Enhanced Claude AI integration documentation
+  - Added `--analyze-files` parameter documentation
+  - Documented project description prompt feature
+  - Added subprocess handling improvements
+  - Updated examples with new features
+
+### Added
+
+- **HTML2MD Claude AI Integration Enhancements**: Major improvements to AI-powered HTML analysis
+  - **External Prompt System**: All prompts now loaded from external markdown files in `prompts/` directory
+    - `select_files_from_project.md`: Strategic selection of 5 representative HTML files
+    - `analyze_selected_files.md`: Task-based analysis workflow with individual file processing
+    - `convert_html_to_md.md`: Enhanced HTML to Markdown conversion with quality standards
+    - Improved maintainability and customization of AI prompts
+  - **Task-Based Analysis Workflow**: Multi-phase analysis for better accuracy
+    - Phase 1: Individual file analysis with detailed findings saved to separate files
+    - Phase 2: Synthesis of all analyses to create optimal configuration
+    - Deep structural analysis with content boundaries, navigation elements, and special content types
+    - Creates temporary analysis files in m1f directory for transparency
+  - **Write Tool Permission**: Claude now has write permissions for creating analysis files
+    - Automatically creates individual analysis files (html_analysis_1.txt through html_analysis_5.txt)
+    - Enables iterative analysis and refinement process
+    - Includes cleanup functionality to remove temporary files after user confirmation
+  - **Directory Access Improvements**: Enhanced Claude integration workflow
+    - Uses `--add-dir` parameter instead of changing directories
+    - Maintains clean working directory structure
+    - Prevents directory traversal issues during analysis
+  - **Improved Error Handling**: Better subprocess management and error reporting
+    - Fixed indentation errors in subprocess.Popen calls
+    - Applied black formatting for consistent code style
+    - Enhanced logging and progress indicators
+    - Changed all subprocess.Popen + communicate() to subprocess.run() for reliable Claude CLI integration
+    - Added 5-minute timeout handling for subprocess operations
+  - **User Experience Improvements**: Enhanced workflow and configuration
+    - Added `--analyze-files` parameter to specify number of files to analyze (1-20, default: 5)
+    - Project description prompt now includes tip about specifying important files
+    - Output configuration saved as `html2md_extract_config.yaml` instead of generic name
+    - Fixed file references to use m1f/ instead of @m1f directory
+    - Added debug output for transparency during analysis process
+    - Cleanup functionality removes temporary analysis files after confirmation
+
+- **WebScraper Content Deduplication**: Memory-efficient duplicate prevention system (enabled by default)
+  - **Database-Backed Deduplication**: Optimized for large scraping sessions
+    - Uses SQLite queries instead of loading all checksums into memory
+    - Stores checksums in `content_checksums` table with first URL and timestamp
+    - Scrapers use callback mechanism to check checksums via database
+    - Significantly reduces memory usage for large scraping sessions
+    - Maintains deduplication state across resume operations
+  - **Content-Based Detection**: SHA-256 checksums of normalized plain text
+    - Extracts plain text from HTML (removes all tags, scripts, styles)
+    - Decodes HTML entities (&nbsp;, &lt;, etc.)
+    - Normalizes whitespace (multiple spaces become single space)
+    - Skips pages with identical text content
+  - **Three-Layer Deduplication System**:
+    1. Canonical URL checking (default: enabled) - Use `--ignore-canonical` to disable
+    2. Content deduplication (default: enabled) - Use `--ignore-duplicates` to disable
+    3. GET parameter normalization (default: disabled) - Use `--ignore-get-params` to enable
+  - **Improved Logging**: Graceful handling of duplicate detection
+    - No longer logs duplicates as "unexpected errors"
+    - Clear informational messages when skipping duplicate content
+    - Transparent reporting of deduplication effectiveness
+
+- **WebScraper Subdirectory Restriction**: Automatic crawling restriction to specified paths
+  - When URL contains a path (e.g., `https://example.com/docs`), only pages under that path are scraped
+  - Prevents crawling outside the specified subdirectory (e.g., won't scrape `/products` when `/docs` is specified)
+  - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
+  - Useful for downloading specific documentation sections without the entire website
+  - Example: `m1f-scrape https://api.example.com/v2/reference` only scrapes pages under `/v2/reference`
+
+- **WebScraper Ignore GET Parameters**: New option to prevent duplicate content from URLs with different query strings
+  - **--ignore-get-params Flag**: Strips GET parameters from URLs during scraping
+    - Prevents duplicate downloads from URLs like `page.html?tab=linux` and `page.html?tab=windows`
+    - Normalized URLs are used for visited tracking and file saving
+    - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
+    - HTTrack uses `-N0` flag to disable query string parsing
+    - Useful for documentation sites that use GET parameters for UI state
+  - **Example**: `m1f-scrape https://docs.example.com -o ./html --ignore-get-params`
+    - Will treat `docs.html?version=1` and `docs.html?version=2` as the same page
+
+- **WebScraper Canonical URL Checking**: Automatically skip duplicate pages based on canonical URLs
+  - **Default Behavior**: Checks `<link rel="canonical">` tags on every page
+    - Skips pages where canonical URL differs from current URL
+    - Prevents downloading duplicate content (print versions, mobile versions, etc.)
+    - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
+    - Logs skipped pages with their canonical URLs for transparency
+  - **--ignore-canonical Flag**: Ignore canonical tags when needed
+    - Use when you want all page versions regardless of canonical tags
+    - Example: `m1f-scrape https://example.com -o ./html --ignore-canonical`
+  - **Use Cases**:
+    - Documentation sites with multiple URL formats for same content
+    - E-commerce sites with product URLs containing tracking parameters
+    - News sites with print and mobile versions of articles
+
+### Fixed
+
+- **HTML2MD Claude Integration Issues**: Resolved multiple issues with Claude CLI integration
+  - Fixed subprocess hanging when using `Popen` + `communicate()` with Claude CLI
+  - Fixed incorrect m1f usage (now properly uses `--skip-output-file` for filelist generation)
+  - Fixed file references from embedded content to proper @ syntax
+  - Fixed indentation errors in subprocess calls
+  - Fixed undefined variable errors (removed unused `html_contents`)
+  - Fixed test failure for outdated CLI parameters
+- **m1f Directory Structure**: Corrected nested directory configuration
+  - Fixed .m1f.config.yml to use proper m1f/m1f/ structure
+  - Removed accidental triple nesting (m1f/m1f/m1f/)
+  - Created proper symlink from m1f/m1f.txt to m1f/m1f/87_m1f_only_docs.txt
+- **WebScraper Logging**: Fixed duplicate content detection logging
+  - Duplicates no longer logged as "unexpected errors"
+  - Changed from exception-based to graceful skip-based handling
+
+
+- **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
+  - **SQLite Database Tracking**: Automatically tracks scraped URLs in `scrape_tracker.db`
+    - Stores URL, status code, target filename, timestamp, and errors
+    - Enables resuming interrupted scraping sessions
+    - Database created in output directory for each scraping job
+  - **Progress Display**: Real-time display of currently processed URLs
+    - Shows "Processing: <URL> (page X)" for each page
+    - Verbose mode displays detailed logging information
+    - Resume shows "Resuming crawl - found X previously scraped URLs"
+  - **Graceful Interruption**: Clean handling of Ctrl+C
+    - Shows friendly message: "⚠️ Scraping interrupted by user"
+    - Instructions to resume: "Run the same command again to resume where you left off"
+    - No Python stack traces on interruption
+  - **Smart Resume Strategy**: Analyzes previously scraped pages
+    - Reads first 20 scraped pages to extract links
+    - Populates URL queue with unvisited links from scraped pages
+    - Shows "Found X URLs to visit after analyzing scraped pages"
+  - **Enhanced CLI**: Better user experience
+    - Added hint "Press Ctrl+C to interrupt and resume later" at startup
+    - Logging configuration with `-v` flag for progress visibility
+    - Fixed asyncio "Unclosed client session" warnings
+=======
+- **m1f-html2md Claude AI Integration**: Intelligent HTML analysis and conversion using Claude
+  - **Analyze Command Enhancement**: Added `--claude` flag for AI-powered analysis
+    - Automatically finds all HTML files in directories (no need to specify individual files)
+    - Uses Claude to intelligently select 5 representative files from scraped documentation
+    - Analyzes HTML structure and suggests optimal CSS selectors for content extraction
+    - Excludes navigation, headers, footers, sidebars, and advertisements
+    - Runs `m1f-init` automatically in the analysis directory
+    - Outputs YAML configuration with content and ignore selectors
+  - **Convert Command Enhancement**: Added `--claude` flag for batch HTML to Markdown conversion
+    - Converts all HTML files in a directory to clean Markdown using Claude AI
+    - Supports model selection with `--model` parameter (opus or sonnet)
+    - Configurable sleep delay between API calls with `--sleep` parameter
+    - Maintains directory structure in output
+    - Progress tracking with conversion summary
+  - **Prompt Templates**: All prompts stored as markdown files in `prompts/` directory
+    - `select_files_simple.md` - Selects representative HTML files
+    - `analyze_html_simple.md` - Analyzes HTML and suggests CSS selectors
+    - `convert_html_to_md.md` - Converts HTML to clean Markdown
+  - **Security**: Path traversal protection using existing `validate_path_traversal` function
+  - **Import Fix**: Fixed ModuleNotFoundError with try/except import pattern
+
+- **--docs-only Parameter**: New command-line flag for documentation-only
+  bundles
+
+  - Filters to include only 62 documentation file extensions
+  - Simplifies command: `m1f -s . -o docs.txt --docs-only`
+  - Replaces verbose `--include-extensions` with 62 extensions
+  - Available in presets via `docs_only: true` configuration
+  - Overrides include-extensions when set
+
+- **Documentation File Extensions**: Centralized definition in constants.py
+
+  - Added DOCUMENTATION_EXTENSIONS constant with 62 file extensions
+  - Added UTF8_PREFERRED_EXTENSIONS constant with 45 UTF-8 preferred formats
+  - Includes man pages, markup formats, text files, and developer docs
+  - Removed binary formats (.doc, .so) that were incorrectly included
+  - Added is_documentation_file() utility function for consistent checks
+  - Updated encoding handler to use centralized UTF-8 preference list
+  - Documentation extensions now available system-wide for all tools
+>>>>>>> a5263cc2954dda4397238b4001d4bbae4cea973d
+
+- **m1f-claude --init Improvements**: Enhanced project initialization process
+
+  - **Choice-Based Setup**: Users can choose between quick and advanced
+    initialization modes
+    - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
+    - Command-line parameters: `--quick-setup` and `--advanced-setup` for
+      scripting
+    - Quick setup: Creates bundles in 30 seconds without Claude
+    - Advanced setup: Claude analyzes project and creates topic-specific bundles
+  - **Project-Specific Bundle Naming**: All bundles include project directory
+    name
+    - Example: `m1f_complete.txt`, `m1f_docs.txt` for the m1f project
+    - Auxiliary files also include project name: `m1f_complete_filelist.txt`,
+      `m1f_complete_dirlist.txt`
+    - Makes it easier to identify bundles when working with multiple projects
+  - **Auxiliary File Generation**: Both bundles now generate filelist and
+    dirlist files
+    - Complete bundle creates: `{project}_complete_filelist.txt` and
+      `{project}_complete_dirlist.txt`
+    - Docs bundle creates: `{project}_docs_filelist.txt` and
+      `{project}_docs_dirlist.txt`
+    - Provides overview of included files and directory structure
+  - **Streamlined Workflow**: Automatic bundle creation without Claude
+    dependency
+    - Automatically creates complete.txt bundle with all project files
+    - Automatically creates docs.txt bundle with 62 documentation extensions
+    - Uses --docs-only parameter for efficient documentation bundling
+    - Claude Code only invoked for advanced topic-specific segmentation
+    - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
+  - **Verbose Mode**: Added `--verbose` flag to show prompts and command
+    parameters
+    - Displays complete Claude Code command with permissions
+
+- **m1f-init Tool**: New cross-platform initialization tool
+  - Replaces m1f-link functionality (m1f-link has been removed)
+  - Integrates documentation linking into initialization process
+  - Works on Windows, Linux, and macOS
+  - Creates complete and docs bundles with project-specific names
+  - Generates auxiliary files (filelist, dirlist) for all bundles
+  - Creates basic .m1f.config.yml configuration
+  - Shows platform-specific next steps
+  - On Linux/macOS: Suggests `m1f-claude --advanced-setup` for topic bundles
+
+### Changed
+
+- **m1f-claude Refactoring**: Removed initialization from m1f-claude
+  - Removed --init, --quick-setup parameters
+  - Now only handles --advanced-setup for topic-specific bundles
+  - Requires m1f-init to be run first (checks for prerequisites)
+  - Focuses solely on Claude-assisted advanced configuration
+  - Not available on Windows (Linux/macOS only)
+
+### Removed
+
+- **m1f-link Command**: Functionality integrated into m1f-init
+  - Documentation linking now happens automatically during m1f-init
+  - Simplifies workflow by combining two steps into one
+
+### Enhanced
+
+- **Auxiliary File Documentation**: Added comprehensive documentation
+
+  - Documented filelist and dirlist generation in main m1f documentation
+  - Added "Output Files" section explaining all generated files
+  - Included examples of working with file lists for custom bundles
+  - Updated Quick Start to show all files created by m1f-init
+  - Added file list editing workflows to development documentation
+    - Shows full prompt being sent for debugging
+    - Helps troubleshoot initialization issues
+  - **Project Analysis Files**: Create and preserve analysis artifacts in m1f/
+    directory
+    - Generates `project_analysis_filelist.txt` with all project files
+    - Generates `project_analysis_dirlist.txt` with directory structure
+    - Files are kept for reference (no cleanup)
+    - Respects .gitignore patterns during analysis
+    - Explicitly excludes m1f/ directory to prevent recursion
+  - **Better Bundle Strategy**: Improved initialization prompts for
+    project-specific configs
+    - Explicit instruction to read @m1f/m1f.txt documentation first
+    - Removed global file size limits from defaults
+    - Added proper meta file exclusions (LICENSE*, CLAUDE.md, *.lock)
+    - Clear rules against creating test bundles when no tests exist
+    - Emphasis on logical segmentation
+      (complete/docs/code/components/config/styles)
+    - Clarified that dotfiles are excluded by default
+    - Added vendor/ to example excludes for PHP projects
+  - **Clearer Instructions**: Made prompts more explicit about modifying files
+    - Emphasizes that basic config is just a starter needing enhancement
+    - Requires 3-5 project-specific bundles minimum
+    - Explicit instruction to use Edit/MultiEdit tools
+    - Stronger language about actually modifying the config file
+
+- **m1f-claude Enhancements**: Major improvements for intelligent m1f setup
+  assistance
+  - **Session Persistence**: Implemented proper conversation continuity using
+    Claude CLI's `-r` flag
+    - Each conversation maintains its own session ID
+    - Multiple users can work in the same directory simultaneously
+    - Session IDs are extracted from JSON responses and reused
+  - **Streaming Output**: Real-time feedback with `--output-format stream-json`
+    - Shows Claude's responses as they arrive
+    - Displays tool usage in debug mode
+    - Provides immediate visual feedback during processing
+  - **Tool Permissions**: Added `--allowedTools` parameter with sensible
+    defaults
+    - Default tools: Read, Edit, MultiEdit, Write, Glob, Grep, Bash
+    - Customizable via `--allowed-tools` command line argument
+    - Enables file operations and project analysis
+  - **Enhanced Prompt System**: Sophisticated prompt enhancement for m1f setup
+    - Deep thinking task list approach for systematic m1f configuration
+    - Detects when users want to set up m1f (various phrase patterns)
+    - Provides 5-phase task list: Analysis, Documentation Study, Design,
+      Implementation, Validation
+    - Always references @m1f/m1f.txt documentation (5+ references per prompt)
+    - Detects and prioritizes AI context files (CLAUDE.md, .cursorrules,
+      .windsurfrules)
+    - Project-aware recommendations based on detected frameworks
+    - Line-specific documentation references for key sections
+  - **Debug Mode**: Added `--debug` flag for detailed output
+    - Shows session IDs, costs, and API usage
+    - Displays tool invocations and responses
+    - Helps troubleshoot issues and monitor usage
+  - **Interactive Mode UX**: Improved visual feedback
+    - "Claude is thinking..." indicator during processing
+    - Tool usage notifications: `[🔧 Using tool: Read]`
+    - Response completion indicator: `[✅ Response complete]`
+    - Better prompt spacing with newlines before "You:"
+    - Clear separation between responses and new prompts
+    - Interaction counter: prompts to continue after every 10 exchanges
+    - Ctrl-C signal handling for graceful cancellation
+    - Tool output preview: shows abbreviated results from Claude's tool usage
+    - Emphasis on Standard separator (not Markdown) for AI-optimized bundles
+  - **Exit Command**: Added `/e` command support like Claude CLI
+    - Works alongside 'quit', 'exit', and 'q' commands
+    - Updated help text and keyboard interrupt messages
+  - **Initialization Command**: Fixed `--init` command async/await issues
+    - Resolved RuntimeError with cancel scope in different task
+    - Added graceful handling of missing 'cost_usd' field in Claude SDK
+      responses
+    - Implemented proper anyio task group management for async operations
+    - Enhanced error handling with debug logging for SDK issues
+    - Fixed subprocess hanging by displaying prompts for manual use instead of
+      programmatic execution
+
+### Changed
+
+- **m1f-claude --init Workflow**: Completely redesigned initialization process
+
+  - Now automatically creates complete.txt and docs.txt bundles without Claude
+  - Generates .m1f.config.yml with both bundles pre-configured
+  - Uses new --docs-only parameter for documentation bundle creation
+  - Claude Code only used for advanced topic-specific segmentation
+  - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
+
+- **Dependencies**: Updated claude-code-sdk to use flexible version constraint
+
+  - Changed from `claude-code-sdk==0.0.10` to `claude-code-sdk>=0.0.10`
+  - Ensures automatic updates to latest compatible versions
+  - Maintains backward compatibility with current version
+
+- **m1f-claude Architecture**: Switched from SDK to subprocess for better
+  control
+  - Uses Claude CLI directly with proper session management
+  - More reliable than the SDK for interactive sessions
+  - Better error handling and fallback mechanisms
+  - Removed misleading "subprocess fallback" message (it's the primary method
+    now)
+
+### Fixed
+
+- **m1f-claude --init Command**: Fixed Claude Code subprocess execution
+
+  - Resolved parameter ordering issue with `--add-dir` flag
+  - Changed from stdin-based prompt delivery to `-p` parameter method
+  - Implemented fallback to display manual command when subprocess hangs
+  - Now shows clear instructions for manual execution with proper parameters
+  - Ensures Claude has directory access permissions for file operations
+
+- **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
+
+  - Created m1f_aliases.ps1 with all PowerShell functions and aliases
+  - Added file existence check in setup_m1f_aliases.ps1 before sourcing
+  - Fixed hardcoded path issue that caused PowerShell profile errors
+  - Now uses correct relative paths based on actual m1f installation location
+  - Added PowerShell profile path to warning message for easier debugging
+
+- **m1f-claude Project Name Extraction**: Fixed regex patterns that were failing
+  to extract project names
+  - Replaced complex regex patterns with backreferences that were causing
+    incorrect matches
+  - Added simpler, more specific patterns for different name formats (quoted,
+    unquoted, possessive)
+  - Fixed issue where project names were always extracted as empty strings
+  - Now correctly handles formats like "project called 'awesome-app'", "project
+    named MyWebApp", "company's main project"
+
+### Dependencies
+
+- Added required dependencies for m1f-claude:
+  - anyio==4.9.0 (async support)
+  - claude-code-sdk==0.0.10 (Claude integration)
+
 ## [3.2.2] - 2025-07-06
 
 ### Changed
@@ -13,23 +402,29 @@ and this project adheres to
 - **Documentation**: Updated all command examples to use installed bin commands
   - Replaced `python -m tools.m1f` with `m1f`
   - Replaced `python -m tools.s1f` with `m1f-s1f`
-  - Replaced `python -m tools.scrape_tool` and `python -m tools.webscraper` with `m1f-scrape`
-  - Replaced `python -m tools.html2md` and `python -m tools.html2md_tool` with `m1f-html2md`
+  - Replaced `python -m tools.scrape_tool` and `python -m tools.webscraper` with
+    `m1f-scrape`
+  - Replaced `python -m tools.html2md` and `python -m tools.html2md_tool` with
+    `m1f-html2md`
   - Replaced `python tools/token_counter.py` with `m1f-token-counter`
   - Replaced `m1f auto-bundle` with `m1f-update` where appropriate
   - Updated all documentation, scripts, and examples for consistency
 
 ### Fixed
 
-- **Scraper Config Files**: Fixed typo in YAML configs (mf1-html2md → m1f-scrape)
-- **Documentation**: Improved command consistency across all user-facing documentation
+- **Scraper Config Files**: Fixed typo in YAML configs (mf1-html2md →
+  m1f-scrape)
+- **Documentation**: Improved command consistency across all user-facing
+  documentation
 
 ## [3.2.1] - 2025-06-07
 
 ### Fixed
 
-- **Wrapper Scripts**: Added PYTHONPATH to all wrapper scripts to ensure proper module imports
-- **Pre-commit Hook**: Updated to use python3 and properly handle virtual environments
+- **Wrapper Scripts**: Added PYTHONPATH to all wrapper scripts to ensure proper
+  module imports
+- **Pre-commit Hook**: Updated to use python3 and properly handle virtual
+  environments
 - **Bin Scripts**: All wrapper scripts now preserve current working directory
 
 ## [3.2.0] - 2025-06-06

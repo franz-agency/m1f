@@ -21,12 +21,18 @@ optimal LLM context usage.
 - **Async I/O**: High-performance concurrent downloading
 - **Intelligent Crawling**: Automatically respects robots.txt, follows
   redirects, handles encoding
+- **Duplicate Prevention**: Three-layer deduplication system:
+  - Canonical URL checking (enabled by default)
+  - Content-based deduplication (enabled by default)
+  - GET parameter normalization (optional with `--ignore-get-params`)
 - **Metadata Preservation**: Saves HTTP headers and metadata alongside HTML
   files
 - **Domain Restriction**: Automatically restricts crawling to the starting
   domain
+- **Subdirectory Restriction**: When URL contains a path, only scrapes within that subdirectory
 - **Rate Limiting**: Configurable delays between requests
 - **Progress Tracking**: Real-time download progress with file listing
+- **Resume Support**: Interrupt and resume scraping sessions with SQLite tracking
 
 ## Quick Start
 
@@ -44,6 +50,9 @@ m1f-scrape https://example.com -o ./html --scraper httrack
 
 # List downloaded files after completion
 m1f-scrape https://example.com -o ./html --list-files
+
+# Resume interrupted scraping (with verbose mode to see progress)
+m1f-scrape https://example.com -o ./html -v
 ```
 
 ## Command Line Interface
@@ -71,9 +80,15 @@ m1f-scrape <url> -o <output> [options]
 | `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
 | `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
+| `--ignore-get-params`   | Ignore GET parameters in URLs (e.g., ?tab=linux)             | False         |
+| `--ignore-canonical`    | Ignore canonical URL tags (checking is enabled by default)    | False         |
+| `--ignore-duplicates`   | Ignore duplicate content detection (enabled by default)       | False         |
 | `--list-files`          | List all downloaded files after completion                    | False         |
 | `-v, --verbose`         | Enable verbose output                                         | False         |
 | `-q, --quiet`           | Suppress all output except errors                             | False         |
+| `--show-db-stats`       | Show scraping statistics from the database                    | False         |
+| `--show-errors`         | Show URLs that had errors during scraping                     | False         |
+| `--show-scraped-urls`   | List all scraped URLs from the database                       | False         |
 | `--version`             | Show version information and exit                             | -             |
 
 ## Scraper Backends
@@ -140,6 +155,73 @@ m1f-scrape https://docs.example.com -o ./docs_html
 m1f-scrape https://docs.example.com -o ./docs_html -v
 ```
 
+### Canonical URL Checking
+
+By default, the scraper checks for canonical URLs to avoid downloading duplicate content:
+
+```bash
+# Pages with different canonical URLs are automatically skipped
+m1f-scrape https://example.com -o ./html
+
+# Ignore canonical tags if you want all page versions
+m1f-scrape https://example.com -o ./html --ignore-canonical
+```
+
+When enabled (default), the scraper:
+- Checks the `<link rel="canonical">` tag on each page
+- Skips pages where the canonical URL differs from the current URL
+- Prevents downloading duplicate content (e.g., print versions, mobile versions)
+- Logs skipped pages with their canonical URLs for transparency
+
+This is especially useful for sites that have multiple URLs pointing to the same content.
+
+### Content Deduplication
+
+By default, the scraper detects and skips pages with duplicate content based on text-only checksums:
+
+```bash
+# Content deduplication is enabled by default
+m1f-scrape https://example.com -o ./html
+
+# Disable content deduplication if needed
+m1f-scrape https://example.com -o ./html --ignore-duplicates
+```
+
+This feature:
+- Enabled by default to avoid downloading duplicate content
+- Extracts plain text from HTML (removes all tags, scripts, styles)
+- Calculates SHA-256 checksum of the normalized text
+- Skips pages with identical text content
+- Useful for sites with multiple URLs serving the same content
+- Works together with canonical URL checking for thorough deduplication
+
+The scraper now has three levels of duplicate prevention, applied in this order:
+1. **GET parameter normalization** (default: disabled) - Use `--ignore-get-params` to enable
+2. **Canonical URL checking** (default: enabled) - Respects `<link rel="canonical">`
+3. **Content deduplication** (default: enabled) - Compares text content
+
+**Important**: All deduplication data is stored in the SQLite database (`scrape_tracker.db`), which means:
+- Content checksums persist across resume operations
+- Canonical URL information is saved for each page
+- The deduplication works correctly even when resuming interrupted scrapes
+- Memory-efficient: checksums are queried from database, not loaded into memory
+- Scales to large websites without excessive memory usage
+
+### Subdirectory Restriction
+
+When you specify a URL with a path, the scraper automatically restricts crawling to that subdirectory:
+
+```bash
+# Only scrape pages under /docs subdirectory
+m1f-scrape https://example.com/docs -o ./docs_only
+
+# Only scrape API documentation pages
+m1f-scrape https://api.example.com/v2/reference -o ./api_docs
+
+# This will NOT scrape /products, /blog, etc. - only /tutorials/*
+m1f-scrape https://learn.example.com/tutorials -o ./tutorials_only
+```
+
 ### Controlled Crawling
 
 ```bash
@@ -173,6 +255,7 @@ Downloaded files are organized to mirror the website structure:
 
 ```
 output_directory/
+├── scrape_tracker.db         # SQLite database for resume functionality
 ├── example.com/
 │   ├── index.html
 │   ├── index.meta.json
@@ -258,6 +341,62 @@ m1f -s ./react_md -o ./react_documentation.txt
 # "Here is the React documentation: <contents of react_documentation.txt>"
 ```
 
+## Resume Functionality
+
+The scraper supports interrupting and resuming downloads, making it ideal for large websites or unreliable connections.
+
+### How It Works
+
+- **SQLite Database**: Creates `scrape_tracker.db` in the output directory to track:
+  - URL of each scraped page
+  - HTTP status code and target filename
+  - Timestamp and error messages (if any)
+- **Progress Display**: Shows real-time progress in verbose mode:
+  ```
+  Processing: https://example.com/page1 (page 1)
+  Processing: https://example.com/page2 (page 2)
+  ```
+- **Graceful Interruption**: Press Ctrl+C to interrupt cleanly:
+  ```
+  Press Ctrl+C to interrupt and resume later
+  ^C
+  ⚠️  Scraping interrupted by user
+  Run the same command again to resume where you left off
+  ```
+
+### Resume Example
+
+```bash
+# Start scraping with verbose mode
+m1f-scrape https://docs.example.com -o ./docs --max-pages 100 -v
+
+# Interrupt with Ctrl+C when needed
+# Resume by running the exact same command:
+m1f-scrape https://docs.example.com -o ./docs --max-pages 100 -v
+
+# You'll see:
+# Resuming crawl - found 25 previously scraped URLs
+# Populating queue from previously scraped pages...
+# Found 187 URLs to visit after analyzing scraped pages
+# Processing: https://docs.example.com/new-page (page 26)
+```
+
+### Database Inspection
+
+```bash
+# Show scraping statistics
+m1f-scrape -o docs/ --show-db-stats
+
+# View all scraped URLs with status codes
+m1f-scrape -o docs/ --show-scraped-urls
+
+# Check for errors
+m1f-scrape -o docs/ --show-errors
+
+# Combine multiple queries
+m1f-scrape -o docs/ --show-db-stats --show-errors
+```
+
 ## Best Practices
 
 1. **Respect robots.txt**: The tool automatically respects robots.txt files
@@ -267,6 +406,8 @@ m1f -s ./react_md -o ./react_documentation.txt
    (default: 2 connections)
 4. **Test with small crawls**: Start with `--max-pages 10` to test your settings
 5. **Check output**: Use `--list-files` to verify what was downloaded
+6. **Use verbose mode**: Add `-v` flag to see progress and resume information
+7. **Keep commands consistent**: Use the exact same command to resume a session
 
 ## Dealing with Cloudflare Protection
 

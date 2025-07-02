@@ -45,6 +45,9 @@ class ScraperConfig:
     timeout: float = 30.0
     follow_redirects: bool = True
     verify_ssl: bool = True
+    ignore_get_params: bool = False
+    check_canonical: bool = True
+    check_content_duplicates: bool = True
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -67,6 +70,9 @@ class ScrapedPage:
     encoding: str = "utf-8"
     status_code: Optional[int] = None
     headers: Optional[Dict[str, str]] = None
+    normalized_url: Optional[str] = None
+    canonical_url: Optional[str] = None
+    content_checksum: Optional[str] = None
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -89,6 +95,7 @@ class WebScraperBase(ABC):
         self._visited_urls: Set[str] = set()
         self._robots_parsers: Dict[str, RobotFileParser] = {}
         self._robots_fetch_lock = asyncio.Lock()
+        self._checksum_callback = None  # Callback to check if checksum exists
 
     @abstractmethod
     async def scrape_url(self, url: str) -> ScrapedPage:
@@ -290,6 +297,14 @@ class WebScraperBase(ABC):
             url: URL to mark as visited
         """
         self._visited_urls.add(url)
+    
+    def set_checksum_callback(self, callback):
+        """Set callback function to check if content checksum exists.
+        
+        Args:
+            callback: Function that takes a checksum string and returns bool
+        """
+        self._checksum_callback = callback
 
     async def __aenter__(self):
         """Async context manager entry."""

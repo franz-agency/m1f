@@ -85,6 +85,7 @@ code_review:
         - join_paragraphs  # Compress for AI
         - remove_empty_lines
       max_lines: 500  # Limit doc length
+      # Note: Consider using docs_only: true in global_settings for complete documentation bundles
     
     # Tests - just structure
     tests:
@@ -108,6 +109,7 @@ docs_chat:
     separator_style: "Markdown"  # Better for chat context
     security_check: null  # No secrets in docs
     remove_scraped_metadata: true
+    docs_only: true  # Use --docs-only to include all 62 documentation extensions
     
     exclude_patterns:
       - "_build/**"

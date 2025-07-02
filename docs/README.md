@@ -55,15 +55,11 @@ This directory contains detailed documentation for the m1f project v3.2.0.
   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
   pip install -r requirements.txt
   ```
-- **Basic file combination**: Use
-  `m1f -s ./your_project -o ./combined.txt`
-- **File extraction**: Use
-  `m1f-s1f -i ./combined.txt -d ./extracted_files`
+- **Basic file combination**: Use `m1f -s ./your_project -o ./combined.txt`
+- **File extraction**: Use `m1f-s1f -i ./combined.txt -d ./extracted_files`
 - **Check token count**: Use `m1f-token-counter ./combined.txt`
-- **Download website**: Use
-  `m1f-scrape https://example.com -o ./html`
-- **Convert HTML to Markdown**: Use
-  `m1f-html2md convert ./html ./markdown`
+- **Download website**: Use `m1f-scrape https://example.com -o ./html`
+- **Convert HTML to Markdown**: Use `m1f-html2md convert ./html ./markdown`
 - **Auto-bundle project**: Use `./scripts/auto_bundle.sh` or configure with
   `.m1f.config.yml`
 

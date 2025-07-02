@@ -64,6 +64,15 @@ m1f-html2md analyze ./html/*.html --suggest-selectors
 # Analyze with detailed structure output
 m1f-html2md analyze ./html/*.html --show-structure --common-patterns
 
+# Use Claude AI to intelligently analyze HTML structure
+m1f-html2md analyze ./html/ --claude
+
+# Analyze with Claude and specify number of files to analyze (1-20)
+m1f-html2md analyze ./html/ --claude --analyze-files 10
+
+# Convert HTML to Markdown using Claude AI (clean content extraction)
+m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus --sleep 2
+
 # Generate a configuration file
 m1f-html2md config -o config.yaml
 ```
@@ -78,7 +87,7 @@ mkdir -p .scrapes/my-project/{html,md,extractors}
 m1f-scrape https://example.com -o .scrapes/my-project/html
 
 # Step 3: Analyze HTML structure (optional)
-m1f-html2md analyze .scrapes/my-project/html/*.html --suggest-selectors
+m1f-html2md analyze .scrapes/my-project/html/ --suggest-selectors
 
 # Step 4: Create custom extractor (optional)
 # Use Claude to analyze and create site-specific extractor:
@@ -114,28 +123,30 @@ m1f-html2md convert <source> -o <output> [options]
 | `--heading-offset`   | Offset heading levels (default: 0)                            |
 | `--no-frontmatter`   | Don't add YAML frontmatter                                    |
 | `--parallel`         | Enable parallel processing                                    |
-| `--log-file`         | Log to file                                                   |
+| `--claude`            | Use Claude AI to convert HTML to Markdown (content only)      |
+| `--model`             | Claude model to use: opus, sonnet (default: sonnet)           |
+| `--sleep`             | Sleep time in seconds between Claude API calls (default: 1.0) |
 | `-v, --verbose`      | Enable verbose output                                         |
 | `-q, --quiet`        | Suppress all output except errors                             |
-| `--version`          | Show version information and exit                             |
 
 ### Analyze Command
 
 Analyze HTML structure for optimal content extraction:
 
 ```bash
-m1f-html2md analyze <files> [options]
+m1f-html2md analyze <paths> [options]
 ```
 
 | Option                | Description                                                          |
 | --------------------- | -------------------------------------------------------------------- |
-| `files`               | HTML files to analyze (2-3 files recommended)                        |
+| `paths`               | HTML files or directories to analyze                                 |
 | `--show-structure`    | Show detailed HTML structure                                         |
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
+| `--claude`            | Use Claude AI to intelligently select files and suggest selectors    |
+| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)           |
 | `-v, --verbose`       | Enable verbose output                                                |
 | `-q, --quiet`         | Suppress all output except errors                                    |
-| `--log-file`          | Log to file                                                          |
 
 ### Config Command
 
@@ -149,6 +160,57 @@ m1f-html2md config [options]
 | -------------- | ------------------------------------------------------ |
 | `-o, --output` | Output configuration file (default: config.yaml)       |
 | `--format`     | Configuration format: yaml, toml, json (default: yaml) |
+
+## Claude AI Integration
+
+html2md offers optional Claude AI integration for intelligent HTML analysis and conversion:
+
+### AI-Powered Analysis
+
+Use Claude to automatically select representative HTML files and suggest optimal CSS selectors:
+
+```bash
+# Analyze a directory of HTML files with Claude
+m1f-html2md analyze ./scraped-site/ --claude
+
+# Analyze more files for better coverage (up to 20)
+m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
+
+# Claude will:
+# 1. Prompt for project description and important files (if applicable)
+# 2. Select representative files from the directory (default: 5)
+# 3. Analyze each file's structure individually
+# 4. Synthesize findings to suggest optimal selectors
+# 5. Generate a YAML configuration (html2md_extract_config.yaml)
+```
+
+**Features of Claude Analysis:**
+- **Project Context**: Provides project description to help Claude understand the content
+- **Important File Priority**: Can specify important files for Claude to prioritize
+- **Multi-phase Analysis**: Individual file analysis followed by synthesis
+- **Transparent Process**: Creates temporary analysis files in m1f/ directory
+- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI integration
+
+### AI-Powered Conversion
+
+Use Claude to convert HTML to clean Markdown, extracting only the main content:
+
+```bash
+# Convert all HTML files using Claude AI
+m1f-html2md convert ./html/ -o ./markdown/ --claude
+
+# Use Opus model for higher quality (default is Sonnet)
+m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus
+
+# Add delay between API calls to avoid rate limits
+m1f-html2md convert ./html/ -o ./markdown/ --claude --sleep 3
+```
+
+The Claude conversion:
+- Extracts only the main content (no navigation, ads, etc.)
+- Preserves document structure and formatting
+- Handles complex HTML layouts intelligently
+- Generates clean, readable Markdown
 
 ## Usage Examples
 
@@ -185,16 +247,16 @@ m1f-html2md convert ./website -o ./docs \
 
 ```bash
 # Analyze HTML files to find optimal selectors
-m1f-html2md analyze ./html/*.html
+m1f-html2md analyze ./html/ --suggest-selectors
 
 # Show detailed structure of HTML files
-m1f-html2md analyze ./html/*.html --show-structure
+m1f-html2md analyze ./html/ --show-structure
 
 # Find common patterns across multiple files
-m1f-html2md analyze ./html/*.html --common-patterns
+m1f-html2md analyze ./html/ --common-patterns
 
 # Get all analysis options
-m1f-html2md analyze ./html/*.html \
+m1f-html2md analyze ./html/ \
   --show-structure --common-patterns --suggest-selectors
 ```
 

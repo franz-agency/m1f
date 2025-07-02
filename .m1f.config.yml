@@ -78,7 +78,7 @@ bundles:
   all-docs:
     description: "m1f documentation"
     group: "documentation"
-    output: "m1f/m1f.txt"
+    output: "m1f/m1f/all-docs.txt"
     sources:
       - path: "."
         include_extensions: [".md", ".txt", ".json", ".yml", ".yaml"]

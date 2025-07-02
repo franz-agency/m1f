@@ -51,11 +51,12 @@ class HTMLParser:
 
         return soup
 
-    def parse_file(self, file_path) -> BeautifulSoup:
+    def parse_file(self, file_path, output_path=None) -> BeautifulSoup:
         """Parse HTML file.
 
         Args:
             file_path: Path to HTML file
+            output_path: Optional output path for relative link resolution
 
         Returns:
             BeautifulSoup object
@@ -83,8 +84,9 @@ class HTMLParser:
                     self.config.encoding, errors=self.config.decode_errors
                 )
 
-        # Get base URL from file path for relative URL resolution
-        base_url = file_path.as_uri()
+        # Don't use file:// URLs - they cause absolute path issues
+        # Instead, we'll handle relative links in a post-processing step
+        base_url = None
 
         return self.parse(html_content, base_url)
 
