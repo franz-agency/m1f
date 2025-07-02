@@ -56,8 +56,8 @@ try:
     from _version import __version__, __version_info__
 except ImportError:
     # Fallback for when running as a script
-    __version__ = "3.2.0"
-    __version_info__ = (3, 2, 0)
+    __version__ = "3.3.0"
+    __version_info__ = (3, 3, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
