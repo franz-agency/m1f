@@ -25,6 +25,7 @@ from rich.console import Console
 from . import __version__
 from .api import Html2mdConverter
 from .config import Config, OutputFormat
+from .claude_runner import ClaudeRunner
 
 console = Console()
 
@@ -197,6 +198,21 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         metavar="N",
         help="Number of files to analyze with Claude (1-20, default: 5)",
     )
+    
+    parser.add_argument(
+        "--parallel-workers",
+        type=int,
+        default=5,
+        metavar="N",
+        help="Number of parallel Claude sessions for file analysis (1-10, default: 5)",
+    )
+    
+    parser.add_argument(
+        "--project-description",
+        type=str,
+        default="",
+        help="Project description to help Claude understand the context (avoids interactive prompt)",
+    )
 
 
 def add_config_arguments(parser: argparse.ArgumentParser) -> None:
@@ -334,7 +350,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     # If --claude flag is set, use Claude AI for analysis
     if args.claude:
         console.print(f"\nFound {len(html_files)} HTML files total")
-        _handle_claude_analysis(html_files, args.analyze_files)
+        _handle_claude_analysis(html_files, args.analyze_files, args.parallel_workers, args.project_description)
         return
 
     # Otherwise, do local analysis
@@ -464,8 +480,8 @@ def _find_common_patterns(parsed_files):
         console.print(f"  <{tag}> (found {count} times)")
 
 
-def _handle_claude_analysis(html_files, num_files_to_analyze=5):
-    """Handle analysis using Claude AI."""
+def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers=5, project_description=""):
+    """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
     import subprocess
     import os
     import tempfile
@@ -475,6 +491,13 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
+    
+    # Try to use improved runner if available
+    try:
+        from .cli_claude_improved import handle_claude_analysis_improved
+        return handle_claude_analysis_improved(html_files, num_files_to_analyze, parallel_workers, project_description)
+    except ImportError:
+        pass
 
     console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
 
@@ -578,13 +601,16 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
         num_files_to_analyze = len(html_files)
         console.print(f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]")
     
-    # Ask user for project description
-    console.print("\n[bold]Project Context:[/bold]")
-    console.print("Please briefly describe what this HTML project contains so Claude can better understand")
-    console.print("what should be converted to Markdown. Example: 'Documentation for XY software - API section'")
-    console.print("\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]")
-    console.print("[dim]     so Claude will prioritize those files in the analysis.[/dim]")
-    project_description = console.input("\nProject description: ").strip()
+    # Ask user for project description if not provided
+    if not project_description:
+        console.print("\n[bold]Project Context:[/bold]")
+        console.print("Please briefly describe what this HTML project contains so Claude can better understand")
+        console.print("what should be converted to Markdown. Example: 'Documentation for XY software - API section'")
+        console.print("\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]")
+        console.print("[dim]     so Claude will prioritize those files in the analysis.[/dim]")
+        project_description = console.input("\nProject description: ").strip()
+    else:
+        console.print(f"\n[bold]Project Context:[/bold] {project_description}")
     
     # Update the prompt with the number of files
     simple_prompt_template = simple_prompt_template.replace("5 representative", f"{num_files_to_analyze} representative")
@@ -1109,6 +1135,13 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
+    
+    # Try to use improved converter if available
+    try:
+        from .convert_claude_improved import handle_claude_convert_improved
+        return handle_claude_convert_improved(args)
+    except ImportError:
+        pass
 
     console.print(f"\n[bold]Using Claude AI to convert HTML to Markdown...[/bold]")
     console.print(f"Model: {args.model}")

@@ -1,0 +1,31 @@
+source: ./html
+destination: ./markdown
+extractor:
+  content_selector: main
+  alternative_selectors:
+  - main.content
+  - main > article
+  - article
+  - .content
+  - body > main
+  - .container main
+  ignore_selectors:
+  - header
+  - nav
+  - header.site-header
+  - header > nav
+  - footer
+  - aside.sidebar
+  - .sidebar
+conversion:
+  strip_tags:
+  - script
+  - style
+  - noscript
+  keep_html_tags: []
+  heading_style: atx
+  bold_style: '**'
+  italic_style: '*'
+  link_style: inline
+  list_marker: '-'
+  code_block_style: fenced

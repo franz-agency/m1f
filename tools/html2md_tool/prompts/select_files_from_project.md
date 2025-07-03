@@ -1,6 +1,6 @@
 # Strategic HTML File Selection for CSS Selector Analysis
 
-The file m1f/all_html_files_filelist.txt contains all HTML files from the scraped documentation site.
+From the list of available HTML files provided above, select the most representative files for CSS selector analysis.
 
 ## Your Mission:
 Select exactly 5 representative HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
@@ -46,3 +46,5 @@ api/reference/authentication.html
 guides/advanced/performance-tuning.html
 tutorials/quickstart.html
 concepts/architecture/overview.html
+
+IMPORTANT: After listing the files, print "FILE_SELECTION_COMPLETE_OK" on the last line to confirm completion.

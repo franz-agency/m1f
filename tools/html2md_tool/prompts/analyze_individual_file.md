@@ -4,9 +4,9 @@ You are analyzing a single HTML file to understand its structure for optimal con
 
 ## Your Task
 
-Read the HTML file: {filename}
+Read the HTML file: {full_path}
 
-Analyze this file's structure and write your findings to: m1f/analysis/html_analysis_{file_number}.txt
+Analyze this file's structure and write your findings to: {output_path}
 
 ## Analysis Criteria
 
@@ -53,7 +53,7 @@ Potential Issues: [edge cases noticed]
 
 ## Output Format
 
-Write your analysis to m1f/analysis/html_analysis_{file_number}.txt in this exact format:
+Write your analysis to {output_path} in this exact format:
 
 ```
 FILE: {filename}
@@ -90,3 +90,4 @@ ignore_selectors:
 2. **Remove any empty or whitespace-only selectors** from lists
 3. **Validate all selectors** are non-empty and properly formatted CSS selectors
 4. Focus on this ONE file only - don't generalize to other files
+5. **IMPORTANT**: After writing the analysis file, print "ANALYSIS_COMPLETE_OK" on the last line to confirm completion

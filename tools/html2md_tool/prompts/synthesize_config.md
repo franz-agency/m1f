@@ -128,3 +128,5 @@ notes: |
 5. **Ensure ignore selectors don't accidentally exclude wanted content**
 
 Output only the YAML configuration - no additional explanation needed.
+
+IMPORTANT: After outputting the YAML configuration, print "SYNTHESIS_COMPLETE_OK" on the last line to confirm completion.
