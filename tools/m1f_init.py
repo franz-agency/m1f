@@ -190,16 +190,20 @@ class M1FInit:
                 content = filelist_path.read_text().strip()
                 if content:
                     files_list = content.split("\n")
-                print(f"📄 Created file list: {filelist_path.name}")
 
             if dirlist_path.exists():
                 content = dirlist_path.read_text().strip()
                 if content:
                     dirs_list = content.split("\n")
-                print(f"📁 Created directory list: {dirlist_path.name}")
 
             # Analyze files to determine project type
             context = self._determine_project_type(files_list, dirs_list)
+            
+            # Clean up temporary analysis files
+            if filelist_path.exists():
+                filelist_path.unlink()
+            if dirlist_path.exists():
+                dirlist_path.unlink()
 
             print(f"✅ Found {len(files_list)} files in {len(dirs_list)} directories")
             print(f"📁 Project Type: {context.get('type', 'Unknown')}")
