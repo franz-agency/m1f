@@ -7,19 +7,19 @@
 
 m1f (Make One File) bundles your entire codebase into a single file that you can feed to Claude AI, ChatGPT, Google Gemini, or any LLM. Think of it as a context maximizer - it takes hundreds of files from your project and intelligently combines them into one mega-file that fits perfectly in an AI's context window.
 
-## Real Example: Tailwind CSS 4.0
+## Real Example: Tailwind CSS Documentation
 
-Here's the problem: Tailwind 4.0 dropped in January 2025, but most LLMs are still stuck in 2024. They have no clue how the new version works. 
+Here's the problem: Tailwind's documentation is constantly evolving, but most LLMs are stuck with outdated information. 
 
 The solution? Three commands:
 
 ```bash
-git clone https://github.com/tailwindlabs/tailwindcss
-cd tailwindcss && m1f-init
+git clone https://github.com/tailwindlabs/tailwindcss.com
+cd tailwindcss.com && m1f-init
 m1f-claude --advanced-setup
 ```
 
-Boom. Now Claude knows everything about Tailwind 4.0. The bundles are created in the `m1f/` directory - you can reference them in Claude with `@m1f/tailwind_complete.txt` or `@m1f/tailwind_docs.txt`. Your AI assistant just became an expert on bleeding-edge tech that didn't exist when it was trained. That's the power of m1f.
+Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are created in the `m1f/` directory - you can reference them in Claude with `@m1f/tailwind_complete.txt` or `@m1f/tailwind_docs.txt`. Your AI assistant just became an expert on bleeding-edge tech that didn't exist when it was trained. That's the power of m1f.
 
 > **🔐 Security Note**: m1f automatically scans for secrets (API keys, passwords, tokens) using [`detect-secrets`](https://github.com/Yelp/detect-secrets) to prevent accidental exposure to LLMs. It'll warn you before bundling sensitive data!
 
@@ -88,11 +88,7 @@ Downloads entire websites for offline processing. Multiple backends for differen
 
 ```bash
 # Scrape documentation sites for offline reference
-m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs \
-  --scraper playwright \
-  --max-pages 50 \
-  --follow-links \
-  --request-delay 1.0
+m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs
 ```
 
 ### 📝 **m1f-html2md** - The Converter
@@ -123,13 +119,18 @@ m1f-token-counter ./bundle.txt
 ### Feed Documentation to Your AI Assistant
 
 ```bash
-# Download → Analyze → Convert → Bundle → Profit
-m1f-scrape https://react.dev -o ./react-html
-m1f-html2md analyze ./react-html --claude
-m1f-html2md convert ./react-html -o ./react-md \
-  --content-selector "main, article" \
-  --ignore-selectors "nav, .sidebar"
-m1f -s ./react-md -o react-docs-for-claude.txt
+# React Documentation - From Git Repository
+git clone https://github.com/reactjs/react.dev
+cd react.dev && m1f-init
+
+# This creates two bundles:
+# - m1f/react_complete.txt (full codebase)
+# - m1f/react_docs.txt (docs only)
+
+# Or create custom bundles
+m1f -s ./src/content -o react-api-docs.txt \
+  --include-extensions .md .mdx \
+  --docs-only
 ```
 
 ### Smart WordPress Development
@@ -198,70 +199,42 @@ m1f-update
 - Check token counts: Your LLM will thank you
 - Read the docs: Seriously, they're pretty good
 
-## Real Example: Scraping Claude's Documentation 🤖
+## Real Example: Scraping Claude Code Documentation 🤖
 
-Want to give Claude its own documentation? Here's how to scrape, process, and
-bundle the Anthropic docs:
+Want to give Claude its own Claude Code documentation? Here's how to scrape and bundle
+the Anthropic docs:
 
-### The Full Pipeline
+It's completely baffling to us that Claude Code doesn't have its own documentation internally and has to look up parameters and syntax online. But now there's help: scrape the documentation, convert it to markdown files, and feed it to Claude Code!
 
 ```bash
-# 1. Download Claude's documentation
-m1f-scrape https://docs.anthropic.com -o ./claude-docs-html \
-  --max-pages 200 \
-  --max-depth 4 \
-  --request-delay 1.0
+# 1. Download Claude Code documentation (specific section only)
+m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-html
 
 # 2. Analyze HTML structure with AI to get optimal selectors
-m1f-html2md analyze ./claude-docs-html --claude
+m1f-html2md analyze ./claude-code-html --claude
 
 # 3. Convert to clean Markdown using the suggested selectors
-m1f-html2md convert ./claude-docs-html -o ./claude-docs-md \
-  --content-selector "main.docs-content, article.documentation" \
-  --ignore-selectors "nav" ".sidebar" ".footer" ".search-box"
+m1f-html2md convert ./claude-code-html -o ./claude-code-md \
+  --content-selector "main, article" \
+  --ignore-selectors "nav, .sidebar"
 
 # 4. Create the mega-bundle for Claude
-m1f -s ./claude-docs-md -o claude-documentation.txt \
+m1f -s ./claude-code-md -o claude-code-documentation.txt \
   --remove-scraped-metadata
 
 # 5. Check if it fits (Claude can handle 200k tokens)
-m1f-token-counter ./claude-documentation.txt
-```
-
-### Or Use Auto-Bundle for Regular Updates
-
-```bash
-# Configure once
-cat > claude-docs-config.yml << EOF
-bundles:
-  claude-docs:
-    description: "Claude API Documentation"
-    output: ".ai-context/claude-complete-docs.txt"
-    sources:
-      - path: "./claude-docs-md"
-        include_extensions: [".md"]
-    priority: "high"
-EOF
-
-# Then auto-bundle whenever you need fresh docs
-m1f-update claude-docs
+m1f-token-counter ./claude-code-documentation.txt
 ```
 
 ### The Result?
 
-Now you can literally tell Claude: "Hey, here's your complete documentation" and
+Now you can literally tell Claude: "Hey, here's your Claude Code documentation" and
 paste the entire context. Perfect for:
 
 - Building Claude-powered tools with accurate API knowledge
-- Creating Claude integration guides
+- Creating Claude Code integration guides
 - Having Claude help debug its own API calls
 - Getting Claude to write better prompts for itself (meta!)
-
-```bash
-# Example usage in your prompt:
-"Based on your documentation below, help me implement a streaming response handler:
-[contents of claude-documentation.txt]"
-```
 
 ### Pro tip: Keep It Fresh 🌿
 
@@ -273,30 +246,6 @@ Set up a weekly cron job to re-scrape and rebuild:
 ```
 
 Where `scrape-claude-docs.sh` contains the full pipeline above.
-
-### Bonus: Offline Claude Code Documentation 🤖
-
-Since Claude Code docs aren't on GitHub, here's how to get them offline:
-
-```bash
-# 1. Scrape the Claude Code section (uses Playwright for JS-heavy site)
-m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-html \
-  --scraper playwright \
-  --max-pages 50 \
-  --follow-links \
-  --request-delay 1.0
-
-# 2. Analyze and convert to Markdown
-m1f-html2md analyze ./claude-code-html --claude
-m1f-html2md convert ./claude-code-html -o ./claude-code-md \
-  --content-selector "main, article" \
-  --ignore-selectors "nav, .sidebar"
-
-# 3. Bundle for offline reference
-m1f -s ./claude-code-md -o claude-code-offline.txt --docs-only
-
-# Now you have the entire Claude Code documentation offline!
-```
 
 ## Beyond AI: Other Cool Uses
 
@@ -312,7 +261,7 @@ Poor man's webpack? Bundle all your CSS and JS files into one. Perfect for simpl
 Got mixed encodings? Latin-1, UTF-16, Windows-1252? m1f auto-detects and converts everything to UTF-8 (or whatever you want). One command, all files normalized.
 
 ### 🚚 **Project Migration**
-Bundle on machine A → transfer one file → extract on machine B. All paths, permissions, and metadata preserved. Like tar, but smarter.
+Bundle on machine A → transfer one file → extract on machine B. All paths and metadata preserved. Like tar, but readable as text file.
 
 ```bash
 # Example: Full project backup with timestamp
