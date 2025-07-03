@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.3.0] - 2025-06-24
+## [3.3.0] - 2025-07-03
 
 ### Documentation
 
@@ -19,6 +19,8 @@ and this project adheres to
   - Added "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
   - Added bundle location and Claude reference syntax explanation
   - Improved overall structure with developer-friendly tone
+  - **Claude Code Integration**: Enhanced documentation for Claude binary auto-detection
+  - **Example Updates**: Improved clarity for Tailwind CSS and Claude Code usage examples
 - **HTML2MD Documentation Updates**: Enhanced Claude AI integration documentation
   - Added `--analyze-files` parameter documentation
   - Documented project description prompt feature
@@ -59,6 +61,8 @@ and this project adheres to
     - Fixed file references to use m1f/ instead of @m1f directory
     - Added debug output for transparency during analysis process
     - Cleanup functionality removes temporary analysis files after confirmation
+    - **Increased Claude timeouts**: Extended timeout from 5 to 30 minutes for large analyses
+    - **Improved configuration templates**: Better organized YAML templates for extraction rules
 
 - **WebScraper Content Deduplication**: Memory-efficient duplicate prevention system (enabled by default)
   - **Database-Backed Deduplication**: Optimized for large scraping sessions
@@ -121,6 +125,10 @@ and this project adheres to
   - Fixed indentation errors in subprocess calls
   - Fixed undefined variable errors (removed unused `html_contents`)
   - Fixed test failure for outdated CLI parameters
+  - **Auto-detection of Claude binary**: m1f-html2md --claude now automatically detects claude binary location
+    - Searches common installation paths including ~/.local/bin/claude
+    - Falls back to system PATH if not found in common locations
+    - Provides helpful error message if claude CLI is not installed
 - **m1f Directory Structure**: Corrected nested directory configuration
   - Fixed .m1f.config.yml to use proper m1f/m1f/ structure
   - Removed accidental triple nesting (m1f/m1f/m1f/)
