@@ -946,45 +946,56 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
                             s for s in extractor["ignore_selectors"] if s
                         ]
 
-                # Save the config to a file
-                config_file = common_parent / "html2md_extract_config.yaml"
+                # Save the config to a file with consistent name
+                config_file = common_parent / "html2md_config.yaml"
                 with open(config_file, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
                 console.print(
-                    f"\n✅ Saved configuration to: {config_file}", style="green"
+                    f"\n✅ Configuration saved to: {config_file}", style="green"
                 )
 
-                # Show the user how to use it
-                console.print("\n[bold]Usage Examples:[/bold]")
-                console.print("\n1. Convert using the generated configuration:")
+                # Show clear usage instructions
+                console.print("\n" + "="*60)
+                console.print("[bold green]✨ Analysis Complete! Here's how to convert your HTML files:[/bold green]")
+                console.print("="*60 + "\n")
+                
+                console.print("[bold]Option 1: Use the generated configuration (RECOMMENDED)[/bold]")
+                console.print("This uses the CSS selectors Claude identified to extract only the main content:\n")
                 console.print(
-                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]"
-                )
-                console.print(
-                    "   This extracts only the main content based on Claude's analysis.\n"
+                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n"
                 )
 
-                console.print("2. Convert with AI assistance (Claude analyzes each file):")
+                console.print("[bold]Option 2: Use Claude AI for each file[/bold]")
+                console.print("This uses Claude to intelligently extract content from each file individually:")
+                console.print("(Slower but may handle edge cases better)\n")
                 console.print(
-                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]"
+                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]\n"
                 )
+                
+                console.print("[bold]Option 3: Convert a single file[/bold]")
+                console.print("To test the configuration on a single file first:\n")
                 console.print(
-                    "   This uses Claude to extract clean content from each file individually."
+                    f"[cyan]m1f-html2md convert path/to/file.html -o test.md -c {config_file}[/cyan]\n"
                 )
+                
+                console.print("="*60)
             else:
                 console.print(
                     "\n⚠️  Could not extract YAML configuration from Claude's response",
                     style="yellow",
                 )
                 console.print(
-                    "You can manually create a config file based on the analysis above."
+                    "Please manually create html2md_config.yaml based on the analysis above."
+                )
+                console.print(
+                    "\nExpected format: The YAML should be between ```yaml and ``` markers."
                 )
 
         except Exception as e:
             console.print(f"\n⚠️  Could not save configuration: {e}", style="yellow")
             console.print(
-                "You can manually create a config file based on the analysis above."
+                f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above."
             )
 
     except subprocess.TimeoutExpired:

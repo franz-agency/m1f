@@ -1,6 +1,6 @@
 # Configuration Synthesis from Individual File Analyses
 
-You have analyzed multiple HTML files individually. Now synthesize their findings into a unified configuration.
+You have analyzed multiple HTML files individually. Now synthesize their findings into a unified configuration that will be saved as `html2md_config.yaml`.
 
 ## Your Task
 
