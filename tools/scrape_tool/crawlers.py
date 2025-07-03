@@ -106,10 +106,11 @@ class WebCrawler:
         """
         self._db_path = output_dir / "scrape_tracker.db"
         self._db_conn = sqlite3.connect(str(self._db_path))
-        
+
         # Create table if it doesn't exist
         cursor = self._db_conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS scraped_urls (
                 url TEXT PRIMARY KEY,
                 normalized_url TEXT,
@@ -120,16 +121,19 @@ class WebCrawler:
                 scraped_at TIMESTAMP,
                 error TEXT
             )
-        """)
-        
+        """
+        )
+
         # Create table for content checksums
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS content_checksums (
                 checksum TEXT PRIMARY KEY,
                 first_url TEXT,
                 first_seen TIMESTAMP
             )
-        """)
+        """
+        )
         self._db_conn.commit()
         cursor.close()
 
@@ -150,7 +154,7 @@ class WebCrawler:
         """
         if not self._db_conn:
             return False
-            
+
         cursor = self._db_conn.cursor()
         cursor.execute("SELECT 1 FROM scraped_urls WHERE url = ?", (url,))
         result = cursor.fetchone()
@@ -165,13 +169,13 @@ class WebCrawler:
         """
         if not self._db_conn:
             return set()
-            
+
         cursor = self._db_conn.cursor()
         cursor.execute("SELECT url FROM scraped_urls")
         urls = {row[0] for row in cursor.fetchall()}
         cursor.close()
         return urls
-    
+
     def _get_content_checksums(self) -> Set[str]:
         """Get all content checksums from previous scraping.
 
@@ -180,13 +184,13 @@ class WebCrawler:
         """
         if not self._db_conn:
             return set()
-            
+
         cursor = self._db_conn.cursor()
         cursor.execute("SELECT checksum FROM content_checksums")
         checksums = {row[0] for row in cursor.fetchall()}
         cursor.close()
         return checksums
-    
+
     def _record_content_checksum(self, checksum: str, url: str) -> None:
         """Record a content checksum in the database.
 
@@ -196,19 +200,22 @@ class WebCrawler:
         """
         if not self._db_conn:
             return
-            
+
         cursor = self._db_conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO content_checksums (checksum, first_url, first_seen)
                 VALUES (?, ?, ?)
-            """, (checksum, url, datetime.now()))
+            """,
+                (checksum, url, datetime.now()),
+            )
             self._db_conn.commit()
         except sqlite3.IntegrityError:
             # Checksum already exists
             pass
         cursor.close()
-    
+
     def _is_content_checksum_exists(self, checksum: str) -> bool:
         """Check if a content checksum already exists in the database.
 
@@ -220,18 +227,25 @@ class WebCrawler:
         """
         if not self._db_conn:
             return False
-            
+
         cursor = self._db_conn.cursor()
-        cursor.execute("SELECT 1 FROM content_checksums WHERE checksum = ?", (checksum,))
+        cursor.execute(
+            "SELECT 1 FROM content_checksums WHERE checksum = ?", (checksum,)
+        )
         result = cursor.fetchone()
         cursor.close()
         return result is not None
 
-    def _record_scraped_url(self, url: str, status_code: Optional[int], 
-                          target_filename: str, error: Optional[str] = None,
-                          normalized_url: Optional[str] = None,
-                          canonical_url: Optional[str] = None,
-                          content_checksum: Optional[str] = None) -> None:
+    def _record_scraped_url(
+        self,
+        url: str,
+        status_code: Optional[int],
+        target_filename: str,
+        error: Optional[str] = None,
+        normalized_url: Optional[str] = None,
+        canonical_url: Optional[str] = None,
+        content_checksum: Optional[str] = None,
+    ) -> None:
         """Record a scraped URL in the database.
 
         Args:
@@ -245,15 +259,26 @@ class WebCrawler:
         """
         if not self._db_conn:
             return
-            
+
         cursor = self._db_conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO scraped_urls 
             (url, normalized_url, canonical_url, content_checksum, 
              status_code, target_filename, scraped_at, error)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (url, normalized_url, canonical_url, content_checksum,
-              status_code, target_filename, datetime.now(), error))
+        """,
+            (
+                url,
+                normalized_url,
+                canonical_url,
+                content_checksum,
+                status_code,
+                target_filename,
+                datetime.now(),
+                error,
+            ),
+        )
         self._db_conn.commit()
         cursor.close()
 
@@ -265,13 +290,15 @@ class WebCrawler:
         """
         if not self._db_conn:
             return []
-            
+
         cursor = self._db_conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT url, target_filename 
             FROM scraped_urls 
             WHERE error IS NULL AND target_filename != ''
-        """)
+        """
+        )
         pages = [{"url": row[0], "filename": row[1]} for row in cursor.fetchall()]
         cursor.close()
         return pages
@@ -307,11 +334,13 @@ class WebCrawler:
 
         # Initialize database for tracking
         self._init_database(output_dir)
-        
+
         # Check if this is a resume operation
         scraped_urls = self._get_scraped_urls()
         if scraped_urls:
-            logger.info(f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs")
+            logger.info(
+                f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs"
+            )
 
         # Create scraper instance
         backend_name = self.config.scraper_backend.value
@@ -323,41 +352,42 @@ class WebCrawler:
         try:
             async with scraper:
                 # Pass already scraped URLs to the scraper if it supports it
-                if hasattr(scraper, '_visited_urls'):
+                if hasattr(scraper, "_visited_urls"):
                     scraper._visited_urls.update(scraped_urls)
-                
+
                 # Set up checksum callback if deduplication is enabled
                 if self._scraper_config.check_content_duplicates:
                     # Pass the database connection to the scraper for checksum queries
-                    if hasattr(scraper, 'set_checksum_callback'):
+                    if hasattr(scraper, "set_checksum_callback"):
                         scraper.set_checksum_callback(self._is_content_checksum_exists)
                         logger.info("Enabled database-backed content deduplication")
-                
+
                 # Pass information about scraped pages for resume functionality
-                if scraped_urls and hasattr(scraper, 'set_resume_info'):
+                if scraped_urls and hasattr(scraper, "set_resume_info"):
                     pages_info = self._get_scraped_pages_info()
                     resume_info = []
                     for page_info in pages_info[:20]:  # Read first 20 pages for links
                         try:
-                            file_path = output_dir / page_info['filename']
+                            file_path = output_dir / page_info["filename"]
                             if file_path.exists():
-                                content = file_path.read_text(encoding='utf-8')
-                                resume_info.append({
-                                    'url': page_info['url'],
-                                    'content': content
-                                })
+                                content = file_path.read_text(encoding="utf-8")
+                                resume_info.append(
+                                    {"url": page_info["url"], "content": content}
+                                )
                         except Exception as e:
-                            logger.warning(f"Failed to read {page_info['filename']}: {e}")
-                    
+                            logger.warning(
+                                f"Failed to read {page_info['filename']}: {e}"
+                            )
+
                     if resume_info:
                         scraper.set_resume_info(resume_info)
-                    
+
                 async for page in scraper.scrape_site(start_url):
                     # Skip if already scraped
                     if self._is_url_scraped(page.url):
                         logger.info(f"Skipping already scraped URL: {page.url}")
                         continue
-                        
+
                     # Log progress - show current URL being scraped
                     logger.info(f"Processing: {page.url} (page {len(pages) + 1})")
                     pages.append(page)
@@ -367,26 +397,31 @@ class WebCrawler:
                         file_path = await self._save_page(page, site_dir)
                         # Record successful scrape with all metadata
                         self._record_scraped_url(
-                            page.url, 
-                            page.status_code, 
+                            page.url,
+                            page.status_code,
                             str(file_path.relative_to(output_dir)),
                             error=None,
                             normalized_url=page.normalized_url,
                             canonical_url=page.canonical_url,
-                            content_checksum=page.content_checksum
+                            content_checksum=page.content_checksum,
                         )
                         # Record content checksum if present
-                        if page.content_checksum and self._scraper_config.check_content_duplicates:
-                            self._record_content_checksum(page.content_checksum, page.url)
+                        if (
+                            page.content_checksum
+                            and self._scraper_config.check_content_duplicates
+                        ):
+                            self._record_content_checksum(
+                                page.content_checksum, page.url
+                            )
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})
                         # Record failed scrape
                         self._record_scraped_url(
                             page.url,
-                            page.status_code if hasattr(page, 'status_code') else None,
+                            page.status_code if hasattr(page, "status_code") else None,
                             "",
-                            str(e)
+                            str(e),
                         )
                         # Continue with other pages despite the error
 

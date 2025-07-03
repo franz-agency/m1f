@@ -297,10 +297,10 @@ class WebScraperBase(ABC):
             url: URL to mark as visited
         """
         self._visited_urls.add(url)
-    
+
     def set_checksum_callback(self, callback):
         """Set callback function to check if content checksum exists.
-        
+
         Args:
             callback: Function that takes a checksum string and returns bool
         """

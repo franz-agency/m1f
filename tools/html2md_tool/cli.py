@@ -190,7 +190,7 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Use Claude AI to intelligently select representative files and suggest selectors",
     )
-    
+
     parser.add_argument(
         "--analyze-files",
         type=int,
@@ -198,7 +198,7 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         metavar="N",
         help="Number of files to analyze with Claude (1-20, default: 5)",
     )
-    
+
     parser.add_argument(
         "--parallel-workers",
         type=int,
@@ -206,7 +206,7 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         metavar="N",
         help="Number of parallel Claude sessions for file analysis (1-10, default: 5)",
     )
-    
+
     parser.add_argument(
         "--project-description",
         type=str,
@@ -350,7 +350,12 @@ def handle_analyze(args: argparse.Namespace) -> None:
     # If --claude flag is set, use Claude AI for analysis
     if args.claude:
         console.print(f"\nFound {len(html_files)} HTML files total")
-        _handle_claude_analysis(html_files, args.analyze_files, args.parallel_workers, args.project_description)
+        _handle_claude_analysis(
+            html_files,
+            args.analyze_files,
+            args.parallel_workers,
+            args.project_description,
+        )
         return
 
     # Otherwise, do local analysis
@@ -480,7 +485,9 @@ def _find_common_patterns(parsed_files):
         console.print(f"  <{tag}> (found {count} times)")
 
 
-def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers=5, project_description=""):
+def _handle_claude_analysis(
+    html_files, num_files_to_analyze=5, parallel_workers=5, project_description=""
+):
     """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
     import subprocess
     import os
@@ -491,11 +498,14 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
-    
+
     # Try to use improved runner if available
     try:
         from .cli_claude import handle_claude_analysis_improved
-        return handle_claude_analysis_improved(html_files, num_files_to_analyze, parallel_workers, project_description)
+
+        return handle_claude_analysis_improved(
+            html_files, num_files_to_analyze, parallel_workers, project_description
+        )
     except ImportError:
         pass
 
@@ -505,13 +515,11 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
     if not html_files:
         console.print("❌ No HTML files to analyze", style="red")
         return
-        
-    common_parent = Path(
-        os.path.commonpath([str(f.absolute()) for f in html_files])
-    )
+
+    common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
     console.print(f"Analysis directory: {common_parent}")
     console.print(f"Total HTML files found: {len(html_files)}")
-    
+
     # Check if we have enough files
     if len(html_files) == 0:
         console.print("❌ No HTML files found in the specified directory", style="red")
@@ -525,14 +533,15 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
     m1f_dir.mkdir(exist_ok=True)
     analysis_dir = m1f_dir / "analysis"
     analysis_dir.mkdir(exist_ok=True)
-    
+
     # Clean old analysis files
     for old_file in analysis_dir.glob("*.txt"):
         if old_file.name != "log.txt":
             old_file.unlink()
-    
+
     # Initialize analysis log
     from datetime import datetime
+
     log_file = analysis_dir / "log.txt"
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
@@ -588,7 +597,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
 
     # Load the prompt from external file
     simple_prompt_template = select_prompt_path.read_text()
-    
+
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
         num_files_to_analyze = 1
@@ -596,35 +605,57 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
     elif num_files_to_analyze > 20:
         num_files_to_analyze = 20
         console.print("[yellow]Maximum is 20 files. Using 20.[/yellow]")
-    
+
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        console.print(f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]")
-    
+        console.print(
+            f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]"
+        )
+
     # Ask user for project description if not provided
     if not project_description:
         console.print("\n[bold]Project Context:[/bold]")
-        console.print("Please briefly describe what this HTML project contains so Claude can better understand")
-        console.print("what should be converted to Markdown. Example: 'Documentation for XY software - API section'")
-        console.print("\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]")
-        console.print("[dim]     so Claude will prioritize those files in the analysis.[/dim]")
+        console.print(
+            "Please briefly describe what this HTML project contains so Claude can better understand"
+        )
+        console.print(
+            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
+        )
+        console.print(
+            "\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]"
+        )
+        console.print(
+            "[dim]     so Claude will prioritize those files in the analysis.[/dim]"
+        )
         project_description = console.input("\nProject description: ").strip()
     else:
         console.print(f"\n[bold]Project Context:[/bold] {project_description}")
-    
+
     # Update the prompt with the number of files
-    simple_prompt_template = simple_prompt_template.replace("5 representative", f"{num_files_to_analyze} representative")
-    simple_prompt_template = simple_prompt_template.replace("select 5", f"select {num_files_to_analyze}")
-    simple_prompt_template = simple_prompt_template.replace("EXACTLY 5 file paths", f"EXACTLY {num_files_to_analyze} file paths")
-    simple_prompt_template = simple_prompt_template.replace("exactly 5 representative", f"exactly {num_files_to_analyze} representative")
-    
+    simple_prompt_template = simple_prompt_template.replace(
+        "5 representative", f"{num_files_to_analyze} representative"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "select 5", f"select {num_files_to_analyze}"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "EXACTLY 5 file paths", f"EXACTLY {num_files_to_analyze} file paths"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "exactly 5 representative", f"exactly {num_files_to_analyze} representative"
+    )
+
     # Add project description to the prompt
     if project_description:
-        simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt_template}"
+        simple_prompt = (
+            f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt_template}"
+        )
     else:
         simple_prompt = simple_prompt_template
 
-    console.print(f"\nAsking Claude to select {num_files_to_analyze} representative files...")
+    console.print(
+        f"\nAsking Claude to select {num_files_to_analyze} representative files..."
+    )
 
     try:
         # Run claude using the same approach as m1f-claude
@@ -643,26 +674,32 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
             input=simple_prompt,
             capture_output=True,
             text=True,
-            timeout=180  # 3 minutes for file selection
+            timeout=180,  # 3 minutes for file selection
         )
-        
+
         if result.returncode != 0:
             raise subprocess.CalledProcessError(
                 result.returncode, cmd, output=result.stdout, stderr=result.stderr
             )
         selected_files = result.stdout.strip().split("\n")
         selected_files = [f.strip() for f in selected_files if f.strip()]
-        
+
         # Filter out any lines that are not file paths (e.g., explanations)
         valid_files = []
         for f in selected_files:
             # Skip lines that look like explanations (contain "select" or start with lowercase or are too long)
-            if any(word in f.lower() for word in ["select", "based on", "analysis", "representative"]) or len(f) > 100:
+            if (
+                any(
+                    word in f.lower()
+                    for word in ["select", "based on", "analysis", "representative"]
+                )
+                or len(f) > 100
+            ):
                 continue
             # Only keep lines that look like file paths (contain .html or /)
             if ".html" in f or "/" in f:
                 valid_files.append(f)
-        
+
         selected_files = valid_files
 
         console.print(f"\nClaude selected {len(selected_files)} files:")
@@ -683,7 +720,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
             Path("/usr/local/bin/claude"),
             Path("/usr/bin/claude"),
         ]
-        
+
         claude_found = False
         for claude_path in claude_paths:
             if claude_path.exists() and claude_path.is_file():
@@ -696,44 +733,59 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
                         input=simple_prompt,
                         capture_output=True,
                         text=True,
-                        timeout=180
+                        timeout=180,
                     )
-                    
+
                     if result.returncode != 0:
                         raise subprocess.CalledProcessError(
-                            result.returncode, cmd, output=result.stdout, stderr=result.stderr
+                            result.returncode,
+                            cmd,
+                            output=result.stdout,
+                            stderr=result.stderr,
                         )
-                    
+
                     selected_files = result.stdout.strip().split("\n")
                     selected_files = [f.strip() for f in selected_files if f.strip()]
-                    
+
                     # Filter out any lines that are not file paths (e.g., explanations)
                     valid_files = []
                     for f in selected_files:
-                        if any(word in f.lower() for word in ["select", "based on", "analysis", "representative"]) or len(f) > 100:
+                        if (
+                            any(
+                                word in f.lower()
+                                for word in [
+                                    "select",
+                                    "based on",
+                                    "analysis",
+                                    "representative",
+                                ]
+                            )
+                            or len(f) > 100
+                        ):
                             continue
                         if ".html" in f or "/" in f:
                             valid_files.append(f)
-                    
+
                     selected_files = valid_files
-                    
+
                     console.print(f"\nClaude selected {len(selected_files)} files:")
                     for f in selected_files:
                         console.print(f"  - {f}", style="blue")
-                    
+
                     claude_found = True
                     break
-                    
+
                 except Exception as e:
                     console.print(f"Failed with {claude_path}: {e}", style="yellow")
                     continue
-        
+
         if not claude_found:
             console.print(
                 "❌ claude command not found. Please install Claude CLI.", style="red"
             )
             console.print(
-                "If claude is installed as an alias, try adding it to your PATH or creating a symlink.", style="yellow"
+                "If claude is installed as an alias, try adding it to your PATH or creating a symlink.",
+                style="yellow",
             )
             return
 
@@ -787,10 +839,12 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
         # Customize prompt for this specific file
         individual_prompt = individual_prompt_template.replace("{filename}", file_path)
         individual_prompt = individual_prompt.replace("{file_number}", str(i))
-        
+
         # Add project context if provided
         if project_description:
-            individual_prompt = f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+            individual_prompt = (
+                f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+            )
 
         try:
             # Run claude for this individual file
@@ -801,7 +855,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
                 Path("/usr/local/bin/claude"),
                 Path("/usr/bin/claude"),
             ]
-            
+
             # Check if we need to use full path
             try:
                 subprocess.run(["claude", "--version"], capture_output=True, check=True)
@@ -811,7 +865,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
                     if path.exists() and path.is_file():
                         claude_cmd = str(path)
                         break
-            
+
             cmd = [
                 claude_cmd,
                 "--print",
@@ -827,7 +881,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
                 input=individual_prompt,
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minutes per file analysis
+                timeout=300,  # 5 minutes per file analysis
             )
 
             # Debug: Show process details
@@ -867,16 +921,21 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
         return
 
     synthesis_prompt = synthesis_prompt_path.read_text()
-    
+
     # Update the synthesis prompt with the actual number of files analyzed
-    synthesis_prompt = synthesis_prompt.replace("analyzed 5 HTML files", f"analyzed {len(verified_files)} HTML files")
-    synthesis_prompt = synthesis_prompt.replace("You have analyzed 5 HTML files", f"You have analyzed {len(verified_files)} HTML files")
-    
+    synthesis_prompt = synthesis_prompt.replace(
+        "analyzed 5 HTML files", f"analyzed {len(verified_files)} HTML files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "You have analyzed 5 HTML files",
+        f"You have analyzed {len(verified_files)} HTML files",
+    )
+
     # Build the file list dynamically
     file_list = []
     for i in range(1, len(verified_files) + 1):
         file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
-    
+
     # Replace the static file list with the dynamic one
     old_file_list = """Read the 5 analysis files:
 - m1f/analysis/html_analysis_1.txt
@@ -884,22 +943,43 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
 - m1f/analysis/html_analysis_3.txt
 - m1f/analysis/html_analysis_4.txt
 - m1f/analysis/html_analysis_5.txt"""
-    
-    new_file_list = f"Read the {len(verified_files)} analysis files:\n" + "\n".join(file_list)
+
+    new_file_list = f"Read the {len(verified_files)} analysis files:\n" + "\n".join(
+        file_list
+    )
     synthesis_prompt = synthesis_prompt.replace(old_file_list, new_file_list)
-    
+
     # Update other references to "5 files"
-    synthesis_prompt = synthesis_prompt.replace("Analyzed 5 files", f"Analyzed {len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("works on X/5 files", f"works on X/{len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("found in X/5 files", f"found in X/{len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("(4-5 out of 5)", f"({len(verified_files)-1}-{len(verified_files)} out of {len(verified_files)})")
-    synthesis_prompt = synthesis_prompt.replace("works on 4/5 files", f"works on {max(1, len(verified_files)-1)}/{len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("works on 3/5 files", f"works on {max(1, len(verified_files)//2)}/{len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("found in 3+ files", f"found in {max(2, len(verified_files)//2)}+ files")
-    
+    synthesis_prompt = synthesis_prompt.replace(
+        "Analyzed 5 files", f"Analyzed {len(verified_files)} files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "works on X/5 files", f"works on X/{len(verified_files)} files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "found in X/5 files", f"found in X/{len(verified_files)} files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "(4-5 out of 5)",
+        f"({len(verified_files)-1}-{len(verified_files)} out of {len(verified_files)})",
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "works on 4/5 files",
+        f"works on {max(1, len(verified_files)-1)}/{len(verified_files)} files",
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "works on 3/5 files",
+        f"works on {max(1, len(verified_files)//2)}/{len(verified_files)} files",
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "found in 3+ files", f"found in {max(2, len(verified_files)//2)}+ files"
+    )
+
     # Add project context if provided
     if project_description:
-        synthesis_prompt = f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
+        synthesis_prompt = (
+            f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
+        )
 
     try:
         # Run claude for synthesis
@@ -910,7 +990,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
             Path("/usr/local/bin/claude"),
             Path("/usr/bin/claude"),
         ]
-        
+
         # Check if we need to use full path
         try:
             subprocess.run(["claude", "--version"], capture_output=True, check=True)
@@ -920,7 +1000,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
                 if path.exists() and path.is_file():
                     claude_cmd = str(path)
                     break
-        
+
         cmd = [
             claude_cmd,
             "--print",
@@ -936,7 +1016,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
             input=synthesis_prompt,
             capture_output=True,
             text=True,
-            timeout=300  # 5 minutes for synthesis
+            timeout=300,  # 5 minutes for synthesis
         )
 
         if result.returncode != 0:
@@ -982,30 +1062,38 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
                 )
 
                 # Show clear usage instructions
-                console.print("\n" + "="*60)
-                console.print("[bold green]✨ Analysis Complete! Here's how to convert your HTML files:[/bold green]")
-                console.print("="*60 + "\n")
-                
-                console.print("[bold]Option 1: Use the generated configuration (RECOMMENDED)[/bold]")
-                console.print("This uses the CSS selectors Claude identified to extract only the main content:\n")
+                console.print("\n" + "=" * 60)
+                console.print(
+                    "[bold green]✨ Analysis Complete! Here's how to convert your HTML files:[/bold green]"
+                )
+                console.print("=" * 60 + "\n")
+
+                console.print(
+                    "[bold]Option 1: Use the generated configuration (RECOMMENDED)[/bold]"
+                )
+                console.print(
+                    "This uses the CSS selectors Claude identified to extract only the main content:\n"
+                )
                 console.print(
                     f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n"
                 )
 
                 console.print("[bold]Option 2: Use Claude AI for each file[/bold]")
-                console.print("This uses Claude to intelligently extract content from each file individually:")
+                console.print(
+                    "This uses Claude to intelligently extract content from each file individually:"
+                )
                 console.print("(Slower but may handle edge cases better)\n")
                 console.print(
                     f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]\n"
                 )
-                
+
                 console.print("[bold]Option 3: Convert a single file[/bold]")
                 console.print("To test the configuration on a single file first:\n")
                 console.print(
                     f"[cyan]m1f-html2md convert path/to/file.html -o test.md -c {config_file}[/cyan]\n"
                 )
-                
-                console.print("="*60)
+
+                console.print("=" * 60)
             else:
                 console.print(
                     "\n⚠️  Could not extract YAML configuration from Claude's response",
@@ -1135,10 +1223,11 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
-    
+
     # Try to use improved converter if available
     try:
         from .convert_claude import handle_claude_convert_improved
+
         return handle_claude_convert_improved(args)
     except ImportError:
         pass
@@ -1245,7 +1334,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
                 Path("/usr/local/bin/claude"),
                 Path("/usr/bin/claude"),
             ]
-            
+
             # Check if we need to use full path
             try:
                 subprocess.run(["claude", "--version"], capture_output=True, check=True)
@@ -1255,7 +1344,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
                     if path.exists() and path.is_file():
                         claude_cmd = str(path)
                         break
-            
+
             cmd = [claude_cmd, "-p", prompt, "--model", model_param]
 
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
