@@ -165,6 +165,15 @@ m1f-html2md config [options]
 
 html2md offers optional Claude AI integration for intelligent HTML analysis and conversion:
 
+### Claude Command Detection
+
+The tool automatically detects Claude Code installations in various locations:
+- Standard PATH locations
+- `~/.claude/local/claude` (common for local installations)
+- `/usr/local/bin/claude` and `/usr/bin/claude`
+
+If you have Claude Code installed but get a "command not found" error, the tool will automatically find and use your Claude binary.
+
 ### AI-Powered Analysis
 
 Use Claude to automatically select representative HTML files and suggest optimal CSS selectors:

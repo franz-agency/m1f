@@ -210,6 +210,7 @@ It's completely baffling to us that Claude Code doesn't have its own documentati
 m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-html
 
 # 2. Analyze HTML structure with AI to get optimal selectors
+# Note: m1f-html2md now auto-detects Claude installations (including ~/.claude/local/claude)
 m1f-html2md analyze ./claude-code-html --claude
 
 # 3. Convert to clean Markdown using the suggested selectors
