@@ -87,7 +87,7 @@ Downloads entire websites for offline processing. Multiple backends for differen
 
 ```bash
 # Scrape documentation sites for offline reference
-m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs
+m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs -v
 ```
 
 ### 📝 **m1f-html2md** - The Converter
