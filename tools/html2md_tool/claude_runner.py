@@ -1,29 +1,26 @@
 """
-Claude runner with improved timeout handling and parallel processing support.
+Claude runner with reliable subprocess execution and streaming support.
 """
 
-import asyncio
 import subprocess
 import sys
 import os
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
-import queue
 import time
-import signal
 from rich.console import Console
 
 console = Console()
 
 
 class ClaudeRunner:
-    """Handles Claude CLI execution with improved timeout and streaming support."""
+    """Handles Claude CLI execution with reliable subprocess support."""
 
-    def __init__(self, claude_binary: Optional[str] = None, max_workers: int = 5):
-        self.claude_binary = claude_binary or self._find_claude_binary()
+    def __init__(self, max_workers: int = 5, working_dir: Optional[str] = None, claude_binary: Optional[str] = None):
         self.max_workers = max_workers
+        self.working_dir = working_dir or str(Path.cwd())
+        self.claude_binary = claude_binary or self._find_claude_binary()
 
     def _find_claude_binary(self) -> str:
         """Find Claude binary in system."""
@@ -53,28 +50,17 @@ class ClaudeRunner:
 
         raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
-    def _stream_output(
-        self, process: subprocess.Popen, output_queue: queue.Queue, stream_name: str
-    ):
-        """Stream output from a subprocess in real-time."""
-        stream = getattr(process, stream_name)
-        for line in iter(stream.readline, ""):
-            if line:
-                output_queue.put((stream_name, line))
-        stream.close()
-
-    def run_claude_streaming(
+    def run_claude_simple(
         self,
         prompt: str,
-        allowed_tools: str = "Read,Glob,Grep,Write",
+        allowed_tools: str = "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",
         add_dir: Optional[str] = None,
         timeout: int = 300,
         show_output: bool = False,
-        working_dir: Optional[str] = None,
     ) -> Tuple[int, str, str]:
         """
-        Run Claude with streaming output and improved timeout handling.
-
+        Run Claude using simple subprocess approach with better timeout handling.
+        
         Returns: (returncode, stdout, stderr)
         """
         cmd = [
@@ -84,6 +70,7 @@ class ClaudeRunner:
             allowed_tools,
         ]
 
+        # Add working directory to command if different from current
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
 
@@ -91,143 +78,82 @@ class ClaudeRunner:
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
 
-        stdout_lines = []
-        stderr_lines = []
-        output_queue = queue.Queue()
+        if show_output:
+            console.print("🤖 Running Claude...", style="blue")
+            console.print(f"Command: {' '.join(cmd[:3])} ...", style="dim")
+            console.print(f"Working dir: {self.working_dir}", style="dim")
 
         try:
-            # Start the process
-            process = subprocess.Popen(
+            # Use a more conservative timeout for complex tasks
+            actual_timeout = max(60, timeout)  # At least 60 seconds
+            
+            # Run the process with timeout
+            result = subprocess.run(
                 cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                input=prompt,
+                capture_output=True,
                 text=True,
-                bufsize=1,  # Line buffered
+                timeout=actual_timeout,
                 env=env,
-                cwd=working_dir,  # Set working directory if provided
+                cwd=self.working_dir,
             )
 
-            # Create threads to read stdout and stderr
-            stdout_thread = threading.Thread(
-                target=self._stream_output, args=(process, output_queue, "stdout")
-            )
-            stderr_thread = threading.Thread(
-                target=self._stream_output, args=(process, output_queue, "stderr")
-            )
+            if show_output:
+                if result.returncode == 0:
+                    console.print("✅ Claude processing complete", style="green")
+                else:
+                    console.print(f"❌ Claude failed with code {result.returncode}", style="red")
+                    if result.stderr:
+                        console.print(f"Error: {result.stderr[:200]}...", style="red dim")
 
-            stdout_thread.daemon = True
-            stderr_thread.daemon = True
-            stdout_thread.start()
-            stderr_thread.start()
+            return result.returncode, result.stdout, result.stderr
 
-            # Send input and close stdin
-            process.stdin.write(prompt)
-            process.stdin.close()
-
-            # Monitor output with timeout
-            start_time = time.time()
-            last_output_time = start_time
-
-            while True:
-                elapsed = time.time() - start_time
-                time_since_last_output = time.time() - last_output_time
-
-                # Check if process has completed
-                if process.poll() is not None:
-                    # Give threads a moment to finish reading
-                    stdout_thread.join(timeout=1)
-                    stderr_thread.join(timeout=1)
-                    break
-
-                # Check for absolute timeout
-                if elapsed > timeout:
-                    console.print(
-                        f"⏰ Absolute timeout reached ({timeout}s)", style="yellow"
-                    )
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                    break
-
-                # Check for completion signals in output
-                output_so_far = "".join(stdout_lines)
-                if any(
-                    signal in output_so_far
-                    for signal in [
-                        "ANALYSIS_COMPLETE_OK",
-                        "FILE_SELECTION_COMPLETE_OK",
-                        "SYNTHESIS_COMPLETE_OK",
-                    ]
-                ):
-                    console.print("✅ Completion signal detected", style="green dim")
-                    # Give process a moment to finish cleanly
-                    time.sleep(1)
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                    break
-
-                # Check for output timeout (no output for 60 seconds)
-                if time_since_last_output > 60:
-                    console.print(
-                        "⏰ No output for 60 seconds, assuming completion",
-                        style="yellow",
-                    )
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                    break
-
-                # Read from queue with timeout
-                try:
-                    stream_name, line = output_queue.get(timeout=0.1)
-                    last_output_time = time.time()
-
-                    if stream_name == "stdout":
-                        stdout_lines.append(line)
-                        if show_output:
-                            console.print(f"📝 {line.rstrip()}", style="dim")
-                    else:
-                        stderr_lines.append(line)
-                        if show_output:
-                            console.print(f"⚠️  {line.rstrip()}", style="yellow dim")
-
-                except queue.Empty:
-                    continue
-
-            # Drain any remaining output
-            while not output_queue.empty():
-                try:
-                    stream_name, line = output_queue.get_nowait()
-                    if stream_name == "stdout":
-                        stdout_lines.append(line)
-                    else:
-                        stderr_lines.append(line)
-                except queue.Empty:
-                    break
-
-            returncode = process.returncode
-            stdout = "".join(stdout_lines)
-            stderr = "".join(stderr_lines)
-
-            return returncode, stdout, stderr
-
+        except subprocess.TimeoutExpired:
+            console.print(f"⏰ Claude timed out after {actual_timeout}s", style="yellow")
+            console.print("💡 Try increasing timeout or simplifying the task", style="blue")
+            return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
             console.print(f"❌ Error running Claude: {e}", style="red")
             return -1, "", str(e)
+
+    def run_claude_streaming(
+        self,
+        prompt: str,
+        allowed_tools: str = "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",
+        add_dir: Optional[str] = None,
+        timeout: int = 300,
+        show_output: bool = False,
+        working_dir: Optional[str] = None,
+    ) -> Tuple[int, str, str]:
+        """
+        Run Claude with improved subprocess handling.
+        
+        Returns: (returncode, stdout, stderr)
+        """
+        # Use the working_dir parameter if provided, otherwise use instance default
+        work_dir = working_dir if working_dir is not None else self.working_dir
+        
+        # Temporarily update the working directory for this call
+        original_work_dir = self.working_dir
+        self.working_dir = work_dir
+        
+        try:
+            return self.run_claude_simple(
+                prompt=prompt,
+                allowed_tools=allowed_tools,
+                add_dir=add_dir,
+                timeout=timeout,
+                show_output=show_output,
+            )
+        finally:
+            # Restore original working directory
+            self.working_dir = original_work_dir
 
     def run_claude_parallel(
         self, tasks: List[Dict[str, Any]], show_progress: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        Run multiple Claude tasks in parallel.
+        Run multiple Claude tasks in parallel using SDK.
 
         Args:
             tasks: List of task dictionaries with keys:
@@ -255,10 +181,11 @@ class ClaudeRunner:
                 future = executor.submit(
                     self.run_claude_streaming,
                     prompt=task["prompt"],
-                    allowed_tools=task.get("allowed_tools", "Read,Glob,Grep,Write"),
+                    allowed_tools=task.get("allowed_tools", "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write"),
                     add_dir=task.get("add_dir"),
                     timeout=task.get("timeout", 300),
-                    show_output=False,  # Don't show output in parallel mode
+                    show_output=show_progress,  # Show output if progress enabled
+                    working_dir=task.get("working_dir"),
                 )
                 future_to_task[future] = task
 
@@ -307,45 +234,3 @@ class ClaudeRunner:
                 results.append(result)
 
         return results
-
-    async def run_claude_async(
-        self,
-        prompt: str,
-        allowed_tools: str = "Read,Glob,Grep,Write",
-        add_dir: Optional[str] = None,
-        timeout: int = 300,
-    ) -> Tuple[int, str, str]:
-        """
-        Async version using asyncio for better integration.
-        """
-        cmd = [
-            self.claude_binary,
-            "--print",
-            "--allowedTools",
-            allowed_tools,
-        ]
-
-        if add_dir:
-            cmd.extend(["--add-dir", add_dir])
-
-        # Create subprocess
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-
-        try:
-            # Send input and get output with timeout
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(prompt.encode()), timeout=timeout
-            )
-
-            return proc.returncode, stdout.decode(), stderr.decode()
-
-        except asyncio.TimeoutError:
-            console.print(f"⏰ Async timeout reached ({timeout}s)", style="yellow")
-            proc.kill()
-            await proc.wait()
-            return -1, "", "Process timed out"

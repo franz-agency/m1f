@@ -27,8 +27,8 @@ def handle_claude_analysis_improved(
 
     # Initialize Claude runner
     try:
-        runner = ClaudeRunner(max_workers=parallel_workers)
-    except FileNotFoundError as e:
+        runner = ClaudeRunner(max_workers=parallel_workers, working_dir=str(common_parent))
+    except Exception as e:
         console.print(f"❌ {e}", style="red")
         return
 
@@ -173,7 +173,7 @@ def handle_claude_analysis_improved(
     # Step 3: Use Claude to select representative files
     returncode, stdout, stderr = runner.run_claude_streaming(
         prompt=simple_prompt,
-        allowed_tools="Glob,LS,Read",  # Tools needed for file selection
+        allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
         add_dir=str(common_parent),
         timeout=180,  # 3 minutes for file selection
         show_output=True,
@@ -295,11 +295,17 @@ def handle_claude_analysis_improved(
                 "name": f"Analysis {i}: {file_path}",
                 "prompt": individual_prompt,
                 "add_dir": str(common_parent),
-                "allowed_tools": "Read,Write,Glob,LS",  # Need Write permission to save analysis, plus file navigation
+                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
                 "timeout": 300,  # 5 minutes per file
+                "working_dir": str(common_parent),  # Set working directory
             }
         )
 
+    # Debug: show first task
+    if tasks:
+        console.print("\n[dim]Debug - First task prompt preview:[/dim]")
+        console.print(f"[dim]{tasks[0]['prompt'][:200]}...[/dim]")
+    
     # Run analyses in parallel
     results = runner.run_claude_parallel(tasks, show_progress=True)
 

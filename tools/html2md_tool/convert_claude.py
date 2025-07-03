@@ -23,8 +23,8 @@ def handle_claude_convert_improved(args):
 
     # Initialize Claude runner
     try:
-        runner = ClaudeRunner()
-    except FileNotFoundError as e:
+        runner = ClaudeRunner(working_dir=str(source_path.parent if source_path.is_file() else source_path))
+    except Exception as e:
         console.print(f"❌ {e}", style="red")
         sys.exit(1)
 
@@ -124,7 +124,7 @@ def handle_claude_convert_improved(args):
             console.print("🔄 Converting with Claude...", style="dim")
             returncode, stdout, stderr = runner.run_claude_streaming(
                 prompt=prompt,
-                allowed_tools="Read",  # Only need Read for the HTML file
+                allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
                 timeout=300,  # 5 minutes per file
                 show_output=False,  # Don't show Claude's thinking process
             )
