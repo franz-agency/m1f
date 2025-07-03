@@ -16,6 +16,7 @@ exclude = '''
     | buck-out
     | build
     | dist
+    | tmp
   )/
   | tests/m1f/source/glob_basic/script\.py
   | tests/m1f/source/glob_test/src/main\.py
