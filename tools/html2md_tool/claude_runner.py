@@ -60,7 +60,8 @@ class ClaudeRunner:
         allowed_tools: str = "Read,Glob,Grep,Write",
         add_dir: Optional[str] = None,
         timeout: int = 300,
-        show_output: bool = False
+        show_output: bool = False,
+        working_dir: Optional[str] = None
     ) -> Tuple[int, str, str]:
         """
         Run Claude with streaming output and improved timeout handling.
@@ -93,7 +94,8 @@ class ClaudeRunner:
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,  # Line buffered
-                env=env
+                env=env,
+                cwd=working_dir  # Set working directory if provided
             )
             
             # Create threads to read stdout and stderr

@@ -494,7 +494,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5, parallel_workers
     
     # Try to use improved runner if available
     try:
-        from .cli_claude_improved import handle_claude_analysis_improved
+        from .cli_claude import handle_claude_analysis_improved
         return handle_claude_analysis_improved(html_files, num_files_to_analyze, parallel_workers, project_description)
     except ImportError:
         pass
@@ -1138,7 +1138,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     
     # Try to use improved converter if available
     try:
-        from .convert_claude_improved import handle_claude_convert_improved
+        from .convert_claude import handle_claude_convert_improved
         return handle_claude_convert_improved(args)
     except ImportError:
         pass

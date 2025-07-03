@@ -235,13 +235,12 @@ def handle_claude_analysis_improved(html_files: List[Path], num_files_to_analyze
     # Prepare tasks for parallel execution
     tasks = []
     for i, file_path in enumerate(verified_files, 1):
-        # Construct full paths
-        full_html_path = str(common_parent / file_path)
-        output_path = str(analysis_dir / f"html_analysis_{i}.txt")
+        # Construct paths - use relative paths when possible
+        # For output, we need to ensure it's relative to where Claude is running
+        output_path = f"m1f/analysis/html_analysis_{i}.txt"
         
         # Customize prompt for this specific file
         individual_prompt = individual_prompt_template.replace("{filename}", file_path)
-        individual_prompt = individual_prompt.replace("{full_path}", full_html_path)
         individual_prompt = individual_prompt.replace("{output_path}", output_path)
         individual_prompt = individual_prompt.replace("{file_number}", str(i))
         
@@ -285,11 +284,10 @@ def handle_claude_analysis_improved(html_files: List[Path], num_files_to_analyze
     synthesis_prompt = synthesis_prompt.replace("analyzed 5 HTML files", f"analyzed {len(verified_files)} HTML files")
     synthesis_prompt = synthesis_prompt.replace("You have analyzed 5 HTML files", f"You have analyzed {len(verified_files)} HTML files")
     
-    # Build the file list dynamically with absolute paths
+    # Build the file list dynamically with relative paths
     file_list = []
     for i in range(1, len(verified_files) + 1):
-        analysis_file_path = str(analysis_dir / f"html_analysis_{i}.txt")
-        file_list.append(f"- {analysis_file_path}")
+        file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
     
     # Replace the static file list with the dynamic one
     old_file_list = """Read the 5 analysis files:

@@ -4,7 +4,7 @@ You are analyzing a single HTML file to understand its structure for optimal con
 
 ## Your Task
 
-Read the HTML file: {full_path}
+Read the HTML file: {filename}
 
 Analyze this file's structure and write your findings to: {output_path}
 
