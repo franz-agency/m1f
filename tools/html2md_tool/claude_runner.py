@@ -126,28 +126,110 @@ class ClaudeRunner:
         working_dir: Optional[str] = None,
     ) -> Tuple[int, str, str]:
         """
-        Run Claude with improved subprocess handling.
+        Run Claude with real-time streaming output.
         
         Returns: (returncode, stdout, stderr)
         """
         # Use the working_dir parameter if provided, otherwise use instance default
         work_dir = working_dir if working_dir is not None else self.working_dir
         
-        # Temporarily update the working directory for this call
-        original_work_dir = self.working_dir
-        self.working_dir = work_dir
+        # Build command
+        cmd = [
+            self.claude_binary,
+            "--print",
+            "--allowedTools", allowed_tools
+        ]
+        
+        if add_dir:
+            cmd.extend(["--add-dir", add_dir])
+        
+        # Only show initial message if show_output is enabled
+        # Removed verbose output for cleaner interface
+        
+        # Collect all output
+        stdout_lines = []
+        stderr_lines = []
         
         try:
-            return self.run_claude_simple(
-                prompt=prompt,
-                allowed_tools=allowed_tools,
-                add_dir=add_dir,
-                timeout=timeout,
-                show_output=show_output,
+            # Start the process
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=work_dir,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
             )
-        finally:
-            # Restore original working directory
-            self.working_dir = original_work_dir
+            
+            # Send the prompt and close stdin
+            process.stdin.write(prompt)
+            process.stdin.close()
+            
+            # Track timing
+            start_time = time.time()
+            last_output_time = start_time
+            
+            # Read stdout line by line
+            while True:
+                line = process.stdout.readline()
+                if line == '' and process.poll() is not None:
+                    break
+                if line:
+                    line = line.rstrip()
+                    stdout_lines.append(line)
+                    
+                    if show_output:
+                        current_time = time.time()
+                        elapsed = current_time - start_time
+                        # Show Claude's actual output (truncate very long lines)
+                        if len(line) > 200:
+                            console.print(f"[{elapsed:.1f}s] {line[:197]}...")
+                        else:
+                            console.print(f"[{elapsed:.1f}s] {line}")
+                        last_output_time = current_time
+                
+                # Check timeout
+                if time.time() - start_time > timeout:
+                    process.kill()
+                    if show_output:
+                        console.print(f"⏰ Claude timed out after {timeout}s", style="yellow")
+                    return -1, "\n".join(stdout_lines), "Process timed out"
+            
+            # Get any remaining output
+            try:
+                remaining_stdout, stderr = process.communicate(timeout=5)
+                if remaining_stdout:
+                    stdout_lines.extend(remaining_stdout.splitlines())
+                if stderr:
+                    stderr_lines.extend(stderr.splitlines())
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+            except ValueError:
+                # Ignore "I/O operation on closed file" errors
+                stderr = ""
+            
+            # Join all output
+            stdout = "\n".join(stdout_lines)
+            stderr = "\n".join(stderr_lines)
+            
+            if show_output:
+                total_time = time.time() - start_time
+                if process.returncode == 0:
+                    console.print(f"✅ Claude processing complete", style="green")
+                else:
+                    console.print(f"❌ Claude failed with code {process.returncode}", style="red")
+                    if stderr:
+                        console.print(f"Error: {stderr[:200]}...", style="red dim")
+            
+            return process.returncode, stdout, stderr
+            
+        except Exception as e:
+            if show_output:
+                console.print(f"❌ Error running Claude: {e}", style="red")
+            return -1, "\n".join(stdout_lines), str(e)
 
     def run_claude_parallel(
         self, tasks: List[Dict[str, Any]], show_progress: bool = True
@@ -173,6 +255,7 @@ class ClaudeRunner:
                 - error: Error message if failed
         """
         results = []
+        start_time = time.time()
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # Submit all tasks
@@ -198,8 +281,9 @@ class ClaudeRunner:
                 completed += 1
 
                 if show_progress:
+                    elapsed_time = time.time() - start_time if 'start_time' in locals() else 0
                     console.print(
-                        f"📊 Progress: {completed}/{total} tasks completed",
+                        f"📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]",
                         style="blue",
                     )
 

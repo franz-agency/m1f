@@ -22,15 +22,9 @@ def handle_claude_analysis_improved(
     """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
 
     console.print(
-        "\n[bold]Using Claude AI for intelligent analysis (with improved streaming)...[/bold]"
+        "\n[bold]Using Claude AI for intelligent analysis...[/bold]"
     )
-
-    # Initialize Claude runner
-    try:
-        runner = ClaudeRunner(max_workers=parallel_workers, working_dir=str(common_parent))
-    except Exception as e:
-        console.print(f"❌ {e}", style="red")
-        return
+    console.print("⏱️  Note: Processing large HTML files (2MB+) may take several minutes.", style="yellow")
 
     # Find the common parent directory of all HTML files
     if not html_files:
@@ -38,8 +32,15 @@ def handle_claude_analysis_improved(
         return
 
     common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
-    console.print(f"Analysis directory: {common_parent}")
-    console.print(f"Total HTML files found: {len(html_files)}")
+    console.print(f"📁 Analysis directory: {common_parent}")
+    console.print(f"📊 Total HTML files found: {len(html_files)}")
+
+    # Initialize Claude runner
+    try:
+        runner = ClaudeRunner(max_workers=parallel_workers, working_dir=str(common_parent))
+    except Exception as e:
+        console.print(f"❌ {e}", style="red")
+        return
 
     # Check if we have enough files
     if len(html_files) == 0:
@@ -139,7 +140,7 @@ def handle_claude_analysis_improved(
         )
         project_description = console.input("\nProject description: ").strip()
     else:
-        console.print(f"\n[bold]Project Context:[/bold] {project_description}")
+        console.print(f"\n📋 [bold]Project Context:[/bold] {project_description}")
 
     # Update the prompt with the number of files
     simple_prompt_template = simple_prompt_template.replace(
@@ -167,8 +168,9 @@ def handle_claude_analysis_improved(
         simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt}"
 
     console.print(
-        f"\nAsking Claude to select {num_files_to_analyze} representative files..."
+        f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files..."
     )
+    console.print("   This may take 10-30 seconds...", style="dim")
 
     # Step 3: Use Claude to select representative files
     returncode, stdout, stderr = runner.run_claude_streaming(
@@ -260,6 +262,8 @@ def handle_claude_analysis_improved(
     console.print(
         f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
     )
+    console.print("⏱️  Expected duration: 3-5 minutes for large HTML files", style="yellow")
+    console.print("   Claude is analyzing each file's structure in detail...", style="dim")
 
     # Load the individual analysis prompt template
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
@@ -301,10 +305,7 @@ def handle_claude_analysis_improved(
             }
         )
 
-    # Debug: show first task
-    if tasks:
-        console.print("\n[dim]Debug - First task prompt preview:[/dim]")
-        console.print(f"[dim]{tasks[0]['prompt'][:200]}...[/dim]")
+    # Removed debug output for cleaner interface
     
     # Run analyses in parallel
     results = runner.run_claude_parallel(tasks, show_progress=True)
@@ -325,6 +326,7 @@ def handle_claude_analysis_improved(
 
     # Step 6: Synthesize all analyses into final config
     console.print("\n🔬 Synthesizing analyses into final configuration...")
+    console.print("⏱️  This final step typically takes 1-2 minutes...", style="yellow")
 
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
@@ -392,7 +394,7 @@ def handle_claude_analysis_improved(
         console.print(f"❌ Synthesis failed: {stderr}", style="red")
         return
 
-    console.print("\n[bold]Claude's Final Configuration:[/bold]")
+    console.print("\n✨ [bold]Claude's Final Configuration:[/bold]")
     console.print(stdout)
 
     # Try to parse the YAML config from Claude's output

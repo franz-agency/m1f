@@ -17,10 +17,15 @@
 import json
 from pathlib import Path
 from typing import Any, Dict
+import warnings
+from dataclasses import fields
 
 import yaml
+from rich.console import Console
 
 from .models import Config
+
+console = Console()
 
 
 def load_config(path: Path) -> Config:
@@ -50,7 +55,29 @@ def load_config(path: Path) -> Config:
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
 
-    return Config(**data)
+    # Get valid field names from Config dataclass
+    valid_fields = {f.name for f in fields(Config)}
+    
+    # Filter out unknown fields and warn about them
+    filtered_data = {}
+    unknown_fields = []
+    
+    for key, value in data.items():
+        if key in valid_fields:
+            # Convert string paths to Path objects for specific fields
+            if key in ['source', 'destination', 'log_file'] and value is not None:
+                filtered_data[key] = Path(value)
+            else:
+                filtered_data[key] = value
+        else:
+            unknown_fields.append(key)
+    
+    # Warn about unknown fields
+    if unknown_fields:
+        console.print(f"⚠️  Warning: Ignoring unknown configuration fields: {', '.join(unknown_fields)}", style="yellow")
+        console.print("   These fields are not recognized by m1f-html2md and will be ignored.", style="dim")
+    
+    return Config(**filtered_data)
 
 
 def save_config(config: Config, path: Path) -> None:
