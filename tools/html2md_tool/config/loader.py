@@ -57,26 +57,32 @@ def load_config(path: Path) -> Config:
 
     # Get valid field names from Config dataclass
     valid_fields = {f.name for f in fields(Config)}
-    
+
     # Filter out unknown fields and warn about them
     filtered_data = {}
     unknown_fields = []
-    
+
     for key, value in data.items():
         if key in valid_fields:
             # Convert string paths to Path objects for specific fields
-            if key in ['source', 'destination', 'log_file'] and value is not None:
+            if key in ["source", "destination", "log_file"] and value is not None:
                 filtered_data[key] = Path(value)
             else:
                 filtered_data[key] = value
         else:
             unknown_fields.append(key)
-    
+
     # Warn about unknown fields
     if unknown_fields:
-        console.print(f"⚠️  Warning: Ignoring unknown configuration fields: {', '.join(unknown_fields)}", style="yellow")
-        console.print("   These fields are not recognized by m1f-html2md and will be ignored.", style="dim")
-    
+        console.print(
+            f"⚠️  Warning: Ignoring unknown configuration fields: {', '.join(unknown_fields)}",
+            style="yellow",
+        )
+        console.print(
+            "   These fields are not recognized by m1f-html2md and will be ignored.",
+            style="dim",
+        )
+
     return Config(**filtered_data)
 
 

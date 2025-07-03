@@ -21,10 +21,11 @@ def handle_claude_analysis_improved(
 ):
     """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
 
+    console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
     console.print(
-        "\n[bold]Using Claude AI for intelligent analysis...[/bold]"
+        "⏱️  Note: Processing large HTML files (2MB+) may take several minutes.",
+        style="yellow",
     )
-    console.print("⏱️  Note: Processing large HTML files (2MB+) may take several minutes.", style="yellow")
 
     # Find the common parent directory of all HTML files
     if not html_files:
@@ -37,7 +38,9 @@ def handle_claude_analysis_improved(
 
     # Initialize Claude runner
     try:
-        runner = ClaudeRunner(max_workers=parallel_workers, working_dir=str(common_parent))
+        runner = ClaudeRunner(
+            max_workers=parallel_workers, working_dir=str(common_parent)
+        )
     except Exception as e:
         console.print(f"❌ {e}", style="red")
         return
@@ -262,8 +265,12 @@ def handle_claude_analysis_improved(
     console.print(
         f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
     )
-    console.print("⏱️  Expected duration: 3-5 minutes for large HTML files", style="yellow")
-    console.print("   Claude is analyzing each file's structure in detail...", style="dim")
+    console.print(
+        "⏱️  Expected duration: 3-5 minutes for large HTML files", style="yellow"
+    )
+    console.print(
+        "   Claude is analyzing each file's structure in detail...", style="dim"
+    )
 
     # Load the individual analysis prompt template
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
@@ -306,7 +313,7 @@ def handle_claude_analysis_improved(
         )
 
     # Removed debug output for cleaner interface
-    
+
     # Run analyses in parallel
     results = runner.run_claude_parallel(tasks, show_progress=True)
 

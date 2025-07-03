@@ -23,7 +23,11 @@ def handle_claude_convert_improved(args):
 
     # Initialize Claude runner
     try:
-        runner = ClaudeRunner(working_dir=str(source_path.parent if source_path.is_file() else source_path))
+        runner = ClaudeRunner(
+            working_dir=str(
+                source_path.parent if source_path.is_file() else source_path
+            )
+        )
     except Exception as e:
         console.print(f"❌ {e}", style="red")
         sys.exit(1)
