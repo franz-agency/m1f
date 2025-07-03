@@ -123,9 +123,9 @@ m1f-html2md convert <source> -o <output> [options]
 | `--heading-offset`   | Offset heading levels (default: 0)                            |
 | `--no-frontmatter`   | Don't add YAML frontmatter                                    |
 | `--parallel`         | Enable parallel processing                                    |
-| `--claude`            | Use Claude AI to convert HTML to Markdown (content only)      |
-| `--model`             | Claude model to use: opus, sonnet (default: sonnet)           |
-| `--sleep`             | Sleep time in seconds between Claude API calls (default: 1.0) |
+| `--claude`           | Use Claude AI to convert HTML to Markdown (content only)      |
+| `--model`            | Claude model to use: opus, sonnet (default: sonnet)           |
+| `--sleep`            | Sleep time in seconds between Claude API calls (default: 1.0) |
 | `-v, --verbose`      | Enable verbose output                                         |
 | `-q, --quiet`        | Suppress all output except errors                             |
 
@@ -144,7 +144,7 @@ m1f-html2md analyze <paths> [options]
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
 | `--claude`            | Use Claude AI to intelligently select files and suggest selectors    |
-| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)           |
+| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)            |
 | `-v, --verbose`       | Enable verbose output                                                |
 | `-q, --quiet`         | Suppress all output except errors                                    |
 
@@ -163,20 +163,24 @@ m1f-html2md config [options]
 
 ## Claude AI Integration
 
-html2md offers optional Claude AI integration for intelligent HTML analysis and conversion:
+html2md offers optional Claude AI integration for intelligent HTML analysis and
+conversion:
 
 ### Claude Command Detection
 
 The tool automatically detects Claude Code installations in various locations:
+
 - Standard PATH locations
 - `~/.claude/local/claude` (common for local installations)
 - `/usr/local/bin/claude` and `/usr/bin/claude`
 
-If you have Claude Code installed but get a "command not found" error, the tool will automatically find and use your Claude binary.
+If you have Claude Code installed but get a "command not found" error, the tool
+will automatically find and use your Claude binary.
 
 ### AI-Powered Analysis
 
-Use Claude to automatically select representative HTML files and suggest optimal CSS selectors:
+Use Claude to automatically select representative HTML files and suggest optimal
+CSS selectors:
 
 ```bash
 # Analyze a directory of HTML files with Claude
@@ -194,11 +198,15 @@ m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
 ```
 
 **Features of Claude Analysis:**
-- **Project Context**: Provides project description to help Claude understand the content
-- **Important File Priority**: Can specify important files for Claude to prioritize
+
+- **Project Context**: Provides project description to help Claude understand
+  the content
+- **Important File Priority**: Can specify important files for Claude to
+  prioritize
 - **Multi-phase Analysis**: Individual file analysis followed by synthesis
 - **Transparent Process**: Creates temporary analysis files in m1f/ directory
-- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI integration
+- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI
+  integration
 
 ### AI-Powered Conversion
 
@@ -216,6 +224,7 @@ m1f-html2md convert ./html/ -o ./markdown/ --claude --sleep 3
 ```
 
 The Claude conversion:
+
 - Extracts only the main content (no navigation, ads, etc.)
 - Preserves document structure and formatting
 - Handles complex HTML layouts intelligently

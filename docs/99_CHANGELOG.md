@@ -14,14 +14,19 @@ and this project adheres to
   - Added clear explanation of what m1f is (Make One File)
   - Added Tailwind CSS 4.0 example demonstrating real-world usage
   - Added concise tool suite overview with links to docs and m1f.dev
-  - Added comprehensive feature list emphasizing dynamic/auto-updating capabilities
+  - Added comprehensive feature list emphasizing dynamic/auto-updating
+    capabilities
   - Added security note about detect-secrets with link to GitHub repository
-  - Added "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
+  - Added "Beyond AI" section showing alternative uses (backups, bundling,
+    encoding conversion)
   - Added bundle location and Claude reference syntax explanation
   - Improved overall structure with developer-friendly tone
-  - **Claude Code Integration**: Enhanced documentation for Claude binary auto-detection
-  - **Example Updates**: Improved clarity for Tailwind CSS and Claude Code usage examples
-- **HTML2MD Documentation Updates**: Enhanced Claude AI integration documentation
+  - **Claude Code Integration**: Enhanced documentation for Claude binary
+    auto-detection
+  - **Example Updates**: Improved clarity for Tailwind CSS and Claude Code usage
+    examples
+- **HTML2MD Documentation Updates**: Enhanced Claude AI integration
+  documentation
   - Added `--analyze-files` parameter documentation
   - Documented project description prompt feature
   - Added subprocess handling improvements
@@ -29,42 +34,62 @@ and this project adheres to
 
 ### Added
 
-- **HTML2MD Claude AI Integration Enhancements**: Major improvements to AI-powered HTML analysis
-  - **External Prompt System**: All prompts now loaded from external markdown files in `prompts/` directory
-    - `select_files_from_project.md`: Strategic selection of 5 representative HTML files
-    - `analyze_selected_files.md`: Task-based analysis workflow with individual file processing
-    - `convert_html_to_md.md`: Enhanced HTML to Markdown conversion with quality standards
+- **HTML2MD Claude AI Integration Enhancements**: Major improvements to
+  AI-powered HTML analysis
+
+  - **External Prompt System**: All prompts now loaded from external markdown
+    files in `prompts/` directory
+    - `select_files_from_project.md`: Strategic selection of 5 representative
+      HTML files
+    - `analyze_selected_files.md`: Task-based analysis workflow with individual
+      file processing
+    - `convert_html_to_md.md`: Enhanced HTML to Markdown conversion with quality
+      standards
     - Improved maintainability and customization of AI prompts
   - **Task-Based Analysis Workflow**: Multi-phase analysis for better accuracy
-    - Phase 1: Individual file analysis with detailed findings saved to separate files
+    - Phase 1: Individual file analysis with detailed findings saved to separate
+      files
     - Phase 2: Synthesis of all analyses to create optimal configuration
-    - Deep structural analysis with content boundaries, navigation elements, and special content types
+    - Deep structural analysis with content boundaries, navigation elements, and
+      special content types
     - Creates temporary analysis files in m1f directory for transparency
-  - **Write Tool Permission**: Claude now has write permissions for creating analysis files
-    - Automatically creates individual analysis files (html_analysis_1.txt through html_analysis_5.txt)
+  - **Write Tool Permission**: Claude now has write permissions for creating
+    analysis files
+    - Automatically creates individual analysis files (html_analysis_1.txt
+      through html_analysis_5.txt)
     - Enables iterative analysis and refinement process
-    - Includes cleanup functionality to remove temporary files after user confirmation
+    - Includes cleanup functionality to remove temporary files after user
+      confirmation
   - **Directory Access Improvements**: Enhanced Claude integration workflow
     - Uses `--add-dir` parameter instead of changing directories
     - Maintains clean working directory structure
     - Prevents directory traversal issues during analysis
-  - **Improved Error Handling**: Better subprocess management and error reporting
+  - **Improved Error Handling**: Better subprocess management and error
+    reporting
     - Fixed indentation errors in subprocess.Popen calls
     - Applied black formatting for consistent code style
     - Enhanced logging and progress indicators
-    - Changed all subprocess.Popen + communicate() to subprocess.run() for reliable Claude CLI integration
+    - Changed all subprocess.Popen + communicate() to subprocess.run() for
+      reliable Claude CLI integration
     - Added 5-minute timeout handling for subprocess operations
   - **User Experience Improvements**: Enhanced workflow and configuration
-    - Added `--analyze-files` parameter to specify number of files to analyze (1-20, default: 5)
-    - Project description prompt now includes tip about specifying important files
-    - Output configuration saved as `html2md_extract_config.yaml` instead of generic name
+    - Added `--analyze-files` parameter to specify number of files to analyze
+      (1-20, default: 5)
+    - Project description prompt now includes tip about specifying important
+      files
+    - Output configuration saved as `html2md_extract_config.yaml` instead of
+      generic name
     - Fixed file references to use m1f/ instead of @m1f directory
     - Added debug output for transparency during analysis process
     - Cleanup functionality removes temporary analysis files after confirmation
-    - **Increased Claude timeouts**: Extended timeout from 5 to 30 minutes for large analyses
-    - **Improved configuration templates**: Better organized YAML templates for extraction rules
+    - **Increased Claude timeouts**: Extended timeout from 5 to 30 minutes for
+      large analyses
+    - **Improved configuration templates**: Better organized YAML templates for
+      extraction rules
 
-- **WebScraper Content Deduplication**: Memory-efficient duplicate prevention system (enabled by default)
+- **WebScraper Content Deduplication**: Memory-efficient duplicate prevention
+  system (enabled by default)
+
   - **Database-Backed Deduplication**: Optimized for large scraping sessions
     - Uses SQLite queries instead of loading all checksums into memory
     - Stores checksums in `content_checksums` table with first URL and timestamp
@@ -77,35 +102,52 @@ and this project adheres to
     - Normalizes whitespace (multiple spaces become single space)
     - Skips pages with identical text content
   - **Three-Layer Deduplication System**:
-    1. Canonical URL checking (default: enabled) - Use `--ignore-canonical` to disable
-    2. Content deduplication (default: enabled) - Use `--ignore-duplicates` to disable
-    3. GET parameter normalization (default: disabled) - Use `--ignore-get-params` to enable
+    1. Canonical URL checking (default: enabled) - Use `--ignore-canonical` to
+       disable
+    2. Content deduplication (default: enabled) - Use `--ignore-duplicates` to
+       disable
+    3. GET parameter normalization (default: disabled) - Use
+       `--ignore-get-params` to enable
   - **Improved Logging**: Graceful handling of duplicate detection
     - No longer logs duplicates as "unexpected errors"
     - Clear informational messages when skipping duplicate content
     - Transparent reporting of deduplication effectiveness
 
-- **WebScraper Subdirectory Restriction**: Automatic crawling restriction to specified paths
-  - When URL contains a path (e.g., `https://example.com/docs`), only pages under that path are scraped
-  - Prevents crawling outside the specified subdirectory (e.g., won't scrape `/products` when `/docs` is specified)
-  - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
-  - Useful for downloading specific documentation sections without the entire website
-  - Example: `m1f-scrape https://api.example.com/v2/reference` only scrapes pages under `/v2/reference`
+- **WebScraper Subdirectory Restriction**: Automatic crawling restriction to
+  specified paths
 
-- **WebScraper Ignore GET Parameters**: New option to prevent duplicate content from URLs with different query strings
-  - **--ignore-get-params Flag**: Strips GET parameters from URLs during scraping
-    - Prevents duplicate downloads from URLs like `page.html?tab=linux` and `page.html?tab=windows`
+  - When URL contains a path (e.g., `https://example.com/docs`), only pages
+    under that path are scraped
+  - Prevents crawling outside the specified subdirectory (e.g., won't scrape
+    `/products` when `/docs` is specified)
+  - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
+  - Useful for downloading specific documentation sections without the entire
+    website
+  - Example: `m1f-scrape https://api.example.com/v2/reference` only scrapes
+    pages under `/v2/reference`
+
+- **WebScraper Ignore GET Parameters**: New option to prevent duplicate content
+  from URLs with different query strings
+
+  - **--ignore-get-params Flag**: Strips GET parameters from URLs during
+    scraping
+    - Prevents duplicate downloads from URLs like `page.html?tab=linux` and
+      `page.html?tab=windows`
     - Normalized URLs are used for visited tracking and file saving
     - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
     - HTTrack uses `-N0` flag to disable query string parsing
     - Useful for documentation sites that use GET parameters for UI state
-  - **Example**: `m1f-scrape https://docs.example.com -o ./html --ignore-get-params`
-    - Will treat `docs.html?version=1` and `docs.html?version=2` as the same page
+  - **Example**:
+    `m1f-scrape https://docs.example.com -o ./html --ignore-get-params`
+    - Will treat `docs.html?version=1` and `docs.html?version=2` as the same
+      page
 
-- **WebScraper Canonical URL Checking**: Automatically skip duplicate pages based on canonical URLs
+- **WebScraper Canonical URL Checking**: Automatically skip duplicate pages
+  based on canonical URLs
   - **Default Behavior**: Checks `<link rel="canonical">` tags on every page
     - Skips pages where canonical URL differs from current URL
-    - Prevents downloading duplicate content (print versions, mobile versions, etc.)
+    - Prevents downloading duplicate content (print versions, mobile versions,
+      etc.)
     - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
     - Logs skipped pages with their canonical URLs for transparency
   - **--ignore-canonical Flag**: Ignore canonical tags when needed
@@ -118,14 +160,18 @@ and this project adheres to
 
 ### Fixed
 
-- **HTML2MD Claude Integration Issues**: Resolved multiple issues with Claude CLI integration
-  - Fixed subprocess hanging when using `Popen` + `communicate()` with Claude CLI
-  - Fixed incorrect m1f usage (now properly uses `--skip-output-file` for filelist generation)
+- **HTML2MD Claude Integration Issues**: Resolved multiple issues with Claude
+  CLI integration
+  - Fixed subprocess hanging when using `Popen` + `communicate()` with Claude
+    CLI
+  - Fixed incorrect m1f usage (now properly uses `--skip-output-file` for
+    filelist generation)
   - Fixed file references from embedded content to proper @ syntax
   - Fixed indentation errors in subprocess calls
   - Fixed undefined variable errors (removed unused `html_contents`)
   - Fixed test failure for outdated CLI parameters
-  - **Auto-detection of Claude binary**: m1f-html2md --claude now automatically detects claude binary location
+  - **Auto-detection of Claude binary**: m1f-html2md --claude now automatically
+    detects claude binary location
     - Searches common installation paths including ~/.local/bin/claude
     - Falls back to system PATH if not found in common locations
     - Provides helpful error message if claude CLI is not installed
@@ -134,12 +180,14 @@ and this project adheres to
   - Removed accidental triple nesting (m1f/m1f/m1f/)
   - Created proper symlink from m1f/m1f.txt to m1f/m1f/87_m1f_only_docs.txt
 - **WebScraper Logging**: Fixed duplicate content detection logging
+
   - Duplicates no longer logged as "unexpected errors"
   - Changed from exception-based to graceful skip-based handling
 
-
-- **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
-  - **SQLite Database Tracking**: Automatically tracks scraped URLs in `scrape_tracker.db`
+- **WebScraper Resume Functionality**: Interrupt and resume web scraping
+  sessions
+  - **SQLite Database Tracking**: Automatically tracks scraped URLs in
+    `scrape_tracker.db`
     - Stores URL, status code, target filename, timestamp, and errors
     - Enables resuming interrupted scraping sessions
     - Database created in output directory for each scraping job
@@ -149,36 +197,45 @@ and this project adheres to
     - Resume shows "Resuming crawl - found X previously scraped URLs"
   - **Graceful Interruption**: Clean handling of Ctrl+C
     - Shows friendly message: "⚠️ Scraping interrupted by user"
-    - Instructions to resume: "Run the same command again to resume where you left off"
+    - Instructions to resume: "Run the same command again to resume where you
+      left off"
     - No Python stack traces on interruption
   - **Smart Resume Strategy**: Analyzes previously scraped pages
     - Reads first 20 scraped pages to extract links
     - Populates URL queue with unvisited links from scraped pages
     - Shows "Found X URLs to visit after analyzing scraped pages"
-  - **Enhanced CLI**: Better user experience
-    - Added hint "Press Ctrl+C to interrupt and resume later" at startup
-    - Logging configuration with `-v` flag for progress visibility
-    - Fixed asyncio "Unclosed client session" warnings
-=======
-- **m1f-html2md Claude AI Integration**: Intelligent HTML analysis and conversion using Claude
-  - **Analyze Command Enhancement**: Added `--claude` flag for AI-powered analysis
-    - Automatically finds all HTML files in directories (no need to specify individual files)
-    - Uses Claude to intelligently select 5 representative files from scraped documentation
-    - Analyzes HTML structure and suggests optimal CSS selectors for content extraction
+  - **Enhanced CLI**: Better user experience - Added hint "Press Ctrl+C to
+    interrupt and resume later" at startup - Logging configuration with `-v`
+    flag for progress visibility - Fixed asyncio "Unclosed client session"
+    warnings =======
+- **m1f-html2md Claude AI Integration**: Intelligent HTML analysis and
+  conversion using Claude
+
+  - **Analyze Command Enhancement**: Added `--claude` flag for AI-powered
+    analysis
+    - Automatically finds all HTML files in directories (no need to specify
+      individual files)
+    - Uses Claude to intelligently select 5 representative files from scraped
+      documentation
+    - Analyzes HTML structure and suggests optimal CSS selectors for content
+      extraction
     - Excludes navigation, headers, footers, sidebars, and advertisements
     - Runs `m1f-init` automatically in the analysis directory
     - Outputs YAML configuration with content and ignore selectors
-  - **Convert Command Enhancement**: Added `--claude` flag for batch HTML to Markdown conversion
+  - **Convert Command Enhancement**: Added `--claude` flag for batch HTML to
+    Markdown conversion
     - Converts all HTML files in a directory to clean Markdown using Claude AI
     - Supports model selection with `--model` parameter (opus or sonnet)
     - Configurable sleep delay between API calls with `--sleep` parameter
     - Maintains directory structure in output
     - Progress tracking with conversion summary
-  - **Prompt Templates**: All prompts stored as markdown files in `prompts/` directory
+  - **Prompt Templates**: All prompts stored as markdown files in `prompts/`
+    directory
     - `select_files_simple.md` - Selects representative HTML files
     - `analyze_html_simple.md` - Analyzes HTML and suggests CSS selectors
     - `convert_html_to_md.md` - Converts HTML to clean Markdown
-  - **Security**: Path traversal protection using existing `validate_path_traversal` function
+  - **Security**: Path traversal protection using existing
+    `validate_path_traversal` function
   - **Import Fix**: Fixed ModuleNotFoundError with try/except import pattern
 
 - **--docs-only Parameter**: New command-line flag for documentation-only
@@ -199,7 +256,7 @@ and this project adheres to
   - Added is_documentation_file() utility function for consistent checks
   - Updated encoding handler to use centralized UTF-8 preference list
   - Documentation extensions now available system-wide for all tools
->>>>>>> a5263cc2954dda4397238b4001d4bbae4cea973d
+    > > > > > > > a5263cc2954dda4397238b4001d4bbae4cea973d
 
 - **m1f-claude --init Improvements**: Enhanced project initialization process
 

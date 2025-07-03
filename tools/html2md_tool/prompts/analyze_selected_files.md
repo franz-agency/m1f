@@ -1,18 +1,21 @@
 # HTML Structure Analysis for Optimal Content Extraction
 
-use deep thinking
-The user wants a more systematic approach:
+use deep thinking The user wants a more systematic approach:
+
 1. Create a task list
 2. Analyze each file individually and save results
-3. Then synthesize all analyses into final config
-This will produce much better results than trying to analyze all files at once.
+3. Then synthesize all analyses into final config This will produce much better
+   results than trying to analyze all files at once.
 
 ## Context
-The file m1f/selected_html_files.txt contains representative HTML files from the documentation site.
+
+The file m1f/selected_html_files.txt contains representative HTML files from the
+documentation site.
 
 ## Task List
 
 ### Phase 1: Individual File Analysis
+
 For each HTML file listed in m1f/selected_html_files.txt:
 
 1. **Read the file** using the Read tool
@@ -23,7 +26,9 @@ For each HTML file listed in m1f/selected_html_files.txt:
    - etc. (continue for all files in the list)
 
 ### Phase 2: Synthesis
-4. **Read all analysis files** (m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt where N is the number of files analyzed)
+
+4. **Read all analysis files** (m1f/analysis/html_analysis_1.txt through
+   m1f/analysis/html_analysis_N.txt where N is the number of files analyzed)
 5. **Identify common patterns** across all analyses
 6. **Create final YAML configuration** based on the synthesized findings
 
@@ -32,6 +37,7 @@ For each HTML file listed in m1f/selected_html_files.txt:
 When analyzing each HTML file, document:
 
 ### 1. Content Structure
+
 ```
 Main Content Location:
 - Primary container: [exact selector]
@@ -42,6 +48,7 @@ Main Content Location:
 ```
 
 ### 2. Navigation & UI Elements
+
 ```
 Elements to Exclude:
 - Header/Navigation: [selectors]
@@ -54,6 +61,7 @@ Elements to Exclude:
 ```
 
 ### 3. Special Content Types
+
 ```
 Within Main Content:
 - Code blocks: [how they're marked]
@@ -64,6 +72,7 @@ Within Main Content:
 ```
 
 ### 4. Page-Specific Observations
+
 ```
 Page Type: [landing/guide/api/reference]
 Unique Patterns: [anything specific to this page]
@@ -106,11 +115,12 @@ ignore_selectors:
 
 ## Final Output
 
-After analyzing all files and reading the analysis results, create the file m1f_extract.yml
+After analyzing all files and reading the analysis results, create the file
+m1f_extract.yml
 
 The file should have the results of you analyses and have this structure:
 
-```yaml
+````yaml
 # Complete configuration file for m1f-html2md
 # All sections are optional - only include what differs from defaults
 
@@ -122,39 +132,39 @@ destination: ./markdown
 extractor:
   # Primary selector that works across most/all analyzed files
   content_selector: "main.content, article.documentation"
-  
+
   # Fallback selectors in priority order
   alternative_selectors:
     - "[selector that works on most files]"
     - "[selector that works on some files]"
     - "[generic but safe fallback]"
-  
+
   # Exclusions that apply across all files
   ignore_selectors:
     # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
-    
+
     # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
-    
+
     # [Continue with all common exclusions]
 
 # Conversion options - Markdown formatting preferences
 conversion:
   strip_tags: ["script", "style", "noscript"]
-  keep_html_tags: []  # HTML tags to preserve in output
-  heading_style: "atx"  # atx (###) or setext (underlines)
-  bold_style: "**"  # ** or __
-  italic_style: "*"  # * or _
-  link_style: "inline"  # inline or reference
-  list_marker: "-"  # -, *, or +
-  code_block_style: "fenced"  # fenced (```) or indented
-  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
-  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  keep_html_tags: [] # HTML tags to preserve in output
+  heading_style: "atx" # atx (###) or setext (underlines)
+  bold_style: "**" # ** or __
+  italic_style: "*" # * or _
+  link_style: "inline" # inline or reference
+  list_marker: "-" # -, *, or +
+  code_block_style: "fenced" # fenced (```) or indented
+  heading_offset: 0 # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true # Add YAML frontmatter with metadata
   preserve_whitespace: false
-  wrap_width: 0  # 0 = no wrapping
+  wrap_width: 0 # 0 = no wrapping
 
 # Asset handling configuration
 assets:
@@ -169,9 +179,9 @@ exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
 target_encoding: "utf-8"
 
 # Processing options
-parallel: true  # Enable parallel processing
+parallel: true # Enable parallel processing
 max_workers: 4
-overwrite: false  # Overwrite existing files
+overwrite: false # Overwrite existing files
 
 # Synthesis notes (not used by the tool, just for documentation)
 notes: |
@@ -179,25 +189,33 @@ notes: |
   - Analyzed N files representing different page types
   - Primary selector works on X/N files
   - Fallback selectors provide Y% coverage
-  
+
   Key Findings:
   - [Main pattern discovered]
   - [Secondary pattern]
   - [Edge cases to watch]
-  
+
   Confidence: [High/Medium/Low] based on consistency across files
-```
+````
 
 **CRITICAL REQUIREMENTS**:
+
 1. Complete ALL tasks in the task list sequentially
-2. The individual analysis files are crucial for creating an accurate final configuration
-3. **NEVER use empty strings** ("") as selectors - every selector must have actual content
-4. **Remove any empty or whitespace-only selectors** from lists before outputting
+2. The individual analysis files are crucial for creating an accurate final
+   configuration
+3. **NEVER use empty strings** ("") as selectors - every selector must have
+   actual content
+4. **Remove any empty or whitespace-only selectors** from lists before
+   outputting
 5. **Validate all selectors** are non-empty and properly formatted CSS selectors
 
 **FILE MANAGEMENT**:
-- Use Write tool to create analysis files in m1f/analysis/ directory as specified
+
+- Use Write tool to create analysis files in m1f/analysis/ directory as
+  specified
 - You may create temporary files if needed for analysis
 - **IMPORTANT**: Clean up ALL temporary files you have created
-- Only keep the required analysis files: m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt (where N is the number of files analyzed)
+- Only keep the required analysis files: m1f/analysis/html_analysis_1.txt
+  through m1f/analysis/html_analysis_N.txt (where N is the number of files
+  analyzed)
 - Delete any .py, .sh, or other temporary files you create during analysis

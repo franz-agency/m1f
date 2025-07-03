@@ -29,10 +29,12 @@ optimal LLM context usage.
   files
 - **Domain Restriction**: Automatically restricts crawling to the starting
   domain
-- **Subdirectory Restriction**: When URL contains a path, only scrapes within that subdirectory
+- **Subdirectory Restriction**: When URL contains a path, only scrapes within
+  that subdirectory
 - **Rate Limiting**: Configurable delays between requests
 - **Progress Tracking**: Real-time download progress with file listing
-- **Resume Support**: Interrupt and resume scraping sessions with SQLite tracking
+- **Resume Support**: Interrupt and resume scraping sessions with SQLite
+  tracking
 
 ## Quick Start
 
@@ -80,7 +82,7 @@ m1f-scrape <url> -o <output> [options]
 | `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
 | `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
-| `--ignore-get-params`   | Ignore GET parameters in URLs (e.g., ?tab=linux)             | False         |
+| `--ignore-get-params`   | Ignore GET parameters in URLs (e.g., ?tab=linux)              | False         |
 | `--ignore-canonical`    | Ignore canonical URL tags (checking is enabled by default)    | False         |
 | `--ignore-duplicates`   | Ignore duplicate content detection (enabled by default)       | False         |
 | `--list-files`          | List all downloaded files after completion                    | False         |
@@ -157,7 +159,8 @@ m1f-scrape https://docs.example.com -o ./docs_html -v
 
 ### Canonical URL Checking
 
-By default, the scraper checks for canonical URLs to avoid downloading duplicate content:
+By default, the scraper checks for canonical URLs to avoid downloading duplicate
+content:
 
 ```bash
 # Pages with different canonical URLs are automatically skipped
@@ -168,16 +171,19 @@ m1f-scrape https://example.com -o ./html --ignore-canonical
 ```
 
 When enabled (default), the scraper:
+
 - Checks the `<link rel="canonical">` tag on each page
 - Skips pages where the canonical URL differs from the current URL
 - Prevents downloading duplicate content (e.g., print versions, mobile versions)
 - Logs skipped pages with their canonical URLs for transparency
 
-This is especially useful for sites that have multiple URLs pointing to the same content.
+This is especially useful for sites that have multiple URLs pointing to the same
+content.
 
 ### Content Deduplication
 
-By default, the scraper detects and skips pages with duplicate content based on text-only checksums:
+By default, the scraper detects and skips pages with duplicate content based on
+text-only checksums:
 
 ```bash
 # Content deduplication is enabled by default
@@ -188,6 +194,7 @@ m1f-scrape https://example.com -o ./html --ignore-duplicates
 ```
 
 This feature:
+
 - Enabled by default to avoid downloading duplicate content
 - Extracts plain text from HTML (removes all tags, scripts, styles)
 - Calculates SHA-256 checksum of the normalized text
@@ -196,11 +203,16 @@ This feature:
 - Works together with canonical URL checking for thorough deduplication
 
 The scraper now has three levels of duplicate prevention, applied in this order:
-1. **GET parameter normalization** (default: disabled) - Use `--ignore-get-params` to enable
-2. **Canonical URL checking** (default: enabled) - Respects `<link rel="canonical">`
+
+1. **GET parameter normalization** (default: disabled) - Use
+   `--ignore-get-params` to enable
+2. **Canonical URL checking** (default: enabled) - Respects
+   `<link rel="canonical">`
 3. **Content deduplication** (default: enabled) - Compares text content
 
-**Important**: All deduplication data is stored in the SQLite database (`scrape_tracker.db`), which means:
+**Important**: All deduplication data is stored in the SQLite database
+(`scrape_tracker.db`), which means:
+
 - Content checksums persist across resume operations
 - Canonical URL information is saved for each page
 - The deduplication works correctly even when resuming interrupted scrapes
@@ -209,7 +221,8 @@ The scraper now has three levels of duplicate prevention, applied in this order:
 
 ### Subdirectory Restriction
 
-When you specify a URL with a path, the scraper automatically restricts crawling to that subdirectory:
+When you specify a URL with a path, the scraper automatically restricts crawling
+to that subdirectory:
 
 ```bash
 # Only scrape pages under /docs subdirectory
@@ -343,11 +356,13 @@ m1f -s ./react_md -o ./react_documentation.txt
 
 ## Resume Functionality
 
-The scraper supports interrupting and resuming downloads, making it ideal for large websites or unreliable connections.
+The scraper supports interrupting and resuming downloads, making it ideal for
+large websites or unreliable connections.
 
 ### How It Works
 
-- **SQLite Database**: Creates `scrape_tracker.db` in the output directory to track:
+- **SQLite Database**: Creates `scrape_tracker.db` in the output directory to
+  track:
   - URL of each scraped page
   - HTTP status code and target filename
   - Timestamp and error messages (if any)
