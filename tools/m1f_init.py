@@ -173,6 +173,7 @@ class M1FInit:
                 ".gitignore",
                 "--excludes",
                 "m1f/",
+                "--quiet",  # Suppress console output and log file creation
             ]
 
             result = subprocess.run(cmd, capture_output=True, text=True)
@@ -342,18 +343,18 @@ class M1FInit:
             "--separator",
             "Standard",
             "--force",
+            "--minimal-output",  # Don't create auxiliary files
+            "--quiet",  # Suppress console output and log file creation
         ]
 
         if self.verbose:
             complete_cmd.append("--verbose")
+            # Remove --quiet if verbose is requested
+            complete_cmd.remove("--quiet")
 
         result = subprocess.run(complete_cmd, capture_output=True, text=True)
         if result.returncode == 0:
             print(f"✅ Created: m1f/{project_name}_complete.txt")
-            if (m1f_dir / f"{project_name}_complete_filelist.txt").exists():
-                print(f"📄 Created: m1f/{project_name}_complete_filelist.txt")
-            if (m1f_dir / f"{project_name}_complete_dirlist.txt").exists():
-                print(f"📁 Created: m1f/{project_name}_complete_dirlist.txt")
         else:
             print(f"⚠️  Failed to create complete bundle: {result.stderr}")
 
@@ -375,18 +376,18 @@ class M1FInit:
             "--separator",
             "Standard",
             "--force",
+            "--minimal-output",  # Don't create auxiliary files
+            "--quiet",  # Suppress console output and log file creation
         ]
 
         if self.verbose:
             docs_cmd.append("--verbose")
+            # Remove --quiet if verbose is requested
+            docs_cmd.remove("--quiet")
 
         result = subprocess.run(docs_cmd, capture_output=True, text=True)
         if result.returncode == 0:
             print(f"✅ Created: m1f/{project_name}_docs.txt")
-            if (m1f_dir / f"{project_name}_docs_filelist.txt").exists():
-                print(f"📄 Created: m1f/{project_name}_docs_filelist.txt")
-            if (m1f_dir / f"{project_name}_docs_dirlist.txt").exists():
-                print(f"📁 Created: m1f/{project_name}_docs_dirlist.txt")
         else:
             print(f"⚠️  Failed to create docs bundle: {result.stderr}")
 
