@@ -651,10 +651,65 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
         console.print(f"Error output: {e.stderr}", style="red")
         return
     except FileNotFoundError:
-        console.print(
-            "❌ claude command not found. Please install Claude CLI.", style="red"
-        )
-        return
+        # Try to find claude in common locations
+        claude_paths = [
+            Path.home() / ".claude" / "local" / "claude",
+            Path("/usr/local/bin/claude"),
+            Path("/usr/bin/claude"),
+        ]
+        
+        claude_found = False
+        for claude_path in claude_paths:
+            if claude_path.exists() and claude_path.is_file():
+                console.print(f"Found claude at: {claude_path}", style="yellow")
+                # Update the command to use the full path
+                cmd[0] = str(claude_path)
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        input=simple_prompt,
+                        capture_output=True,
+                        text=True,
+                        timeout=180
+                    )
+                    
+                    if result.returncode != 0:
+                        raise subprocess.CalledProcessError(
+                            result.returncode, cmd, output=result.stdout, stderr=result.stderr
+                        )
+                    
+                    selected_files = result.stdout.strip().split("\n")
+                    selected_files = [f.strip() for f in selected_files if f.strip()]
+                    
+                    # Filter out any lines that are not file paths (e.g., explanations)
+                    valid_files = []
+                    for f in selected_files:
+                        if any(word in f.lower() for word in ["select", "based on", "analysis", "representative"]) or len(f) > 100:
+                            continue
+                        if ".html" in f or "/" in f:
+                            valid_files.append(f)
+                    
+                    selected_files = valid_files
+                    
+                    console.print(f"\nClaude selected {len(selected_files)} files:")
+                    for f in selected_files:
+                        console.print(f"  - {f}", style="blue")
+                    
+                    claude_found = True
+                    break
+                    
+                except Exception as e:
+                    console.print(f"Failed with {claude_path}: {e}", style="yellow")
+                    continue
+        
+        if not claude_found:
+            console.print(
+                "❌ claude command not found. Please install Claude CLI.", style="red"
+            )
+            console.print(
+                "If claude is installed as an alias, try adding it to your PATH or creating a symlink.", style="yellow"
+            )
+            return
 
     # Step 2: Verify the selected files exist and save to file
     console.print("\nVerifying selected HTML files...")
@@ -713,8 +768,26 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
 
         try:
             # Run claude for this individual file
+            # First try with 'claude' command, then fall back to known paths
+            claude_cmd = "claude"
+            claude_paths = [
+                Path.home() / ".claude" / "local" / "claude",
+                Path("/usr/local/bin/claude"),
+                Path("/usr/bin/claude"),
+            ]
+            
+            # Check if we need to use full path
+            try:
+                subprocess.run(["claude", "--version"], capture_output=True, check=True)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # Try to find claude in known locations
+                for path in claude_paths:
+                    if path.exists() and path.is_file():
+                        claude_cmd = str(path)
+                        break
+            
             cmd = [
-                "claude",
+                claude_cmd,
                 "--print",
                 "--allowedTools",
                 "Read,Glob,Grep,Write",
@@ -804,8 +877,26 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
 
     try:
         # Run claude for synthesis
+        # Use the same claude command detection as before
+        claude_cmd = "claude"
+        claude_paths = [
+            Path.home() / ".claude" / "local" / "claude",
+            Path("/usr/local/bin/claude"),
+            Path("/usr/bin/claude"),
+        ]
+        
+        # Check if we need to use full path
+        try:
+            subprocess.run(["claude", "--version"], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Try to find claude in known locations
+            for path in claude_paths:
+                if path.exists() and path.is_file():
+                    claude_cmd = str(path)
+                    break
+        
         cmd = [
-            "claude",
+            claude_cmd,
             "--print",
             "--allowedTools",
             "Read,Glob,Grep,Write",
@@ -1103,7 +1194,25 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             prompt = prompt_template.replace("{html_content}", f"@{tmp_html_path}")
 
             # Call Claude with the prompt referencing the file
-            cmd = ["claude", "-p", prompt, "--model", model_param]
+            # Detect claude command location
+            claude_cmd = "claude"
+            claude_paths = [
+                Path.home() / ".claude" / "local" / "claude",
+                Path("/usr/local/bin/claude"),
+                Path("/usr/bin/claude"),
+            ]
+            
+            # Check if we need to use full path
+            try:
+                subprocess.run(["claude", "--version"], capture_output=True, check=True)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # Try to find claude in known locations
+                for path in claude_paths:
+                    if path.exists() and path.is_file():
+                        claude_cmd = str(path)
+                        break
+            
+            cmd = [claude_cmd, "-p", prompt, "--model", model_param]
 
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
