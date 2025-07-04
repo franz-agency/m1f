@@ -9920,13 +9920,18 @@ class M1FInit:
         print("=" * 30)
         context = self._analyze_project()
 
-        # Step 4: Create bundles
-        print(f"\n📦 Creating Initial Bundles")
-        print("=" * 30)
-        self._create_bundles(context)
-
-        # Step 5: Create config if needed
-        if not config_exists:
+        # Step 4: If config exists, run m1f-update instead of creating bundles
+        if config_exists:
+            print(f"\n📦 Running m1f-update with existing configuration")
+            print("=" * 30)
+            self._run_m1f_update()
+        else:
+            # Create bundles only if no config exists
+            print(f"\n📦 Creating Initial Bundles")
+            print("=" * 30)
+            self._create_bundles(context)
+            
+            # Step 5: Create config
             self._create_config(context)
 
         # Step 6: Show next steps
@@ -10006,6 +10011,48 @@ class M1FInit:
         else:
             print(f"⚠️  No m1f configuration found - will create one")
             return False
+    
+    def _run_m1f_update(self):
+        """Run m1f-update to create bundles from existing config."""
+        try:
+            # Run m1f-update
+            cmd = [sys.executable, "-m", "tools.m1f.auto_bundle"]
+            if self.verbose:
+                cmd.append("--verbose")
+            
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                # Parse output to track created files
+                for line in result.stdout.split('\n'):
+                    if '[SUCCESS] Created:' in line:
+                        bundle_name = line.split('Created:')[1].strip()
+                        # Get the output path from config
+                        import yaml
+                        config_path = self.project_path / ".m1f.config.yml"
+                        with open(config_path, 'r') as f:
+                            config = yaml.safe_load(f)
+                        
+                        # Find the bundle output path
+                        for bundle_key, bundle_config in config.get('bundles', {}).items():
+                            if bundle_key == bundle_name:
+                                output_path = bundle_config.get('output', '')
+                                if output_path:
+                                    self.created_files.append(output_path)
+                                break
+                
+                if not self.created_files:
+                    # Fallback: list files in m1f directory
+                    m1f_dir = self.project_path / "m1f"
+                    if m1f_dir.exists():
+                        for file in m1f_dir.glob("*.txt"):
+                            if file.name != "m1f.txt":  # Don't list the symlink
+                                self.created_files.append(f"m1f/{file.name}")
+            else:
+                print(f"⚠️  Failed to run m1f-update: {result.stderr}")
+                
+        except Exception as e:
+            print(f"⚠️  Error running m1f-update: {e}")
 
     def _analyze_project(self) -> Dict:
         """Analyze project structure."""
@@ -10136,41 +10183,55 @@ class M1FInit:
         
         # Determine project type from files (if not already documentation)
         if context["type"] == "Unknown":
-            for file in files:
-                if "package.json" in file:
-                    context["type"] = "Node.js/JavaScript Project"
-                    context["frameworks"].append("Node.js")
-                    break
-                elif (
-                    "requirements.txt" in file
-                    or "setup.py" in file
-                    or "pyproject.toml" in file
-                ):
-                    context["type"] = "Python Project"
-                    break
-                elif "composer.json" in file:
-                    context["type"] = "PHP Project"
-                    context["frameworks"].append("Composer")
-                    break
-                elif "pom.xml" in file:
-                    context["type"] = "Java Maven Project"
-                    context["frameworks"].append("Maven")
-                    break
-                elif "build.gradle" in file:
-                    context["type"] = "Java Gradle Project"
-                    context["frameworks"].append("Gradle")
-                    break
-                elif "Cargo.toml" in file:
-                    context["type"] = "Rust Project"
-                    context["frameworks"].append("Cargo")
-                    break
-                elif "go.mod" in file:
-                    context["type"] = "Go Project"
-                    break
-                elif "Gemfile" in file:
-                    context["type"] = "Ruby Project"
-                    context["frameworks"].append("Bundler")
-                    break
+            # Check all project type indicators first
+            has_package_json = any("package.json" in f for f in files)
+            has_python_indicators = any(
+                indicator in f 
+                for f in files 
+                for indicator in ["requirements.txt", "setup.py", "pyproject.toml", "__init__.py"]
+            )
+            has_composer = any("composer.json" in f for f in files)
+            has_maven = any("pom.xml" in f for f in files)
+            has_gradle = any("build.gradle" in f for f in files)
+            has_cargo = any("Cargo.toml" in f for f in files)
+            has_go_mod = any("go.mod" in f for f in files)
+            has_gemfile = any("Gemfile" in f for f in files)
+            
+            # Count language files
+            py_count = ext_count.get(".py", 0)
+            js_count = ext_count.get(".js", 0) + ext_count.get(".jsx", 0)
+            ts_count = ext_count.get(".ts", 0) + ext_count.get(".tsx", 0)
+            php_count = ext_count.get(".php", 0)
+            java_count = ext_count.get(".java", 0)
+            
+            # Determine primary language based on file count and indicators
+            if has_python_indicators or py_count > max(js_count, ts_count, php_count, java_count):
+                context["type"] = "Python Project"
+                # Check for Python frameworks
+                if any("manage.py" in f for f in files):
+                    context["frameworks"].append("Django")
+                elif any(f.endswith(("app.py", "application.py")) for f in files):
+                    context["frameworks"].append("Flask/FastAPI")
+            elif has_package_json and (js_count > 0 or ts_count > 0):
+                context["type"] = "Node.js/JavaScript Project"
+                context["frameworks"].append("Node.js")
+            elif has_composer:
+                context["type"] = "PHP Project"
+                context["frameworks"].append("Composer")
+            elif has_maven:
+                context["type"] = "Java Maven Project"
+                context["frameworks"].append("Maven")
+            elif has_gradle:
+                context["type"] = "Java Gradle Project"
+                context["frameworks"].append("Gradle")
+            elif has_cargo:
+                context["type"] = "Rust Project"
+                context["frameworks"].append("Cargo")
+            elif has_go_mod:
+                context["type"] = "Go Project"
+            elif has_gemfile:
+                context["type"] = "Ruby Project"
+                context["frameworks"].append("Bundler")
 
         # Check for specific frameworks
         for file in files:
