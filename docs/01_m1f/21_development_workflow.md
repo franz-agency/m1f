@@ -41,11 +41,15 @@ m1f-init
 
    - Makes m1f docs available to AI tools
    - Creates symlink on Linux/macOS, copies on Windows
+   - Use `--no-symlink` to skip this step if not needed
 
 2. **Analyzes your project**
 
-   - Detects project type and languages
+   - Detects project type and programming languages
+   - Supports Python, JavaScript, TypeScript, PHP, Java, C#, Go, Rust, Ruby
    - Creates file and directory listings
+   - Shows clean output with created files listed at the end
+   - Automatically cleans up temporary analysis files
 
 3. **Generates initial bundles with auxiliary files**
 
@@ -59,6 +63,8 @@ m1f-init
 4. **Creates basic configuration**
    - Generates `.m1f.config.yml` if not present
    - Sets up sensible defaults
+   - Handles .gitignore correctly (only uses from current directory)
+   - Smart Git detection (clean messages for subdirectories)
 
 #### Using with AI Tools:
 

@@ -5,11 +5,15 @@
 
 ## What is m1f?
 
-m1f (Make One File) bundles your entire codebase into a single file that you can feed to Claude AI, ChatGPT, Google Gemini, or any LLM. Think of it as a context maximizer - it takes hundreds of files from your project and intelligently combines them into one mega-file that fits perfectly in an AI's context window.
+m1f (Make One File) bundles your entire codebase into a single file that you can
+feed to Claude AI, ChatGPT, Google Gemini, or any LLM. Think of it as a context
+maximizer - it takes hundreds of files from your project and intelligently
+combines them into one mega-file that fits perfectly in an AI's context window.
 
 ## Real Example: Tailwind CSS Documentation
 
-Here's the problem: Tailwind's documentation is constantly evolving, but most LLMs are stuck with outdated information. 
+Here's the problem: Tailwind's documentation is constantly evolving, but most
+LLMs are stuck with outdated information.
 
 The solution? Three commands:
 
@@ -19,16 +23,23 @@ cd tailwindcss.com && m1f-init
 m1f-claude --advanced-setup
 ```
 
-Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are created in the `m1f/` directory - you can reference them in Claude with `@m1f/tailwind_complete.txt` or `@m1f/tailwind_docs.txt`. Your AI assistant just became an expert on bleeding-edge tech that didn't exist when it was trained. That's the power of m1f.
+Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are
+created in the `m1f/` directory - you can reference them in Claude with
+`@m1f/tailwind_complete.txt` or `@m1f/tailwind_docs.txt`. Your AI assistant just
+became an expert on bleeding-edge tech that didn't exist when it was trained.
+That's the power of m1f.
 
-> **🔐 Security Note**: m1f automatically scans for secrets (API keys, passwords, tokens) using [`detect-secrets`](https://github.com/Yelp/detect-secrets) to prevent accidental exposure to LLMs. It'll warn you before bundling sensitive data!
+> **🔐 Security Note**: m1f automatically scans for secrets (API keys,
+> passwords, tokens) using
+> [`detect-secrets`](https://github.com/Yelp/detect-secrets) to prevent
+> accidental exposure to LLMs. It'll warn you before bundling sensitive data!
 
 ## The Tool Suite
 
 m1f isn't just one tool - it's a whole squad:
 
 - **m1f** - The main bundler that creates your mega-files
-- **m1f-s1f** - Splits bundles back into individual files  
+- **m1f-s1f** - Splits bundles back into individual files
 - **m1f-scrape** - Downloads entire websites for offline processing
 - **m1f-html2md** - Converts HTML docs to clean Markdown
 - **m1f-token-counter** - Checks if your bundle fits in context windows
@@ -39,6 +50,7 @@ Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
 ## Key Features of m1f
 
 ### 🎯 Dynamic & Always Fresh
+
 - **Auto-updating bundles** - Configure once, always current
 - **Dynamic paths** - Glob patterns, regex, whatever you need
 - **Smart file selection** - Include/exclude by extension, size, path patterns
@@ -46,19 +58,25 @@ Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
 - **Git hooks** - Auto-bundle on every commit
 
 ### 🚀 Performance
+
 - **Async I/O** - Blazing fast concurrent file processing
 - **Smart deduplication** - Skip identical files automatically (SHA256)
 - **Streaming architecture** - Handle massive codebases without breaking a sweat
 
 ### 🔒 Security First
-- **Secret detection** - Powered by Yelp's [`detect-secrets`](https://github.com/Yelp/detect-secrets) - scans for API keys, passwords, tokens before bundling
+
+- **Secret detection** - Powered by Yelp's
+  [`detect-secrets`](https://github.com/Yelp/detect-secrets) - scans for API
+  keys, passwords, tokens before bundling
 - **Path traversal protection** - No sneaky directory escapes
 - **SSRF protection** - Safe web scraping by default
 - **robots.txt compliance** - Always respects crawl rules
 
 ### 🤖 AI-Optimized
+
 - **Token counting** - Know before you paste
-- **Smart separators** - Choose between human-readable or machine-readable formats
+- **Smart separators** - Choose between human-readable or machine-readable
+  formats
 - **Metadata preservation** - Keep file paths, timestamps, encodings
 - **Size filtering** - Skip those massive log files automatically
 
@@ -66,7 +84,9 @@ Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
 
 ### 🎯 **m1f** - The Bundler
 
-Combines multiple files into a single, AI-friendly mega-file. Smart enough to deduplicate content, handle any encoding, and even scan for secrets. Because nobody wants their API keys in a ChatGPT conversation.
+Combines multiple files into a single, AI-friendly mega-file. Smart enough to
+deduplicate content, handle any encoding, and even scan for secrets. Because
+nobody wants their API keys in a ChatGPT conversation.
 
 ```bash
 # Bundle your entire project (but smart about it)
@@ -75,7 +95,8 @@ m1f -s ./your-project -o context.txt --preset presets/wordpress.m1f-presets.yml
 
 ### ✂️ **m1f-s1f** - The Splitter
 
-Extracts files back from bundles. Perfect for when your AI assistant generates that perfect codebase and you need it back in actual files.
+Extracts files back from bundles. Perfect for when your AI assistant generates
+that perfect codebase and you need it back in actual files.
 
 ```bash
 # Unbundle that AI-generated masterpiece
@@ -84,16 +105,18 @@ m1f-s1f -i bundle.txt -d ./extracted
 
 ### 🌐 **m1f-scrape** - The Collector
 
-Downloads entire websites for offline processing. Multiple backends for different scenarios - from simple HTML to JavaScript-heavy SPAs.
+Downloads entire websites for offline processing. Multiple backends for
+different scenarios - from simple HTML to JavaScript-heavy SPAs.
 
 ```bash
 # Scrape documentation sites for offline reference
-m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs
+m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs -v
 ```
 
 ### 📝 **m1f-html2md** - The Converter
 
-Transforms HTML into clean Markdown. Use AI to analyze structure and suggest optimal selectors, then convert with precision.
+Transforms HTML into clean Markdown. Use AI to analyze structure and suggest
+optimal selectors, then convert with precision.
 
 ```bash
 # AI-powered analysis to find best selectors
@@ -107,7 +130,8 @@ m1f-html2md convert ./html -o ./markdown \
 
 ### 🔢 **m1f-token-counter** - The Calculator
 
-Counts tokens before you hit those pesky context limits. Support for all major LLM encodings.
+Counts tokens before you hit those pesky context limits. Support for all major
+LLM encodings.
 
 ```bash
 # Will it fit?
@@ -201,16 +225,20 @@ m1f-update
 
 ## Real Example: Scraping Claude Code Documentation 🤖
 
-Want to give Claude its own Claude Code documentation? Here's how to scrape and bundle
-the Anthropic docs:
+Want to give Claude its own Claude Code documentation? Here's how to scrape and
+bundle the Anthropic docs:
 
-It's completely baffling to us that Claude Code doesn't have its own documentation internally and has to look up parameters and syntax online. But now there's help: scrape the documentation, convert it to markdown files, and feed it to Claude Code!
+It's completely baffling to us that Claude Code doesn't have its own
+documentation internally and has to look up parameters and syntax online. But
+now there's help: scrape the documentation, convert it to markdown files, and
+feed it to Claude Code!
 
 ```bash
 # 1. Download Claude Code documentation (specific section only)
 m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-html
 
 # 2. Analyze HTML structure with AI to get optimal selectors
+# Note: m1f-html2md now auto-detects Claude installations (including ~/.claude/local/claude)
 m1f-html2md analyze ./claude-code-html --claude
 
 # 3. Convert to clean Markdown using the suggested selectors
@@ -228,8 +256,8 @@ m1f-token-counter ./claude-code-documentation.txt
 
 ### The Result?
 
-Now you can literally tell Claude: "Hey, here's your Claude Code documentation" and
-paste the entire context. Perfect for:
+Now you can literally tell Claude: "Hey, here's your Claude Code documentation"
+and paste the entire context. Perfect for:
 
 - Building Claude-powered tools with accurate API knowledge
 - Creating Claude Code integration guides
@@ -252,16 +280,25 @@ Where `scrape-claude-docs.sh` contains the full pipeline above.
 m1f isn't just for feeding LLMs. Here's what else you can do:
 
 ### 📦 **Backup & Versioning**
-Bundle your project → timestamp it → instant versioned backups. Extract anywhere, anytime with m1f-s1f.
+
+Bundle your project → timestamp it → instant versioned backups. Extract
+anywhere, anytime with m1f-s1f.
 
 ### 🎨 **CSS/JS Bundler**
-Poor man's webpack? Bundle all your CSS and JS files into one. Perfect for simple projects that don't need the complexity of modern build tools.
+
+Poor man's webpack? Bundle all your CSS and JS files into one. Perfect for
+simple projects that don't need the complexity of modern build tools.
 
 ### 🔄 **Universal File Converter**
-Got mixed encodings? Latin-1, UTF-16, Windows-1252? m1f auto-detects and converts everything to UTF-8 (or whatever you want). One command, all files normalized.
+
+Got mixed encodings? Latin-1, UTF-16, Windows-1252? m1f auto-detects and
+converts everything to UTF-8 (or whatever you want). One command, all files
+normalized.
 
 ### 🚚 **Project Migration**
-Bundle on machine A → transfer one file → extract on machine B. All paths and metadata preserved. Like tar, but readable as text file.
+
+Bundle on machine A → transfer one file → extract on machine B. All paths and
+metadata preserved. Like tar, but readable as text file.
 
 ```bash
 # Example: Full project backup with timestamp
@@ -437,378 +474,18 @@ For comprehensive understanding of each tool:
 - `docs/01_m1f/10_m1f_presets.md` - Preset system documentation
 - `docs/01_m1f/20_auto_bundle_guide.md` - Auto-bundling configuration
 
-======= m1f-claude.txt ======
-# m1f-claude.txt: Essential m1f Guide for Claude
-
-This is a focused guide for Claude to help you set up and use m1f effectively in any project.
-
-## Quick Start
-
-m1f (Make One File) combines multiple files into a single reference file - perfect for providing context to AI assistants like Claude.
-
-### Basic Usage
-
-```bash
-# Simple bundling
-m1f -s . -o output.txt
-
-# Bundle specific file types
-m1f -s . -o code.txt --include-extensions .py .js .ts
-
-# Use presets for smart processing
-m1f -s . -o bundle.txt --preset web-project
-```
-
-## CRITICAL: Directory Context Issue
-
-**IMPORTANT**: When m1f is installed globally, it runs from its installation directory, NOT your current directory. This causes path issues.
-
-### Workarounds:
-
-1. **Use Python module directly** (RECOMMENDED):
-   ```bash
-   m1f -s . -o output.txt
-   ```
-
-2. **Create local wrapper script** in your project:
-   ```bash
-   #!/bin/bash
-   # Save as: m1f-local
-   python /path/to/m1f/tools/m1f.py "$@"
-   ```
-
-3. **Use absolute paths**:
-   ```bash
-   m1f -s /absolute/path/to/project -o /absolute/path/to/output.txt
-   ```
-
-## Setting Up Auto-Bundling
-
-Auto-bundling creates predefined bundles automatically. Essential for maintaining up-to-date context files.
-
-### 1. Create `.m1f.config.yml` in your project root:
-
-```yaml
-# .m1f.config.yml
-bundles:
-  # Complete project overview
-  complete:
-    description: "Complete project bundle for initial AI context"
-    sources:
-      - path: "."
-    output: "m1f/1_complete.txt"
-    separator_style: "MachineReadable"
-    filters:
-      max_file_size: "100KB"
-      exclude_extensions: [".log", ".tmp"]
-    
-  # Documentation only
-  docs:
-    description: "All documentation files"
-    sources:
-      - path: "."
-    output: "m1f/2_docs.txt"
-    separator_style: "Markdown"
-    filters:
-      include_extensions: [".md", ".rst", ".txt"]
-      max_file_size: "50KB"
-    
-  # Source code focus
-  code:
-    description: "Source code for debugging"
-    sources:
-      - path: "src"
-      - path: "lib"
-    output: "m1f/3_code.txt"
-    separator_style: "MachineReadable"
-    filters:
-      include_extensions: [".py", ".js", ".ts", ".jsx", ".tsx"]
-      exclude_patterns:
-        - "**/__pycache__/**"
-        - "**/node_modules/**"
-        - "**/*.test.*"
-        - "**/*.spec.*"
-
-# Global settings
-global:
-  exclude_patterns:
-    - "**/.git/**"
-    - "**/.venv/**"
-    - "**/node_modules/**"
-    - "**/vendor/**"
-    - "**/__pycache__/**"
-    - "**/*.pyc"
-    - "**/.env*"
-  
-  security_check:
-    default_level: "detect"
-    file_types:
-      ".env": "error"
-      ".yml": "warn"
-      ".json": "warn"
-```
-
-### 2. Create m1f output directory:
-
-```bash
-mkdir -p m1f
-echo "m1f/" >> .gitignore  # Don't commit generated bundles
-```
-
-### 3. Generate bundles:
-
-```bash
-# List available bundles
-m1f auto-bundle --list
-
-# Generate all bundles
-m1f-update
-
-# Generate specific bundle
-m1f-update code
-```
-
-## Preset Files
-
-Presets enable file-specific processing (minification, comment removal, etc.).
-
-### 1. Create preset file in your project:
-
-```yaml
-# myproject.m1f-presets.yml
-name: "MyProject"
-description: "Custom processing for my project"
-
-# File-specific processors
-file_processors:
-  # Minify JavaScript
-  "**/*.js":
-    - minify_js
-  
-  # Compress CSS
-  "**/*.css":
-    - minify_css
-    - compress_whitespace
-  
-  # Clean Python files
-  "**/*.py":
-    - remove_comments
-    - strip_empty_lines
-  
-  # Process JSON
-  "**/*.json":
-    - minify_json
-
-# Security settings
-security:
-  # Scan for secrets
-  detect_secrets: true
-  
-  # Patterns to flag as errors
-  error_patterns:
-    - "password.*=.*['\"].*['\"]"
-    - "api[_-]?key.*=.*['\"].*['\"]"
-    - "secret.*=.*['\"].*['\"]"
-
-# Encoding preferences
-encoding:
-  # Auto-detect encoding
-  auto_detect: true
-  
-  # Preferred output encoding
-  output_encoding: "utf-8"
-  
-  # Fallback encoding
-  fallback_encoding: "utf-8"
-```
-
-### 2. Use the preset:
-
-```bash
-m1f -s . -o output.txt --preset myproject.m1f-presets.yml
-```
-
-## Best Practices for AI Context
-
-### 1. Keep bundles focused and under 100KB:
-```yaml
-bundles:
-  api:
-    sources: [{ path: "api" }]
-    output: "m1f/api.txt"
-    filters: { max_file_size: "50KB" }
-  
-  frontend:
-    sources: [{ path: "frontend/src" }]
-    output: "m1f/frontend.txt"
-    filters: { max_file_size: "50KB" }
-```
-
-### 2. Use appropriate separator styles:
-- `MachineReadable`: Best for extraction/parsing
-- `Markdown`: Best for human/AI reading
-- `Standard`: Simple and clean
-- `None`: When you just need content
-
-### 3. Create task-specific bundles:
-```yaml
-bundles:
-  bug_fix:
-    description: "Files related to current bug"
-    sources:
-      - path: "src/auth"
-      - path: "tests/auth"
-    output: "m1f/bug_context.txt"
-  
-  new_feature:
-    description: "Files for new feature development"
-    sources:
-      - path: "src/components"
-      - path: "docs/api"
-    output: "m1f/feature_context.txt"
-```
-
-## Common Patterns
-
-### WordPress Project
-```yaml
-bundles:
-  theme:
-    sources: [{ path: "wp-content/themes/mytheme" }]
-    output: "m1f/theme.txt"
-    preset: "wordpress"
-    filters:
-      exclude_patterns: ["**/node_modules/**", "**/vendor/**"]
-```
-
-### Python Project
-```yaml
-bundles:
-  core:
-    sources: [{ path: "src" }]
-    output: "m1f/core.txt"
-    filters:
-      include_extensions: [".py"]
-      exclude_patterns: ["**/__pycache__/**", "**/*.pyc"]
-```
-
-### React/Vue/Angular Project
-```yaml
-bundles:
-  components:
-    sources: [{ path: "src/components" }]
-    output: "m1f/components.txt"
-    filters:
-      include_extensions: [".jsx", ".tsx", ".vue"]
-      exclude_patterns: ["**/*.test.*", "**/*.spec.*"]
-```
-
-## Troubleshooting
-
-### "Path traversal detected" error
-- m1f is running from its installation directory
-- Use workarounds mentioned above
-
-### Bundle too large
-- Add `max_file_size` filter
-- Split into multiple focused bundles
-- Exclude test files and dependencies
-
-### Encoding issues
-- Add `--prefer-utf8` flag
-- Set `encoding.auto_detect: true` in preset
-
-### Auto-bundle not finding config
-- Ensure `.m1f.config.yml` is in project root
-- Check YAML syntax is valid
-- Use `m1f auto-bundle --list` to verify
-
-## Integration with Claude
-
-### 1. Reference bundles in CLAUDE.md:
-```markdown
-# CLAUDE.md
-
-## Available Context Files
-- `@m1f/1_complete.txt` - Full project overview
-- `@m1f/2_docs.txt` - All documentation
-- `@m1f/3_code.txt` - Source code only
-
-Use these with @ mentions for instant context.
-```
-
-### 2. Keep bundles updated:
-```bash
-# Add to git pre-commit hook
-m1f-update --quiet
-
-# Or use file watcher
-./scripts/watch_and_bundle.sh
-```
-
-### 3. Optimize for Claude's context window:
-- Keep individual bundles under 100KB
-- Create topic-specific bundles
-- Use clear, descriptive filenames
-- Include file paths in separator style
-
-## Quick Reference Card
-
-```bash
-# Install m1f
-git clone https://github.com/FranzForstmayr/m1f.git
-cd m1f && ./scripts/install.sh
-
-# Basic commands
-m1f -s . -o output.txt                    # Bundle current directory
-m1f-update                                # Run auto-bundling
-m1f auto-bundle --list                    # List available bundles
-m1f-s1f -i bundle.txt -d extracted/       # Extract files from bundle
-
-# With presets
-m1f -s . -o out.txt --preset wordpress    # Use WordPress preset
-m1f -s . -o out.txt --preset mypreset.yml # Use custom preset
-
-# Common flags
---include-extensions .py .js              # Only specific file types
---exclude-patterns "**/test/**"           # Exclude patterns
---max-file-size 100KB                     # Limit file sizes
---separator-style Markdown                # Human-readable output
---force                                   # Overwrite existing
---minimal-output                          # Less verbose
---prefer-utf8                             # Handle encoding issues
-```
-
-Remember: Always use absolute paths or run from m1f directory when using global installation!
-
-======= package.json ======
-{
-  "devDependencies": {
-    "prettier": "3.5.3"
-  },
-  "scripts": {
-    "lint:md": "prettier --write \"**/*.md\"",
-    "lint:md:check": "prettier --check \"**/*.md\""
-  },
-  "homepage": "https://m1f.dev",
-  "name": "m1f-website",
-  "version": "3.3.0",
-  "description": "Python Development Tools by Franz Agency",
-  "main": "index.js",
-  "author": "Franz Agency",
-  "license": "Apache-2.0"
-}
-
 ======= perfect_bundle_prompt.md ======
 # Perfect Bundle Creation Prompt for m1f-claude
 
 ## 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
+
 ============================================================
 
-The basic bundles (complete.txt and docs.txt) have already been created.
-Now create additional topic-specific bundles following BEST PRACTICES.
+The basic bundles (complete.txt and docs.txt) have already been created. Now
+create additional topic-specific bundles following BEST PRACTICES.
 
 ## 📚 REQUIRED READING (IN THIS ORDER):
+
 1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax
 2. READ: @m1f/project_analysis_dirlist.txt for directory structure
 3. READ: @m1f/project_analysis_filelist.txt for complete file listing
@@ -818,12 +495,16 @@ Now create additional topic-specific bundles following BEST PRACTICES.
 ## 🏆 BEST PRACTICES FOR PERFECT BUNDLES
 
 ### 1. MODULAR ARCHITECTURE PRINCIPLE
+
 - Identify each logical module, tool, or subsystem in the project
-- Create one bundle per module/tool (e.g., auth-module, payment-module, user-module)
+- Create one bundle per module/tool (e.g., auth-module, payment-module,
+  user-module)
 - Each module bundle should be self-contained and meaningful
 
 ### 2. USE PRECISE INCLUDES, NOT BROAD EXCLUDES
+
 Instead of excluding everything except what you want, use precise includes:
+
 ```yaml
 # ❌ BAD - Too broad, relies on excludes
 sources:
@@ -838,7 +519,9 @@ sources:
 ```
 
 ### 3. BUNDLE GROUPING STRATEGY
+
 Organize bundles into logical groups:
+
 - `documentation` - All documentation bundles
 - `source` - Source code bundles by module
 - `tests` - Test code bundles
@@ -846,7 +529,9 @@ Organize bundles into logical groups:
 - `complete` - Aggregated bundles
 
 ### 4. NUMBERED OUTPUT FILES
+
 Use numbered prefixes for proper sorting:
+
 ```yaml
 output: "m1f/project/87_module1_docs.txt"  # Documentation
 output: "m1f/project/94_module1_code.txt"  # Source code
@@ -855,21 +540,27 @@ output: "m1f/project/99_complete.txt"      # Complete bundle
 ```
 
 ### 5. HIERARCHICAL BUNDLES
+
 Create aggregated bundles that combine related bundles:
+
 - `all-docs` - Combines all documentation
 - `all-tests` - Combines all tests
 - `all-frontend` - Combines all frontend code
 - `complete` - The ultimate bundle with everything
 
 ### 6. SHARED FILES STRATEGY
+
 When files are used by multiple modules (like utils, constants, types):
+
 - Include them in each relevant module bundle
 - This ensures each bundle is self-contained
 
 ## 🔍 PROJECT ANALYSIS STEPS
 
 ### STEP 1: Identify Project Architecture
+
 Analyze the directory structure to find:
+
 - Monorepo with packages? → Create bundle per package
 - Multiple apps/services? → Create bundle per app
 - Modular architecture? → Create bundle per module
@@ -877,14 +568,18 @@ Analyze the directory structure to find:
 - Frontend/Backend split? → Create bundles for each
 
 ### STEP 2: Find Logical Boundaries
+
 Look for natural boundaries in the code:
+
 - Directory names that indicate modules (auth/, payment/, user/)
 - File naming patterns (auth.service.ts, auth.controller.ts)
 - Configuration files that define modules
 - Import patterns that show dependencies
 
 ### STEP 3: Design Bundle Hierarchy
+
 Plan your bundles in this order:
+
 1. Module/tool-specific bundles (most granular)
 2. Category bundles (tests, docs, config)
 3. Aggregated bundles (all-docs, all-frontend)
@@ -893,11 +588,13 @@ Plan your bundles in this order:
 ## 📝 BUNDLE CREATION RULES
 
 ### NAMING CONVENTIONS
+
 - Use lowercase with hyphens: `user-service`, `auth-module`
 - Be descriptive but concise
 - Group prefix when applicable: `frontend-components`, `backend-api`
 
 ### OUTPUT FILE PATTERNS
+
 ```
 m1f/{project_name}/
 ├── 80-89_*_docs.txt     # Documentation bundles
@@ -907,7 +604,9 @@ m1f/{project_name}/
 ```
 
 ### SOURCES CONFIGURATION
+
 Always use the most specific configuration:
+
 ```yaml
 sources:
   - path: "src/modules/auth"
@@ -919,7 +618,7 @@ sources:
 
 ## 🚨 CRITICAL RULES - MUST FOLLOW
 
-1. **NO DEFAULT EXCLUDES**: Don't exclude node_modules, .git, __pycache__, etc.
+1. **NO DEFAULT EXCLUDES**: Don't exclude node_modules, .git, **pycache**, etc.
 2. **NO BINARY/ASSET BUNDLES**: Skip images, fonts, compiled files
 3. **MAX 20 BUNDLES**: Including existing complete and docs
 4. **USE INCLUDES OVER EXCLUDES**: Be precise about what to include
@@ -927,19 +626,16 @@ sources:
 
 ## 🎯 IMPLEMENTATION CHECKLIST
 
-□ Read all three required files completely
-□ Identify the project's modular structure
-□ Plan bundle hierarchy (modules → categories → aggregated)
-□ Design precise `includes` patterns for each bundle
-□ Use numbered output files for sorting
-□ Group bundles logically
-□ Create aggregated bundles where valuable
-□ Keep total count under 20 bundles
-□ Use MultiEdit to add all bundles at once
+□ Read all three required files completely □ Identify the project's modular
+structure □ Plan bundle hierarchy (modules → categories → aggregated) □ Design
+precise `includes` patterns for each bundle □ Use numbered output files for
+sorting □ Group bundles logically □ Create aggregated bundles where valuable □
+Keep total count under 20 bundles □ Use MultiEdit to add all bundles at once
 
 ## 💡 EXAMPLE PATTERNS TO RECOGNIZE
 
 ### For a Multi-Service Project:
+
 ```yaml
 bundles:
   # Service-specific bundles
@@ -951,7 +647,7 @@ bundles:
         include_extensions: [".js", ".ts"]
       - path: "shared"
         includes: ["auth/**", "types/auth.ts"]
-  
+
   user-service:
     group: "services"
     output: "m1f/project/95_user_service.txt"
@@ -963,6 +659,7 @@ bundles:
 ```
 
 ### For a Plugin-Based System:
+
 ```yaml
 bundles:
   plugin-core:
@@ -973,7 +670,7 @@ bundles:
         include_extensions: [".py"]
       - path: "plugins"
         includes: ["__init__.py", "base.py"]
-  
+
   plugin-auth:
     group: "plugins"
     output: "m1f/project/95_plugin_auth.txt"
@@ -991,180 +688,8 @@ bundles:
 4. Test your mental model: "Would each bundle be useful alone?"
 5. Create the configuration with MultiEdit
 
-Remember: The goal is bundles that are **modular**, **focused**, and **self-contained**!
-
-======= RELEASE_NOTES_v3.3.0.md ======
-# m1f v3.3.0 Release Notes
-
-**Release Date:** 2025-06-24
-
-We're excited to announce the release of m1f v3.3.0, a major update that brings significant enhancements to HTML-to-Markdown conversion with Claude AI integration, powerful web scraping improvements, and streamlined project initialization workflows.
-
-## 🎯 Highlights
-
-- **Enhanced Claude AI Integration**: Revolutionary improvements to HTML2MD's AI-powered analysis with external prompts and multi-phase workflows
-- **Smart Web Scraping**: Advanced deduplication, resume functionality, and subdirectory restrictions
-- **Simplified Setup**: New `m1f-init` tool consolidates initialization steps
-- **Better Documentation**: Major README overhaul with real-world examples
-
-## 📚 Documentation Improvements
-
-### README.md Enhancements
-- Clear explanation of what m1f is (Make One File)
-- Added Tailwind CSS 4.0 example demonstrating real-world usage
-- Comprehensive feature list emphasizing dynamic/auto-updating capabilities
-- New "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
-- Bundle location and Claude reference syntax explanation
-- Security note about detect-secrets integration
-
-### HTML2MD Documentation Updates
-- `--analyze-files` parameter documentation
-- Project description prompt feature
-- Subprocess handling improvements
-- Updated examples with new features
-
-## 🤖 HTML2MD Claude AI Integration Enhancements
-
-### External Prompt System
-All AI prompts are now externalized for better maintainability:
-- `select_files_from_project.md`: Strategic selection of representative HTML files
-- `analyze_selected_files.md`: Task-based analysis workflow
-- `convert_html_to_md.md`: Enhanced HTML to Markdown conversion
-- Easy customization without code changes
-
-### Task-Based Analysis Workflow
-Multi-phase analysis for superior accuracy:
-- **Phase 1**: Individual file analysis with detailed findings
-- **Phase 2**: Synthesis to create optimal configuration
-- Deep structural analysis identifies content boundaries, navigation, and special content
-- Transparent process with temporary analysis files
-
-### Improved Integration
-- Write tool permissions for analysis file creation
-- `--add-dir` parameter for clean directory access
-- Subprocess reliability improvements with 5-minute timeouts
-- `--analyze-files` parameter (1-20 files, default: 5)
-
-## 🕷️ WebScraper Enhancements
-
-### Content Deduplication (Default: Enabled)
-Memory-efficient duplicate prevention:
-- Database-backed system using SQLite
-- SHA-256 checksums of normalized plain text
-- Three-layer deduplication:
-  1. Canonical URL checking (`--ignore-canonical` to disable)
-  2. Content deduplication (`--ignore-duplicates` to disable)
-  3. GET parameter normalization (`--ignore-get-params` to enable)
-
-### Resume Functionality
-Interrupt and resume scraping sessions:
-- SQLite database tracks progress
-- Real-time URL processing display
-- Graceful Ctrl+C handling
-- Smart resume strategy analyzes scraped pages
-
-### Subdirectory Restriction
-Automatic path-based crawling limits:
-- URLs like `https://example.com/docs` only scrape under `/docs`
-- Prevents scope creep
-- Works with all scraper backends
-
-### URL Normalization
-New `--ignore-get-params` flag:
-- Prevents duplicate content from query string variations
-- Treats `page.html?tab=linux` and `page.html?tab=windows` as identical
-
-## 🛠️ Tool Improvements
-
-### New m1f-init Tool
-Replaces `m1f-link` with enhanced functionality:
-- Cross-platform support (Windows, Linux, macOS)
-- Automatic documentation linking
-- Creates complete and docs bundles with project names
-- Generates auxiliary files (filelist, dirlist)
-- Platform-specific next steps guidance
-
-### m1f-claude Refactoring
-- Removed `--init` and `--quick-setup` parameters
-- Now focuses on `--advanced-setup` for topic-specific bundles
-- Requires `m1f-init` to be run first
-- Linux/macOS only
-
-### Enhanced Features
-- `--docs-only` parameter for documentation-only bundles
-- Centralized documentation file extensions (62 formats)
-- Project-specific bundle naming
-- Auxiliary file generation for all bundles
-
-## 🐛 Bug Fixes
-
-### HTML2MD Claude Integration
-- Fixed subprocess hanging with Claude CLI
-- Corrected m1f usage with `--skip-output-file`
-- Fixed file reference syntax
-- Resolved indentation and undefined variable errors
-
-### Directory Structure
-- Fixed `.m1f.config.yml` nested directory configuration
-- Removed accidental triple nesting
-- Created proper symlinks
-
-### WebScraper
-- Fixed duplicate content logging
-- Graceful skip-based handling instead of exceptions
-
-### PowerShell Installation
-- Created missing `m1f_aliases.ps1` file
-- Fixed hardcoded paths
-- Added file existence checks
-
-### m1f-claude
-- Fixed project name extraction regex patterns
-- Resolved async/await issues
-- Improved error handling
-
-## 📦 Dependencies
-
-- Added: `anyio==4.9.0` (async support)
-- Added: `claude-code-sdk>=0.0.10` (flexible version constraint)
-
-## 💡 Usage Examples
-
-### Initialize a New Project
-```bash
-m1f-init
-```
-
-### Analyze HTML with Claude AI
-```bash
-m1f-html2md analyze /path/to/html --claude --analyze-files 10
-```
-
-### Scrape with Resume Support
-```bash
-m1f-scrape https://docs.example.com -o ./html
-# Press Ctrl+C to interrupt
-# Run same command to resume
-```
-
-### Create Documentation-Only Bundle
-```bash
-m1f -s . -o docs.txt --docs-only
-```
-
-## 🔄 Migration Notes
-
-- `m1f-link` users should switch to `m1f-init`
-- Bundle files remain in `m1f/` directory
-- All existing workflows continue to work
-
-## 🙏 Acknowledgments
-
-Thanks to all contributors and users who provided feedback for this release. Special thanks to the Claude AI team for their excellent API that powers our HTML analysis features.
-
----
-
-For detailed changes, see the [full changelog](docs/99_CHANGELOG.md).
+Remember: The goal is bundles that are **modular**, **focused**, and
+**self-contained**!
 
 ======= requirements.txt ======
 aiohttp==3.12.13
@@ -1505,17 +1030,10 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options
 
-======= wp-cli.example.yml ======
-# Example configuration for WP-CLI
-# Copy to `wp-cli.yml` and adjust the settings for your environment.
-path: /var/www/html
-url: https://example.com
-user: admin
-
 ======= docs/README.md ======
 # m1f Documentation
 
-This directory contains detailed documentation for the m1f project v3.2.0.
+This directory contains detailed documentation for the m1f project v3.4.0.
 
 ## Contents
 
@@ -1591,7 +1109,7 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 
 ## Project Overview
 
-m1f v2.0.0 is a comprehensive toolkit designed to help you work more efficiently
+m1f v3.4.0 is a comprehensive toolkit designed to help you work more efficiently
 with Large Language Models (LLMs) by managing context. Built with modern Python
 3.10+ architecture, these tools solve core challenges when working with AI
 assistants.
@@ -1629,7 +1147,87 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.3.0] - 2025-06-24
+## [3.4.0] - 2025-07-04
+
+### Added
+
+- **m1f-init Enhancements**: Improved project initialization tool
+  - Added `--no-symlink` parameter to skip creating symlink to m1f documentation
+  - Added file tracking to show only actually created files in output
+  - Improved output formatting with "Here is your file:" / "Here are your files:" section
+  - Added proper spacing and bullet points for created files list
+  - Now runs `m1f-update` when `.m1f.config.yml` already exists instead of creating default bundles
+
+- **Multiple Source Directories**: m1f now supports multiple `-s` source directories
+  - Use `-s dir1 -s dir2` to combine files from multiple directories
+  - All source directories are processed and files are merged into single output
+  - Useful for documentation bundles that need files from different locations
+
+- **Include Patterns**: Added `--includes` parameter for pattern-based file filtering
+  - Works with gitignore-style patterns (e.g., `*.py`, `src/**`, `!test.py`)
+  - When combined with `--include-extensions`, files must match both criteria
+  - Allows precise control over which files to include in bundles
+
+### Changed
+
+- **m1f-init Git Detection**: Improved Git repository detection messages
+  - Simplified output for parent directory Git repositories (no longer shows paths)
+  - Only shows messages for current directory Git repos or no Git repo at all
+  - Better handling of subdirectories within larger Git projects
+
+- **m1f-init Language Detection**: Enhanced programming language detection
+  - Changed "Not detected" to "No programming languages detected" for clarity
+  - Added file counting for all supported languages (Java, C#, Go, Rust, Ruby)
+  - Only shows "Programming Languages:" line when languages are actually detected
+  - Better label clarity with "Programming Languages:" instead of just "Languages:"
+
+### Fixed
+
+- **m1f-init .gitignore Handling**: Fixed .gitignore usage in subdirectories
+  - Now only uses .gitignore from current directory, not parent directories
+  - Prevents errors when running m1f-init in subdirectories without their own .gitignore
+  - All m1f commands now check for .gitignore existence before using --exclude-paths-file
+
+- **m1f-init Python Project Detection**: Fixed language detection prioritization
+  - Now prioritizes by file count to correctly identify primary language
+  - Python projects are now properly detected even with mixed language codebases
+
+- **m1f-init Behavior with Existing Config**: Fixed to run m1f-update when config exists
+  - No longer creates default bundles when `.m1f.config.yml` already exists
+  - Automatically runs `m1f-update` to use existing configuration
+
+- **m1f Directory Exclusion Performance**: Fixed severe performance issue with directory filtering
+  - Directory exclusions from .gitignore now properly applied at directory traversal level
+  - Reduced bundle creation time from 42+ seconds to ~1.2 seconds (35x improvement)
+  - Fixed tmp/ directory exclusion that was scanning 362,419 unnecessary files
+
+- **m1f Multiple Source Directories**: Fixed CLI to support multiple source directories
+  - Changed from single source to List[Path] throughout codebase
+  - Now properly processes all specified source directories with `-s dir1 -s dir2`
+  - All files from multiple sources are combined into single output
+
+- **m1f Include Patterns**: Fixed include pattern filtering
+  - Include patterns now properly applied from config files
+  - Fixed _load_include_patterns() to run even without include_paths_file
+  - Patterns correctly filter files when combined with extension filters
+
+- **m1f Bundle Configuration**: Fixed output directory exclusion pattern
+  - Changed `/m1f/**` to `m1f/m1f/**` to only exclude output directory
+  - Previously excluded all directories named "m1f" anywhere in the project
+
+- **m1f-html2md Streaming**: Fixed streaming output for Claude AI analysis
+  - Fixed common_parent variable scope issue (used before definition)
+  - Implemented proper streaming in run_claude_streaming method
+  - Fixed ColoredFormatter modifying LogRecord objects (causing ANSI codes in logs)
+  - Added elapsed time tracking for progress messages
+  - Improved subprocess handling for reliable Claude CLI integration
+
+- **m1f-html2md Config Loading**: Made configuration more robust
+  - Config loader now handles unknown fields gracefully (with warnings)
+  - Automatic conversion of string paths to Path objects
+  - Better error handling for Claude-generated configurations
+
+## [3.3.0] - 2025-07-03
 
 ### Documentation
 
@@ -1637,12 +1235,19 @@ and this project adheres to
   - Added clear explanation of what m1f is (Make One File)
   - Added Tailwind CSS 4.0 example demonstrating real-world usage
   - Added concise tool suite overview with links to docs and m1f.dev
-  - Added comprehensive feature list emphasizing dynamic/auto-updating capabilities
+  - Added comprehensive feature list emphasizing dynamic/auto-updating
+    capabilities
   - Added security note about detect-secrets with link to GitHub repository
-  - Added "Beyond AI" section showing alternative uses (backups, bundling, encoding conversion)
+  - Added "Beyond AI" section showing alternative uses (backups, bundling,
+    encoding conversion)
   - Added bundle location and Claude reference syntax explanation
   - Improved overall structure with developer-friendly tone
-- **HTML2MD Documentation Updates**: Enhanced Claude AI integration documentation
+  - **Claude Code Integration**: Enhanced documentation for Claude binary
+    auto-detection
+  - **Example Updates**: Improved clarity for Tailwind CSS and Claude Code usage
+    examples
+- **HTML2MD Documentation Updates**: Enhanced Claude AI integration
+  documentation
   - Added `--analyze-files` parameter documentation
   - Documented project description prompt feature
   - Added subprocess handling improvements
@@ -1650,40 +1255,62 @@ and this project adheres to
 
 ### Added
 
-- **HTML2MD Claude AI Integration Enhancements**: Major improvements to AI-powered HTML analysis
-  - **External Prompt System**: All prompts now loaded from external markdown files in `prompts/` directory
-    - `select_files_from_project.md`: Strategic selection of 5 representative HTML files
-    - `analyze_selected_files.md`: Task-based analysis workflow with individual file processing
-    - `convert_html_to_md.md`: Enhanced HTML to Markdown conversion with quality standards
+- **HTML2MD Claude AI Integration Enhancements**: Major improvements to
+  AI-powered HTML analysis
+
+  - **External Prompt System**: All prompts now loaded from external markdown
+    files in `prompts/` directory
+    - `select_files_from_project.md`: Strategic selection of 5 representative
+      HTML files
+    - `analyze_selected_files.md`: Task-based analysis workflow with individual
+      file processing
+    - `convert_html_to_md.md`: Enhanced HTML to Markdown conversion with quality
+      standards
     - Improved maintainability and customization of AI prompts
   - **Task-Based Analysis Workflow**: Multi-phase analysis for better accuracy
-    - Phase 1: Individual file analysis with detailed findings saved to separate files
+    - Phase 1: Individual file analysis with detailed findings saved to separate
+      files
     - Phase 2: Synthesis of all analyses to create optimal configuration
-    - Deep structural analysis with content boundaries, navigation elements, and special content types
+    - Deep structural analysis with content boundaries, navigation elements, and
+      special content types
     - Creates temporary analysis files in m1f directory for transparency
-  - **Write Tool Permission**: Claude now has write permissions for creating analysis files
-    - Automatically creates individual analysis files (html_analysis_1.txt through html_analysis_5.txt)
+  - **Write Tool Permission**: Claude now has write permissions for creating
+    analysis files
+    - Automatically creates individual analysis files (html_analysis_1.txt
+      through html_analysis_5.txt)
     - Enables iterative analysis and refinement process
-    - Includes cleanup functionality to remove temporary files after user confirmation
+    - Includes cleanup functionality to remove temporary files after user
+      confirmation
   - **Directory Access Improvements**: Enhanced Claude integration workflow
     - Uses `--add-dir` parameter instead of changing directories
     - Maintains clean working directory structure
     - Prevents directory traversal issues during analysis
-  - **Improved Error Handling**: Better subprocess management and error reporting
+  - **Improved Error Handling**: Better subprocess management and error
+    reporting
     - Fixed indentation errors in subprocess.Popen calls
     - Applied black formatting for consistent code style
     - Enhanced logging and progress indicators
-    - Changed all subprocess.Popen + communicate() to subprocess.run() for reliable Claude CLI integration
+    - Changed all subprocess.Popen + communicate() to subprocess.run() for
+      reliable Claude CLI integration
     - Added 5-minute timeout handling for subprocess operations
   - **User Experience Improvements**: Enhanced workflow and configuration
-    - Added `--analyze-files` parameter to specify number of files to analyze (1-20, default: 5)
-    - Project description prompt now includes tip about specifying important files
-    - Output configuration saved as `html2md_extract_config.yaml` instead of generic name
+    - Added `--analyze-files` parameter to specify number of files to analyze
+      (1-20, default: 5)
+    - Project description prompt now includes tip about specifying important
+      files
+    - Output configuration saved as `html2md_extract_config.yaml` instead of
+      generic name
     - Fixed file references to use m1f/ instead of @m1f directory
     - Added debug output for transparency during analysis process
     - Cleanup functionality removes temporary analysis files after confirmation
+    - **Increased Claude timeouts**: Extended timeout from 5 to 30 minutes for
+      large analyses
+    - **Improved configuration templates**: Better organized YAML templates for
+      extraction rules
 
-- **WebScraper Content Deduplication**: Memory-efficient duplicate prevention system (enabled by default)
+- **WebScraper Content Deduplication**: Memory-efficient duplicate prevention
+  system (enabled by default)
+
   - **Database-Backed Deduplication**: Optimized for large scraping sessions
     - Uses SQLite queries instead of loading all checksums into memory
     - Stores checksums in `content_checksums` table with first URL and timestamp
@@ -1696,35 +1323,52 @@ and this project adheres to
     - Normalizes whitespace (multiple spaces become single space)
     - Skips pages with identical text content
   - **Three-Layer Deduplication System**:
-    1. Canonical URL checking (default: enabled) - Use `--ignore-canonical` to disable
-    2. Content deduplication (default: enabled) - Use `--ignore-duplicates` to disable
-    3. GET parameter normalization (default: disabled) - Use `--ignore-get-params` to enable
+    1. Canonical URL checking (default: enabled) - Use `--ignore-canonical` to
+       disable
+    2. Content deduplication (default: enabled) - Use `--ignore-duplicates` to
+       disable
+    3. GET parameter normalization (default: disabled) - Use
+       `--ignore-get-params` to enable
   - **Improved Logging**: Graceful handling of duplicate detection
     - No longer logs duplicates as "unexpected errors"
     - Clear informational messages when skipping duplicate content
     - Transparent reporting of deduplication effectiveness
 
-- **WebScraper Subdirectory Restriction**: Automatic crawling restriction to specified paths
-  - When URL contains a path (e.g., `https://example.com/docs`), only pages under that path are scraped
-  - Prevents crawling outside the specified subdirectory (e.g., won't scrape `/products` when `/docs` is specified)
-  - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
-  - Useful for downloading specific documentation sections without the entire website
-  - Example: `m1f-scrape https://api.example.com/v2/reference` only scrapes pages under `/v2/reference`
+- **WebScraper Subdirectory Restriction**: Automatic crawling restriction to
+  specified paths
 
-- **WebScraper Ignore GET Parameters**: New option to prevent duplicate content from URLs with different query strings
-  - **--ignore-get-params Flag**: Strips GET parameters from URLs during scraping
-    - Prevents duplicate downloads from URLs like `page.html?tab=linux` and `page.html?tab=windows`
+  - When URL contains a path (e.g., `https://example.com/docs`), only pages
+    under that path are scraped
+  - Prevents crawling outside the specified subdirectory (e.g., won't scrape
+    `/products` when `/docs` is specified)
+  - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
+  - Useful for downloading specific documentation sections without the entire
+    website
+  - Example: `m1f-scrape https://api.example.com/v2/reference` only scrapes
+    pages under `/v2/reference`
+
+- **WebScraper Ignore GET Parameters**: New option to prevent duplicate content
+  from URLs with different query strings
+
+  - **--ignore-get-params Flag**: Strips GET parameters from URLs during
+    scraping
+    - Prevents duplicate downloads from URLs like `page.html?tab=linux` and
+      `page.html?tab=windows`
     - Normalized URLs are used for visited tracking and file saving
     - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
     - HTTrack uses `-N0` flag to disable query string parsing
     - Useful for documentation sites that use GET parameters for UI state
-  - **Example**: `m1f-scrape https://docs.example.com -o ./html --ignore-get-params`
-    - Will treat `docs.html?version=1` and `docs.html?version=2` as the same page
+  - **Example**:
+    `m1f-scrape https://docs.example.com -o ./html --ignore-get-params`
+    - Will treat `docs.html?version=1` and `docs.html?version=2` as the same
+      page
 
-- **WebScraper Canonical URL Checking**: Automatically skip duplicate pages based on canonical URLs
+- **WebScraper Canonical URL Checking**: Automatically skip duplicate pages
+  based on canonical URLs
   - **Default Behavior**: Checks `<link rel="canonical">` tags on every page
     - Skips pages where canonical URL differs from current URL
-    - Prevents downloading duplicate content (print versions, mobile versions, etc.)
+    - Prevents downloading duplicate content (print versions, mobile versions,
+      etc.)
     - Works with all scraper backends (BeautifulSoup, HTTrack, Selectolax)
     - Logs skipped pages with their canonical URLs for transparency
   - **--ignore-canonical Flag**: Ignore canonical tags when needed
@@ -1737,24 +1381,34 @@ and this project adheres to
 
 ### Fixed
 
-- **HTML2MD Claude Integration Issues**: Resolved multiple issues with Claude CLI integration
-  - Fixed subprocess hanging when using `Popen` + `communicate()` with Claude CLI
-  - Fixed incorrect m1f usage (now properly uses `--skip-output-file` for filelist generation)
+- **HTML2MD Claude Integration Issues**: Resolved multiple issues with Claude
+  CLI integration
+  - Fixed subprocess hanging when using `Popen` + `communicate()` with Claude
+    CLI
+  - Fixed incorrect m1f usage (now properly uses `--skip-output-file` for
+    filelist generation)
   - Fixed file references from embedded content to proper @ syntax
   - Fixed indentation errors in subprocess calls
   - Fixed undefined variable errors (removed unused `html_contents`)
   - Fixed test failure for outdated CLI parameters
+  - **Auto-detection of Claude binary**: m1f-html2md --claude now automatically
+    detects claude binary location
+    - Searches common installation paths including ~/.local/bin/claude
+    - Falls back to system PATH if not found in common locations
+    - Provides helpful error message if claude CLI is not installed
 - **m1f Directory Structure**: Corrected nested directory configuration
   - Fixed .m1f.config.yml to use proper m1f/m1f/ structure
   - Removed accidental triple nesting (m1f/m1f/m1f/)
   - Created proper symlink from m1f/m1f.txt to m1f/m1f/87_m1f_only_docs.txt
 - **WebScraper Logging**: Fixed duplicate content detection logging
+
   - Duplicates no longer logged as "unexpected errors"
   - Changed from exception-based to graceful skip-based handling
 
-
-- **WebScraper Resume Functionality**: Interrupt and resume web scraping sessions
-  - **SQLite Database Tracking**: Automatically tracks scraped URLs in `scrape_tracker.db`
+- **WebScraper Resume Functionality**: Interrupt and resume web scraping
+  sessions
+  - **SQLite Database Tracking**: Automatically tracks scraped URLs in
+    `scrape_tracker.db`
     - Stores URL, status code, target filename, timestamp, and errors
     - Enables resuming interrupted scraping sessions
     - Database created in output directory for each scraping job
@@ -1764,36 +1418,45 @@ and this project adheres to
     - Resume shows "Resuming crawl - found X previously scraped URLs"
   - **Graceful Interruption**: Clean handling of Ctrl+C
     - Shows friendly message: "⚠️ Scraping interrupted by user"
-    - Instructions to resume: "Run the same command again to resume where you left off"
+    - Instructions to resume: "Run the same command again to resume where you
+      left off"
     - No Python stack traces on interruption
   - **Smart Resume Strategy**: Analyzes previously scraped pages
     - Reads first 20 scraped pages to extract links
     - Populates URL queue with unvisited links from scraped pages
     - Shows "Found X URLs to visit after analyzing scraped pages"
-  - **Enhanced CLI**: Better user experience
-    - Added hint "Press Ctrl+C to interrupt and resume later" at startup
-    - Logging configuration with `-v` flag for progress visibility
-    - Fixed asyncio "Unclosed client session" warnings
-=======
-- **m1f-html2md Claude AI Integration**: Intelligent HTML analysis and conversion using Claude
-  - **Analyze Command Enhancement**: Added `--claude` flag for AI-powered analysis
-    - Automatically finds all HTML files in directories (no need to specify individual files)
-    - Uses Claude to intelligently select 5 representative files from scraped documentation
-    - Analyzes HTML structure and suggests optimal CSS selectors for content extraction
+  - **Enhanced CLI**: Better user experience - Added hint "Press Ctrl+C to
+    interrupt and resume later" at startup - Logging configuration with `-v`
+    flag for progress visibility - Fixed asyncio "Unclosed client session"
+    warnings =======
+- **m1f-html2md Claude AI Integration**: Intelligent HTML analysis and
+  conversion using Claude
+
+  - **Analyze Command Enhancement**: Added `--claude` flag for AI-powered
+    analysis
+    - Automatically finds all HTML files in directories (no need to specify
+      individual files)
+    - Uses Claude to intelligently select 5 representative files from scraped
+      documentation
+    - Analyzes HTML structure and suggests optimal CSS selectors for content
+      extraction
     - Excludes navigation, headers, footers, sidebars, and advertisements
     - Runs `m1f-init` automatically in the analysis directory
     - Outputs YAML configuration with content and ignore selectors
-  - **Convert Command Enhancement**: Added `--claude` flag for batch HTML to Markdown conversion
+  - **Convert Command Enhancement**: Added `--claude` flag for batch HTML to
+    Markdown conversion
     - Converts all HTML files in a directory to clean Markdown using Claude AI
     - Supports model selection with `--model` parameter (opus or sonnet)
     - Configurable sleep delay between API calls with `--sleep` parameter
     - Maintains directory structure in output
     - Progress tracking with conversion summary
-  - **Prompt Templates**: All prompts stored as markdown files in `prompts/` directory
+  - **Prompt Templates**: All prompts stored as markdown files in `prompts/`
+    directory
     - `select_files_simple.md` - Selects representative HTML files
     - `analyze_html_simple.md` - Analyzes HTML and suggests CSS selectors
     - `convert_html_to_md.md` - Converts HTML to clean Markdown
-  - **Security**: Path traversal protection using existing `validate_path_traversal` function
+  - **Security**: Path traversal protection using existing
+    `validate_path_traversal` function
   - **Import Fix**: Fixed ModuleNotFoundError with try/except import pattern
 
 - **--docs-only Parameter**: New command-line flag for documentation-only
@@ -1814,7 +1477,7 @@ and this project adheres to
   - Added is_documentation_file() utility function for consistent checks
   - Updated encoding handler to use centralized UTF-8 preference list
   - Documentation extensions now available system-wide for all tools
->>>>>>> a5263cc2954dda4397238b4001d4bbae4cea973d
+    > > > > > > > a5263cc2954dda4397238b4001d4bbae4cea973d
 
 - **m1f-claude --init Improvements**: Enhanced project initialization process
 
@@ -2726,1606 +2389,6 @@ improvements and new features.
 - Multiple output formats
 - Cross-platform compatibility
 
-======= presets/ai-context.m1f-presets.yml ======
-# AI Context Generation Preset
-# Optimized for creating context bundles for Claude, ChatGPT, and other LLMs
-
-# For code review and analysis
-code_review:
-  description: "Code bundle for AI review and analysis"
-  enabled: true
-  priority: 20
-  
-  global_settings:
-    encoding: "utf-8"
-    separator_style: "MachineReadable"  # Best for AI parsing
-    security_check: "warn"  # Warn but don't stop
-    
-    # Exclude generated and dependency files
-    exclude_patterns:
-      - "**/node_modules/**"
-      - "**/venv/**"
-      - "**/__pycache__/**"
-      - "**/dist/**"
-      - "**/build/**"
-      - "**/.git/**"
-      - "**/*.min.js"
-      - "**/*.min.css"
-      - "**/*.map"
-    
-    # Size limits for AI context windows
-    max_file_size: "500KB"  # Keep individual files reasonable
-    
-    # Extension-specific defaults
-    extensions:
-      .py:
-        actions:
-          - strip_comments  # Remove comments but keep docstrings
-          - remove_empty_lines
-      .js:
-        actions:
-          - strip_comments
-          - compress_whitespace
-      .tsx:
-        actions:
-          - strip_comments
-          - compress_whitespace
-      .jsx:
-        actions:
-          - strip_comments
-          - compress_whitespace
-  
-  presets:
-    # Source code
-    source:
-      patterns:
-        - "src/**/*"
-        - "lib/**/*"
-        - "app/**/*"
-      exclude_patterns:
-        - "**/*.test.*"
-        - "**/*.spec.*"
-        - "**/__tests__/**"
-      separator_style: "MachineReadable"
-      include_metadata: true
-    
-    # Configuration and setup
-    config:
-      patterns:
-        - "package.json"
-        - "tsconfig*.json"
-        - "webpack.config.*"
-        - "vite.config.*"
-        - ".eslintrc*"
-        - "pyproject.toml"
-        - "requirements*.txt"
-        - "Makefile"
-        - "docker-compose*.yml"
-      actions: []  # Keep configs as-is
-      include_metadata: true
-    
-    # Documentation
-    docs:
-      patterns:
-        - "README*"
-        - "docs/**/*.md"
-        - "*.md"
-      actions:
-        - join_paragraphs  # Compress for AI
-        - remove_empty_lines
-      max_lines: 500  # Limit doc length
-      # Note: Consider using docs_only: true in global_settings for complete documentation bundles
-    
-    # Tests - just structure
-    tests:
-      patterns:
-        - "**/*.test.*"
-        - "**/*.spec.*"
-        - "**/test_*.py"
-      actions:
-        - custom
-      custom_processor: "extract_functions"
-      max_lines: 50
-
-# For documentation chat
-docs_chat:
-  description: "Documentation bundle optimized for Q&A"
-  enabled: true
-  priority: 15
-  
-  global_settings:
-    encoding: "utf-8"
-    separator_style: "Markdown"  # Better for chat context
-    security_check: null  # No secrets in docs
-    remove_scraped_metadata: true
-    docs_only: true  # Use --docs-only to include all 62 documentation extensions
-    
-    exclude_patterns:
-      - "_build/**"
-      - "site/**"
-      - ".tox/**"
-  
-  presets:
-    # All markdown files
-    markdown:
-      patterns:
-        - "**/*.md"
-        - "**/*.mdx"
-        - "**/*.markdown"
-      actions:
-        - join_paragraphs
-        - remove_empty_lines
-      max_file_size: "1MB"
-      separator_style: "Markdown"
-    
-    # Code examples in docs
-    examples:
-      patterns:
-        - "**/examples/**/*"
-        - "**/snippets/**/*"
-      actions:
-        - strip_comments
-        - compress_whitespace
-      max_lines: 100
-    
-    # API reference
-    api_ref:
-      patterns:
-        - "**/api/**/*.md"
-        - "**/reference/**/*.md"
-      actions:
-        - compress_whitespace
-      max_file_size: "2MB"
-
-# For debugging and problem-solving
-debug_context:
-  description: "Include everything relevant for debugging"
-  enabled: false  # Enable with --preset-group debug_context
-  priority: 30
-  
-  global_settings:
-    encoding: "utf-8"
-    separator_style: "Detailed"  # Maximum detail
-    security_check: "warn"
-    
-    # Include more for debugging
-    include_dot_paths: true  # Include .env, .config, etc
-    max_file_size: "10MB"   # Allow larger files
-    
-    # Less strict excludes
-    exclude_patterns:
-      - "**/node_modules/**"
-      - "**/.git/objects/**"
-      - "**/*.log"
-  
-  presets:
-    # Everything in the current directory
-    all_files:
-      patterns:
-        - "**/*"
-      actions: []  # No processing - keep original
-      include_metadata: true
-      separator_style: "Detailed"
-    
-    # Logs and debug output
-    logs:
-      patterns:
-        - "**/*.log"
-        - "**/debug/**/*"
-        - "**/logs/**/*"
-      actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 10000  # Last 10KB of logs
-      max_lines: 500
-
-# Usage examples:
-# m1f -s . -o ai-context.txt --preset ai-context.m1f-presets.yml
-# m1f -s ./docs -o docs-qa.txt --preset ai-context.m1f-presets.yml --preset-group docs_chat
-# m1f -s . -o debug.txt --preset ai-context.m1f-presets.yml --preset-group debug_context
-
-======= presets/docs-bundle.m1f-presets.yml ======
-# Documentation bundle preset group
-# Use --docs-only parameter to include all 62 documentation extensions automatically
-# Claude prefers valid markdown. However, there are LLMs that only read the first 200 lines of a file and then
-# decide whether to continue. This means you need to fit a lot of information into those first 200 lines.
-docs_bundle:
-  name: "Documentation Bundle"
-  description: "Includes all documentation files using --docs-only filter and optimizes for LLM processing"
-  priority: 10
-  enabled: true
-  
-  # Global settings for documentation bundles
-  global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
-    security_check: null  # Docs rarely have secrets
-    remove_scraped_metadata: true  # Clean up scraped docs
-    docs_only: true  # Include all 62 documentation extensions
-    
-    # Exclude build outputs
-    exclude_patterns:
-      - "_build/**"
-      - "build/**"
-      - "site/**"
-      - "public/**"
-  
-  presets:
-    markdown_processor:
-      patterns: 
-        - "**/*.md"
-        - "**/*.markdown"
-        - "**/README*"
-      actions:
-        - "join_paragraphs"  # Compress paragraphs to single lines
-        - "remove_empty_lines"
-      separator_style: "Standard"
-      max_file_size: "2MB"
-
-======= presets/documentation.m1f-presets.yml ======
-# Documentation Project Preset Configuration for m1f
-# Optimized for documentation and knowledge base projects
-
-documentation:
-  description: "Documentation project processing"
-  enabled: true
-  priority: 20  # Higher priority for documentation-focused projects
-  
-  # Global settings for documentation projects
-  global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
-    security_check: null  # Documentation rarely has secrets
-    
-    # Documentation-specific excludes
-    exclude_patterns:
-      - "_build/**"
-      - "build/**"
-      - ".tox/**"
-      - "htmlcov/**"
-      - "site/**"  # MkDocs build output
-      - "public/**"  # Hugo/Jekyll output
-      - "*.pyc"
-      - "__pycache__/**"
-    
-    # Allow larger documentation files
-    max_file_size: "5MB"
-    
-    # Keep all metadata by default
-    remove_scraped_metadata: false
-  
-  presets:
-    # Markdown files - main content
-    markdown:
-      extensions: [".md", ".mdx", ".markdown"]
-      actions:
-        - remove_empty_lines
-      separator_style: "Standard"
-      include_metadata: true
-    
-    # reStructuredText
-    rst:
-      extensions: [".rst", ".rest"]
-      actions:
-        - remove_empty_lines
-      separator_style: "Standard"
-    
-    # Code examples in docs
-    code_examples:
-      patterns:
-        - "examples/**/*"
-        - "snippets/**/*"
-        - "code/**/*"
-      actions:
-        - strip_comments
-        - compress_whitespace
-      # Keep examples concise but useful
-      max_lines: 100  # Show more of examples
-      separator_style: "Standard"
-      max_file_size: "200KB"
-    
-    # API documentation
-    api_docs:
-      patterns:
-        - "api/**/*.md"
-        - "reference/**/*.md"
-        - "openapi*.yml"
-        - "swagger*.json"
-      actions:
-        - compress_whitespace
-      separator_style: "Standard"
-      max_file_size: "1MB"  # API docs can be large
-    
-    # Jupyter notebooks
-    notebooks:
-      extensions: [".ipynb"]
-      actions:
-        - custom
-      custom_processor: "extract_markdown_cells"
-      separator_style: "Markdown"
-    
-    # HTML documentation
-    html_docs:
-      extensions: [".html"]
-      patterns:
-        - "build/html/**/*.html"
-        - "_build/**/*.html"
-      actions:
-        - strip_tags
-        - minify
-      strip_tags:
-        - "script"
-        - "style"
-        - "nav"
-        - "header"
-        - "footer"
-      preserve_tags:
-        - "main"
-        - "article"
-        - "pre"
-        - "code"
-    
-    # Images in documentation
-    images:
-      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg"]
-      patterns:
-        - "images/**/*"
-        - "assets/**/*"
-        - "_static/**/*"
-      actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 200  # Show path and alt text if available
-      include_metadata: true
-    
-    # Configuration files
-    config:
-      patterns:
-        - "mkdocs.yml"
-        - "docusaurus.config.js"
-        - "conf.py"  # Sphinx
-        - "_config.yml"  # Jekyll
-        - "book.toml"  # mdBook
-      actions: []
-      include_metadata: true
-    
-    default:
-      actions: []
-      include_metadata: true
-      separator_style: "Standard"
-
-# Technical writing specific
-technical_writing:
-  description: "Technical documentation with special formatting"
-  enabled: false  # Enable when needed
-  priority: 15
-  
-  global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
-    max_file_size: "10MB"  # LaTeX files can be large
-  
-  presets:
-    # AsciiDoc files
-    asciidoc:
-      extensions: [".adoc", ".asciidoc", ".asc"]
-      actions:
-        - remove_empty_lines
-      separator_style: "Standard"
-    
-    # LaTeX documents
-    latex:
-      extensions: [".tex", ".latex"]
-      actions:
-        - strip_comments
-        - compress_whitespace
-      separator_style: "Standard"
-    
-    # Diagrams as code
-    diagrams:
-      extensions: [".puml", ".plantuml", ".mermaid", ".dot"]
-      actions:
-        - strip_comments
-      separator_style: "Standard"
-      
-    default:
-      actions: []
-      include_metadata: true
-
-======= presets/example-globals.m1f-presets.yml ======
-# Example preset with global settings
-# Shows how global defaults can be overridden locally
-
-web_project:
-  description: "Web project with global HTML processing"
-  priority: 10
-  
-  # Global settings that apply to all files
-  global_settings:
-    # General settings
-    encoding: "utf-8"
-    separator_style: "Detailed"
-    line_ending: "lf"
-    
-    # Global include/exclude patterns
-    exclude_patterns:
-      - "*.min.js"
-      - "*.min.css"
-      - "*.map"
-    exclude_extensions:
-      - ".log"
-      - ".tmp"
-      - ".cache"
-    
-    # File filtering options
-    include_dot_paths: false        # Include hidden files/directories
-    include_binary_files: false     # Include binary files
-    include_symlinks: false         # Follow symbolic links
-    no_default_excludes: false      # Disable default exclusions (node_modules, etc)
-    max_file_size: "10MB"          # Skip files larger than this
-    # Use multiple exclude files - they are merged
-    exclude_paths_file:
-      - ".gitignore"
-      - ".m1fignore"
-    
-    # Processing options
-    remove_scraped_metadata: true   # Remove HTML2MD metadata
-    abort_on_encoding_error: false  # Continue on encoding errors
-    
-    # Security options
-    security_check: "warn"          # Check for secrets: abort, skip, warn
-    
-    # Extension-specific defaults
-    extensions:
-      # All HTML files get these settings by default
-      .html:
-        actions:
-          - strip_tags
-          - minify
-        strip_tags:
-          - "script"
-          - "style"
-          - "meta"
-          - "link"
-        preserve_tags:
-          - "main"
-          - "article"
-      
-      # All CSS files get minified by default
-      .css:
-        actions:
-          - minify
-          - strip_comments
-      
-      # All JS files get comments stripped by default
-      .js:
-        actions:
-          - strip_comments
-          - compress_whitespace
-  
-  presets:
-    # Documentation HTML - override global settings
-    docs:
-      patterns:
-        - "docs/**/*.html"
-        - "documentation/**/*.html"
-      # Override global - don't strip any tags from docs
-      strip_tags: []
-      actions:
-        - compress_whitespace  # Only compress, no tag stripping
-    
-    # Main site HTML - use global defaults
-    site:
-      patterns:
-        - "public/**/*.html"
-        - "dist/**/*.html"
-      # Inherits global HTML settings (strip_tags, minify)
-    
-    # Development JS - override global
-    dev_scripts:
-      patterns:
-        - "src/**/*.js"
-        - "dev/**/*.js"
-      actions: []  # No processing for dev files
-      
-    # Vendor CSS - keep as-is
-    vendor_styles:
-      patterns:
-        - "vendor/**/*.css"
-        - "node_modules/**/*.css"
-      actions: []  # Override global - no processing
-    
-    # Default for other files
-    default:
-      actions:
-        - remove_empty_lines
-
-# Another group showing m1f project exception
-m1f_project:
-  description: "Special rules for m1f project itself"
-  priority: 20  # Higher priority than web_project
-  
-  global_settings:
-    # Override encoding for this project
-    encoding: "utf-8"
-    
-    extensions:
-      .html:
-        # For m1f project, don't strip tags from HTML
-        actions:
-          - compress_whitespace
-  
-  presets:
-    # Test HTML files need full content
-    test_html:
-      patterns:
-        - "tests/**/*.html"
-      actions: []  # No processing at all
-      
-    # Example HTML files
-    examples:
-      patterns:
-        - "examples/**/*.html"
-      # Uses global (only compress_whitespace)
-
-======= presets/example-use-cases.m1f-presets.yml ======
-# Example Use Cases for m1f Presets
-# This file demonstrates the specific use cases mentioned
-
-# Use Case 1: Different security settings per file type
-# "I want to disable security_check for all *.md files, but keep it for PHP files"
-security_per_type:
-  description: "Different security settings for different file types"
-  priority: 10
-  
-  global_settings:
-    # Default security setting for all files
-    security_check: "abort"  # Strict by default
-    
-    # Per-extension overrides
-    extensions:
-      # Disable security check for documentation
-      .md:
-        security_check: null  # Disabled for markdown
-      .txt:
-        security_check: null  # Disabled for text files
-      .rst:
-        security_check: null  # Disabled for reStructuredText
-        
-      # Keep strict security for code files
-      .php:
-        security_check: "abort"  # Very strict for PHP
-      .js:
-        security_check: "warn"   # Warning only for JavaScript
-      .py:
-        security_check: "abort"  # Strict for Python
-      
-      # Special handling for config files
-      .env:
-        security_check: "abort"  # Always check .env files
-      .json:
-        security_check: "warn"   # Warn for JSON configs
-      .yml:
-        security_check: "warn"   # Warn for YAML configs
-
-# Use Case 2: Different size limits per file type
-# "I want to exclude all CSS files over 50KB, but include PHP files that are larger"
-size_limits_per_type:
-  description: "Different file size limits for different file types"
-  priority: 10
-  
-  global_settings:
-    # Default size limit
-    max_file_size: "1MB"
-    
-    # Per-extension size limits
-    extensions:
-      # Strict limits for frontend assets
-      .css:
-        max_file_size: "50KB"   # Exclude CSS files over 50KB
-        actions: [minify]       # Also minify them
-      .js:
-        max_file_size: "100KB"  # 100KB limit for JS
-        actions: [strip_comments, compress_whitespace]
-      
-      # More lenient for backend code
-      .php:
-        max_file_size: "5MB"    # Allow larger PHP files
-        actions: [strip_comments]
-      .py:
-        max_file_size: "2MB"    # Python files up to 2MB
-      
-      # Very strict for certain files
-      .log:
-        max_file_size: "100KB"  # Small log files only
-        actions: [custom]
-        custom_processor: "truncate"
-        processor_args:
-          max_chars: 5000
-      
-      # Large data files
-      .sql:
-        max_file_size: "10MB"   # Allow large SQL dumps
-        max_lines: 1000         # But truncate to 1000 lines
-
-# Combined example: Full project configuration
-web_project_complete:
-  description: "Complete web project with mixed requirements"
-  priority: 15
-  
-  global_settings:
-    # General settings
-    encoding: "utf-8"
-    separator_style: "Detailed"
-    security_check: "warn"  # Default: warn
-    max_file_size: "2MB"    # Default: 2MB
-    
-    # Global excludes
-    exclude_patterns:
-      - "*.min.js"
-      - "*.min.css"
-      - "vendor/**"
-      - "node_modules/**"
-    
-    # Extension-specific rules
-    extensions:
-      # Documentation - no security check, clean metadata
-      # NOTE: For complete documentation bundles, use docs_only: true instead
-      .md:
-        security_check: null
-        remove_scraped_metadata: true
-        max_file_size: "500KB"
-        actions: [remove_empty_lines]
-      
-      # Frontend assets - strict size limits
-      .css:
-        max_file_size: "50KB"
-        security_check: "skip"
-        actions: [minify, strip_comments]
-      .js:
-        max_file_size: "100KB"
-        security_check: "warn"
-        actions: [strip_comments, compress_whitespace]
-      
-      # Backend code - larger files allowed, strict security
-      .php:
-        max_file_size: "5MB"
-        security_check: "abort"
-        actions: [strip_comments, remove_empty_lines]
-      
-      # Config files - strict security, moderate size
-      .env:
-        max_file_size: "10KB"
-        security_check: "abort"
-        include_dot_paths: true  # Include .env files
-      .json:
-        max_file_size: "1MB"
-        security_check: "warn"
-        actions: [compress_whitespace]
-      
-      # Binary/data files
-      .sql:
-        max_file_size: "10MB"
-        security_check: null  # No point checking SQL
-        max_lines: 2000
-      .csv:
-        max_file_size: "5MB"
-        security_check: null
-        max_lines: 1000
-  
-  presets:
-    # Override for test files - more lenient
-    test_files:
-      patterns:
-        - "test/**/*"
-        - "tests/**/*"
-        - "*.test.*"
-        - "*.spec.*"
-      security_check: null  # No security check for tests
-      max_file_size: "10MB"  # Allow larger test files
-    
-    # Override for production builds - stricter
-    production:
-      patterns:
-        - "dist/**/*"
-        - "build/**/*"
-        - "public/**/*"
-      actions: [minify, strip_comments, compress_whitespace]
-      max_file_size: "200KB"  # Strict for production
-      security_check: "abort"
-    
-    # Third-party code - skip most processing
-    vendor:
-      patterns:
-        - "vendor/**/*"
-        - "node_modules/**/*"
-        - "bower_components/**/*"
-      actions: []  # No processing
-      max_file_size: "50KB"  # Only include small vendor files
-      security_check: null  # Don't check vendor code
-
-# v3.2 feature example: Control deduplication and encoding
-v3_2_features:
-  description: "Demonstrating v3.2 features"
-  priority: 20
-  
-  global_settings:
-    # v3.2: Control content deduplication
-    enable_content_deduplication: false  # Include duplicate files
-    
-    # v3.2: Control UTF-8 preference
-    prefer_utf8_for_text_files: false  # Use detected encoding
-    
-    # v3.2+: Use --docs-only for documentation bundles
-    docs_only: true  # Include all 62 documentation extensions
-    
-    # v3.2: Enhanced security options
-    security_check: "error"  # Strictest mode
-  
-  presets:
-    # Legacy encoding files
-    legacy_files:
-      patterns:
-        - "legacy/**/*.txt"
-        - "legacy/**/*.md"
-      # Will use windows-1252 if detected, not force UTF-8
-      prefer_utf8_for_text_files: false
-    
-    # Test files that might have duplicates
-    test_files:
-      patterns:
-        - "test/**/*"
-        - "tests/**/*"
-      # Allow duplicate test fixtures
-      enable_content_deduplication: false
-
-# Documentation-only bundle example
-documentation_bundle:
-  description: "Extract only documentation files using --docs-only"
-  priority: 10
-  
-  global_settings:
-    # Use the new --docs-only parameter
-    docs_only: true  # Includes 62 documentation extensions
-    
-    # Standard separator for AI consumption
-    separator_style: "Standard"
-    
-    # Documentation-specific settings
-    security_check: null  # No security check for docs
-    remove_scraped_metadata: true  # Clean metadata
-    
-    # Exclude build outputs
-    exclude_patterns:
-      - "_build/**"
-      - "build/**"
-      - "site/**"
-      - "public/**"
-
-# Usage examples:
-# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group security_per_type
-# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group size_limits_per_type
-# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group web_project_complete
-# m1f -s . -o bundle.txt --preset example-use-cases.m1f-presets.yml --preset-group v3_2_features
-# m1f -s . -o docs.txt --preset example-use-cases.m1f-presets.yml --preset-group documentation_bundle
-
-======= presets/template-all-settings.m1f-presets.yml ======
-# Complete m1f Preset Template
-# This file contains ALL available preset settings with explanations
-# Copy and modify this template for your own projects
-
-# Each preset file can contain multiple preset groups
-# Groups are processed by priority (higher numbers first)
-
-# Group name - can be any valid YAML key
-example_group_name:
-  # Group description (optional)
-  description: "Comprehensive example showing all available settings"
-  
-  # Whether this group is enabled (default: true)
-  enabled: true
-  
-  # Priority for this group (higher = processed first)
-  # When multiple groups match a file, higher priority wins
-  priority: 10
-  
-  # Base path for relative patterns (optional)
-  # All patterns in this group will be relative to this path
-  base_path: "src"
-  
-  # Global settings that apply to all files in this group
-  global_settings:
-    # === ENCODING AND FORMATTING ===
-    
-    # Target character encoding for all files
-    # Options: utf-8, utf-16, utf-16-le, utf-16-be, ascii, latin-1, cp1252
-    encoding: "utf-8"
-    
-    # Separator style between files in output
-    # Options: Standard, Detailed, Markdown, MachineReadable, None
-    separator_style: "Detailed"
-    
-    # Line ending style for generated content
-    # Options: lf, crlf
-    line_ending: "lf"
-    
-    # === INPUT/OUTPUT SETTINGS ===
-    
-    # Source directory path (overrides CLI -s/--source-directory)
-    # source_directory: "/path/to/source"
-    
-    # Input file path (overrides CLI -i/--input-file)
-    # input_file: "/path/to/input-list.txt"
-    
-    # Output file path (overrides CLI -o/--output-file)
-    # output_file: "/path/to/output.txt"
-    
-    # Intro files to include at beginning (single file or list)
-    # Single file:
-    # input_include_files: "README.md"
-    # Multiple files:
-    # input_include_files:
-    #   - "README.md"
-    #   - "intro.txt"
-    
-    # === OUTPUT CONTROL ===
-    
-    # Add timestamp to output filename (default: false)
-    add_timestamp: false
-    
-    # Add hash of file modification times to filename (default: false)
-    filename_mtime_hash: false
-    
-    # Force overwrite existing output file (default: false)
-    force: false
-    
-    # Only create main output file, skip auxiliary files (default: false)
-    minimal_output: false
-    
-    # Skip creating main output file (default: false)
-    skip_output_file: false
-    
-    # === ARCHIVE SETTINGS ===
-    
-    # Create backup archive of processed files (default: false)
-    create_archive: false
-    
-    # Archive format when create_archive is true
-    # Options: zip, tar.gz
-    archive_type: "zip"
-    
-    # === RUNTIME BEHAVIOR ===
-    
-    # Enable verbose output (default: false)
-    verbose: false
-    
-    # Suppress all output (default: false)
-    quiet: false
-    
-    # === INCLUDE/EXCLUDE PATTERNS ===
-    
-    # Patterns to include (gitignore-style patterns)
-    include_patterns:
-      - "src/**/*.js"
-      - "lib/**/*.py"
-      - "!src/vendor/**"  # Exclude even if matched above
-    
-    # Patterns to exclude (gitignore-style patterns)
-    exclude_patterns:
-      - "*.min.js"
-      - "*.map"
-      - "build/"
-      - "dist/"
-      - "**/*.log"
-    
-    # File extensions to include (with or without dot)
-    include_extensions:
-      - ".py"
-      - ".js"
-      - ".jsx"
-      - ".ts"
-      - ".tsx"
-      - ".md"
-    
-    # File extensions to exclude (with or without dot)
-    exclude_extensions:
-      - ".log"
-      - ".tmp"
-      - ".cache"
-      - ".bak"
-      - ".swp"
-    
-    # === FILE FILTERING OPTIONS ===
-    
-    # Include files/directories starting with dot (default: false)
-    include_dot_paths: false
-    
-    # Include binary files (default: false)
-    include_binary_files: false
-    
-    # Follow symbolic links (default: false)
-    # WARNING: Be careful of symlink cycles!
-    include_symlinks: false
-    
-    # Disable default exclusions like node_modules, .git, etc (default: false)
-    no_default_excludes: false
-    
-    # Include only documentation files (62 extensions) (default: false)
-    # Overrides include_extensions when set to true
-    # Includes: .md, .txt, .rst, .adoc, .man, .1-8, .changes, .pod, and 54 more
-    docs_only: false
-    
-    # v3.2 features
-    enable_content_deduplication: true  # Deduplicate files by content
-    prefer_utf8_for_text_files: true    # Prefer UTF-8 for .md, .txt files
-    
-    # Maximum file size to include
-    # Supports: B, KB, MB, GB, TB (e.g., "50KB", "10MB", "1.5GB")
-    max_file_size: "10MB"
-    
-    # Path(s) to file(s) containing additional exclude patterns
-    # Can be a .gitignore file or custom exclude file
-    # Single file:
-    exclude_paths_file: ".gitignore"
-    # Multiple files (merged in order):
-    # exclude_paths_file:
-    #   - ".gitignore"
-    #   - ".m1fignore"
-    #   - "exclude-patterns.txt"
-    
-    # Path(s) to file(s) containing include patterns
-    # Only files matching these patterns will be included
-    # Single file:
-    # include_paths_file: "include-patterns.txt"
-    # Multiple files (merged in order):
-    # include_paths_file:
-    #   - ".m1f-include"
-    #   - "include-patterns.txt"
-    
-    # === PROCESSING OPTIONS ===
-    
-    # Remove scraped metadata from HTML2MD files (default: false)
-    # Removes URL, timestamp, source info from end of markdown files
-    remove_scraped_metadata: true
-    
-    # Abort processing if encoding conversion fails (default: false)
-    # If false, problematic characters are replaced with placeholders
-    abort_on_encoding_error: false
-    
-    # === SECURITY OPTIONS ===
-    
-    # Scan files for secrets before including
-    # Options: abort (stop processing), skip (skip file), warn (include with warning), null (disable)
-    security_check: "warn"
-    
-    # === EXTENSION-SPECIFIC DEFAULTS ===
-    # Define default processing for specific file extensions
-    extensions:
-      # HTML files
-      .html:
-        actions:
-          - strip_tags      # Remove HTML tags
-          - minify         # Remove unnecessary whitespace
-          - compress_whitespace
-        strip_tags:
-          - "script"       # Remove script tags
-          - "style"        # Remove style tags
-          - "meta"
-          - "link"
-        preserve_tags:
-          - "pre"          # Keep pre tags
-          - "code"         # Keep code tags
-        # File-specific overrides
-        max_file_size: "500KB"  # HTML-specific size limit
-        security_check: "warn"  # Less strict for HTML
-      
-      # Markdown files
-      .md:
-        actions:
-          - remove_empty_lines
-        separator_style: "Markdown"  # Override separator for markdown
-        security_check: null  # Disable security check for docs
-        remove_scraped_metadata: true  # Clean scraped content
-      
-      # CSS files
-      .css:
-        actions:
-          - minify
-          - strip_comments
-      
-      # JavaScript files
-      .js:
-        actions:
-          - strip_comments
-          - compress_whitespace
-      
-      # Python files
-      .py:
-        actions:
-          - strip_comments    # Removes # comments, preserves docstrings
-          - remove_empty_lines
-      
-      # JSON files
-      .json:
-        actions:
-          - compress_whitespace
-      
-      # Log files
-      .log:
-        actions:
-          - custom
-        custom_processor: "truncate"
-        processor_args:
-          max_chars: 5000
-  
-  # Individual file presets (matched by pattern or extension)
-  presets:
-    # Preset name (for identification)
-    documentation:
-      # File extensions this preset applies to
-      extensions: [".md", ".rst", ".txt"]
-      
-      # Glob patterns this preset applies to
-      patterns:
-        - "docs/**/*"
-        - "README*"
-        - "*.md"
-      
-      # Processing actions to apply (in order)
-      actions:
-        - remove_empty_lines
-        - compress_whitespace
-        - join_paragraphs  # v3.2: Compress paragraphs for LLMs
-      
-      # Override separator style for these files
-      separator_style: "Markdown"
-      
-      # Include file metadata in output
-      include_metadata: true
-      
-      # Maximum lines to include (truncate after this)
-      max_lines: 1000
-      
-      # File-specific overrides
-      security_check: null  # No security check for docs
-      remove_scraped_metadata: true
-    
-    # Configuration files
-    config_files:
-      patterns:
-        - "*.json"
-        - "*.yml"
-        - "*.yaml"
-        - "*.toml"
-        - "*.ini"
-        - ".env*"
-      actions:
-        - custom
-      custom_processor: "redact_secrets"
-      processor_args:
-        patterns:
-          # Regex patterns to find and redact
-          - "(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*[\"']?[\\w-]+[\"']?"
-          - "(?i)bearer\\s+[\\w-]+"
-    
-    # Source code
-    source_code:
-      extensions: [".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".c", ".cpp"]
-      actions:
-        - strip_comments
-        - remove_empty_lines
-      include_metadata: true
-    
-    # Minified files - skip processing
-    minified:
-      patterns:
-        - "*.min.js"
-        - "*.min.css"
-      actions: []  # Empty list = no processing
-      include_metadata: false
-    
-    # Large data files
-    data_files:
-      extensions: [".sql", ".csv", ".xml"]
-      actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 10000
-      max_lines: 500
-    
-    # Binary files that somehow got included
-    binary_fallback:
-      extensions: [".png", ".jpg", ".gif", ".pdf", ".zip"]
-      actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 100  # Just show file info
-    
-    # Default preset for unmatched files
-    default:
-      actions:
-        - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"
-
-# Second group example - Production settings
-production:
-  description: "Production build settings - aggressive optimization"
-  enabled: false  # Enable with --preset-group production
-  priority: 20    # Higher priority than example_group_name
-  
-  global_settings:
-    # Override encoding for production
-    encoding: "utf-8"
-    separator_style: "MachineReadable"
-    
-    # Exclude all development files
-    exclude_patterns:
-      - "test/**"
-      - "tests/**"
-      - "spec/**"
-      - "*.test.*"
-      - "*.spec.*"
-      - "__tests__/**"
-      - "node_modules/**"
-      - ".git/**"
-    
-    # Strict file size limits
-    max_file_size: "1MB"
-    
-    # Security settings
-    security_check: "abort"  # Strict for production
-    abort_on_encoding_error: true
-  
-  presets:
-    # Aggressive minification for all web assets
-    web_assets:
-      extensions: [".html", ".css", ".js"]
-      actions:
-        - minify
-        - strip_tags
-        - strip_comments
-        - compress_whitespace
-      strip_tags: ["script", "style", "meta", "link", "comment"]
-
-# Third group example - Development settings
-development:
-  description: "Development settings - preserve readability"
-  enabled: false  # Enable with --preset-group development
-  priority: 15
-  
-  global_settings:
-    # Keep everything readable
-    separator_style: "Detailed"
-    
-    # Include test files
-    include_patterns:
-      - "test/**"
-      - "tests/**"
-      - "*.test.*"
-      - "*.spec.*"
-    
-    # Include hidden files for development
-    include_dot_paths: true
-    
-    # More lenient size limits
-    max_file_size: "50MB"
-    
-    # Security as warning only
-    security_check: "warn"
-  
-  presets:
-    # Keep source code readable
-    source:
-      extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
-      actions: []  # No processing - keep as-is
-      include_metadata: true
-
-# Available Processing Actions:
-# - minify: Remove unnecessary whitespace (HTML, CSS, JS)
-# - strip_tags: Remove specified HTML tags
-# - strip_comments: Remove comments based on file type
-# - compress_whitespace: Normalize whitespace
-# - remove_empty_lines: Remove all empty lines
-# - custom: Apply custom processor
-
-# Built-in Custom Processors:
-# - truncate: Limit content to max_chars
-# - redact_secrets: Remove sensitive information
-# - extract_functions: Extract only function definitions (Python)
-
-# Usage Examples:
-# m1f -s . -o bundle.txt --preset this-file.yml
-# m1f -s . -o prod.txt --preset this-file.yml --preset-group production
-# m1f -s . -o dev.txt --preset this-file.yml --preset-group development
-
-======= presets/web-project.m1f-presets.yml ======
-# Web Project Preset Configuration for m1f
-# General web development project processing rules
-
-frontend:
-  description: "Frontend web project processing"
-  enabled: true
-  priority: 10
-  
-  # Global settings for frontend projects
-  global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
-    security_check: "warn"
-    
-    # Common frontend excludes
-    exclude_patterns:
-      - "node_modules/**"
-      - "dist/**"
-      - "build/**"
-      - ".next/**"
-      - ".nuxt/**"
-      - "coverage/**"
-      - "*.log"
-      - ".cache/**"
-      - ".parcel-cache/**"
-    
-    # Default size limits for frontend assets
-    max_file_size: "1MB"
-    
-    # Extension defaults
-    extensions:
-      .js:
-        max_file_size: "200KB"
-      .css:
-        max_file_size: "100KB"
-  
-  presets:
-    # React/Vue/Angular components
-    components:
-      extensions: [".jsx", ".tsx", ".vue"]
-      patterns:
-        - "src/components/**/*"
-        - "src/pages/**/*"
-      actions:
-        - strip_comments
-        - compress_whitespace
-      separator_style: "Detailed"
-    
-    # HTML files
-    html:
-      extensions: [".html", ".htm"]
-      actions:
-        - minify
-        - strip_tags
-      strip_tags:
-        - "script"
-        - "link"
-        - "meta"
-      preserve_tags:
-        - "main"
-        - "article"
-        - "section"
-    
-    # Stylesheets
-    styles:
-      extensions: [".css", ".scss", ".sass", ".less"]
-      patterns:
-        - "src/**/*.css"
-        - "styles/**/*"
-      actions:
-        - minify
-      exclude_patterns:
-        - "*.min.css"
-        - "node_modules/**"
-    
-    # TypeScript/JavaScript
-    scripts:
-      extensions: [".js", ".ts", ".mjs"]
-      patterns:
-        - "src/**/*.js"
-        - "src/**/*.ts"
-      actions:
-        - strip_comments
-        - remove_empty_lines
-      exclude_patterns:
-        - "*.min.js"
-        - "dist/**"
-        - "build/**"
-    
-    # JSON data files
-    data:
-      extensions: [".json"]
-      actions:
-        - compress_whitespace
-      # Truncate large data files
-      max_lines: 100
-      max_file_size: "50KB"
-      patterns:
-        - "src/data/**/*.json"
-        - "mock/**/*.json"
-        - "fixtures/**/*.json"
-    
-    # Images - just include reference
-    images:
-      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"]
-      actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 100  # Just show filename and basic info
-      include_metadata: true
-      max_file_size: "10KB"  # Only process small images
-    
-    # Configuration
-    config:
-      patterns:
-        - "package.json"
-        - "tsconfig*.json"
-        - "webpack.config.*"
-        - "vite.config.*"
-        - ".env*"
-      actions:
-        - custom
-      custom_processor: "redact_secrets"
-      include_metadata: true
-    
-    default:
-      actions: []
-      include_metadata: true
-
-backend:
-  description: "Backend API project processing"
-  enabled: true
-  priority: 5
-  
-  # Global settings for backend projects
-  global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
-    security_check: "abort"  # Stricter for backend
-    
-    # Backend-specific excludes
-    exclude_patterns:
-      - "node_modules/**"
-      - "venv/**"
-      - "__pycache__/**"
-      - "*.pyc"
-      - ".pytest_cache/**"
-      - "coverage/**"
-      - "*.log"
-      - ".env*"
-      - "*.sqlite"
-      - "*.db"
-    
-    max_file_size: "5MB"  # Allow larger backend files
-  
-  presets:
-    # API routes
-    routes:
-      patterns:
-        - "routes/**/*.js"
-        - "api/**/*.py"
-        - "controllers/**/*"
-      actions:
-        - strip_comments
-        - custom
-      custom_processor: "extract_functions"
-      separator_style: "Detailed"
-      max_file_size: "500KB"
-    
-    # Database models
-    models:
-      patterns:
-        - "models/**/*"
-        - "entities/**/*"
-        - "schemas/**/*"
-      actions:
-        - strip_comments
-        - remove_empty_lines
-      separator_style: "Detailed"
-    
-    # Tests - only structure
-    tests:
-      patterns:
-        - "test/**/*"
-        - "tests/**/*"
-        - "__tests__/**/*"
-      actions:
-        - custom
-      custom_processor: "extract_functions"
-      max_lines: 50
-    
-    # SQL/Migrations
-    database:
-      extensions: [".sql"]
-      patterns:
-        - "migrations/**/*.sql"
-        - "db/**/*.sql"
-      actions:
-        - strip_comments
-      max_lines: 200
-      exclude_patterns:
-        - "**/backups/**"
-        - "**/dumps/**"
-    
-    default:
-      actions:
-        - remove_empty_lines
-      include_metadata: true
-
-======= presets/wordpress.m1f-presets.yml ======
-# WordPress Project Preset Configuration for m1f
-# This preset defines how different file types should be processed when bundling
-
-wordpress:
-  description: "WordPress project processing rules"
-  enabled: true
-  priority: 10
-  
-  # Global settings for WordPress projects
-  global_settings:
-    # Default encoding and formatting
-    encoding: "utf-8"
-    separator_style: "Standard"
-    line_ending: "lf"
-    
-    # Security - warn for WordPress since config files may have keys
-    security_check: "warn"
-    
-    
-    # WordPress-specific excludes
-    exclude_patterns:
-      - "wp-content/uploads/**"
-      - "wp-content/cache/**"
-      - "wp-content/upgrade/**"
-      - "wp-content/backups/**"
-      - "wp-content/backup-*/**"
-      - "wp-content/wflogs/**"  # Wordfence logs
-      - "wp-content/updraft/**"  # UpdraftPlus backups
-      - "*.log"
-      - "error_log"
-      - "debug.log"
-      - ".htaccess"  # Usually contains sensitive server configs
-      - "wp-config.php"  # Contains database credentials
-    
-    # Common WordPress file extensions to exclude
-    exclude_extensions:
-      - ".exe"
-      - ".dll"
-      - ".so"
-      - ".dylib"
-      - ".zip"
-      - ".tar"
-      - ".gz"
-      - ".sql"
-      - ".sql.gz"
-      - ".bak"
-      - ".tmp"
-    
-    # Extension-specific processing defaults
-    extensions:
-      .php:
-        actions:
-          - remove_empty_lines
-      .js:
-        actions:
-          - strip_comments
-          - compress_whitespace
-      .css:
-        actions:
-          - minify
-          - strip_comments
-  
-  presets:
-    # PHP files - WordPress core and plugins
-    php:
-      extensions: [".php"]
-      patterns:
-        - "*.php"
-        - "wp-content/plugins/**/*.php"
-        - "wp-content/themes/**/*.php"
-      actions:
-        - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"
-      # Exclude vendor and library files
-      exclude_patterns:
-        - "wp-includes/**"  # WordPress core
-        - "wp-admin/**"      # WordPress admin
-        - "**/vendor/**"     # Composer dependencies
-    
-    # HTML templates and output
-    html:
-      extensions: [".html", ".htm"]
-      patterns:
-        - "*.html"
-        - "wp-content/themes/**/*.html"
-      actions:
-        - minify
-        - strip_tags
-      strip_tags:
-        - "script"
-        - "style"
-        - "noscript"
-      preserve_tags:
-        - "pre"
-        - "code"
-      separator_style: "Standard"
-    
-    # Markdown documentation
-    md:
-      extensions: [".md", ".markdown"]
-      patterns:
-        - "*.md"
-        - "README*"
-        - "docs/**/*.md"
-      actions:
-        - remove_empty_lines
-      include_metadata: true
-      separator_style: "Markdown"
-    
-    # JavaScript files
-    js:
-      extensions: [".js"]
-      patterns:
-        - "wp-content/themes/**/*.js"
-        - "wp-content/plugins/**/*.js"
-      actions:
-        - strip_comments
-        - compress_whitespace
-      # Exclude minified and vendor files
-      exclude_patterns:
-        - "*.min.js"
-        - "**/vendor/**"
-        - "**/node_modules/**"
-      separator_style: "Standard"
-    
-    # CSS files
-    css:
-      extensions: [".css", ".scss", ".sass"]
-      patterns:
-        - "wp-content/themes/**/*.css"
-      actions:
-        - minify
-        - strip_comments
-      exclude_patterns:
-        - "*.min.css"
-      separator_style: "Standard"
-    
-    # Configuration files - exclude most sensitive ones
-    config:
-      patterns:
-        - "*.json"
-        - "*.yml"
-        - "*.yaml"
-        - "composer.json"
-        - "package.json"
-      actions:
-        - compress_whitespace
-      # wp-config.php is excluded globally for security
-      exclude_patterns:
-        - "wp-config*.php"
-        - ".env*"
-      include_metadata: true
-      max_file_size: "100KB"
-    
-    # SQL files
-    sql:
-      extensions: [".sql"]
-      actions:
-        - strip_comments
-        - compress_whitespace
-      # Truncate large dump files
-      max_lines: 500  # Truncate large SQL dumps
-    
-    # Default for unmatched files
-    default:
-      actions:
-        - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"
-
 ======= tasks/README.md ======
 # AI Context File Generator & Auto-Bundling System
 
@@ -4926,640 +2989,6 @@ files stay out of version control.
 
 # Add task-specific files here as needed
 
-======= tasks/auto_bundle.json ======
-{
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Auto Bundle: Docs Bundle",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["docs"],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates a documentation bundle with all README files, docs/, and markdown content"
-        },
-        {
-            "label": "Auto Bundle: Source Bundle",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["src"],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates a source code bundle with all Python scripts and modules"
-        },
-        {
-            "label": "Auto Bundle: Tests Bundle",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["tests"],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates a test suite bundle with all test files and fixtures"
-        },
-        {
-            "label": "Auto Bundle: Complete Bundle",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["complete"],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates a complete project bundle with all documentation, source, and tests"
-        },
-        {
-            "label": "Auto Bundle: Custom Focus",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["${input:bundleFocus}"],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates a custom bundle based on focus area (html2md, m1f, s1f, etc.)"
-        },
-        {
-            "label": "Auto Bundle: Watch and Update",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/watch_and_bundle.sh",
-            "args": ["${input:watchBundleType}"],
-            "problemMatcher": [],
-            "isBackground": true,
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "dedicated",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Watches for file changes and automatically regenerates the specified bundle"
-        },
-        {
-            "label": "Auto Bundle: Generate All Bundles",
-            "type": "shell",
-            "command": "bash",
-            "args": [
-                "-c",
-                "for type in docs src tests complete; do echo \"=== Generating $type bundle ===\"; ${workspaceFolder}/scripts/auto_bundle.sh $type; done"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Generates all standard bundles (docs, src, tests, complete) in one go"
-        },
-        {
-            "label": "Auto Bundle: With Preset",
-            "type": "shell",
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/tools/m1f.py",
-                "--source-directory",
-                "${workspaceFolder}",
-                "--output-file",
-                "${workspaceFolder}/.ai-context/bundle_with_preset_${input:presetType}.m1f.txt",
-                "--preset",
-                "${workspaceFolder}/presets/${input:presetFile}",
-                "--preset-group",
-                "${input:presetGroup}",
-                "--separator-style",
-                "MachineReadable",
-                "--force",
-                "--minimal-output"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates a bundle using the preset system for file-specific processing"
-        },
-        {
-            "label": "Auto Bundle: Preset - All Standard",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
-            "args": ["all"],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates all standard preset-based bundles (docs, source, complete)"
-        },
-        {
-            "label": "Auto Bundle: Preset - Focused",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
-            "args": ["focus", "${input:focusArea}"],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates focused bundles for specific area using presets"
-        },
-        {
-            "label": "Auto Bundle: List Presets",
-            "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
-            "args": ["list"],
-            "problemMatcher": [],
-            "group": {
-                "kind": "none"
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Lists all available presets and their groups"
-        }
-    ],
-    "inputs": [
-        {
-            "id": "bundleFocus",
-            "type": "pickString",
-            "description": "Select bundle focus area",
-            "options": [
-                "html2md",
-                "m1f", 
-                "s1f",
-                "presets",
-                "auto-bundle",
-                "claude-code"
-            ]
-        },
-        {
-            "id": "watchBundleType",
-            "type": "pickString",
-            "description": "Select bundle type to watch",
-            "options": [
-                "docs",
-                "src",
-                "tests",
-                "complete"
-            ],
-            "default": "complete"
-        },
-        {
-            "id": "presetType",
-            "type": "promptString",
-            "description": "Enter preset type (e.g., wordpress, web, docs)",
-            "default": "web"
-        },
-        {
-            "id": "presetFile",
-            "type": "pickString",
-            "description": "Select preset file",
-            "options": [
-                "wordpress.m1f-presets.yml",
-                "web-project.m1f-presets.yml",
-                "documentation.m1f-presets.yml",
-                "example-globals.m1f-presets.yml",
-                "template-all-settings.m1f-presets.yml",
-                "example-use-cases.m1f-presets.yml"
-            ]
-        },
-        {
-            "id": "presetGroup",
-            "type": "promptString",
-            "description": "Enter preset group name (optional)",
-            "default": ""
-        },
-        {
-            "id": "focusArea",
-            "type": "pickString",
-            "description": "Select focus area for preset bundling",
-            "options": [
-                "wordpress",
-                "web",
-                "docs"
-            ]
-        }
-    ]
-}
-
-======= tasks/example.tasks.json ======
-{
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "$ref": "../tasks/m1f.json#/tasks/0"
-        },
-        {
-            "$ref": "../tasks/m1f.json#/tasks/1"
-        },
-        {
-            "$ref": "../tasks/m1f.json#/tasks/2"
-        },
-        {
-            "$ref": "../tasks/m1f.json#/tasks/3"
-        },
-        {
-            "$ref": "../tasks/m1f.json#/tasks/4"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/0"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/1"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/2"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/3"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/4"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/5"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/6"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/7"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/8"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/9"
-        },
-        {
-            "$ref": "../tasks/auto_bundle.json#/tasks/10"
-        },
-        {
-            "$ref": "../tasks/linting.json#/tasks/0"
-        },
-        {
-            "$ref": "../tasks/linting.json#/tasks/1"
-        },
-        {
-            "$ref": "../tasks/linting.json#/tasks/2"
-        }
-    ]
-}
-
-======= tasks/linting.json ======
-{
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Lint: Format JSON/Markdown with Prettier",
-            "type": "shell",
-            "command": "npx",
-            "args": [
-                "prettier",
-                "--write",
-                "${workspaceFolder}/**/*.{json,md,yaml,yml}"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "test",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Formats all JSON/Markdown/YAML files using Prettier according to the .prettierrc.yaml configuration."
-        }
-    ]
-} 
-
-======= tasks/m1f.json ======
-{
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "AI Context: Create From Selected Files (Recommended)",
-            "type": "shell",
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/tools/m1f.py",
-                "--input-file",
-                "${workspaceFolder}/tasks/ai_context_files.txt",
-                "--output-file",
-                "${workspaceFolder}/.gen/ai_context_selective.m1f.txt",
-                "--separator-style",
-                "MachineReadable",
-                "--force",
-                "--minimal-output",
-                "--quiet"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates an AI context file from your carefully selected 20-50 most important files. Best for focused tasks."
-        },
-        {
-            "label": "AI Context: Create With Default Filtering",
-            "type": "shell",
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/tools/m1f.py",
-                "--source-directory",
-                "${workspaceFolder}",
-                "--output-file",
-                "${workspaceFolder}/.gen/ai_context_filtered.m1f.txt",
-                "--separator-style",
-                "MachineReadable",
-                "--force",
-                "--verbose",
-                "--minimal-output",
-                "--additional-excludes", 
-                "node_modules", 
-                ".git", 
-                ".venv", 
-                ".idea", 
-                "__pycache__",
-                "dist",
-                "build",
-                "cache"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates an AI context file by automatically filtering project files. Use only for initial exploration."
-        },
-        {
-            "label": "AI Context: Create Feature-Specific Bundle",
-            "type": "shell",
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/tools/m1f.py",
-                "--input-file",
-                "${workspaceFolder}/tasks/feature_context_files.txt",
-                "--output-file",
-                "${workspaceFolder}/.gen/ai_context_feature.m1f.txt",
-                "--separator-style",
-                "MachineReadable",
-                "--force",
-                "--minimal-output",
-                "--add-timestamp"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "detail": "Creates a feature-specific context bundle using paths in feature_context_files.txt. Includes timestamp for versioning."
-        },
-        {
-            "label": "WordPress: Generate Theme Context",
-            "type": "shell",
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/tools/m1f.py",
-                "--source-directory",
-                "${workspaceFolder}/wp-content/themes/mytheme",
-                "--exclude-paths-file",
-                "${workspaceFolder}/tasks/wp_excludes.txt",
-                "--output-file",
-                "${workspaceFolder}/.ai-context/mytheme.m1f.txt",
-                "--separator-style",
-                "MachineReadable",
-                "--force",
-                "--minimal-output",
-                "--quiet"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build"
-            },
-            "presentation": {
-                "reveal": "silent",
-                "panel": "shared",
-                "clear": true
-            },
-            "detail": "Creates an AI context file containing all files from the mytheme WordPress theme."
-        },
-        {
-            "label": "WordPress: Generate Plugin Context",
-            "type": "shell",
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/tools/m1f.py",
-                "--source-directory",
-                "${workspaceFolder}/wp-content/plugins/myplugin",
-                "--exclude-paths-file",
-                "${workspaceFolder}/tasks/wp_excludes.txt",
-                "--output-file",
-                "${workspaceFolder}/.ai-context/myplugin.m1f.txt",
-                "--separator-style",
-                "MachineReadable",
-                "--force",
-                "--minimal-output",
-                "--quiet"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build"
-            },
-            "presentation": {
-                "reveal": "silent",
-                "panel": "shared",
-                "clear": true
-            },
-            "detail": "Creates an AI context file containing all files from the myplugin WordPress plugin."
-        },
-        {
-            "label": "WordPress: Generate Both Theme and Plugin Context",
-            "type": "shell",
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/tools/m1f.py",
-                "--input-file",
-                "${workspaceFolder}/tasks/wp_theme_plugin_includes.txt",
-                "--exclude-paths-file",
-                "${workspaceFolder}/tasks/wp_excludes.txt",
-                "--output-file",
-                "${workspaceFolder}/.ai-context/wordpress_project.m1f.txt",
-                "--separator-style",
-                "MachineReadable",
-                "--force",
-                "--minimal-output",
-                "--quiet"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build"
-            },
-            "presentation": {
-                "reveal": "silent",
-                "panel": "shared",
-                "clear": true
-            },
-            "detail": "Creates a combined AI context file containing both theme and plugin files for a complete WordPress project."
-        },
-        {
-            "label": "Project Review: Generate Lists",
-            "type": "shell",
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/tools/m1f.py",
-                "--source-directory",
-                "${workspaceFolder}",
-                "--output-file",
-                "${workspaceFolder}/.m1f/project_review.m1f.txt",
-                "--skip-output-file",
-                "--verbose"
-            ],
-            "problemMatcher": [],
-            "group": "build",
-            "detail": "Generates full project file and directory listings in the m1f directory."
-        },
-        {
-            "label": "Project Review: Watch for Changes",
-            "type": "shell",
-            "command": "watchmedo",
-            "args": [
-                "shell-command",
-                "--patterns=*.py;*.md;*",
-                "--recursive",
-                "--command",
-                "python ${workspaceFolder}/tools/m1f.py --source-directory ${workspaceFolder} --output-file ${workspaceFolder}/.m1f/project_review.m1f.txt --skip-output-file --quiet"
-            ],
-            "problemMatcher": [],
-            "isBackground": true,
-            "group": "build",
-            "presentation": {
-                "reveal": "silent",
-                "panel": "shared"
-            },
-            "detail": "Watches for file changes and regenerates the project review lists."
-        }
-    ]
-}
-
 ======= tasks/wp_excludes.txt ======
 # WordPress Paths to Exclude
 
@@ -5885,7 +3314,7 @@ with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool (v3.2.0) solves a common challenge when working with LLMs:
+The m1f tool (v3.4.0) solves a common challenge when working with LLMs:
 providing sufficient context without exceeding token limits. Built with Python
 3.10+ and modern architecture patterns, it creates optimized reference files
 from multiple sources while automatically handling duplicates and providing
@@ -5914,6 +3343,9 @@ comprehensive metadata.
 # Quick setup for any project
 cd /your/project
 m1f-init
+
+# Initialize without creating symlink to m1f documentation
+m1f-init --no-symlink
 
 # This creates in the m1f/ directory:
 # - <project>_complete.txt          # Full project bundle
@@ -5952,7 +3384,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 
 | Option                      | Description                                                                                                                                                                                                                                                      |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-s, --source-directory`    | Path to the directory containing files to process                                                                                                                                                                                                                |
+| `-s, --source-directory`    | Path to the directory containing files to process. Can be specified multiple times to include files from multiple directories (e.g., `-s dir1 -s dir2`)                                                                                                          |
 | `-i, --input-file`          | Path to a file containing a list of files/directories to process. Can be used together with --source-directory to resolve relative paths in the input file against the source directory                                                                          |
 | `-o, --output-file`         | Path for the combined output file                                                                                                                                                                                                                                |
 | `-f, --force`               | Force overwrite of existing output file without prompting                                                                                                                                                                                                        |
@@ -5960,6 +3392,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
 | `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
+| `--includes`                | Space-separated list of gitignore-style patterns to include (e.g., `--includes "*.py" "src/**" "!test.py"`). When combined with `--include-extensions`, files must match both criteria                                                                           |
 | `--docs-only`               | Include only documentation files (62 extensions including .md, .txt, .rst, .org, .tex, .info, etc.). Overrides include-extensions.                                                                                                                               |
 | `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
@@ -6034,11 +3467,21 @@ For detailed preset documentation, see:
 m1f --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
 
+# Using multiple source directories (new in v3.4.0)
+m1f -s ./src -s ./docs -s ./tests -o combined_output.txt
+
 # Using an input file containing paths to process (one per line)
 m1f -i filelist.txt -o combined_output.txt
 
 # Using both source directory and input file together
 m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+
+# Using include patterns to filter files (new in v3.4.0)
+m1f -s ./project -o output.txt --includes "src/**" "*.py" "!*_test.py"
+
+# Combining includes with extensions for precise filtering
+m1f -s ./project -o docs.txt --include-extensions .md .rst \
+  --includes "docs/**" "README.md"
 
 # Remove scraped metadata from HTML2MD files (new in v2.0.0)
 m1f -s ./scraped_docs -o ./clean_docs.txt \
@@ -6709,7 +4152,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
-available in m1f v3.2.0.
+available in m1f v3.4.0.
 
 ## Synopsis
 
@@ -6742,7 +4185,7 @@ Show help message and exit.
 
 ### `--version`
 
-Show program version and exit. Current version: v3.2.0
+Show program version and exit. Current version: v3.4.0
 
 ## Input/Output Options
 
@@ -7032,7 +4475,7 @@ Disable all preset processing, even if preset files are specified.
 ## Environment Variables
 
 **Note**: The following environment variables are documented for future
-implementation but are not currently supported in v3.2.0:
+implementation but are not currently supported in v3.4.0:
 
 - `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
 - `M1F_SECURITY_CHECK` - Default security check mode (not implemented)
@@ -8967,6 +6410,15 @@ bundles:
         excludes: ["**/test_*.py"]
       - path: "."
         include_files: ["README.md", "CHANGELOG.md"]
+
+  # New in v3.4.0: Using includes patterns
+  tool-specific:
+    description: "Specific tool code only"
+    output: "m1f/tool-code.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
+        includes: ["m1f/**", "s1f/**", "!**/test_*.py"]
 ```
 
 ### Using Presets
@@ -9095,6 +6547,25 @@ bundles:
         include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
 ```
 
+### Combining Multiple Directories (v3.4.0+)
+
+When you need to combine files from completely different directories:
+
+```yaml
+bundles:
+  # Combine documentation from multiple locations
+  all-docs:
+    description: "All project documentation"
+    output: "m1f/all-docs.txt"
+    sources:
+      - path: "docs"
+      - path: "src"
+        include_extensions: [".md"]
+      - path: "../shared-docs"
+      - path: "/absolute/path/to/external/docs"
+        includes: ["api/**", "guides/**"]
+```
+
 ### WordPress Plugin Bundle
 
 ```yaml
@@ -9156,11 +6627,15 @@ m1f-init
 
    - Makes m1f docs available to AI tools
    - Creates symlink on Linux/macOS, copies on Windows
+   - Use `--no-symlink` to skip this step if not needed
 
 2. **Analyzes your project**
 
-   - Detects project type and languages
+   - Detects project type and programming languages
+   - Supports Python, JavaScript, TypeScript, PHP, Java, C#, Go, Rust, Ruby
    - Creates file and directory listings
+   - Shows clean output with created files listed at the end
+   - Automatically cleans up temporary analysis files
 
 3. **Generates initial bundles with auxiliary files**
 
@@ -9174,6 +6649,8 @@ m1f-init
 4. **Creates basic configuration**
    - Generates `.m1f.config.yml` if not present
    - Sets up sensible defaults
+   - Handles .gitignore correctly (only uses from current directory)
+   - Smart Git detection (clean messages for subdirectories)
 
 #### Using with AI Tools:
 
@@ -12744,12 +10221,12 @@ extractors, async I/O, and parallel processing capabilities.
 
 ## Overview
 
-The html2md tool (v3.1.0) provides a robust solution for converting HTML content
+The html2md tool (v3.4.0) provides a robust solution for converting HTML content
 to Markdown format, with fine-grained control over the conversion process. Built
 with Python 3.10+ and modern async architecture, it focuses on intelligent
 content extraction and conversion.
 
-**New in v3.1.0:** Custom extractor plugin system for site-specific content
+**New in v3.4.0:** Custom extractor plugin system for site-specific content
 extraction.
 
 **Note:** Web scraping functionality has been moved to the separate `webscraper`
@@ -12862,9 +10339,9 @@ m1f-html2md convert <source> -o <output> [options]
 | `--heading-offset`   | Offset heading levels (default: 0)                            |
 | `--no-frontmatter`   | Don't add YAML frontmatter                                    |
 | `--parallel`         | Enable parallel processing                                    |
-| `--claude`            | Use Claude AI to convert HTML to Markdown (content only)      |
-| `--model`             | Claude model to use: opus, sonnet (default: sonnet)           |
-| `--sleep`             | Sleep time in seconds between Claude API calls (default: 1.0) |
+| `--claude`           | Use Claude AI to convert HTML to Markdown (content only)      |
+| `--model`            | Claude model to use: opus, sonnet (default: sonnet)           |
+| `--sleep`            | Sleep time in seconds between Claude API calls (default: 1.0) |
 | `-v, --verbose`      | Enable verbose output                                         |
 | `-q, --quiet`        | Suppress all output except errors                             |
 
@@ -12883,7 +10360,7 @@ m1f-html2md analyze <paths> [options]
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
 | `--claude`            | Use Claude AI to intelligently select files and suggest selectors    |
-| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)           |
+| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)            |
 | `-v, --verbose`       | Enable verbose output                                                |
 | `-q, --quiet`         | Suppress all output except errors                                    |
 
@@ -12902,11 +10379,24 @@ m1f-html2md config [options]
 
 ## Claude AI Integration
 
-html2md offers optional Claude AI integration for intelligent HTML analysis and conversion:
+html2md offers optional Claude AI integration for intelligent HTML analysis and
+conversion:
+
+### Claude Command Detection
+
+The tool automatically detects Claude Code installations in various locations:
+
+- Standard PATH locations
+- `~/.claude/local/claude` (common for local installations)
+- `/usr/local/bin/claude` and `/usr/bin/claude`
+
+If you have Claude Code installed but get a "command not found" error, the tool
+will automatically find and use your Claude binary.
 
 ### AI-Powered Analysis
 
-Use Claude to automatically select representative HTML files and suggest optimal CSS selectors:
+Use Claude to automatically select representative HTML files and suggest optimal
+CSS selectors:
 
 ```bash
 # Analyze a directory of HTML files with Claude
@@ -12924,11 +10414,17 @@ m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
 ```
 
 **Features of Claude Analysis:**
-- **Project Context**: Provides project description to help Claude understand the content
-- **Important File Priority**: Can specify important files for Claude to prioritize
+
+- **Project Context**: Provides project description to help Claude understand
+  the content
+- **Important File Priority**: Can specify important files for Claude to
+  prioritize
 - **Multi-phase Analysis**: Individual file analysis followed by synthesis
 - **Transparent Process**: Creates temporary analysis files in m1f/ directory
-- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI integration
+- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI
+  integration
+- **Streaming Output**: Real-time progress display during Claude analysis (v3.4.0)
+- **Robust Config Loading**: Handles Claude-generated configs with unknown fields gracefully (v3.4.0)
 
 ### AI-Powered Conversion
 
@@ -12946,6 +10442,7 @@ m1f-html2md convert ./html/ -o ./markdown/ --claude --sleep 3
 ```
 
 The Claude conversion:
+
 - Extracts only the main content (no navigation, ads, etc.)
 - Preserves document structure and formatting
 - Handles complex HTML layouts intelligently
@@ -13206,7 +10703,7 @@ The converter provides robust character encoding detection and conversion:
 
 ## Architecture
 
-HTML2MD v3.1.0 features a modern, modular architecture:
+HTML2MD v3.4.0 features a modern, modular architecture:
 
 ```
 tools/html2md/
@@ -14649,10 +12146,12 @@ optimal LLM context usage.
   files
 - **Domain Restriction**: Automatically restricts crawling to the starting
   domain
-- **Subdirectory Restriction**: When URL contains a path, only scrapes within that subdirectory
+- **Subdirectory Restriction**: When URL contains a path, only scrapes within
+  that subdirectory
 - **Rate Limiting**: Configurable delays between requests
 - **Progress Tracking**: Real-time download progress with file listing
-- **Resume Support**: Interrupt and resume scraping sessions with SQLite tracking
+- **Resume Support**: Interrupt and resume scraping sessions with SQLite
+  tracking
 
 ## Quick Start
 
@@ -14700,7 +12199,7 @@ m1f-scrape <url> -o <output> [options]
 | `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
 | `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
-| `--ignore-get-params`   | Ignore GET parameters in URLs (e.g., ?tab=linux)             | False         |
+| `--ignore-get-params`   | Ignore GET parameters in URLs (e.g., ?tab=linux)              | False         |
 | `--ignore-canonical`    | Ignore canonical URL tags (checking is enabled by default)    | False         |
 | `--ignore-duplicates`   | Ignore duplicate content detection (enabled by default)       | False         |
 | `--list-files`          | List all downloaded files after completion                    | False         |
@@ -14777,7 +12276,8 @@ m1f-scrape https://docs.example.com -o ./docs_html -v
 
 ### Canonical URL Checking
 
-By default, the scraper checks for canonical URLs to avoid downloading duplicate content:
+By default, the scraper checks for canonical URLs to avoid downloading duplicate
+content:
 
 ```bash
 # Pages with different canonical URLs are automatically skipped
@@ -14788,16 +12288,19 @@ m1f-scrape https://example.com -o ./html --ignore-canonical
 ```
 
 When enabled (default), the scraper:
+
 - Checks the `<link rel="canonical">` tag on each page
 - Skips pages where the canonical URL differs from the current URL
 - Prevents downloading duplicate content (e.g., print versions, mobile versions)
 - Logs skipped pages with their canonical URLs for transparency
 
-This is especially useful for sites that have multiple URLs pointing to the same content.
+This is especially useful for sites that have multiple URLs pointing to the same
+content.
 
 ### Content Deduplication
 
-By default, the scraper detects and skips pages with duplicate content based on text-only checksums:
+By default, the scraper detects and skips pages with duplicate content based on
+text-only checksums:
 
 ```bash
 # Content deduplication is enabled by default
@@ -14808,6 +12311,7 @@ m1f-scrape https://example.com -o ./html --ignore-duplicates
 ```
 
 This feature:
+
 - Enabled by default to avoid downloading duplicate content
 - Extracts plain text from HTML (removes all tags, scripts, styles)
 - Calculates SHA-256 checksum of the normalized text
@@ -14816,11 +12320,16 @@ This feature:
 - Works together with canonical URL checking for thorough deduplication
 
 The scraper now has three levels of duplicate prevention, applied in this order:
-1. **GET parameter normalization** (default: disabled) - Use `--ignore-get-params` to enable
-2. **Canonical URL checking** (default: enabled) - Respects `<link rel="canonical">`
+
+1. **GET parameter normalization** (default: disabled) - Use
+   `--ignore-get-params` to enable
+2. **Canonical URL checking** (default: enabled) - Respects
+   `<link rel="canonical">`
 3. **Content deduplication** (default: enabled) - Compares text content
 
-**Important**: All deduplication data is stored in the SQLite database (`scrape_tracker.db`), which means:
+**Important**: All deduplication data is stored in the SQLite database
+(`scrape_tracker.db`), which means:
+
 - Content checksums persist across resume operations
 - Canonical URL information is saved for each page
 - The deduplication works correctly even when resuming interrupted scrapes
@@ -14829,7 +12338,8 @@ The scraper now has three levels of duplicate prevention, applied in this order:
 
 ### Subdirectory Restriction
 
-When you specify a URL with a path, the scraper automatically restricts crawling to that subdirectory:
+When you specify a URL with a path, the scraper automatically restricts crawling
+to that subdirectory:
 
 ```bash
 # Only scrape pages under /docs subdirectory
@@ -14963,11 +12473,13 @@ m1f -s ./react_md -o ./react_documentation.txt
 
 ## Resume Functionality
 
-The scraper supports interrupting and resuming downloads, making it ideal for large websites or unreliable connections.
+The scraper supports interrupting and resuming downloads, making it ideal for
+large websites or unreliable connections.
 
 ### How It Works
 
-- **SQLite Database**: Creates `scrape_tracker.db` in the output directory to track:
+- **SQLite Database**: Creates `scrape_tracker.db` in the output directory to
+  track:
   - URL of each scraped page
   - HTTP status code and target filename
   - Timestamp and error messages (if any)
@@ -16026,19 +13538,21 @@ This dependency is included in the project's requirements.txt file.
 ======= tools/html2md_tool/prompts/analyze_individual_file.md ======
 # Individual HTML File Analysis
 
-You are analyzing a single HTML file to understand its structure for optimal content extraction.
+You are analyzing a single HTML file to understand its structure for optimal
+content extraction.
 
 ## Your Task
 
 Read the HTML file: {filename}
 
-Analyze this file's structure and write your findings to: m1f/analysis/html_analysis_{file_number}.txt
+Analyze this file's structure and write your findings to: {output_path}
 
 ## Analysis Criteria
 
 For this HTML file, document:
 
 ### 1. Content Structure
+
 ```
 Main Content Location:
 - Primary container: [exact selector]
@@ -16049,6 +13563,7 @@ Main Content Location:
 ```
 
 ### 2. Navigation & UI Elements
+
 ```
 Elements to Exclude:
 - Header/Navigation: [selectors]
@@ -16061,6 +13576,7 @@ Elements to Exclude:
 ```
 
 ### 3. Special Content Types
+
 ```
 Within Main Content:
 - Code blocks: [how they're marked]
@@ -16071,6 +13587,7 @@ Within Main Content:
 ```
 
 ### 4. Page-Specific Observations
+
 ```
 Page Type: [landing/guide/api/reference]
 Unique Patterns: [anything specific to this page]
@@ -16079,7 +13596,7 @@ Potential Issues: [edge cases noticed]
 
 ## Output Format
 
-Write your analysis to m1f/analysis/html_analysis_{file_number}.txt in this exact format:
+Write your analysis to {output_path} in this exact format:
 
 ```
 FILE: {filename}
@@ -16112,27 +13629,33 @@ ignore_selectors:
 ```
 
 **CRITICAL REQUIREMENTS**:
+
 1. **NEVER use empty strings** ("") as selectors
 2. **Remove any empty or whitespace-only selectors** from lists
 3. **Validate all selectors** are non-empty and properly formatted CSS selectors
 4. Focus on this ONE file only - don't generalize to other files
+5. **IMPORTANT**: After writing the analysis file, print "ANALYSIS_COMPLETE_OK"
+   on the last line to confirm completion
 
 ======= tools/html2md_tool/prompts/analyze_selected_files.md ======
 # HTML Structure Analysis for Optimal Content Extraction
 
-use deep thinking
-The user wants a more systematic approach:
+use deep thinking The user wants a more systematic approach:
+
 1. Create a task list
 2. Analyze each file individually and save results
-3. Then synthesize all analyses into final config
-This will produce much better results than trying to analyze all files at once.
+3. Then synthesize all analyses into final config This will produce much better
+   results than trying to analyze all files at once.
 
 ## Context
-The file m1f/selected_html_files.txt contains representative HTML files from the documentation site.
+
+The file m1f/selected_html_files.txt contains representative HTML files from the
+documentation site.
 
 ## Task List
 
 ### Phase 1: Individual File Analysis
+
 For each HTML file listed in m1f/selected_html_files.txt:
 
 1. **Read the file** using the Read tool
@@ -16143,7 +13666,9 @@ For each HTML file listed in m1f/selected_html_files.txt:
    - etc. (continue for all files in the list)
 
 ### Phase 2: Synthesis
-4. **Read all analysis files** (m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt where N is the number of files analyzed)
+
+4. **Read all analysis files** (m1f/analysis/html_analysis_1.txt through
+   m1f/analysis/html_analysis_N.txt where N is the number of files analyzed)
 5. **Identify common patterns** across all analyses
 6. **Create final YAML configuration** based on the synthesized findings
 
@@ -16152,6 +13677,7 @@ For each HTML file listed in m1f/selected_html_files.txt:
 When analyzing each HTML file, document:
 
 ### 1. Content Structure
+
 ```
 Main Content Location:
 - Primary container: [exact selector]
@@ -16162,6 +13688,7 @@ Main Content Location:
 ```
 
 ### 2. Navigation & UI Elements
+
 ```
 Elements to Exclude:
 - Header/Navigation: [selectors]
@@ -16174,6 +13701,7 @@ Elements to Exclude:
 ```
 
 ### 3. Special Content Types
+
 ```
 Within Main Content:
 - Code blocks: [how they're marked]
@@ -16184,6 +13712,7 @@ Within Main Content:
 ```
 
 ### 4. Page-Specific Observations
+
 ```
 Page Type: [landing/guide/api/reference]
 Unique Patterns: [anything specific to this page]
@@ -16226,11 +13755,12 @@ ignore_selectors:
 
 ## Final Output
 
-After analyzing all files and reading the analysis results, create the file m1f_extract.yml
+After analyzing all files and reading the analysis results, create the file
+m1f_extract.yml
 
 The file should have the results of you analyses and have this structure:
 
-```yaml
+````yaml
 # Complete configuration file for m1f-html2md
 # All sections are optional - only include what differs from defaults
 
@@ -16242,39 +13772,39 @@ destination: ./markdown
 extractor:
   # Primary selector that works across most/all analyzed files
   content_selector: "main.content, article.documentation"
-  
+
   # Fallback selectors in priority order
   alternative_selectors:
     - "[selector that works on most files]"
     - "[selector that works on some files]"
     - "[generic but safe fallback]"
-  
+
   # Exclusions that apply across all files
   ignore_selectors:
     # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
-    
+
     # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
-    
+
     # [Continue with all common exclusions]
 
 # Conversion options - Markdown formatting preferences
 conversion:
   strip_tags: ["script", "style", "noscript"]
-  keep_html_tags: []  # HTML tags to preserve in output
-  heading_style: "atx"  # atx (###) or setext (underlines)
-  bold_style: "**"  # ** or __
-  italic_style: "*"  # * or _
-  link_style: "inline"  # inline or reference
-  list_marker: "-"  # -, *, or +
-  code_block_style: "fenced"  # fenced (```) or indented
-  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
-  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  keep_html_tags: [] # HTML tags to preserve in output
+  heading_style: "atx" # atx (###) or setext (underlines)
+  bold_style: "**" # ** or __
+  italic_style: "*" # * or _
+  link_style: "inline" # inline or reference
+  list_marker: "-" # -, *, or +
+  code_block_style: "fenced" # fenced (```) or indented
+  heading_offset: 0 # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true # Add YAML frontmatter with metadata
   preserve_whitespace: false
-  wrap_width: 0  # 0 = no wrapping
+  wrap_width: 0 # 0 = no wrapping
 
 # Asset handling configuration
 assets:
@@ -16289,9 +13819,9 @@ exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
 target_encoding: "utf-8"
 
 # Processing options
-parallel: true  # Enable parallel processing
+parallel: true # Enable parallel processing
 max_workers: 4
-overwrite: false  # Overwrite existing files
+overwrite: false # Overwrite existing files
 
 # Synthesis notes (not used by the tool, just for documentation)
 notes: |
@@ -16299,38 +13829,49 @@ notes: |
   - Analyzed N files representing different page types
   - Primary selector works on X/N files
   - Fallback selectors provide Y% coverage
-  
+
   Key Findings:
   - [Main pattern discovered]
   - [Secondary pattern]
   - [Edge cases to watch]
-  
+
   Confidence: [High/Medium/Low] based on consistency across files
-```
+````
 
 **CRITICAL REQUIREMENTS**:
+
 1. Complete ALL tasks in the task list sequentially
-2. The individual analysis files are crucial for creating an accurate final configuration
-3. **NEVER use empty strings** ("") as selectors - every selector must have actual content
-4. **Remove any empty or whitespace-only selectors** from lists before outputting
+2. The individual analysis files are crucial for creating an accurate final
+   configuration
+3. **NEVER use empty strings** ("") as selectors - every selector must have
+   actual content
+4. **Remove any empty or whitespace-only selectors** from lists before
+   outputting
 5. **Validate all selectors** are non-empty and properly formatted CSS selectors
 
 **FILE MANAGEMENT**:
-- Use Write tool to create analysis files in m1f/analysis/ directory as specified
+
+- Use Write tool to create analysis files in m1f/analysis/ directory as
+  specified
 - You may create temporary files if needed for analysis
 - **IMPORTANT**: Clean up ALL temporary files you have created
-- Only keep the required analysis files: m1f/analysis/html_analysis_1.txt through m1f/analysis/html_analysis_N.txt (where N is the number of files analyzed)
+- Only keep the required analysis files: m1f/analysis/html_analysis_1.txt
+  through m1f/analysis/html_analysis_N.txt (where N is the number of files
+  analyzed)
 - Delete any .py, .sh, or other temporary files you create during analysis
 
 ======= tools/html2md_tool/prompts/convert_html_to_md.md ======
 # Convert HTML to Clean, High-Quality Markdown
 
 ## Context:
-You are converting scraped documentation HTML to clean Markdown. The HTML may contain navigation, ads, and other non-content elements that must be excluded.
+
+You are converting scraped documentation HTML to clean Markdown. The HTML may
+contain navigation, ads, and other non-content elements that must be excluded.
 
 ## Content Extraction Rules:
 
 ### INCLUDE:
+
 - Main article/documentation content
 - Headings within the content area
 - Code blocks and inline code
@@ -16342,6 +13883,7 @@ You are converting scraped documentation HTML to clean Markdown. The HTML may co
 - Important callouts/alerts within content
 
 ### EXCLUDE:
+
 - Site navigation (top nav, sidebars, breadcrumbs)
 - Headers and footers outside main content
 - "Edit this page" or "Improve this doc" links
@@ -16359,56 +13901,56 @@ You are converting scraped documentation HTML to clean Markdown. The HTML may co
 ## Markdown Quality Standards:
 
 ### 1. Structure Preservation
+
 - Maintain the original heading hierarchy
 - Don't skip heading levels
 - Preserve the logical flow of information
 
 ### 2. Code Formatting
-```markdown
+
+````markdown
 # Inline code
+
 Use `backticks` for inline code, commands, or file names
 
 # Code blocks
-​```language
-code here
-​```
+
+​`language code here ​`
 
 # Shell commands
-​```bash
-$ command here
-​```
-```
+
+​`bash $ command here ​`
+````
 
 ### 3. Special Content Types
 
-**API Endpoints:**
-Format as inline code: `GET /api/v1/users`
+**API Endpoints:** Format as inline code: `GET /api/v1/users`
 
-**File Paths:**
-Format as inline code: `/etc/config.yaml`
+**File Paths:** Format as inline code: `/etc/config.yaml`
 
-**Callout Boxes:**
-Convert to blockquotes with type indicators:
-> **Note:** Important information
-> **Warning:** Critical warning
-> **Tip:** Helpful suggestion
+**Callout Boxes:** Convert to blockquotes with type indicators:
 
-**Tables:**
-Use clean Markdown table syntax with proper alignment
+> **Note:** Important information **Warning:** Critical warning **Tip:** Helpful
+> suggestion
+
+**Tables:** Use clean Markdown table syntax with proper alignment
 
 ### 4. Link Handling
+
 - Convert relative links to proper Markdown: `[text](url)`
 - Preserve anchor links: `[Section](#section-id)`
 - Remove dead or navigation-only links
 
 ### 5. Image Handling
+
 - Use descriptive alt text: `![Description of image](image-url)`
 - If no alt text exists, describe the image content
 - Skip purely decorative images
 
 ## Final Quality Checklist:
+
 - ✓ No HTML tags remaining
-- ✓ No broken Markdown syntax  
+- ✓ No broken Markdown syntax
 - ✓ Clean, readable formatting
 - ✓ Proper spacing between sections
 - ✓ Consistent code block language tags
@@ -16421,21 +13963,28 @@ Use clean Markdown table syntax with proper alignment
 ======= tools/html2md_tool/prompts/select_files_from_project.md ======
 # Strategic HTML File Selection for CSS Selector Analysis
 
-The file m1f/all_html_files_filelist.txt contains all HTML files from the scraped documentation site.
+From the list of available HTML files provided above, select the most
+representative files for CSS selector analysis.
 
 ## Your Mission:
-Select exactly 5 representative HTML files that will give us the BEST insight into the site's structure for creating robust CSS selectors.
+
+Select exactly 5 representative HTML files that will give us the BEST insight
+into the site's structure for creating robust CSS selectors.
 
 ## Selection Strategy:
 
 ### 1. Diversity is Key
+
 Choose files that represent different:
+
 - **Sections**: API docs, guides, tutorials, references, landing pages
-- **Depths**: Root level, deeply nested, mid-level pages  
+- **Depths**: Root level, deeply nested, mid-level pages
 - **Layouts**: Different page templates if identifiable from paths
 
 ### 2. Pattern Recognition
+
 Look for URL patterns that suggest content types:
+
 - `/api/` or `/reference/` → API documentation
 - `/guide/` or `/tutorial/` → Step-by-step content
 - `/docs/` → General documentation
@@ -16444,45 +13993,53 @@ Look for URL patterns that suggest content types:
 - Long paths with multiple segments → Detailed topic pages
 
 ### 3. Avoid Redundancy
+
 Skip:
+
 - Multiple files from the same directory pattern
 - Obviously auto-generated sequences (e.g., /api/v1/method1, /api/v1/method2)
 - Redirect or error pages if identifiable
 
 ### 4. Prioritize High-Value Pages
+
 Select files that likely have:
+
 - Rich content structure (not just navigation pages)
 - Different content layouts
 - Representative examples of the site's documentation style
 
 ## Output Format:
-Return EXACTLY 5 file paths, one per line.
-No explanations, no formatting, no numbering.
-Do not include any text before or after the file paths.
-Just the file paths, nothing else.
 
-Example format:
-docs/getting-started/index.html
-api/reference/authentication.html
-guides/advanced/performance-tuning.html
-tutorials/quickstart.html
-concepts/architecture/overview.html
+Return EXACTLY 5 file paths, one per line. No explanations, no formatting, no
+numbering. Do not include any text before or after the file paths. Just the file
+paths, nothing else.
+
+Example format: docs/getting-started/index.html
+api/reference/authentication.html guides/advanced/performance-tuning.html
+tutorials/quickstart.html concepts/architecture/overview.html
+
+IMPORTANT: After listing the files, print "FILE_SELECTION_COMPLETE_OK" on the
+last line to confirm completion.
 
 ======= tools/html2md_tool/prompts/synthesize_config.md ======
 # Configuration Synthesis from Individual File Analyses
 
-You have analyzed multiple HTML files individually. Now synthesize their findings into a unified configuration.
+You have analyzed multiple HTML files individually. Now synthesize their
+findings into a unified configuration that will be saved as
+`html2md_config.yaml`.
 
 ## Your Task
 
 Read the analysis files:
+
 - m1f/analysis/html_analysis_1.txt
-- m1f/analysis/html_analysis_2.txt  
+- m1f/analysis/html_analysis_2.txt
 - m1f/analysis/html_analysis_3.txt
 - m1f/analysis/html_analysis_4.txt
 - m1f/analysis/html_analysis_5.txt
 
-Based on these analyses, create an optimal YAML configuration that works across all files.
+Based on these analyses, create an optimal YAML configuration that works across
+all files.
 
 ## Analysis Process
 
@@ -16496,7 +14053,7 @@ Based on these analyses, create an optimal YAML configuration that works across 
 
 Create a YAML configuration in this exact format:
 
-```yaml
+````yaml
 # Complete configuration file for m1f-html2md
 # All sections are optional - only include what differs from defaults
 
@@ -16508,39 +14065,39 @@ destination: ./markdown
 extractor:
   # Primary selector that works across most/all analyzed files
   content_selector: "main.content, article.documentation"
-  
+
   # Fallback selectors in priority order
   alternative_selectors:
     - "[selector that works on most files]"
     - "[selector that works on some files]"
     - "[generic but safe fallback]"
-  
+
   # Exclusions that apply across all files
   ignore_selectors:
     # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
-    
+
     # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
-    
+
     # [Continue with all common exclusions]
 
 # Conversion options - Markdown formatting preferences
 conversion:
   strip_tags: ["script", "style", "noscript"]
-  keep_html_tags: []  # HTML tags to preserve in output
-  heading_style: "atx"  # atx (###) or setext (underlines)
-  bold_style: "**"  # ** or __
-  italic_style: "*"  # * or _
-  link_style: "inline"  # inline or reference
-  list_marker: "-"  # -, *, or +
-  code_block_style: "fenced"  # fenced (```) or indented
-  heading_offset: 0  # Adjust heading levels (e.g., 1 = h1→h2)
-  generate_frontmatter: true  # Add YAML frontmatter with metadata
+  keep_html_tags: [] # HTML tags to preserve in output
+  heading_style: "atx" # atx (###) or setext (underlines)
+  bold_style: "**" # ** or __
+  italic_style: "*" # * or _
+  link_style: "inline" # inline or reference
+  list_marker: "-" # -, *, or +
+  code_block_style: "fenced" # fenced (```) or indented
+  heading_offset: 0 # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true # Add YAML frontmatter with metadata
   preserve_whitespace: false
-  wrap_width: 0  # 0 = no wrapping
+  wrap_width: 0 # 0 = no wrapping
 
 # Asset handling configuration
 assets:
@@ -16555,9 +14112,9 @@ exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
 target_encoding: "utf-8"
 
 # Processing options
-parallel: false  # Enable parallel processing
+parallel: false # Enable parallel processing
 max_workers: 4
-overwrite: false  # Overwrite existing files
+overwrite: false # Overwrite existing files
 
 # Synthesis notes (not used by the tool, just for documentation)
 notes: |
@@ -16565,33 +14122,37 @@ notes: |
   - Analyzed N files representing different page types
   - Primary selector works on X/N files
   - Fallback selectors provide Y% coverage
-  
+
   Key Findings:
   - [Main pattern discovered]
   - [Secondary pattern]
   - [Edge cases to watch]
-  
+
   Confidence: [High/Medium/Low] based on consistency across files
-```
+````
 
 ## Selection Criteria
 
 **Primary Content Selector**:
+
 - Choose selector that works on most files (80%+ coverage)
 - If no single selector works on most, combine multiple with commas
 - Prefer semantic selectors (main, article) over class-based
 
 **Alternative Selectors**:
+
 - Order by coverage (most files first)
 - Include at least one generic fallback
 - Each should be valid CSS selector
 
 **Ignore Selectors**:
+
 - Include selectors found in majority of files
 - Group by type (navigation, headers, footers, etc.)
 - Add comments showing coverage (found in X/N files)
 
 **Critical Requirements**:
+
 1. **NEVER include empty strings** ("") in any selector list
 2. **All selectors must be valid CSS selectors**
 3. **Remove whitespace-only entries**
@@ -16600,14 +14161,17 @@ notes: |
 
 Output only the YAML configuration - no additional explanation needed.
 
-======= tools/m1f/prompts/segmentation_prompt.md ======
-🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
-============================================================
+IMPORTANT: After outputting the YAML configuration, print
+"SYNTHESIS_COMPLETE_OK" on the last line to confirm completion.
 
-The basic bundles (complete.txt and docs.txt) have already been created.
-Now create additional topic-specific bundles following BEST PRACTICES.
+======= tools/m1f/prompts/segmentation_prompt.md ======
+# 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
+
+The basic bundles (complete.txt and docs.txt) have already been created. Now
+create additional topic-specific bundles following BEST PRACTICES.
 
 📚 REQUIRED READING (IN THIS ORDER):
+
 1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax
 2. READ: @m1f/project_analysis_dirlist.txt for directory structure
 3. READ: @m1f/project_analysis_filelist.txt for complete file listing
@@ -16617,6 +14181,7 @@ Now create additional topic-specific bundles following BEST PRACTICES.
 🏆 BEST PRACTICES FOR PERFECT BUNDLES:
 
 1. **SIZE GUIDELINES** - Optimize for different use cases!
+
    - Claude Code: Ideally under 180KB per bundle for best performance
    - Claude AI: Ideally under 5MB per bundle
    - Complete/full bundles can be larger (even 40MB+) for comprehensive analysis
@@ -16626,6 +14191,7 @@ Now create additional topic-specific bundles following BEST PRACTICES.
 
 3. **USE PRECISE INCLUDES** - Don't exclude everything except what you want!
    Instead, use precise 'includes' patterns:
+
    ```yaml
    sources:
      - path: "src/auth"
@@ -16633,17 +14199,19 @@ Now create additional topic-specific bundles following BEST PRACTICES.
      - path: "shared"
        includes: ["auth-utils.ts", "auth-types.ts"]
    ```
-   
+
    For documentation chapters/sections:
+
    ```yaml
    sources:
-     - path: "src"  # Use "src" not "src/" 
+     - path: "src" # Use "src" not "src/"
        includes: ["ch04-*.md", "chapter-04/*.md"]
-     - path: "."    # Use "." for root directory
+     - path: "." # Use "." for root directory
        includes: ["README.md", "CONTRIBUTING.md"]
    ```
 
 4. **HIERARCHICAL NAMING** - Use category-number-topic pattern:
+
    - api-01-core-basics
    - api-02-core-advanced
    - guide-01-getting-started
@@ -16654,8 +14222,11 @@ Now create additional topic-specific bundles following BEST PRACTICES.
    - best-practices (< 180KB)
 
 🚨 CRITICAL RULES:
-1. FOLLOW SIZE GUIDELINES - Create focused bundles under 180KB for Claude Code when possible
-2. NO DEFAULT EXCLUDES (node_modules, .git, __pycache__, vendor/ already excluded)
+
+1. FOLLOW SIZE GUIDELINES - Create focused bundles under 180KB for Claude Code
+   when possible
+2. NO DEFAULT EXCLUDES (node_modules, .git, **pycache**, vendor/ already
+   excluded)
 3. NO IMAGE/BINARY BUNDLES
 4. MAXIMUM 30-40 bundles (more granular = better for targeted AI assistance)
 5. Each bundle should be SELF-CONTAINED and appropriately sized for its purpose
@@ -16663,40 +14234,44 @@ Now create additional topic-specific bundles following BEST PRACTICES.
 7. USE RELATIVE PATHS from project root (not absolute paths)
 
 📋 ALREADY CREATED BUNDLES:
+
 - complete: Full project bundle
 - docs: All documentation files
 
 🔍 PROJECT ANALYSIS STEPS:
 
 STEP 1: Identify Architecture Type
+
 - Monorepo? → Bundle per package
 - Multi-app? → Bundle per app + shared bundles
 - Plugin system? → Bundle per plugin + core
 - Modular? → Bundle per module
 
-STEP 2: Find Natural Boundaries
-Look for:
+STEP 2: Find Natural Boundaries Look for:
+
 - Directory names indicating modules (auth/, user/, payment/)
-- Plugin/theme directories (wp-content/plugins/*, wp-content/themes/*)
+- Plugin/theme directories (wp-content/plugins/_, wp-content/themes/_)
 - Feature boundaries (admin/, public/, includes/)
 
 STEP 3: Design Bundle Hierarchy
+
 1. Module-specific bundles (most granular)
 2. Category bundles (all-tests, all-docs)
 3. Aggregated bundles (all-frontend, all-backend)
 4. Complete bundle (everything)
 
 📊 PROJECT ANALYSIS SUMMARY:
+
 - Project Type: {project_type}
 - Languages: {languages}
 - Total Files: {total_files}
 
-**Main Code Directories:**
-{main_code_dirs}
+**Main Code Directories:** {main_code_dirs}
 
 📝 IMPLEMENTATION APPROACH:
 
 Example for optimal bundle sizes:
+
 ```yaml
 # For API documentation (split to stay under 180KB)
 api-01-core-options:
@@ -16733,6 +14308,7 @@ common-errors:
 ```
 
 ⚡ ACTION PLAN:
+
 1. Read all required files thoroughly
 2. VERIFY PATHS: Check project_analysis_dirlist.txt to ensure all paths exist
 3. Estimate content sizes and plan bundles based on purpose
@@ -16743,146 +14319,15 @@ common-errors:
 8. Add all bundles with MultiEdit in one operation
 
 ⚠️ COMMON MISTAKES TO AVOID:
-- Don't use paths like "dot" when you mean "." 
+
+- Don't use paths like "dot" when you mean "."
 - Don't create bundles for non-existent directories
 - Don't forget to check if files actually exist in the paths
 - Don't use absolute paths like "/home/user/project"
 - Don't create bundles smaller than 10KB (they likely have path errors)
 
-Remember: Each bundle should answer "What would I need to understand this module?" - size appropriately based on the use case!
-
-======= tools/m1f/prompts/verification_prompt.md ======
-🔍 VERIFY AND IMPROVE M1F CONFIGURATION
-============================================================
-
-Your task is to verify the .m1f.config.yml that was just created and improve it if needed.
-
-📋 VERIFICATION CHECKLIST:
-
-1. **Read .m1f.config.yml** - Check the current configuration
-2. **Check Generated Bundles** - Look in m1f/ directory for .txt files
-3. **Verify Bundle Quality**:
-   - Are focused/task bundles ideally under 180KB for Claude Code usage?
-   - Are larger reference bundles under 5MB for Claude AI?
-   - Complete/full bundles can be larger - that's OK!
-   - Do they contain the expected content?
-   - Are there any errors or warnings?
-4. **Test a Bundle** - Read at least one generated bundle (e.g., @m1f/{project_name}_complete.txt)
-5. **Check for Common Issues**:
-   - Redundant excludes (node_modules, .git, etc. are auto-excluded)
-   - Missing important files
-   - Bundles that are too large or too small
-   - Incorrect separator_style (should be Standard or omitted)
-   - Wrong sources format (should use 'sources:' array, not 'source_directory:')
-
-🛠️ IMPROVEMENT ACTIONS:
-
-If you find issues:
-1. **Fix Configuration Errors** - Update .m1f.config.yml
-2. **Optimize Bundle Organization** - Better grouping or splitting
-3. **Add Missing Bundles** - If important areas aren't covered
-4. **Remove Redundant Bundles** - If there's too much overlap
-5. **Fix Size Issues** - Split large bundles or combine small ones
-
-📝 SPECIFIC CHECKS:
-
-1. Run: `ls -lah m1f/` to see all generated bundles and their sizes
-2. SIZE GUIDELINES: 
-   - Task-focused bundles: Ideally < 180KB for Claude Code
-   - Reference bundles: Ideally < 5MB for Claude AI
-   - Complete/full bundles: Can be much larger (40MB+ is fine)
-   - TOO SMALL: Bundles under 10KB likely have configuration errors
-3. Check for m1f-update errors in the output above
-4. Read the complete bundle (e.g., @m1f/{project_name}_complete.txt) to verify content inclusion
-5. Ensure each bundle serves a clear, distinct purpose
-6. CRITICAL: Check for bundles under 10KB - these often indicate:
-   - Wrong file paths in includes
-   - Non-existent directories
-   - Incorrect glob patterns
-   Action: Remove these bundle sections from the config!
-
-⚠️ SIZE OPTIMIZATION GUIDELINES:
-For bundles intended for Claude Code that exceed 180KB:
-1. Consider splitting into smaller, more focused bundles
-2. Use more specific includes patterns
-3. Create sub-bundles for large topics (e.g., api-core-1, api-core-2)
-Note: This is a guideline - some bundles naturally need to be larger!
-
-📊 PROJECT CONTEXT:
-- Type: {project_type}
-- Languages: {languages}
-- Total Files: {total_files}
-
-🎯 EXPECTED OUTCOME:
-
-After verification:
-1. The .m1f.config.yml should be optimal for this project
-2. All bundles should generate without errors
-3. Each bundle should be appropriately sized for its purpose:
-   - Task-focused bundles: Ideally < 180KB for Claude Code
-   - Reference bundles: Ideally < 5MB for Claude AI
-   - Complete bundles: Any size that captures the full scope
-4. The configuration should follow all best practices
-
-If everything looks good, just confirm. If improvements are needed, make them!
-
-📈 SIZE OPTIMIZATION STRATEGIES:
-
-For bundles that are too large:
-```yaml
-# Instead of this (too large):
-api-documentation:
-  sources:
-    - path: "docs/api"
-
-# Do this (split by topic):
-api-01-authentication:
-  sources:
-    - path: "docs/api"
-      includes: ["auth*.md", "login*.md", "session*.md"]
-
-api-02-data-models:
-  sources:
-    - path: "docs/api"
-      includes: ["models/*.md", "schema*.md"]
-
-api-03-endpoints:
-  sources:
-    - path: "docs/api"
-      includes: ["endpoints/*.md", "routes*.md"]
-```
-
-For bundles that are too small (<10KB):
-```yaml
-# If you see this in ls -lah output:
-# 108   m1f/some-bundle.txt
-# 2.1K  m1f/another-bundle.txt
-
-# Check the bundle content:
-cat m1f/some-bundle.txt
-# Output: "# No files processed from /path/to/nowhere"
-
-# ACTION: Remove the bundle from config:
-# DELETE this entire section:
-some-bundle:
-  description: "..."
-  sources:
-    - path: "nonexistent/path"  # <-- This path doesn't exist!
-```
-
-🔍 FINAL VERIFICATION:
-After making any changes, run `m1f-update` again and verify:
-1. All bundles generate without errors
-2. No bundles are under 10KB (unless intentionally small)
-3. Task-focused bundles are ideally under 180KB
-4. The configuration follows best practices
-
-⚠️ PATH VERIFICATION CHECKLIST:
-Before finalizing, double-check:
-- All paths in sources exist in the project
-- Paths use relative format (e.g., "src/api" not "/home/user/src/api")
-- Include patterns match actual files (check with `ls` command)
-- No typos in directory names (e.g., "dot" vs ".")
+Remember: Each bundle should answer "What would I need to understand this
+module?" - size appropriately based on the use case!
 
 ======= tools/scrape_tool/scrapers/README.md ======
 # HTML2MD Web Scrapers
@@ -16971,265 +14416,3 @@ All scrapers share common configuration options through `ScraperConfig`:
 - `timeout`: Request timeout in seconds
 
 Backend-specific options can be added as needed in the scraper implementation.
-
-======= tools/scrape_tool/scrapers/configs/beautifulsoup.yaml ======
-# BeautifulSoup scraper configuration example
-scraper_backend: beautifulsoup
-scraper_config:
-  parser: "html.parser"  # Options: "html.parser", "lxml", "html5lib"
-  
-crawler:
-  max_depth: 5
-  max_pages: 100
-  request_delay: 0.5
-  concurrent_requests: 5
-  respect_robots_txt: true
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-
-======= tools/scrape_tool/scrapers/configs/cloudflare.yaml ======
-# Conservative configuration for sites with Cloudflare protection
-# These settings help avoid triggering Cloudflare's bot detection
-
-scraper_backend: httrack
-scraper_config:
-  verify_ssl: true
-  
-crawler:
-  max_depth: 5  # Limit depth to reduce requests
-  max_pages: 100  # Start with fewer pages
-  
-  # Very conservative delays (30 seconds base + random delay)
-  request_delay: 30  # 30 seconds between requests
-  concurrent_requests: 1  # Only 1 connection at a time
-  
-  # Always respect robots.txt
-  respect_robots_txt: true
-  
-  # Use a realistic, current browser user agent
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-  
-  # HTTrack-specific settings for Cloudflare
-  allowed_domains: []  # Empty = same domain only
-  
-  # Common paths to exclude to reduce load
-  excluded_paths:
-    - "*/api/*"
-    - "*/admin/*"
-    - "*/login/*"
-    - "*/search/*"
-    - "*.pdf"
-    - "*.zip"
-    - "*.mp4"
-    - "*.mp3"
-    
-# Additional notes for extreme Cloudflare protection:
-# 1. Consider using request_delay: 45-60 seconds
-# 2. Add random delays by modifying the scraper code
-# 3. Use browser automation (Playwright) as last resort
-# 4. Some sites may require manual browsing or API access
-
-======= tools/scrape_tool/scrapers/configs/httrack.yaml ======
-# HTTrack scraper configuration - Conservative settings for Cloudflare protection
-scraper_backend: httrack
-scraper_config:
-  verify_ssl: true
-  
-crawler:
-  max_depth: 10
-  max_pages: 1000
-  # Conservative delays to avoid Cloudflare detection
-  request_delay: 20  # 20 seconds between requests (0.05 requests/sec)
-  concurrent_requests: 2  # Max 2 simultaneous connections
-  respect_robots_txt: true
-  # Use a realistic browser user agent
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-  
-  # HTTrack-specific settings
-  allowed_domains: []  # Empty = same domain only
-  excluded_paths:
-    - "*/api/*"
-    - "*/admin/*"
-    - "*.pdf"
-    - "*.zip"
-
-======= tools/scrape_tool/scrapers/configs/playwright.yaml ======
-# Playwright scraper configuration
-# Browser-based scraping for JavaScript-heavy sites
-
-# Basic scraper settings
-max_depth: 5  # Lower depth for resource-intensive browser scraping
-max_pages: 100  # Lower limit due to browser overhead
-request_delay: 1.0  # Higher delay to be respectful
-concurrent_requests: 3  # Limited concurrent browser pages
-respect_robots_txt: true
-timeout: 30.0
-
-# Browser configuration
-browser_config:
-  # Browser type: chromium, firefox, or webkit
-  browser: chromium
-  
-  # Run in headless mode (no UI)
-  headless: true
-  
-  # Viewport size
-  viewport:
-    width: 1920
-    height: 1080
-  
-  # Wait strategies
-  # Options: load, domcontentloaded, networkidle, commit
-  wait_until: networkidle
-  
-  # Timeout for wait operations (milliseconds)
-  wait_timeout: 30000
-  
-  # Optional: Wait for specific selector before considering page loaded
-  # wait_for_selector: "div.main-content"
-  
-  # Optional: Execute custom JavaScript after page load
-  # execute_script: |
-  #   window.scrollTo(0, document.body.scrollHeight);
-  #   await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  # Screenshot options
-  screenshot: false
-  screenshot_path: "screenshots/"
-  
-  # Browser launch options
-  launch_options:
-    # Chromium-specific options
-    args:
-      - "--disable-dev-shm-usage"
-      - "--no-sandbox"  # Required in some Docker environments
-      - "--disable-setuid-sandbox"
-      - "--disable-gpu"  # Disable GPU in headless mode
-    
-    # Ignore HTTPS errors
-    ignoreHTTPSErrors: true
-    
-    # Slow down operations by specified milliseconds (for debugging)
-    # slowMo: 100
-    
-    # Enable devtools (chromium/firefox only)
-    # devtools: true
-
-# Mobile emulation example (uncomment to use)
-# browser_config:
-#   browser: chromium
-#   headless: true
-#   viewport:
-#     width: 375
-#     height: 667
-#     isMobile: true
-#     hasTouch: true
-#   user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) ..."
-
-# Example usage:
-# m1f-scrape https://example.com -o output/ \
-#   --scraper playwright --scraper-config playwright.yaml
-
-======= tools/scrape_tool/scrapers/configs/scrapy.yaml ======
-# Scrapy scraper configuration
-# Industrial-strength web scraping framework
-
-# Basic scraper settings
-max_depth: 10
-max_pages: 5000
-request_delay: 0.5
-concurrent_requests: 16  # Scrapy default
-respect_robots_txt: true
-timeout: 180.0
-
-# Scrapy-specific settings
-scrapy_config:
-  # Download settings
-  DOWNLOAD_DELAY: 0.5
-  RANDOMIZE_DOWNLOAD_DELAY: true
-  DOWNLOAD_TIMEOUT: 30
-  
-  # Concurrent requests
-  CONCURRENT_REQUESTS: 16
-  CONCURRENT_REQUESTS_PER_DOMAIN: 8
-  
-  # Auto-throttle settings
-  AUTOTHROTTLE_ENABLED: true
-  AUTOTHROTTLE_START_DELAY: 0.5
-  AUTOTHROTTLE_MAX_DELAY: 10.0
-  AUTOTHROTTLE_TARGET_CONCURRENCY: 8.0
-  AUTOTHROTTLE_DEBUG: false
-  
-  # Retry settings
-  RETRY_ENABLED: true
-  RETRY_TIMES: 3
-  RETRY_HTTP_CODES: [500, 502, 503, 504, 408, 429]
-  
-  # Cache settings
-  HTTPCACHE_ENABLED: true
-  HTTPCACHE_EXPIRATION_SECS: 3600
-  HTTPCACHE_IGNORE_HTTP_CODES: [503, 504, 400, 403, 404]
-  
-  # Middleware settings
-  COOKIES_ENABLED: true
-  REDIRECT_ENABLED: true
-  REDIRECT_MAX_TIMES: 5
-  
-  # DNS settings
-  DNSCACHE_ENABLED: true
-  DNSCACHE_SIZE: 10000
-  DNS_TIMEOUT: 60
-  
-  # Memory usage control
-  MEMUSAGE_ENABLED: true
-  MEMUSAGE_LIMIT_MB: 2048
-  MEMUSAGE_WARNING_MB: 1536
-  
-  # Depth control
-  DEPTH_PRIORITY: 1
-  SCHEDULER_DISK_QUEUE: 'scrapy.squeues.PickleFifoDiskQueue'
-  SCHEDULER_MEMORY_QUEUE: 'scrapy.squeues.FifoMemoryQueue'
-
-# Example usage:
-# m1f-scrape https://example.com -o output/ \
-#   --scraper scrapy --scraper-config scrapy.yaml
-
-======= tools/scrape_tool/scrapers/configs/selectolax.yaml ======
-# Selectolax scraper configuration
-# High-performance HTML parsing with httpx + selectolax
-
-# Basic scraper settings
-max_depth: 10
-max_pages: 1000
-request_delay: 0.1  # Minimal delay for high performance
-concurrent_requests: 20  # Higher concurrency for speed
-respect_robots_txt: true
-timeout: 10.0
-
-# httpx client settings
-httpx_config:
-  # Connection pool settings
-  max_keepalive_connections: 50
-  max_connections: 100
-  keepalive_expiry: 30.0
-  
-  # Timeout settings (in seconds)
-  connect_timeout: 5.0
-  read_timeout: 10.0
-  write_timeout: 5.0
-  pool_timeout: 5.0
-  
-  # HTTP/2 support
-  http2: true
-  
-  # Retry configuration
-  max_retries: 3
-  retry_backoff_factor: 0.5
-
-# Selectolax parser settings
-parser_config:
-  # Parser options
-  strict: false  # Lenient parsing for malformed HTML
-  
-# Example usage:
-# m1f-scrape https://example.com -o output/ \
-#   --scraper selectolax --scraper-config selectolax.yaml

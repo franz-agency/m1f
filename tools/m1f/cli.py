@@ -126,7 +126,8 @@ Perfect for:
         "--source-directory",
         type=str,
         metavar="DIR",
-        help="Path to the directory containing files to combine",
+        action="append",
+        help="Path to the directory containing files to combine (can be specified multiple times)",
     )
 
     io_group.add_argument(
@@ -210,6 +211,14 @@ Perfect for:
         nargs="+",
         metavar="FILE",
         help="File(s) containing paths to include (supports gitignore format, multiple files merged)",
+    )
+
+    filter_group.add_argument(
+        "--includes",
+        type=str,
+        nargs="*",
+        metavar="PATTERN",
+        help="Include only files matching these patterns (gitignore format)",
     )
 
     filter_group.add_argument(

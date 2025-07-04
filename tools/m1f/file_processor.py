@@ -83,8 +83,9 @@ class FileProcessor:
         for pattern in all_exclude_patterns:
             if "/" not in pattern and "*" not in pattern and "?" not in pattern:
                 # Simple name without wildcards or paths
-                if self.config.source_directory:
-                    potential_path = self.config.source_directory / pattern
+                if self.config.source_directories:
+                    # Try to find the pattern in any of the source directories
+                    potential_path = self.config.source_directories[0] / pattern
                     if potential_path.exists():
                         if potential_path.is_dir():
                             self.excluded_dirs.add(pattern.lower())
@@ -112,8 +113,8 @@ class FileProcessor:
         self.exact_includes = set()
         self.include_gitignore_spec = None
 
-        if self.config.filter.include_paths_file:
-            self._load_include_patterns()
+        # Load include patterns from files or config
+        self._load_include_patterns()
 
         # Build gitignore spec from command-line patterns
         self._build_gitignore_spec()
@@ -160,8 +161,9 @@ class FileProcessor:
                     self.logger.info(f"Processing {exclude_file} as exact path list")
                     for line in lines:
                         path = Path(line)
-                        if not path.is_absolute() and self.config.source_directory:
-                            path = self.config.source_directory / path
+                        if not path.is_absolute() and self.config.source_directories:
+                            # Use the first source directory as base
+                            path = self.config.source_directories[0] / path
                         try:
                             validated_path = validate_path_traversal(path.resolve())
                             self.exact_excludes.add(str(validated_path))
@@ -180,65 +182,82 @@ class FileProcessor:
             )
 
     def _load_include_patterns(self) -> None:
-        """Load inclusion patterns from file(s)."""
-        include_files_param = self.config.filter.include_paths_file
-        if not include_files_param:
-            return
-
-        # Convert to list if it's a single string/Path
-        if isinstance(include_files_param, (str, Path)):
-            include_files = [include_files_param]
-        else:
-            include_files = include_files_param
-
+        """Load inclusion patterns from file(s) and/or config."""
         all_gitignore_lines = []
+        
+        # First, load patterns from include_paths_file if specified
+        include_files_param = self.config.filter.include_paths_file
+        if include_files_param:
+            # Convert to list if it's a single string/Path
+            if isinstance(include_files_param, (str, Path)):
+                include_files = [include_files_param]
+            else:
+                include_files = include_files_param
 
-        for include_file_str in include_files:
-            include_file = Path(include_file_str)
+            for include_file_str in include_files:
+                include_file = Path(include_file_str)
 
-            if not include_file.exists():
-                self.logger.info(f"Include file not found (skipping): {include_file}")
-                continue
+                if not include_file.exists():
+                    self.logger.info(f"Include file not found (skipping): {include_file}")
+                    continue
 
-            try:
-                with open(include_file, "r", encoding="utf-8") as f:
-                    lines = [
-                        line.strip()
-                        for line in f
-                        if line.strip() and not line.strip().startswith("#")
-                    ]
+                try:
+                    with open(include_file, "r", encoding="utf-8") as f:
+                        lines = [
+                            line.strip()
+                            for line in f
+                            if line.strip() and not line.strip().startswith("#")
+                        ]
 
-                # Detect if it's gitignore format
-                is_gitignore = any(
-                    any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")
-                    for line in lines
-                )
+                    # Detect if it's gitignore format
+                    is_gitignore = any(
+                        any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")
+                        for line in lines
+                    )
 
-                if is_gitignore:
-                    self.logger.info(f"Processing {include_file} as gitignore format")
-                    all_gitignore_lines.extend(lines)
-                else:
-                    self.logger.info(f"Processing {include_file} as exact path list")
-                    for line in lines:
-                        path = Path(line)
-                        if not path.is_absolute() and self.config.source_directory:
-                            path = self.config.source_directory / path
-                        try:
-                            validated_path = validate_path_traversal(path.resolve())
-                            self.exact_includes.add(str(validated_path))
-                        except ValueError as e:
-                            self.logger.warning(
-                                f"Skipping invalid include path '{line}': {e}"
-                            )
+                    if is_gitignore:
+                        self.logger.info(f"Processing {include_file} as gitignore format")
+                        all_gitignore_lines.extend(lines)
+                    else:
+                        self.logger.info(f"Processing {include_file} as exact path list")
+                        for line in lines:
+                            path = Path(line)
+                            if not path.is_absolute() and self.config.source_directories:
+                                # Use the first source directory as base
+                                path = self.config.source_directories[0] / path
+                            try:
+                                validated_path = validate_path_traversal(path.resolve())
+                                self.exact_includes.add(str(validated_path))
+                            except ValueError as e:
+                                self.logger.warning(
+                                    f"Skipping invalid include path '{line}': {e}"
+                                )
 
-            except Exception as e:
-                self.logger.warning(f"Error reading include file {include_file}: {e}")
+                except Exception as e:
+                    self.logger.warning(f"Error reading include file {include_file}: {e}")
 
+        # Add include patterns from config
+        if self.config.filter.include_patterns:
+            all_gitignore_lines.extend(self.config.filter.include_patterns)
+            
         # Build combined gitignore spec from all collected lines
         if all_gitignore_lines:
             self.include_gitignore_spec = pathspec.PathSpec.from_lines(
                 "gitwildmatch", all_gitignore_lines
             )
+
+    def _get_base_dir_for_path(self, path: Path) -> Path:
+        """Get the appropriate base directory for a given path."""
+        # Check if the path is under any of our source directories
+        if self.config.source_directories:
+            for source_dir in self.config.source_directories:
+                try:
+                    path.relative_to(source_dir)
+                    return source_dir
+                except ValueError:
+                    continue
+        # Default to the path's parent
+        return path.parent
 
     def _build_gitignore_spec(self) -> None:
         """Build gitignore spec from command-line patterns."""
@@ -276,11 +295,12 @@ class FileProcessor:
             # Process from input file
             input_paths = await self._process_input_file()
             files_to_process = await self._gather_from_paths(input_paths)
-        elif self.config.source_directory:
-            # Process from source directory
-            files_to_process = await self._gather_from_directory(
-                self.config.source_directory
-            )
+        elif self.config.source_directories:
+            # Process from source directories
+            files_to_process = []
+            for source_dir in self.config.source_directories:
+                dir_files = await self._gather_from_directory(source_dir)
+                files_to_process.extend(dir_files)
         else:
             raise ValidationError("No source directory or input file specified")
 
@@ -294,7 +314,7 @@ class FileProcessor:
         input_file = self.config.input_file
         paths = []
 
-        base_dir = self.config.source_directory or input_file.parent
+        base_dir = self.config.source_directories[0] if self.config.source_directories else input_file.parent
 
         try:
             with open(input_file, "r", encoding="utf-8") as f:
@@ -375,7 +395,7 @@ class FileProcessor:
             if path.is_file():
                 if await self._should_include_file(path, explicitly_included=True):
                     rel_path = get_relative_path(
-                        path, self.config.source_directory or path.parent
+                        path, self._get_base_dir_for_path(path)
                     )
                     files.append((path, rel_path))
             elif path.is_dir():
@@ -407,7 +427,7 @@ class FileProcessor:
 
                 if await self._should_include_file(file_path, explicitly_included):
                     rel_path = get_relative_path(
-                        file_path, self.config.source_directory or directory
+                        file_path, self._get_base_dir_for_path(file_path)
                     )
 
                     # Check for duplicates
@@ -437,22 +457,45 @@ class FileProcessor:
         for dirname in dirs:
             dir_path = root / dirname
 
-            # Check if directory is excluded
+            # Check if directory is excluded by name
             if dirname.lower() in self.excluded_dirs:
+                self.logger.debug(f"Directory excluded by name: {dir_path}")
                 continue
 
             # Check dot directories
             if not self.config.filter.include_dot_paths and dirname.startswith("."):
+                self.logger.debug(f"Dot directory excluded: {dir_path}")
                 continue
 
             # Check symlinks
             if dir_path.is_symlink():
                 if not self.config.filter.include_symlinks:
+                    self.logger.debug(f"Symlink directory excluded: {dir_path}")
                     continue
 
                 # Check for cycles
                 if self._detect_symlink_cycle(dir_path):
                     self.logger.warning(f"Skipping symlink cycle: {dir_path}")
+                    continue
+
+            # Check gitignore patterns - this is the critical performance fix!
+            if self.gitignore_spec:
+                # Get relative path from source directory or current root
+                base_dir = self.config.source_directories[0] if self.config.source_directories else Path.cwd()
+                try:
+                    rel_path = dir_path.relative_to(base_dir)
+                except ValueError:
+                    # If dir_path is not relative to base_dir, use as is
+                    rel_path = dir_path
+                
+                # For directory matching, we need to append a trailing slash
+                rel_path_str = str(rel_path).replace(os.sep, "/")
+                if not rel_path_str.endswith("/"):
+                    rel_path_str += "/"
+                
+                # Check if directory matches any exclude pattern
+                if self.gitignore_spec.match_file(rel_path_str):
+                    self.logger.debug(f"Directory excluded by gitignore pattern: {dir_path}")
                     continue
 
             filtered.append(dirname)
@@ -507,7 +550,7 @@ class FileProcessor:
             # Check include gitignore patterns
             if not include_matched and self.include_gitignore_spec:
                 rel_path = get_relative_path(
-                    file_path, self.config.source_directory or file_path.parent
+                    file_path, self._get_base_dir_for_path(file_path)
                 )
                 if self.include_gitignore_spec.match_file(rel_path):
                     include_matched = True
@@ -527,7 +570,7 @@ class FileProcessor:
         # Check gitignore patterns
         if self.gitignore_spec:
             rel_path = get_relative_path(
-                file_path, self.config.source_directory or file_path.parent
+                file_path, self._get_base_dir_for_path(file_path)
             )
             if self.gitignore_spec.match_file(rel_path):
                 return False

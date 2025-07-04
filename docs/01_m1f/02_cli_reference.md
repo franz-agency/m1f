@@ -1,7 +1,7 @@
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
-available in m1f v3.2.0.
+available in m1f v3.4.0.
 
 ## Synopsis
 
@@ -34,7 +34,7 @@ Show help message and exit.
 
 ### `--version`
 
-Show program version and exit. Current version: v3.2.0
+Show program version and exit. Current version: v3.4.0
 
 ## Input/Output Options
 
@@ -324,7 +324,7 @@ Disable all preset processing, even if preset files are specified.
 ## Environment Variables
 
 **Note**: The following environment variables are documented for future
-implementation but are not currently supported in v3.2.0:
+implementation but are not currently supported in v3.4.0:
 
 - `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
 - `M1F_SECURITY_CHECK` - Default security check mode (not implemented)

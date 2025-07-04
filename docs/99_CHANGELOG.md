@@ -15,6 +15,17 @@ and this project adheres to
   - Added file tracking to show only actually created files in output
   - Improved output formatting with "Here is your file:" / "Here are your files:" section
   - Added proper spacing and bullet points for created files list
+  - Now runs `m1f-update` when `.m1f.config.yml` already exists instead of creating default bundles
+
+- **Multiple Source Directories**: m1f now supports multiple `-s` source directories
+  - Use `-s dir1 -s dir2` to combine files from multiple directories
+  - All source directories are processed and files are merged into single output
+  - Useful for documentation bundles that need files from different locations
+
+- **Include Patterns**: Added `--includes` parameter for pattern-based file filtering
+  - Works with gitignore-style patterns (e.g., `*.py`, `src/**`, `!test.py`)
+  - When combined with `--include-extensions`, files must match both criteria
+  - Allows precise control over which files to include in bundles
 
 ### Changed
 
@@ -35,6 +46,33 @@ and this project adheres to
   - Now only uses .gitignore from current directory, not parent directories
   - Prevents errors when running m1f-init in subdirectories without their own .gitignore
   - All m1f commands now check for .gitignore existence before using --exclude-paths-file
+
+- **m1f-init Python Project Detection**: Fixed language detection prioritization
+  - Now prioritizes by file count to correctly identify primary language
+  - Python projects are now properly detected even with mixed language codebases
+
+- **m1f-init Behavior with Existing Config**: Fixed to run m1f-update when config exists
+  - No longer creates default bundles when `.m1f.config.yml` already exists
+  - Automatically runs `m1f-update` to use existing configuration
+
+- **m1f Directory Exclusion Performance**: Fixed severe performance issue with directory filtering
+  - Directory exclusions from .gitignore now properly applied at directory traversal level
+  - Reduced bundle creation time from 42+ seconds to ~1.2 seconds (35x improvement)
+  - Fixed tmp/ directory exclusion that was scanning 362,419 unnecessary files
+
+- **m1f Multiple Source Directories**: Fixed CLI to support multiple source directories
+  - Changed from single source to List[Path] throughout codebase
+  - Now properly processes all specified source directories with `-s dir1 -s dir2`
+  - All files from multiple sources are combined into single output
+
+- **m1f Include Patterns**: Fixed include pattern filtering
+  - Include patterns now properly applied from config files
+  - Fixed _load_include_patterns() to run even without include_paths_file
+  - Patterns correctly filter files when combined with extension filters
+
+- **m1f Bundle Configuration**: Fixed output directory exclusion pattern
+  - Changed `/m1f/**` to `m1f/m1f/**` to only exclude output directory
+  - Previously excluded all directories named "m1f" anywhere in the project
 
 - **m1f-html2md Streaming**: Fixed streaming output for Claude AI analysis
   - Fixed common_parent variable scope issue (used before definition)

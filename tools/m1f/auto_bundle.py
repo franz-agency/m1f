@@ -210,6 +210,12 @@ class AutoBundler:
                     cmd_parts.append("--include-extensions")
                     cmd_parts.extend(source["include_extensions"])
 
+            # Handle includes at source level
+            if "includes" in source:
+                # Add includes patterns
+                cmd_parts.append("--includes")
+                cmd_parts.extend(source["includes"])
+                
             # Collect excludes from source
             if "excludes" in source:
                 all_excludes.extend(source["excludes"])
@@ -286,6 +292,9 @@ class AutoBundler:
         # Other options
         if bundle_config.get("filename_mtime_hash"):
             cmd_parts.append("--filename-mtime-hash")
+            
+        if bundle_config.get("docs_only"):
+            cmd_parts.append("--docs-only")
 
         if bundle_config.get("minimal_output", True):
             cmd_parts.append("--minimal-output")

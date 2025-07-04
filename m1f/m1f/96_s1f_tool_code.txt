@@ -1,0 +1,2147 @@
+======= path_utils.py ======
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
+from pathlib import Path, PureWindowsPath
+
+
+def convert_to_posix_path(path_val: str) -> str:
+    """Convert a path string to POSIX style."""
+    return PureWindowsPath(path_val).as_posix()
+
+
+def normalize_path(path: Path | str) -> str:
+    """Normalize a Path or path-like object to POSIX style."""
+    return PureWindowsPath(str(path)).as_posix()
+
+======= s1f.py ======
+#!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
+"""Main entry point for s1f - Split One File."""
+
+import sys
+
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from tools.s1f.cli import main
+except ImportError:
+    # Fallback for direct script execution
+    from s1f.cli import main
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+======= s1f/__init__.py ======
+"""
+s1f - Split One File
+====================
+
+A modern Python tool to split a combined file (created by m1f) back into individual files.
+"""
+
+try:
+    from .._version import __version__, __version_info__
+except ImportError:
+    # Fallback when running as standalone script
+    __version__ = "3.3.0"
+    __version_info__ = (3, 3, 0)
+
+__author__ = "Franz und Franz (https://franz.agency)"
+__project__ = "https://m1f.dev"
+
+from .exceptions import S1FError
+from .cli import main
+
+__all__ = [
+    "S1FError",
+    "main",
+    "__version__",
+    "__version_info__",
+    "__author__",
+    "__project__",
+]
+
+======= s1f/__main__.py ======
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
+"""Allow the s1f package to be run as a module."""
+
+import sys
+from .cli import main
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+======= s1f/cli.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Command-line interface for s1f."""
+
+import argparse
+import asyncio
+import sys
+from pathlib import Path
+from typing import Optional, Sequence
+
+from . import __version__, __project__
+from .config import Config
+from .core import FileSplitter
+from .logging import setup_logging
+from .exceptions import ConfigurationError
+
+
+def create_argument_parser() -> argparse.ArgumentParser:
+    """Create and configure the argument parser."""
+    parser = argparse.ArgumentParser(
+        description="s1f - Split combined files back into original files",
+        epilog=f"""Examples:
+  # Extract files from archive
+  s1f archive.m1f.txt ./output/
+  
+  # List files without extracting
+  s1f --list archive.m1f.txt
+  
+  # Extract with original encoding
+  s1f archive.m1f.txt ./output/ --respect-encoding
+  
+Project home: {__project__}""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    # Support both positional and option-style arguments for backward compatibility
+    # Option-style (for backward compatibility)
+    parser.add_argument(
+        "-i",
+        "--input-file",
+        type=Path,
+        dest="input_file_opt",
+        help="Path to the combined file (m1f output)",
+    )
+
+    parser.add_argument(
+        "-d",
+        "--destination-directory",
+        type=Path,
+        dest="destination_directory_opt",
+        help="Directory where files will be extracted",
+    )
+
+    # Positional arguments (new style)
+    parser.add_argument(
+        "input_file",
+        type=Path,
+        nargs="?",
+        help="Path to the combined file (m1f output)",
+    )
+
+    parser.add_argument(
+        "destination_directory",
+        type=Path,
+        nargs="?",
+        help="Directory where files will be extracted",
+    )
+
+    # Optional arguments
+    parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Overwrite existing files without prompting",
+    )
+
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output for debugging",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        help="List files in the archive without extracting",
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"s1f {__version__}",
+        help="Show version information and exit",
+    )
+
+    # Timestamp handling
+    timestamp_group = parser.add_mutually_exclusive_group()
+    timestamp_group.add_argument(
+        "--timestamp-mode",
+        choices=["original", "current"],
+        default="original",
+        help="How to set file timestamps (default: %(default)s)",
+    )
+
+    # Checksum handling
+    parser.add_argument(
+        "--ignore-checksum",
+        action="store_true",
+        help="Skip checksum verification",
+    )
+
+    # Encoding handling
+    encoding_group = parser.add_argument_group("encoding options")
+    encoding_group.add_argument(
+        "--respect-encoding",
+        action="store_true",
+        help="Write files using their original encoding (when available)",
+    )
+
+    encoding_group.add_argument(
+        "--target-encoding",
+        type=str,
+        help="Force all files to be written with this encoding (e.g., 'utf-8', 'latin-1')",
+    )
+
+    return parser
+
+
+def validate_args(args: argparse.Namespace) -> None:
+    """Validate command-line arguments."""
+    # Handle backward compatibility for option-style arguments
+    if args.input_file_opt:
+        args.input_file = args.input_file_opt
+    if args.destination_directory_opt:
+        args.destination_directory = args.destination_directory_opt
+
+    # Ensure required arguments are provided
+    if not args.input_file:
+        raise ConfigurationError("Missing required argument: input_file")
+    if not args.list and not args.destination_directory:
+        raise ConfigurationError("Missing required argument: destination_directory")
+
+    # Check if input file exists
+    if not args.input_file.exists():
+        raise ConfigurationError(f"Input file does not exist: {args.input_file}")
+
+    if not args.input_file.is_file():
+        raise ConfigurationError(f"Input path is not a file: {args.input_file}")
+
+    # Validate encoding options
+    if args.target_encoding and args.respect_encoding:
+        raise ConfigurationError(
+            "Cannot use both --target-encoding and --respect-encoding"
+        )
+
+    # Validate target encoding if specified
+    if args.target_encoding:
+        try:
+            # Test if the encoding is valid
+            "test".encode(args.target_encoding)
+        except LookupError:
+            raise ConfigurationError(f"Unknown encoding: {args.target_encoding}")
+
+
+async def async_main(argv: Optional[Sequence[str]] = None) -> int:
+    """Async main entry point."""
+    # Parse arguments
+    parser = create_argument_parser()
+    args = parser.parse_args(argv)
+
+    try:
+        # Validate arguments
+        validate_args(args)
+
+        # Create configuration
+        config = Config.from_args(args)
+
+        # Setup logging
+        logger_manager = setup_logging(config)
+
+        # Create file splitter
+        splitter = FileSplitter(config, logger_manager)
+
+        # Run in list mode or extraction mode
+        if args.list:
+            result, exit_code = await splitter.list_files()
+        else:
+            result, exit_code = await splitter.split_file()
+
+        # Cleanup
+        await logger_manager.cleanup()
+
+        return exit_code
+
+    except ConfigurationError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return e.exit_code
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.", file=sys.stderr)
+        return 130
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        if args.verbose:
+            import traceback
+
+            traceback.print_exc()
+        return 1
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Main entry point."""
+    return asyncio.run(async_main(argv))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+======= s1f/config.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Configuration for s1f."""
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
+from argparse import Namespace
+
+
+@dataclass
+class Config:
+    """Configuration for the s1f file splitter."""
+
+    input_file: Path
+    destination_directory: Optional[Path] = None
+    force_overwrite: bool = False
+    verbose: bool = False
+    timestamp_mode: str = "original"
+    ignore_checksum: bool = False
+    respect_encoding: bool = False
+    target_encoding: Optional[str] = None
+
+    def __post_init__(self):
+        """Validate configuration after initialization."""
+        # Ensure paths are Path objects
+        self.input_file = Path(self.input_file)
+        if self.destination_directory is not None:
+            self.destination_directory = Path(self.destination_directory)
+
+        # Validate timestamp mode
+        if self.timestamp_mode not in ["original", "current"]:
+            raise ValueError(f"Invalid timestamp_mode: {self.timestamp_mode}")
+
+    @classmethod
+    def from_args(cls, args: Namespace) -> "Config":
+        """Create configuration from command line arguments."""
+        return cls(
+            input_file=Path(args.input_file),
+            destination_directory=(
+                Path(args.destination_directory) if args.destination_directory else None
+            ),
+            force_overwrite=args.force,
+            verbose=args.verbose,
+            timestamp_mode=args.timestamp_mode,
+            ignore_checksum=args.ignore_checksum,
+            respect_encoding=args.respect_encoding,
+            target_encoding=args.target_encoding,
+        )
+
+    @property
+    def output_encoding(self) -> str:
+        """Determine the default output encoding based on configuration."""
+        if self.target_encoding:
+            return self.target_encoding
+        return "utf-8"
+
+======= s1f/core.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Core file splitter functionality for s1f."""
+
+import time
+from pathlib import Path
+from typing import List, Optional, Tuple
+import logging
+
+try:
+    import aiofiles
+
+    AIOFILES_AVAILABLE = True
+except ImportError:
+    AIOFILES_AVAILABLE = False
+
+from .config import Config
+from .models import ExtractedFile, ExtractionResult
+from .parsers import CombinedFileParser
+from .writers import FileWriter
+from .utils import format_size, is_binary_content
+from .exceptions import FileParsingError, S1FError
+from .logging import LoggerManager
+
+
+class FileSplitter:
+    """Main class for splitting combined files back into individual files."""
+
+    def __init__(self, config: Config, logger_manager: LoggerManager):
+        self.config = config
+        self.logger_manager = logger_manager
+        self.logger = logger_manager.get_logger(__name__)
+        self.parser = CombinedFileParser(self.logger)
+        self.writer = FileWriter(config, self.logger)
+
+    async def list_files(self) -> Tuple[ExtractionResult, int]:
+        """List files in the combined file without extracting.
+
+        Returns:
+            Tuple of (ExtractionResult, exit_code)
+        """
+        start_time = time.time()
+
+        try:
+            # Read the input file
+            content = await self._read_input_file()
+
+            # Parse the content
+            self.logger.info("Parsing combined file...")
+            extracted_files = self.parser.parse(content)
+
+            if not extracted_files:
+                self.logger.error("No files found in the combined file.")
+                return ExtractionResult(), 2
+
+            # Display file list
+            print(
+                f"\nFound {len(extracted_files)} file(s) in {self.config.input_file}:\n"
+            )
+
+            total_size = 0
+            for i, file in enumerate(extracted_files, 1):
+                meta = file.metadata
+                # Build info line
+                info_parts = [f"{i:4d}. {meta.path}"]
+
+                # Only add size if available
+                if meta.size_bytes:
+                    size_str = format_size(meta.size_bytes)
+                    info_parts.append(f"[{size_str}]")
+
+                if meta.encoding:
+                    info_parts.append(f"Encoding: {meta.encoding}")
+
+                if meta.type:
+                    info_parts.append(f"Type: {meta.type}")
+
+                print("  ".join(info_parts))
+
+                if meta.size_bytes:
+                    total_size += meta.size_bytes
+
+            print(f"\nTotal size: {format_size(total_size)}")
+
+            result = ExtractionResult(
+                files_created=0,
+                files_overwritten=0,
+                files_failed=0,
+                execution_time=time.time() - start_time,
+            )
+
+            return result, 0
+
+        except S1FError as e:
+            self.logger.error(f"Error: {e}")
+            return (
+                ExtractionResult(execution_time=time.time() - start_time),
+                e.exit_code,
+            )
+        except KeyboardInterrupt:
+            self.logger.info("\nOperation cancelled by user.")
+            return ExtractionResult(execution_time=time.time() - start_time), 130
+        except Exception as e:
+            self.logger.error(f"Unexpected error: {e}")
+            if self.config.verbose:
+                import traceback
+
+                self.logger.debug(traceback.format_exc())
+            return ExtractionResult(execution_time=time.time() - start_time), 1
+
+    async def split_file(self) -> Tuple[ExtractionResult, int]:
+        """Split the combined file into individual files.
+
+        Returns:
+            Tuple of (ExtractionResult, exit_code)
+        """
+        start_time = time.time()
+
+        try:
+            # Read the input file
+            content = await self._read_input_file()
+
+            # Parse the content
+            self.logger.info("Parsing combined file...")
+            extracted_files = self.parser.parse(content)
+
+            if not extracted_files:
+                self.logger.error("No files found in the combined file.")
+                return ExtractionResult(), 2
+
+            self.logger.info(f"Found {len(extracted_files)} file(s) to extract")
+
+            # Ensure destination directory exists
+            self.config.destination_directory.mkdir(parents=True, exist_ok=True)
+
+            # Write the files
+            result = await self.writer.write_files(extracted_files)
+
+            # Set execution time
+            result.execution_time = time.time() - start_time
+
+            # Log summary
+            self._log_summary(result)
+
+            # Determine exit code
+            if result.files_failed > 0:
+                exit_code = 1
+            else:
+                exit_code = 0
+
+            return result, exit_code
+
+        except S1FError as e:
+            self.logger.error(f"Error: {e}")
+            return (
+                ExtractionResult(execution_time=time.time() - start_time),
+                e.exit_code,
+            )
+        except KeyboardInterrupt:
+            self.logger.info("\nOperation cancelled by user.")
+            return ExtractionResult(execution_time=time.time() - start_time), 130
+        except Exception as e:
+            self.logger.error(f"Unexpected error: {e}")
+            if self.config.verbose:
+                import traceback
+
+                self.logger.debug(traceback.format_exc())
+            return ExtractionResult(execution_time=time.time() - start_time), 1
+
+    async def _read_input_file(self) -> str:
+        """Read the input file content."""
+        if not self.config.input_file.exists():
+            raise FileParsingError(
+                f"Input file '{self.config.input_file}' does not exist.",
+                str(self.config.input_file),
+            )
+
+        try:
+            if AIOFILES_AVAILABLE:
+                # Use async I/O
+                # First, try to detect if the file is binary
+                async with aiofiles.open(self.config.input_file, "rb") as f:
+                    sample_bytes = await f.read(8192)
+
+                if is_binary_content(sample_bytes):
+                    raise FileParsingError(
+                        f"Input file '{self.config.input_file}' appears to be binary.",
+                        str(self.config.input_file),
+                    )
+
+                # Try to read with UTF-8 first
+                try:
+                    async with aiofiles.open(
+                        self.config.input_file, "r", encoding="utf-8"
+                    ) as f:
+                        content = await f.read()
+                except UnicodeDecodeError:
+                    # Try with latin-1 as fallback (can decode any byte sequence)
+                    self.logger.warning(
+                        f"Failed to decode '{self.config.input_file}' as UTF-8, "
+                        f"trying latin-1 encoding..."
+                    )
+                    async with aiofiles.open(
+                        self.config.input_file, "r", encoding="latin-1"
+                    ) as f:
+                        content = await f.read()
+            else:
+                # Fallback to sync I/O
+                # First, try to detect if the file is binary
+                sample_bytes = self.config.input_file.read_bytes()[:8192]
+                if is_binary_content(sample_bytes):
+                    raise FileParsingError(
+                        f"Input file '{self.config.input_file}' appears to be binary.",
+                        str(self.config.input_file),
+                    )
+
+                # Try to read with UTF-8 first
+                try:
+                    content = self.config.input_file.read_text(encoding="utf-8")
+                except UnicodeDecodeError:
+                    # Try with latin-1 as fallback (can decode any byte sequence)
+                    self.logger.warning(
+                        f"Failed to decode '{self.config.input_file}' as UTF-8, "
+                        f"trying latin-1 encoding..."
+                    )
+                    content = self.config.input_file.read_text(encoding="latin-1")
+
+            # Check if the file is empty
+            if not content.strip():
+                raise FileParsingError(
+                    f"Input file '{self.config.input_file}' is empty.",
+                    str(self.config.input_file),
+                )
+
+            file_size = self.config.input_file.stat().st_size
+            self.logger.info(
+                f"Read input file '{self.config.input_file}' "
+                f"({format_size(file_size)})"
+            )
+
+            return content
+
+        except (IOError, OSError) as e:
+            raise FileParsingError(
+                f"Failed to read input file '{self.config.input_file}': {e}",
+                str(self.config.input_file),
+            )
+
+    def _log_summary(self, result: ExtractionResult):
+        """Log extraction summary."""
+        self.logger.info("")
+        self.logger.info("=== Extraction Summary ===")
+        self.logger.info(f"Files created:     {result.files_created}")
+        self.logger.info(f"Files overwritten: {result.files_overwritten}")
+
+        if result.files_failed > 0:
+            self.logger.error(f"Files failed:      {result.files_failed}")
+        else:
+            self.logger.info(f"Files failed:      {result.files_failed}")
+
+        self.logger.info(f"Total processed:   {result.total_files}")
+        self.logger.info(f"Success rate:      {result.success_rate:.1f}%")
+        self.logger.info(f"Time taken:        {result.execution_time:.2f} seconds")
+        self.logger.info("")
+
+        if result.files_failed == 0 and result.total_files > 0:
+            self.logger.info("✓ All files extracted successfully!")
+        elif result.files_failed > 0:
+            self.logger.error(
+                f"✗ Extraction completed with {result.files_failed} error(s). "
+                f"Check the logs above for details."
+            )
+
+
+# Alias for backward compatibility with tests
+S1FExtractor = FileSplitter
+
+======= s1f/exceptions.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Custom exceptions for s1f."""
+
+from typing import Optional
+
+
+class S1FError(Exception):
+    """Base exception for all s1f errors."""
+
+    def __init__(self, message: str, exit_code: int = 1):
+        super().__init__(message)
+        self.exit_code = exit_code
+
+
+class FileParsingError(S1FError):
+    """Raised when file parsing fails."""
+
+    def __init__(self, message: str, file_path: Optional[str] = None):
+        super().__init__(message, exit_code=2)
+        self.file_path = file_path
+
+
+class FileWriteError(S1FError):
+    """Raised when file writing fails."""
+
+    def __init__(self, message: str, file_path: Optional[str] = None):
+        super().__init__(message, exit_code=3)
+        self.file_path = file_path
+
+
+class ConfigurationError(S1FError):
+    """Raised when configuration is invalid."""
+
+    def __init__(self, message: str):
+        super().__init__(message, exit_code=4)
+
+
+class ChecksumMismatchError(S1FError):
+    """Raised when checksum verification fails."""
+
+    def __init__(self, file_path: str, expected: str, actual: str):
+        message = (
+            f"Checksum mismatch for {file_path}: expected {expected}, got {actual}"
+        )
+        super().__init__(message, exit_code=5)
+        self.file_path = file_path
+        self.expected_checksum = expected
+        self.actual_checksum = actual
+
+======= s1f/logging.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Logging configuration for s1f."""
+
+import logging
+import sys
+from dataclasses import dataclass
+from typing import Optional, Dict, Any, List
+from pathlib import Path
+
+try:
+    from colorama import init, Fore, Style
+
+    COLORAMA_AVAILABLE = True
+    init(autoreset=True)
+except ImportError:
+    COLORAMA_AVAILABLE = False
+
+
+@dataclass
+class LogLevel:
+    """Log level configuration."""
+
+    name: str
+    value: int
+    color: Optional[str] = None
+
+
+LOG_LEVELS = {
+    "DEBUG": LogLevel(
+        "DEBUG", logging.DEBUG, Fore.BLUE if COLORAMA_AVAILABLE else None
+    ),
+    "INFO": LogLevel("INFO", logging.INFO, Fore.GREEN if COLORAMA_AVAILABLE else None),
+    "WARNING": LogLevel(
+        "WARNING", logging.WARNING, Fore.YELLOW if COLORAMA_AVAILABLE else None
+    ),
+    "ERROR": LogLevel("ERROR", logging.ERROR, Fore.RED if COLORAMA_AVAILABLE else None),
+    "CRITICAL": LogLevel(
+        "CRITICAL", logging.CRITICAL, Fore.RED if COLORAMA_AVAILABLE else None
+    ),
+}
+
+
+class ColoredFormatter(logging.Formatter):
+    """Custom formatter that adds color to log messages."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format the log record with colors if available."""
+        if COLORAMA_AVAILABLE:
+            # Get the appropriate color for the log level
+            level_name = record.levelname
+            if level_name in LOG_LEVELS and LOG_LEVELS[level_name].color:
+                color = LOG_LEVELS[level_name].color
+                record.levelname = f"{color}{level_name}{Style.RESET_ALL}"
+
+        return super().format(record)
+
+
+class LoggerManager:
+    """Manages logging configuration and logger instances."""
+
+    def __init__(self, verbose: bool = False):
+        self.verbose = verbose
+        self.loggers: Dict[str, logging.Logger] = {}
+        self._setup_root_logger()
+
+    def _setup_root_logger(self):
+        """Setup the root logger with appropriate handlers."""
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.DEBUG if self.verbose else logging.INFO)
+
+        # Remove existing handlers
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+
+        # Create console handler
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.DEBUG if self.verbose else logging.INFO)
+
+        # Set formatter
+        if COLORAMA_AVAILABLE:
+            formatter = ColoredFormatter("%(levelname)-8s: %(message)s")
+        else:
+            formatter = logging.Formatter("%(levelname)-8s: %(message)s")
+
+        console_handler.setFormatter(formatter)
+        root_logger.addHandler(console_handler)
+
+    def get_logger(self, name: str) -> logging.Logger:
+        """Get or create a logger with the given name."""
+        if name not in self.loggers:
+            logger = logging.getLogger(name)
+            self.loggers[name] = logger
+        return self.loggers[name]
+
+    async def cleanup(self):
+        """Cleanup logging resources."""
+        # Nothing to cleanup for now, but might be needed in the future
+        pass
+
+
+def setup_logging(config) -> LoggerManager:
+    """Setup logging based on configuration."""
+    return LoggerManager(verbose=config.verbose)
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Get a logger instance."""
+    return logging.getLogger(name)
+
+======= s1f/models.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Data models for s1f."""
+
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+
+@dataclass
+class FileMetadata:
+    """Metadata for an extracted file."""
+
+    path: str
+    checksum_sha256: Optional[str] = None
+    size_bytes: Optional[int] = None
+    modified: Optional[datetime] = None
+    encoding: Optional[str] = None
+    line_endings: Optional[str] = None
+    type: Optional[str] = None
+    had_encoding_errors: bool = False
+
+
+@dataclass
+class ExtractedFile:
+    """Represents a file extracted from the combined file."""
+
+    metadata: FileMetadata
+    content: str
+
+    @property
+    def path(self) -> str:
+        """Convenience property for accessing the file path."""
+        return self.metadata.path
+
+
+@dataclass
+class ExtractionResult:
+    """Result of the extraction process."""
+
+    files_created: int = 0
+    files_overwritten: int = 0
+    files_failed: int = 0
+    execution_time: float = 0.0
+
+    @property
+    def total_files(self) -> int:
+        """Total number of files processed."""
+        return self.files_created + self.files_overwritten + self.files_failed
+
+    @property
+    def success_rate(self) -> float:
+        """Percentage of successfully processed files."""
+        if self.total_files == 0:
+            return 0.0
+        return (self.files_created + self.files_overwritten) / self.total_files * 100
+
+    @property
+    def extracted_count(self) -> int:
+        """Total number of successfully extracted files."""
+        return self.files_created + self.files_overwritten
+
+    @property
+    def success(self) -> bool:
+        """Whether the extraction was successful."""
+        return self.files_failed == 0 and self.extracted_count > 0
+
+
+@dataclass
+class SeparatorMatch:
+    """Represents a matched separator in the content."""
+
+    separator_type: str
+    start_index: int
+    end_index: int
+    metadata: Dict[str, Any]
+    header_length: int = 0
+    uuid: Optional[str] = None
+
+======= s1f/parsers.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Parsers for different separator formats."""
+
+import json
+import re
+from abc import ABC, abstractmethod
+from typing import List, Optional, Dict, Any, Pattern, Tuple
+from datetime import datetime
+import logging
+
+from .models import ExtractedFile, FileMetadata, SeparatorMatch
+from .utils import convert_to_posix_path, parse_iso_timestamp
+from .exceptions import FileParsingError
+
+
+class SeparatorParser(ABC):
+    """Abstract base class for separator parsers."""
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Get the name of this parser."""
+        pass
+
+    @property
+    @abstractmethod
+    def pattern(self) -> Pattern:
+        """Get the regex pattern for this separator type."""
+        pass
+
+    @abstractmethod
+    def parse_match(
+        self, match: re.Match, content: str, index: int
+    ) -> Optional[SeparatorMatch]:
+        """Parse a regex match into a SeparatorMatch object."""
+        pass
+
+    @abstractmethod
+    def extract_content(
+        self,
+        content: str,
+        current_match: SeparatorMatch,
+        next_match: Optional[SeparatorMatch],
+    ) -> str:
+        """Extract file content between separators."""
+        pass
+
+
+class PYMK1FParser(SeparatorParser):
+    """Parser for PYMK1F format with UUID-based separators."""
+
+    PATTERN = re.compile(
+        r"--- PYMK1F_BEGIN_FILE_METADATA_BLOCK_([a-f0-9-]+) ---\r?\n"
+        r"METADATA_JSON:\r?\n"
+        r"(\{(?:.|\s)*?\})\r?\n"
+        r"--- PYMK1F_END_FILE_METADATA_BLOCK_\1 ---\r?\n"
+        r"--- PYMK1F_BEGIN_FILE_CONTENT_BLOCK_\1 ---\r?\n",
+        re.MULTILINE | re.DOTALL,
+    )
+
+    END_MARKER_PATTERN = "--- PYMK1F_END_FILE_CONTENT_BLOCK_{uuid} ---"
+
+    @property
+    def name(self) -> str:
+        return "PYMK1F"
+
+    @property
+    def pattern(self) -> Pattern:
+        return self.PATTERN
+
+    def parse_match(
+        self, match: re.Match, content: str, index: int
+    ) -> Optional[SeparatorMatch]:
+        """Parse a PYMK1F format match."""
+        try:
+            uuid = match.group(1)
+            json_str = match.group(2)
+            meta = json.loads(json_str)
+
+            # Extract path from metadata
+            path = meta.get("original_filepath", "").strip()
+            path = convert_to_posix_path(path)
+
+            if not path:
+                self.logger.warning(
+                    f"PYMK1F block at offset {match.start()} has missing or empty path"
+                )
+                return None
+
+            # Parse timestamp if available
+            timestamp = None
+            if "timestamp_utc_iso" in meta:
+                try:
+                    timestamp = parse_iso_timestamp(meta["timestamp_utc_iso"])
+                except ValueError as e:
+                    self.logger.warning(f"Failed to parse timestamp: {e}")
+
+            # Extract encoding info
+            encoding = meta.get("encoding")
+            had_errors = meta.get("had_encoding_errors", False)
+            if had_errors and encoding:
+                encoding += " (with conversion errors)"
+
+            return SeparatorMatch(
+                separator_type=self.name,
+                start_index=match.start(),
+                end_index=match.end(),
+                metadata={
+                    "path": path,
+                    "checksum_sha256": meta.get("checksum_sha256"),
+                    "size_bytes": meta.get("size_bytes"),
+                    "modified": timestamp,
+                    "encoding": encoding,
+                    "line_endings": meta.get("line_endings", ""),
+                    "type": meta.get("type"),
+                },
+                header_length=len(match.group(0)),
+                uuid=uuid,
+            )
+
+        except json.JSONDecodeError as e:
+            self.logger.warning(
+                f"PYMK1F block at offset {match.start()} has invalid JSON: {e}"
+            )
+            return None
+        except Exception as e:
+            self.logger.warning(
+                f"Error parsing PYMK1F block at offset {match.start()}: {e}"
+            )
+            return None
+
+    def extract_content(
+        self,
+        content: str,
+        current_match: SeparatorMatch,
+        next_match: Optional[SeparatorMatch],
+    ) -> str:
+        """Extract content for PYMK1F format."""
+        content_start = current_match.end_index
+
+        # Find the end marker with matching UUID
+        if current_match.uuid:
+            end_marker = self.END_MARKER_PATTERN.format(uuid=current_match.uuid)
+            end_pos = content.find(end_marker, content_start)
+
+            if end_pos != -1:
+                file_content = content[content_start:end_pos]
+            else:
+                self.logger.warning(
+                    f"PYMK1F file '{current_match.metadata['path']}' missing end marker"
+                )
+                # Fallback to next separator or EOF
+                if next_match:
+                    file_content = content[content_start : next_match.start_index]
+                else:
+                    file_content = content[content_start:]
+        else:
+            # No UUID available
+            if next_match:
+                file_content = content[content_start : next_match.start_index]
+            else:
+                file_content = content[content_start:]
+
+        # Apply pragmatic fix for trailing \r if needed
+        if (
+            current_match.metadata.get("size_bytes") is not None
+            and current_match.metadata.get("checksum_sha256") is not None
+        ):
+            file_content = self._apply_trailing_cr_fix(
+                file_content, current_match.metadata
+            )
+
+        return file_content
+
+    def _apply_trailing_cr_fix(self, content: str, metadata: Dict[str, Any]) -> str:
+        """Apply pragmatic fix for trailing \r character."""
+        try:
+            current_bytes = content.encode("utf-8")
+            current_size = len(current_bytes)
+            original_size = metadata["size_bytes"]
+
+            if current_size == original_size + 1 and content.endswith("\r"):
+                # Verify if removing \r would match the original checksum
+                import hashlib
+
+                fixed_bytes = content[:-1].encode("utf-8")
+                fixed_checksum = hashlib.sha256(fixed_bytes).hexdigest()
+
+                if (
+                    fixed_checksum == metadata["checksum_sha256"]
+                    and len(fixed_bytes) == original_size
+                ):
+                    self.logger.info(
+                        f"Applied trailing \\r fix for '{metadata['path']}'"
+                    )
+                    return content[:-1]
+
+        except Exception as e:
+            self.logger.warning(f"Error during trailing \\r fix attempt: {e}")
+
+        return content
+
+
+class MachineReadableParser(SeparatorParser):
+    """Parser for legacy MachineReadable format."""
+
+    PATTERN = re.compile(
+        r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"
+        r"# FILE: (.*?)\r?\n"
+        r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"
+        r"# METADATA: (\{.*?\})\r?\n"
+        r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n",
+        re.MULTILINE,
+    )
+
+    END_MARKER_PATTERN = re.compile(
+        r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E\r?\n"
+        r"# END FILE\r?\n"
+        r"# PYM1F-BOUNDARY-99C5F740A78D4ABC82E3F9882D5A281E",
+        re.MULTILINE,
+    )
+
+    @property
+    def name(self) -> str:
+        return "MachineReadable"
+
+    @property
+    def pattern(self) -> Pattern:
+        return self.PATTERN
+
+    def parse_match(
+        self, match: re.Match, content: str, index: int
+    ) -> Optional[SeparatorMatch]:
+        """Parse a MachineReadable format match."""
+        try:
+            path = match.group(1).strip()
+            path = convert_to_posix_path(path)
+
+            if not path:
+                self.logger.warning(
+                    f"MachineReadable block at offset {match.start()} has empty path"
+                )
+                return None
+
+            # Parse metadata JSON
+            json_str = match.group(2)
+            meta = json.loads(json_str)
+
+            # Parse timestamp if available
+            timestamp = None
+            if "modified" in meta:
+                try:
+                    timestamp = parse_iso_timestamp(meta["modified"])
+                except ValueError as e:
+                    self.logger.warning(f"Failed to parse timestamp: {e}")
+
+            # Calculate header length including potential blank line
+            header_len = len(match.group(0))
+            next_pos = match.end()
+            if next_pos < len(content) and content[next_pos : next_pos + 2] in [
+                "\r\n",
+                "\n",
+            ]:
+                header_len += 2 if content[next_pos : next_pos + 2] == "\r\n" else 1
+
+            return SeparatorMatch(
+                separator_type=self.name,
+                start_index=match.start(),
+                end_index=match.end(),
+                metadata={
+                    "path": path,
+                    "checksum_sha256": meta.get("checksum_sha256"),
+                    "size_bytes": meta.get("size_bytes"),
+                    "modified": timestamp,
+                    "encoding": meta.get("encoding"),
+                    "line_endings": meta.get("line_endings", ""),
+                    "type": meta.get("type"),
+                },
+                header_length=header_len,
+            )
+
+        except json.JSONDecodeError as e:
+            self.logger.warning(
+                f"MachineReadable block at offset {match.start()} has invalid JSON: {e}"
+            )
+            return None
+        except Exception as e:
+            self.logger.warning(
+                f"Error parsing MachineReadable block at offset {match.start()}: {e}"
+            )
+            return None
+
+    def extract_content(
+        self,
+        content: str,
+        current_match: SeparatorMatch,
+        next_match: Optional[SeparatorMatch],
+    ) -> str:
+        """Extract content for MachineReadable format."""
+        content_start = current_match.end_index
+
+        # Find the end marker
+        end_search = self.END_MARKER_PATTERN.search(content, content_start)
+
+        if end_search:
+            end_pos = end_search.start()
+            # Check for newline before marker
+            if end_pos > 1 and content[end_pos - 2 : end_pos] == "\r\n":
+                end_pos -= 2
+            elif end_pos > 0 and content[end_pos - 1] == "\n":
+                end_pos -= 1
+        else:
+            self.logger.warning(
+                f"MachineReadable file '{current_match.metadata['path']}' missing end marker"
+            )
+            # Fallback to next separator or EOF
+            if next_match:
+                end_pos = next_match.start_index
+            else:
+                end_pos = len(content)
+
+        return content[content_start:end_pos]
+
+
+class MarkdownParser(SeparatorParser):
+    """Parser for Markdown format."""
+
+    PATTERN = re.compile(
+        r"^(## (.*?)$\r?\n"
+        r"(?:\*\*Date Modified:\*\* .*? \| \*\*Size:\*\* .*? \| \*\*Type:\*\* .*?"
+        r"(?:\s\|\s\*\*Encoding:\*\*\s(.*?)(?:\s\(with conversion errors\))?)?"
+        r"(?:\s\|\s\*\*Checksum \(SHA256\):\*\*\s([0-9a-fA-F]{64}))?)$\r?\n\r?\n"
+        r"```(?:.*?)\r?\n)",
+        re.MULTILINE,
+    )
+
+    @property
+    def name(self) -> str:
+        return "Markdown"
+
+    @property
+    def pattern(self) -> Pattern:
+        return self.PATTERN
+
+    def parse_match(
+        self, match: re.Match, content: str, index: int
+    ) -> Optional[SeparatorMatch]:
+        """Parse a Markdown format match."""
+        path = match.group(2).strip()
+        path = convert_to_posix_path(path)
+
+        if not path:
+            return None
+
+        encoding = None
+        if match.group(3):
+            encoding = match.group(3)
+
+        return SeparatorMatch(
+            separator_type=self.name,
+            start_index=match.start(),
+            end_index=match.end(),
+            metadata={
+                "path": path,
+                "checksum_sha256": match.group(4) if match.group(4) else None,
+                "encoding": encoding,
+            },
+            header_length=len(match.group(1)),
+        )
+
+    def extract_content(
+        self,
+        content: str,
+        current_match: SeparatorMatch,
+        next_match: Optional[SeparatorMatch],
+    ) -> str:
+        """Extract content for Markdown format."""
+        content_start = current_match.end_index
+
+        if next_match:
+            raw_content = content[content_start : next_match.start_index]
+        else:
+            raw_content = content[content_start:]
+
+        # Strip inter-file newline if not last file
+        if next_match:
+            if raw_content.endswith("\r\n"):
+                raw_content = raw_content[:-2]
+            elif raw_content.endswith("\n"):
+                raw_content = raw_content[:-1]
+
+        # Strip closing marker
+        if raw_content.endswith("```\r\n"):
+            return raw_content[:-5]
+        elif raw_content.endswith("```\n"):
+            return raw_content[:-4]
+        elif raw_content.endswith("```"):
+            return raw_content[:-3]
+        else:
+            self.logger.warning(
+                f"Markdown file '{current_match.metadata['path']}' missing closing marker"
+            )
+            return raw_content
+
+
+class DetailedParser(SeparatorParser):
+    """Parser for Detailed format."""
+
+    PATTERN = re.compile(
+        r"^(={88}\r?\n"
+        r"== FILE: (.*?)\r?\n"
+        r"== DATE: .*? \| SIZE: .*? \| TYPE: .*?\r?\n"
+        r"(?:== ENCODING: (.*?)(?:\s\(with conversion errors\))?\r?\n)?"
+        r"(?:== CHECKSUM_SHA256: ([0-9a-fA-F]{64})\r?\n)?"
+        r"={88}\r?\n)",
+        re.MULTILINE,
+    )
+
+    @property
+    def name(self) -> str:
+        return "Detailed"
+
+    @property
+    def pattern(self) -> Pattern:
+        return self.PATTERN
+
+    def parse_match(
+        self, match: re.Match, content: str, index: int
+    ) -> Optional[SeparatorMatch]:
+        """Parse a Detailed format match."""
+        path = match.group(2).strip()
+        path = convert_to_posix_path(path)
+
+        if not path:
+            return None
+
+        return SeparatorMatch(
+            separator_type=self.name,
+            start_index=match.start(),
+            end_index=match.end(),
+            metadata={
+                "path": path,
+                "checksum_sha256": match.group(4) if match.group(4) else None,
+                "encoding": match.group(3) if match.group(3) else None,
+            },
+            header_length=len(match.group(1)),
+        )
+
+    def extract_content(
+        self,
+        content: str,
+        current_match: SeparatorMatch,
+        next_match: Optional[SeparatorMatch],
+    ) -> str:
+        """Extract content for Detailed format."""
+        return self._extract_standard_format_content(content, current_match, next_match)
+
+    def _extract_standard_format_content(
+        self,
+        content: str,
+        current_match: SeparatorMatch,
+        next_match: Optional[SeparatorMatch],
+    ) -> str:
+        """Extract content for Standard/Detailed formats."""
+        content_start = current_match.end_index
+
+        if next_match:
+            raw_content = content[content_start : next_match.start_index]
+        else:
+            raw_content = content[content_start:]
+
+        # Strip leading blank line
+        if raw_content.startswith("\r\n"):
+            raw_content = raw_content[2:]
+        elif raw_content.startswith("\n"):
+            raw_content = raw_content[1:]
+
+        # Strip trailing inter-file newline if not last file
+        if next_match:
+            if raw_content.endswith("\r\n"):
+                raw_content = raw_content[:-2]
+            elif raw_content.endswith("\n"):
+                raw_content = raw_content[:-1]
+
+        return raw_content
+
+
+class StandardParser(DetailedParser):
+    """Parser for Standard format."""
+
+    PATTERN = re.compile(
+        r"======= (.*?)(?:\s*\|\s*CHECKSUM_SHA256:\s*([0-9a-fA-F]{64}))?\s*======",
+        re.MULTILINE,
+    )
+
+    @property
+    def name(self) -> str:
+        return "Standard"
+
+    @property
+    def pattern(self) -> Pattern:
+        return self.PATTERN
+
+    def parse_match(
+        self, match: re.Match, content: str, index: int
+    ) -> Optional[SeparatorMatch]:
+        """Parse a Standard format match."""
+        path = match.group(1).strip()
+        path = convert_to_posix_path(path)
+
+        if not path:
+            return None
+
+        return SeparatorMatch(
+            separator_type=self.name,
+            start_index=match.start(),
+            end_index=match.end(),
+            metadata={
+                "path": path,
+                "checksum_sha256": match.group(2) if match.group(2) else None,
+                "encoding": None,
+            },
+            header_length=0,  # Standard format doesn't have multi-line headers
+        )
+
+
+class CombinedFileParser:
+    """Main parser that coordinates all separator parsers."""
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+        self.parsers = [
+            PYMK1FParser(logger),
+            MachineReadableParser(logger),
+            MarkdownParser(logger),
+            DetailedParser(logger),
+            StandardParser(logger),
+        ]
+
+    def _find_code_blocks(self, content: str) -> List[Tuple[int, int]]:
+        """Find all code block regions in the content."""
+        code_blocks = []
+
+        # Find triple backtick code blocks
+        pattern = re.compile(r"```[\s\S]*?```", re.MULTILINE)
+        for match in pattern.finditer(content):
+            code_blocks.append((match.start(), match.end()))
+
+        return code_blocks
+
+    def _is_in_code_block(
+        self, position: int, code_blocks: List[Tuple[int, int]]
+    ) -> bool:
+        """Check if a position is inside a code block."""
+        for start, end in code_blocks:
+            if start <= position < end:
+                return True
+        return False
+
+    def parse(self, content: str) -> List[ExtractedFile]:
+        """Parse the combined file content and extract individual files."""
+        # Find all code blocks first
+        code_blocks = self._find_code_blocks(content)
+
+        # Find all matches from all parsers
+        matches: List[SeparatorMatch] = []
+
+        for parser in self.parsers:
+            for match in parser.pattern.finditer(content):
+                # Skip matches inside code blocks
+                if self._is_in_code_block(match.start(), code_blocks):
+                    self.logger.debug(
+                        f"Skipping separator inside code block at position {match.start()}"
+                    )
+                    continue
+
+                separator_match = parser.parse_match(match, content, len(matches))
+                if separator_match:
+                    matches.append(separator_match)
+
+        # Sort by position in file
+        matches.sort(key=lambda m: m.start_index)
+
+        if not matches:
+            self.logger.warning("No recognizable file separators found")
+            return []
+
+        # Extract files
+        extracted_files: List[ExtractedFile] = []
+
+        for i, current_match in enumerate(matches):
+            # Find the appropriate parser
+            parser = next(
+                p for p in self.parsers if p.name == current_match.separator_type
+            )
+
+            # Get next match if available
+            next_match = matches[i + 1] if i + 1 < len(matches) else None
+
+            # Extract content
+            file_content = parser.extract_content(content, current_match, next_match)
+
+            # Create metadata
+            metadata = FileMetadata(
+                path=current_match.metadata["path"],
+                checksum_sha256=current_match.metadata.get("checksum_sha256"),
+                size_bytes=current_match.metadata.get("size_bytes"),
+                modified=current_match.metadata.get("modified"),
+                encoding=current_match.metadata.get("encoding"),
+                line_endings=current_match.metadata.get("line_endings"),
+                type=current_match.metadata.get("type"),
+            )
+
+            # Create extracted file
+            extracted_file = ExtractedFile(metadata=metadata, content=file_content)
+            extracted_files.append(extracted_file)
+
+            self.logger.debug(
+                f"Identified file: '{metadata.path}', type: {current_match.separator_type}, "
+                f"content length: {len(file_content)}"
+            )
+
+        return extracted_files
+
+======= s1f/utils.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Utility functions for s1f."""
+
+import hashlib
+import os
+from pathlib import Path, PureWindowsPath
+from typing import Optional, Union
+from datetime import datetime, timezone
+import re
+
+
+def convert_to_posix_path(path_str: Optional[str]) -> str:
+    """Convert a path string to use forward slashes."""
+    if path_str is None:
+        return ""
+    return str(path_str).replace("\\", "/")
+
+
+def calculate_sha256(content: bytes) -> str:
+    """Calculate SHA256 checksum of the given bytes."""
+    return hashlib.sha256(content).hexdigest()
+
+
+def parse_iso_timestamp(timestamp_str: str) -> datetime:
+    """Parse ISO timestamp string to datetime object.
+
+    Handles both 'Z' suffix and explicit timezone offset formats.
+    """
+    if timestamp_str.endswith("Z"):
+        # Replace 'Z' with '+00:00' for UTC
+        timestamp_str = timestamp_str[:-1] + "+00:00"
+
+    return datetime.fromisoformat(timestamp_str)
+
+
+def normalize_line_endings(content: str, target: str = "\n") -> str:
+    """Normalize line endings in content.
+
+    Args:
+        content: The content to normalize
+        target: The target line ending ("\n", "\r\n", or "\r")
+
+    Returns:
+        Content with normalized line endings
+    """
+    # First normalize all to \n
+    content = content.replace("\r\n", "\n").replace("\r", "\n")
+
+    # Then convert to target if different
+    if target != "\n":
+        content = content.replace("\n", target)
+
+    return content
+
+
+def get_line_ending_style(content: str) -> str:
+    """Detect the predominant line ending style in content.
+
+    Returns:
+        One of: "LF", "CRLF", "CR", or "MIXED"
+    """
+    lf_count = content.count("\n") - content.count("\r\n")
+    crlf_count = content.count("\r\n")
+    cr_count = content.count("\r") - content.count("\r\n")
+
+    if lf_count > 0 and crlf_count == 0 and cr_count == 0:
+        return "LF"
+    elif crlf_count > 0 and lf_count == 0 and cr_count == 0:
+        return "CRLF"
+    elif cr_count > 0 and lf_count == 0 and crlf_count == 0:
+        return "CR"
+    elif lf_count + crlf_count + cr_count > 0:
+        return "MIXED"
+    else:
+        return "NONE"
+
+
+def validate_file_path(path: Path, base_dir: Path) -> bool:
+    """Validate that a file path is safe and within the base directory.
+
+    Args:
+        path: The path to validate
+        base_dir: The base directory that should contain the path
+
+    Returns:
+        True if the path is valid and safe, False otherwise
+    """
+    try:
+        # Convert path to string to check for suspicious patterns
+        path_str = str(path)
+
+        # Check for Windows-style path traversal
+        if "\\..\\" in path_str or path_str.startswith("..\\"):
+            return False
+
+        # Check for Unix-style path traversal
+        if "/../" in path_str or path_str.startswith("../"):
+            return False
+
+        # Check for absolute paths
+        if path.is_absolute():
+            return False
+
+        # Resolve the path (but don't require it to exist)
+        resolved_path = (base_dir / path).resolve()
+
+        # Check if it's within the base directory
+        resolved_path.relative_to(base_dir.resolve())
+
+        # Check for suspicious patterns in path parts
+        if ".." in path.parts:
+            return False
+
+        return True
+    except ValueError:
+        # relative_to() raises ValueError if path is not relative to base_dir
+        return False
+
+
+def format_size(size_bytes: int) -> str:
+    """Format size in bytes to human-readable format."""
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.1f} PB"
+
+
+def clean_encoding_name(encoding: str) -> str:
+    """Clean up encoding name by removing error indicators."""
+    if not encoding:
+        return ""
+    return encoding.split(" (with conversion errors)")[0].strip()
+
+
+def is_binary_content(content: bytes, sample_size: int = 8192) -> bool:
+    """Check if content appears to be binary.
+
+    Args:
+        content: The content to check
+        sample_size: Number of bytes to sample
+
+    Returns:
+        True if content appears to be binary, False otherwise
+    """
+    # Sample the beginning of the content
+    sample = content[:sample_size]
+
+    # Check for null bytes (common in binary files)
+    if b"\x00" in sample:
+        return True
+
+    # Check for high ratio of non-printable characters
+    non_printable = sum(1 for byte in sample if byte < 32 and byte not in (9, 10, 13))
+
+    if len(sample) > 0:
+        ratio = non_printable / len(sample)
+        return ratio > 0.3
+
+    return False
+
+======= s1f/writers.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""File writers for s1f."""
+
+import asyncio
+import os
+from pathlib import Path
+from typing import List, Optional, Tuple
+import threading
+import logging
+from datetime import datetime
+
+from .config import Config
+from .models import ExtractedFile, ExtractionResult
+from .utils import (
+    validate_file_path,
+    calculate_sha256,
+    clean_encoding_name,
+    format_size,
+    normalize_line_endings,
+)
+from .exceptions import FileWriteError, ChecksumMismatchError
+
+try:
+    import aiofiles
+
+    AIOFILES_AVAILABLE = True
+except ImportError:
+    AIOFILES_AVAILABLE = False
+
+
+class FileWriter:
+    """Handles writing extracted files to disk."""
+
+    def __init__(self, config: Config, logger: logging.Logger):
+        self.config = config
+        self.logger = logger
+        self._counter_lock = asyncio.Lock()  # For thread-safe counter updates
+        self._write_semaphore = asyncio.Semaphore(
+            10
+        )  # Limit concurrent writes to prevent "too many open files"
+
+    async def write_files(
+        self, extracted_files: List[ExtractedFile]
+    ) -> ExtractionResult:
+        """Write all extracted files to the destination directory."""
+        result = ExtractionResult()
+
+        self.logger.info(
+            f"Writing {len(extracted_files)} extracted file(s) to '{self.config.destination_directory}'..."
+        )
+
+        # Create tasks for concurrent file writing if async is available
+        if AIOFILES_AVAILABLE:
+            tasks = [
+                self._write_file_async(file_data, result)
+                for file_data in extracted_files
+            ]
+            # Gather results and handle exceptions properly
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            # Check for exceptions in results
+            for i, result_or_exc in enumerate(results):
+                if isinstance(result_or_exc, Exception):
+                    # An exception occurred during file writing
+                    file_data = extracted_files[i]
+                    async with self._counter_lock:
+                        result.files_failed += 1
+                    logger.error(
+                        f"Failed to write file {file_data.relative_path}: {result_or_exc}"
+                    )
+        else:
+            # Fallback to synchronous writing
+            for file_data in extracted_files:
+                await self._write_file_sync(file_data, result)
+
+        return result
+
+    async def _write_file_async(
+        self, file_data: ExtractedFile, result: ExtractionResult
+    ):
+        """Write a single file asynchronously."""
+        async with self._write_semaphore:  # Limit concurrent file operations
+            try:
+                output_path = await self._prepare_output_path(file_data)
+                if output_path is None:
+                    async with self._counter_lock:
+                        result.files_failed += 1
+                    return
+
+                # Check if file exists
+                is_overwrite = output_path.exists()
+
+                if is_overwrite and not self.config.force_overwrite:
+                    if not await self._confirm_overwrite_async(output_path):
+                        self.logger.info(f"Skipping existing file '{output_path}'")
+                        return
+
+                # Determine encoding
+                encoding = self._determine_encoding(file_data)
+
+                # Write the file
+                content_bytes = await self._encode_content(
+                    file_data.content, encoding, file_data.path
+                )
+
+                async with aiofiles.open(output_path, "wb") as f:
+                    await f.write(content_bytes)
+
+                # Update result with thread-safe counter increment
+                async with self._counter_lock:
+                    if is_overwrite:
+                        result.files_overwritten += 1
+                        self.logger.debug(f"Overwrote file: {output_path}")
+                    else:
+                        result.files_created += 1
+                        self.logger.debug(f"Created file: {output_path}")
+
+                # Set file timestamp
+                await self._set_file_timestamp(output_path, file_data)
+
+                # Verify checksum if needed
+                if (
+                    not self.config.ignore_checksum
+                    and file_data.metadata.checksum_sha256
+                ):
+                    await self._verify_checksum_async(output_path, file_data)
+
+            except Exception as e:
+                self.logger.error(f"Failed to write file '{file_data.path}': {e}")
+                async with self._counter_lock:
+                    result.files_failed += 1
+
+    async def _write_file_sync(
+        self, file_data: ExtractedFile, result: ExtractionResult
+    ):
+        """Write a single file synchronously (fallback when aiofiles not available)."""
+        try:
+            output_path = await self._prepare_output_path(file_data)
+            if output_path is None:
+                async with self._counter_lock:
+                    result.files_failed += 1
+                return
+
+            # Check if file exists
+            is_overwrite = output_path.exists()
+
+            if is_overwrite and not self.config.force_overwrite:
+                if not self._confirm_overwrite_sync(output_path):
+                    self.logger.info(f"Skipping existing file '{output_path}'")
+                    return
+
+            # Determine encoding
+            encoding = self._determine_encoding(file_data)
+
+            # Write the file
+            content_bytes = await self._encode_content(
+                file_data.content, encoding, file_data.path
+            )
+            output_path.write_bytes(content_bytes)
+
+            # Update result with thread-safe counter increment
+            async with self._counter_lock:
+                if is_overwrite:
+                    result.files_overwritten += 1
+                    self.logger.debug(f"Overwrote file: {output_path}")
+                else:
+                    result.files_created += 1
+                    self.logger.debug(f"Created file: {output_path}")
+
+            # Set file timestamp
+            await self._set_file_timestamp(output_path, file_data)
+
+            # Verify checksum if needed
+            if not self.config.ignore_checksum and file_data.metadata.checksum_sha256:
+                self._verify_checksum_sync(output_path, file_data)
+
+        except Exception as e:
+            self.logger.error(f"Failed to write file '{file_data.path}': {e}")
+            async with self._counter_lock:
+                result.files_failed += 1
+
+    async def _prepare_output_path(self, file_data: ExtractedFile) -> Optional[Path]:
+        """Prepare the output path for a file."""
+        relative_path = Path(file_data.path)
+
+        # Validate path security
+        if not validate_file_path(relative_path, self.config.destination_directory):
+            self.logger.error(
+                f"Skipping file '{file_data.path}' due to invalid path components"
+            )
+            return None
+
+        output_path = self.config.destination_directory / relative_path
+
+        # Create parent directories
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            self.logger.error(f"Failed to create directory for '{file_data.path}': {e}")
+            return None
+
+        self.logger.debug(f"Preparing to write: {output_path}")
+        return output_path
+
+    def _determine_encoding(self, file_data: ExtractedFile) -> str:
+        """Determine the encoding to use for writing a file."""
+        # Priority 1: Explicit target encoding from config
+        if self.config.target_encoding:
+            return self.config.target_encoding
+
+        # Priority 2: Original encoding if respect_encoding is True
+        if self.config.respect_encoding and file_data.metadata.encoding:
+            clean_encoding = clean_encoding_name(file_data.metadata.encoding)
+
+            # Validate encoding
+            try:
+                "test".encode(clean_encoding)
+                return clean_encoding
+            except (LookupError, UnicodeError):
+                self.logger.warning(
+                    f"Original encoding '{clean_encoding}' for file '{file_data.path}' "
+                    f"is not recognized. Falling back to UTF-8."
+                )
+
+        # Default: UTF-8
+        return "utf-8"
+
+    async def _encode_content(
+        self, content: str, encoding: str, file_path: str
+    ) -> bytes:
+        """Encode content with the specified encoding."""
+        try:
+            return content.encode(encoding, errors="strict")
+        except UnicodeEncodeError:
+            self.logger.warning(
+                f"Cannot strictly encode file '{file_path}' with {encoding}. "
+                f"Using replacement mode which may lose some characters."
+            )
+            return content.encode(encoding, errors="replace")
+
+    async def _confirm_overwrite_async(self, path: Path) -> bool:
+        """Asynchronously confirm file overwrite (returns True for now)."""
+        # In async mode, we can't easily do interactive input
+        # So we follow the force_overwrite setting
+        return self.config.force_overwrite
+
+    def _confirm_overwrite_sync(self, path: Path) -> bool:
+        """Synchronously confirm file overwrite."""
+        if self.config.force_overwrite:
+            return True
+
+        try:
+            response = input(f"Output file '{path}' already exists. Overwrite? (y/N): ")
+            return response.lower() == "y"
+        except KeyboardInterrupt:
+            self.logger.info("\nOperation cancelled by user (Ctrl+C).")
+            raise
+
+    async def _set_file_timestamp(self, path: Path, file_data: ExtractedFile):
+        """Set file modification timestamp if configured."""
+        if (
+            self.config.timestamp_mode == "original"
+            and file_data.metadata.modified is not None
+        ):
+            try:
+                # Convert datetime to timestamp
+                mod_time = file_data.metadata.modified.timestamp()
+                access_time = mod_time
+
+                # Use asyncio to run in executor for non-blocking
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(
+                    None, os.utime, path, (access_time, mod_time)
+                )
+
+                self.logger.debug(
+                    f"Set original modification time for '{path}' to "
+                    f"{file_data.metadata.modified}"
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"Could not set original modification time for '{path}': {e}"
+                )
+
+    async def _verify_checksum_async(self, path: Path, file_data: ExtractedFile):
+        """Verify file checksum asynchronously."""
+        try:
+            # Calculate checksum using chunks to avoid loading entire file into memory
+            import hashlib
+
+            sha256_hash = hashlib.sha256()
+
+            async with aiofiles.open(path, "rb") as f:
+                while chunk := await f.read(8192):  # Read in 8KB chunks
+                    sha256_hash.update(chunk)
+
+            calculated_checksum = sha256_hash.hexdigest()
+            expected_checksum = file_data.metadata.checksum_sha256
+
+            if calculated_checksum != expected_checksum:
+                # Check if difference is due to line endings
+                await self._check_line_ending_difference(
+                    path, file_data, calculated_checksum, expected_checksum
+                )
+            else:
+                self.logger.debug(f"Checksum VERIFIED for file '{path}'")
+
+        except Exception as e:
+            self.logger.warning(f"Error during checksum verification for '{path}': {e}")
+
+    def _verify_checksum_sync(self, path: Path, file_data: ExtractedFile):
+        """Verify file checksum synchronously."""
+        try:
+            content_bytes = path.read_bytes()
+            calculated_checksum = calculate_sha256(content_bytes)
+            expected_checksum = file_data.metadata.checksum_sha256
+
+            if calculated_checksum != expected_checksum:
+                # Check if difference is due to line endings
+                self._check_line_ending_difference_sync(
+                    path, file_data, calculated_checksum, expected_checksum
+                )
+            else:
+                self.logger.debug(f"Checksum VERIFIED for file '{path}'")
+
+        except Exception as e:
+            self.logger.warning(f"Error during checksum verification for '{path}': {e}")
+
+    async def _check_line_ending_difference(
+        self, path: Path, file_data: ExtractedFile, calculated: str, expected: str
+    ):
+        """Check if checksum difference is due to line endings."""
+        # Normalize line endings and recalculate
+        normalized_content = normalize_line_endings(file_data.content, "\n")
+        normalized_bytes = normalized_content.encode("utf-8")
+        normalized_checksum = calculate_sha256(normalized_bytes)
+
+        if normalized_checksum == expected:
+            self.logger.debug(
+                f"Checksum difference for '{path}' appears to be due to "
+                f"line ending normalization"
+            )
+        else:
+            self.logger.warning(
+                f"CHECKSUM MISMATCH for file '{path}'. "
+                f"Expected: {expected}, Calculated: {calculated}. "
+                f"The file content may be corrupted or was altered."
+            )
+
+    def _check_line_ending_difference_sync(
+        self, path: Path, file_data: ExtractedFile, calculated: str, expected: str
+    ):
+        """Check if checksum difference is due to line endings (sync version)."""
+        # Same logic as async version
+        normalized_content = normalize_line_endings(file_data.content, "\n")
+        normalized_bytes = normalized_content.encode("utf-8")
+        normalized_checksum = calculate_sha256(normalized_bytes)
+
+        if normalized_checksum == expected:
+            self.logger.debug(
+                f"Checksum difference for '{path}' appears to be due to "
+                f"line ending normalization"
+            )
+        else:
+            self.logger.warning(
+                f"CHECKSUM MISMATCH for file '{path}'. "
+                f"Expected: {expected}, Calculated: {calculated}. "
+                f"The file content may be corrupted or was altered."
+            )

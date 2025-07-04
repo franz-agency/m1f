@@ -12,7 +12,16 @@ if [ -f ".m1f.config.yml" ]; then
         if [ -f ".venv/bin/activate" ]; then
             source .venv/bin/activate
         fi
-        if m1f-update; then
+        # Use the full path to m1f-update
+        if [ -f "bin/m1f-update" ]; then
+            ./bin/m1f-update
+        elif command -v m1f-update &> /dev/null; then
+            m1f-update
+        else
+            echo "Error: m1f-update not found!"
+            exit 1
+        fi
+        if [ $? -eq 0 ]; then
             echo "Auto-bundle completed successfully."
             [ -d "m1f" ] && git add m1f/*
         else

@@ -90,7 +90,7 @@ with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool (v3.2.0) solves a common challenge when working with LLMs:
+The m1f tool (v3.4.0) solves a common challenge when working with LLMs:
 providing sufficient context without exceeding token limits. Built with Python
 3.10+ and modern architecture patterns, it creates optimized reference files
 from multiple sources while automatically handling duplicates and providing
@@ -119,6 +119,9 @@ comprehensive metadata.
 # Quick setup for any project
 cd /your/project
 m1f-init
+
+# Initialize without creating symlink to m1f documentation
+m1f-init --no-symlink
 
 # This creates in the m1f/ directory:
 # - <project>_complete.txt          # Full project bundle
@@ -157,7 +160,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 
 | Option                      | Description                                                                                                                                                                                                                                                      |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-s, --source-directory`    | Path to the directory containing files to process                                                                                                                                                                                                                |
+| `-s, --source-directory`    | Path to the directory containing files to process. Can be specified multiple times to include files from multiple directories (e.g., `-s dir1 -s dir2`)                                                                                                          |
 | `-i, --input-file`          | Path to a file containing a list of files/directories to process. Can be used together with --source-directory to resolve relative paths in the input file against the source directory                                                                          |
 | `-o, --output-file`         | Path for the combined output file                                                                                                                                                                                                                                |
 | `-f, --force`               | Force overwrite of existing output file without prompting                                                                                                                                                                                                        |
@@ -165,6 +168,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
 | `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
+| `--includes`                | Space-separated list of gitignore-style patterns to include (e.g., `--includes "*.py" "src/**" "!test.py"`). When combined with `--include-extensions`, files must match both criteria                                                                           |
 | `--docs-only`               | Include only documentation files (62 extensions including .md, .txt, .rst, .org, .tex, .info, etc.). Overrides include-extensions.                                                                                                                               |
 | `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
@@ -239,11 +243,21 @@ For detailed preset documentation, see:
 m1f --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
 
+# Using multiple source directories (new in v3.4.0)
+m1f -s ./src -s ./docs -s ./tests -o combined_output.txt
+
 # Using an input file containing paths to process (one per line)
 m1f -i filelist.txt -o combined_output.txt
 
 # Using both source directory and input file together
 m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+
+# Using include patterns to filter files (new in v3.4.0)
+m1f -s ./project -o output.txt --includes "src/**" "*.py" "!*_test.py"
+
+# Combining includes with extensions for precise filtering
+m1f -s ./project -o docs.txt --include-extensions .md .rst \
+  --includes "docs/**" "README.md"
 
 # Remove scraped metadata from HTML2MD files (new in v2.0.0)
 m1f -s ./scraped_docs -o ./clean_docs.txt \
@@ -914,7 +928,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
-available in m1f v3.2.0.
+available in m1f v3.4.0.
 
 ## Synopsis
 
@@ -947,7 +961,7 @@ Show help message and exit.
 
 ### `--version`
 
-Show program version and exit. Current version: v3.2.0
+Show program version and exit. Current version: v3.4.0
 
 ## Input/Output Options
 
@@ -1237,7 +1251,7 @@ Disable all preset processing, even if preset files are specified.
 ## Environment Variables
 
 **Note**: The following environment variables are documented for future
-implementation but are not currently supported in v3.2.0:
+implementation but are not currently supported in v3.4.0:
 
 - `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
 - `M1F_SECURITY_CHECK` - Default security check mode (not implemented)
@@ -3172,6 +3186,15 @@ bundles:
         excludes: ["**/test_*.py"]
       - path: "."
         include_files: ["README.md", "CHANGELOG.md"]
+
+  # New in v3.4.0: Using includes patterns
+  tool-specific:
+    description: "Specific tool code only"
+    output: "m1f/tool-code.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
+        includes: ["m1f/**", "s1f/**", "!**/test_*.py"]
 ```
 
 ### Using Presets
@@ -3300,6 +3323,25 @@ bundles:
         include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
 ```
 
+### Combining Multiple Directories (v3.4.0+)
+
+When you need to combine files from completely different directories:
+
+```yaml
+bundles:
+  # Combine documentation from multiple locations
+  all-docs:
+    description: "All project documentation"
+    output: "m1f/all-docs.txt"
+    sources:
+      - path: "docs"
+      - path: "src"
+        include_extensions: [".md"]
+      - path: "../shared-docs"
+      - path: "/absolute/path/to/external/docs"
+        includes: ["api/**", "guides/**"]
+```
+
 ### WordPress Plugin Bundle
 
 ```yaml
@@ -3361,11 +3403,15 @@ m1f-init
 
    - Makes m1f docs available to AI tools
    - Creates symlink on Linux/macOS, copies on Windows
+   - Use `--no-symlink` to skip this step if not needed
 
 2. **Analyzes your project**
 
-   - Detects project type and languages
+   - Detects project type and programming languages
+   - Supports Python, JavaScript, TypeScript, PHP, Java, C#, Go, Rust, Ruby
    - Creates file and directory listings
+   - Shows clean output with created files listed at the end
+   - Automatically cleans up temporary analysis files
 
 3. **Generates initial bundles with auxiliary files**
 
@@ -3379,6 +3425,8 @@ m1f-init
 4. **Creates basic configuration**
    - Generates `.m1f.config.yml` if not present
    - Sets up sensible defaults
+   - Handles .gitignore correctly (only uses from current directory)
+   - Smart Git detection (clean messages for subdirectories)
 
 #### Using with AI Tools:
 
