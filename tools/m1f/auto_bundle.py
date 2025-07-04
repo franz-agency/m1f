@@ -210,6 +210,12 @@ class AutoBundler:
                     cmd_parts.append("--include-extensions")
                     cmd_parts.extend(source["include_extensions"])
 
+            # Handle includes at source level
+            if "includes" in source:
+                # Add includes patterns
+                cmd_parts.append("--includes")
+                cmd_parts.extend(source["includes"])
+                
             # Collect excludes from source
             if "excludes" in source:
                 all_excludes.extend(source["excludes"])

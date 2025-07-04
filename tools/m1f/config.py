@@ -102,6 +102,7 @@ class FilterConfig:
     exclude_patterns: List[str] = field(default_factory=list)
     exclude_paths_file: Optional[Union[str, List[str]]] = None
     include_paths_file: Optional[Union[str, List[str]]] = None
+    include_patterns: List[str] = field(default_factory=list)
     include_extensions: Set[str] = field(default_factory=set)
     exclude_extensions: Set[str] = field(default_factory=set)
     docs_only: bool = False
@@ -149,7 +150,7 @@ class PresetConfig:
 class Config:
     """Main configuration class that combines all settings."""
 
-    source_directory: Optional[Path]
+    source_directories: List[Path]
     input_file: Optional[Path]
     input_include_files: List[Path]
     output: OutputConfig
@@ -171,7 +172,7 @@ class Config:
             config = cls._apply_preset_overrides(config, args)
 
         # Validate that we have required inputs after preset application
-        if not config.source_directory and not config.input_file:
+        if not config.source_directories and not config.input_file:
             raise ValueError(
                 "At least one of source_directory or input_file must be provided "
                 "(either via CLI arguments or preset configuration)"
@@ -188,11 +189,14 @@ class Config:
     @classmethod
     def _create_from_cli_args(cls, args: argparse.Namespace) -> Config:
         """Create initial configuration from CLI arguments."""
-        # Process source directory with path traversal validation
-        source_dir = None
+        # Process source directories with path traversal validation
+        source_dirs = []
         if args.source_directory:
-            resolved_path = Path(args.source_directory).resolve()
-            source_dir = validate_path_traversal(resolved_path)
+            # args.source_directory is now a list due to action="append"
+            for source_dir in args.source_directory:
+                resolved_path = Path(source_dir).resolve()
+                validated_path = validate_path_traversal(resolved_path)
+                source_dirs.append(validated_path)
 
         # Process input file with path traversal validation
         input_file = None
@@ -245,6 +249,7 @@ class Config:
             exclude_patterns=getattr(args, "excludes", []),
             exclude_paths_file=getattr(args, "exclude_paths_file", None),
             include_paths_file=getattr(args, "include_paths_file", None),
+            include_patterns=getattr(args, "includes", []),
             include_extensions=set(
                 normalize_extensions(getattr(args, "include_extensions", []))
             ),
@@ -302,7 +307,7 @@ class Config:
         )
 
         return cls(
-            source_directory=source_dir,
+            source_directories=source_dirs,
             input_file=input_file,
             input_include_files=include_files,
             output=output_config,
@@ -331,7 +336,7 @@ class Config:
         # Apply overrides - CLI arguments take precedence over presets
 
         # Input/Output overrides
-        source_dir = config.source_directory
+        source_dirs = config.source_directories
         input_file = config.input_file
         output_file = config.output.output_file
         input_include_files = config.input_include_files
@@ -340,7 +345,8 @@ class Config:
         # Paths from presets are trusted
         if not args.source_directory and global_settings.source_directory:
             resolved_path = Path(global_settings.source_directory).resolve()
-            source_dir = validate_path_traversal(resolved_path, from_preset=True)
+            validated_path = validate_path_traversal(resolved_path, from_preset=True)
+            source_dirs = [validated_path]
 
         if not args.input_file and global_settings.input_file:
             resolved_path = Path(global_settings.input_file).resolve()
@@ -440,7 +446,7 @@ class Config:
 
         # Return new config with overrides applied
         return cls(
-            source_directory=source_dir,
+            source_directories=source_dirs,
             input_file=input_file,
             input_include_files=input_include_files,
             output=output_config,

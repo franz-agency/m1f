@@ -208,6 +208,15 @@ bundles:
         excludes: ["**/test_*.py"]
       - path: "."
         include_files: ["README.md", "CHANGELOG.md"]
+
+  # New in v3.4.0: Using includes patterns
+  tool-specific:
+    description: "Specific tool code only"
+    output: "m1f/tool-code.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
+        includes: ["m1f/**", "s1f/**", "!**/test_*.py"]
 ```
 
 ### Using Presets
@@ -334,6 +343,25 @@ bundles:
     sources:
       - path: "."
         include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
+```
+
+### Combining Multiple Directories (v3.4.0+)
+
+When you need to combine files from completely different directories:
+
+```yaml
+bundles:
+  # Combine documentation from multiple locations
+  all-docs:
+    description: "All project documentation"
+    output: "m1f/all-docs.txt"
+    sources:
+      - path: "docs"
+      - path: "src"
+        include_extensions: [".md"]
+      - path: "../shared-docs"
+      - path: "/absolute/path/to/external/docs"
+        includes: ["api/**", "guides/**"]
 ```
 
 ### WordPress Plugin Bundle

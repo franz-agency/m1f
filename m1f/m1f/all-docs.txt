@@ -1156,6 +1156,17 @@ and this project adheres to
   - Added file tracking to show only actually created files in output
   - Improved output formatting with "Here is your file:" / "Here are your files:" section
   - Added proper spacing and bullet points for created files list
+  - Now runs `m1f-update` when `.m1f.config.yml` already exists instead of creating default bundles
+
+- **Multiple Source Directories**: m1f now supports multiple `-s` source directories
+  - Use `-s dir1 -s dir2` to combine files from multiple directories
+  - All source directories are processed and files are merged into single output
+  - Useful for documentation bundles that need files from different locations
+
+- **Include Patterns**: Added `--includes` parameter for pattern-based file filtering
+  - Works with gitignore-style patterns (e.g., `*.py`, `src/**`, `!test.py`)
+  - When combined with `--include-extensions`, files must match both criteria
+  - Allows precise control over which files to include in bundles
 
 ### Changed
 
@@ -1176,6 +1187,33 @@ and this project adheres to
   - Now only uses .gitignore from current directory, not parent directories
   - Prevents errors when running m1f-init in subdirectories without their own .gitignore
   - All m1f commands now check for .gitignore existence before using --exclude-paths-file
+
+- **m1f-init Python Project Detection**: Fixed language detection prioritization
+  - Now prioritizes by file count to correctly identify primary language
+  - Python projects are now properly detected even with mixed language codebases
+
+- **m1f-init Behavior with Existing Config**: Fixed to run m1f-update when config exists
+  - No longer creates default bundles when `.m1f.config.yml` already exists
+  - Automatically runs `m1f-update` to use existing configuration
+
+- **m1f Directory Exclusion Performance**: Fixed severe performance issue with directory filtering
+  - Directory exclusions from .gitignore now properly applied at directory traversal level
+  - Reduced bundle creation time from 42+ seconds to ~1.2 seconds (35x improvement)
+  - Fixed tmp/ directory exclusion that was scanning 362,419 unnecessary files
+
+- **m1f Multiple Source Directories**: Fixed CLI to support multiple source directories
+  - Changed from single source to List[Path] throughout codebase
+  - Now properly processes all specified source directories with `-s dir1 -s dir2`
+  - All files from multiple sources are combined into single output
+
+- **m1f Include Patterns**: Fixed include pattern filtering
+  - Include patterns now properly applied from config files
+  - Fixed _load_include_patterns() to run even without include_paths_file
+  - Patterns correctly filter files when combined with extension filters
+
+- **m1f Bundle Configuration**: Fixed output directory exclusion pattern
+  - Changed `/m1f/**` to `m1f/m1f/**` to only exclude output directory
+  - Previously excluded all directories named "m1f" anywhere in the project
 
 - **m1f-html2md Streaming**: Fixed streaming output for Claude AI analysis
   - Fixed common_parent variable scope issue (used before definition)
@@ -3346,7 +3384,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 
 | Option                      | Description                                                                                                                                                                                                                                                      |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-s, --source-directory`    | Path to the directory containing files to process                                                                                                                                                                                                                |
+| `-s, --source-directory`    | Path to the directory containing files to process. Can be specified multiple times to include files from multiple directories (e.g., `-s dir1 -s dir2`)                                                                                                          |
 | `-i, --input-file`          | Path to a file containing a list of files/directories to process. Can be used together with --source-directory to resolve relative paths in the input file against the source directory                                                                          |
 | `-o, --output-file`         | Path for the combined output file                                                                                                                                                                                                                                |
 | `-f, --force`               | Force overwrite of existing output file without prompting                                                                                                                                                                                                        |
@@ -3354,6 +3392,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
 | `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
+| `--includes`                | Space-separated list of gitignore-style patterns to include (e.g., `--includes "*.py" "src/**" "!test.py"`). When combined with `--include-extensions`, files must match both criteria                                                                           |
 | `--docs-only`               | Include only documentation files (62 extensions including .md, .txt, .rst, .org, .tex, .info, etc.). Overrides include-extensions.                                                                                                                               |
 | `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
@@ -3428,11 +3467,21 @@ For detailed preset documentation, see:
 m1f --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
 
+# Using multiple source directories (new in v3.4.0)
+m1f -s ./src -s ./docs -s ./tests -o combined_output.txt
+
 # Using an input file containing paths to process (one per line)
 m1f -i filelist.txt -o combined_output.txt
 
 # Using both source directory and input file together
 m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+
+# Using include patterns to filter files (new in v3.4.0)
+m1f -s ./project -o output.txt --includes "src/**" "*.py" "!*_test.py"
+
+# Combining includes with extensions for precise filtering
+m1f -s ./project -o docs.txt --include-extensions .md .rst \
+  --includes "docs/**" "README.md"
 
 # Remove scraped metadata from HTML2MD files (new in v2.0.0)
 m1f -s ./scraped_docs -o ./clean_docs.txt \
@@ -6361,6 +6410,15 @@ bundles:
         excludes: ["**/test_*.py"]
       - path: "."
         include_files: ["README.md", "CHANGELOG.md"]
+
+  # New in v3.4.0: Using includes patterns
+  tool-specific:
+    description: "Specific tool code only"
+    output: "m1f/tool-code.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
+        includes: ["m1f/**", "s1f/**", "!**/test_*.py"]
 ```
 
 ### Using Presets
@@ -6487,6 +6545,25 @@ bundles:
     sources:
       - path: "."
         include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
+```
+
+### Combining Multiple Directories (v3.4.0+)
+
+When you need to combine files from completely different directories:
+
+```yaml
+bundles:
+  # Combine documentation from multiple locations
+  all-docs:
+    description: "All project documentation"
+    output: "m1f/all-docs.txt"
+    sources:
+      - path: "docs"
+      - path: "src"
+        include_extensions: [".md"]
+      - path: "../shared-docs"
+      - path: "/absolute/path/to/external/docs"
+        includes: ["api/**", "guides/**"]
 ```
 
 ### WordPress Plugin Bundle

@@ -193,13 +193,15 @@ class FileCombiner:
 
     def _validate_config(self) -> None:
         """Validate the configuration."""
-        if not self.config.source_directory and not self.config.input_file:
+        if not self.config.source_directories and not self.config.input_file:
             raise ValidationError("No source directory or input file specified")
 
-        if self.config.source_directory and not self.config.source_directory.exists():
-            raise FileNotFoundError(
-                f"Source directory not found: {self.config.source_directory}"
-            )
+        if self.config.source_directories:
+            for source_dir in self.config.source_directories:
+                if not source_dir.exists():
+                    raise FileNotFoundError(
+                        f"Source directory not found: {source_dir}"
+                    )
 
         if self.config.input_file and not self.config.input_file.exists():
             raise FileNotFoundError(f"Input file not found: {self.config.input_file}")
@@ -267,8 +269,11 @@ class FileCombiner:
 
     def _log_start_info(self) -> None:
         """Log initial information about the processing."""
-        if self.config.source_directory:
-            self.logger.info(f"Source directory: {self.config.source_directory}")
+        if self.config.source_directories:
+            if len(self.config.source_directories) == 1:
+                self.logger.info(f"Source directory: {self.config.source_directories[0]}")
+            else:
+                self.logger.info(f"Source directories: {', '.join(str(d) for d in self.config.source_directories)}")
 
         if self.config.input_file:
             self.logger.info(f"Input file: {self.config.input_file}")
@@ -422,7 +427,7 @@ class FileCombiner:
     async def _create_empty_output(self, output_path: Path) -> None:
         """Create an empty output file with a note."""
         try:
-            source = self.config.source_directory or "input file"
+            source = ", ".join(str(d) for d in self.config.source_directories) if self.config.source_directories else "input file"
             content = f"# No files processed from {source}\n"
 
             def write_empty():

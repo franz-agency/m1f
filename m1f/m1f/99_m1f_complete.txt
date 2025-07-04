@@ -1183,6 +1183,573 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options
 
+======= test.log ======
+2025-07-04 13:24:40,563 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/docs/01_m1f
+2025-07-04 13:24:40,563 - tools.m1f.core - INFO    : Separator style: Detailed
+2025-07-04 13:24:40,566 - tools.m1f.core - INFO    : Found 16 files to process
+2025-07-04 13:24:40,566 - tools.m1f.output_writer - INFO    : Processing 16 file(s) for inclusion...
+2025-07-04 13:24:40,566 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-07-04 13:24:40,751 - tools.m1f.core - INFO    : Successfully combined 16 files into '/home/fuf-user/git/m1f/test.txt'
+2025-07-04 13:24:40,751 - m1f_main - INFO    : Total execution time: 0.19 seconds
+2025-07-04 13:24:40,752 - m1f_main - INFO    : Processed 16 files
+
+======= test_debug.log ======
+2025-07-04 14:17:46,646 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
+2025-07-04 14:17:46,646 - tools.m1f.core - INFO    : Separator style: Detailed
+2025-07-04 14:17:46,674 - tools.m1f.core - INFO    : Found 71 files to process
+2025-07-04 14:17:46,675 - tools.m1f.output_writer - INFO    : Processing 71 file(s) for inclusion...
+2025-07-04 14:17:46,675 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-07-04 14:17:47,076 - tools.m1f.core - INFO    : Successfully combined 71 files into '/home/fuf-user/git/m1f/test_debug.txt'
+2025-07-04 14:17:47,076 - m1f_main - INFO    : Total execution time: 0.43 seconds
+2025-07-04 14:17:47,077 - m1f_main - INFO    : Processed 71 files
+
+======= test_debug2.log ======
+2025-07-04 14:23:25,987 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
+2025-07-04 14:23:25,988 - tools.m1f.core - INFO    : Separator style: Detailed
+2025-07-04 14:23:25,988 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/__pycache__
+2025-07-04 14:23:25,988 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f.py
+2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f_init.py
+2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape.py
+2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/_version.py
+2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f_claude.py
+2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/prepare_docs.py
+2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/__init__.py
+2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/setup.py
+2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/wp_export_md.py
+2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/token_counter.py
+2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md.py
+2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/__pycache__
+2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/core.py
+2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/__main__.py
+2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner_simple.py
+2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/analyze_html.py
+2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/preprocessors.py
+2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/cli_claude.py
+2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner.py
+2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/__init__.py
+2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/extractors.py
+2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/utils.py
+2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/api.py
+2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/convert_claude.py
+2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/cli.py
+2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/select_files_from_project.md
+2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_selected_files.md
+2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/convert_html_to_md.md
+2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_individual_file.md
+2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/synthesize_config.md
+2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/config/__pycache__
+2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/loader.py
+2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/__init__.py
+2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/models.py
+2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/__pycache__
+2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/__main__.py
+2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/__init__.py
+2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/config.py
+2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/utils.py
+2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/crawlers.py
+2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/cli.py
+2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__pycache__
+2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/httrack.py
+2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/selectolax.py
+2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/beautifulsoup.py
+2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__init__.py
+2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/README.md
+2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/scrapy_scraper.py
+2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/base.py
+2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/playwright.py
+2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/cloudflare.yaml
+2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/playwright.yaml
+2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/beautifulsoup.yaml
+2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/httrack.yaml
+2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/scrapy.yaml
+2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/selectolax.yaml
+2025-07-04 14:23:26,000 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/m1f/__pycache__
+2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/segmentation_prompt.md
+2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/verification_prompt.md
+2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/s1f/__pycache__
+2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/core.py
+2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/__main__.py
+2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/exceptions.py
+2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/parsers.py
+2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/__init__.py
+2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/config.py
+2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/utils.py
+2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/writers.py
+2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/models.py
+2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/logging.py
+2025-07-04 14:23:26,007 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/cli.py
+2025-07-04 14:23:26,007 - tools.m1f.core - INFO    : Found 20 files to process
+2025-07-04 14:23:26,007 - tools.m1f.core - DEBUG   : Files sorted by depth and name
+2025-07-04 14:23:26,007 - tools.m1f.output_writer - INFO    : Processing 20 file(s) for inclusion...
+2025-07-04 14:23:26,007 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-07-04 14:23:26,008 - tools.m1f.output_writer - DEBUG   : Processing file (1/20): m1f.py
+2025-07-04 14:23:26,009 - tools.m1f.output_writer - DEBUG   : Processing file (2/20): path_utils.py
+2025-07-04 14:23:26,009 - tools.m1f.output_writer - DEBUG   : Processing file (3/20): __init__.py
+2025-07-04 14:23:26,010 - tools.m1f.output_writer - DEBUG   : Processing file (4/20): __main__.py
+2025-07-04 14:23:26,010 - tools.m1f.output_writer - DEBUG   : Processing file (5/20): archive_creator.py
+2025-07-04 14:23:26,011 - tools.m1f.output_writer - DEBUG   : Processing file (6/20): auto_bundle.py
+2025-07-04 14:23:26,014 - tools.m1f.output_writer - DEBUG   : Processing file (7/20): cli.py
+2025-07-04 14:23:26,027 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2788
+2025-07-04 14:23:26,028 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 2790
+2025-07-04 14:23:26,029 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2788
+2025-07-04 14:23:26,030 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2788
+2025-07-04 14:23:26,031 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2790
+2025-07-04 14:23:26,031 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2788
+2025-07-04 14:23:26,032 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 2788
+2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
+2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
+2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-JP not active
+2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : GB2312 not active
+2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-KR not active
+2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : CP949 not active
+2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : Big5 not active
+2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-TW not active
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : Johab not active
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12799495392693638
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
+2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.7080353101079013
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : EUC-JP not active
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : GB2312 not active
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : EUC-KR not active
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : CP949 not active
+2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : Big5 not active
+2025-07-04 14:23:26,044 - chardet.charsetprober - DEBUG   : EUC-TW not active
+2025-07-04 14:23:26,044 - chardet.charsetprober - DEBUG   : Johab not active
+2025-07-04 14:23:26,044 - tools.m1f.output_writer - DEBUG   : Processing file (8/20): config.py
+2025-07-04 14:23:26,047 - tools.m1f.output_writer - DEBUG   : Processing file (9/20): config_loader.py
+2025-07-04 14:23:26,048 - tools.m1f.output_writer - DEBUG   : Processing file (10/20): constants.py
+2025-07-04 14:23:26,050 - tools.m1f.output_writer - DEBUG   : Processing file (11/20): core.py
+2025-07-04 14:23:26,053 - tools.m1f.output_writer - DEBUG   : Processing file (12/20): encoding_handler.py
+2025-07-04 14:23:26,055 - tools.m1f.output_writer - DEBUG   : Processing file (13/20): exceptions.py
+2025-07-04 14:23:26,055 - tools.m1f.output_writer - DEBUG   : Processing file (14/20): file_processor.py
+2025-07-04 14:23:26,061 - tools.m1f.output_writer - DEBUG   : Processing file (15/20): logging.py
+2025-07-04 14:23:26,062 - tools.m1f.output_writer - DEBUG   : Processing file (16/20): output_writer.py
+2025-07-04 14:23:26,067 - tools.m1f.output_writer - DEBUG   : Processing file (17/20): presets.py
+2025-07-04 14:23:26,074 - tools.m1f.output_writer - DEBUG   : Processing file (18/20): security_scanner.py
+2025-07-04 14:23:26,075 - tools.m1f.output_writer - DEBUG   : Processing file (19/20): separator_generator.py
+2025-07-04 14:23:26,077 - tools.m1f.output_writer - DEBUG   : Processing file (20/20): utils.py
+2025-07-04 14:23:26,080 - tools.m1f.core - INFO    : Successfully combined 20 files into '/home/fuf-user/git/m1f/test_debug2.txt'
+2025-07-04 14:23:26,080 - m1f_main - INFO    : Total execution time: 0.09 seconds
+2025-07-04 14:23:26,080 - m1f_main - INFO    : Processed 20 files
+
+======= test_exact.log ======
+2025-07-04 14:24:06,392 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
+2025-07-04 14:24:06,392 - tools.m1f.core - INFO    : Separator style: Standard
+2025-07-04 14:24:06,398 - tools.m1f.core - INFO    : Found 2 files to process
+2025-07-04 14:24:06,398 - tools.m1f.output_writer - INFO    : Processing 2 file(s) for inclusion...
+2025-07-04 14:24:06,398 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-07-04 14:24:06,399 - tools.m1f.core - INFO    : Successfully combined 2 files into '/home/fuf-user/git/m1f/test_exact.txt'
+2025-07-04 14:24:06,399 - m1f_main - INFO    : Total execution time: 0.01 seconds
+2025-07-04 14:24:06,399 - m1f_main - INFO    : Processed 2 files
+
+======= test_fixed.log ======
+2025-07-04 14:19:51,125 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
+2025-07-04 14:19:51,125 - tools.m1f.core - INFO    : Separator style: Detailed
+2025-07-04 14:19:51,135 - tools.m1f.core - INFO    : Found 26 files to process
+2025-07-04 14:19:51,136 - tools.m1f.output_writer - INFO    : Processing 26 file(s) for inclusion...
+2025-07-04 14:19:51,136 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-07-04 14:19:51,204 - tools.m1f.core - INFO    : Successfully combined 26 files into '/home/fuf-user/git/m1f/test_fixed.txt'
+2025-07-04 14:19:51,205 - m1f_main - INFO    : Total execution time: 0.08 seconds
+2025-07-04 14:19:51,205 - m1f_main - INFO    : Processed 26 files
+
+======= test_includes.log ======
+2025-07-04 13:25:33,820 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
+2025-07-04 13:25:33,820 - tools.m1f.core - INFO    : Separator style: Detailed
+2025-07-04 13:25:33,820 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/__pycache__
+2025-07-04 13:25:33,822 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/__pycache__
+2025-07-04 13:25:33,823 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/select_files_from_project.md
+2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_selected_files.md
+2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/convert_html_to_md.md
+2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_individual_file.md
+2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/synthesize_config.md
+2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/config/__pycache__
+2025-07-04 13:25:33,825 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/__pycache__
+2025-07-04 13:25:33,826 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__pycache__
+2025-07-04 13:25:33,827 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/README.md
+2025-07-04 13:25:33,827 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/cloudflare.yaml
+2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/playwright.yaml
+2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/beautifulsoup.yaml
+2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/httrack.yaml
+2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/scrapy.yaml
+2025-07-04 13:25:33,829 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/selectolax.yaml
+2025-07-04 13:25:33,829 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/m1f/__pycache__
+2025-07-04 13:25:33,831 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/segmentation_prompt.md
+2025-07-04 13:25:33,831 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/verification_prompt.md
+2025-07-04 13:25:33,832 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/s1f/__pycache__
+2025-07-04 13:25:33,834 - tools.m1f.core - INFO    : Found 71 files to process
+2025-07-04 13:25:33,834 - tools.m1f.core - DEBUG   : Files sorted by depth and name
+2025-07-04 13:25:33,834 - tools.m1f.output_writer - INFO    : Processing 71 file(s) for inclusion...
+2025-07-04 13:25:33,834 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-07-04 13:25:33,835 - tools.m1f.output_writer - DEBUG   : Processing file (1/71): __init__.py
+2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (2/71): _version.py
+2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (3/71): html2md.py
+2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (4/71): m1f.py
+2025-07-04 13:25:33,837 - tools.m1f.output_writer - DEBUG   : Processing file (5/71): m1f_claude.py
+2025-07-04 13:25:33,855 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 13166
+2025-07-04 13:25:33,857 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 3268
+2025-07-04 13:25:33,860 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 7058
+2025-07-04 13:25:33,861 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 3268
+2025-07-04 13:25:33,862 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 3268
+2025-07-04 13:25:33,863 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 3269
+2025-07-04 13:25:33,864 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 3268
+2025-07-04 13:25:33,866 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 7058
+2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
+2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0008665978698776126
+2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.06669660909212169
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.020260163830146078
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.004826885702612296
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5598521267355432
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:33,908 - tools.m1f.output_writer - DEBUG   : Processing file (6/71): m1f_init.py
+2025-07-04 13:25:33,916 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 4912
+2025-07-04 13:25:33,917 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2073
+2025-07-04 13:25:33,918 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 3571
+2025-07-04 13:25:33,919 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2073
+2025-07-04 13:25:33,920 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2073
+2025-07-04 13:25:33,920 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2074
+2025-07-04 13:25:33,921 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2073
+2025-07-04 13:25:33,922 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 3571
+2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12132476743738871
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.0
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.0
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.592066659710789
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:33,940 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:33,940 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/m1f_init.py: MacRoman (0.67)
+2025-07-04 13:25:33,940 - tools.m1f.output_writer - DEBUG   : Processing file (7/71): path_utils.py
+2025-07-04 13:25:33,940 - tools.m1f.output_writer - DEBUG   : Processing file (8/71): prepare_docs.py
+2025-07-04 13:25:33,942 - tools.m1f.output_writer - DEBUG   : Processing file (9/71): s1f.py
+2025-07-04 13:25:33,942 - tools.m1f.output_writer - DEBUG   : Processing file (10/71): scrape.py
+2025-07-04 13:25:33,943 - tools.m1f.output_writer - DEBUG   : Processing file (11/71): setup.py
+2025-07-04 13:25:33,944 - tools.m1f.output_writer - DEBUG   : Processing file (12/71): token_counter.py
+2025-07-04 13:25:33,944 - tools.m1f.output_writer - DEBUG   : Processing file (13/71): wp_export_md.py
+2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (14/71): __init__.py
+2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (15/71): __main__.py
+2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (16/71): analyze_html.py
+2025-07-04 13:25:33,947 - tools.m1f.output_writer - DEBUG   : Processing file (17/71): api.py
+2025-07-04 13:25:33,952 - tools.m1f.output_writer - DEBUG   : Processing file (18/71): claude_runner.py
+2025-07-04 13:25:33,957 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 2574
+2025-07-04 13:25:33,959 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2571
+2025-07-04 13:25:33,960 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 3330
+2025-07-04 13:25:33,961 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2571
+2025-07-04 13:25:33,962 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2571
+2025-07-04 13:25:33,963 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 3329
+2025-07-04 13:25:33,964 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2571
+2025-07-04 13:25:33,965 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 3330
+2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.6232257237634873
+2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
+2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
+2025-07-04 13:25:33,974 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner.py: MacRoman (0.70)
+2025-07-04 13:25:33,974 - tools.m1f.output_writer - DEBUG   : Processing file (19/71): claude_runner_simple.py
+2025-07-04 13:25:33,975 - tools.m1f.output_writer - DEBUG   : Processing file (20/71): cli.py
+2025-07-04 13:25:33,995 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 9630
+2025-07-04 13:25:34,001 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 9331
+2025-07-04 13:25:34,005 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 9333
+2025-07-04 13:25:34,007 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 9331
+2025-07-04 13:25:34,010 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 9331
+2025-07-04 13:25:34,014 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 9332
+2025-07-04 13:25:34,017 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 9331
+2025-07-04 13:25:34,022 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 9333
+2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
+2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
+2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.048832383505359254
+2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
+2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
+2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
+2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.009640882524843783
+2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.0
+2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5756326357520669
+2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,063 - tools.m1f.output_writer - DEBUG   : Processing file (21/71): cli_claude.py
+2025-07-04 13:25:34,067 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 669
+2025-07-04 13:25:34,067 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 667
+2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 880
+2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 667
+2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 667
+2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 879
+2025-07-04 13:25:34,069 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 667
+2025-07-04 13:25:34,069 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 667
+2025-07-04 13:25:34,082 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
+2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
+2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.05279906430788877
+2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
+2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
+2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
+2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.027787128136305905
+2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
+2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5623391748928872
+2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,084 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/cli_claude.py: MacRoman (0.69)
+2025-07-04 13:25:34,085 - tools.m1f.output_writer - DEBUG   : Processing file (22/71): convert_claude.py
+2025-07-04 13:25:34,088 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 875
+2025-07-04 13:25:34,088 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 873
+2025-07-04 13:25:34,089 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 875
+2025-07-04 13:25:34,089 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 873
+2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 873
+2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 874
+2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 873
+2025-07-04 13:25:34,091 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 875
+2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
+2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
+2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
+2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
+2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
+2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
+2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
+2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
+2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5804167545150976
+2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,097 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/convert_claude.py: MacRoman (0.70)
+2025-07-04 13:25:34,097 - tools.m1f.output_writer - DEBUG   : Processing file (23/71): core.py
+2025-07-04 13:25:34,099 - tools.m1f.output_writer - DEBUG   : Processing file (24/71): extractors.py
+2025-07-04 13:25:34,100 - tools.m1f.output_writer - DEBUG   : Processing file (25/71): preprocessors.py
+2025-07-04 13:25:34,101 - tools.m1f.output_writer - DEBUG   : Processing file (26/71): utils.py
+2025-07-04 13:25:34,103 - tools.m1f.output_writer - DEBUG   : Processing file (27/71): __init__.py
+2025-07-04 13:25:34,104 - tools.m1f.output_writer - DEBUG   : Processing file (28/71): __main__.py
+2025-07-04 13:25:34,104 - tools.m1f.output_writer - DEBUG   : Processing file (29/71): archive_creator.py
+2025-07-04 13:25:34,105 - tools.m1f.output_writer - DEBUG   : Processing file (30/71): auto_bundle.py
+2025-07-04 13:25:34,109 - tools.m1f.output_writer - DEBUG   : Processing file (31/71): cli.py
+2025-07-04 13:25:34,121 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2788
+2025-07-04 13:25:34,122 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 2790
+2025-07-04 13:25:34,123 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2788
+2025-07-04 13:25:34,124 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2788
+2025-07-04 13:25:34,125 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2790
+2025-07-04 13:25:34,126 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2788
+2025-07-04 13:25:34,127 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 2788
+2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
+2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
+2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : EUC-JP not active
+2025-07-04 13:25:34,136 - chardet.charsetprober - DEBUG   : GB2312 not active
+2025-07-04 13:25:34,136 - chardet.charsetprober - DEBUG   : EUC-KR not active
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : CP949 not active
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : Big5 not active
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : EUC-TW not active
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : Johab not active
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12799495392693638
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
+2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.7080353101079013
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : EUC-JP not active
+2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : GB2312 not active
+2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : EUC-KR not active
+2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : CP949 not active
+2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : Big5 not active
+2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : EUC-TW not active
+2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : Johab not active
+2025-07-04 13:25:34,139 - tools.m1f.output_writer - DEBUG   : Processing file (32/71): config.py
+2025-07-04 13:25:34,143 - tools.m1f.output_writer - DEBUG   : Processing file (33/71): config_loader.py
+2025-07-04 13:25:34,144 - tools.m1f.output_writer - DEBUG   : Processing file (34/71): constants.py
+2025-07-04 13:25:34,145 - tools.m1f.output_writer - DEBUG   : Processing file (35/71): core.py
+2025-07-04 13:25:34,148 - tools.m1f.output_writer - DEBUG   : Processing file (36/71): encoding_handler.py
+2025-07-04 13:25:34,150 - tools.m1f.output_writer - DEBUG   : Processing file (37/71): exceptions.py
+2025-07-04 13:25:34,150 - tools.m1f.output_writer - DEBUG   : Processing file (38/71): file_processor.py
+2025-07-04 13:25:34,155 - tools.m1f.output_writer - DEBUG   : Processing file (39/71): logging.py
+2025-07-04 13:25:34,156 - tools.m1f.output_writer - DEBUG   : Processing file (40/71): output_writer.py
+2025-07-04 13:25:34,161 - tools.m1f.output_writer - DEBUG   : Processing file (41/71): presets.py
+2025-07-04 13:25:34,168 - tools.m1f.output_writer - DEBUG   : Processing file (42/71): security_scanner.py
+2025-07-04 13:25:34,169 - tools.m1f.output_writer - DEBUG   : Processing file (43/71): separator_generator.py
+2025-07-04 13:25:34,171 - tools.m1f.output_writer - DEBUG   : Processing file (44/71): utils.py
+2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (45/71): __init__.py
+2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (46/71): __main__.py
+2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (47/71): cli.py
+2025-07-04 13:25:34,174 - tools.m1f.output_writer - DEBUG   : Processing file (48/71): config.py
+2025-07-04 13:25:34,175 - tools.m1f.output_writer - DEBUG   : Processing file (49/71): core.py
+2025-07-04 13:25:34,185 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 10280
+2025-07-04 13:25:34,191 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 10278
+2025-07-04 13:25:34,194 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 10280
+2025-07-04 13:25:34,197 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 10278
+2025-07-04 13:25:34,200 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 10278
+2025-07-04 13:25:34,203 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 10279
+2025-07-04 13:25:34,206 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 10278
+2025-07-04 13:25:34,210 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 10280
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-JP not active
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : GB2312 not active
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-KR not active
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : CP949 not active
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : Big5 not active
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-TW not active
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : Johab not active
+2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.585116903119894
+2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-JP not active
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : GB2312 not active
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-KR not active
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : CP949 not active
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : Big5 not active
+2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-TW not active
+2025-07-04 13:25:34,219 - chardet.charsetprober - DEBUG   : Johab not active
+2025-07-04 13:25:34,219 - tools.m1f.output_writer - DEBUG   : Processing file (50/71): exceptions.py
+2025-07-04 13:25:34,220 - tools.m1f.output_writer - DEBUG   : Processing file (51/71): logging.py
+2025-07-04 13:25:34,221 - tools.m1f.output_writer - DEBUG   : Processing file (52/71): models.py
+2025-07-04 13:25:34,221 - tools.m1f.output_writer - DEBUG   : Processing file (53/71): parsers.py
+2025-07-04 13:25:34,225 - tools.m1f.output_writer - DEBUG   : Processing file (54/71): utils.py
+2025-07-04 13:25:34,226 - tools.m1f.output_writer - DEBUG   : Processing file (55/71): writers.py
+2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (56/71): __init__.py
+2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (57/71): __main__.py
+2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (58/71): cli.py
+2025-07-04 13:25:34,233 - tools.m1f.output_writer - DEBUG   : Processing file (59/71): config.py
+2025-07-04 13:25:34,234 - tools.m1f.output_writer - DEBUG   : Processing file (60/71): crawlers.py
+2025-07-04 13:25:34,238 - tools.m1f.output_writer - DEBUG   : Processing file (61/71): utils.py
+2025-07-04 13:25:34,239 - tools.m1f.output_writer - DEBUG   : Processing file (62/71): __init__.py
+2025-07-04 13:25:34,239 - tools.m1f.output_writer - DEBUG   : Processing file (63/71): loader.py
+2025-07-04 13:25:34,242 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 2254
+2025-07-04 13:25:34,243 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2252
+2025-07-04 13:25:34,245 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2252
+2025-07-04 13:25:34,246 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2252
+2025-07-04 13:25:34,247 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2253
+2025-07-04 13:25:34,247 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2252
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-JP not active
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : GB2312 Chinese confidence = 0.01
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-KR not active
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : CP949 not active
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : Big5 not active
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-TW not active
+2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : Johab Korean confidence = 0.01
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.01
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.6826397542769941
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.0
+2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
+2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
+2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.6198389013021715
+2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
+2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
+2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
+2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : EUC-JP not active
+2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : GB2312 Chinese confidence = 0.01
+2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : EUC-KR not active
+2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : CP949 not active
+2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : Big5 not active
+2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : EUC-TW not active
+2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : Johab Korean confidence = 0.01
+2025-07-04 13:25:34,255 - tools.m1f.output_writer - DEBUG   : Processing file (64/71): models.py
+2025-07-04 13:25:34,257 - tools.m1f.output_writer - DEBUG   : Processing file (65/71): __init__.py
+2025-07-04 13:25:34,258 - tools.m1f.output_writer - DEBUG   : Processing file (66/71): base.py
+2025-07-04 13:25:34,260 - tools.m1f.output_writer - DEBUG   : Processing file (67/71): beautifulsoup.py
+2025-07-04 13:25:34,264 - tools.m1f.output_writer - DEBUG   : Processing file (68/71): httrack.py
+2025-07-04 13:25:34,267 - tools.m1f.output_writer - DEBUG   : Processing file (69/71): playwright.py
+2025-07-04 13:25:34,269 - tools.m1f.output_writer - DEBUG   : Processing file (70/71): scrapy_scraper.py
+2025-07-04 13:25:34,272 - tools.m1f.output_writer - DEBUG   : Processing file (71/71): selectolax.py
+2025-07-04 13:25:34,276 - tools.m1f.core - INFO    : Successfully combined 71 files into '/home/fuf-user/git/m1f/test_includes.txt'
+2025-07-04 13:25:34,276 - m1f_main - INFO    : Total execution time: 0.46 seconds
+2025-07-04 13:25:34,277 - m1f_main - INFO    : Processed 71 files
+
+======= test_multi.log ======
+2025-07-04 13:24:47,416 - tools.m1f.core - INFO    : Source directories: /home/fuf-user/git/m1f/docs/04_scrape, /home/fuf-user/git/m1f/tools/scrape_tool
+2025-07-04 13:24:47,416 - tools.m1f.core - INFO    : Separator style: Detailed
+2025-07-04 13:24:47,417 - tools.m1f.core - INFO    : Found 3 files to process
+2025-07-04 13:24:47,417 - tools.m1f.output_writer - INFO    : Processing 3 file(s) for inclusion...
+2025-07-04 13:24:47,417 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-07-04 13:24:47,425 - tools.m1f.core - INFO    : Successfully combined 3 files into '/home/fuf-user/git/m1f/test_multi.txt'
+2025-07-04 13:24:47,425 - m1f_main - INFO    : Total execution time: 0.01 seconds
+2025-07-04 13:24:47,425 - m1f_main - INFO    : Processed 3 files
+
+======= test_scraper_docs.log ======
+2025-07-04 13:12:05,005 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools/scrape_tool
+2025-07-04 13:12:05,005 - tools.m1f.core - INFO    : Separator style: Detailed
+2025-07-04 13:12:05,006 - tools.m1f.core - INFO    : Found 1 files to process
+2025-07-04 13:12:05,006 - tools.m1f.output_writer - INFO    : Processing 1 file(s) for inclusion...
+2025-07-04 13:12:05,007 - tools.m1f.core - INFO    : Successfully combined 1 files into '/home/fuf-user/git/m1f/test_scraper_docs.txt'
+2025-07-04 13:12:05,007 - m1f_main - INFO    : Total execution time: 0.00 seconds
+2025-07-04 13:12:05,007 - m1f_main - INFO    : Processed 1 files
+
 ======= wp-cli.example.yml ======
 # Example configuration for WP-CLI
 # Copy to `wp-cli.yml` and adjust the settings for your environment.
@@ -1548,6 +2115,17 @@ and this project adheres to
   - Added file tracking to show only actually created files in output
   - Improved output formatting with "Here is your file:" / "Here are your files:" section
   - Added proper spacing and bullet points for created files list
+  - Now runs `m1f-update` when `.m1f.config.yml` already exists instead of creating default bundles
+
+- **Multiple Source Directories**: m1f now supports multiple `-s` source directories
+  - Use `-s dir1 -s dir2` to combine files from multiple directories
+  - All source directories are processed and files are merged into single output
+  - Useful for documentation bundles that need files from different locations
+
+- **Include Patterns**: Added `--includes` parameter for pattern-based file filtering
+  - Works with gitignore-style patterns (e.g., `*.py`, `src/**`, `!test.py`)
+  - When combined with `--include-extensions`, files must match both criteria
+  - Allows precise control over which files to include in bundles
 
 ### Changed
 
@@ -1568,6 +2146,33 @@ and this project adheres to
   - Now only uses .gitignore from current directory, not parent directories
   - Prevents errors when running m1f-init in subdirectories without their own .gitignore
   - All m1f commands now check for .gitignore existence before using --exclude-paths-file
+
+- **m1f-init Python Project Detection**: Fixed language detection prioritization
+  - Now prioritizes by file count to correctly identify primary language
+  - Python projects are now properly detected even with mixed language codebases
+
+- **m1f-init Behavior with Existing Config**: Fixed to run m1f-update when config exists
+  - No longer creates default bundles when `.m1f.config.yml` already exists
+  - Automatically runs `m1f-update` to use existing configuration
+
+- **m1f Directory Exclusion Performance**: Fixed severe performance issue with directory filtering
+  - Directory exclusions from .gitignore now properly applied at directory traversal level
+  - Reduced bundle creation time from 42+ seconds to ~1.2 seconds (35x improvement)
+  - Fixed tmp/ directory exclusion that was scanning 362,419 unnecessary files
+
+- **m1f Multiple Source Directories**: Fixed CLI to support multiple source directories
+  - Changed from single source to List[Path] throughout codebase
+  - Now properly processes all specified source directories with `-s dir1 -s dir2`
+  - All files from multiple sources are combined into single output
+
+- **m1f Include Patterns**: Fixed include pattern filtering
+  - Include patterns now properly applied from config files
+  - Fixed _load_include_patterns() to run even without include_paths_file
+  - Patterns correctly filter files when combined with extension filters
+
+- **m1f Bundle Configuration**: Fixed output directory exclusion pattern
+  - Changed `/m1f/**` to `m1f/m1f/**` to only exclude output directory
+  - Previously excluded all directories named "m1f" anywhere in the project
 
 - **m1f-html2md Streaming**: Fixed streaming output for Claude AI analysis
   - Fixed common_parent variable scope issue (used before definition)
@@ -11331,7 +11936,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 
 | Option                      | Description                                                                                                                                                                                                                                                      |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-s, --source-directory`    | Path to the directory containing files to process                                                                                                                                                                                                                |
+| `-s, --source-directory`    | Path to the directory containing files to process. Can be specified multiple times to include files from multiple directories (e.g., `-s dir1 -s dir2`)                                                                                                          |
 | `-i, --input-file`          | Path to a file containing a list of files/directories to process. Can be used together with --source-directory to resolve relative paths in the input file against the source directory                                                                          |
 | `-o, --output-file`         | Path for the combined output file                                                                                                                                                                                                                                |
 | `-f, --force`               | Force overwrite of existing output file without prompting                                                                                                                                                                                                        |
@@ -11339,6 +11944,7 @@ m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
 | `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
+| `--includes`                | Space-separated list of gitignore-style patterns to include (e.g., `--includes "*.py" "src/**" "!test.py"`). When combined with `--include-extensions`, files must match both criteria                                                                           |
 | `--docs-only`               | Include only documentation files (62 extensions including .md, .txt, .rst, .org, .tex, .info, etc.). Overrides include-extensions.                                                                                                                               |
 | `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
@@ -11413,11 +12019,21 @@ For detailed preset documentation, see:
 m1f --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
 
+# Using multiple source directories (new in v3.4.0)
+m1f -s ./src -s ./docs -s ./tests -o combined_output.txt
+
 # Using an input file containing paths to process (one per line)
 m1f -i filelist.txt -o combined_output.txt
 
 # Using both source directory and input file together
 m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+
+# Using include patterns to filter files (new in v3.4.0)
+m1f -s ./project -o output.txt --includes "src/**" "*.py" "!*_test.py"
+
+# Combining includes with extensions for precise filtering
+m1f -s ./project -o docs.txt --include-extensions .md .rst \
+  --includes "docs/**" "README.md"
 
 # Remove scraped metadata from HTML2MD files (new in v2.0.0)
 m1f -s ./scraped_docs -o ./clean_docs.txt \
@@ -14346,6 +14962,15 @@ bundles:
         excludes: ["**/test_*.py"]
       - path: "."
         include_files: ["README.md", "CHANGELOG.md"]
+
+  # New in v3.4.0: Using includes patterns
+  tool-specific:
+    description: "Specific tool code only"
+    output: "m1f/tool-code.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
+        includes: ["m1f/**", "s1f/**", "!**/test_*.py"]
 ```
 
 ### Using Presets
@@ -14472,6 +15097,25 @@ bundles:
     sources:
       - path: "."
         include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
+```
+
+### Combining Multiple Directories (v3.4.0+)
+
+When you need to combine files from completely different directories:
+
+```yaml
+bundles:
+  # Combine documentation from multiple locations
+  all-docs:
+    description: "All project documentation"
+    output: "m1f/all-docs.txt"
+    sources:
+      - path: "docs"
+      - path: "src"
+        include_extensions: [".md"]
+      - path: "../shared-docs"
+      - path: "/absolute/path/to/external/docs"
+        includes: ["api/**", "guides/**"]
 ```
 
 ### WordPress Plugin Bundle
@@ -26757,6 +27401,12 @@ class AutoBundler:
                     cmd_parts.append("--include-extensions")
                     cmd_parts.extend(source["include_extensions"])
 
+            # Handle includes at source level
+            if "includes" in source:
+                # Add includes patterns
+                cmd_parts.append("--includes")
+                cmd_parts.extend(source["includes"])
+                
             # Collect excludes from source
             if "excludes" in source:
                 all_excludes.extend(source["excludes"])
@@ -27154,7 +27804,8 @@ Perfect for:
         "--source-directory",
         type=str,
         metavar="DIR",
-        help="Path to the directory containing files to combine",
+        action="append",
+        help="Path to the directory containing files to combine (can be specified multiple times)",
     )
 
     io_group.add_argument(
@@ -27238,6 +27889,14 @@ Perfect for:
         nargs="+",
         metavar="FILE",
         help="File(s) containing paths to include (supports gitignore format, multiple files merged)",
+    )
+
+    filter_group.add_argument(
+        "--includes",
+        type=str,
+        nargs="*",
+        metavar="PATTERN",
+        help="Include only files matching these patterns (gitignore format)",
     )
 
     filter_group.add_argument(
@@ -27543,6 +28202,7 @@ class FilterConfig:
     exclude_patterns: List[str] = field(default_factory=list)
     exclude_paths_file: Optional[Union[str, List[str]]] = None
     include_paths_file: Optional[Union[str, List[str]]] = None
+    include_patterns: List[str] = field(default_factory=list)
     include_extensions: Set[str] = field(default_factory=set)
     exclude_extensions: Set[str] = field(default_factory=set)
     docs_only: bool = False
@@ -27590,7 +28250,7 @@ class PresetConfig:
 class Config:
     """Main configuration class that combines all settings."""
 
-    source_directory: Optional[Path]
+    source_directories: List[Path]
     input_file: Optional[Path]
     input_include_files: List[Path]
     output: OutputConfig
@@ -27612,7 +28272,7 @@ class Config:
             config = cls._apply_preset_overrides(config, args)
 
         # Validate that we have required inputs after preset application
-        if not config.source_directory and not config.input_file:
+        if not config.source_directories and not config.input_file:
             raise ValueError(
                 "At least one of source_directory or input_file must be provided "
                 "(either via CLI arguments or preset configuration)"
@@ -27629,11 +28289,14 @@ class Config:
     @classmethod
     def _create_from_cli_args(cls, args: argparse.Namespace) -> Config:
         """Create initial configuration from CLI arguments."""
-        # Process source directory with path traversal validation
-        source_dir = None
+        # Process source directories with path traversal validation
+        source_dirs = []
         if args.source_directory:
-            resolved_path = Path(args.source_directory).resolve()
-            source_dir = validate_path_traversal(resolved_path)
+            # args.source_directory is now a list due to action="append"
+            for source_dir in args.source_directory:
+                resolved_path = Path(source_dir).resolve()
+                validated_path = validate_path_traversal(resolved_path)
+                source_dirs.append(validated_path)
 
         # Process input file with path traversal validation
         input_file = None
@@ -27686,6 +28349,7 @@ class Config:
             exclude_patterns=getattr(args, "excludes", []),
             exclude_paths_file=getattr(args, "exclude_paths_file", None),
             include_paths_file=getattr(args, "include_paths_file", None),
+            include_patterns=getattr(args, "includes", []),
             include_extensions=set(
                 normalize_extensions(getattr(args, "include_extensions", []))
             ),
@@ -27743,7 +28407,7 @@ class Config:
         )
 
         return cls(
-            source_directory=source_dir,
+            source_directories=source_dirs,
             input_file=input_file,
             input_include_files=include_files,
             output=output_config,
@@ -27772,7 +28436,7 @@ class Config:
         # Apply overrides - CLI arguments take precedence over presets
 
         # Input/Output overrides
-        source_dir = config.source_directory
+        source_dirs = config.source_directories
         input_file = config.input_file
         output_file = config.output.output_file
         input_include_files = config.input_include_files
@@ -27781,7 +28445,8 @@ class Config:
         # Paths from presets are trusted
         if not args.source_directory and global_settings.source_directory:
             resolved_path = Path(global_settings.source_directory).resolve()
-            source_dir = validate_path_traversal(resolved_path, from_preset=True)
+            validated_path = validate_path_traversal(resolved_path, from_preset=True)
+            source_dirs = [validated_path]
 
         if not args.input_file and global_settings.input_file:
             resolved_path = Path(global_settings.input_file).resolve()
@@ -27881,7 +28546,7 @@ class Config:
 
         # Return new config with overrides applied
         return cls(
-            source_directory=source_dir,
+            source_directories=source_dirs,
             input_file=input_file,
             input_include_files=input_include_files,
             output=output_config,
@@ -28565,13 +29230,15 @@ class FileCombiner:
 
     def _validate_config(self) -> None:
         """Validate the configuration."""
-        if not self.config.source_directory and not self.config.input_file:
+        if not self.config.source_directories and not self.config.input_file:
             raise ValidationError("No source directory or input file specified")
 
-        if self.config.source_directory and not self.config.source_directory.exists():
-            raise FileNotFoundError(
-                f"Source directory not found: {self.config.source_directory}"
-            )
+        if self.config.source_directories:
+            for source_dir in self.config.source_directories:
+                if not source_dir.exists():
+                    raise FileNotFoundError(
+                        f"Source directory not found: {source_dir}"
+                    )
 
         if self.config.input_file and not self.config.input_file.exists():
             raise FileNotFoundError(f"Input file not found: {self.config.input_file}")
@@ -28639,8 +29306,11 @@ class FileCombiner:
 
     def _log_start_info(self) -> None:
         """Log initial information about the processing."""
-        if self.config.source_directory:
-            self.logger.info(f"Source directory: {self.config.source_directory}")
+        if self.config.source_directories:
+            if len(self.config.source_directories) == 1:
+                self.logger.info(f"Source directory: {self.config.source_directories[0]}")
+            else:
+                self.logger.info(f"Source directories: {', '.join(str(d) for d in self.config.source_directories)}")
 
         if self.config.input_file:
             self.logger.info(f"Input file: {self.config.input_file}")
@@ -28794,7 +29464,7 @@ class FileCombiner:
     async def _create_empty_output(self, output_path: Path) -> None:
         """Create an empty output file with a note."""
         try:
-            source = self.config.source_directory or "input file"
+            source = ", ".join(str(d) for d in self.config.source_directories) if self.config.source_directories else "input file"
             content = f"# No files processed from {source}\n"
 
             def write_empty():
@@ -29259,8 +29929,9 @@ class FileProcessor:
         for pattern in all_exclude_patterns:
             if "/" not in pattern and "*" not in pattern and "?" not in pattern:
                 # Simple name without wildcards or paths
-                if self.config.source_directory:
-                    potential_path = self.config.source_directory / pattern
+                if self.config.source_directories:
+                    # Try to find the pattern in any of the source directories
+                    potential_path = self.config.source_directories[0] / pattern
                     if potential_path.exists():
                         if potential_path.is_dir():
                             self.excluded_dirs.add(pattern.lower())
@@ -29288,8 +29959,8 @@ class FileProcessor:
         self.exact_includes = set()
         self.include_gitignore_spec = None
 
-        if self.config.filter.include_paths_file:
-            self._load_include_patterns()
+        # Load include patterns from files or config
+        self._load_include_patterns()
 
         # Build gitignore spec from command-line patterns
         self._build_gitignore_spec()
@@ -29336,8 +30007,9 @@ class FileProcessor:
                     self.logger.info(f"Processing {exclude_file} as exact path list")
                     for line in lines:
                         path = Path(line)
-                        if not path.is_absolute() and self.config.source_directory:
-                            path = self.config.source_directory / path
+                        if not path.is_absolute() and self.config.source_directories:
+                            # Use the first source directory as base
+                            path = self.config.source_directories[0] / path
                         try:
                             validated_path = validate_path_traversal(path.resolve())
                             self.exact_excludes.add(str(validated_path))
@@ -29356,65 +30028,82 @@ class FileProcessor:
             )
 
     def _load_include_patterns(self) -> None:
-        """Load inclusion patterns from file(s)."""
-        include_files_param = self.config.filter.include_paths_file
-        if not include_files_param:
-            return
-
-        # Convert to list if it's a single string/Path
-        if isinstance(include_files_param, (str, Path)):
-            include_files = [include_files_param]
-        else:
-            include_files = include_files_param
-
+        """Load inclusion patterns from file(s) and/or config."""
         all_gitignore_lines = []
+        
+        # First, load patterns from include_paths_file if specified
+        include_files_param = self.config.filter.include_paths_file
+        if include_files_param:
+            # Convert to list if it's a single string/Path
+            if isinstance(include_files_param, (str, Path)):
+                include_files = [include_files_param]
+            else:
+                include_files = include_files_param
 
-        for include_file_str in include_files:
-            include_file = Path(include_file_str)
+            for include_file_str in include_files:
+                include_file = Path(include_file_str)
 
-            if not include_file.exists():
-                self.logger.info(f"Include file not found (skipping): {include_file}")
-                continue
+                if not include_file.exists():
+                    self.logger.info(f"Include file not found (skipping): {include_file}")
+                    continue
 
-            try:
-                with open(include_file, "r", encoding="utf-8") as f:
-                    lines = [
-                        line.strip()
-                        for line in f
-                        if line.strip() and not line.strip().startswith("#")
-                    ]
+                try:
+                    with open(include_file, "r", encoding="utf-8") as f:
+                        lines = [
+                            line.strip()
+                            for line in f
+                            if line.strip() and not line.strip().startswith("#")
+                        ]
 
-                # Detect if it's gitignore format
-                is_gitignore = any(
-                    any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")
-                    for line in lines
-                )
+                    # Detect if it's gitignore format
+                    is_gitignore = any(
+                        any(ch in line for ch in ["*", "?", "!"]) or line.endswith("/")
+                        for line in lines
+                    )
 
-                if is_gitignore:
-                    self.logger.info(f"Processing {include_file} as gitignore format")
-                    all_gitignore_lines.extend(lines)
-                else:
-                    self.logger.info(f"Processing {include_file} as exact path list")
-                    for line in lines:
-                        path = Path(line)
-                        if not path.is_absolute() and self.config.source_directory:
-                            path = self.config.source_directory / path
-                        try:
-                            validated_path = validate_path_traversal(path.resolve())
-                            self.exact_includes.add(str(validated_path))
-                        except ValueError as e:
-                            self.logger.warning(
-                                f"Skipping invalid include path '{line}': {e}"
-                            )
+                    if is_gitignore:
+                        self.logger.info(f"Processing {include_file} as gitignore format")
+                        all_gitignore_lines.extend(lines)
+                    else:
+                        self.logger.info(f"Processing {include_file} as exact path list")
+                        for line in lines:
+                            path = Path(line)
+                            if not path.is_absolute() and self.config.source_directories:
+                                # Use the first source directory as base
+                                path = self.config.source_directories[0] / path
+                            try:
+                                validated_path = validate_path_traversal(path.resolve())
+                                self.exact_includes.add(str(validated_path))
+                            except ValueError as e:
+                                self.logger.warning(
+                                    f"Skipping invalid include path '{line}': {e}"
+                                )
 
-            except Exception as e:
-                self.logger.warning(f"Error reading include file {include_file}: {e}")
+                except Exception as e:
+                    self.logger.warning(f"Error reading include file {include_file}: {e}")
 
+        # Add include patterns from config
+        if self.config.filter.include_patterns:
+            all_gitignore_lines.extend(self.config.filter.include_patterns)
+            
         # Build combined gitignore spec from all collected lines
         if all_gitignore_lines:
             self.include_gitignore_spec = pathspec.PathSpec.from_lines(
                 "gitwildmatch", all_gitignore_lines
             )
+
+    def _get_base_dir_for_path(self, path: Path) -> Path:
+        """Get the appropriate base directory for a given path."""
+        # Check if the path is under any of our source directories
+        if self.config.source_directories:
+            for source_dir in self.config.source_directories:
+                try:
+                    path.relative_to(source_dir)
+                    return source_dir
+                except ValueError:
+                    continue
+        # Default to the path's parent
+        return path.parent
 
     def _build_gitignore_spec(self) -> None:
         """Build gitignore spec from command-line patterns."""
@@ -29452,11 +30141,12 @@ class FileProcessor:
             # Process from input file
             input_paths = await self._process_input_file()
             files_to_process = await self._gather_from_paths(input_paths)
-        elif self.config.source_directory:
-            # Process from source directory
-            files_to_process = await self._gather_from_directory(
-                self.config.source_directory
-            )
+        elif self.config.source_directories:
+            # Process from source directories
+            files_to_process = []
+            for source_dir in self.config.source_directories:
+                dir_files = await self._gather_from_directory(source_dir)
+                files_to_process.extend(dir_files)
         else:
             raise ValidationError("No source directory or input file specified")
 
@@ -29470,7 +30160,7 @@ class FileProcessor:
         input_file = self.config.input_file
         paths = []
 
-        base_dir = self.config.source_directory or input_file.parent
+        base_dir = self.config.source_directories[0] if self.config.source_directories else input_file.parent
 
         try:
             with open(input_file, "r", encoding="utf-8") as f:
@@ -29551,7 +30241,7 @@ class FileProcessor:
             if path.is_file():
                 if await self._should_include_file(path, explicitly_included=True):
                     rel_path = get_relative_path(
-                        path, self.config.source_directory or path.parent
+                        path, self._get_base_dir_for_path(path)
                     )
                     files.append((path, rel_path))
             elif path.is_dir():
@@ -29583,7 +30273,7 @@ class FileProcessor:
 
                 if await self._should_include_file(file_path, explicitly_included):
                     rel_path = get_relative_path(
-                        file_path, self.config.source_directory or directory
+                        file_path, self._get_base_dir_for_path(file_path)
                     )
 
                     # Check for duplicates
@@ -29637,7 +30327,7 @@ class FileProcessor:
             # Check gitignore patterns - this is the critical performance fix!
             if self.gitignore_spec:
                 # Get relative path from source directory or current root
-                base_dir = self.config.source_directory or Path.cwd()
+                base_dir = self.config.source_directories[0] if self.config.source_directories else Path.cwd()
                 try:
                     rel_path = dir_path.relative_to(base_dir)
                 except ValueError:
@@ -29706,7 +30396,7 @@ class FileProcessor:
             # Check include gitignore patterns
             if not include_matched and self.include_gitignore_spec:
                 rel_path = get_relative_path(
-                    file_path, self.config.source_directory or file_path.parent
+                    file_path, self._get_base_dir_for_path(file_path)
                 )
                 if self.include_gitignore_spec.match_file(rel_path):
                     include_matched = True
@@ -29726,7 +30416,7 @@ class FileProcessor:
         # Check gitignore patterns
         if self.gitignore_spec:
             rel_path = get_relative_path(
-                file_path, self.config.source_directory or file_path.parent
+                file_path, self._get_base_dir_for_path(file_path)
             )
             if self.gitignore_spec.match_file(rel_path):
                 return False

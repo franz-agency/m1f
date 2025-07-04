@@ -4,7 +4,7 @@
 global:
   # Exclusions that apply to all bundles
   global_excludes:
-    - "/m1f/**"
+    - "m1f/m1f/**"  # Exclude the m1f output directory
     - "**/*.pyc"
     - "**/tmp/**"
     - "tmp/**"  # Exclude project root tmp directory
@@ -86,41 +86,41 @@ bundles:
       - path: "tests/"
         excludes: ["**/tests/**/source/**", "**/tests/**/extracted/**", "**/tests/**/output/**", "**/tests/**/expected/**", "**/tests/**/scraped_examples/**"]
 
-  mf1-tool-code:
-    description: "mf1 complete code"
+  m1f-tool-code:
+    description: "m1f tool code only"
     group: "source"
-    output: "m1f/m1f/95_mf1_code.txt"
+    output: "m1f/m1f/93_m1f_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
-        includes: ["m1f/**", "m1f.py", "path_utils.py", "__init__.py"]
+        includes: ["m1f/**", "m1f.py", "path_utils.py"]
 
   s1f-code:
-    description: "s1f complete code"
+    description: "s1f tool code only"
     group: "source"
-    output: "m1f/m1f/96_s1f_code.txt"
+    output: "m1f/m1f/96_s1f_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
-        includes: ["s1f/**", "s1f.py", "path_utils.py", "__init__.py"]
+        includes: ["s1f/**", "s1f.py", "path_utils.py"]
 
   html2md-code:
-    description: "html2md complete code"
+    description: "html2md tool code only"
     group: "source"
-    output: "m1f/m1f/97_html2md_code.txt"
+    output: "m1f/m1f/97_html2md_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
-        includes: ["html2md_tool/**", "html2md.py", "path_utils.py", "__init__.py"]
+        includes: ["html2md_tool/**", "html2md.py", "path_utils.py"]
 
   scraper-code:
-    description: "m1f-scrape complete code"
+    description: "m1f-scrape tool code only"
     group: "source"
-    output: "m1f/m1f/98_scraper_code.txt"
+    output: "m1f/m1f/98_scraper_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
-        includes: ["scrape_tool/**", "scrape.py", "path_utils.py", "__init__.py"]
+        includes: ["scrape_tool/**", "scrape.py", "path_utils.py"]
 
   # Complete project bundle
   all:
