@@ -90,7 +90,7 @@ with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool (v3.2.0) solves a common challenge when working with LLMs:
+The m1f tool (v3.4.0) solves a common challenge when working with LLMs:
 providing sufficient context without exceeding token limits. Built with Python
 3.10+ and modern architecture patterns, it creates optimized reference files
 from multiple sources while automatically handling duplicates and providing
@@ -119,6 +119,9 @@ comprehensive metadata.
 # Quick setup for any project
 cd /your/project
 m1f-init
+
+# Initialize without creating symlink to m1f documentation
+m1f-init --no-symlink
 
 # This creates in the m1f/ directory:
 # - <project>_complete.txt          # Full project bundle
@@ -914,7 +917,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
-available in m1f v3.2.0.
+available in m1f v3.4.0.
 
 ## Synopsis
 
@@ -947,7 +950,7 @@ Show help message and exit.
 
 ### `--version`
 
-Show program version and exit. Current version: v3.2.0
+Show program version and exit. Current version: v3.4.0
 
 ## Input/Output Options
 
@@ -1237,7 +1240,7 @@ Disable all preset processing, even if preset files are specified.
 ## Environment Variables
 
 **Note**: The following environment variables are documented for future
-implementation but are not currently supported in v3.2.0:
+implementation but are not currently supported in v3.4.0:
 
 - `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
 - `M1F_SECURITY_CHECK` - Default security check mode (not implemented)
@@ -3361,11 +3364,15 @@ m1f-init
 
    - Makes m1f docs available to AI tools
    - Creates symlink on Linux/macOS, copies on Windows
+   - Use `--no-symlink` to skip this step if not needed
 
 2. **Analyzes your project**
 
-   - Detects project type and languages
+   - Detects project type and programming languages
+   - Supports Python, JavaScript, TypeScript, PHP, Java, C#, Go, Rust, Ruby
    - Creates file and directory listings
+   - Shows clean output with created files listed at the end
+   - Automatically cleans up temporary analysis files
 
 3. **Generates initial bundles with auxiliary files**
 
@@ -3379,6 +3386,8 @@ m1f-init
 4. **Creates basic configuration**
    - Generates `.m1f.config.yml` if not present
    - Sets up sensible defaults
+   - Handles .gitignore correctly (only uses from current directory)
+   - Smart Git detection (clean messages for subdirectories)
 
 #### Using with AI Tools:
 

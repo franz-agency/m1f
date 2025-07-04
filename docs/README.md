@@ -1,6 +1,6 @@
 # m1f Documentation
 
-This directory contains detailed documentation for the m1f project v3.2.0.
+This directory contains detailed documentation for the m1f project v3.4.0.
 
 ## Contents
 
@@ -76,7 +76,7 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 
 ## Project Overview
 
-m1f v2.0.0 is a comprehensive toolkit designed to help you work more efficiently
+m1f v3.4.0 is a comprehensive toolkit designed to help you work more efficiently
 with Large Language Models (LLMs) by managing context. Built with modern Python
 3.10+ architecture, these tools solve core challenges when working with AI
 assistants.

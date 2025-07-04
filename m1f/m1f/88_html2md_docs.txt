@@ -6,12 +6,12 @@ extractors, async I/O, and parallel processing capabilities.
 
 ## Overview
 
-The html2md tool (v3.1.0) provides a robust solution for converting HTML content
+The html2md tool (v3.4.0) provides a robust solution for converting HTML content
 to Markdown format, with fine-grained control over the conversion process. Built
 with Python 3.10+ and modern async architecture, it focuses on intelligent
 content extraction and conversion.
 
-**New in v3.1.0:** Custom extractor plugin system for site-specific content
+**New in v3.4.0:** Custom extractor plugin system for site-specific content
 extraction.
 
 **Note:** Web scraping functionality has been moved to the separate `webscraper`
@@ -208,6 +208,8 @@ m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
 - **Transparent Process**: Creates temporary analysis files in m1f/ directory
 - **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI
   integration
+- **Streaming Output**: Real-time progress display during Claude analysis (v3.4.0)
+- **Robust Config Loading**: Handles Claude-generated configs with unknown fields gracefully (v3.4.0)
 
 ### AI-Powered Conversion
 
@@ -486,7 +488,7 @@ The converter provides robust character encoding detection and conversion:
 
 ## Architecture
 
-HTML2MD v3.1.0 features a modern, modular architecture:
+HTML2MD v3.4.0 features a modern, modular architecture:
 
 ```
 tools/html2md/

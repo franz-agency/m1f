@@ -1461,7 +1461,7 @@ cd "$ORIGINAL_DIR" && exec python -m tools.m1f auto-bundle "$@"
 ======= docs/README.md ======
 # m1f Documentation
 
-This directory contains detailed documentation for the m1f project v3.2.0.
+This directory contains detailed documentation for the m1f project v3.4.0.
 
 ## Contents
 
@@ -1537,7 +1537,7 @@ This directory contains detailed documentation for the m1f project v3.2.0.
 
 ## Project Overview
 
-m1f v2.0.0 is a comprehensive toolkit designed to help you work more efficiently
+m1f v3.4.0 is a comprehensive toolkit designed to help you work more efficiently
 with Large Language Models (LLMs) by managing context. Built with modern Python
 3.10+ architecture, these tools solve core challenges when working with AI
 assistants.
@@ -12905,7 +12905,7 @@ with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool (v3.2.0) solves a common challenge when working with LLMs:
+The m1f tool (v3.4.0) solves a common challenge when working with LLMs:
 providing sufficient context without exceeding token limits. Built with Python
 3.10+ and modern architecture patterns, it creates optimized reference files
 from multiple sources while automatically handling duplicates and providing
@@ -12934,6 +12934,9 @@ comprehensive metadata.
 # Quick setup for any project
 cd /your/project
 m1f-init
+
+# Initialize without creating symlink to m1f documentation
+m1f-init --no-symlink
 
 # This creates in the m1f/ directory:
 # - <project>_complete.txt          # Full project bundle
@@ -13729,7 +13732,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
-available in m1f v3.2.0.
+available in m1f v3.4.0.
 
 ## Synopsis
 
@@ -13762,7 +13765,7 @@ Show help message and exit.
 
 ### `--version`
 
-Show program version and exit. Current version: v3.2.0
+Show program version and exit. Current version: v3.4.0
 
 ## Input/Output Options
 
@@ -14052,7 +14055,7 @@ Disable all preset processing, even if preset files are specified.
 ## Environment Variables
 
 **Note**: The following environment variables are documented for future
-implementation but are not currently supported in v3.2.0:
+implementation but are not currently supported in v3.4.0:
 
 - `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
 - `M1F_SECURITY_CHECK` - Default security check mode (not implemented)
@@ -16176,11 +16179,15 @@ m1f-init
 
    - Makes m1f docs available to AI tools
    - Creates symlink on Linux/macOS, copies on Windows
+   - Use `--no-symlink` to skip this step if not needed
 
 2. **Analyzes your project**
 
-   - Detects project type and languages
+   - Detects project type and programming languages
+   - Supports Python, JavaScript, TypeScript, PHP, Java, C#, Go, Rust, Ruby
    - Creates file and directory listings
+   - Shows clean output with created files listed at the end
+   - Automatically cleans up temporary analysis files
 
 3. **Generates initial bundles with auxiliary files**
 
@@ -16194,6 +16201,8 @@ m1f-init
 4. **Creates basic configuration**
    - Generates `.m1f.config.yml` if not present
    - Sets up sensible defaults
+   - Handles .gitignore correctly (only uses from current directory)
+   - Smart Git detection (clean messages for subdirectories)
 
 #### Using with AI Tools:
 
@@ -19764,12 +19773,12 @@ extractors, async I/O, and parallel processing capabilities.
 
 ## Overview
 
-The html2md tool (v3.1.0) provides a robust solution for converting HTML content
+The html2md tool (v3.4.0) provides a robust solution for converting HTML content
 to Markdown format, with fine-grained control over the conversion process. Built
 with Python 3.10+ and modern async architecture, it focuses on intelligent
 content extraction and conversion.
 
-**New in v3.1.0:** Custom extractor plugin system for site-specific content
+**New in v3.4.0:** Custom extractor plugin system for site-specific content
 extraction.
 
 **Note:** Web scraping functionality has been moved to the separate `webscraper`
@@ -19966,6 +19975,8 @@ m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
 - **Transparent Process**: Creates temporary analysis files in m1f/ directory
 - **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI
   integration
+- **Streaming Output**: Real-time progress display during Claude analysis (v3.4.0)
+- **Robust Config Loading**: Handles Claude-generated configs with unknown fields gracefully (v3.4.0)
 
 ### AI-Powered Conversion
 
@@ -20244,7 +20255,7 @@ The converter provides robust character encoding detection and conversion:
 
 ## Architecture
 
-HTML2MD v3.1.0 features a modern, modular architecture:
+HTML2MD v3.4.0 features a modern, modular architecture:
 
 ```
 tools/html2md/
