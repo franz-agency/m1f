@@ -1406,7 +1406,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Create segmentation prompt focused on advanced bundling
         segmentation_prompt = self._create_segmentation_prompt(context)
-        
+
         # Show prompt in verbose mode
         if self.verbose:
             print(f"\n📝 PHASE 1 PROMPT (Segmentation):")
@@ -1417,55 +1417,61 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Execute Claude directly with the prompt
         print(f"\n🤖 Sending to Claude Code...")
-        print(f"⏳ Claude will now analyze your project and create topic-specific bundles...")
+        print(
+            f"⏳ Claude will now analyze your project and create topic-specific bundles..."
+        )
         print(f"\n⚠️  IMPORTANT: This process may take 1-3 minutes as Claude:")
         print(f"   • Reads and analyzes all project files")
-        print(f"   • Understands your project structure") 
+        print(f"   • Understands your project structure")
         print(f"   • Creates intelligent bundle configurations")
         print(f"\n🔄 Please wait while Claude works...\n")
-        
+
         try:
             # PHASE 1: Run Claude with the prompt directly
             cmd = [
                 "claude",
-                "-p", segmentation_prompt,
-                "--add-dir", str(self.project_path),
-                "--allowedTools", "Read,Write,Edit,MultiEdit,Glob,Grep"
+                "-p",
+                segmentation_prompt,
+                "--add-dir",
+                str(self.project_path),
+                "--allowedTools",
+                "Read,Write,Edit,MultiEdit,Glob,Grep",
             ]
-            
+
             # Execute Claude
-            result = subprocess.run(cmd, cwd=self.project_path, capture_output=False, text=True)
-            
+            result = subprocess.run(
+                cmd, cwd=self.project_path, capture_output=False, text=True
+            )
+
             if result.returncode == 0:
                 print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
-                print(f"📝 Claude has analyzed your project and updated .m1f.config.yml")
+                print(
+                    f"📝 Claude has analyzed your project and updated .m1f.config.yml"
+                )
             else:
                 print(f"\n⚠️  Claude exited with code {result.returncode}")
                 print(f"Please check your .m1f.config.yml manually.")
                 return
-                
+
             # PHASE 2: Run m1f-update and have Claude verify the results
             print(f"\n🔄 Phase 2: Generating bundles and verifying configuration...")
             print(f"⏳ Running m1f-update to generate bundles...")
-            
+
             # Run m1f-update to generate the bundles
             update_result = subprocess.run(
-                ["m1f-update"], 
-                cwd=self.project_path, 
-                capture_output=True, 
-                text=True
+                ["m1f-update"], cwd=self.project_path, capture_output=True, text=True
             )
-            
+
             if update_result.returncode != 0:
                 print(f"\n⚠️  m1f-update failed:")
                 print(update_result.stderr)
                 print(f"\n📝 Running verification anyway to help fix issues...")
             else:
                 print(f"✅ Bundles generated successfully!")
-            
+
             # Create verification prompt
             verification_prompt = self._create_verification_prompt(context)
-            
+
             # Show prompt in verbose mode
             if self.verbose:
                 print(f"\n📝 PHASE 2 PROMPT (Verification):")
@@ -1473,26 +1479,37 @@ I'll analyze your project and create an optimal m1f configuration that:
                 print(verification_prompt)
                 print("=" * 80)
                 print()
-            
-            print(f"\n🤖 Phase 2: Claude will now verify and improve the configuration...")
-            print(f"⏳ This includes checking bundle quality and fixing any issues...\n")
-            
+
+            print(
+                f"\n🤖 Phase 2: Claude will now verify and improve the configuration..."
+            )
+            print(
+                f"⏳ This includes checking bundle quality and fixing any issues...\n"
+            )
+
             # Run Claude again to verify and improve
             cmd_verify = [
                 "claude",
-                "-p", verification_prompt,
-                "--add-dir", str(self.project_path),
-                "--allowedTools", "Read,Write,Edit,MultiEdit,Glob,Grep,Bash"
+                "-p",
+                verification_prompt,
+                "--add-dir",
+                str(self.project_path),
+                "--allowedTools",
+                "Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
             ]
-            
+
             # Execute Claude for verification
-            verify_result = subprocess.run(cmd_verify, cwd=self.project_path, capture_output=False, text=True)
-            
+            verify_result = subprocess.run(
+                cmd_verify, cwd=self.project_path, capture_output=False, text=True
+            )
+
             if verify_result.returncode == 0:
                 print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
             else:
-                print(f"\n⚠️  Verification phase exited with code {verify_result.returncode}")
-                
+                print(
+                    f"\n⚠️  Verification phase exited with code {verify_result.returncode}"
+                )
+
         except FileNotFoundError:
             print(f"\n❌ Claude Code not found. Please install it first:")
             print(f"npm install -g @anthropic-ai/claude-code")
@@ -1557,22 +1574,24 @@ bundles:
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(yaml_content)
 
-    def _load_prompt_template(self, template_name: str, variables: Dict[str, str]) -> str:
+    def _load_prompt_template(
+        self, template_name: str, variables: Dict[str, str]
+    ) -> str:
         """Load a prompt template from markdown file and replace variables."""
         prompt_dir = Path(__file__).parent / "m1f" / "prompts"
         template_path = prompt_dir / f"{template_name}.md"
-        
+
         if not template_path.exists():
             raise FileNotFoundError(f"Prompt template not found: {template_path}")
-        
+
         # Read the template
         template_content = template_path.read_text(encoding="utf-8")
-        
+
         # Replace variables
         for key, value in variables.items():
             placeholder = f"{{{key}}}"
             template_content = template_content.replace(placeholder, str(value))
-        
+
         return template_content
 
     def _create_segmentation_prompt(self, project_context: Dict) -> str:
@@ -1583,14 +1602,16 @@ bundles:
             "languages": project_context.get("languages", "Unknown"),
             "total_files": project_context.get("total_files", "Unknown"),
         }
-        
+
         # Format main code directories
         if project_context.get("main_code_dirs"):
-            dirs_list = "\n".join([f"- {d}" for d in project_context["main_code_dirs"][:10]])
+            dirs_list = "\n".join(
+                [f"- {d}" for d in project_context["main_code_dirs"][:10]]
+            )
             variables["main_code_dirs"] = dirs_list
         else:
             variables["main_code_dirs"] = "- No specific code directories identified"
-        
+
         # Load and return the template
         return self._load_prompt_template("segmentation_prompt", variables)
 
@@ -1603,7 +1624,7 @@ bundles:
             "total_files": project_context.get("total_files", "Unknown"),
             "project_name": self.project_path.name,
         }
-        
+
         # Load and return the template
         return self._load_prompt_template("verification_prompt", variables)
 

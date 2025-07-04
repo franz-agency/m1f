@@ -79,13 +79,15 @@ class CrawlerConfig(BaseModel):
         default=3, ge=0, le=10, description="Number of retries for failed requests"
     )
     ignore_get_params: bool = Field(
-        default=False, description="Ignore GET parameters in URLs to avoid duplicate content"
+        default=False,
+        description="Ignore GET parameters in URLs to avoid duplicate content",
     )
     check_canonical: bool = Field(
         default=True, description="Skip pages if canonical URL differs from current URL"
     )
     check_content_duplicates: bool = Field(
-        default=True, description="Skip pages with duplicate content (based on text-only checksum)"
+        default=True,
+        description="Skip pages with duplicate content (based on text-only checksum)",
     )
 
 

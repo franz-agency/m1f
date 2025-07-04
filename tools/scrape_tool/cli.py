@@ -32,44 +32,48 @@ console = Console()
 
 def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
     """Show information from the scrape tracker database.
-    
+
     Args:
         db_path: Path to the SQLite database
         args: Command line arguments
     """
     if not db_path.exists():
-        console.print("[yellow]No database found. Have you scraped anything yet?[/yellow]")
+        console.print(
+            "[yellow]No database found. Have you scraped anything yet?[/yellow]"
+        )
         return
-        
+
     try:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
-        
+
         if args.show_db_stats:
             # Show statistics
             cursor.execute("SELECT COUNT(*) FROM scraped_urls")
             total = cursor.fetchone()[0]
-            
+
             cursor.execute("SELECT COUNT(*) FROM scraped_urls WHERE error IS NULL")
             successful = cursor.fetchone()[0]
-            
+
             cursor.execute("SELECT COUNT(*) FROM scraped_urls WHERE error IS NOT NULL")
             errors = cursor.fetchone()[0]
-            
+
             console.print("\n[bold]Scraping Statistics:[/bold]")
             console.print(f"Total URLs processed: {total}")
             console.print(f"Successfully scraped: {successful}")
             console.print(f"Errors encountered: {errors}")
-            
+
             if total > 0:
                 success_rate = (successful / total) * 100
                 console.print(f"Success rate: {success_rate:.1f}%")
-                
+
         if args.show_errors:
             # Show URLs with errors
-            cursor.execute("SELECT url, error FROM scraped_urls WHERE error IS NOT NULL")
+            cursor.execute(
+                "SELECT url, error FROM scraped_urls WHERE error IS NOT NULL"
+            )
             errors = cursor.fetchall()
-            
+
             if errors:
                 console.print("\n[bold]URLs with Errors:[/bold]")
                 for url, error in errors:
@@ -77,22 +81,28 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
                     console.print(f"    Error: {error}")
             else:
                 console.print("\n[green]No errors found![/green]")
-                
+
         if args.show_scraped_urls:
             # Show all scraped URLs
-            cursor.execute("SELECT url, status_code FROM scraped_urls ORDER BY scraped_at")
+            cursor.execute(
+                "SELECT url, status_code FROM scraped_urls ORDER BY scraped_at"
+            )
             urls = cursor.fetchall()
-            
+
             if urls:
                 console.print("\n[bold]Scraped URLs:[/bold]")
                 for url, status_code in urls:
-                    status_icon = "[green]✓[/green]" if status_code == 200 else f"[yellow]{status_code}[/yellow]"
+                    status_icon = (
+                        "[green]✓[/green]"
+                        if status_code == 200
+                        else f"[yellow]{status_code}[/yellow]"
+                    )
                     console.print(f"{status_icon} {url}")
             else:
                 console.print("\n[yellow]No URLs found in database[/yellow]")
-                
+
         conn.close()
-        
+
     except sqlite3.Error as e:
         console.print(f"[red]Database error: {e}[/red]")
     except Exception as e:
@@ -120,7 +130,9 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     # Main arguments
-    parser.add_argument("url", nargs="?", help="URL to scrape (not needed for database queries)")
+    parser.add_argument(
+        "url", nargs="?", help="URL to scrape (not needed for database queries)"
+    )
     parser.add_argument(
         "-o", "--output", type=Path, required=True, help="Output directory"
     )
@@ -170,19 +182,19 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("--user-agent", type=str, help="Custom user agent string")
-    
+
     parser.add_argument(
         "--ignore-get-params",
         action="store_true",
         help="Ignore GET parameters in URLs (e.g., ?tab=linux) to avoid duplicate content",
     )
-    
+
     parser.add_argument(
         "--ignore-canonical",
         action="store_true",
         help="Ignore canonical URL tags (by default, pages with different canonical URLs are skipped)",
     )
-    
+
     parser.add_argument(
         "--ignore-duplicates",
         action="store_true",
@@ -232,7 +244,7 @@ def main() -> None:
 
     if args.user_agent:
         config.crawler.user_agent = args.user_agent
-    
+
     config.crawler.ignore_get_params = args.ignore_get_params
     config.crawler.check_canonical = not args.ignore_canonical
     config.crawler.check_content_duplicates = not args.ignore_duplicates
@@ -256,12 +268,11 @@ def main() -> None:
     if args.verbose:
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
     elif not args.quiet:
         logging.basicConfig(
-            level=logging.WARNING,
-            format='%(asctime)s - %(levelname)s - %(message)s'
+            level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
         )
 
     # Check if only database query options are requested
@@ -305,7 +316,9 @@ def main() -> None:
 
     except KeyboardInterrupt:
         console.print("\n[yellow]⚠️  Scraping interrupted by user[/yellow]")
-        console.print("[dim]Run the same command again to resume where you left off[/dim]")
+        console.print(
+            "[dim]Run the same command again to resume where you left off[/dim]"
+        )
         sys.exit(0)
     except Exception as e:
         console.print(f"❌ Error during scraping: {e}", style="red")

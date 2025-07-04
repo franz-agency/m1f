@@ -1,18 +1,20 @@
 # Individual HTML File Analysis
 
-You are analyzing a single HTML file to understand its structure for optimal content extraction.
+You are analyzing a single HTML file to understand its structure for optimal
+content extraction.
 
 ## Your Task
 
 Read the HTML file: {filename}
 
-Analyze this file's structure and write your findings to: m1f/analysis/html_analysis_{file_number}.txt
+Analyze this file's structure and write your findings to: {output_path}
 
 ## Analysis Criteria
 
 For this HTML file, document:
 
 ### 1. Content Structure
+
 ```
 Main Content Location:
 - Primary container: [exact selector]
@@ -23,6 +25,7 @@ Main Content Location:
 ```
 
 ### 2. Navigation & UI Elements
+
 ```
 Elements to Exclude:
 - Header/Navigation: [selectors]
@@ -35,6 +38,7 @@ Elements to Exclude:
 ```
 
 ### 3. Special Content Types
+
 ```
 Within Main Content:
 - Code blocks: [how they're marked]
@@ -45,6 +49,7 @@ Within Main Content:
 ```
 
 ### 4. Page-Specific Observations
+
 ```
 Page Type: [landing/guide/api/reference]
 Unique Patterns: [anything specific to this page]
@@ -53,7 +58,7 @@ Potential Issues: [edge cases noticed]
 
 ## Output Format
 
-Write your analysis to m1f/analysis/html_analysis_{file_number}.txt in this exact format:
+Write your analysis to {output_path} in this exact format:
 
 ```
 FILE: {filename}
@@ -86,7 +91,10 @@ ignore_selectors:
 ```
 
 **CRITICAL REQUIREMENTS**:
+
 1. **NEVER use empty strings** ("") as selectors
 2. **Remove any empty or whitespace-only selectors** from lists
 3. **Validate all selectors** are non-empty and properly formatted CSS selectors
 4. Focus on this ONE file only - don't generalize to other files
+5. **IMPORTANT**: After writing the analysis file, print "ANALYSIS_COMPLETE_OK"
+   on the last line to confirm completion

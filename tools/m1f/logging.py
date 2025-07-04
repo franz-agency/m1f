@@ -96,10 +96,15 @@ class LoggerManager:
                 }
 
                 def format(self, record: logging.LogRecord) -> str:
+                    # Save original levelname to avoid affecting other handlers
+                    original_levelname = record.levelname
                     color = self.COLORS.get(record.levelname, "")
                     reset = Style.RESET_ALL if color else ""
                     record.levelname = f"{color}{record.levelname}{reset}"
-                    return super().format(record)
+                    result = super().format(record)
+                    # Restore original levelname for other handlers
+                    record.levelname = original_levelname
+                    return result
 
             formatter = ColoredFormatter("%(levelname)-8s: %(message)s")
         except ImportError:

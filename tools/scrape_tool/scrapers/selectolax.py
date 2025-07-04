@@ -65,13 +65,13 @@ class SelectolaxScraper(WebScraperBase):
         super().__init__(config)
         self._client: Optional[httpx.AsyncClient] = None
         self._visited_urls: Set[str] = set()
-    
+
     def _normalize_url(self, url: str) -> str:
         """Normalize URL by removing GET parameters if configured.
-        
+
         Args:
             url: URL to normalize
-            
+
         Returns:
             Normalized URL
         """
@@ -128,12 +128,12 @@ class SelectolaxScraper(WebScraperBase):
 
             # Parse HTML with selectolax
             html_parser = HTMLParser(response.text)
-            
+
             # Store metadata for database
             normalized_url = self._normalize_url(str(response.url))
             canonical_url = None
             content_checksum = None
-            
+
             # Order: 1. GET parameter normalization (already done in _normalize_url)
             # 2. Canonical URL check
             if self.config.check_canonical:
@@ -144,18 +144,23 @@ class SelectolaxScraper(WebScraperBase):
                     canonical_url = urljoin(url, canonical_url)
                     # Normalize canonical URL too
                     normalized_canonical = self._normalize_url(canonical_url)
-                    
+
                     if normalized_url != normalized_canonical:
-                        logger.info(f"Skipping {url} - canonical URL differs: {canonical_url}")
+                        logger.info(
+                            f"Skipping {url} - canonical URL differs: {canonical_url}"
+                        )
                         return None  # Return None to indicate skip, not an error
-            
+
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
                 from ..utils import calculate_content_checksum
+
                 content_checksum = calculate_content_checksum(response.text)
-                
+
                 # Check if checksum exists using callback
-                if self._checksum_callback and self._checksum_callback(content_checksum):
+                if self._checksum_callback and self._checksum_callback(
+                    content_checksum
+                ):
                     logger.info(f"Skipping {url} - duplicate content detected")
                     return None  # Return None to indicate skip, not an error
 
@@ -236,9 +241,9 @@ class SelectolaxScraper(WebScraperBase):
         # Parse start URL to get base domain
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
-        
+
         # Store the base path for subdirectory restriction
-        base_path = parsed_start.path.rstrip('/')
+        base_path = parsed_start.path.rstrip("/")
         if base_path:
             logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
@@ -268,7 +273,7 @@ class SelectolaxScraper(WebScraperBase):
 
                     # Scrape the page
                     page = await self.scrape_url(url)
-                    
+
                     # Skip if page is None (duplicate content or canonical mismatch)
                     if page is None:
                         return None
@@ -297,7 +302,10 @@ class SelectolaxScraper(WebScraperBase):
 
                             # Check subdirectory restriction
                             if base_path:
-                                if not parsed_url.path.startswith(base_path + '/') and parsed_url.path != base_path:
+                                if (
+                                    not parsed_url.path.startswith(base_path + "/")
+                                    and parsed_url.path != base_path
+                                ):
                                     continue
 
                             # Skip if matches exclude pattern
@@ -310,7 +318,7 @@ class SelectolaxScraper(WebScraperBase):
 
                             # Normalize URL
                             normalized_url = self._normalize_url(absolute_url)
-                            
+
                             # Skip if already visited
                             if normalized_url in self._visited_urls:
                                 continue

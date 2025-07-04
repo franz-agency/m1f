@@ -103,7 +103,7 @@ class HTTrackScraper(WebScraperBase):
 
         if not self.config.verify_ssl:
             cmd.append("--assume-insecure")
-        
+
         if self.config.ignore_get_params:
             cmd.append("-N0")  # Don't parse query strings
 
@@ -191,20 +191,29 @@ class HTTrackScraper(WebScraperBase):
         canonical_url_found = None
         if "<link" in content and "canonical" in content:
             import re
-            canonical_match = re.search(r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']', content, re.IGNORECASE)
+
+            canonical_match = re.search(
+                r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']',
+                content,
+                re.IGNORECASE,
+            )
             if not canonical_match:
-                canonical_match = re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']', content, re.IGNORECASE)
+                canonical_match = re.search(
+                    r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']',
+                    content,
+                    re.IGNORECASE,
+                )
             if canonical_match:
                 canonical_url_found = urljoin(url, canonical_match.group(1))
-        
+
         return ScrapedPage(
-            url=url, 
-            content=content, 
-            title=title, 
+            url=url,
+            content=content,
+            title=title,
             encoding="utf-8",
             normalized_url=url,
             canonical_url=canonical_url_found,
-            content_checksum=None  # Not calculated for single URL
+            content_checksum=None,  # Not calculated for single URL
         )
 
     async def scrape_site(self, start_url: str) -> AsyncGenerator[ScrapedPage, None]:
@@ -249,8 +258,8 @@ class HTTrackScraper(WebScraperBase):
 
         # Parse start URL for domain and path restrictions
         parsed = urlparse(start_url)
-        base_path = parsed.path.rstrip('/')
-        
+        base_path = parsed.path.rstrip("/")
+
         # Add domain restrictions
         if self.config.allowed_domains:
             for domain in self.config.allowed_domains:
@@ -258,7 +267,7 @@ class HTTrackScraper(WebScraperBase):
         else:
             # Restrict to same domain by default
             cmd.extend(["+*" + parsed.netloc + "*"])
-        
+
         # Add subdirectory restriction if path is specified
         if base_path:
             logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
@@ -274,7 +283,7 @@ class HTTrackScraper(WebScraperBase):
 
         if not self.config.verify_ssl:
             cmd.append("--assume-insecure")
-        
+
         if self.config.ignore_get_params:
             cmd.append("-N0")  # Don't parse query strings
 
@@ -332,44 +341,63 @@ class HTTrackScraper(WebScraperBase):
                         content = html_file.read_text(encoding="utf-8")
                     except UnicodeDecodeError:
                         content = html_file.read_text(encoding="latin-1")
-                    
+
                     # Store metadata for database
-                    normalized_url = url.rstrip('/')
+                    normalized_url = url.rstrip("/")
                     if self.config.ignore_get_params and "?" in normalized_url:
                         normalized_url = normalized_url.split("?")[0]
                     canonical_url_found = None
                     content_checksum = None
-                    
+
                     # Order: 1. GET parameter normalization (already done above)
                     # 2. Canonical URL check
                     if self.config.check_canonical:
                         # Simple regex-based extraction for canonical URL
                         import re
-                        canonical_match = re.search(r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']', content, re.IGNORECASE)
+
+                        canonical_match = re.search(
+                            r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']',
+                            content,
+                            re.IGNORECASE,
+                        )
                         if not canonical_match:
                             # Try alternate order
-                            canonical_match = re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']', content, re.IGNORECASE)
-                        
+                            canonical_match = re.search(
+                                r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']',
+                                content,
+                                re.IGNORECASE,
+                            )
+
                         if canonical_match:
                             canonical_url_found = canonical_match.group(1)
                             # Make canonical URL absolute
                             canonical_url_found = urljoin(url, canonical_url_found)
                             # Normalize canonical URL too
-                            normalized_canonical = canonical_url_found.rstrip('/')
-                            if self.config.ignore_get_params and "?" in normalized_canonical:
-                                normalized_canonical = normalized_canonical.split("?")[0]
-                            
+                            normalized_canonical = canonical_url_found.rstrip("/")
+                            if (
+                                self.config.ignore_get_params
+                                and "?" in normalized_canonical
+                            ):
+                                normalized_canonical = normalized_canonical.split("?")[
+                                    0
+                                ]
+
                             if normalized_url != normalized_canonical:
-                                logger.info(f"Skipping {url} - canonical URL differs: {canonical_url_found}")
+                                logger.info(
+                                    f"Skipping {url} - canonical URL differs: {canonical_url_found}"
+                                )
                                 continue  # Skip this file
-                    
+
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
                         from ..utils import calculate_content_checksum
+
                         content_checksum = calculate_content_checksum(content)
-                        
+
                         # Check if checksum exists using callback
-                        if self._checksum_callback and self._checksum_callback(content_checksum):
+                        if self._checksum_callback and self._checksum_callback(
+                            content_checksum
+                        ):
                             logger.info(f"Skipping {url} - duplicate content detected")
                             continue  # Skip this file
 
@@ -383,13 +411,13 @@ class HTTrackScraper(WebScraperBase):
                     self.mark_visited(url)
 
                     yield ScrapedPage(
-                        url=url, 
-                        content=content, 
-                        title=title, 
+                        url=url,
+                        content=content,
+                        title=title,
                         encoding="utf-8",
                         normalized_url=normalized_url,
                         canonical_url=canonical_url_found,
-                        content_checksum=content_checksum
+                        content_checksum=content_checksum,
                     )
 
             except Exception as e:

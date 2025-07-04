@@ -39,11 +39,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 class M1FInit:
     """Initialize m1f for a project with quick setup."""
 
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False, no_symlink: bool = False):
         """Initialize m1f-init."""
         self.verbose = verbose
+        self.no_symlink = no_symlink
         self.project_path = Path.cwd()
         self.is_windows = platform.system() == "Windows"
+        self.created_files = []  # Track created files
+        
+        # Create safe project name (remove special characters)
+        import re
+        project_name = self.project_path.name
+        self.safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', project_name)
 
         # Find m1f installation directory
         self.m1f_root = Path(__file__).parent.parent
@@ -73,13 +80,16 @@ class M1FInit:
 
         # Step 5: Create config if needed
         if not config_exists:
-            self._create_config()
+            self._create_config(context)
 
         # Step 6: Show next steps
         self._show_next_steps()
 
     def _link_documentation(self):
         """Link m1f documentation (replaces m1f-link functionality)."""
+        if self.no_symlink:
+            return
+            
         print("\n📋 Setting up m1f documentation...")
 
         # Create m1f directory if it doesn't exist
@@ -90,6 +100,7 @@ class M1FInit:
         link_path = m1f_dir / "m1f.txt"
         if link_path.exists():
             print("✅ m1f documentation already linked")
+            self.created_files.append("m1f/m1f.txt (symlink)")
             return
 
         # Create symlink or copy on Windows
@@ -99,6 +110,7 @@ class M1FInit:
                 try:
                     link_path.symlink_to(self.m1f_docs_source)
                     print(f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
+                    self.created_files.append("m1f/m1f.txt (symlink)")
                 except OSError:
                     # Fall back to copying the file
                     import shutil
@@ -108,10 +120,12 @@ class M1FInit:
                     print(
                         "   (Symlink creation requires admin rights or developer mode on Windows)"
                     )
+                    self.created_files.append("m1f/m1f.txt (copy)")
             else:
                 # Unix-like systems
                 link_path.symlink_to(self.m1f_docs_source)
                 print(f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
+                self.created_files.append("m1f/m1f.txt (symlink)")
 
         except Exception as e:
             print(f"⚠️  Failed to link m1f documentation: {e}")
@@ -121,14 +135,13 @@ class M1FInit:
         """Check if we're in a git repository."""
         git_root = self.project_path
         if (self.project_path / ".git").exists():
-            print(f"✅ Git repository detected: {self.project_path}")
+            print(f"✅ Git repository detected in current directory")
         else:
             # Look for git root in parent directories
             current = self.project_path
             while current != current.parent:
                 if (current / ".git").exists():
                     git_root = current
-                    print(f"✅ Git repository detected: {git_root}")
                     break
                 current = current.parent
             else:
@@ -169,11 +182,14 @@ class M1FInit:
                 "-o",
                 str(analysis_path),
                 "--skip-output-file",
-                "--exclude-paths-file",
-                ".gitignore",
                 "--excludes",
                 "m1f/",
+                "--quiet",  # Suppress console output and log file creation
             ]
+            
+            # Only use .gitignore if it exists in current directory
+            if (self.project_path / ".gitignore").exists():
+                cmd.extend(["--exclude-paths-file", ".gitignore"])
 
             result = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -189,26 +205,31 @@ class M1FInit:
                 content = filelist_path.read_text().strip()
                 if content:
                     files_list = content.split("\n")
-                print(f"📄 Created file list: {filelist_path.name}")
 
             if dirlist_path.exists():
                 content = dirlist_path.read_text().strip()
                 if content:
                     dirs_list = content.split("\n")
-                print(f"📁 Created directory list: {dirlist_path.name}")
 
             # Analyze files to determine project type
             context = self._determine_project_type(files_list, dirs_list)
+            
+            # Clean up temporary analysis files
+            if filelist_path.exists():
+                filelist_path.unlink()
+            if dirlist_path.exists():
+                dirlist_path.unlink()
 
             print(f"✅ Found {len(files_list)} files in {len(dirs_list)} directories")
             print(f"📁 Project Type: {context.get('type', 'Unknown')}")
-            print(f"💻 Languages: {context.get('languages', 'Unknown')}")
+            if context.get('languages') != 'No programming languages detected':
+                print(f"💻 Programming Languages: {context.get('languages', 'Unknown')}")
 
             return context
 
         except Exception as e:
             print(f"⚠️  Failed to analyze project: {e}")
-            return {"type": "Unknown", "languages": "Unknown", "files": [], "dirs": []}
+            return {"type": "Unknown", "languages": "No programming languages detected", "files": [], "dirs": []}
 
     def _determine_project_type(self, files: List[str], dirs: List[str]) -> Dict:
         """Determine project type from file and directory lists."""
@@ -222,10 +243,15 @@ class M1FInit:
 
         # Count file extensions
         ext_count = {}
+        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
+        doc_file_count = 0
+        
         for file in files:
             ext = Path(file).suffix.lower()
             if ext:
                 ext_count[ext] = ext_count.get(ext, 0) + 1
+                if ext in doc_extensions:
+                    doc_file_count += 1
 
         # Determine languages
         if ext_count.get(".py", 0) > 0:
@@ -247,34 +273,57 @@ class M1FInit:
         if ext_count.get(".rb", 0) > 0:
             context["languages"].add("Ruby")
 
-        # Determine project type from files
-        for file in files:
-            if "package.json" in file:
-                context["type"] = "Node.js/JavaScript Project"
-                context["frameworks"].append("Node.js")
-            elif (
-                "requirements.txt" in file
-                or "setup.py" in file
-                or "pyproject.toml" in file
-            ):
-                context["type"] = "Python Project"
-            elif "composer.json" in file:
-                context["type"] = "PHP Project"
-                context["frameworks"].append("Composer")
-            elif "pom.xml" in file:
-                context["type"] = "Java Maven Project"
-                context["frameworks"].append("Maven")
-            elif "build.gradle" in file:
-                context["type"] = "Java Gradle Project"
-                context["frameworks"].append("Gradle")
-            elif "Cargo.toml" in file:
-                context["type"] = "Rust Project"
-                context["frameworks"].append("Cargo")
-            elif "go.mod" in file:
-                context["type"] = "Go Project"
-            elif "Gemfile" in file:
-                context["type"] = "Ruby Project"
-                context["frameworks"].append("Bundler")
+        # Check if this is primarily a documentation project
+        total_files = len(files)
+        if total_files > 0 and doc_file_count == total_files:  # All files are docs
+            context["type"] = "Documentation"
+            # Check for specific documentation frameworks
+            if any("mkdocs" in f.lower() for f in files):
+                context["frameworks"].append("MkDocs")
+            elif any("sphinx" in f.lower() for f in files):
+                context["frameworks"].append("Sphinx")
+            elif any("docusaurus" in f.lower() for f in files):
+                context["frameworks"].append("Docusaurus")
+            elif any("hugo" in f.lower() or "jekyll" in f.lower() for f in files):
+                context["frameworks"].append("Static Site Generator")
+        
+        # Determine project type from files (if not already documentation)
+        if context["type"] == "Unknown":
+            for file in files:
+                if "package.json" in file:
+                    context["type"] = "Node.js/JavaScript Project"
+                    context["frameworks"].append("Node.js")
+                    break
+                elif (
+                    "requirements.txt" in file
+                    or "setup.py" in file
+                    or "pyproject.toml" in file
+                ):
+                    context["type"] = "Python Project"
+                    break
+                elif "composer.json" in file:
+                    context["type"] = "PHP Project"
+                    context["frameworks"].append("Composer")
+                    break
+                elif "pom.xml" in file:
+                    context["type"] = "Java Maven Project"
+                    context["frameworks"].append("Maven")
+                    break
+                elif "build.gradle" in file:
+                    context["type"] = "Java Gradle Project"
+                    context["frameworks"].append("Gradle")
+                    break
+                elif "Cargo.toml" in file:
+                    context["type"] = "Rust Project"
+                    context["frameworks"].append("Cargo")
+                    break
+                elif "go.mod" in file:
+                    context["type"] = "Go Project"
+                    break
+                elif "Gemfile" in file:
+                    context["type"] = "Ruby Project"
+                    context["frameworks"].append("Bundler")
+                    break
 
         # Check for specific frameworks
         for file in files:
@@ -309,6 +358,16 @@ class M1FInit:
                     count = ext_count.get(".ts", 0) + ext_count.get(".tsx", 0)
                 elif lang == "PHP":
                     count = ext_count.get(".php", 0)
+                elif lang == "Java":
+                    count = ext_count.get(".java", 0)
+                elif lang == "C#":
+                    count = ext_count.get(".cs", 0)
+                elif lang == "Go":
+                    count = ext_count.get(".go", 0)
+                elif lang == "Rust":
+                    count = ext_count.get(".rs", 0)
+                elif lang == "Ruby":
+                    count = ext_count.get(".rb", 0)
                 else:
                     count = 0
                 if count > 0:
@@ -316,46 +375,63 @@ class M1FInit:
 
             context["languages"] = ", ".join(lang_counts) if lang_counts else "Unknown"
         else:
-            context["languages"] = "Not detected"
+            context["languages"] = "No programming languages detected"
 
         return context
 
     def _create_bundles(self, context: Dict):
         """Create complete and docs bundles."""
         m1f_dir = self.project_path / "m1f"
-        project_name = self.project_path.name
+        project_name = self.safe_name
+        
+        # Check if all files in the project are documentation files
+        files_list = context.get('files', [])
+        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
+        
+        # Count doc files
+        doc_file_count = sum(1 for f in files_list if Path(f).suffix.lower() in doc_extensions)
+        total_file_count = len(files_list)
+        
+        # If all files are docs, only create docs bundle
+        only_docs = (doc_file_count == total_file_count and total_file_count > 0)
 
-        # Create complete bundle
-        print(f"Creating complete project bundle...")
-        complete_cmd = [
-            sys.executable,
-            "-m",
-            "tools.m1f",
-            "-s",
-            str(self.project_path),
-            "-o",
-            str(m1f_dir / f"{project_name}_complete.txt"),
-            "--exclude-paths-file",
-            ".gitignore",
-            "--excludes",
-            "m1f/",
-            "--separator",
-            "Standard",
-            "--force",
-        ]
+        # Create complete bundle only if not all files are docs
+        if not only_docs:
+            print(f"Creating complete project bundle...")
+            complete_cmd = [
+                sys.executable,
+                "-m",
+                "tools.m1f",
+                "-s",
+                str(self.project_path),
+                "-o",
+                str(m1f_dir / f"{project_name}_complete.txt"),
+                "--excludes",
+                "m1f/",
+                "--separator",
+                "Standard",
+                "--force",
+                "--minimal-output",  # Don't create auxiliary files
+                "--quiet",  # Suppress console output and log file creation
+            ]
+            
+            # Only use .gitignore if it exists in current directory
+            if (self.project_path / ".gitignore").exists():
+                idx = complete_cmd.index("--excludes")
+                complete_cmd.insert(idx, ".gitignore")
+                complete_cmd.insert(idx, "--exclude-paths-file")
 
-        if self.verbose:
-            complete_cmd.append("--verbose")
+            if self.verbose:
+                complete_cmd.append("--verbose")
+                # Remove --quiet if verbose is requested
+                complete_cmd.remove("--quiet")
 
-        result = subprocess.run(complete_cmd, capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"✅ Created: m1f/{project_name}_complete.txt")
-            if (m1f_dir / f"{project_name}_complete_filelist.txt").exists():
-                print(f"📄 Created: m1f/{project_name}_complete_filelist.txt")
-            if (m1f_dir / f"{project_name}_complete_dirlist.txt").exists():
-                print(f"📁 Created: m1f/{project_name}_complete_dirlist.txt")
-        else:
-            print(f"⚠️  Failed to create complete bundle: {result.stderr}")
+            result = subprocess.run(complete_cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ Created: m1f/{project_name}_complete.txt")
+                self.created_files.append(f"m1f/{project_name}_complete.txt")
+            else:
+                print(f"⚠️  Failed to create complete bundle: {result.stderr}")
 
         # Create docs bundle
         print(f"Creating documentation bundle...")
@@ -367,35 +443,81 @@ class M1FInit:
             str(self.project_path),
             "-o",
             str(m1f_dir / f"{project_name}_docs.txt"),
-            "--exclude-paths-file",
-            ".gitignore",
             "--excludes",
             "m1f/",
             "--docs-only",
             "--separator",
             "Standard",
             "--force",
+            "--minimal-output",  # Don't create auxiliary files
+            "--quiet",  # Suppress console output and log file creation
         ]
+        
+        # Only use .gitignore if it exists in current directory
+        if (self.project_path / ".gitignore").exists():
+            idx = docs_cmd.index("--excludes")
+            docs_cmd.insert(idx, ".gitignore")
+            docs_cmd.insert(idx, "--exclude-paths-file")
 
         if self.verbose:
             docs_cmd.append("--verbose")
+            # Remove --quiet if verbose is requested
+            docs_cmd.remove("--quiet")
 
         result = subprocess.run(docs_cmd, capture_output=True, text=True)
         if result.returncode == 0:
             print(f"✅ Created: m1f/{project_name}_docs.txt")
-            if (m1f_dir / f"{project_name}_docs_filelist.txt").exists():
-                print(f"📄 Created: m1f/{project_name}_docs_filelist.txt")
-            if (m1f_dir / f"{project_name}_docs_dirlist.txt").exists():
-                print(f"📁 Created: m1f/{project_name}_docs_dirlist.txt")
+            self.created_files.append(f"m1f/{project_name}_docs.txt")
+            if only_docs:
+                print(f"ℹ️  Skipped complete bundle (all {total_file_count} files are documentation)")
         else:
             print(f"⚠️  Failed to create docs bundle: {result.stderr}")
 
-    def _create_config(self):
+    def _create_config(self, context: Dict):
         """Create basic .m1f.config.yml."""
-        project_name = self.project_path.name
+        project_name = self.safe_name
         config_path = self.project_path / ".m1f.config.yml"
 
         print(f"\n📝 Creating .m1f.config.yml...")
+        
+        # Check if all files are documentation
+        files_list = context.get('files', [])
+        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
+        doc_file_count = sum(1 for f in files_list if Path(f).suffix.lower() in doc_extensions)
+        total_file_count = len(files_list)
+        only_docs = (doc_file_count == total_file_count and total_file_count > 0)
+
+        # Build bundles section based on project content
+        if only_docs:
+            bundles_section = f"""bundles:
+  # Documentation bundle (62 file extensions)
+  docs:
+    description: "All documentation files"
+    output: "m1f/{project_name}_docs.txt"
+    sources:
+      - path: "."
+    docs_only: true
+    separator: "Standard"
+"""
+        else:
+            bundles_section = f"""bundles:
+  # Complete project bundle
+  complete:
+    description: "Complete project excluding meta files"
+    output: "m1f/{project_name}_complete.txt"
+    sources:
+      - path: "."
+    separator: "Standard"
+  
+  # Documentation bundle (62 file extensions)
+  docs:
+    description: "All documentation files"
+    output: "m1f/{project_name}_docs.txt"
+    sources:
+      - path: "."
+    docs_only: true
+    separator: "Standard"
+"""
 
         yaml_content = f"""# m1f Configuration - Generated by m1f-init
 # Use 'm1f-claude --advanced-setup' to add topic-specific bundles (non-Windows only)
@@ -416,24 +538,7 @@ global:
     minimal_output: true
     # Note: NO global max_file_size limit!
 
-bundles:
-  # Complete project bundle
-  complete:
-    description: "Complete project excluding meta files"
-    output: "m1f/{project_name}_complete.txt"
-    sources:
-      - path: "."
-    separator: "Standard"
-  
-  # Documentation bundle (62 file extensions)
-  docs:
-    description: "All documentation files"
-    output: "m1f/{project_name}_docs.txt"
-    sources:
-      - path: "."
-    docs_only: true
-    separator: "Standard"
-
+{bundles_section}
 # Use 'm1f-update' to regenerate bundles after making changes
 """
 
@@ -441,17 +546,30 @@ bundles:
             f.write(yaml_content)
 
         print(f"✅ Configuration created: .m1f.config.yml")
+        self.created_files.append(".m1f.config.yml")
 
     def _show_next_steps(self):
         """Show next steps to the user."""
-        project_name = self.project_path.name
-
         print(f"\n✅ Quick Setup Complete!")
-        print(f"\n📌 Next Steps:")
-        print(f"1. Check your bundles in m1f/ directory")
-        print(f"2. Run 'cat m1f/{project_name}_complete.txt | head -50' to preview")
-        print(f"3. Use 'm1f-update' to regenerate bundles after changes")
-        print(f"4. Reference @m1f/m1f.txt in AI tools for m1f documentation")
+        
+        # Show created files nicely formatted
+        if self.created_files:
+            print(f"\n📁 {'Here is your file:' if len(self.created_files) == 1 else 'Here are your files:'}\n")
+            for file in self.created_files:
+                print(f"   • {file}")
+            print()  # Empty line for spacing
+        
+        # Show next steps
+        print(f"📌 Next Steps:")
+        print(f"1. Use 'm1f-update' to regenerate bundles after changes")
+        print(f"2. Reference @m1f/m1f.txt in AI tools for m1f documentation")
+        
+        # Show preview command only for actual bundle files
+        bundle_files = [f for f in self.created_files if f.endswith('.txt') and 'symlink' not in f]
+        if bundle_files:
+            # Use the first bundle file for the preview example
+            first_bundle = bundle_files[0]
+            print(f"3. Preview your bundle: cat {first_bundle} | head -50")
 
         if not self.is_windows:
             print(f"\n🚀 Advanced Setup Available!")
@@ -497,10 +615,16 @@ After initialization:
         help="Show detailed output during initialization",
     )
 
+    parser.add_argument(
+        "--no-symlink",
+        action="store_true",
+        help="Skip creating symlink to m1f documentation",
+    )
+
     args = parser.parse_args()
 
     # Run initialization
-    init = M1FInit(verbose=args.verbose)
+    init = M1FInit(verbose=args.verbose, no_symlink=args.no_symlink)
     init.run()
 
 

@@ -205,3 +205,9 @@ CLAUDE.md
 
 # symlink to doc
 m1f/m1f.txt
+
+# Test artifacts and temporary files
+test_claude*.py
+tests/html2md/test_claude_files/m1f/
+m1f/analysis/
+analysis/
