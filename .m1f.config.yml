@@ -6,14 +6,12 @@ global:
   global_excludes:
     - "/m1f/**"
     - "**/*.pyc"
-    - "**/*.log"
     - "**/tmp/**"
+    - "tmp/**"  # Exclude project root tmp directory
     - "**/dev/**"
-    - "**/tests/**/source/**"  # Test input data
-    - "**/tests/**/output/**"  # Test output data
-    - "**/tests/**/expected/**"  # Expected test results
-    - "**/tests/**/scraped_examples/**"  # Scraped test examples
-
+    - "**/tests/**"  # Exclude all test directories
+    - "**/test/**"   # Also common test directory name
+        
   global_settings:
     # Default security setting for all files
     security_check: "warn"  # Strict by default
@@ -21,11 +19,7 @@ global:
     exclude_paths_file:
       - ".gitignore"
       - ".m1fignore"
-    # Example of multiple exclude files:
-    # exclude_paths_file:
-    #   - ".gitignore"
-    #   - ".m1fignore"
-
+    
     # Per-extension overrides
     extensions:
       .py:
@@ -35,19 +29,7 @@ global:
   defaults:
     force_overwrite: true
     max_file_size: "1MB"
-    minimal_output: false
-    
-  # File watcher settings
-  watcher:
-    enabled: true
-    debounce_seconds: 2
-    ignored_paths:
-      - "/m1f"
-      - ".git/"
-      - ".venv/"
-      - "tmp/"
-      - ".scrapes/"
-      # Note: global_excludes are automatically added to ignored_paths
+    minimal_output: true
 
 # Bundle definitions
 bundles:
@@ -58,6 +40,7 @@ bundles:
     output: "m1f/m1f/87_m1f_only_docs.txt"
     sources:
       - path: "docs/01_m1f"
+    docs_only: true
 
   html2md-docs:
     description: "html2md docs"
@@ -65,6 +48,7 @@ bundles:
     output: "m1f/m1f/88_html2md_docs.txt"
     sources:
       - path: "docs/03_html2md"
+    docs_only: true
 
   scraper-docs:
     description: "m1f-scrape docs"
@@ -73,7 +57,7 @@ bundles:
     sources:
       - path: "docs/04_scrape"
       - path: "tools/scrape_tool"
-        include_extensions: [".md", ".txt", ".json", ".yml", ".yaml"]
+    docs_only: true
 
   all-docs:
     description: "m1f documentation"
@@ -81,8 +65,7 @@ bundles:
     output: "m1f/m1f/all-docs.txt"
     sources:
       - path: "."
-        include_extensions: [".md", ".txt", ".json", ".yml", ".yaml"]
-        excludes: ["tests/**"]
+    docs_only: true
 
   # Source code bundles
   m1f-code:
@@ -138,7 +121,7 @@ bundles:
       - path: "tools/"
         include_extensions: [".py"]
         includes: ["scrape_tool/**", "scrape.py", "path_utils.py", "__init__.py"]
-        
+
   # Complete project bundle
   all:
     description: "All 1 One"
@@ -146,4 +129,3 @@ bundles:
     output: "m1f/m1f/99_m1f_complete.txt"
     sources:
       - path: "."
-        
