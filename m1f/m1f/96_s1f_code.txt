@@ -21,7 +21,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.3.0"
+__version__ = "3.4.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= html2md.py ======
@@ -1613,7 +1613,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Create segmentation prompt focused on advanced bundling
         segmentation_prompt = self._create_segmentation_prompt(context)
-        
+
         # Show prompt in verbose mode
         if self.verbose:
             print(f"\n📝 PHASE 1 PROMPT (Segmentation):")
@@ -1624,55 +1624,61 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Execute Claude directly with the prompt
         print(f"\n🤖 Sending to Claude Code...")
-        print(f"⏳ Claude will now analyze your project and create topic-specific bundles...")
+        print(
+            f"⏳ Claude will now analyze your project and create topic-specific bundles..."
+        )
         print(f"\n⚠️  IMPORTANT: This process may take 1-3 minutes as Claude:")
         print(f"   • Reads and analyzes all project files")
-        print(f"   • Understands your project structure") 
+        print(f"   • Understands your project structure")
         print(f"   • Creates intelligent bundle configurations")
         print(f"\n🔄 Please wait while Claude works...\n")
-        
+
         try:
             # PHASE 1: Run Claude with the prompt directly
             cmd = [
                 "claude",
-                "-p", segmentation_prompt,
-                "--add-dir", str(self.project_path),
-                "--allowedTools", "Read,Write,Edit,MultiEdit,Glob,Grep"
+                "-p",
+                segmentation_prompt,
+                "--add-dir",
+                str(self.project_path),
+                "--allowedTools",
+                "Read,Write,Edit,MultiEdit,Glob,Grep",
             ]
-            
+
             # Execute Claude
-            result = subprocess.run(cmd, cwd=self.project_path, capture_output=False, text=True)
-            
+            result = subprocess.run(
+                cmd, cwd=self.project_path, capture_output=False, text=True
+            )
+
             if result.returncode == 0:
                 print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
-                print(f"📝 Claude has analyzed your project and updated .m1f.config.yml")
+                print(
+                    f"📝 Claude has analyzed your project and updated .m1f.config.yml"
+                )
             else:
                 print(f"\n⚠️  Claude exited with code {result.returncode}")
                 print(f"Please check your .m1f.config.yml manually.")
                 return
-                
+
             # PHASE 2: Run m1f-update and have Claude verify the results
             print(f"\n🔄 Phase 2: Generating bundles and verifying configuration...")
             print(f"⏳ Running m1f-update to generate bundles...")
-            
+
             # Run m1f-update to generate the bundles
             update_result = subprocess.run(
-                ["m1f-update"], 
-                cwd=self.project_path, 
-                capture_output=True, 
-                text=True
+                ["m1f-update"], cwd=self.project_path, capture_output=True, text=True
             )
-            
+
             if update_result.returncode != 0:
                 print(f"\n⚠️  m1f-update failed:")
                 print(update_result.stderr)
                 print(f"\n📝 Running verification anyway to help fix issues...")
             else:
                 print(f"✅ Bundles generated successfully!")
-            
+
             # Create verification prompt
             verification_prompt = self._create_verification_prompt(context)
-            
+
             # Show prompt in verbose mode
             if self.verbose:
                 print(f"\n📝 PHASE 2 PROMPT (Verification):")
@@ -1680,26 +1686,37 @@ I'll analyze your project and create an optimal m1f configuration that:
                 print(verification_prompt)
                 print("=" * 80)
                 print()
-            
-            print(f"\n🤖 Phase 2: Claude will now verify and improve the configuration...")
-            print(f"⏳ This includes checking bundle quality and fixing any issues...\n")
-            
+
+            print(
+                f"\n🤖 Phase 2: Claude will now verify and improve the configuration..."
+            )
+            print(
+                f"⏳ This includes checking bundle quality and fixing any issues...\n"
+            )
+
             # Run Claude again to verify and improve
             cmd_verify = [
                 "claude",
-                "-p", verification_prompt,
-                "--add-dir", str(self.project_path),
-                "--allowedTools", "Read,Write,Edit,MultiEdit,Glob,Grep,Bash"
+                "-p",
+                verification_prompt,
+                "--add-dir",
+                str(self.project_path),
+                "--allowedTools",
+                "Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
             ]
-            
+
             # Execute Claude for verification
-            verify_result = subprocess.run(cmd_verify, cwd=self.project_path, capture_output=False, text=True)
-            
+            verify_result = subprocess.run(
+                cmd_verify, cwd=self.project_path, capture_output=False, text=True
+            )
+
             if verify_result.returncode == 0:
                 print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
             else:
-                print(f"\n⚠️  Verification phase exited with code {verify_result.returncode}")
-                
+                print(
+                    f"\n⚠️  Verification phase exited with code {verify_result.returncode}"
+                )
+
         except FileNotFoundError:
             print(f"\n❌ Claude Code not found. Please install it first:")
             print(f"npm install -g @anthropic-ai/claude-code")
@@ -1764,22 +1781,24 @@ bundles:
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(yaml_content)
 
-    def _load_prompt_template(self, template_name: str, variables: Dict[str, str]) -> str:
+    def _load_prompt_template(
+        self, template_name: str, variables: Dict[str, str]
+    ) -> str:
         """Load a prompt template from markdown file and replace variables."""
         prompt_dir = Path(__file__).parent / "m1f" / "prompts"
         template_path = prompt_dir / f"{template_name}.md"
-        
+
         if not template_path.exists():
             raise FileNotFoundError(f"Prompt template not found: {template_path}")
-        
+
         # Read the template
         template_content = template_path.read_text(encoding="utf-8")
-        
+
         # Replace variables
         for key, value in variables.items():
             placeholder = f"{{{key}}}"
             template_content = template_content.replace(placeholder, str(value))
-        
+
         return template_content
 
     def _create_segmentation_prompt(self, project_context: Dict) -> str:
@@ -1790,14 +1809,16 @@ bundles:
             "languages": project_context.get("languages", "Unknown"),
             "total_files": project_context.get("total_files", "Unknown"),
         }
-        
+
         # Format main code directories
         if project_context.get("main_code_dirs"):
-            dirs_list = "\n".join([f"- {d}" for d in project_context["main_code_dirs"][:10]])
+            dirs_list = "\n".join(
+                [f"- {d}" for d in project_context["main_code_dirs"][:10]]
+            )
             variables["main_code_dirs"] = dirs_list
         else:
             variables["main_code_dirs"] = "- No specific code directories identified"
-        
+
         # Load and return the template
         return self._load_prompt_template("segmentation_prompt", variables)
 
@@ -1810,7 +1831,7 @@ bundles:
             "total_files": project_context.get("total_files", "Unknown"),
             "project_name": self.project_path.name,
         }
-        
+
         # Load and return the template
         return self._load_prompt_template("verification_prompt", variables)
 
@@ -2421,11 +2442,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 class M1FInit:
     """Initialize m1f for a project with quick setup."""
 
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False, no_symlink: bool = False):
         """Initialize m1f-init."""
         self.verbose = verbose
+        self.no_symlink = no_symlink
         self.project_path = Path.cwd()
         self.is_windows = platform.system() == "Windows"
+        self.created_files = []  # Track created files
+        
+        # Create safe project name (remove special characters)
+        import re
+        project_name = self.project_path.name
+        self.safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', project_name)
 
         # Find m1f installation directory
         self.m1f_root = Path(__file__).parent.parent
@@ -2455,13 +2483,16 @@ class M1FInit:
 
         # Step 5: Create config if needed
         if not config_exists:
-            self._create_config()
+            self._create_config(context)
 
         # Step 6: Show next steps
         self._show_next_steps()
 
     def _link_documentation(self):
         """Link m1f documentation (replaces m1f-link functionality)."""
+        if self.no_symlink:
+            return
+            
         print("\n📋 Setting up m1f documentation...")
 
         # Create m1f directory if it doesn't exist
@@ -2472,6 +2503,7 @@ class M1FInit:
         link_path = m1f_dir / "m1f.txt"
         if link_path.exists():
             print("✅ m1f documentation already linked")
+            self.created_files.append("m1f/m1f.txt (symlink)")
             return
 
         # Create symlink or copy on Windows
@@ -2481,6 +2513,7 @@ class M1FInit:
                 try:
                     link_path.symlink_to(self.m1f_docs_source)
                     print(f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
+                    self.created_files.append("m1f/m1f.txt (symlink)")
                 except OSError:
                     # Fall back to copying the file
                     import shutil
@@ -2490,10 +2523,12 @@ class M1FInit:
                     print(
                         "   (Symlink creation requires admin rights or developer mode on Windows)"
                     )
+                    self.created_files.append("m1f/m1f.txt (copy)")
             else:
                 # Unix-like systems
                 link_path.symlink_to(self.m1f_docs_source)
                 print(f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
+                self.created_files.append("m1f/m1f.txt (symlink)")
 
         except Exception as e:
             print(f"⚠️  Failed to link m1f documentation: {e}")
@@ -2503,14 +2538,13 @@ class M1FInit:
         """Check if we're in a git repository."""
         git_root = self.project_path
         if (self.project_path / ".git").exists():
-            print(f"✅ Git repository detected: {self.project_path}")
+            print(f"✅ Git repository detected in current directory")
         else:
             # Look for git root in parent directories
             current = self.project_path
             while current != current.parent:
                 if (current / ".git").exists():
                     git_root = current
-                    print(f"✅ Git repository detected: {git_root}")
                     break
                 current = current.parent
             else:
@@ -2551,11 +2585,14 @@ class M1FInit:
                 "-o",
                 str(analysis_path),
                 "--skip-output-file",
-                "--exclude-paths-file",
-                ".gitignore",
                 "--excludes",
                 "m1f/",
+                "--quiet",  # Suppress console output and log file creation
             ]
+            
+            # Only use .gitignore if it exists in current directory
+            if (self.project_path / ".gitignore").exists():
+                cmd.extend(["--exclude-paths-file", ".gitignore"])
 
             result = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -2571,26 +2608,31 @@ class M1FInit:
                 content = filelist_path.read_text().strip()
                 if content:
                     files_list = content.split("\n")
-                print(f"📄 Created file list: {filelist_path.name}")
 
             if dirlist_path.exists():
                 content = dirlist_path.read_text().strip()
                 if content:
                     dirs_list = content.split("\n")
-                print(f"📁 Created directory list: {dirlist_path.name}")
 
             # Analyze files to determine project type
             context = self._determine_project_type(files_list, dirs_list)
+            
+            # Clean up temporary analysis files
+            if filelist_path.exists():
+                filelist_path.unlink()
+            if dirlist_path.exists():
+                dirlist_path.unlink()
 
             print(f"✅ Found {len(files_list)} files in {len(dirs_list)} directories")
             print(f"📁 Project Type: {context.get('type', 'Unknown')}")
-            print(f"💻 Languages: {context.get('languages', 'Unknown')}")
+            if context.get('languages') != 'No programming languages detected':
+                print(f"💻 Programming Languages: {context.get('languages', 'Unknown')}")
 
             return context
 
         except Exception as e:
             print(f"⚠️  Failed to analyze project: {e}")
-            return {"type": "Unknown", "languages": "Unknown", "files": [], "dirs": []}
+            return {"type": "Unknown", "languages": "No programming languages detected", "files": [], "dirs": []}
 
     def _determine_project_type(self, files: List[str], dirs: List[str]) -> Dict:
         """Determine project type from file and directory lists."""
@@ -2604,10 +2646,15 @@ class M1FInit:
 
         # Count file extensions
         ext_count = {}
+        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
+        doc_file_count = 0
+        
         for file in files:
             ext = Path(file).suffix.lower()
             if ext:
                 ext_count[ext] = ext_count.get(ext, 0) + 1
+                if ext in doc_extensions:
+                    doc_file_count += 1
 
         # Determine languages
         if ext_count.get(".py", 0) > 0:
@@ -2629,34 +2676,57 @@ class M1FInit:
         if ext_count.get(".rb", 0) > 0:
             context["languages"].add("Ruby")
 
-        # Determine project type from files
-        for file in files:
-            if "package.json" in file:
-                context["type"] = "Node.js/JavaScript Project"
-                context["frameworks"].append("Node.js")
-            elif (
-                "requirements.txt" in file
-                or "setup.py" in file
-                or "pyproject.toml" in file
-            ):
-                context["type"] = "Python Project"
-            elif "composer.json" in file:
-                context["type"] = "PHP Project"
-                context["frameworks"].append("Composer")
-            elif "pom.xml" in file:
-                context["type"] = "Java Maven Project"
-                context["frameworks"].append("Maven")
-            elif "build.gradle" in file:
-                context["type"] = "Java Gradle Project"
-                context["frameworks"].append("Gradle")
-            elif "Cargo.toml" in file:
-                context["type"] = "Rust Project"
-                context["frameworks"].append("Cargo")
-            elif "go.mod" in file:
-                context["type"] = "Go Project"
-            elif "Gemfile" in file:
-                context["type"] = "Ruby Project"
-                context["frameworks"].append("Bundler")
+        # Check if this is primarily a documentation project
+        total_files = len(files)
+        if total_files > 0 and doc_file_count == total_files:  # All files are docs
+            context["type"] = "Documentation"
+            # Check for specific documentation frameworks
+            if any("mkdocs" in f.lower() for f in files):
+                context["frameworks"].append("MkDocs")
+            elif any("sphinx" in f.lower() for f in files):
+                context["frameworks"].append("Sphinx")
+            elif any("docusaurus" in f.lower() for f in files):
+                context["frameworks"].append("Docusaurus")
+            elif any("hugo" in f.lower() or "jekyll" in f.lower() for f in files):
+                context["frameworks"].append("Static Site Generator")
+        
+        # Determine project type from files (if not already documentation)
+        if context["type"] == "Unknown":
+            for file in files:
+                if "package.json" in file:
+                    context["type"] = "Node.js/JavaScript Project"
+                    context["frameworks"].append("Node.js")
+                    break
+                elif (
+                    "requirements.txt" in file
+                    or "setup.py" in file
+                    or "pyproject.toml" in file
+                ):
+                    context["type"] = "Python Project"
+                    break
+                elif "composer.json" in file:
+                    context["type"] = "PHP Project"
+                    context["frameworks"].append("Composer")
+                    break
+                elif "pom.xml" in file:
+                    context["type"] = "Java Maven Project"
+                    context["frameworks"].append("Maven")
+                    break
+                elif "build.gradle" in file:
+                    context["type"] = "Java Gradle Project"
+                    context["frameworks"].append("Gradle")
+                    break
+                elif "Cargo.toml" in file:
+                    context["type"] = "Rust Project"
+                    context["frameworks"].append("Cargo")
+                    break
+                elif "go.mod" in file:
+                    context["type"] = "Go Project"
+                    break
+                elif "Gemfile" in file:
+                    context["type"] = "Ruby Project"
+                    context["frameworks"].append("Bundler")
+                    break
 
         # Check for specific frameworks
         for file in files:
@@ -2691,6 +2761,16 @@ class M1FInit:
                     count = ext_count.get(".ts", 0) + ext_count.get(".tsx", 0)
                 elif lang == "PHP":
                     count = ext_count.get(".php", 0)
+                elif lang == "Java":
+                    count = ext_count.get(".java", 0)
+                elif lang == "C#":
+                    count = ext_count.get(".cs", 0)
+                elif lang == "Go":
+                    count = ext_count.get(".go", 0)
+                elif lang == "Rust":
+                    count = ext_count.get(".rs", 0)
+                elif lang == "Ruby":
+                    count = ext_count.get(".rb", 0)
                 else:
                     count = 0
                 if count > 0:
@@ -2698,46 +2778,63 @@ class M1FInit:
 
             context["languages"] = ", ".join(lang_counts) if lang_counts else "Unknown"
         else:
-            context["languages"] = "Not detected"
+            context["languages"] = "No programming languages detected"
 
         return context
 
     def _create_bundles(self, context: Dict):
         """Create complete and docs bundles."""
         m1f_dir = self.project_path / "m1f"
-        project_name = self.project_path.name
+        project_name = self.safe_name
+        
+        # Check if all files in the project are documentation files
+        files_list = context.get('files', [])
+        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
+        
+        # Count doc files
+        doc_file_count = sum(1 for f in files_list if Path(f).suffix.lower() in doc_extensions)
+        total_file_count = len(files_list)
+        
+        # If all files are docs, only create docs bundle
+        only_docs = (doc_file_count == total_file_count and total_file_count > 0)
 
-        # Create complete bundle
-        print(f"Creating complete project bundle...")
-        complete_cmd = [
-            sys.executable,
-            "-m",
-            "tools.m1f",
-            "-s",
-            str(self.project_path),
-            "-o",
-            str(m1f_dir / f"{project_name}_complete.txt"),
-            "--exclude-paths-file",
-            ".gitignore",
-            "--excludes",
-            "m1f/",
-            "--separator",
-            "Standard",
-            "--force",
-        ]
+        # Create complete bundle only if not all files are docs
+        if not only_docs:
+            print(f"Creating complete project bundle...")
+            complete_cmd = [
+                sys.executable,
+                "-m",
+                "tools.m1f",
+                "-s",
+                str(self.project_path),
+                "-o",
+                str(m1f_dir / f"{project_name}_complete.txt"),
+                "--excludes",
+                "m1f/",
+                "--separator",
+                "Standard",
+                "--force",
+                "--minimal-output",  # Don't create auxiliary files
+                "--quiet",  # Suppress console output and log file creation
+            ]
+            
+            # Only use .gitignore if it exists in current directory
+            if (self.project_path / ".gitignore").exists():
+                idx = complete_cmd.index("--excludes")
+                complete_cmd.insert(idx, ".gitignore")
+                complete_cmd.insert(idx, "--exclude-paths-file")
 
-        if self.verbose:
-            complete_cmd.append("--verbose")
+            if self.verbose:
+                complete_cmd.append("--verbose")
+                # Remove --quiet if verbose is requested
+                complete_cmd.remove("--quiet")
 
-        result = subprocess.run(complete_cmd, capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"✅ Created: m1f/{project_name}_complete.txt")
-            if (m1f_dir / f"{project_name}_complete_filelist.txt").exists():
-                print(f"📄 Created: m1f/{project_name}_complete_filelist.txt")
-            if (m1f_dir / f"{project_name}_complete_dirlist.txt").exists():
-                print(f"📁 Created: m1f/{project_name}_complete_dirlist.txt")
-        else:
-            print(f"⚠️  Failed to create complete bundle: {result.stderr}")
+            result = subprocess.run(complete_cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ Created: m1f/{project_name}_complete.txt")
+                self.created_files.append(f"m1f/{project_name}_complete.txt")
+            else:
+                print(f"⚠️  Failed to create complete bundle: {result.stderr}")
 
         # Create docs bundle
         print(f"Creating documentation bundle...")
@@ -2749,35 +2846,81 @@ class M1FInit:
             str(self.project_path),
             "-o",
             str(m1f_dir / f"{project_name}_docs.txt"),
-            "--exclude-paths-file",
-            ".gitignore",
             "--excludes",
             "m1f/",
             "--docs-only",
             "--separator",
             "Standard",
             "--force",
+            "--minimal-output",  # Don't create auxiliary files
+            "--quiet",  # Suppress console output and log file creation
         ]
+        
+        # Only use .gitignore if it exists in current directory
+        if (self.project_path / ".gitignore").exists():
+            idx = docs_cmd.index("--excludes")
+            docs_cmd.insert(idx, ".gitignore")
+            docs_cmd.insert(idx, "--exclude-paths-file")
 
         if self.verbose:
             docs_cmd.append("--verbose")
+            # Remove --quiet if verbose is requested
+            docs_cmd.remove("--quiet")
 
         result = subprocess.run(docs_cmd, capture_output=True, text=True)
         if result.returncode == 0:
             print(f"✅ Created: m1f/{project_name}_docs.txt")
-            if (m1f_dir / f"{project_name}_docs_filelist.txt").exists():
-                print(f"📄 Created: m1f/{project_name}_docs_filelist.txt")
-            if (m1f_dir / f"{project_name}_docs_dirlist.txt").exists():
-                print(f"📁 Created: m1f/{project_name}_docs_dirlist.txt")
+            self.created_files.append(f"m1f/{project_name}_docs.txt")
+            if only_docs:
+                print(f"ℹ️  Skipped complete bundle (all {total_file_count} files are documentation)")
         else:
             print(f"⚠️  Failed to create docs bundle: {result.stderr}")
 
-    def _create_config(self):
+    def _create_config(self, context: Dict):
         """Create basic .m1f.config.yml."""
-        project_name = self.project_path.name
+        project_name = self.safe_name
         config_path = self.project_path / ".m1f.config.yml"
 
         print(f"\n📝 Creating .m1f.config.yml...")
+        
+        # Check if all files are documentation
+        files_list = context.get('files', [])
+        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
+        doc_file_count = sum(1 for f in files_list if Path(f).suffix.lower() in doc_extensions)
+        total_file_count = len(files_list)
+        only_docs = (doc_file_count == total_file_count and total_file_count > 0)
+
+        # Build bundles section based on project content
+        if only_docs:
+            bundles_section = f"""bundles:
+  # Documentation bundle (62 file extensions)
+  docs:
+    description: "All documentation files"
+    output: "m1f/{project_name}_docs.txt"
+    sources:
+      - path: "."
+    docs_only: true
+    separator: "Standard"
+"""
+        else:
+            bundles_section = f"""bundles:
+  # Complete project bundle
+  complete:
+    description: "Complete project excluding meta files"
+    output: "m1f/{project_name}_complete.txt"
+    sources:
+      - path: "."
+    separator: "Standard"
+  
+  # Documentation bundle (62 file extensions)
+  docs:
+    description: "All documentation files"
+    output: "m1f/{project_name}_docs.txt"
+    sources:
+      - path: "."
+    docs_only: true
+    separator: "Standard"
+"""
 
         yaml_content = f"""# m1f Configuration - Generated by m1f-init
 # Use 'm1f-claude --advanced-setup' to add topic-specific bundles (non-Windows only)
@@ -2798,24 +2941,7 @@ global:
     minimal_output: true
     # Note: NO global max_file_size limit!
 
-bundles:
-  # Complete project bundle
-  complete:
-    description: "Complete project excluding meta files"
-    output: "m1f/{project_name}_complete.txt"
-    sources:
-      - path: "."
-    separator: "Standard"
-  
-  # Documentation bundle (62 file extensions)
-  docs:
-    description: "All documentation files"
-    output: "m1f/{project_name}_docs.txt"
-    sources:
-      - path: "."
-    docs_only: true
-    separator: "Standard"
-
+{bundles_section}
 # Use 'm1f-update' to regenerate bundles after making changes
 """
 
@@ -2823,17 +2949,30 @@ bundles:
             f.write(yaml_content)
 
         print(f"✅ Configuration created: .m1f.config.yml")
+        self.created_files.append(".m1f.config.yml")
 
     def _show_next_steps(self):
         """Show next steps to the user."""
-        project_name = self.project_path.name
-
         print(f"\n✅ Quick Setup Complete!")
-        print(f"\n📌 Next Steps:")
-        print(f"1. Check your bundles in m1f/ directory")
-        print(f"2. Run 'cat m1f/{project_name}_complete.txt | head -50' to preview")
-        print(f"3. Use 'm1f-update' to regenerate bundles after changes")
-        print(f"4. Reference @m1f/m1f.txt in AI tools for m1f documentation")
+        
+        # Show created files nicely formatted
+        if self.created_files:
+            print(f"\n📁 {'Here is your file:' if len(self.created_files) == 1 else 'Here are your files:'}\n")
+            for file in self.created_files:
+                print(f"   • {file}")
+            print()  # Empty line for spacing
+        
+        # Show next steps
+        print(f"📌 Next Steps:")
+        print(f"1. Use 'm1f-update' to regenerate bundles after changes")
+        print(f"2. Reference @m1f/m1f.txt in AI tools for m1f documentation")
+        
+        # Show preview command only for actual bundle files
+        bundle_files = [f for f in self.created_files if f.endswith('.txt') and 'symlink' not in f]
+        if bundle_files:
+            # Use the first bundle file for the preview example
+            first_bundle = bundle_files[0]
+            print(f"3. Preview your bundle: cat {first_bundle} | head -50")
 
         if not self.is_windows:
             print(f"\n🚀 Advanced Setup Available!")
@@ -2879,10 +3018,16 @@ After initialization:
         help="Show detailed output during initialization",
     )
 
+    parser.add_argument(
+        "--no-symlink",
+        action="store_true",
+        help="Skip creating symlink to m1f documentation",
+    )
+
     args = parser.parse_args()
 
     # Run initialization
-    init = M1FInit(verbose=args.verbose)
+    init = M1FInit(verbose=args.verbose, no_symlink=args.no_symlink)
     init.run()
 
 
@@ -4700,6 +4845,429 @@ def convert_html(html_content: str, **kwargs) -> str:
     converter = Html2mdConverter(config)
     return converter.convert_html(html_content)
 
+======= html2md_tool/claude_runner.py ======
+"""
+Claude runner with reliable subprocess execution and streaming support.
+"""
+
+import subprocess
+import sys
+import os
+from pathlib import Path
+from typing import List, Tuple, Optional, Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
+from rich.console import Console
+
+console = Console()
+
+
+class ClaudeRunner:
+    """Handles Claude CLI execution with reliable subprocess support."""
+
+    def __init__(
+        self,
+        max_workers: int = 5,
+        working_dir: Optional[str] = None,
+        claude_binary: Optional[str] = None,
+    ):
+        self.max_workers = max_workers
+        self.working_dir = working_dir or str(Path.cwd())
+        self.claude_binary = claude_binary or self._find_claude_binary()
+
+    def _find_claude_binary(self) -> str:
+        """Find Claude binary in system."""
+        # Try default command first
+        try:
+            subprocess.run(
+                ["claude", "--version"], capture_output=True, check=True, timeout=5
+            )
+            return "claude"
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
+            pass
+
+        # Check known locations
+        claude_paths = [
+            Path.home() / ".claude" / "local" / "claude",
+            Path("/usr/local/bin/claude"),
+            Path("/usr/bin/claude"),
+        ]
+
+        for path in claude_paths:
+            if path.exists() and path.is_file():
+                return str(path)
+
+        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
+
+    def run_claude_simple(
+        self,
+        prompt: str,
+        allowed_tools: str = "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",
+        add_dir: Optional[str] = None,
+        timeout: int = 300,
+        show_output: bool = False,
+    ) -> Tuple[int, str, str]:
+        """
+        Run Claude using simple subprocess approach with better timeout handling.
+
+        Returns: (returncode, stdout, stderr)
+        """
+        cmd = [
+            self.claude_binary,
+            "--print",  # Use print mode for non-interactive output
+            "--allowedTools",
+            allowed_tools,
+        ]
+
+        # Add working directory to command if different from current
+        if add_dir:
+            cmd.extend(["--add-dir", add_dir])
+
+        # Set environment to ensure unbuffered output
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+
+        if show_output:
+            console.print("🤖 Running Claude...", style="blue")
+            console.print(f"Command: {' '.join(cmd[:3])} ...", style="dim")
+            console.print(f"Working dir: {self.working_dir}", style="dim")
+
+        try:
+            # Use a more conservative timeout for complex tasks
+            actual_timeout = max(60, timeout)  # At least 60 seconds
+
+            # Run the process with timeout
+            result = subprocess.run(
+                cmd,
+                input=prompt,
+                capture_output=True,
+                text=True,
+                timeout=actual_timeout,
+                env=env,
+                cwd=self.working_dir,
+            )
+
+            if show_output:
+                if result.returncode == 0:
+                    console.print("✅ Claude processing complete", style="green")
+                else:
+                    console.print(
+                        f"❌ Claude failed with code {result.returncode}", style="red"
+                    )
+                    if result.stderr:
+                        console.print(
+                            f"Error: {result.stderr[:200]}...", style="red dim"
+                        )
+
+            return result.returncode, result.stdout, result.stderr
+
+        except subprocess.TimeoutExpired:
+            console.print(
+                f"⏰ Claude timed out after {actual_timeout}s", style="yellow"
+            )
+            console.print(
+                "💡 Try increasing timeout or simplifying the task", style="blue"
+            )
+            return -1, "", f"Process timed out after {actual_timeout}s"
+        except Exception as e:
+            console.print(f"❌ Error running Claude: {e}", style="red")
+            return -1, "", str(e)
+
+    def run_claude_streaming(
+        self,
+        prompt: str,
+        allowed_tools: str = "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",
+        add_dir: Optional[str] = None,
+        timeout: int = 300,
+        show_output: bool = False,
+        working_dir: Optional[str] = None,
+    ) -> Tuple[int, str, str]:
+        """
+        Run Claude with real-time streaming output.
+
+        Returns: (returncode, stdout, stderr)
+        """
+        # Use the working_dir parameter if provided, otherwise use instance default
+        work_dir = working_dir if working_dir is not None else self.working_dir
+
+        # Build command
+        cmd = [self.claude_binary, "--print", "--allowedTools", allowed_tools]
+
+        if add_dir:
+            cmd.extend(["--add-dir", add_dir])
+
+        # Only show initial message if show_output is enabled
+        # Removed verbose output for cleaner interface
+
+        # Collect all output
+        stdout_lines = []
+        stderr_lines = []
+
+        try:
+            # Start the process
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=work_dir,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+            )
+
+            # Send the prompt and close stdin
+            process.stdin.write(prompt)
+            process.stdin.close()
+
+            # Track timing
+            start_time = time.time()
+            last_output_time = start_time
+
+            # Read stdout line by line
+            while True:
+                line = process.stdout.readline()
+                if line == "" and process.poll() is not None:
+                    break
+                if line:
+                    line = line.rstrip()
+                    stdout_lines.append(line)
+
+                    if show_output:
+                        current_time = time.time()
+                        elapsed = current_time - start_time
+                        # Show Claude's actual output (truncate very long lines)
+                        if len(line) > 200:
+                            console.print(f"[{elapsed:.1f}s] {line[:197]}...")
+                        else:
+                            console.print(f"[{elapsed:.1f}s] {line}")
+                        last_output_time = current_time
+
+                # Check timeout
+                if time.time() - start_time > timeout:
+                    process.kill()
+                    if show_output:
+                        console.print(
+                            f"⏰ Claude timed out after {timeout}s", style="yellow"
+                        )
+                    return -1, "\n".join(stdout_lines), "Process timed out"
+
+            # Get any remaining output
+            try:
+                remaining_stdout, stderr = process.communicate(timeout=5)
+                if remaining_stdout:
+                    stdout_lines.extend(remaining_stdout.splitlines())
+                if stderr:
+                    stderr_lines.extend(stderr.splitlines())
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+            except ValueError:
+                # Ignore "I/O operation on closed file" errors
+                stderr = ""
+
+            # Join all output
+            stdout = "\n".join(stdout_lines)
+            stderr = "\n".join(stderr_lines)
+
+            if show_output:
+                total_time = time.time() - start_time
+                if process.returncode == 0:
+                    console.print(f"✅ Claude processing complete", style="green")
+                else:
+                    console.print(
+                        f"❌ Claude failed with code {process.returncode}", style="red"
+                    )
+                    if stderr:
+                        console.print(f"Error: {stderr[:200]}...", style="red dim")
+
+            return process.returncode, stdout, stderr
+
+        except Exception as e:
+            if show_output:
+                console.print(f"❌ Error running Claude: {e}", style="red")
+            return -1, "\n".join(stdout_lines), str(e)
+
+    def run_claude_parallel(
+        self, tasks: List[Dict[str, Any]], show_progress: bool = True
+    ) -> List[Dict[str, Any]]:
+        """
+        Run multiple Claude tasks in parallel using SDK.
+
+        Args:
+            tasks: List of task dictionaries with keys:
+                - prompt: The prompt to send
+                - name: Task name for display
+                - allowed_tools: Tools to allow (optional)
+                - add_dir: Directory to add (optional)
+                - timeout: Timeout in seconds (optional)
+
+        Returns:
+            List of results with keys:
+                - name: Task name
+                - success: Boolean
+                - returncode: Process return code
+                - stdout: Standard output
+                - stderr: Standard error
+                - error: Error message if failed
+        """
+        results = []
+        start_time = time.time()
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all tasks
+            future_to_task = {}
+            for task in tasks:
+                future = executor.submit(
+                    self.run_claude_streaming,
+                    prompt=task["prompt"],
+                    allowed_tools=task.get(
+                        "allowed_tools",
+                        "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",
+                    ),
+                    add_dir=task.get("add_dir"),
+                    timeout=task.get("timeout", 300),
+                    show_output=show_progress,  # Show output if progress enabled
+                    working_dir=task.get("working_dir"),
+                )
+                future_to_task[future] = task
+
+            # Process completed tasks
+            completed = 0
+            total = len(tasks)
+
+            for future in as_completed(future_to_task):
+                task = future_to_task[future]
+                completed += 1
+
+                if show_progress:
+                    elapsed_time = (
+                        time.time() - start_time if "start_time" in locals() else 0
+                    )
+                    console.print(
+                        f"📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]",
+                        style="blue",
+                    )
+
+                try:
+                    returncode, stdout, stderr = future.result()
+
+                    result = {
+                        "name": task["name"],
+                        "success": returncode == 0,
+                        "returncode": returncode,
+                        "stdout": stdout,
+                        "stderr": stderr,
+                        "error": None,
+                    }
+
+                    if returncode == 0:
+                        console.print(f"✅ Completed: {task['name']}", style="green")
+                    else:
+                        console.print(f"❌ Failed: {task['name']}", style="red")
+
+                except Exception as e:
+                    console.print(f"❌ Exception in {task['name']}: {e}", style="red")
+                    result = {
+                        "name": task["name"],
+                        "success": False,
+                        "returncode": -1,
+                        "stdout": "",
+                        "stderr": "",
+                        "error": str(e),
+                    }
+
+                results.append(result)
+
+        return results
+
+======= html2md_tool/claude_runner_simple.py ======
+"""
+Simplified Claude runner for debugging.
+"""
+
+import subprocess
+import os
+from pathlib import Path
+from typing import Tuple, Optional
+from rich.console import Console
+
+console = Console()
+
+
+class ClaudeRunnerSimple:
+    """Simplified Claude runner without streaming."""
+
+    def __init__(self, claude_binary: Optional[str] = None):
+        self.claude_binary = claude_binary or self._find_claude_binary()
+
+    def _find_claude_binary(self) -> str:
+        """Find Claude binary in system."""
+        # Check known locations
+        claude_paths = [
+            Path.home() / ".claude" / "local" / "claude",
+            Path("/usr/local/bin/claude"),
+            Path("/usr/bin/claude"),
+        ]
+
+        for path in claude_paths:
+            if path.exists() and path.is_file():
+                return str(path)
+
+        # Try default command
+        try:
+            subprocess.run(
+                ["claude", "--version"], capture_output=True, check=True, timeout=5
+            )
+            return "claude"
+        except:
+            pass
+
+        raise FileNotFoundError("Claude CLI not found")
+
+    def run_claude(
+        self,
+        prompt: str,
+        allowed_tools: str = "Read,Glob,Grep,Write",
+        add_dir: Optional[str] = None,
+        timeout: int = 300,
+        working_dir: Optional[str] = None,
+    ) -> Tuple[int, str, str]:
+        """Run Claude with simple subprocess."""
+
+        cmd = [
+            self.claude_binary,
+            "--print",
+            "--allowedTools",
+            allowed_tools,
+        ]
+
+        if add_dir:
+            cmd.extend(["--add-dir", add_dir])
+
+        # Add prompt as command argument
+        cmd.extend(["--", prompt])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=working_dir,
+            )
+
+            return result.returncode, result.stdout, result.stderr
+
+        except subprocess.TimeoutExpired:
+            return -1, "", f"Command timed out after {timeout} seconds"
+        except Exception as e:
+            return -1, "", str(e)
+
 ======= html2md_tool/cli.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
@@ -4728,6 +5296,7 @@ from rich.console import Console
 from . import __version__
 from .api import Html2mdConverter
 from .config import Config, OutputFormat
+from .claude_runner import ClaudeRunner
 
 console = Console()
 
@@ -4892,13 +5461,28 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Use Claude AI to intelligently select representative files and suggest selectors",
     )
-    
+
     parser.add_argument(
         "--analyze-files",
         type=int,
         default=5,
         metavar="N",
         help="Number of files to analyze with Claude (1-20, default: 5)",
+    )
+
+    parser.add_argument(
+        "--parallel-workers",
+        type=int,
+        default=5,
+        metavar="N",
+        help="Number of parallel Claude sessions for file analysis (1-10, default: 5)",
+    )
+
+    parser.add_argument(
+        "--project-description",
+        type=str,
+        default="",
+        help="Project description to help Claude understand the context (avoids interactive prompt)",
     )
 
 
@@ -5037,7 +5621,12 @@ def handle_analyze(args: argparse.Namespace) -> None:
     # If --claude flag is set, use Claude AI for analysis
     if args.claude:
         console.print(f"\nFound {len(html_files)} HTML files total")
-        _handle_claude_analysis(html_files, args.analyze_files)
+        _handle_claude_analysis(
+            html_files,
+            args.analyze_files,
+            args.parallel_workers,
+            args.project_description,
+        )
         return
 
     # Otherwise, do local analysis
@@ -5167,8 +5756,10 @@ def _find_common_patterns(parsed_files):
         console.print(f"  <{tag}> (found {count} times)")
 
 
-def _handle_claude_analysis(html_files, num_files_to_analyze=5):
-    """Handle analysis using Claude AI."""
+def _handle_claude_analysis(
+    html_files, num_files_to_analyze=5, parallel_workers=5, project_description=""
+):
+    """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
     import subprocess
     import os
     import tempfile
@@ -5179,19 +5770,27 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
 
+    # Try to use improved runner if available
+    try:
+        from .cli_claude import handle_claude_analysis_improved
+
+        return handle_claude_analysis_improved(
+            html_files, num_files_to_analyze, parallel_workers, project_description
+        )
+    except ImportError:
+        pass
+
     console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
 
     # Find the common parent directory of all HTML files
     if not html_files:
         console.print("‚ùå No HTML files to analyze", style="red")
         return
-        
-    common_parent = Path(
-        os.path.commonpath([str(f.absolute()) for f in html_files])
-    )
+
+    common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
     console.print(f"Analysis directory: {common_parent}")
     console.print(f"Total HTML files found: {len(html_files)}")
-    
+
     # Check if we have enough files
     if len(html_files) == 0:
         console.print("‚ùå No HTML files found in the specified directory", style="red")
@@ -5205,14 +5804,15 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
     m1f_dir.mkdir(exist_ok=True)
     analysis_dir = m1f_dir / "analysis"
     analysis_dir.mkdir(exist_ok=True)
-    
+
     # Clean old analysis files
     for old_file in analysis_dir.glob("*.txt"):
         if old_file.name != "log.txt":
             old_file.unlink()
-    
+
     # Initialize analysis log
     from datetime import datetime
+
     log_file = analysis_dir / "log.txt"
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
@@ -5268,7 +5868,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
 
     # Load the prompt from external file
     simple_prompt_template = select_prompt_path.read_text()
-    
+
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
         num_files_to_analyze = 1
@@ -5276,32 +5876,57 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
     elif num_files_to_analyze > 20:
         num_files_to_analyze = 20
         console.print("[yellow]Maximum is 20 files. Using 20.[/yellow]")
-    
+
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        console.print(f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]")
-    
-    # Ask user for project description
-    console.print("\n[bold]Project Context:[/bold]")
-    console.print("Please briefly describe what this HTML project contains so Claude can better understand")
-    console.print("what should be converted to Markdown. Example: 'Documentation for XY software - API section'")
-    console.print("\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]")
-    console.print("[dim]     so Claude will prioritize those files in the analysis.[/dim]")
-    project_description = console.input("\nProject description: ").strip()
-    
+        console.print(
+            f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]"
+        )
+
+    # Ask user for project description if not provided
+    if not project_description:
+        console.print("\n[bold]Project Context:[/bold]")
+        console.print(
+            "Please briefly describe what this HTML project contains so Claude can better understand"
+        )
+        console.print(
+            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
+        )
+        console.print(
+            "\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]"
+        )
+        console.print(
+            "[dim]     so Claude will prioritize those files in the analysis.[/dim]"
+        )
+        project_description = console.input("\nProject description: ").strip()
+    else:
+        console.print(f"\n[bold]Project Context:[/bold] {project_description}")
+
     # Update the prompt with the number of files
-    simple_prompt_template = simple_prompt_template.replace("5 representative", f"{num_files_to_analyze} representative")
-    simple_prompt_template = simple_prompt_template.replace("select 5", f"select {num_files_to_analyze}")
-    simple_prompt_template = simple_prompt_template.replace("EXACTLY 5 file paths", f"EXACTLY {num_files_to_analyze} file paths")
-    simple_prompt_template = simple_prompt_template.replace("exactly 5 representative", f"exactly {num_files_to_analyze} representative")
-    
+    simple_prompt_template = simple_prompt_template.replace(
+        "5 representative", f"{num_files_to_analyze} representative"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "select 5", f"select {num_files_to_analyze}"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "EXACTLY 5 file paths", f"EXACTLY {num_files_to_analyze} file paths"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "exactly 5 representative", f"exactly {num_files_to_analyze} representative"
+    )
+
     # Add project description to the prompt
     if project_description:
-        simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt_template}"
+        simple_prompt = (
+            f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt_template}"
+        )
     else:
         simple_prompt = simple_prompt_template
 
-    console.print(f"\nAsking Claude to select {num_files_to_analyze} representative files...")
+    console.print(
+        f"\nAsking Claude to select {num_files_to_analyze} representative files..."
+    )
 
     try:
         # Run claude using the same approach as m1f-claude
@@ -5320,26 +5945,32 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
             input=simple_prompt,
             capture_output=True,
             text=True,
-            timeout=180  # 3 minutes for file selection
+            timeout=180,  # 3 minutes for file selection
         )
-        
+
         if result.returncode != 0:
             raise subprocess.CalledProcessError(
                 result.returncode, cmd, output=result.stdout, stderr=result.stderr
             )
         selected_files = result.stdout.strip().split("\n")
         selected_files = [f.strip() for f in selected_files if f.strip()]
-        
+
         # Filter out any lines that are not file paths (e.g., explanations)
         valid_files = []
         for f in selected_files:
             # Skip lines that look like explanations (contain "select" or start with lowercase or are too long)
-            if any(word in f.lower() for word in ["select", "based on", "analysis", "representative"]) or len(f) > 100:
+            if (
+                any(
+                    word in f.lower()
+                    for word in ["select", "based on", "analysis", "representative"]
+                )
+                or len(f) > 100
+            ):
                 continue
             # Only keep lines that look like file paths (contain .html or /)
             if ".html" in f or "/" in f:
                 valid_files.append(f)
-        
+
         selected_files = valid_files
 
         console.print(f"\nClaude selected {len(selected_files)} files:")
@@ -5354,10 +5985,80 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
         console.print(f"Error output: {e.stderr}", style="red")
         return
     except FileNotFoundError:
-        console.print(
-            "‚ùå claude command not found. Please install Claude CLI.", style="red"
-        )
-        return
+        # Try to find claude in common locations
+        claude_paths = [
+            Path.home() / ".claude" / "local" / "claude",
+            Path("/usr/local/bin/claude"),
+            Path("/usr/bin/claude"),
+        ]
+
+        claude_found = False
+        for claude_path in claude_paths:
+            if claude_path.exists() and claude_path.is_file():
+                console.print(f"Found claude at: {claude_path}", style="yellow")
+                # Update the command to use the full path
+                cmd[0] = str(claude_path)
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        input=simple_prompt,
+                        capture_output=True,
+                        text=True,
+                        timeout=180,
+                    )
+
+                    if result.returncode != 0:
+                        raise subprocess.CalledProcessError(
+                            result.returncode,
+                            cmd,
+                            output=result.stdout,
+                            stderr=result.stderr,
+                        )
+
+                    selected_files = result.stdout.strip().split("\n")
+                    selected_files = [f.strip() for f in selected_files if f.strip()]
+
+                    # Filter out any lines that are not file paths (e.g., explanations)
+                    valid_files = []
+                    for f in selected_files:
+                        if (
+                            any(
+                                word in f.lower()
+                                for word in [
+                                    "select",
+                                    "based on",
+                                    "analysis",
+                                    "representative",
+                                ]
+                            )
+                            or len(f) > 100
+                        ):
+                            continue
+                        if ".html" in f or "/" in f:
+                            valid_files.append(f)
+
+                    selected_files = valid_files
+
+                    console.print(f"\nClaude selected {len(selected_files)} files:")
+                    for f in selected_files:
+                        console.print(f"  - {f}", style="blue")
+
+                    claude_found = True
+                    break
+
+                except Exception as e:
+                    console.print(f"Failed with {claude_path}: {e}", style="yellow")
+                    continue
+
+        if not claude_found:
+            console.print(
+                "‚ùå claude command not found. Please install Claude CLI.", style="red"
+            )
+            console.print(
+                "If claude is installed as an alias, try adding it to your PATH or creating a symlink.",
+                style="yellow",
+            )
+            return
 
     # Step 2: Verify the selected files exist and save to file
     console.print("\nVerifying selected HTML files...")
@@ -5409,15 +6110,35 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
         # Customize prompt for this specific file
         individual_prompt = individual_prompt_template.replace("{filename}", file_path)
         individual_prompt = individual_prompt.replace("{file_number}", str(i))
-        
+
         # Add project context if provided
         if project_description:
-            individual_prompt = f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+            individual_prompt = (
+                f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+            )
 
         try:
             # Run claude for this individual file
+            # First try with 'claude' command, then fall back to known paths
+            claude_cmd = "claude"
+            claude_paths = [
+                Path.home() / ".claude" / "local" / "claude",
+                Path("/usr/local/bin/claude"),
+                Path("/usr/bin/claude"),
+            ]
+
+            # Check if we need to use full path
+            try:
+                subprocess.run(["claude", "--version"], capture_output=True, check=True)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # Try to find claude in known locations
+                for path in claude_paths:
+                    if path.exists() and path.is_file():
+                        claude_cmd = str(path)
+                        break
+
             cmd = [
-                "claude",
+                claude_cmd,
                 "--print",
                 "--allowedTools",
                 "Read,Glob,Grep,Write",
@@ -5431,7 +6152,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
                 input=individual_prompt,
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minutes per file analysis
+                timeout=300,  # 5 minutes per file analysis
             )
 
             # Debug: Show process details
@@ -5471,16 +6192,21 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
         return
 
     synthesis_prompt = synthesis_prompt_path.read_text()
-    
+
     # Update the synthesis prompt with the actual number of files analyzed
-    synthesis_prompt = synthesis_prompt.replace("analyzed 5 HTML files", f"analyzed {len(verified_files)} HTML files")
-    synthesis_prompt = synthesis_prompt.replace("You have analyzed 5 HTML files", f"You have analyzed {len(verified_files)} HTML files")
-    
+    synthesis_prompt = synthesis_prompt.replace(
+        "analyzed 5 HTML files", f"analyzed {len(verified_files)} HTML files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "You have analyzed 5 HTML files",
+        f"You have analyzed {len(verified_files)} HTML files",
+    )
+
     # Build the file list dynamically
     file_list = []
     for i in range(1, len(verified_files) + 1):
         file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
-    
+
     # Replace the static file list with the dynamic one
     old_file_list = """Read the 5 analysis files:
 - m1f/analysis/html_analysis_1.txt
@@ -5488,27 +6214,66 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
 - m1f/analysis/html_analysis_3.txt
 - m1f/analysis/html_analysis_4.txt
 - m1f/analysis/html_analysis_5.txt"""
-    
-    new_file_list = f"Read the {len(verified_files)} analysis files:\n" + "\n".join(file_list)
+
+    new_file_list = f"Read the {len(verified_files)} analysis files:\n" + "\n".join(
+        file_list
+    )
     synthesis_prompt = synthesis_prompt.replace(old_file_list, new_file_list)
-    
+
     # Update other references to "5 files"
-    synthesis_prompt = synthesis_prompt.replace("Analyzed 5 files", f"Analyzed {len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("works on X/5 files", f"works on X/{len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("found in X/5 files", f"found in X/{len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("(4-5 out of 5)", f"({len(verified_files)-1}-{len(verified_files)} out of {len(verified_files)})")
-    synthesis_prompt = synthesis_prompt.replace("works on 4/5 files", f"works on {max(1, len(verified_files)-1)}/{len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("works on 3/5 files", f"works on {max(1, len(verified_files)//2)}/{len(verified_files)} files")
-    synthesis_prompt = synthesis_prompt.replace("found in 3+ files", f"found in {max(2, len(verified_files)//2)}+ files")
-    
+    synthesis_prompt = synthesis_prompt.replace(
+        "Analyzed 5 files", f"Analyzed {len(verified_files)} files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "works on X/5 files", f"works on X/{len(verified_files)} files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "found in X/5 files", f"found in X/{len(verified_files)} files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "(4-5 out of 5)",
+        f"({len(verified_files)-1}-{len(verified_files)} out of {len(verified_files)})",
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "works on 4/5 files",
+        f"works on {max(1, len(verified_files)-1)}/{len(verified_files)} files",
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "works on 3/5 files",
+        f"works on {max(1, len(verified_files)//2)}/{len(verified_files)} files",
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "found in 3+ files", f"found in {max(2, len(verified_files)//2)}+ files"
+    )
+
     # Add project context if provided
     if project_description:
-        synthesis_prompt = f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
+        synthesis_prompt = (
+            f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
+        )
 
     try:
         # Run claude for synthesis
+        # Use the same claude command detection as before
+        claude_cmd = "claude"
+        claude_paths = [
+            Path.home() / ".claude" / "local" / "claude",
+            Path("/usr/local/bin/claude"),
+            Path("/usr/bin/claude"),
+        ]
+
+        # Check if we need to use full path
+        try:
+            subprocess.run(["claude", "--version"], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Try to find claude in known locations
+            for path in claude_paths:
+                if path.exists() and path.is_file():
+                    claude_cmd = str(path)
+                    break
+
         cmd = [
-            "claude",
+            claude_cmd,
             "--print",
             "--allowedTools",
             "Read,Glob,Grep,Write",
@@ -5522,7 +6287,7 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
             input=synthesis_prompt,
             capture_output=True,
             text=True,
-            timeout=300  # 5 minutes for synthesis
+            timeout=300,  # 5 minutes for synthesis
         )
 
         if result.returncode != 0:
@@ -5558,45 +6323,64 @@ def _handle_claude_analysis(html_files, num_files_to_analyze=5):
                             s for s in extractor["ignore_selectors"] if s
                         ]
 
-                # Save the config to a file
-                config_file = common_parent / "html2md_extract_config.yaml"
+                # Save the config to a file with consistent name
+                config_file = common_parent / "html2md_config.yaml"
                 with open(config_file, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
                 console.print(
-                    f"\n‚úÖ Saved configuration to: {config_file}", style="green"
+                    f"\n‚úÖ Configuration saved to: {config_file}", style="green"
                 )
 
-                # Show the user how to use it
-                console.print("\n[bold]Usage Examples:[/bold]")
-                console.print("\n1. Convert using the generated configuration:")
+                # Show clear usage instructions
+                console.print("\n" + "=" * 60)
                 console.print(
-                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]"
+                    "[bold green]‚ú® Analysis Complete! Here's how to convert your HTML files:[/bold green]"
+                )
+                console.print("=" * 60 + "\n")
+
+                console.print(
+                    "[bold]Option 1: Use the generated configuration (RECOMMENDED)[/bold]"
                 )
                 console.print(
-                    "   This extracts only the main content based on Claude's analysis.\n"
+                    "This uses the CSS selectors Claude identified to extract only the main content:\n"
+                )
+                console.print(
+                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown -c {config_file}[/cyan]\n"
                 )
 
-                console.print("2. Convert with AI assistance (Claude analyzes each file):")
+                console.print("[bold]Option 2: Use Claude AI for each file[/bold]")
                 console.print(
-                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]"
+                    "This uses Claude to intelligently extract content from each file individually:"
                 )
+                console.print("(Slower but may handle edge cases better)\n")
                 console.print(
-                    "   This uses Claude to extract clean content from each file individually."
+                    f"[cyan]m1f-html2md convert {common_parent} -o ./markdown --claude[/cyan]\n"
                 )
+
+                console.print("[bold]Option 3: Convert a single file[/bold]")
+                console.print("To test the configuration on a single file first:\n")
+                console.print(
+                    f"[cyan]m1f-html2md convert path/to/file.html -o test.md -c {config_file}[/cyan]\n"
+                )
+
+                console.print("=" * 60)
             else:
                 console.print(
                     "\n‚ö†Ô∏è  Could not extract YAML configuration from Claude's response",
                     style="yellow",
                 )
                 console.print(
-                    "You can manually create a config file based on the analysis above."
+                    "Please manually create html2md_config.yaml based on the analysis above."
+                )
+                console.print(
+                    "\nExpected format: The YAML should be between ```yaml and ``` markers."
                 )
 
         except Exception as e:
             console.print(f"\n‚ö†Ô∏è  Could not save configuration: {e}", style="yellow")
             console.print(
-                "You can manually create a config file based on the analysis above."
+                f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above."
             )
 
     except subprocess.TimeoutExpired:
@@ -5711,6 +6495,14 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
 
+    # Try to use improved converter if available
+    try:
+        from .convert_claude import handle_claude_convert_improved
+
+        return handle_claude_convert_improved(args)
+    except ImportError:
+        pass
+
     console.print(f"\n[bold]Using Claude AI to convert HTML to Markdown...[/bold]")
     console.print(f"Model: {args.model}")
     console.print(f"Sleep between calls: {args.sleep} seconds")
@@ -5806,7 +6598,25 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             prompt = prompt_template.replace("{html_content}", f"@{tmp_html_path}")
 
             # Call Claude with the prompt referencing the file
-            cmd = ["claude", "-p", prompt, "--model", model_param]
+            # Detect claude command location
+            claude_cmd = "claude"
+            claude_paths = [
+                Path.home() / ".claude" / "local" / "claude",
+                Path("/usr/local/bin/claude"),
+                Path("/usr/bin/claude"),
+            ]
+
+            # Check if we need to use full path
+            try:
+                subprocess.run(["claude", "--version"], capture_output=True, check=True)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # Try to find claude in known locations
+                for path in claude_paths:
+                    if path.exists() and path.is_file():
+                        claude_cmd = str(path)
+                        break
+
+            cmd = [claude_cmd, "-p", prompt, "--model", model_param]
 
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
@@ -5982,6 +6792,654 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+======= html2md_tool/cli_claude.py ======
+"""Improved Claude analysis functions for HTML to Markdown converter."""
+
+import os
+import subprocess
+import time
+from pathlib import Path
+from typing import List
+from datetime import datetime
+
+from rich.console import Console
+from .claude_runner import ClaudeRunner
+
+console = Console()
+
+
+def handle_claude_analysis_improved(
+    html_files: List[Path],
+    num_files_to_analyze: int = 5,
+    parallel_workers: int = 5,
+    project_description: str = "",
+):
+    """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
+
+    console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
+    console.print(
+        "⏱️  Note: Processing large HTML files (2MB+) may take several minutes.",
+        style="yellow",
+    )
+
+    # Find the common parent directory of all HTML files
+    if not html_files:
+        console.print("❌ No HTML files to analyze", style="red")
+        return
+
+    common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
+    console.print(f"📁 Analysis directory: {common_parent}")
+    console.print(f"📊 Total HTML files found: {len(html_files)}")
+
+    # Initialize Claude runner
+    try:
+        runner = ClaudeRunner(
+            max_workers=parallel_workers, working_dir=str(common_parent)
+        )
+    except Exception as e:
+        console.print(f"❌ {e}", style="red")
+        return
+
+    # Check if we have enough files
+    if len(html_files) == 0:
+        console.print("❌ No HTML files found in the specified directory", style="red")
+        return
+
+    # Step 1: Create m1f and analysis directories if they don't exist
+    m1f_dir = common_parent / "m1f"
+    m1f_dir.mkdir(exist_ok=True)
+    analysis_dir = m1f_dir / "analysis"
+    analysis_dir.mkdir(exist_ok=True)
+
+    # Clean old analysis files
+    for old_file in analysis_dir.glob("*.txt"):
+        if old_file.name != "log.txt":
+            old_file.unlink()
+
+    # Initialize analysis log
+    log_file = analysis_dir / "log.txt"
+    log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
+
+    # Create a filelist with all HTML files using m1f
+    console.print("\n🔧 Creating HTML file list using m1f...")
+    console.print(f"Working with HTML directory: {common_parent}")
+
+    # Run m1f to create only the filelist (not the content)
+    m1f_cmd = [
+        "m1f",
+        "-s",
+        str(common_parent),
+        "-o",
+        str(m1f_dir / "all_html_files.txt"),
+        "--include-extensions",
+        ".html",
+        "-t",  # Text only
+        "--include-dot-paths",  # Include hidden paths
+    ]
+
+    try:
+        subprocess.run(m1f_cmd, check=True, capture_output=True, text=True, timeout=60)
+        console.print("✅ Created HTML file list")
+    except subprocess.CalledProcessError as e:
+        console.print(f"❌ Failed to create file list: {e}", style="red")
+        return
+    except subprocess.TimeoutExpired:
+        console.print("❌ Timeout creating file list", style="red")
+        return
+
+    # Get relative paths for all HTML files
+    relative_paths = []
+    for f in html_files:
+        try:
+            rel_path = f.relative_to(common_parent)
+            relative_paths.append(str(rel_path))
+        except ValueError:
+            relative_paths.append(str(f))
+
+    # Step 2: Load the file selection prompt
+    prompt_dir = Path(__file__).parent / "prompts"
+    select_prompt_path = prompt_dir / "select_files_from_project.md"
+
+    if not select_prompt_path.exists():
+        console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
+        return
+
+    # Load the prompt from external file
+    simple_prompt_template = select_prompt_path.read_text()
+
+    # Validate and adjust number of files to analyze
+    if num_files_to_analyze < 1:
+        num_files_to_analyze = 1
+        console.print("[yellow]Minimum is 1 file. Using 1.[/yellow]")
+    elif num_files_to_analyze > 20:
+        num_files_to_analyze = 20
+        console.print("[yellow]Maximum is 20 files. Using 20.[/yellow]")
+
+    if num_files_to_analyze > len(html_files):
+        num_files_to_analyze = len(html_files)
+        console.print(
+            f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]"
+        )
+
+    # Ask user for project description if not provided
+    if not project_description:
+        console.print("\n[bold]Project Context:[/bold]")
+        console.print(
+            "Please briefly describe what this HTML project contains so Claude can better understand"
+        )
+        console.print(
+            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
+        )
+        console.print(
+            "\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]"
+        )
+        console.print(
+            "[dim]     so Claude will prioritize those files in the analysis.[/dim]"
+        )
+        project_description = console.input("\nProject description: ").strip()
+    else:
+        console.print(f"\n📋 [bold]Project Context:[/bold] {project_description}")
+
+    # Update the prompt with the number of files
+    simple_prompt_template = simple_prompt_template.replace(
+        "5 representative", f"{num_files_to_analyze} representative"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "select 5", f"select {num_files_to_analyze}"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "EXACTLY 5 file paths", f"EXACTLY {num_files_to_analyze} file paths"
+    )
+    simple_prompt_template = simple_prompt_template.replace(
+        "exactly 5 representative", f"exactly {num_files_to_analyze} representative"
+    )
+
+    # Add the list of available HTML files to the prompt
+    file_list = "\n".join(relative_paths)
+    simple_prompt = f"""Available HTML files in the directory:
+{file_list}
+
+{simple_prompt_template}"""
+
+    # Add project context if provided
+    if project_description:
+        simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt}"
+
+    console.print(
+        f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files..."
+    )
+    console.print("   This may take 10-30 seconds...", style="dim")
+
+    # Step 3: Use Claude to select representative files
+    returncode, stdout, stderr = runner.run_claude_streaming(
+        prompt=simple_prompt,
+        allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
+        add_dir=str(common_parent),
+        timeout=180,  # 3 minutes for file selection
+        show_output=True,
+    )
+
+    if returncode != 0:
+        console.print(f"❌ Claude command failed: {stderr}", style="red")
+        return
+
+    selected_files = stdout.strip().split("\n")
+    selected_files = [f.strip() for f in selected_files if f.strip()]
+
+    # Filter out any lines that are not file paths and normalize paths
+    valid_files = []
+    for f in selected_files:
+        if (
+            any(
+                word in f.lower()
+                for word in ["select", "based on", "analysis", "representative"]
+            )
+            or len(f) > 200
+        ):
+            continue
+        if "FILE_SELECTION_COMPLETE_OK" in f:
+            continue
+        if ".html" in f or ".htm" in f:
+            # Normalize path - remove common_parent prefix if present
+            if str(common_parent) in f:
+                f = f.replace(str(common_parent) + "/", "")
+            valid_files.append(f)
+
+    selected_files = valid_files
+
+    console.print(f"\nClaude selected {len(selected_files)} files:")
+    for f in selected_files:
+        console.print(f"  - {f}", style="blue")
+
+    # Step 4: Verify the selected files exist
+    console.print("\nVerifying selected HTML files...")
+    verified_files = []
+
+    for file_path in selected_files[:num_files_to_analyze]:
+        file_path = file_path.strip()
+
+        # Try different path resolutions
+        paths_to_try = [
+            common_parent / file_path,  # Relative to common_parent
+            Path(file_path),  # Absolute path
+            common_parent / Path(file_path).name,  # Just filename in common_parent
+        ]
+
+        found = False
+        for test_path in paths_to_try:
+            if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
+                # Store relative path from common_parent
+                try:
+                    rel_path = test_path.relative_to(common_parent)
+                    verified_files.append(str(rel_path))
+                    console.print(f"✅ Found: {rel_path}", style="green")
+                    found = True
+                    break
+                except ValueError:
+                    # If not relative to common_parent, use the filename
+                    verified_files.append(test_path.name)
+                    console.print(f"✅ Found: {test_path.name}", style="green")
+                    found = True
+                    break
+
+        if not found:
+            console.print(f"⚠️  Not found: {file_path}", style="yellow")
+
+    if not verified_files:
+        console.print("❌ No HTML files could be verified", style="red")
+        return
+
+    # Write the verified files to a reference list
+    selected_files_path = m1f_dir / "selected_html_files.txt"
+    with open(selected_files_path, "w") as f:
+        for file_path in verified_files:
+            f.write(f"{file_path}\n")
+    console.print(f"✅ Wrote selected files list to: {selected_files_path}")
+
+    # Step 5: Analyze each file individually with Claude (in parallel)
+    console.print(
+        f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
+    )
+    console.print(
+        "⏱️  Expected duration: 3-5 minutes for large HTML files", style="yellow"
+    )
+    console.print(
+        "   Claude is analyzing each file's structure in detail...", style="dim"
+    )
+
+    # Load the individual analysis prompt template
+    individual_prompt_path = prompt_dir / "analyze_individual_file.md"
+
+    if not individual_prompt_path.exists():
+        console.print(
+            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
+        )
+        return
+
+    individual_prompt_template = individual_prompt_path.read_text()
+
+    # Prepare tasks for parallel execution
+    tasks = []
+    for i, file_path in enumerate(verified_files, 1):
+        # Construct paths - use relative paths when possible
+        # For output, we need to ensure it's relative to where Claude is running
+        output_path = f"m1f/analysis/html_analysis_{i}.txt"
+
+        # Customize prompt for this specific file
+        individual_prompt = individual_prompt_template.replace("{filename}", file_path)
+        individual_prompt = individual_prompt.replace("{output_path}", output_path)
+        individual_prompt = individual_prompt.replace("{file_number}", str(i))
+
+        # Add project context if provided
+        if project_description:
+            individual_prompt = (
+                f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+            )
+
+        tasks.append(
+            {
+                "name": f"Analysis {i}: {file_path}",
+                "prompt": individual_prompt,
+                "add_dir": str(common_parent),
+                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
+                "timeout": 300,  # 5 minutes per file
+                "working_dir": str(common_parent),  # Set working directory
+            }
+        )
+
+    # Removed debug output for cleaner interface
+
+    # Run analyses in parallel
+    results = runner.run_claude_parallel(tasks, show_progress=True)
+
+    # Check results
+    successful_analyses = sum(1 for r in results if r["success"])
+    console.print(
+        f"\n✅ Successfully analyzed {successful_analyses}/{len(verified_files)} files"
+    )
+
+    # Show any errors
+    for result in results:
+        if not result["success"]:
+            console.print(
+                f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}",
+                style="red",
+            )
+
+    # Step 6: Synthesize all analyses into final config
+    console.print("\n🔬 Synthesizing analyses into final configuration...")
+    console.print("⏱️  This final step typically takes 1-2 minutes...", style="yellow")
+
+    # Load the synthesis prompt
+    synthesis_prompt_path = prompt_dir / "synthesize_config.md"
+
+    if not synthesis_prompt_path.exists():
+        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
+        return
+
+    synthesis_prompt = synthesis_prompt_path.read_text()
+
+    # Update the synthesis prompt with the actual number of files analyzed
+    synthesis_prompt = synthesis_prompt.replace(
+        "analyzed 5 HTML files", f"analyzed {len(verified_files)} HTML files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "You have analyzed 5 HTML files",
+        f"You have analyzed {len(verified_files)} HTML files",
+    )
+
+    # Build the file list dynamically with relative paths
+    file_list = []
+    for i in range(1, len(verified_files) + 1):
+        file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
+
+    # Replace the static file list with the dynamic one
+    old_file_list = """Read the 5 analysis files:
+- m1f/analysis/html_analysis_1.txt
+- m1f/analysis/html_analysis_2.txt  
+- m1f/analysis/html_analysis_3.txt
+- m1f/analysis/html_analysis_4.txt
+- m1f/analysis/html_analysis_5.txt"""
+
+    new_file_list = f"Read the {len(verified_files)} analysis files:\n" + "\n".join(
+        file_list
+    )
+    synthesis_prompt = synthesis_prompt.replace(old_file_list, new_file_list)
+
+    # Update other references
+    synthesis_prompt = synthesis_prompt.replace(
+        "Analyzed 5 files", f"Analyzed {len(verified_files)} files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "works on X/5 files", f"works on X/{len(verified_files)} files"
+    )
+    synthesis_prompt = synthesis_prompt.replace(
+        "found in X/5 files", f"found in X/{len(verified_files)} files"
+    )
+
+    # Add project context if provided
+    if project_description:
+        synthesis_prompt = (
+            f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
+        )
+
+    # Run synthesis with streaming output
+    console.print("\nRunning synthesis with Claude...")
+    returncode, stdout, stderr = runner.run_claude_streaming(
+        prompt=synthesis_prompt,
+        add_dir=str(common_parent),
+        timeout=300,  # 5 minutes for synthesis
+        show_output=True,
+    )
+
+    if returncode != 0:
+        console.print(f"❌ Synthesis failed: {stderr}", style="red")
+        return
+
+    console.print("\n✨ [bold]Claude's Final Configuration:[/bold]")
+    console.print(stdout)
+
+    # Try to parse the YAML config from Claude's output
+    import yaml
+
+    try:
+        # Extract YAML from the output (between ```yaml and ```)
+        output = stdout
+        yaml_start = output.find("```yaml")
+        yaml_end = output.find("```", yaml_start + 6)
+
+        if yaml_start != -1 and yaml_end != -1:
+            yaml_content = output[yaml_start + 7 : yaml_end].strip()
+            config_data = yaml.safe_load(yaml_content)
+
+            # Clean up the config - remove empty strings
+            if "extractor" in config_data:
+                extractor = config_data["extractor"]
+                if "alternative_selectors" in extractor:
+                    extractor["alternative_selectors"] = [
+                        s for s in extractor["alternative_selectors"] if s
+                    ]
+                if "ignore_selectors" in extractor:
+                    extractor["ignore_selectors"] = [
+                        s for s in extractor["ignore_selectors"] if s
+                    ]
+
+            # Save the config to a file
+            config_path = common_parent / "m1f-html2md-config.yaml"
+            with open(config_path, "w") as f:
+                yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
+
+            console.print(f"\n✅ Saved configuration to: {config_path}", style="green")
+            console.print(
+                "\nYou can now use this configuration file to convert your HTML files:"
+            )
+            console.print(
+                f"  m1f-html2md convert {common_parent} -c {config_path} -o ./output/",
+                style="blue",
+            )
+        else:
+            console.print(
+                "\n⚠️  Could not extract YAML config from Claude's response",
+                style="yellow",
+            )
+            console.print(
+                "Please review the output above and create the config file manually.",
+                style="yellow",
+            )
+
+    except yaml.YAMLError as e:
+        console.print(f"\n⚠️  Error parsing YAML config: {e}", style="yellow")
+        console.print(
+            "Please review the output above and create the config file manually.",
+            style="yellow",
+        )
+    except Exception as e:
+        console.print(f"\n⚠️  Error saving config: {e}", style="yellow")
+
+    console.print("\n✅ Analysis complete!", style="green bold")
+
+======= html2md_tool/convert_claude.py ======
+"""Improved Claude conversion functions for HTML to Markdown converter."""
+
+import os
+import sys
+import time
+import tempfile
+from pathlib import Path
+from typing import List
+from rich.console import Console
+from .claude_runner import ClaudeRunner
+
+console = Console()
+
+
+def handle_claude_convert_improved(args):
+    """Handle conversion using Claude AI with improved timeout handling."""
+
+    console.print(
+        f"\n[bold]Using Claude AI to convert HTML to Markdown (with improved streaming)...[/bold]"
+    )
+    console.print(f"Model: {args.model}")
+    console.print(f"Sleep between calls: {args.sleep} seconds")
+
+    # Initialize Claude runner
+    try:
+        runner = ClaudeRunner(
+            working_dir=str(
+                source_path.parent if source_path.is_file() else source_path
+            )
+        )
+    except Exception as e:
+        console.print(f"❌ {e}", style="red")
+        sys.exit(1)
+
+    # Find all HTML files in source directory
+    source_path = args.source
+    if not source_path.exists():
+        console.print(f"❌ Source path not found: {source_path}", style="red")
+        sys.exit(1)
+
+    html_files = []
+    if source_path.is_file():
+        if source_path.suffix.lower() in [".html", ".htm"]:
+            html_files.append(source_path)
+        else:
+            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
+            sys.exit(1)
+    elif source_path.is_dir():
+        # Find all HTML files recursively
+        html_files = list(source_path.rglob("*.html")) + list(
+            source_path.rglob("*.htm")
+        )
+        console.print(f"Found {len(html_files)} HTML files in {source_path}")
+
+    if not html_files:
+        console.print("❌ No HTML files found to convert", style="red")
+        sys.exit(1)
+
+    # Prepare output directory
+    output_path = args.output
+    if output_path.exists() and output_path.is_file():
+        console.print(
+            f"❌ Output path is a file, expected directory: {output_path}", style="red"
+        )
+        sys.exit(1)
+
+    if not output_path.exists():
+        output_path.mkdir(parents=True, exist_ok=True)
+        console.print(f"Created output directory: {output_path}")
+
+    # Load conversion prompt
+    prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
+    if not prompt_path.exists():
+        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
+        sys.exit(1)
+
+    prompt_template = prompt_path.read_text()
+
+    # Process each HTML file
+    converted_count = 0
+    failed_count = 0
+
+    for i, html_file in enumerate(html_files):
+        tmp_html_path = None
+        try:
+            # Import validate_path_traversal
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from m1f.utils import validate_path_traversal
+
+            # Validate path to prevent traversal attacks
+            validated_path = validate_path_traversal(
+                html_file,
+                base_path=source_path if source_path.is_dir() else source_path.parent,
+                allow_outside=False,
+            )
+
+            # Read HTML content
+            html_content = validated_path.read_text(encoding="utf-8")
+
+            # Determine output file path
+            if source_path.is_file():
+                # Single file conversion
+                output_file = output_path / html_file.with_suffix(".md").name
+            else:
+                # Directory conversion - maintain structure
+                relative_path = html_file.relative_to(source_path)
+                output_file = output_path / relative_path.with_suffix(".md")
+
+            # Create output directory if needed
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+
+            console.print(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
+
+            # Create a temporary file with the HTML content
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False, encoding="utf-8"
+            ) as tmp_html:
+                tmp_html.write(html_content)
+                tmp_html_path = tmp_html.name
+
+            # Prepare the prompt for the temporary file
+            prompt = prompt_template.replace("{html_content}", f"@{tmp_html_path}")
+
+            # Add model parameter to prompt
+            prompt = f"{prompt}\n\nNote: Using model {args.model}"
+
+            # Use improved Claude runner with streaming
+            console.print("🔄 Converting with Claude...", style="dim")
+            returncode, stdout, stderr = runner.run_claude_streaming(
+                prompt=prompt,
+                allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
+                timeout=300,  # 5 minutes per file
+                show_output=False,  # Don't show Claude's thinking process
+            )
+
+            if returncode != 0:
+                console.print(f"❌ Claude conversion failed: {stderr}", style="red")
+                failed_count += 1
+                continue
+
+            # Save the markdown output
+            markdown_content = stdout.strip()
+
+            # Clean up any Claude metadata if present
+            if "Claude:" in markdown_content:
+                # Remove any Claude: prefixed lines
+                lines = markdown_content.split("\n")
+                cleaned_lines = [
+                    line for line in lines if not line.strip().startswith("Claude:")
+                ]
+                markdown_content = "\n".join(cleaned_lines)
+
+            output_file.write_text(markdown_content, encoding="utf-8")
+            console.print(f"✅ Converted to: {output_file}", style="green")
+            converted_count += 1
+
+            # Sleep between API calls (except for the last one)
+            if i < len(html_files) - 1 and args.sleep > 0:
+                console.print(f"Sleeping for {args.sleep} seconds...", style="dim")
+                time.sleep(args.sleep)
+
+        except Exception as e:
+            console.print(f"❌ Error processing {html_file}: {e}", style="red")
+            failed_count += 1
+
+        finally:
+            # Clean up temporary file
+            if tmp_html_path and os.path.exists(tmp_html_path):
+                try:
+                    os.unlink(tmp_html_path)
+                except Exception:
+                    pass
+
+    # Summary
+    console.print(f"\n✅ Conversion complete!", style="green bold")
+    console.print(f"Successfully converted: {converted_count} files")
+    if failed_count > 0:
+        console.print(f"Failed: {failed_count} files", style="yellow")
+
+    console.print(f"\nOutput directory: {output_path}")
 
 ======= html2md_tool/core.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -9079,44 +10537,48 @@ console = Console()
 
 def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
     """Show information from the scrape tracker database.
-    
+
     Args:
         db_path: Path to the SQLite database
         args: Command line arguments
     """
     if not db_path.exists():
-        console.print("[yellow]No database found. Have you scraped anything yet?[/yellow]")
+        console.print(
+            "[yellow]No database found. Have you scraped anything yet?[/yellow]"
+        )
         return
-        
+
     try:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
-        
+
         if args.show_db_stats:
             # Show statistics
             cursor.execute("SELECT COUNT(*) FROM scraped_urls")
             total = cursor.fetchone()[0]
-            
+
             cursor.execute("SELECT COUNT(*) FROM scraped_urls WHERE error IS NULL")
             successful = cursor.fetchone()[0]
-            
+
             cursor.execute("SELECT COUNT(*) FROM scraped_urls WHERE error IS NOT NULL")
             errors = cursor.fetchone()[0]
-            
+
             console.print("\n[bold]Scraping Statistics:[/bold]")
             console.print(f"Total URLs processed: {total}")
             console.print(f"Successfully scraped: {successful}")
             console.print(f"Errors encountered: {errors}")
-            
+
             if total > 0:
                 success_rate = (successful / total) * 100
                 console.print(f"Success rate: {success_rate:.1f}%")
-                
+
         if args.show_errors:
             # Show URLs with errors
-            cursor.execute("SELECT url, error FROM scraped_urls WHERE error IS NOT NULL")
+            cursor.execute(
+                "SELECT url, error FROM scraped_urls WHERE error IS NOT NULL"
+            )
             errors = cursor.fetchall()
-            
+
             if errors:
                 console.print("\n[bold]URLs with Errors:[/bold]")
                 for url, error in errors:
@@ -9124,22 +10586,28 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
                     console.print(f"    Error: {error}")
             else:
                 console.print("\n[green]No errors found![/green]")
-                
+
         if args.show_scraped_urls:
             # Show all scraped URLs
-            cursor.execute("SELECT url, status_code FROM scraped_urls ORDER BY scraped_at")
+            cursor.execute(
+                "SELECT url, status_code FROM scraped_urls ORDER BY scraped_at"
+            )
             urls = cursor.fetchall()
-            
+
             if urls:
                 console.print("\n[bold]Scraped URLs:[/bold]")
                 for url, status_code in urls:
-                    status_icon = "[green]✓[/green]" if status_code == 200 else f"[yellow]{status_code}[/yellow]"
+                    status_icon = (
+                        "[green]✓[/green]"
+                        if status_code == 200
+                        else f"[yellow]{status_code}[/yellow]"
+                    )
                     console.print(f"{status_icon} {url}")
             else:
                 console.print("\n[yellow]No URLs found in database[/yellow]")
-                
+
         conn.close()
-        
+
     except sqlite3.Error as e:
         console.print(f"[red]Database error: {e}[/red]")
     except Exception as e:
@@ -9167,7 +10635,9 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     # Main arguments
-    parser.add_argument("url", nargs="?", help="URL to scrape (not needed for database queries)")
+    parser.add_argument(
+        "url", nargs="?", help="URL to scrape (not needed for database queries)"
+    )
     parser.add_argument(
         "-o", "--output", type=Path, required=True, help="Output directory"
     )
@@ -9217,19 +10687,19 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("--user-agent", type=str, help="Custom user agent string")
-    
+
     parser.add_argument(
         "--ignore-get-params",
         action="store_true",
         help="Ignore GET parameters in URLs (e.g., ?tab=linux) to avoid duplicate content",
     )
-    
+
     parser.add_argument(
         "--ignore-canonical",
         action="store_true",
         help="Ignore canonical URL tags (by default, pages with different canonical URLs are skipped)",
     )
-    
+
     parser.add_argument(
         "--ignore-duplicates",
         action="store_true",
@@ -9279,7 +10749,7 @@ def main() -> None:
 
     if args.user_agent:
         config.crawler.user_agent = args.user_agent
-    
+
     config.crawler.ignore_get_params = args.ignore_get_params
     config.crawler.check_canonical = not args.ignore_canonical
     config.crawler.check_content_duplicates = not args.ignore_duplicates
@@ -9303,12 +10773,11 @@ def main() -> None:
     if args.verbose:
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
     elif not args.quiet:
         logging.basicConfig(
-            level=logging.WARNING,
-            format='%(asctime)s - %(levelname)s - %(message)s'
+            level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
         )
 
     # Check if only database query options are requested
@@ -9352,7 +10821,9 @@ def main() -> None:
 
     except KeyboardInterrupt:
         console.print("\n[yellow]⚠️  Scraping interrupted by user[/yellow]")
-        console.print("[dim]Run the same command again to resume where you left off[/dim]")
+        console.print(
+            "[dim]Run the same command again to resume where you left off[/dim]"
+        )
         sys.exit(0)
     except Exception as e:
         console.print(f"❌ Error during scraping: {e}", style="red")
@@ -9448,13 +10919,15 @@ class CrawlerConfig(BaseModel):
         default=3, ge=0, le=10, description="Number of retries for failed requests"
     )
     ignore_get_params: bool = Field(
-        default=False, description="Ignore GET parameters in URLs to avoid duplicate content"
+        default=False,
+        description="Ignore GET parameters in URLs to avoid duplicate content",
     )
     check_canonical: bool = Field(
         default=True, description="Skip pages if canonical URL differs from current URL"
     )
     check_content_duplicates: bool = Field(
-        default=True, description="Skip pages with duplicate content (based on text-only checksum)"
+        default=True,
+        description="Skip pages with duplicate content (based on text-only checksum)",
     )
 
 
@@ -9576,10 +11049,11 @@ class WebCrawler:
         """
         self._db_path = output_dir / "scrape_tracker.db"
         self._db_conn = sqlite3.connect(str(self._db_path))
-        
+
         # Create table if it doesn't exist
         cursor = self._db_conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS scraped_urls (
                 url TEXT PRIMARY KEY,
                 normalized_url TEXT,
@@ -9590,16 +11064,19 @@ class WebCrawler:
                 scraped_at TIMESTAMP,
                 error TEXT
             )
-        """)
-        
+        """
+        )
+
         # Create table for content checksums
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS content_checksums (
                 checksum TEXT PRIMARY KEY,
                 first_url TEXT,
                 first_seen TIMESTAMP
             )
-        """)
+        """
+        )
         self._db_conn.commit()
         cursor.close()
 
@@ -9620,7 +11097,7 @@ class WebCrawler:
         """
         if not self._db_conn:
             return False
-            
+
         cursor = self._db_conn.cursor()
         cursor.execute("SELECT 1 FROM scraped_urls WHERE url = ?", (url,))
         result = cursor.fetchone()
@@ -9635,13 +11112,13 @@ class WebCrawler:
         """
         if not self._db_conn:
             return set()
-            
+
         cursor = self._db_conn.cursor()
         cursor.execute("SELECT url FROM scraped_urls")
         urls = {row[0] for row in cursor.fetchall()}
         cursor.close()
         return urls
-    
+
     def _get_content_checksums(self) -> Set[str]:
         """Get all content checksums from previous scraping.
 
@@ -9650,13 +11127,13 @@ class WebCrawler:
         """
         if not self._db_conn:
             return set()
-            
+
         cursor = self._db_conn.cursor()
         cursor.execute("SELECT checksum FROM content_checksums")
         checksums = {row[0] for row in cursor.fetchall()}
         cursor.close()
         return checksums
-    
+
     def _record_content_checksum(self, checksum: str, url: str) -> None:
         """Record a content checksum in the database.
 
@@ -9666,19 +11143,22 @@ class WebCrawler:
         """
         if not self._db_conn:
             return
-            
+
         cursor = self._db_conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO content_checksums (checksum, first_url, first_seen)
                 VALUES (?, ?, ?)
-            """, (checksum, url, datetime.now()))
+            """,
+                (checksum, url, datetime.now()),
+            )
             self._db_conn.commit()
         except sqlite3.IntegrityError:
             # Checksum already exists
             pass
         cursor.close()
-    
+
     def _is_content_checksum_exists(self, checksum: str) -> bool:
         """Check if a content checksum already exists in the database.
 
@@ -9690,18 +11170,25 @@ class WebCrawler:
         """
         if not self._db_conn:
             return False
-            
+
         cursor = self._db_conn.cursor()
-        cursor.execute("SELECT 1 FROM content_checksums WHERE checksum = ?", (checksum,))
+        cursor.execute(
+            "SELECT 1 FROM content_checksums WHERE checksum = ?", (checksum,)
+        )
         result = cursor.fetchone()
         cursor.close()
         return result is not None
 
-    def _record_scraped_url(self, url: str, status_code: Optional[int], 
-                          target_filename: str, error: Optional[str] = None,
-                          normalized_url: Optional[str] = None,
-                          canonical_url: Optional[str] = None,
-                          content_checksum: Optional[str] = None) -> None:
+    def _record_scraped_url(
+        self,
+        url: str,
+        status_code: Optional[int],
+        target_filename: str,
+        error: Optional[str] = None,
+        normalized_url: Optional[str] = None,
+        canonical_url: Optional[str] = None,
+        content_checksum: Optional[str] = None,
+    ) -> None:
         """Record a scraped URL in the database.
 
         Args:
@@ -9715,15 +11202,26 @@ class WebCrawler:
         """
         if not self._db_conn:
             return
-            
+
         cursor = self._db_conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO scraped_urls 
             (url, normalized_url, canonical_url, content_checksum, 
              status_code, target_filename, scraped_at, error)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (url, normalized_url, canonical_url, content_checksum,
-              status_code, target_filename, datetime.now(), error))
+        """,
+            (
+                url,
+                normalized_url,
+                canonical_url,
+                content_checksum,
+                status_code,
+                target_filename,
+                datetime.now(),
+                error,
+            ),
+        )
         self._db_conn.commit()
         cursor.close()
 
@@ -9735,13 +11233,15 @@ class WebCrawler:
         """
         if not self._db_conn:
             return []
-            
+
         cursor = self._db_conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT url, target_filename 
             FROM scraped_urls 
             WHERE error IS NULL AND target_filename != ''
-        """)
+        """
+        )
         pages = [{"url": row[0], "filename": row[1]} for row in cursor.fetchall()]
         cursor.close()
         return pages
@@ -9777,11 +11277,13 @@ class WebCrawler:
 
         # Initialize database for tracking
         self._init_database(output_dir)
-        
+
         # Check if this is a resume operation
         scraped_urls = self._get_scraped_urls()
         if scraped_urls:
-            logger.info(f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs")
+            logger.info(
+                f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs"
+            )
 
         # Create scraper instance
         backend_name = self.config.scraper_backend.value
@@ -9793,41 +11295,42 @@ class WebCrawler:
         try:
             async with scraper:
                 # Pass already scraped URLs to the scraper if it supports it
-                if hasattr(scraper, '_visited_urls'):
+                if hasattr(scraper, "_visited_urls"):
                     scraper._visited_urls.update(scraped_urls)
-                
+
                 # Set up checksum callback if deduplication is enabled
                 if self._scraper_config.check_content_duplicates:
                     # Pass the database connection to the scraper for checksum queries
-                    if hasattr(scraper, 'set_checksum_callback'):
+                    if hasattr(scraper, "set_checksum_callback"):
                         scraper.set_checksum_callback(self._is_content_checksum_exists)
                         logger.info("Enabled database-backed content deduplication")
-                
+
                 # Pass information about scraped pages for resume functionality
-                if scraped_urls and hasattr(scraper, 'set_resume_info'):
+                if scraped_urls and hasattr(scraper, "set_resume_info"):
                     pages_info = self._get_scraped_pages_info()
                     resume_info = []
                     for page_info in pages_info[:20]:  # Read first 20 pages for links
                         try:
-                            file_path = output_dir / page_info['filename']
+                            file_path = output_dir / page_info["filename"]
                             if file_path.exists():
-                                content = file_path.read_text(encoding='utf-8')
-                                resume_info.append({
-                                    'url': page_info['url'],
-                                    'content': content
-                                })
+                                content = file_path.read_text(encoding="utf-8")
+                                resume_info.append(
+                                    {"url": page_info["url"], "content": content}
+                                )
                         except Exception as e:
-                            logger.warning(f"Failed to read {page_info['filename']}: {e}")
-                    
+                            logger.warning(
+                                f"Failed to read {page_info['filename']}: {e}"
+                            )
+
                     if resume_info:
                         scraper.set_resume_info(resume_info)
-                    
+
                 async for page in scraper.scrape_site(start_url):
                     # Skip if already scraped
                     if self._is_url_scraped(page.url):
                         logger.info(f"Skipping already scraped URL: {page.url}")
                         continue
-                        
+
                     # Log progress - show current URL being scraped
                     logger.info(f"Processing: {page.url} (page {len(pages) + 1})")
                     pages.append(page)
@@ -9837,26 +11340,31 @@ class WebCrawler:
                         file_path = await self._save_page(page, site_dir)
                         # Record successful scrape with all metadata
                         self._record_scraped_url(
-                            page.url, 
-                            page.status_code, 
+                            page.url,
+                            page.status_code,
                             str(file_path.relative_to(output_dir)),
                             error=None,
                             normalized_url=page.normalized_url,
                             canonical_url=page.canonical_url,
-                            content_checksum=page.content_checksum
+                            content_checksum=page.content_checksum,
                         )
                         # Record content checksum if present
-                        if page.content_checksum and self._scraper_config.check_content_duplicates:
-                            self._record_content_checksum(page.content_checksum, page.url)
+                        if (
+                            page.content_checksum
+                            and self._scraper_config.check_content_duplicates
+                        ):
+                            self._record_content_checksum(
+                                page.content_checksum, page.url
+                            )
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})
                         # Record failed scrape
                         self._record_scraped_url(
                             page.url,
-                            page.status_code if hasattr(page, 'status_code') else None,
+                            page.status_code if hasattr(page, "status_code") else None,
                             "",
-                            str(e)
+                            str(e),
                         )
                         # Continue with other pages despite the error
 
@@ -10045,51 +11553,53 @@ from typing import Optional
 
 def extract_text_from_html(html_content: str) -> str:
     """Extract plain text from HTML content for deduplication.
-    
+
     This strips all HTML tags and normalizes whitespace to create
     a content fingerprint for duplicate detection.
-    
+
     Args:
         html_content: HTML content to extract text from
-        
+
     Returns:
         Plain text with normalized whitespace
     """
     # Remove script and style content first
-    text = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
-    text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
-    
+    text = re.sub(
+        r"<script[^>]*>.*?</script>", "", html_content, flags=re.DOTALL | re.IGNORECASE
+    )
+    text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE)
+
     # Remove all HTML tags
-    text = re.sub(r'<[^>]+>', ' ', text)
-    
+    text = re.sub(r"<[^>]+>", " ", text)
+
     # Decode HTML entities
-    text = re.sub(r'&nbsp;', ' ', text)
-    text = re.sub(r'&lt;', '<', text)
-    text = re.sub(r'&gt;', '>', text)
-    text = re.sub(r'&amp;', '&', text)
-    text = re.sub(r'&quot;', '"', text)
-    text = re.sub(r'&#39;', "'", text)
-    
+    text = re.sub(r"&nbsp;", " ", text)
+    text = re.sub(r"&lt;", "<", text)
+    text = re.sub(r"&gt;", ">", text)
+    text = re.sub(r"&amp;", "&", text)
+    text = re.sub(r"&quot;", '"', text)
+    text = re.sub(r"&#39;", "'", text)
+
     # Normalize whitespace
-    text = re.sub(r'\s+', ' ', text)
-    
+    text = re.sub(r"\s+", " ", text)
+
     # Remove leading/trailing whitespace
     text = text.strip()
-    
+
     return text
 
 
 def calculate_content_checksum(html_content: str) -> str:
     """Calculate checksum of HTML content based on text only.
-    
+
     Args:
         html_content: HTML content to calculate checksum for
-        
+
     Returns:
         SHA-256 checksum of the text content
     """
     text = extract_text_from_html(html_content)
-    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 ======= html2md_tool/config/__init__.py ======
 """Configuration system for mf1-html2md."""
@@ -10139,10 +11649,15 @@ __all__ = [
 import json
 from pathlib import Path
 from typing import Any, Dict
+import warnings
+from dataclasses import fields
 
 import yaml
+from rich.console import Console
 
 from .models import Config
+
+console = Console()
 
 
 def load_config(path: Path) -> Config:
@@ -10172,7 +11687,35 @@ def load_config(path: Path) -> Config:
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
 
-    return Config(**data)
+    # Get valid field names from Config dataclass
+    valid_fields = {f.name for f in fields(Config)}
+
+    # Filter out unknown fields and warn about them
+    filtered_data = {}
+    unknown_fields = []
+
+    for key, value in data.items():
+        if key in valid_fields:
+            # Convert string paths to Path objects for specific fields
+            if key in ["source", "destination", "log_file"] and value is not None:
+                filtered_data[key] = Path(value)
+            else:
+                filtered_data[key] = value
+        else:
+            unknown_fields.append(key)
+
+    # Warn about unknown fields
+    if unknown_fields:
+        console.print(
+            f"⚠️  Warning: Ignoring unknown configuration fields: {', '.join(unknown_fields)}",
+            style="yellow",
+        )
+        console.print(
+            "   These fields are not recognized by m1f-html2md and will be ignored.",
+            style="dim",
+        )
+
+    return Config(**filtered_data)
 
 
 def save_config(config: Config, path: Path) -> None:
@@ -10837,10 +12380,10 @@ class WebScraperBase(ABC):
             url: URL to mark as visited
         """
         self._visited_urls.add(url)
-    
+
     def set_checksum_callback(self, callback):
         """Set callback function to check if content checksum exists.
-        
+
         Args:
             callback: Function that takes a checksum string and returns bool
         """
@@ -10897,13 +12440,13 @@ class BeautifulSoupScraper(WebScraperBase):
         self.session: Optional[aiohttp.ClientSession] = None
         self._semaphore = asyncio.Semaphore(config.concurrent_requests)
         self._resume_info: List[Dict[str, str]] = []
-    
+
     def _normalize_url(self, url: str) -> str:
         """Normalize URL by removing GET parameters if configured.
-        
+
         Args:
             url: URL to normalize
-            
+
         Returns:
             Normalized URL
         """
@@ -10995,12 +12538,12 @@ class BeautifulSoupScraper(WebScraperBase):
 
                     # Parse with BeautifulSoup
                     soup = BeautifulSoup(content, "html.parser")
-                    
+
                     # Store metadata for database
                     normalized_url = self._normalize_url(str(response.url))
                     canonical_url = None
                     content_checksum = None
-                    
+
                     # Order: 1. GET parameter normalization (already done in _normalize_url)
                     # 2. Canonical URL check
                     if self.config.check_canonical:
@@ -11011,18 +12554,25 @@ class BeautifulSoupScraper(WebScraperBase):
                             canonical_url = urljoin(url, canonical_url)
                             # Normalize canonical URL too
                             normalized_canonical = self._normalize_url(canonical_url)
-                            
+
                             if normalized_url != normalized_canonical:
-                                logger.info(f"Skipping {url} - canonical URL differs: {canonical_url}")
-                                return None  # Return None to indicate skip, not an error
-                    
+                                logger.info(
+                                    f"Skipping {url} - canonical URL differs: {canonical_url}"
+                                )
+                                return (
+                                    None  # Return None to indicate skip, not an error
+                                )
+
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
                         from ..utils import calculate_content_checksum
+
                         content_checksum = calculate_content_checksum(content)
-                        
+
                         # Check if checksum exists using callback or fall back to database query
-                        if self._checksum_callback and self._checksum_callback(content_checksum):
+                        if self._checksum_callback and self._checksum_callback(
+                            content_checksum
+                        ):
                             logger.info(f"Skipping {url} - duplicate content detected")
                             return None  # Return None to indicate skip, not an error
 
@@ -11057,18 +12607,25 @@ class BeautifulSoupScraper(WebScraperBase):
 
     def set_resume_info(self, resume_info: List[Dict[str, str]]) -> None:
         """Set resume information for continuing a crawl.
-        
+
         Args:
             resume_info: List of dicts with 'url' and 'content' keys
         """
         self._resume_info = resume_info
-        logger.info(f"Loaded {len(resume_info)} previously scraped pages for link extraction")
+        logger.info(
+            f"Loaded {len(resume_info)} previously scraped pages for link extraction"
+        )
 
-    async def populate_queue_from_content(self, content: str, url: str, 
-                                        to_visit: Set[str], depth_map: Dict[str, int],
-                                        current_depth: int) -> None:
+    async def populate_queue_from_content(
+        self,
+        content: str,
+        url: str,
+        to_visit: Set[str],
+        depth_map: Dict[str, int],
+        current_depth: int,
+    ) -> None:
         """Extract links from content and add to queue.
-        
+
         Args:
             content: HTML content to extract links from
             url: URL of the page
@@ -11080,8 +12637,10 @@ class BeautifulSoupScraper(WebScraperBase):
             new_urls = self._extract_links(content, url)
             for new_url in new_urls:
                 normalized_new_url = self._normalize_url(new_url)
-                if (normalized_new_url not in self._visited_urls 
-                    and normalized_new_url not in to_visit):
+                if (
+                    normalized_new_url not in self._visited_urls
+                    and normalized_new_url not in to_visit
+                ):
                     to_visit.add(normalized_new_url)
                     depth_map[normalized_new_url] = current_depth + 1
                     logger.debug(
@@ -11100,9 +12659,9 @@ class BeautifulSoupScraper(WebScraperBase):
         # Parse start URL to get base domain
         start_parsed = urlparse(start_url)
         base_domain = start_parsed.netloc
-        
+
         # Store the base path for subdirectory restriction
-        base_path = start_parsed.path.rstrip('/')
+        base_path = start_parsed.path.rstrip("/")
         if base_path:
             logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
@@ -11126,11 +12685,15 @@ class BeautifulSoupScraper(WebScraperBase):
             if self._resume_info:
                 logger.info("Populating queue from previously scraped pages...")
                 for page_info in self._resume_info:
-                    url = page_info['url']
-                    content = page_info['content']
+                    url = page_info["url"]
+                    content = page_info["content"]
                     # Assume depth 0 for scraped pages, their links will be depth 1
-                    await self.populate_queue_from_content(content, url, to_visit, depth_map, 0)
-                logger.info(f"Found {len(to_visit)} URLs to visit after analyzing scraped pages")
+                    await self.populate_queue_from_content(
+                        content, url, to_visit, depth_map, 0
+                    )
+                logger.info(
+                    f"Found {len(to_visit)} URLs to visit after analyzing scraped pages"
+                )
             while to_visit and len(self._visited_urls) < self.config.max_pages:
                 # Get next URL
                 url = to_visit.pop()
@@ -11147,8 +12710,13 @@ class BeautifulSoupScraper(WebScraperBase):
                 # Check subdirectory restriction
                 if base_path:
                     url_parsed = urlparse(url)
-                    if not url_parsed.path.startswith(base_path + '/') and url_parsed.path != base_path:
-                        logger.debug(f"Skipping {url} - outside subdirectory {base_path}")
+                    if (
+                        not url_parsed.path.startswith(base_path + "/")
+                        and url_parsed.path != base_path
+                    ):
+                        logger.debug(
+                            f"Skipping {url} - outside subdirectory {base_path}"
+                        )
                         continue
 
                 # Check robots.txt
@@ -11170,11 +12738,11 @@ class BeautifulSoupScraper(WebScraperBase):
                 try:
                     # Scrape the page
                     page = await self.scrape_url(url)
-                    
+
                     # Skip if page is None (duplicate content or canonical mismatch)
                     if page is None:
                         continue
-                        
+
                     yield page
 
                     # Extract links if not at max depth
@@ -11259,11 +12827,11 @@ class BeautifulSoupScraper(WebScraperBase):
                         absolute_url = urljoin(base_url, href)
                         # Remove fragment
                         absolute_url = absolute_url.split("#")[0]
-                        
+
                         # Remove GET parameters if configured to do so
                         if self.config.ignore_get_params and "?" in absolute_url:
                             absolute_url = absolute_url.split("?")[0]
-                        
+
                         if absolute_url:
                             # Skip non-HTML resources
                             if not any(
@@ -11397,7 +12965,7 @@ class HTTrackScraper(WebScraperBase):
 
         if not self.config.verify_ssl:
             cmd.append("--assume-insecure")
-        
+
         if self.config.ignore_get_params:
             cmd.append("-N0")  # Don't parse query strings
 
@@ -11485,20 +13053,29 @@ class HTTrackScraper(WebScraperBase):
         canonical_url_found = None
         if "<link" in content and "canonical" in content:
             import re
-            canonical_match = re.search(r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']', content, re.IGNORECASE)
+
+            canonical_match = re.search(
+                r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']',
+                content,
+                re.IGNORECASE,
+            )
             if not canonical_match:
-                canonical_match = re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']', content, re.IGNORECASE)
+                canonical_match = re.search(
+                    r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']',
+                    content,
+                    re.IGNORECASE,
+                )
             if canonical_match:
                 canonical_url_found = urljoin(url, canonical_match.group(1))
-        
+
         return ScrapedPage(
-            url=url, 
-            content=content, 
-            title=title, 
+            url=url,
+            content=content,
+            title=title,
             encoding="utf-8",
             normalized_url=url,
             canonical_url=canonical_url_found,
-            content_checksum=None  # Not calculated for single URL
+            content_checksum=None,  # Not calculated for single URL
         )
 
     async def scrape_site(self, start_url: str) -> AsyncGenerator[ScrapedPage, None]:
@@ -11543,8 +13120,8 @@ class HTTrackScraper(WebScraperBase):
 
         # Parse start URL for domain and path restrictions
         parsed = urlparse(start_url)
-        base_path = parsed.path.rstrip('/')
-        
+        base_path = parsed.path.rstrip("/")
+
         # Add domain restrictions
         if self.config.allowed_domains:
             for domain in self.config.allowed_domains:
@@ -11552,7 +13129,7 @@ class HTTrackScraper(WebScraperBase):
         else:
             # Restrict to same domain by default
             cmd.extend(["+*" + parsed.netloc + "*"])
-        
+
         # Add subdirectory restriction if path is specified
         if base_path:
             logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
@@ -11568,7 +13145,7 @@ class HTTrackScraper(WebScraperBase):
 
         if not self.config.verify_ssl:
             cmd.append("--assume-insecure")
-        
+
         if self.config.ignore_get_params:
             cmd.append("-N0")  # Don't parse query strings
 
@@ -11626,44 +13203,63 @@ class HTTrackScraper(WebScraperBase):
                         content = html_file.read_text(encoding="utf-8")
                     except UnicodeDecodeError:
                         content = html_file.read_text(encoding="latin-1")
-                    
+
                     # Store metadata for database
-                    normalized_url = url.rstrip('/')
+                    normalized_url = url.rstrip("/")
                     if self.config.ignore_get_params and "?" in normalized_url:
                         normalized_url = normalized_url.split("?")[0]
                     canonical_url_found = None
                     content_checksum = None
-                    
+
                     # Order: 1. GET parameter normalization (already done above)
                     # 2. Canonical URL check
                     if self.config.check_canonical:
                         # Simple regex-based extraction for canonical URL
                         import re
-                        canonical_match = re.search(r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']', content, re.IGNORECASE)
+
+                        canonical_match = re.search(
+                            r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']',
+                            content,
+                            re.IGNORECASE,
+                        )
                         if not canonical_match:
                             # Try alternate order
-                            canonical_match = re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']', content, re.IGNORECASE)
-                        
+                            canonical_match = re.search(
+                                r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']',
+                                content,
+                                re.IGNORECASE,
+                            )
+
                         if canonical_match:
                             canonical_url_found = canonical_match.group(1)
                             # Make canonical URL absolute
                             canonical_url_found = urljoin(url, canonical_url_found)
                             # Normalize canonical URL too
-                            normalized_canonical = canonical_url_found.rstrip('/')
-                            if self.config.ignore_get_params and "?" in normalized_canonical:
-                                normalized_canonical = normalized_canonical.split("?")[0]
-                            
+                            normalized_canonical = canonical_url_found.rstrip("/")
+                            if (
+                                self.config.ignore_get_params
+                                and "?" in normalized_canonical
+                            ):
+                                normalized_canonical = normalized_canonical.split("?")[
+                                    0
+                                ]
+
                             if normalized_url != normalized_canonical:
-                                logger.info(f"Skipping {url} - canonical URL differs: {canonical_url_found}")
+                                logger.info(
+                                    f"Skipping {url} - canonical URL differs: {canonical_url_found}"
+                                )
                                 continue  # Skip this file
-                    
+
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
                         from ..utils import calculate_content_checksum
+
                         content_checksum = calculate_content_checksum(content)
-                        
+
                         # Check if checksum exists using callback
-                        if self._checksum_callback and self._checksum_callback(content_checksum):
+                        if self._checksum_callback and self._checksum_callback(
+                            content_checksum
+                        ):
                             logger.info(f"Skipping {url} - duplicate content detected")
                             continue  # Skip this file
 
@@ -11677,13 +13273,13 @@ class HTTrackScraper(WebScraperBase):
                     self.mark_visited(url)
 
                     yield ScrapedPage(
-                        url=url, 
-                        content=content, 
-                        title=title, 
+                        url=url,
+                        content=content,
+                        title=title,
                         encoding="utf-8",
                         normalized_url=normalized_url,
                         canonical_url=canonical_url_found,
-                        content_checksum=content_checksum
+                        content_checksum=content_checksum,
                     )
 
             except Exception as e:
@@ -12609,13 +14205,13 @@ class SelectolaxScraper(WebScraperBase):
         super().__init__(config)
         self._client: Optional[httpx.AsyncClient] = None
         self._visited_urls: Set[str] = set()
-    
+
     def _normalize_url(self, url: str) -> str:
         """Normalize URL by removing GET parameters if configured.
-        
+
         Args:
             url: URL to normalize
-            
+
         Returns:
             Normalized URL
         """
@@ -12672,12 +14268,12 @@ class SelectolaxScraper(WebScraperBase):
 
             # Parse HTML with selectolax
             html_parser = HTMLParser(response.text)
-            
+
             # Store metadata for database
             normalized_url = self._normalize_url(str(response.url))
             canonical_url = None
             content_checksum = None
-            
+
             # Order: 1. GET parameter normalization (already done in _normalize_url)
             # 2. Canonical URL check
             if self.config.check_canonical:
@@ -12688,18 +14284,23 @@ class SelectolaxScraper(WebScraperBase):
                     canonical_url = urljoin(url, canonical_url)
                     # Normalize canonical URL too
                     normalized_canonical = self._normalize_url(canonical_url)
-                    
+
                     if normalized_url != normalized_canonical:
-                        logger.info(f"Skipping {url} - canonical URL differs: {canonical_url}")
+                        logger.info(
+                            f"Skipping {url} - canonical URL differs: {canonical_url}"
+                        )
                         return None  # Return None to indicate skip, not an error
-            
+
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
                 from ..utils import calculate_content_checksum
+
                 content_checksum = calculate_content_checksum(response.text)
-                
+
                 # Check if checksum exists using callback
-                if self._checksum_callback and self._checksum_callback(content_checksum):
+                if self._checksum_callback and self._checksum_callback(
+                    content_checksum
+                ):
                     logger.info(f"Skipping {url} - duplicate content detected")
                     return None  # Return None to indicate skip, not an error
 
@@ -12780,9 +14381,9 @@ class SelectolaxScraper(WebScraperBase):
         # Parse start URL to get base domain
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
-        
+
         # Store the base path for subdirectory restriction
-        base_path = parsed_start.path.rstrip('/')
+        base_path = parsed_start.path.rstrip("/")
         if base_path:
             logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
@@ -12812,7 +14413,7 @@ class SelectolaxScraper(WebScraperBase):
 
                     # Scrape the page
                     page = await self.scrape_url(url)
-                    
+
                     # Skip if page is None (duplicate content or canonical mismatch)
                     if page is None:
                         return None
@@ -12841,7 +14442,10 @@ class SelectolaxScraper(WebScraperBase):
 
                             # Check subdirectory restriction
                             if base_path:
-                                if not parsed_url.path.startswith(base_path + '/') and parsed_url.path != base_path:
+                                if (
+                                    not parsed_url.path.startswith(base_path + "/")
+                                    and parsed_url.path != base_path
+                                ):
                                     continue
 
                             # Skip if matches exclude pattern
@@ -12854,7 +14458,7 @@ class SelectolaxScraper(WebScraperBase):
 
                             # Normalize URL
                             normalized_url = self._normalize_url(absolute_url)
-                            
+
                             # Skip if already visited
                             if normalized_url in self._visited_urls:
                                 continue
