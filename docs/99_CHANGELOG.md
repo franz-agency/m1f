@@ -6,6 +6,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-07-04
+
+### Added
+
+- **m1f-init Enhancements**: Improved project initialization tool
+  - Added `--no-symlink` parameter to skip creating symlink to m1f documentation
+  - Added file tracking to show only actually created files in output
+  - Improved output formatting with "Here is your file:" / "Here are your files:" section
+  - Added proper spacing and bullet points for created files list
+
+### Changed
+
+- **m1f-init Git Detection**: Improved Git repository detection messages
+  - Simplified output for parent directory Git repositories (no longer shows paths)
+  - Only shows messages for current directory Git repos or no Git repo at all
+  - Better handling of subdirectories within larger Git projects
+
+- **m1f-init Language Detection**: Enhanced programming language detection
+  - Changed "Not detected" to "No programming languages detected" for clarity
+  - Added file counting for all supported languages (Java, C#, Go, Rust, Ruby)
+  - Only shows "Programming Languages:" line when languages are actually detected
+  - Better label clarity with "Programming Languages:" instead of just "Languages:"
+
+### Fixed
+
+- **m1f-init .gitignore Handling**: Fixed .gitignore usage in subdirectories
+  - Now only uses .gitignore from current directory, not parent directories
+  - Prevents errors when running m1f-init in subdirectories without their own .gitignore
+  - All m1f commands now check for .gitignore existence before using --exclude-paths-file
+
+- **m1f-html2md Streaming**: Fixed streaming output for Claude AI analysis
+  - Fixed common_parent variable scope issue (used before definition)
+  - Implemented proper streaming in run_claude_streaming method
+  - Fixed ColoredFormatter modifying LogRecord objects (causing ANSI codes in logs)
+  - Added elapsed time tracking for progress messages
+  - Improved subprocess handling for reliable Claude CLI integration
+
+- **m1f-html2md Config Loading**: Made configuration more robust
+  - Config loader now handles unknown fields gracefully (with warnings)
+  - Automatic conversion of string paths to Path objects
+  - Better error handling for Claude-generated configurations
+
 ## [3.3.0] - 2025-07-03
 
 ### Documentation
