@@ -437,22 +437,45 @@ class FileProcessor:
         for dirname in dirs:
             dir_path = root / dirname
 
-            # Check if directory is excluded
+            # Check if directory is excluded by name
             if dirname.lower() in self.excluded_dirs:
+                self.logger.debug(f"Directory excluded by name: {dir_path}")
                 continue
 
             # Check dot directories
             if not self.config.filter.include_dot_paths and dirname.startswith("."):
+                self.logger.debug(f"Dot directory excluded: {dir_path}")
                 continue
 
             # Check symlinks
             if dir_path.is_symlink():
                 if not self.config.filter.include_symlinks:
+                    self.logger.debug(f"Symlink directory excluded: {dir_path}")
                     continue
 
                 # Check for cycles
                 if self._detect_symlink_cycle(dir_path):
                     self.logger.warning(f"Skipping symlink cycle: {dir_path}")
+                    continue
+
+            # Check gitignore patterns - this is the critical performance fix!
+            if self.gitignore_spec:
+                # Get relative path from source directory or current root
+                base_dir = self.config.source_directory or Path.cwd()
+                try:
+                    rel_path = dir_path.relative_to(base_dir)
+                except ValueError:
+                    # If dir_path is not relative to base_dir, use as is
+                    rel_path = dir_path
+                
+                # For directory matching, we need to append a trailing slash
+                rel_path_str = str(rel_path).replace(os.sep, "/")
+                if not rel_path_str.endswith("/"):
+                    rel_path_str += "/"
+                
+                # Check if directory matches any exclude pattern
+                if self.gitignore_spec.match_file(rel_path_str):
+                    self.logger.debug(f"Directory excluded by gitignore pattern: {dir_path}")
                     continue
 
             filtered.append(dirname)
