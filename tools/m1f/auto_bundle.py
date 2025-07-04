@@ -286,6 +286,9 @@ class AutoBundler:
         # Other options
         if bundle_config.get("filename_mtime_hash"):
             cmd_parts.append("--filename-mtime-hash")
+            
+        if bundle_config.get("docs_only"):
+            cmd_parts.append("--docs-only")
 
         if bundle_config.get("minimal_output", True):
             cmd_parts.append("--minimal-output")
