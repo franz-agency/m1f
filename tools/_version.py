@@ -8,5 +8,5 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.3.0"
+__version__ = "3.4.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
