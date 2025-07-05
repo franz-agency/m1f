@@ -35,6 +35,12 @@ import anyio
 import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 
+# Handle both module and direct script execution
+try:
+    from .m1f_claude_runner import M1FClaudeRunner
+except ImportError:
+    from m1f_claude_runner import M1FClaudeRunner
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(message)s"  # Simple format for user-facing messages
@@ -1478,21 +1484,20 @@ I'll analyze your project and create an optimal m1f configuration that:
         print(f"\n🔄 Please wait while Claude works...\n")
 
         try:
-            # PHASE 1: Run Claude with the prompt directly
-            cmd = [
-                claude_path,
-                "-p",
-                segmentation_prompt,
-                "--add-dir",
-                str(self.project_path),
-                "--allowedTools",
-                "Read,Write,Edit,MultiEdit,Glob,Grep",
-            ]
-
-            # Execute Claude
-            result = subprocess.run(
-                cmd, cwd=self.project_path, capture_output=False, text=True
+            # PHASE 1: Run Claude with streaming output
+            runner = M1FClaudeRunner(claude_binary=claude_path)
+            
+            # Execute with streaming and timeout handling
+            returncode, stdout, stderr = runner.run_claude_streaming(
+                prompt=segmentation_prompt,
+                working_dir=str(self.project_path),
+                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep",
+                add_dir=str(self.project_path),
+                timeout=300,  # 5 minutes timeout
+                show_output=True
             )
+            
+            result = type('Result', (), {'returncode': returncode})
 
             if result.returncode == 0:
                 print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
@@ -1539,20 +1544,16 @@ I'll analyze your project and create an optimal m1f configuration that:
             )
 
             # Run Claude again to verify and improve
-            cmd_verify = [
-                claude_path,
-                "-p",
-                verification_prompt,
-                "--add-dir",
-                str(self.project_path),
-                "--allowedTools",
-                "Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
-            ]
-
-            # Execute Claude for verification
-            verify_result = subprocess.run(
-                cmd_verify, cwd=self.project_path, capture_output=False, text=True
+            returncode_verify, stdout_verify, stderr_verify = runner.run_claude_streaming(
+                prompt=verification_prompt,
+                working_dir=str(self.project_path),
+                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
+                add_dir=str(self.project_path),
+                timeout=300,  # 5 minutes timeout
+                show_output=True
             )
+            
+            verify_result = type('Result', (), {'returncode': returncode_verify})
 
             if verify_result.returncode == 0:
                 print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
