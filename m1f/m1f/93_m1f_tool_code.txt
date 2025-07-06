@@ -218,7 +218,7 @@ def _scan_files_for_sensitive_info(files_to_process):
     )
 
     config = Config(
-        source_directory=Path("."),
+        source_directories=[Path(".")],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("test.txt")),
@@ -263,7 +263,7 @@ def _detect_symlink_cycles(path):
 
     # Create basic config
     config = Config(
-        source_directory=Path("."),
+        source_directories=[Path(".")],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("test.txt")),

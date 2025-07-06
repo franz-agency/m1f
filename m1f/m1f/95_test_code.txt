@@ -9328,7 +9328,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_single_exclude_file(self, temp_dir):
         """Test with a single exclude file."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -9356,7 +9356,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_multiple_exclude_files(self, temp_dir):
         """Test with multiple exclude files."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -9389,7 +9389,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_single_include_file(self, temp_dir):
         """Test with a single include file."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -9413,7 +9413,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_multiple_include_files(self, temp_dir):
         """Test with multiple include files."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -9442,7 +9442,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_exclude_and_include_together(self, temp_dir):
         """Test with both exclude and include files."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -9478,7 +9478,7 @@ class TestMultipleExcludeIncludeFiles:
         input_file.write_text("exclude_me.py\nsecret.key\nfile1.py")
 
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=input_file,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -9508,7 +9508,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_nonexistent_files_skipped(self, temp_dir):
         """Test that non-existent files are gracefully skipped."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -9603,7 +9603,7 @@ class TestParallelProcessing:
     def config_parallel(self, temp_dir):
         """Create a config with parallel processing enabled."""
         return Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(
@@ -9711,7 +9711,7 @@ class TestParallelProcessing:
 
         # Test with parallel disabled (sequential)
         config_seq = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(
@@ -9743,7 +9743,7 @@ class TestParallelProcessing:
 
         # Test with parallel enabled
         config_par = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output_par.txt", parallel=True),
@@ -9919,7 +9919,7 @@ class TestPathTraversalSecurity:
     def _create_test_args(self, **overrides):
         """Create test argparse.Namespace with all required attributes."""
         defaults = {
-            "source_directory": None,
+            "source_directory": [],
             "input_file": None,
             "output_file": "output.txt",
             "input_include_files": None,
@@ -9947,6 +9947,9 @@ class TestPathTraversalSecurity:
             "disable_security_check": False,
             "quiet": False,
         }
+        # Handle source_directory as a list
+        if 'source_directory' in overrides:
+            overrides['source_directory'] = [overrides['source_directory']]
         defaults.update(overrides)
         return argparse.Namespace(**defaults)
 
@@ -10202,7 +10205,7 @@ def _scan_files_for_sensitive_info(files):
 
     # Create a minimal config
     config = Config(
-        source_directory=None,
+        source_directories=[],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("dummy.txt")),

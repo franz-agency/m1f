@@ -71,7 +71,7 @@ def _scan_files_for_sensitive_info(files):
 
     # Create a minimal config
     config = Config(
-        source_directory=None,
+        source_directories=[],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("dummy.txt")),

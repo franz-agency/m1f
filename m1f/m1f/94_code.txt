@@ -361,7 +361,7 @@ wcwidth==0.2.13
 claude-code-sdk==0.0.14
 
 # Web scraping dependencies
-httpx==1.0.dev1
+httpx==0.27.2
 lxml==6.0.0
 playwright==1.53.0
 scrapy==2.13.3
@@ -11945,7 +11945,7 @@ def _scan_files_for_sensitive_info(files_to_process):
     )
 
     config = Config(
-        source_directory=Path("."),
+        source_directories=[Path(".")],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("test.txt")),
@@ -11990,7 +11990,7 @@ def _detect_symlink_cycles(path):
 
     # Create basic config
     config = Config(
-        source_directory=Path("."),
+        source_directories=[Path(".")],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("test.txt")),

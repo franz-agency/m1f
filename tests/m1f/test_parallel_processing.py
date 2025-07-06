@@ -66,7 +66,7 @@ class TestParallelProcessing:
     def config_parallel(self, temp_dir):
         """Create a config with parallel processing enabled."""
         return Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(
@@ -174,7 +174,7 @@ class TestParallelProcessing:
 
         # Test with parallel disabled (sequential)
         config_seq = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(
@@ -206,7 +206,7 @@ class TestParallelProcessing:
 
         # Test with parallel enabled
         config_par = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output_par.txt", parallel=True),
