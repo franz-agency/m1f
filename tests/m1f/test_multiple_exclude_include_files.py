@@ -76,7 +76,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_single_exclude_file(self, temp_dir):
         """Test with a single exclude file."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -104,7 +104,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_multiple_exclude_files(self, temp_dir):
         """Test with multiple exclude files."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -137,7 +137,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_single_include_file(self, temp_dir):
         """Test with a single include file."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -161,7 +161,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_multiple_include_files(self, temp_dir):
         """Test with multiple include files."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -190,7 +190,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_exclude_and_include_together(self, temp_dir):
         """Test with both exclude and include files."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -226,7 +226,7 @@ class TestMultipleExcludeIncludeFiles:
         input_file.write_text("exclude_me.py\nsecret.key\nfile1.py")
 
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=input_file,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),
@@ -256,7 +256,7 @@ class TestMultipleExcludeIncludeFiles:
     async def test_nonexistent_files_skipped(self, temp_dir):
         """Test that non-existent files are gracefully skipped."""
         config = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output.txt"),

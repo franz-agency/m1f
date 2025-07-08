@@ -32,7 +32,7 @@ class TestPathTraversalSecurity:
     def _create_test_args(self, **overrides):
         """Create test argparse.Namespace with all required attributes."""
         defaults = {
-            "source_directory": None,
+            "source_directory": [],
             "input_file": None,
             "output_file": "output.txt",
             "input_include_files": None,
@@ -60,6 +60,9 @@ class TestPathTraversalSecurity:
             "disable_security_check": False,
             "quiet": False,
         }
+        # Handle source_directory as a list
+        if 'source_directory' in overrides:
+            overrides['source_directory'] = [overrides['source_directory']]
         defaults.update(overrides)
         return argparse.Namespace(**defaults)
 

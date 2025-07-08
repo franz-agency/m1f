@@ -35,11 +35,80 @@ import anyio
 import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 
+# Handle both module and direct script execution
+try:
+    from .m1f_claude_runner import M1FClaudeRunner
+except ImportError:
+    from m1f_claude_runner import M1FClaudeRunner
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(message)s"  # Simple format for user-facing messages
 )
 logger = logging.getLogger(__name__)
+
+
+def find_claude_executable() -> Optional[str]:
+    """Find the Claude executable in various possible locations."""
+    # Check common Claude installation paths
+    possible_paths = [
+        # Global npm install
+        "claude",
+        # Local npm install in user's home
+        Path.home() / ".claude" / "local" / "node_modules" / ".bin" / "claude",
+        # Global npm prefix locations
+        Path("/usr/local/bin/claude"),
+        Path("/usr/bin/claude"),
+        # npm global install with custom prefix
+        Path.home() / ".npm-global" / "bin" / "claude",
+        # Check if npm prefix is set
+    ]
+    
+    # Add npm global bin to search if npm is available
+    try:
+        npm_prefix = subprocess.run(
+            ["npm", "config", "get", "prefix"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if npm_prefix.returncode == 0:
+            npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
+            possible_paths.append(npm_bin)
+    except:
+        pass
+    
+    # Check each possible path
+    for path in possible_paths:
+        if isinstance(path, str):
+            # Try as command in PATH
+            try:
+                result = subprocess.run(
+                    [path, "--version"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    return path
+            except:
+                continue
+        else:
+            # Check as file path
+            if path.exists() and path.is_file():
+                try:
+                    result = subprocess.run(
+                        [str(path), "--version"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    if result.returncode == 0:
+                        return str(path)
+                except:
+                    continue
+    
+    return None
 
 
 class ClaudeResponseCancelled(Exception):
@@ -1125,12 +1194,10 @@ I'll analyze your project and create an optimal m1f configuration that:
     def send_to_claude_code_subprocess(self, enhanced_prompt: str) -> Optional[str]:
         """Fallback method using subprocess if SDK fails."""
         try:
-            # Check if claude command exists
-            result = subprocess.run(
-                ["claude", "--version"], capture_output=True, text=True, timeout=5
-            )
-
-            if result.returncode != 0:
+            # Find claude executable
+            claude_path = find_claude_executable()
+            
+            if not claude_path:
                 if self.debug:
                     logger.info("Claude Code not found via subprocess")
                 return None
@@ -1297,23 +1364,13 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Check for Claude Code availability
         has_claude_code = False
-        try:
-            result = subprocess.run(
-                ["claude", "--version"], capture_output=True, text=True
-            )
-            if result.returncode == 0:
-                print(f"✅ Claude Code is available")
-                has_claude_code = True
-            else:
-                print(f"⚠️  Claude Code not found")
-                print(
-                    f"\nPlease install Claude Code: npm install -g @anthropic-ai/claude-code"
-                )
-                return
-        except FileNotFoundError:
-            print(
-                f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
-            )
+        claude_path = find_claude_executable()
+        
+        if claude_path:
+            print(f"✅ Claude Code is available")
+            has_claude_code = True
+        else:
+            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code")
             return
 
         print(f"\n📊 Project Analysis")
@@ -1427,21 +1484,20 @@ I'll analyze your project and create an optimal m1f configuration that:
         print(f"\n🔄 Please wait while Claude works...\n")
 
         try:
-            # PHASE 1: Run Claude with the prompt directly
-            cmd = [
-                "claude",
-                "-p",
-                segmentation_prompt,
-                "--add-dir",
-                str(self.project_path),
-                "--allowedTools",
-                "Read,Write,Edit,MultiEdit,Glob,Grep",
-            ]
-
-            # Execute Claude
-            result = subprocess.run(
-                cmd, cwd=self.project_path, capture_output=False, text=True
+            # PHASE 1: Run Claude with streaming output
+            runner = M1FClaudeRunner(claude_binary=claude_path)
+            
+            # Execute with streaming and timeout handling
+            returncode, stdout, stderr = runner.run_claude_streaming(
+                prompt=segmentation_prompt,
+                working_dir=str(self.project_path),
+                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep",
+                add_dir=str(self.project_path),
+                timeout=300,  # 5 minutes timeout
+                show_output=True
             )
+            
+            result = type('Result', (), {'returncode': returncode})
 
             if result.returncode == 0:
                 print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
@@ -1488,20 +1544,16 @@ I'll analyze your project and create an optimal m1f configuration that:
             )
 
             # Run Claude again to verify and improve
-            cmd_verify = [
-                "claude",
-                "-p",
-                verification_prompt,
-                "--add-dir",
-                str(self.project_path),
-                "--allowedTools",
-                "Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
-            ]
-
-            # Execute Claude for verification
-            verify_result = subprocess.run(
-                cmd_verify, cwd=self.project_path, capture_output=False, text=True
+            returncode_verify, stdout_verify, stderr_verify = runner.run_claude_streaming(
+                prompt=verification_prompt,
+                working_dir=str(self.project_path),
+                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
+                add_dir=str(self.project_path),
+                timeout=300,  # 5 minutes timeout
+                show_output=True
             )
+            
+            verify_result = type('Result', (), {'returncode': returncode_verify})
 
             if verify_result.returncode == 0:
                 print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
@@ -1654,9 +1706,15 @@ bundles:
         old_handler = signal.signal(signal.SIGINT, handle_interrupt)
 
         try:
+            # Find claude executable
+            claude_cmd = find_claude_executable()
+            if not claude_cmd:
+                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code")
+                return None, None
+            
             # Build command - use stream-json for real-time feedback
             cmd = [
-                "claude",
+                claude_cmd,
                 "--print",
                 "--verbose",  # Required for stream-json
                 "--output-format",
@@ -2132,17 +2190,10 @@ First time? Run 'm1f-init' to set up your project!
             print(f"⚠️  m1f docs not found - run 'm1f-init' first!")
 
         # Check for Claude Code
-        try:
-            result = subprocess.run(
-                ["claude", "--version"], capture_output=True, text=True
-            )
-            if result.returncode == 0:
-                print(f"✅ Claude Code is installed")
-            else:
-                print(
-                    f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
-                )
-        except:
+        claude_path = find_claude_executable()
+        if claude_path:
+            print(f"✅ Claude Code is installed")
+        else:
             print(
                 f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
             )

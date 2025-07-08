@@ -318,67 +318,116 @@ Built with ❤️ by [Franz Agency](https://franz.agency) for developers who tal
 robots.
 
 ======= requirements.txt ======
+# Core dependencies
+aiofiles==24.1.0
 aiohttp==3.12.13
-application_properties==0.8.2
+anyio==4.9.0
+application_properties==0.9.0
+beautifulsoup4==4.13.4
 black==25.1.0
-certifi==2025.4.26
+certifi==2025.6.15
 chardet==5.2.0
 charset-normalizer==3.4.2
-click==8.2.0
+click==8.2.1
 colorama==0.4.6
 Columnar==1.4.1
 detect-secrets==1.5.0
+html5lib==1.1
 idna==3.10
 iniconfig==2.1.0
-markdownify==0.14.1
-beautifulsoup4==4.12.3
-html5lib==1.1
+markdownify==1.1.0
 mypy_extensions==1.1.0
 packaging==25.0
 pathspec==0.12.1
 platformdirs==4.3.8
 pluggy==1.6.0
-pydantic==2.5.3
-pymarkdownlnt==0.9.29
-pytest==8.3.5
+pydantic==2.11.7
+pymarkdownlnt==0.9.30
+pytest==8.4.1
+pytest-asyncio==1.1.0a1
 pytest-timeout==2.4.0
-pytest-asyncio==0.25.2
 PyYAML==6.0.2
 regex==2024.11.6
 requests==2.32.4
-rich==13.7.0
+rich==14.0.0
 tiktoken==0.9.0
 tomli==2.2.1
 toolz==1.0.0
-typing_extensions==4.13.2
+typing_extensions==4.14.1
 urllib3==2.5.0
 wcwidth==0.2.13
 
-# Async file operations
-aiofiles==24.1.0
-anyio==4.9.0
-
 # Claude Code SDK for m1f-claude
-claude-code-sdk>=0.0.10
+claude-code-sdk==0.0.14
 
-# Optional dependencies for additional scrapers
-# Install with: pip install httpx selectolax
+# Web scraping dependencies
 httpx==0.27.2
-selectolax==0.3.26
-
-# Optional: Better BeautifulSoup parser
-# Install with: pip install lxml
-lxml==5.3.0
-
-# Install with: pip install scrapy
-scrapy==2.12.0
-
-# Install with: pip install playwright && playwright install
-playwright==1.50.0
+lxml==6.0.0
+playwright==1.53.0
+scrapy==2.13.3
+selectolax==0.3.31
 
 # Test server dependencies
-flask==3.1.1
+Flask==3.1.1
 flask-cors==6.0.1
+
+# Additional dependencies (automatically installed)
+aiohappyeyeballs==2.6.1
+aiosignal==1.4.0
+annotated-types==0.7.0
+attrs==25.3.0
+Automat==25.4.16
+blinker==1.9.0
+cffi==1.17.1
+constantly==23.10.4
+cryptography==45.0.5
+cssselect==1.3.0
+defusedxml==0.8.0rc2
+filelock==3.18.0
+frozenlist==1.7.0
+greenlet==3.2.3
+h11==0.16.0
+httpcore==1.0.9
+hyperlink==21.0.0
+incremental==24.7.2
+itemadapter==0.11.0
+itemloaders==1.3.2
+itsdangerous==2.2.0
+Jinja2==3.1.6
+jmespath==1.0.1
+markdown-it-py==3.0.0
+MarkupSafe==3.0.2
+mdurl==0.1.2
+multidict==6.6.3
+nest-asyncio==1.6.0
+parsel==1.10.0
+propcache==0.3.2
+Protego==0.5.0
+pyasn1==0.6.1
+pyasn1_modules==0.4.2
+pycparser==2.22
+pydantic_core==2.35.2
+PyDispatcher==2.0.7
+pyee==13.0.0
+Pygments==2.19.2
+pyjson5==1.6.9
+pyOpenSSL==25.1.0
+queuelib==1.8.0
+requests-file==2.1.0
+service-identity==24.2.0
+setuptools==80.9.0
+six==1.17.0
+sniffio==1.3.1
+soupsieve==2.7
+tldextract==5.3.0
+truststore==0.10.1
+Twisted==25.5.0
+typing-inspection==0.4.1
+w3lib==2.3.1
+webencodings==0.5.1
+Werkzeug==3.1.3
+yarl==1.20.1
+zope.interface==7.2
 
 ======= SETUP.md ======
 # m1f Setup Guide
@@ -3201,11 +3250,80 @@ import anyio
 import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 
+# Handle both module and direct script execution
+try:
+    from .m1f_claude_runner import M1FClaudeRunner
+except ImportError:
+    from m1f_claude_runner import M1FClaudeRunner
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(message)s"  # Simple format for user-facing messages
 )
 logger = logging.getLogger(__name__)
+
+
+def find_claude_executable() -> Optional[str]:
+    """Find the Claude executable in various possible locations."""
+    # Check common Claude installation paths
+    possible_paths = [
+        # Global npm install
+        "claude",
+        # Local npm install in user's home
+        Path.home() / ".claude" / "local" / "node_modules" / ".bin" / "claude",
+        # Global npm prefix locations
+        Path("/usr/local/bin/claude"),
+        Path("/usr/bin/claude"),
+        # npm global install with custom prefix
+        Path.home() / ".npm-global" / "bin" / "claude",
+        # Check if npm prefix is set
+    ]
+    
+    # Add npm global bin to search if npm is available
+    try:
+        npm_prefix = subprocess.run(
+            ["npm", "config", "get", "prefix"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if npm_prefix.returncode == 0:
+            npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
+            possible_paths.append(npm_bin)
+    except:
+        pass
+    
+    # Check each possible path
+    for path in possible_paths:
+        if isinstance(path, str):
+            # Try as command in PATH
+            try:
+                result = subprocess.run(
+                    [path, "--version"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    return path
+            except:
+                continue
+        else:
+            # Check as file path
+            if path.exists() and path.is_file():
+                try:
+                    result = subprocess.run(
+                        [str(path), "--version"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    if result.returncode == 0:
+                        return str(path)
+                except:
+                    continue
+    
+    return None
 
 
 class ClaudeResponseCancelled(Exception):
@@ -4291,12 +4409,10 @@ I'll analyze your project and create an optimal m1f configuration that:
     def send_to_claude_code_subprocess(self, enhanced_prompt: str) -> Optional[str]:
         """Fallback method using subprocess if SDK fails."""
         try:
-            # Check if claude command exists
-            result = subprocess.run(
-                ["claude", "--version"], capture_output=True, text=True, timeout=5
-            )
-
-            if result.returncode != 0:
+            # Find claude executable
+            claude_path = find_claude_executable()
+            
+            if not claude_path:
                 if self.debug:
                     logger.info("Claude Code not found via subprocess")
                 return None
@@ -4463,23 +4579,13 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Check for Claude Code availability
         has_claude_code = False
-        try:
-            result = subprocess.run(
-                ["claude", "--version"], capture_output=True, text=True
-            )
-            if result.returncode == 0:
-                print(f"✅ Claude Code is available")
-                has_claude_code = True
-            else:
-                print(f"⚠️  Claude Code not found")
-                print(
-                    f"\nPlease install Claude Code: npm install -g @anthropic-ai/claude-code"
-                )
-                return
-        except FileNotFoundError:
-            print(
-                f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
-            )
+        claude_path = find_claude_executable()
+        
+        if claude_path:
+            print(f"✅ Claude Code is available")
+            has_claude_code = True
+        else:
+            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code")
             return
 
         print(f"\n📊 Project Analysis")
@@ -4593,21 +4699,20 @@ I'll analyze your project and create an optimal m1f configuration that:
         print(f"\n🔄 Please wait while Claude works...\n")
 
         try:
-            # PHASE 1: Run Claude with the prompt directly
-            cmd = [
-                "claude",
-                "-p",
-                segmentation_prompt,
-                "--add-dir",
-                str(self.project_path),
-                "--allowedTools",
-                "Read,Write,Edit,MultiEdit,Glob,Grep",
-            ]
-
-            # Execute Claude
-            result = subprocess.run(
-                cmd, cwd=self.project_path, capture_output=False, text=True
+            # PHASE 1: Run Claude with streaming output
+            runner = M1FClaudeRunner(claude_binary=claude_path)
+            
+            # Execute with streaming and timeout handling
+            returncode, stdout, stderr = runner.run_claude_streaming(
+                prompt=segmentation_prompt,
+                working_dir=str(self.project_path),
+                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep",
+                add_dir=str(self.project_path),
+                timeout=300,  # 5 minutes timeout
+                show_output=True
             )
+            
+            result = type('Result', (), {'returncode': returncode})
 
             if result.returncode == 0:
                 print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
@@ -4654,20 +4759,16 @@ I'll analyze your project and create an optimal m1f configuration that:
             )
 
             # Run Claude again to verify and improve
-            cmd_verify = [
-                "claude",
-                "-p",
-                verification_prompt,
-                "--add-dir",
-                str(self.project_path),
-                "--allowedTools",
-                "Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
-            ]
-
-            # Execute Claude for verification
-            verify_result = subprocess.run(
-                cmd_verify, cwd=self.project_path, capture_output=False, text=True
+            returncode_verify, stdout_verify, stderr_verify = runner.run_claude_streaming(
+                prompt=verification_prompt,
+                working_dir=str(self.project_path),
+                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
+                add_dir=str(self.project_path),
+                timeout=300,  # 5 minutes timeout
+                show_output=True
             )
+            
+            verify_result = type('Result', (), {'returncode': returncode_verify})
 
             if verify_result.returncode == 0:
                 print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
@@ -4820,9 +4921,15 @@ bundles:
         old_handler = signal.signal(signal.SIGINT, handle_interrupt)
 
         try:
+            # Find claude executable
+            claude_cmd = find_claude_executable()
+            if not claude_cmd:
+                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code")
+                return None, None
+            
             # Build command - use stream-json for real-time feedback
             cmd = [
-                "claude",
+                claude_cmd,
                 "--print",
                 "--verbose",  # Required for stream-json
                 "--output-format",
@@ -5298,17 +5405,10 @@ First time? Run 'm1f-init' to set up your project!
             print(f"⚠️  m1f docs not found - run 'm1f-init' first!")
 
         # Check for Claude Code
-        try:
-            result = subprocess.run(
-                ["claude", "--version"], capture_output=True, text=True
-            )
-            if result.returncode == 0:
-                print(f"✅ Claude Code is installed")
-            else:
-                print(
-                    f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
-                )
-        except:
+        claude_path = find_claude_executable()
+        if claude_path:
+            print(f"✅ Claude Code is installed")
+        else:
             print(
                 f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code"
             )
@@ -5358,6 +5458,245 @@ First time? Run 'm1f-init' to set up your project!
 
 if __name__ == "__main__":
     main()
+
+======= tools/m1f_claude_runner.py ======
+"""
+Claude runner with streaming output and timeout handling for m1f-claude.
+Based on improvements from html2md tool.
+"""
+
+import subprocess
+import time
+import sys
+from pathlib import Path
+from typing import Tuple, Optional, IO
+import signal
+
+
+class M1FClaudeRunner:
+    """Handles Claude CLI execution with streaming output and robust timeout handling."""
+
+    def __init__(self, claude_binary: Optional[str] = None):
+        self.claude_binary = claude_binary or self._find_claude_binary()
+        self.process = None
+
+    def _find_claude_binary(self) -> str:
+        """Find Claude binary in system."""
+        # Check default command first
+        try:
+            subprocess.run(
+                ["claude", "--version"], capture_output=True, check=True, timeout=5
+            )
+            return "claude"
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
+            pass
+
+        # Check known locations
+        claude_paths = [
+            Path.home() / ".claude" / "local" / "node_modules" / ".bin" / "claude",
+            Path("/usr/local/bin/claude"),
+            Path("/usr/bin/claude"),
+            Path.home() / ".npm-global" / "bin" / "claude",
+        ]
+
+        # Add npm global bin if available
+        try:
+            npm_prefix = subprocess.run(
+                ["npm", "config", "get", "prefix"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if npm_prefix.returncode == 0:
+                npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
+                claude_paths.append(npm_bin)
+        except:
+            pass
+
+        for path in claude_paths:
+            if path.exists() and path.is_file():
+                return str(path)
+
+        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
+
+    def run_claude_streaming(
+        self,
+        prompt: str,
+        working_dir: str,
+        allowed_tools: str = "Read,Write,Edit,MultiEdit,Glob,Grep",
+        add_dir: Optional[str] = None,
+        timeout: int = 600,  # 10 minutes default
+        show_output: bool = True,
+        output_handler: Optional[callable] = None,
+    ) -> Tuple[int, str, str]:
+        """
+        Run Claude with real-time streaming output and improved timeout handling.
+
+        Args:
+            prompt: The prompt to send to Claude
+            working_dir: Working directory for the command
+            allowed_tools: Comma-separated list of allowed tools
+            add_dir: Directory to add to Claude's context
+            timeout: Maximum time in seconds (default 600s = 10 minutes)
+            show_output: Whether to print output to console
+            output_handler: Optional callback for each output line
+
+        Returns:
+            (returncode, stdout, stderr)
+        """
+        # Build command - use --print mode and stdin for prompt
+        cmd = [
+            self.claude_binary,
+            "--print",  # Use print mode for non-interactive output
+            "--allowedTools",
+            allowed_tools,
+        ]
+
+        if add_dir:
+            cmd.extend(["--add-dir", add_dir])
+
+        # Use conservative timeout (at least 60 seconds)
+        actual_timeout = max(60, timeout)
+
+        # Collect all output
+        stdout_lines = []
+        stderr_lines = []
+
+        # Signal handler for graceful interruption
+        def handle_interrupt(signum, frame):
+            if self.process:
+                print("\nüõë Interrupting Claude... Press Ctrl-C again to force quit.")
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+            raise KeyboardInterrupt()
+
+        old_handler = signal.signal(signal.SIGINT, handle_interrupt)
+
+        try:
+            # Start the process
+            self.process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=working_dir,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+            )
+            
+            # Send the prompt and close stdin
+            self.process.stdin.write(prompt)
+            self.process.stdin.close()
+
+            # Track timing
+            start_time = time.time()
+            last_output_time = start_time
+            
+            # Progress indicators
+            spinner_chars = "‚†ã‚†ô‚†π‚†∏‚†º‚†¥‚†¶‚†ß‚†á‚†è"
+            spinner_idx = 0
+
+            # Read output line by line
+            while True:
+                line = self.process.stdout.readline()
+                if line == "" and self.process.poll() is not None:
+                    break
+                    
+                if line:
+                    line = line.rstrip()
+                    stdout_lines.append(line)
+                    current_time = time.time()
+                    elapsed = current_time - start_time
+
+                    if show_output:
+                        # Show progress with elapsed time
+                        if len(line) > 150:
+                            print(f"[{elapsed:5.1f}s] {line[:147]}...")
+                        else:
+                            print(f"[{elapsed:5.1f}s] {line}")
+                    
+                    if output_handler:
+                        output_handler(line, elapsed)
+
+                    last_output_time = current_time
+                else:
+                    # No output, check for timeout
+                    current_time = time.time()
+                    elapsed = current_time - start_time
+                    
+                    # Check absolute timeout
+                    if elapsed > actual_timeout:
+                        if show_output:
+                            print(f"\n‚è∞ Claude timed out after {actual_timeout}s")
+                        self.process.kill()
+                        return -1, "\n".join(stdout_lines), f"Process timed out after {actual_timeout}s"
+                    
+                    # Check inactivity timeout (60 seconds)
+                    if current_time - last_output_time > 60:
+                        if show_output:
+                            print(f"\n‚è∞ Claude inactive for 60s (total time: {elapsed:.1f}s)")
+                        self.process.kill()
+                        return -1, "\n".join(stdout_lines), "Process inactive for 60 seconds"
+                    
+                    # Show spinner to indicate we're still waiting
+                    if show_output and int(elapsed) % 5 == 0:
+                        sys.stdout.write(f"\r‚è≥ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]")
+                        sys.stdout.flush()
+                        spinner_idx = (spinner_idx + 1) % len(spinner_chars)
+                    
+                    time.sleep(0.1)  # Small delay to prevent busy waiting
+
+            # Get any remaining output
+            try:
+                remaining_stdout, stderr = self.process.communicate(timeout=5)
+                if remaining_stdout:
+                    stdout_lines.extend(remaining_stdout.splitlines())
+                if stderr:
+                    stderr_lines.extend(stderr.splitlines())
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+            except ValueError:
+                # Ignore "I/O operation on closed file" errors
+                stderr = ""
+
+            # Join all output
+            stdout = "\n".join(stdout_lines)
+            stderr = "\n".join(stderr_lines)
+
+            if show_output:
+                total_time = time.time() - start_time
+                print(f"\n‚úÖ Claude completed in {total_time:.1f}s")
+
+            return self.process.returncode, stdout, stderr
+
+        except KeyboardInterrupt:
+            if show_output:
+                print("\n‚ùå Operation cancelled by user")
+            return -1, "\n".join(stdout_lines), "Cancelled by user"
+        except Exception as e:
+            if show_output:
+                print(f"\n‚ùå Error running Claude: {e}")
+            return -1, "\n".join(stdout_lines), str(e)
+        finally:
+            # Restore signal handler
+            signal.signal(signal.SIGINT, old_handler)
+            # Ensure process is cleaned up
+            if self.process and self.process.poll() is None:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+            self.process = None
 
 ======= tools/m1f_init.py ======
 #!/usr/bin/env python3
@@ -11606,7 +11945,7 @@ def _scan_files_for_sensitive_info(files_to_process):
     )
 
     config = Config(
-        source_directory=Path("."),
+        source_directories=[Path(".")],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("test.txt")),
@@ -11651,7 +11990,7 @@ def _detect_symlink_cycles(path):
 
     # Create basic config
     config = Config(
-        source_directory=Path("."),
+        source_directories=[Path(".")],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("test.txt")),
