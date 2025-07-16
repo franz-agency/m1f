@@ -50,6 +50,19 @@ logger = logging.getLogger(__name__)
 
 def find_claude_executable() -> Optional[str]:
     """Find the Claude executable in various possible locations."""
+    # First check if claude is available via npx
+    try:
+        result = subprocess.run(
+            ["npx", "claude", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            return "npx claude"
+    except:
+        pass
+    
     # Check common Claude installation paths
     possible_paths = [
         # Global npm install
@@ -1370,7 +1383,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             print(f"✅ Claude Code is available")
             has_claude_code = True
         else:
-            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code")
+            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
             return
 
         print(f"\n📊 Project Analysis")
@@ -1709,19 +1722,31 @@ bundles:
             # Find claude executable
             claude_cmd = find_claude_executable()
             if not claude_cmd:
-                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code")
+                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
                 return None, None
             
             # Build command - use stream-json for real-time feedback
-            cmd = [
-                claude_cmd,
-                "--print",
-                "--verbose",  # Required for stream-json
-                "--output-format",
-                "stream-json",
-                "--allowedTools",
-                self.allowed_tools,
-            ]
+            if claude_cmd == "npx claude":
+                cmd = [
+                    "npx",
+                    "claude",
+                    "--print",
+                    "--verbose",  # Required for stream-json
+                    "--output-format",
+                    "stream-json",
+                    "--allowedTools",
+                    self.allowed_tools,
+                ]
+            else:
+                cmd = [
+                    claude_cmd,
+                    "--print",
+                    "--verbose",  # Required for stream-json
+                    "--output-format",
+                    "stream-json",
+                    "--allowedTools",
+                    self.allowed_tools,
+                ]
 
             # Note: --debug flag interferes with JSON parsing, only use in stderr
             if self.debug:
@@ -1962,7 +1987,7 @@ bundles:
             return None, None
         except FileNotFoundError:
             logger.error(
-                "Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code"
+                "Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
             )
             return None, None
         except Exception as e:
