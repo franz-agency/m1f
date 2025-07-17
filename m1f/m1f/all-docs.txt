@@ -1196,6 +1196,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.2] - 2025-07-08
+
+### Fixed
+
+- **Version Conflict**: Resolved version conflict issues
+- **httpx Compatibility**: Downgraded httpx from newer version to 0.27.2 for improved compatibility
+- **Configuration Consistency**: Updated `source_directory` to `source_directories` in configuration for consistency
+- **m1f-claude Subprocess Handling**: Improved subprocess handling and timeout behavior for Claude executable detection
+
+### Changed
+
+- **Dependencies Update**: Updated multiple dependencies to newer versions for improved compatibility and performance
+  - Updated aiofiles to 24.1.0
+  - Updated application_properties to 0.9.0
+  - Updated beautifulsoup4 to 4.13.4
+  - Updated certifi to 2025.6.15
+  - Updated click to 8.2.1
+  - Updated markdownify to 1.1.0
+  - Updated pydantic to 2.11.7
+  - Updated pymarkdownlnt to 0.9.30
+  - Updated pytest to 8.4.1
+  - Updated pytest-asyncio to 1.1.0a1
+  - Updated rich to 14.0.0
+  - Updated typing_extensions to 4.14.1
+  - Updated claude-code-sdk to 0.0.14
+  - Updated Flask to 3.1.1
+  - Updated lxml to 6.0.0
+  - Updated playwright to 1.53.0
+  - Updated scrapy to 2.13.3
+  - Updated selectolax to 0.3.31
+
+### Removed
+
+- Removed unnecessary documentation files
+
 ## [3.4.0] - 2025-07-04
 
 ### Added

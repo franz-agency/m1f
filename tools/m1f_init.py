@@ -50,7 +50,7 @@ class M1FInit:
         # Create safe project name (remove special characters)
         import re
         project_name = self.project_path.name
-        self.safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', project_name)
+        self.safe_name = re.sub(r'[^a-zA-Z0-9_.-]', '_', project_name)
 
         # Find m1f installation directory
         self.m1f_root = Path(__file__).parent.parent

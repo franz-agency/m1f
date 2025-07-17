@@ -3029,7 +3029,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.4.1"
+__version__ = "3.4.2"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -3265,6 +3265,19 @@ logger = logging.getLogger(__name__)
 
 def find_claude_executable() -> Optional[str]:
     """Find the Claude executable in various possible locations."""
+    # First check if claude is available via npx
+    try:
+        result = subprocess.run(
+            ["npx", "claude", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            return "npx claude"
+    except:
+        pass
+    
     # Check common Claude installation paths
     possible_paths = [
         # Global npm install
@@ -4585,7 +4598,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             print(f"✅ Claude Code is available")
             has_claude_code = True
         else:
-            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code")
+            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
             return
 
         print(f"\n📊 Project Analysis")
@@ -4924,19 +4937,31 @@ bundles:
             # Find claude executable
             claude_cmd = find_claude_executable()
             if not claude_cmd:
-                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code")
+                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
                 return None, None
             
             # Build command - use stream-json for real-time feedback
-            cmd = [
-                claude_cmd,
-                "--print",
-                "--verbose",  # Required for stream-json
-                "--output-format",
-                "stream-json",
-                "--allowedTools",
-                self.allowed_tools,
-            ]
+            if claude_cmd == "npx claude":
+                cmd = [
+                    "npx",
+                    "claude",
+                    "--print",
+                    "--verbose",  # Required for stream-json
+                    "--output-format",
+                    "stream-json",
+                    "--allowedTools",
+                    self.allowed_tools,
+                ]
+            else:
+                cmd = [
+                    claude_cmd,
+                    "--print",
+                    "--verbose",  # Required for stream-json
+                    "--output-format",
+                    "stream-json",
+                    "--allowedTools",
+                    self.allowed_tools,
+                ]
 
             # Note: --debug flag interferes with JSON parsing, only use in stderr
             if self.debug:
@@ -5177,7 +5202,7 @@ bundles:
             return None, None
         except FileNotFoundError:
             logger.error(
-                "Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code"
+                "Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
             )
             return None, None
         except Exception as e:
@@ -5751,7 +5776,7 @@ class M1FInit:
         # Create safe project name (remove special characters)
         import re
         project_name = self.project_path.name
-        self.safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', project_name)
+        self.safe_name = re.sub(r'[^a-zA-Z0-9_.-]', '_', project_name)
 
         # Find m1f installation directory
         self.m1f_root = Path(__file__).parent.parent
@@ -6057,35 +6082,77 @@ class M1FInit:
             ts_count = ext_count.get(".ts", 0) + ext_count.get(".tsx", 0)
             php_count = ext_count.get(".php", 0)
             java_count = ext_count.get(".java", 0)
+            go_count = ext_count.get(".go", 0)
+            rust_count = ext_count.get(".rs", 0)
+            cs_count = ext_count.get(".cs", 0)
+            rb_count = ext_count.get(".rb", 0)
             
-            # Determine primary language based on file count and indicators
-            if has_python_indicators or py_count > max(js_count, ts_count, php_count, java_count):
-                context["type"] = "Python Project"
-                # Check for Python frameworks
-                if any("manage.py" in f for f in files):
-                    context["frameworks"].append("Django")
-                elif any(f.endswith(("app.py", "application.py")) for f in files):
-                    context["frameworks"].append("Flask/FastAPI")
-            elif has_package_json and (js_count > 0 or ts_count > 0):
-                context["type"] = "Node.js/JavaScript Project"
-                context["frameworks"].append("Node.js")
-            elif has_composer:
-                context["type"] = "PHP Project"
-                context["frameworks"].append("Composer")
-            elif has_maven:
-                context["type"] = "Java Maven Project"
-                context["frameworks"].append("Maven")
-            elif has_gradle:
-                context["type"] = "Java Gradle Project"
-                context["frameworks"].append("Gradle")
-            elif has_cargo:
-                context["type"] = "Rust Project"
-                context["frameworks"].append("Cargo")
-            elif has_go_mod:
-                context["type"] = "Go Project"
-            elif has_gemfile:
-                context["type"] = "Ruby Project"
-                context["frameworks"].append("Bundler")
+            # Determine primary language based on file count
+            # Create a list of (count, language, has_indicator) tuples
+            language_counts = [
+                (py_count, "Python", has_python_indicators),
+                (js_count, "JavaScript", has_package_json),
+                (ts_count, "TypeScript", has_package_json),
+                (php_count, "PHP", has_composer),
+                (java_count, "Java", has_maven or has_gradle),
+                (go_count, "Go", has_go_mod),
+                (rust_count, "Rust", has_cargo),
+                (cs_count, "C#", False),  # No specific indicator for C#
+                (rb_count, "Ruby", has_gemfile)
+            ]
+            
+            # Sort by count (descending) to find the language with most files
+            language_counts.sort(key=lambda x: x[0], reverse=True)
+            
+            # Get the language with the most files
+            max_count = language_counts[0][0]
+            
+            if max_count > 0:
+                # Find the primary language (the one with most files)
+                primary_lang = language_counts[0][1]
+                primary_has_indicator = language_counts[0][2]
+                
+                # Determine project type based on the primary language
+                if primary_lang == "Python":
+                    context["type"] = "Python Project"
+                    # Check for Python frameworks
+                    if any("manage.py" in f for f in files):
+                        context["frameworks"].append("Django")
+                    elif any(f.endswith(("app.py", "application.py")) for f in files):
+                        context["frameworks"].append("Flask/FastAPI")
+                elif primary_lang == "JavaScript":
+                    context["type"] = "Node.js/JavaScript Project"
+                    if has_package_json:
+                        context["frameworks"].append("Node.js")
+                elif primary_lang == "TypeScript":
+                    context["type"] = "TypeScript Project"
+                    if has_package_json:
+                        context["frameworks"].append("Node.js")
+                elif primary_lang == "PHP":
+                    context["type"] = "PHP Project"
+                    if has_composer:
+                        context["frameworks"].append("Composer")
+                elif primary_lang == "Java":
+                    if has_maven:
+                        context["type"] = "Java Maven Project"
+                        context["frameworks"].append("Maven")
+                    elif has_gradle:
+                        context["type"] = "Java Gradle Project"
+                        context["frameworks"].append("Gradle")
+                    else:
+                        context["type"] = "Java Project"
+                elif primary_lang == "Go":
+                    context["type"] = "Go Project"
+                elif primary_lang == "Rust":
+                    context["type"] = "Rust Project"
+                    if has_cargo:
+                        context["frameworks"].append("Cargo")
+                elif primary_lang == "C#":
+                    context["type"] = "C# Project"
+                elif primary_lang == "Ruby":
+                    context["type"] = "Ruby Project"
+                    if has_gemfile:
+                        context["frameworks"].append("Bundler")
 
         # Check for specific frameworks
         for file in files:
