@@ -320,7 +320,7 @@ robots.
 ======= requirements.txt ======
 # Core dependencies
 aiofiles==24.1.0
-aiohttp==3.12.13
+aiohttp==3.12.14
 anyio==4.9.0
 application_properties==0.9.0
 beautifulsoup4==4.13.4
@@ -3029,7 +3029,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.4.2"
+__version__ = "3.5.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -3265,6 +3265,19 @@ logger = logging.getLogger(__name__)
 
 def find_claude_executable() -> Optional[str]:
     """Find the Claude executable in various possible locations."""
+    # First check if claude is available via npx
+    try:
+        result = subprocess.run(
+            ["npx", "claude", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            return "npx claude"
+    except:
+        pass
+    
     # Check common Claude installation paths
     possible_paths = [
         # Global npm install
@@ -3341,6 +3354,8 @@ class M1FClaude:
         allowed_tools: str = "Read,Edit,MultiEdit,Write,Glob,Grep,Bash",
         debug: bool = False,
         verbose: bool = False,
+        project_description: str = None,
+        project_priorities: str = None,
     ):
         """Initialize m1f-claude with project context."""
         self.project_path = project_path or Path.cwd()
@@ -3350,6 +3365,8 @@ class M1FClaude:
         self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
         self.debug = debug  # Enable debug output
         self.verbose = verbose  # Show all prompts and parameters
+        self.project_description = project_description  # User-provided project description
+        self.project_priorities = project_priorities  # User-provided project priorities
 
         # Check for m1f documentation in various locations
         self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
@@ -3458,11 +3475,22 @@ class M1FClaude:
 
                 # Analyze the file and directory lists to determine project type
                 project_context = self._analyze_project_files(files_list, dirs_list)
+                
+                # Add user-provided info if available
+                if self.project_description:
+                    project_context["user_description"] = self.project_description
+                if self.project_priorities:
+                    project_context["user_priorities"] = self.project_priorities
 
             except Exception as e:
                 logger.warning(f"Failed to analyze project structure: {e}")
                 # Fallback to extracting context from user prompt
                 project_context = self._extract_project_context(user_prompt)
+                # Add user-provided info if available
+                if self.project_description:
+                    project_context["user_description"] = self.project_description
+                if self.project_priorities:
+                    project_context["user_priorities"] = self.project_priorities
 
             # Deep thinking task list approach with structured template
             enhanced.append(
@@ -3544,6 +3572,10 @@ CRITICAL CONFIG RULES:
 - Size Constraints: {project_context.get('size_limit', '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)')}
 - Performance Needs: {project_context.get('performance', 'Standard')}
 - AI Tool Integration: {project_context.get('ai_tools', 'Claude')}
+
+**User-Provided Information:**
+- Project Description: {project_context.get('user_description', self.project_description or 'Not provided')}
+- Project Priorities: {project_context.get('user_priorities', self.project_priorities or 'Not provided')}
 
 **Suggested Bundle Structure:**
 Based on the project context, create these bundles:
@@ -4545,6 +4577,31 @@ I'll analyze your project and create an optimal m1f configuration that:
         print("  • .m1f.config.yml should exist")
         print()
 
+        # Collect project description and priorities if not provided via CLI
+        if not self.project_description and not self.project_priorities:
+            print("\n📝 Project Information")
+            print("=" * 50)
+            print("Please provide some information about your project to help create better bundles.")
+            print()
+            
+            # Interactive project description input
+            if not self.project_description:
+                print("📋 Project Description")
+                print("Describe your project briefly (what it does, main technologies):")
+                self.project_description = input("> ").strip()
+                if not self.project_description:
+                    self.project_description = "Not provided"
+            
+            # Interactive project priorities input
+            if not self.project_priorities:
+                print("\n🎯 Project Priorities") 
+                print("What's important for this project? (e.g., performance, security, maintainability, documentation):")
+                self.project_priorities = input("> ").strip()
+                if not self.project_priorities:
+                    self.project_priorities = "Not provided"
+            
+            print()
+
         # Check if we're in a git repository
         git_root = self.project_path
         if (self.project_path / ".git").exists():
@@ -4585,7 +4642,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             print(f"✅ Claude Code is available")
             has_claude_code = True
         else:
-            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code")
+            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
             return
 
         print(f"\n📊 Project Analysis")
@@ -4646,6 +4703,12 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Analyze the file and directory lists to determine project type
             context = self._analyze_project_files(files_list, dirs_list)
+            
+            # Add user-provided info to context
+            if self.project_description:
+                context["user_description"] = self.project_description
+            if self.project_priorities:
+                context["user_priorities"] = self.project_priorities
 
             # Display analysis results
             print(
@@ -4655,6 +4718,12 @@ I'll analyze your project and create an optimal m1f configuration that:
             print(f"💻 Languages: {context.get('languages', 'Unknown')}")
             if context.get("main_code_dirs"):
                 print(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
+            
+            # Display user-provided info
+            if self.project_description:
+                print(f"\n📝 User Description: {self.project_description}")
+            if self.project_priorities:
+                print(f"🎯 User Priorities: {self.project_priorities}")
 
         except Exception as e:
             print(f"⚠️  Failed to analyze project structure: {e}")
@@ -4868,6 +4937,8 @@ bundles:
             "project_type": project_context.get("type", "Unknown"),
             "languages": project_context.get("languages", "Unknown"),
             "total_files": project_context.get("total_files", "Unknown"),
+            "user_project_description": self.project_description or "Not provided",
+            "user_project_priorities": self.project_priorities or "Not provided",
         }
 
         # Format main code directories
@@ -4924,19 +4995,31 @@ bundles:
             # Find claude executable
             claude_cmd = find_claude_executable()
             if not claude_cmd:
-                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code")
+                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
                 return None, None
             
             # Build command - use stream-json for real-time feedback
-            cmd = [
-                claude_cmd,
-                "--print",
-                "--verbose",  # Required for stream-json
-                "--output-format",
-                "stream-json",
-                "--allowedTools",
-                self.allowed_tools,
-            ]
+            if claude_cmd == "npx claude":
+                cmd = [
+                    "npx",
+                    "claude",
+                    "--print",
+                    "--verbose",  # Required for stream-json
+                    "--output-format",
+                    "stream-json",
+                    "--allowedTools",
+                    self.allowed_tools,
+                ]
+            else:
+                cmd = [
+                    claude_cmd,
+                    "--print",
+                    "--verbose",  # Required for stream-json
+                    "--output-format",
+                    "stream-json",
+                    "--allowedTools",
+                    self.allowed_tools,
+                ]
 
             # Note: --debug flag interferes with JSON parsing, only use in stderr
             if self.debug:
@@ -5177,7 +5260,7 @@ bundles:
             return None, None
         except FileNotFoundError:
             logger.error(
-                "Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code"
+                "Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
             )
             return None, None
         except Exception as e:
@@ -5378,6 +5461,18 @@ First time? Run 'm1f-init' to set up your project!
         help="Show all prompts sent to Claude and command parameters",
     )
 
+    parser.add_argument(
+        "--project-description",
+        type=str,
+        help="Brief description of your project (what it does, what technology it uses)",
+    )
+
+    parser.add_argument(
+        "--project-priorities", 
+        type=str,
+        help="What's important for this project (performance, security, maintainability, etc.)",
+    )
+
     args = parser.parse_args()
 
     # Handle /advanced-setup command in prompt
@@ -5387,7 +5482,11 @@ First time? Run 'm1f-init' to set up your project!
 
     # Initialize m1f-claude
     m1f_claude = M1FClaude(
-        allowed_tools=args.allowed_tools, debug=args.debug, verbose=args.verbose
+        allowed_tools=args.allowed_tools, 
+        debug=args.debug, 
+        verbose=args.verbose,
+        project_description=args.project_description,
+        project_priorities=args.project_priorities
     )
 
     # Check status
@@ -5751,7 +5850,7 @@ class M1FInit:
         # Create safe project name (remove special characters)
         import re
         project_name = self.project_path.name
-        self.safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', project_name)
+        self.safe_name = re.sub(r'[^a-zA-Z0-9_.-]', '_', project_name)
 
         # Find m1f installation directory
         self.m1f_root = Path(__file__).parent.parent
@@ -6057,35 +6156,77 @@ class M1FInit:
             ts_count = ext_count.get(".ts", 0) + ext_count.get(".tsx", 0)
             php_count = ext_count.get(".php", 0)
             java_count = ext_count.get(".java", 0)
+            go_count = ext_count.get(".go", 0)
+            rust_count = ext_count.get(".rs", 0)
+            cs_count = ext_count.get(".cs", 0)
+            rb_count = ext_count.get(".rb", 0)
             
-            # Determine primary language based on file count and indicators
-            if has_python_indicators or py_count > max(js_count, ts_count, php_count, java_count):
-                context["type"] = "Python Project"
-                # Check for Python frameworks
-                if any("manage.py" in f for f in files):
-                    context["frameworks"].append("Django")
-                elif any(f.endswith(("app.py", "application.py")) for f in files):
-                    context["frameworks"].append("Flask/FastAPI")
-            elif has_package_json and (js_count > 0 or ts_count > 0):
-                context["type"] = "Node.js/JavaScript Project"
-                context["frameworks"].append("Node.js")
-            elif has_composer:
-                context["type"] = "PHP Project"
-                context["frameworks"].append("Composer")
-            elif has_maven:
-                context["type"] = "Java Maven Project"
-                context["frameworks"].append("Maven")
-            elif has_gradle:
-                context["type"] = "Java Gradle Project"
-                context["frameworks"].append("Gradle")
-            elif has_cargo:
-                context["type"] = "Rust Project"
-                context["frameworks"].append("Cargo")
-            elif has_go_mod:
-                context["type"] = "Go Project"
-            elif has_gemfile:
-                context["type"] = "Ruby Project"
-                context["frameworks"].append("Bundler")
+            # Determine primary language based on file count
+            # Create a list of (count, language, has_indicator) tuples
+            language_counts = [
+                (py_count, "Python", has_python_indicators),
+                (js_count, "JavaScript", has_package_json),
+                (ts_count, "TypeScript", has_package_json),
+                (php_count, "PHP", has_composer),
+                (java_count, "Java", has_maven or has_gradle),
+                (go_count, "Go", has_go_mod),
+                (rust_count, "Rust", has_cargo),
+                (cs_count, "C#", False),  # No specific indicator for C#
+                (rb_count, "Ruby", has_gemfile)
+            ]
+            
+            # Sort by count (descending) to find the language with most files
+            language_counts.sort(key=lambda x: x[0], reverse=True)
+            
+            # Get the language with the most files
+            max_count = language_counts[0][0]
+            
+            if max_count > 0:
+                # Find the primary language (the one with most files)
+                primary_lang = language_counts[0][1]
+                primary_has_indicator = language_counts[0][2]
+                
+                # Determine project type based on the primary language
+                if primary_lang == "Python":
+                    context["type"] = "Python Project"
+                    # Check for Python frameworks
+                    if any("manage.py" in f for f in files):
+                        context["frameworks"].append("Django")
+                    elif any(f.endswith(("app.py", "application.py")) for f in files):
+                        context["frameworks"].append("Flask/FastAPI")
+                elif primary_lang == "JavaScript":
+                    context["type"] = "Node.js/JavaScript Project"
+                    if has_package_json:
+                        context["frameworks"].append("Node.js")
+                elif primary_lang == "TypeScript":
+                    context["type"] = "TypeScript Project"
+                    if has_package_json:
+                        context["frameworks"].append("Node.js")
+                elif primary_lang == "PHP":
+                    context["type"] = "PHP Project"
+                    if has_composer:
+                        context["frameworks"].append("Composer")
+                elif primary_lang == "Java":
+                    if has_maven:
+                        context["type"] = "Java Maven Project"
+                        context["frameworks"].append("Maven")
+                    elif has_gradle:
+                        context["type"] = "Java Gradle Project"
+                        context["frameworks"].append("Gradle")
+                    else:
+                        context["type"] = "Java Project"
+                elif primary_lang == "Go":
+                    context["type"] = "Go Project"
+                elif primary_lang == "Rust":
+                    context["type"] = "Rust Project"
+                    if has_cargo:
+                        context["frameworks"].append("Cargo")
+                elif primary_lang == "C#":
+                    context["type"] = "C# Project"
+                elif primary_lang == "Ruby":
+                    context["type"] = "Ruby Project"
+                    if has_gemfile:
+                        context["frameworks"].append("Bundler")
 
         # Check for specific frameworks
         for file in files:
@@ -22904,6 +23045,16 @@ STEP 3: Design Bundle Hierarchy
 - Total Files: {total_files}
 
 **Main Code Directories:** {main_code_dirs}
+
+📝 **User-Provided Project Information:**
+- **Description:** {user_project_description}
+- **Priorities:** {user_project_priorities}
+
+Please take the user's description and priorities into account when creating bundles. For example:
+- If performance is a priority, create focused performance-critical code bundles
+- If security is important, create security-related bundles (auth, validation, etc.)
+- If documentation is key, create more granular documentation bundles
+- If maintainability matters, organize bundles by architectural layers
 
 📝 IMPLEMENTATION APPROACH:
 

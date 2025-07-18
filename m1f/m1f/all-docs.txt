@@ -317,6 +317,163 @@ Apache 2.0 - Go wild, just don't blame us.
 Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to
 robots.
 
+======= CLAUDE.md ======
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Context
+This is the m1f (Make One File) project - a comprehensive toolkit for bundling codebases into AI-friendly context files. The project's mission is to "feed your AI the whole story" by converting messy codebases into digestible chunks for LLMs.
+
+## Core Architecture
+
+### Tool Suite
+- **m1f** - Main bundler combining multiple files into AI-ready context
+- **m1f-s1f** - File splitter that extracts files back from bundles
+- **m1f-scrape** - Website scraper with pluggable backends (BeautifulSoup, HTTrack, Playwright, Scrapy, Selectolax)
+- **m1f-html2md** - HTML to Markdown converter with custom extractors
+- **m1f-token-counter** - Token estimation for LLM context planning
+- **m1f-claude** - AI assistant with m1f knowledge integration
+
+### Modern Python 3.10+ Design
+- **Async I/O** throughout for performance
+- **Type safety** with comprehensive annotations
+- **Modular architecture** with clean separation of concerns
+- **Plugin systems** for scrapers and custom processors
+- **Security-first** with path traversal protection, secret detection, SSRF protection
+
+### Key Directories
+```
+tools/
+├── m1f/              # Main bundling tool with async core
+├── s1f/              # File splitting with concurrent writes
+├── html2md_tool/     # HTML conversion with custom extractors
+├── scrape_tool/      # Web scraping backends
+└── _version.py       # Centralized version management
+
+presets/              # Configuration templates for different project types
+bin/                  # Global command wrappers
+scripts/              # Installation and utility scripts
+```
+
+## Development Commands
+
+### Installation & Setup
+```bash
+# Install from source
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows
+
+# Generate m1f bundles
+m1f-update
+```
+
+### Testing
+```bash
+# Install test dependencies first
+pip install -r requirements.txt
+
+# Run tests (when pytest is available)
+python3 -m pytest                    # All tests
+python3 -m pytest tests/m1f          # m1f-specific tests
+python3 -m pytest tests/s1f          # s1f-specific tests
+python3 -m pytest tests/html2md      # html2md tests
+```
+
+### Code Quality
+```bash
+# Format Python code
+black tools/
+
+# Format Markdown
+npm run lint:md
+
+# Check Markdown formatting
+npm run lint:md:check
+```
+
+### Bundle Management
+```bash
+# Update all project bundles
+m1f-update
+
+# List available bundles
+m1f auto-bundle --list
+
+# Create specific bundle
+m1f-update docs
+```
+
+## Documentation
+
+Project documentation is located in the `docs/` directory with comprehensive guides for each tool.
+
+## Configuration Systems
+
+### Preset System
+Located in `presets/` with templates for:
+- WordPress projects (`wordpress.m1f-presets.yml`)
+- Web projects (`web-project.m1f-presets.yml`)
+- Documentation sites (`documentation.m1f-presets.yml`)
+- AI-context optimization (`ai-context.m1f-presets.yml`)
+
+### Auto-bundling
+- `.m1f.config.yml` defines project-specific bundle configurations
+- Git hooks available for automatic bundle generation on commits
+- Watch scripts for real-time bundle updates
+
+## Security Considerations
+
+The project implements comprehensive security measures:
+- **Path validation** to prevent directory traversal attacks
+- **Secret detection** using detect-secrets integration
+- **SSRF protection** for web scraping backends
+- **robots.txt compliance** (always enabled, cannot be disabled)
+- **SSL/TLS validation** enabled by default
+
+## Key Development Patterns
+
+### Version Management
+- Single source of truth in `tools/_version.py`
+- Automatic syncing across all components
+- Use `scripts/bump_version.py` for version updates
+
+### Async Architecture
+All file operations use async I/O patterns:
+```python
+# Standard pattern for file operations
+async with aiofiles.open(file_path, 'r') as f:
+    content = await f.read()
+```
+
+### Error Handling
+Custom exception hierarchy with specific error types for different failure modes.
+
+### Testing Strategy
+- Comprehensive test coverage with pytest
+- Async test support with pytest-asyncio
+- Integration tests including HTML test server
+- Security-focused tests for path traversal and injection attacks
+
+## m1f Best Practices
+
+When working with m1f functionality:
+- Create focused bundles under 100KB for optimal AI context windows
+- Use appropriate separators: Standard (default) for AI consumption, not Markdown
+- Leverage the preset system for consistent file processing
+- Exclude unnecessary files using default excludes (automatically handles node_modules, .git, etc.)
+- Use security scanning to prevent secrets in bundles
+
+## Key Documentation Files
+
+For comprehensive understanding of each tool:
+- `docs/01_m1f/00_m1f.md` - Main m1f tool documentation
+- `docs/02_s1f/20_s1f.md` - File splitting tool documentation
+- `docs/03_html2md/30_html2md.md` - HTML to Markdown conversion
+- `docs/04_scrape/40_webscraper.md` - Web scraping backends
+- `docs/01_m1f/10_m1f_presets.md` - Preset system documentation
+- `docs/01_m1f/20_auto_bundle_guide.md` - Auto-bundling configuration
+
 ======= perfect_bundle_prompt.md ======
 # Perfect Bundle Creation Prompt for m1f-claude
 
@@ -537,7 +694,7 @@ Remember: The goal is bundles that are **modular**, **focused**, and
 ======= requirements.txt ======
 # Core dependencies
 aiofiles==24.1.0
-aiohttp==3.12.13
+aiohttp==3.12.14
 anyio==4.9.0
 application_properties==0.9.0
 beautifulsoup4==4.13.4
@@ -1038,6 +1195,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [3.5.0] - 2025-07-18
+
+### Added
+
+- **m1f-claude**: Add project description and priorities input functionality
+
+### Fixed
+
+- **m1f-init**: Correct project type detection to use file count for all languages
+- **m1f**: Support npx execution method for m1f tool
+- **m1f-init**: Preserve dots in project names for bundle generation
+
+### Changed
+
+- Updated package dependencies
 
 ## [3.4.2] - 2025-07-08
 
@@ -8755,7 +8928,13 @@ Boom! 💥 This command:
 For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
+# Interactive mode - will prompt for project description and priorities
 m1f-claude --advanced-setup
+
+# Or provide project info via command line
+m1f-claude --advanced-setup \
+  --project-description "E-commerce platform with React frontend and Django backend" \
+  --project-priorities "performance, security, maintainability"
 ```
 
 ### Step 2: Start the Conversation
@@ -9300,6 +9479,28 @@ m1f-init --verbose
    - Excludes m1f/ directory automatically
 
 ### Advanced Setup with m1f-claude (Linux/macOS only)
+
+The `m1f-claude` tool enhances project setup by creating topic-specific bundles based on your project's needs:
+
+```bash
+# Interactive mode - prompts for project details
+m1f-claude --advanced-setup
+
+# With project information provided
+m1f-claude --advanced-setup \
+  --project-description "SaaS dashboard with React frontend and Express API" \
+  --project-priorities "code modularity, API documentation, test coverage"
+```
+
+#### Project Information Options:
+
+- **--project-description**: Brief description of what your project does and its main technologies
+- **--project-priorities**: What's important for this project (e.g., performance, security, documentation, maintainability)
+
+This information helps Claude create better-targeted bundles. For example:
+- If "security" is a priority, it will create dedicated auth/security bundles
+- If "documentation" is important, it will create more granular doc bundles
+- If "performance" matters, it will separate performance-critical code
 
 For topic-specific bundles and advanced configuration:
 
@@ -14420,6 +14621,16 @@ STEP 3: Design Bundle Hierarchy
 - Total Files: {total_files}
 
 **Main Code Directories:** {main_code_dirs}
+
+📝 **User-Provided Project Information:**
+- **Description:** {user_project_description}
+- **Priorities:** {user_project_priorities}
+
+Please take the user's description and priorities into account when creating bundles. For example:
+- If performance is a priority, create focused performance-critical code bundles
+- If security is important, create security-related bundles (auth, validation, etc.)
+- If documentation is key, create more granular documentation bundles
+- If maintainability matters, organize bundles by architectural layers
 
 📝 IMPLEMENTATION APPROACH:
 

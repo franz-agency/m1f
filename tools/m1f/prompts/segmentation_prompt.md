@@ -101,6 +101,16 @@ STEP 3: Design Bundle Hierarchy
 
 **Main Code Directories:** {main_code_dirs}
 
+📝 **User-Provided Project Information:**
+- **Description:** {user_project_description}
+- **Priorities:** {user_project_priorities}
+
+Please take the user's description and priorities into account when creating bundles. For example:
+- If performance is a priority, create focused performance-critical code bundles
+- If security is important, create security-related bundles (auth, validation, etc.)
+- If documentation is key, create more granular documentation bundles
+- If maintainability matters, organize bundles by architectural layers
+
 📝 IMPLEMENTATION APPROACH:
 
 Example for optimal bundle sizes:
