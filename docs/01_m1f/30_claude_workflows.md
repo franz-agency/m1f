@@ -36,7 +36,13 @@ Boom! 💥 This command:
 For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
+# Interactive mode - will prompt for project description and priorities
 m1f-claude --advanced-setup
+
+# Or provide project info via command line
+m1f-claude --advanced-setup \
+  --project-description "E-commerce platform with React frontend and Django backend" \
+  --project-priorities "performance, security, maintainability"
 ```
 
 ### Step 2: Start the Conversation

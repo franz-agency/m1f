@@ -3354,6 +3354,8 @@ class M1FClaude:
         allowed_tools: str = "Read,Edit,MultiEdit,Write,Glob,Grep,Bash",
         debug: bool = False,
         verbose: bool = False,
+        project_description: str = None,
+        project_priorities: str = None,
     ):
         """Initialize m1f-claude with project context."""
         self.project_path = project_path or Path.cwd()
@@ -3363,6 +3365,8 @@ class M1FClaude:
         self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
         self.debug = debug  # Enable debug output
         self.verbose = verbose  # Show all prompts and parameters
+        self.project_description = project_description  # User-provided project description
+        self.project_priorities = project_priorities  # User-provided project priorities
 
         # Check for m1f documentation in various locations
         self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
@@ -3471,11 +3475,22 @@ class M1FClaude:
 
                 # Analyze the file and directory lists to determine project type
                 project_context = self._analyze_project_files(files_list, dirs_list)
+                
+                # Add user-provided info if available
+                if self.project_description:
+                    project_context["user_description"] = self.project_description
+                if self.project_priorities:
+                    project_context["user_priorities"] = self.project_priorities
 
             except Exception as e:
                 logger.warning(f"Failed to analyze project structure: {e}")
                 # Fallback to extracting context from user prompt
                 project_context = self._extract_project_context(user_prompt)
+                # Add user-provided info if available
+                if self.project_description:
+                    project_context["user_description"] = self.project_description
+                if self.project_priorities:
+                    project_context["user_priorities"] = self.project_priorities
 
             # Deep thinking task list approach with structured template
             enhanced.append(
@@ -3557,6 +3572,10 @@ CRITICAL CONFIG RULES:
 - Size Constraints: {project_context.get('size_limit', '200KB per bundle (Claude Code) / 5MB per bundle (Claude AI)')}
 - Performance Needs: {project_context.get('performance', 'Standard')}
 - AI Tool Integration: {project_context.get('ai_tools', 'Claude')}
+
+**User-Provided Information:**
+- Project Description: {project_context.get('user_description', self.project_description or 'Not provided')}
+- Project Priorities: {project_context.get('user_priorities', self.project_priorities or 'Not provided')}
 
 **Suggested Bundle Structure:**
 Based on the project context, create these bundles:
@@ -4558,6 +4577,31 @@ I'll analyze your project and create an optimal m1f configuration that:
         print("  • .m1f.config.yml should exist")
         print()
 
+        # Collect project description and priorities if not provided via CLI
+        if not self.project_description and not self.project_priorities:
+            print("\n📝 Project Information")
+            print("=" * 50)
+            print("Please provide some information about your project to help create better bundles.")
+            print()
+            
+            # Interactive project description input
+            if not self.project_description:
+                print("📋 Project Description")
+                print("Describe your project briefly (what it does, main technologies):")
+                self.project_description = input("> ").strip()
+                if not self.project_description:
+                    self.project_description = "Not provided"
+            
+            # Interactive project priorities input
+            if not self.project_priorities:
+                print("\n🎯 Project Priorities") 
+                print("What's important for this project? (e.g., performance, security, maintainability, documentation):")
+                self.project_priorities = input("> ").strip()
+                if not self.project_priorities:
+                    self.project_priorities = "Not provided"
+            
+            print()
+
         # Check if we're in a git repository
         git_root = self.project_path
         if (self.project_path / ".git").exists():
@@ -4659,6 +4703,12 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Analyze the file and directory lists to determine project type
             context = self._analyze_project_files(files_list, dirs_list)
+            
+            # Add user-provided info to context
+            if self.project_description:
+                context["user_description"] = self.project_description
+            if self.project_priorities:
+                context["user_priorities"] = self.project_priorities
 
             # Display analysis results
             print(
@@ -4668,6 +4718,12 @@ I'll analyze your project and create an optimal m1f configuration that:
             print(f"💻 Languages: {context.get('languages', 'Unknown')}")
             if context.get("main_code_dirs"):
                 print(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
+            
+            # Display user-provided info
+            if self.project_description:
+                print(f"\n📝 User Description: {self.project_description}")
+            if self.project_priorities:
+                print(f"🎯 User Priorities: {self.project_priorities}")
 
         except Exception as e:
             print(f"⚠️  Failed to analyze project structure: {e}")
@@ -4881,6 +4937,8 @@ bundles:
             "project_type": project_context.get("type", "Unknown"),
             "languages": project_context.get("languages", "Unknown"),
             "total_files": project_context.get("total_files", "Unknown"),
+            "user_project_description": self.project_description or "Not provided",
+            "user_project_priorities": self.project_priorities or "Not provided",
         }
 
         # Format main code directories
@@ -5403,6 +5461,18 @@ First time? Run 'm1f-init' to set up your project!
         help="Show all prompts sent to Claude and command parameters",
     )
 
+    parser.add_argument(
+        "--project-description",
+        type=str,
+        help="Brief description of your project (what it does, what technology it uses)",
+    )
+
+    parser.add_argument(
+        "--project-priorities", 
+        type=str,
+        help="What's important for this project (performance, security, maintainability, etc.)",
+    )
+
     args = parser.parse_args()
 
     # Handle /advanced-setup command in prompt
@@ -5412,7 +5482,11 @@ First time? Run 'm1f-init' to set up your project!
 
     # Initialize m1f-claude
     m1f_claude = M1FClaude(
-        allowed_tools=args.allowed_tools, debug=args.debug, verbose=args.verbose
+        allowed_tools=args.allowed_tools, 
+        debug=args.debug, 
+        verbose=args.verbose,
+        project_description=args.project_description,
+        project_priorities=args.project_priorities
     )
 
     # Check status
@@ -22971,6 +23045,16 @@ STEP 3: Design Bundle Hierarchy
 - Total Files: {total_files}
 
 **Main Code Directories:** {main_code_dirs}
+
+📝 **User-Provided Project Information:**
+- **Description:** {user_project_description}
+- **Priorities:** {user_project_priorities}
+
+Please take the user's description and priorities into account when creating bundles. For example:
+- If performance is a priority, create focused performance-critical code bundles
+- If security is important, create security-related bundles (auth, validation, etc.)
+- If documentation is key, create more granular documentation bundles
+- If maintainability matters, organize bundles by architectural layers
 
 📝 IMPLEMENTATION APPROACH:
 

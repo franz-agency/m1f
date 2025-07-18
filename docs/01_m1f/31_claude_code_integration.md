@@ -99,6 +99,28 @@ m1f-init --verbose
 
 ### Advanced Setup with m1f-claude (Linux/macOS only)
 
+The `m1f-claude` tool enhances project setup by creating topic-specific bundles based on your project's needs:
+
+```bash
+# Interactive mode - prompts for project details
+m1f-claude --advanced-setup
+
+# With project information provided
+m1f-claude --advanced-setup \
+  --project-description "SaaS dashboard with React frontend and Express API" \
+  --project-priorities "code modularity, API documentation, test coverage"
+```
+
+#### Project Information Options:
+
+- **--project-description**: Brief description of what your project does and its main technologies
+- **--project-priorities**: What's important for this project (e.g., performance, security, documentation, maintainability)
+
+This information helps Claude create better-targeted bundles. For example:
+- If "security" is a priority, it will create dedicated auth/security bundles
+- If "documentation" is important, it will create more granular doc bundles
+- If "performance" matters, it will separate performance-critical code
+
 For topic-specific bundles and advanced configuration:
 
 ```bash
