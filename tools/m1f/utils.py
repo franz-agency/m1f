@@ -150,13 +150,16 @@ def is_binary_file(file_path: Path) -> bool:
 
     # Try reading first few bytes
     try:
+        chunk = None
         with open(file_path, "rb") as f:
             # Read first 1024 bytes
             chunk = f.read(1024)
+        # Explicitly ensure file handle is released
+        f = None
 
-            # Check for null bytes
-            if b"\0" in chunk:
-                return True
+        # Check for null bytes
+        if b"\0" in chunk:
+            return True
 
             # Try to decode as UTF-8
             try:
@@ -196,11 +199,17 @@ def get_relative_path(file_path: Path, base_path: Path) -> str:
     bundle format across different operating systems.
     """
     try:
+        # Ensure both paths are resolved to handle edge cases
+        resolved_file = file_path.resolve()
+        resolved_base = base_path.resolve()
+        
+        # Get relative path and convert to forward slashes
+        rel_path = resolved_file.relative_to(resolved_base)
         # Use as_posix() to ensure forward slashes on all platforms
-        return file_path.relative_to(base_path).as_posix()
+        return rel_path.as_posix()
     except ValueError:
         # If file is not under base path, return absolute path with forward slashes
-        return file_path.as_posix()
+        return file_path.resolve().as_posix()
 
 
 def parse_file_size(size_str: str) -> int:
@@ -357,8 +366,11 @@ def validate_path_traversal(
     if path_str.startswith("~"):
         return resolved_path
 
-    # Check for excessive parent directory traversals
-    parent_traversals = path_str.count("../")
+    # Normalize path separators for consistent checking
+    normalized_path_str = path_str.replace("\\", "/")
+    
+    # Check for excessive parent directory traversals (both Unix and Windows style)
+    parent_traversals = normalized_path_str.count("../") + normalized_path_str.count("..\\") + path_str.count("..\\")
     if parent_traversals >= 3 and not (allow_outside or from_preset):
         # Three or more parent directory traversals are suspicious
         raise ValueError(
@@ -377,13 +389,29 @@ def validate_path_traversal(
 
     # Allow access to home directory for config files
     home_dir = Path.home()
-    if resolved_path.is_relative_to(home_dir / ".m1f"):
-        return resolved_path
+    try:
+        if resolved_path.is_relative_to(home_dir / ".m1f"):
+            return resolved_path
+    except (ValueError, AttributeError):
+        # is_relative_to might not exist in older Python versions
+        try:
+            resolved_path.relative_to(home_dir / ".m1f")
+            return resolved_path
+        except ValueError:
+            pass
 
     # Allow access to project's tmp directory for tests
     project_root = resolved_base
-    if resolved_path.is_relative_to(project_root / "tmp"):
-        return resolved_path
+    try:
+        if resolved_path.is_relative_to(project_root / "tmp"):
+            return resolved_path
+    except (ValueError, AttributeError):
+        # is_relative_to might not exist in older Python versions
+        try:
+            resolved_path.relative_to(project_root / "tmp")
+            return resolved_path
+        except ValueError:
+            pass
 
     # Check if the resolved path is within the base directory
     try:
@@ -391,10 +419,11 @@ def validate_path_traversal(
         resolved_path.relative_to(resolved_base)
         return resolved_path
     except ValueError:
-        # Check if we're in a test environment
+        # Check if we're in a test environment (handle Windows temp paths)
+        resolved_str = str(resolved_path).replace("\\", "/")
         if any(
-            part in str(resolved_path)
-            for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
+            part in resolved_str.lower()
+            for part in ["/tmp/", "/var/folders/", "pytest-", "test_", "\\temp\\", "\\tmp\\", "/temp/", "appdata/local/temp"]
         ):
             # Allow temporary test directories
             return resolved_path

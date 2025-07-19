@@ -21,16 +21,37 @@ Tests various HTML structures, edge cases, and conversion options.
 import os
 import sys
 import pytest
+import pytest_asyncio
 import asyncio
 import aiohttp
 import subprocess
 import time
 import tempfile
 import shutil
+import socket
+
+# Optional import for enhanced process management
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    psutil = None
+    HAS_PSUTIL = False
 from pathlib import Path
 from typing import Dict, List, Optional
 import json
 import yaml
+import platform
+import signal
+from contextlib import contextmanager
+import logging
+
+# Configure logging for better debugging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -39,43 +60,434 @@ from tools.html2md_tool import HTML2MDConverter, ConversionOptions
 
 
 class TestServer:
-    """Manages the test server lifecycle."""
+    """Manages the test server lifecycle with robust startup and cleanup."""
 
-    def __init__(self, port: int = 8080):
-        self.port = port
+    def __init__(self, port: Optional[int] = None, startup_timeout: int = 30):
+        """Initialize TestServer.
+        
+        Args:
+            port: Specific port to use, or None for dynamic allocation
+            startup_timeout: Maximum time to wait for server startup (seconds)
+        """
+        self.port = port or self._find_free_port()
         self.process = None
-        self.base_url = f"http://localhost:{port}"
+        self.base_url = f"http://localhost:{self.port}"
+        self.startup_timeout = startup_timeout
+        self._is_started = False
+        self._server_output = []  # Store server output for debugging
 
-    def start(self):
-        """Start the test server."""
+    def _find_free_port(self) -> int:
+        """Find a free port for the server."""
+        # Try multiple times to find a free port to avoid race conditions
+        for attempt in range(5):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', 0))
+                s.listen(1)
+                port = s.getsockname()[1]
+            
+            # Verify the port is still free after a small delay
+            time.sleep(0.1)
+            if not self._is_port_in_use(port):
+                logger.info(f"Found free port {port} on attempt {attempt + 1}")
+                return port
+        
+        raise RuntimeError("Could not find a free port after 5 attempts")
+
+    def _is_port_in_use(self, port: int) -> bool:
+        """Check if a port is currently in use."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('localhost', port))
+                return False
+            except OSError:
+                return True
+
+    async def _wait_for_server(self) -> bool:
+        """Wait for server to become responsive with health checks."""
+        start_time = time.time()
+        last_log_time = start_time
+        check_count = 0
+        
+        logger.info(f"Waiting for server to start on port {self.port}...")
+        
+        while time.time() - start_time < self.startup_timeout:
+            check_count += 1
+            
+            try:
+                # Check if process is still running
+                if self.process and self.process.poll() is not None:
+                    # Process has terminated - capture output for debugging
+                    stdout, stderr = self.process.communicate(timeout=1)
+                    logger.error(f"Server process terminated unexpectedly. Exit code: {self.process.returncode}")
+                    if stdout:
+                        logger.error(f"Server stdout: {stdout.decode('utf-8', errors='replace')}")
+                    if stderr:
+                        logger.error(f"Server stderr: {stderr.decode('utf-8', errors='replace')}")
+                    return False
+                
+                # Try to connect to the server with progressive timeout
+                timeout = min(1.0 + (check_count * 0.1), 5.0)  # Increase timeout gradually
+                async with aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=timeout, connect=timeout/2)
+                ) as session:
+                    async with session.get(f"{self.base_url}/api/test-pages") as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            logger.info(f"Server started successfully on port {self.port} after {check_count} checks ({time.time() - start_time:.2f}s)")
+                            logger.info(f"Server has {len(data)} test pages available")
+                            return True
+                        else:
+                            logger.warning(f"Server returned status {response.status}")
+                            
+            except aiohttp.ClientConnectorError as e:
+                # Connection refused - server not ready yet
+                if time.time() - last_log_time > 2.0:  # Log every 2 seconds
+                    logger.debug(f"Server not ready yet: {type(e).__name__}: {e}")
+                    last_log_time = time.time()
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                # Other connection errors
+                if time.time() - last_log_time > 2.0:
+                    logger.debug(f"Connection attempt failed: {type(e).__name__}: {e}")
+                    last_log_time = time.time()
+            except Exception as e:
+                logger.error(f"Unexpected error waiting for server: {type(e).__name__}: {e}")
+            
+            # Progressive backoff - start with short delays, increase over time
+            delay = min(0.1 * (1 + check_count // 10), 0.5)
+            await asyncio.sleep(delay)
+        
+        logger.error(f"Server failed to start within {self.startup_timeout} seconds after {check_count} checks")
+        return False
+
+    def _create_server_process(self) -> subprocess.Popen:
+        """Create the server process with platform-specific handling."""
         server_path = Path(__file__).parent / "html2md_server" / "server.py"
-        self.process = subprocess.Popen(
-            [sys.executable, str(server_path)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        # Wait for server to start
-        time.sleep(2)
+        
+        # Verify server script exists
+        if not server_path.exists():
+            raise FileNotFoundError(f"Server script not found: {server_path}")
+        
+        # Environment variables for the server
+        env = os.environ.copy()
+        env['FLASK_ENV'] = 'testing'
+        env['FLASK_DEBUG'] = '0'  # Disable debug mode for tests
+        # Don't set WERKZEUG_RUN_MAIN as it expects WERKZEUG_SERVER_FD to be set too
+        
+        # Platform-specific process creation
+        if platform.system() == "Windows":
+            # Windows-specific handling
+            process = subprocess.Popen(
+                [sys.executable, "-u", str(server_path)],  # -u for unbuffered output
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                bufsize=1,  # Line buffered
+                universal_newlines=True
+            )
+        else:
+            # Unix-like systems
+            process = subprocess.Popen(
+                [sys.executable, "-u", str(server_path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+                preexec_fn=os.setsid,  # Create new process group
+                bufsize=1,
+                universal_newlines=True
+            )
+        
+        # Start threads to capture output without blocking
+        import threading
+        
+        def capture_output(pipe, name):
+            try:
+                for line in pipe:
+                    if line:
+                        self._server_output.append(f"[{name}] {line.strip()}")
+                        if "Running on" in line or "Serving Flask app" in line:
+                            logger.debug(f"Server {name}: {line.strip()}")
+            except Exception as e:
+                logger.error(f"Error capturing {name}: {e}")
+        
+        if process.stdout:
+            stdout_thread = threading.Thread(
+                target=capture_output, 
+                args=(process.stdout, "stdout"),
+                daemon=True
+            )
+            stdout_thread.start()
+        
+        if process.stderr:
+            stderr_thread = threading.Thread(
+                target=capture_output,
+                args=(process.stderr, "stderr"),
+                daemon=True
+            )
+            stderr_thread.start()
+        
+        return process
+
+    async def start(self) -> bool:
+        """Start the test server with health checks.
+        
+        Returns:
+            bool: True if server started successfully, False otherwise
+        """
+        if self._is_started:
+            logger.info(f"Server already started on port {self.port}")
+            return True
+        
+        # Clear previous output
+        self._server_output = []
+        
+        # Try up to 3 times with different ports if needed
+        for attempt in range(3):
+            # Check if port is already in use
+            if self._is_port_in_use(self.port):
+                logger.warning(f"Port {self.port} is already in use, finding a new port...")
+                old_port = self.port
+                self.port = self._find_free_port()
+                self.base_url = f"http://localhost:{self.port}"
+                logger.info(f"Changed from port {old_port} to {self.port}")
+            
+            try:
+                # Set environment variable for the server port
+                os.environ['HTML2MD_SERVER_PORT'] = str(self.port)
+                
+                logger.info(f"Starting server on port {self.port} (attempt {attempt + 1}/3)...")
+                
+                # Create and start the process
+                self.process = self._create_server_process()
+                
+                # Give the process a moment to fail fast if there's an immediate error
+                await asyncio.sleep(0.5)
+                
+                # Check if process already terminated
+                if self.process.poll() is not None:
+                    logger.error(f"Server process terminated immediately with code {self.process.returncode}")
+                    if self._server_output:
+                        logger.error("Server output:")
+                        for line in self._server_output[-10:]:  # Last 10 lines
+                            logger.error(f"  {line}")
+                    self._cleanup_process()
+                    continue
+                
+                # Wait for server to become responsive
+                if await self._wait_for_server():
+                    self._is_started = True
+                    return True
+                else:
+                    # Server failed to start
+                    logger.error(f"Server failed to start on attempt {attempt + 1}")
+                    if self._server_output:
+                        logger.error("Server output:")
+                        for line in self._server_output[-20:]:  # Last 20 lines
+                            logger.error(f"  {line}")
+                    self._cleanup_process()
+                    
+                    # Try a different port on next attempt
+                    if attempt < 2:
+                        self.port = self._find_free_port()
+                        self.base_url = f"http://localhost:{self.port}"
+                        await asyncio.sleep(1)  # Brief pause before retry
+                        
+            except Exception as e:
+                logger.error(f"Failed to start server on attempt {attempt + 1}: {type(e).__name__}: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                self._cleanup_process()
+                
+                if attempt < 2:
+                    self.port = self._find_free_port()
+                    self.base_url = f"http://localhost:{self.port}"
+                    await asyncio.sleep(1)
+        
+        return False
+
+    def _cleanup_process(self):
+        """Clean up the server process."""
+        if not self.process:
+            return
+        
+        try:
+            # Get process info before termination
+            pid = self.process.pid
+            
+            # Try graceful termination first
+            if platform.system() == "Windows":
+                # Windows doesn't have SIGTERM, use terminate()
+                self.process.terminate()
+            else:
+                # Unix-like systems
+                try:
+                    os.killpg(os.getpgid(pid), signal.SIGTERM)
+                except (ProcessLookupError, OSError):
+                    self.process.terminate()
+            
+            # Wait for process to terminate gracefully
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                # Force kill if graceful termination failed
+                if platform.system() == "Windows":
+                    self.process.kill()
+                else:
+                    try:
+                        os.killpg(os.getpgid(pid), signal.SIGKILL)
+                    except (ProcessLookupError, OSError):
+                        self.process.kill()
+                
+                # Final wait
+                try:
+                    self.process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    pass  # Process might be zombie, but we've done our best
+            
+            # Clean up any child processes using psutil if available
+            if HAS_PSUTIL:
+                try:
+                    parent = psutil.Process(pid)
+                    children = parent.children(recursive=True)
+                    for child in children:
+                        try:
+                            child.terminate()
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+                    
+                    # Wait for children to terminate
+                    psutil.wait_procs(children, timeout=3)
+                    
+                    # Kill any remaining children
+                    for child in children:
+                        try:
+                            if child.is_running():
+                                child.kill()
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+                            
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    # Process already gone
+                    pass
+        
+        except Exception as e:
+            print(f"Error during process cleanup: {e}")
+        
+        finally:
+            self.process = None
+            self._is_started = False
 
     def stop(self):
         """Stop the test server."""
-        if self.process:
-            self.process.terminate()
-            self.process.wait()
+        self._cleanup_process()
+        
+        # Clean up environment variable
+        if 'HTML2MD_SERVER_PORT' in os.environ:
+            del os.environ['HTML2MD_SERVER_PORT']
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        if await self.start():
+            return self
+        else:
+            raise RuntimeError(f"Failed to start test server on port {self.port}")
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        self.stop()
 
     def __enter__(self):
-        self.start()
-        return self
+        """Sync context manager entry - runs async start in event loop."""
+        # For sync usage, we need to handle the async start
+        loop = None
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        if loop.is_running():
+            # If we're already in an async context, we can't use sync context manager
+            raise RuntimeError("Use async context manager (__aenter__) within async functions")
+        
+        if loop.run_until_complete(self.start()):
+            return self
+        else:
+            raise RuntimeError(f"Failed to start test server on port {self.port}")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Sync context manager exit."""
         self.stop()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def test_server():
-    """Fixture to manage test server lifecycle."""
-    with TestServer() as server:
+    """Fixture to manage test server lifecycle.
+    
+    Uses function scope to avoid port conflicts between tests.
+    Each test gets its own server instance with a unique port.
+    """
+    server = TestServer()
+    
+    # Try to start the server with retries
+    import asyncio
+    
+    # Handle existing event loop on different platforms
+    try:
+        loop = asyncio.get_running_loop()
+        # We're already in an async context
+        raise RuntimeError("Cannot use sync test_server fixture in async context. Use async_test_server instead.")
+    except RuntimeError:
+        # No running loop, create a new one
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    try:
+        # Run the async server startup
+        success = loop.run_until_complete(server.start())
+        if not success:
+            # Try to provide more diagnostic info
+            error_msg = f"Failed to start test server on port {server.port}"
+            if server._server_output:
+                error_msg += "\nServer output:\n"
+                error_msg += "\n".join(server._server_output[-20:])
+            raise RuntimeError(error_msg)
+        
         yield server
+    finally:
+        # Clean up
+        try:
+            server.stop()
+        except Exception as e:
+            logger.error(f"Error stopping server: {e}")
+        finally:
+            # Ensure loop is closed
+            try:
+                loop.close()
+            except Exception as e:
+                logger.error(f"Error closing event loop: {e}")
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_test_server():
+    """Async fixture to manage test server lifecycle.
+    
+    Uses function scope to avoid port conflicts between tests.
+    Each test gets its own server instance with a unique port.
+    """
+    server = None
+    try:
+        server = TestServer()
+        if not await server.start():
+            error_msg = f"Failed to start test server on port {server.port}"
+            if server._server_output:
+                error_msg += "\nServer output:\n"
+                error_msg += "\n".join(server._server_output[-20:])
+            raise RuntimeError(error_msg)
+        yield server
+    finally:
+        if server:
+            server.stop()
 
 
 @pytest.fixture
@@ -90,11 +502,11 @@ class TestHTML2MDConversion:
     """Test HTML to Markdown conversion with various scenarios."""
 
     @pytest.mark.asyncio
-    async def test_basic_conversion(self, test_server, temp_output_dir):
+    async def test_basic_conversion(self, async_test_server, temp_output_dir):
         """Test basic HTML to Markdown conversion."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=f"{test_server.base_url}/page",
+                source_dir=f"{async_test_server.base_url}/page",
                 destination_dir=temp_output_dir,
             )
         )
@@ -102,7 +514,7 @@ class TestHTML2MDConversion:
         # Convert a simple page
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/m1f-documentation"
+                f"{async_test_server.base_url}/page/m1f-documentation"
             ) as resp:
                 html_content = await resp.text()
 
@@ -121,11 +533,11 @@ class TestHTML2MDConversion:
         assert len(markdown) > 100  # At least some content was converted
 
     @pytest.mark.asyncio
-    async def test_content_selection(self, test_server, temp_output_dir):
+    async def test_content_selection(self, async_test_server, temp_output_dir):
         """Test CSS selector-based content extraction."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=f"{test_server.base_url}/page",
+                source_dir=f"{async_test_server.base_url}/page",
                 destination_dir=temp_output_dir,
                 outermost_selector="article",
                 ignore_selectors=["nav", ".sidebar", "footer"],
@@ -134,7 +546,7 @@ class TestHTML2MDConversion:
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/html2md-documentation"
+                f"{async_test_server.base_url}/page/html2md-documentation"
             ) as resp:
                 html_content = await resp.text()
 
@@ -150,11 +562,11 @@ class TestHTML2MDConversion:
         assert "## Key Features" in markdown
 
     @pytest.mark.asyncio
-    async def test_complex_layouts(self, test_server, temp_output_dir):
+    async def test_complex_layouts(self, async_test_server, temp_output_dir):
         """Test conversion of complex CSS layouts."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=f"{test_server.base_url}/page",
+                source_dir=f"{async_test_server.base_url}/page",
                 destination_dir=temp_output_dir,
                 outermost_selector="article",
             )
@@ -162,7 +574,7 @@ class TestHTML2MDConversion:
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/complex-layout"
+                f"{async_test_server.base_url}/page/complex-layout"
             ) as resp:
                 html_content = await resp.text()
 
@@ -178,11 +590,11 @@ class TestHTML2MDConversion:
         assert "function deeplyNested()" in markdown
 
     @pytest.mark.asyncio
-    async def test_code_examples(self, test_server, temp_output_dir):
+    async def test_code_examples(self, async_test_server, temp_output_dir):
         """Test code block conversion with various languages."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=f"{test_server.base_url}/page",
+                source_dir=f"{async_test_server.base_url}/page",
                 destination_dir=temp_output_dir,
                 convert_code_blocks=True,
             )
@@ -190,7 +602,7 @@ class TestHTML2MDConversion:
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/code-examples"
+                f"{async_test_server.base_url}/page/code-examples"
             ) as resp:
                 html_content = await resp.text()
 
@@ -344,11 +756,11 @@ class TestHTML2MDConversion:
         assert "α" in markdown
 
     @pytest.mark.asyncio
-    async def test_parallel_conversion(self, test_server, temp_output_dir):
+    async def test_parallel_conversion(self, async_test_server, temp_output_dir):
         """Test parallel processing of multiple files."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=test_server.base_url,
+                source_dir=async_test_server.base_url,
                 destination_dir=temp_output_dir,
                 parallel=True,
                 max_workers=4,
@@ -357,12 +769,12 @@ class TestHTML2MDConversion:
 
         # Get list of test pages
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{test_server.base_url}/api/test-pages") as resp:
+            async with session.get(f"{async_test_server.base_url}/api/test-pages") as resp:
                 pages = await resp.json()
 
         # Convert all pages in parallel
         results = await converter.convert_directory_from_urls(
-            [f"{test_server.base_url}/page/{page}" for page in pages.keys()]
+            [f"{async_test_server.base_url}/page/{page}" for page in pages.keys()]
         )
 
         # Verify all conversions completed
