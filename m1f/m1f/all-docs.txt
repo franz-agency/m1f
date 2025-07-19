@@ -20,7 +20,7 @@ The solution? Three commands:
 ```bash
 git clone https://github.com/tailwindlabs/tailwindcss.com
 cd tailwindcss.com && m1f-init
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are
@@ -1024,7 +1024,7 @@ m1f -s . -i m1f/selected_dirs.txt -o m1f/specific_areas.txt
 For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 #### Example AI Prompts:
@@ -1568,7 +1568,7 @@ and this project adheres to
   - **Choice-Based Setup**: Users can choose between quick and advanced
     initialization modes
     - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
-    - Command-line parameters: `--quick-setup` and `--advanced-setup` for
+    - Command-line parameters: `--quick-setup` and `--setup` for
       scripting
     - Quick setup: Creates bundles in 30 seconds without Claude
     - Advanced setup: Claude analyzes project and creates topic-specific bundles
@@ -1604,13 +1604,13 @@ and this project adheres to
   - Generates auxiliary files (filelist, dirlist) for all bundles
   - Creates basic .m1f.config.yml configuration
   - Shows platform-specific next steps
-  - On Linux/macOS: Suggests `m1f-claude --advanced-setup` for topic bundles
+  - On Linux/macOS: Suggests `m1f-claude --setup` for topic bundles
 
 ### Changed
 
 - **m1f-claude Refactoring**: Removed initialization from m1f-claude
   - Removed --init, --quick-setup parameters
-  - Now only handles --advanced-setup for topic-specific bundles
+  - Now only handles --setup for topic-specific bundles
   - Requires m1f-init to be run first (checks for prerequisites)
   - Focuses solely on Claude-assisted advanced configuration
   - Not available on Windows (Linux/macOS only)
@@ -6986,7 +6986,7 @@ my .m1f.config.yml for a React project"
 For topic-specific bundles and Claude-assisted configuration:
 
 ```bash
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 #### Working with File Lists:
@@ -8913,10 +8913,10 @@ For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
 # Interactive mode - will prompt for project description and priorities
-m1f-claude --advanced-setup
+m1f-claude --setup
 
 # Or provide project info via command line
-m1f-claude --advanced-setup \
+m1f-claude --setup \
   --project-description "E-commerce platform with React frontend and Django backend" \
   --project-priorities "performance, security, maintainability"
 ```
@@ -8994,12 +8994,12 @@ For advanced project-specific configuration, use m1f-claude (Linux/macOS only):
 m1f-init
 
 # Then for advanced configuration with Claude's help
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 ### What Makes m1f-claude Special?
 
-When you use `m1f-claude --advanced-setup`, it:
+When you use `m1f-claude --setup`, it:
 
 - Analyzes your project in detail with Claude's assistance
 - Creates topic-specific bundles (components, API, tests, etc.)
@@ -9468,10 +9468,10 @@ The `m1f-claude` tool enhances project setup by creating topic-specific bundles 
 
 ```bash
 # Interactive mode - prompts for project details
-m1f-claude --advanced-setup
+m1f-claude --setup
 
 # With project information provided
-m1f-claude --advanced-setup \
+m1f-claude --setup \
   --project-description "SaaS dashboard with React frontend and Express API" \
   --project-priorities "code modularity, API documentation, test coverage"
 ```
@@ -9493,10 +9493,10 @@ For topic-specific bundles and advanced configuration:
 m1f-init
 
 # Then run advanced setup
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
-#### What --advanced-setup Does:
+#### What --setup Does:
 
 - Claude analyzes your project structure in detail
 - Creates topic-specific bundles (models, views, tests, etc.)

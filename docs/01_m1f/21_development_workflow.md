@@ -90,7 +90,7 @@ my .m1f.config.yml for a React project"
 For topic-specific bundles and Claude-assisted configuration:
 
 ```bash
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 #### Working with File Lists:
