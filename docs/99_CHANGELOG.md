@@ -12,6 +12,10 @@ and this project adheres to
 
 - **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
 - **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
+- **Project Organization**: Cleaned up project root directory
+  - Moved development test scripts to `dev/` directory
+  - Moved `perfect_bundle_prompt.md` to `tools/m1f/prompts/`
+  - Moved `wp-cli.example.yml` to `examples/` directory
 
 ### Fixed
 
