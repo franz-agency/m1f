@@ -3650,32 +3650,32 @@ This guide provides comprehensive examples of `.m1f.config.yml` files for
 different project types. Each example includes detailed comments explaining the
 configuration choices.
 
-> **‚ö†Ô∏è IMPORTANT**: m1f automatically excludes many common directories
+> **⚠️ IMPORTANT**: m1f automatically excludes many common directories
 > (node_modules, .git, **pycache**, etc.). See the
 > [Default Excludes Guide](./26_default_excludes_guide.md) for the complete
 > list. **Only add project-specific excludes to keep your configs minimal!**
 
-## üö® IMPORTANT: Use Standard Separator for AI Bundles!
+## 🚨 IMPORTANT: Use Standard Separator for AI Bundles!
 
 **The primary purpose of m1f bundles is to provide context to AI assistants like
 Claude, NOT for human reading in Markdown!**
 
-- ‚úÖ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
+- ✅ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
   default)
-- ‚ùå **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
+- ❌ **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
   blocks)
-- üéØ **Why**: Standard format is clean and optimal for AI consumption
+- 🎯 **Why**: Standard format is clean and optimal for AI consumption
 
 ```yaml
 # CORRECT - For AI consumption:
 bundles:
   - name: my-bundle
-    separator_style: Standard  # ‚Üê This is optimal (or just omit it)
+    separator_style: Standard  # ← This is optimal (or just omit it)
 
 # AVOID - Adds unnecessary markdown formatting:
 bundles:
   - name: my-bundle
-    separator_style: Markdown  # ‚Üê Don't use for AI bundles!
+    separator_style: Markdown  # ← Don't use for AI bundles!
 ```
 
 **Note**: `MachineReadable` is only needed when you plan to use `s1f` to split
@@ -3683,12 +3683,12 @@ the bundle back into individual files.
 
 ## Minimal vs Verbose Configurations
 
-### ‚ùå BAD Example - Overly Verbose (Don't Do This!)
+### ❌ BAD Example - Overly Verbose (Don't Do This!)
 
 ```yaml
 global:
   global_excludes:
-    # ‚ùå ALL of these are already excluded by default!
+    # ❌ ALL of these are already excluded by default!
     - "**/node_modules/**" # Auto-excluded
     - "**/vendor/**" # Auto-excluded
     - "**/__pycache__/**" # Auto-excluded
@@ -3699,13 +3699,13 @@ global:
     - "**/.vscode/**" # Auto-excluded
     - "**/.idea/**" # Auto-excluded
 
-    # ‚úÖ Only these are needed (project-specific)
+    # ✅ Only these are needed (project-specific)
     - "**/logs/**"
     - "**/tmp/**"
     - "/m1f/**"
 ```
 
-### ‚úÖ GOOD Example - Minimal Configuration
+### ✅ GOOD Example - Minimal Configuration
 
 ```yaml
 global:
@@ -3841,7 +3841,7 @@ Configuration for a modern React application with TypeScript and testing.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - Only project-specific excludes!
+    # ⚠️ MINIMAL CONFIG - Only project-specific excludes!
     # DON'T add node_modules, dist, build - they're auto-excluded!
 
     # Next.js specific (not in defaults)
@@ -3988,7 +3988,7 @@ Configuration for a Django web application with REST API.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
+    # ⚠️ MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
 
     # Python bytecode (not in defaults)
     - "**/*.pyc"
@@ -4138,7 +4138,7 @@ Configuration for a custom WordPress theme with modern build tools.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
+    # ⚠️ MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
 
     # WordPress specific (not in defaults)
     - "wp-admin/**" # Core files
@@ -5096,12 +5096,12 @@ you plan to use the bundles with AI assistants.
 This guide explains the files and directories that m1f excludes by default,
 helping you write minimal and efficient `.m1f.config.yml` configurations.
 
-## üö® CRITICAL: Correct Bundle Format
+## 🚨 CRITICAL: Correct Bundle Format
 
 **ALWAYS use the `sources:` array format, NOT `source_directory:`!**
 
 ```yaml
-# ‚úÖ CORRECT FORMAT:
+# ✅ CORRECT FORMAT:
 bundles:
   - name: my-bundle
     sources:
@@ -5109,7 +5109,7 @@ bundles:
     output_file: "m1f/my-bundle.txt"
     separator_style: Standard  # Or omit - Standard is default
 
-# ‚ùå WRONG FORMAT (will cause errors):
+# ❌ WRONG FORMAT (will cause errors):
 bundles:
   my-bundle:
     source_directory: "./src"  # This format causes "ERROR: At least one of -s/--source-directory..."
@@ -5168,7 +5168,7 @@ These specific files are also excluded automatically:
 
 ## Writing Minimal Configurations
 
-### ‚ùå BAD - Overly Verbose Configuration
+### ❌ BAD - Overly Verbose Configuration
 
 ```yaml
 # DON'T DO THIS - repeating default excludes unnecessarily!
@@ -5186,7 +5186,7 @@ global:
     - "**/logs/**" # Project-specific - OK
 ```
 
-### ‚úÖ GOOD - Minimal Configuration
+### ✅ GOOD - Minimal Configuration
 
 ```yaml
 # Only add project-specific exclusions!
@@ -5284,7 +5284,7 @@ If you need to include normally excluded directories:
 m1f -s . -o complete.txt --no-default-excludes
 ```
 
-‚ö†Ô∏è **WARNING**: This can create HUGE bundles and include sensitive data!
+⚠️ **WARNING**: This can create HUGE bundles and include sensitive data!
 
 ## Best Practices
 

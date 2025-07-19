@@ -7,13 +7,30 @@
 HTML to Markdown converter - wrapper script.
 """
 
+import sys
+import os
+from pathlib import Path
+
 if __name__ == "__main__":
-    # Try absolute imports first (for module execution), fall back to relative
+    # Add the parent directory to sys.path for proper imports
+    script_dir = Path(__file__).parent
+    parent_dir = script_dir.parent
+    
+    # Try different import strategies based on execution context
     try:
+        # First try as if we're in the m1f package
         from tools.html2md_tool.cli import main
     except ImportError:
-        # Fallback for direct script execution
-        from html2md_tool.cli import main
+        try:
+            # Try adding parent to path and importing
+            if str(parent_dir) not in sys.path:
+                sys.path.insert(0, str(parent_dir))
+            from tools.html2md_tool.cli import main
+        except ImportError:
+            # Fallback for direct script execution
+            if str(script_dir) not in sys.path:
+                sys.path.insert(0, str(script_dir))
+            from html2md_tool.cli import main
 
     main()
 
@@ -1941,15 +1958,15 @@ def handle_convert(args: argparse.Namespace) -> None:
     if args.source.is_file():
         console.print(f"Converting file: {args.source}")
         output = converter.convert_file(args.source)
-        console.print(f"‚úÖ Converted to: {output}", style="green")
+        console.print(f"✅ Converted to: {output}", style="green")
 
     elif args.source.is_dir():
         console.print(f"Converting directory: {args.source}")
         outputs = converter.convert_directory()
-        console.print(f"‚úÖ Converted {len(outputs)} files", style="green")
+        console.print(f"✅ Converted {len(outputs)} files", style="green")
 
     else:
-        console.print(f"‚ùå Source not found: {args.source}", style="red")
+        console.print(f"❌ Source not found: {args.source}", style="red")
         sys.exit(1)
 
 
@@ -1963,7 +1980,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     html_files = []
     for path in args.paths:
         if not path.exists():
-            console.print(f"‚ùå Path not found: {path}", style="red")
+            console.print(f"❌ Path not found: {path}", style="red")
             continue
 
         if path.is_file():
@@ -1971,7 +1988,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
             if path.suffix.lower() in [".html", ".htm"]:
                 html_files.append(path)
             else:
-                console.print(f"‚ö†Ô∏è  Skipping non-HTML file: {path}", style="yellow")
+                console.print(f"⚠️  Skipping non-HTML file: {path}", style="yellow")
         elif path.is_dir():
             # Directory - find all HTML files recursively
             found_files = list(path.rglob("*.html")) + list(path.rglob("*.htm"))
@@ -1981,10 +1998,10 @@ def handle_analyze(args: argparse.Namespace) -> None:
                     f"Found {len(found_files)} HTML files in {path}", style="blue"
                 )
             else:
-                console.print(f"‚ö†Ô∏è  No HTML files found in {path}", style="yellow")
+                console.print(f"⚠️  No HTML files found in {path}", style="yellow")
 
     if not html_files:
-        console.print("‚ùå No HTML files to analyze", style="red")
+        console.print("❌ No HTML files to analyze", style="red")
         sys.exit(1)
 
     # If --claude flag is set, use Claude AI for analysis
@@ -2013,9 +2030,9 @@ def handle_analyze(args: argparse.Namespace) -> None:
                 relative_path = file_path.relative_to(Path.cwd())
             except ValueError:
                 relative_path = file_path
-            console.print(f"‚úÖ Parsed: {relative_path}", style="green")
+            console.print(f"✅ Parsed: {relative_path}", style="green")
         except Exception as e:
-            console.print(f"‚ùå Error parsing {file_path}: {e}", style="red")
+            console.print(f"❌ Error parsing {file_path}: {e}", style="red")
 
     if not parsed_files:
         console.print("No files could be parsed", style="red")
@@ -2153,7 +2170,7 @@ def _handle_claude_analysis(
 
     # Find the common parent directory of all HTML files
     if not html_files:
-        console.print("‚ùå No HTML files to analyze", style="red")
+        console.print("❌ No HTML files to analyze", style="red")
         return
 
     common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
@@ -2162,7 +2179,7 @@ def _handle_claude_analysis(
 
     # Check if we have enough files
     if len(html_files) == 0:
-        console.print("‚ùå No HTML files found in the specified directory", style="red")
+        console.print("❌ No HTML files found in the specified directory", style="red")
         return
 
     # We'll work from the current directory and use --add-dir for Claude
@@ -2186,7 +2203,7 @@ def _handle_claude_analysis(
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
     # Create a filelist with all HTML files using m1f
-    console.print("\nüîß Creating HTML file list using m1f...")
+    console.print("\n🔧 Creating HTML file list using m1f...")
     console.print(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
@@ -2209,13 +2226,13 @@ def _handle_claude_analysis(
         # The filelist will be created with this name
         html_filelist = m1f_dir / "all_html_files_filelist.txt"
         if not html_filelist.exists():
-            console.print("‚ùå m1f filelist not created", style="red")
+            console.print("❌ m1f filelist not created", style="red")
             return
 
-        console.print(f"‚úÖ Created HTML file list: {html_filelist}")
+        console.print(f"✅ Created HTML file list: {html_filelist}")
 
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
+        console.print(f"❌ Failed to create HTML file list: {e.stderr}", style="red")
         return
 
     # Get relative paths from the common parent (still needed for filtering)
@@ -2232,7 +2249,7 @@ def _handle_claude_analysis(
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
     if not select_prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {select_prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
         return
 
     # Load the prompt from external file
@@ -2347,10 +2364,10 @@ def _handle_claude_analysis(
             console.print(f"  - {f}", style="blue")
 
     except subprocess.TimeoutExpired:
-        console.print("‚è∞ Timeout selecting files (3 minutes)", style="yellow")
+        console.print("⏰ Timeout selecting files (3 minutes)", style="yellow")
         return
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Claude command failed: {e}", style="red")
+        console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
         return
     except FileNotFoundError:
@@ -2421,7 +2438,7 @@ def _handle_claude_analysis(
 
         if not claude_found:
             console.print(
-                "‚ùå claude command not found. Please install Claude CLI.", style="red"
+                "❌ claude command not found. Please install Claude CLI.", style="red"
             )
             console.print(
                 "If claude is installed as an alias, try adding it to your PATH or creating a symlink.",
@@ -2440,12 +2457,12 @@ def _handle_claude_analysis(
         full_path = common_parent / file_path
         if full_path.exists():
             verified_files.append(file_path)
-            console.print(f"‚úÖ Found: {file_path}", style="green")
+            console.print(f"✅ Found: {file_path}", style="green")
         else:
-            console.print(f"‚ö†Ô∏è  Not found: {file_path}", style="yellow")
+            console.print(f"⚠️  Not found: {file_path}", style="yellow")
 
     if not verified_files:
-        console.print("‚ùå No HTML files could be verified", style="red")
+        console.print("❌ No HTML files could be verified", style="red")
         return
 
     # Write the verified files to a reference list
@@ -2453,7 +2470,7 @@ def _handle_claude_analysis(
     with open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
-    console.print(f"‚úÖ Wrote selected files list to: {selected_files_path}")
+    console.print(f"✅ Wrote selected files list to: {selected_files_path}")
 
     # Step 3: Analyze each file individually with Claude
     console.print("\nAnalyzing each file individually with Claude...")
@@ -2463,7 +2480,7 @@ def _handle_claude_analysis(
 
     if not individual_prompt_path.exists():
         console.print(
-            f"‚ùå Prompt file not found: {individual_prompt_path}", style="red"
+            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
         )
         return
 
@@ -2471,9 +2488,9 @@ def _handle_claude_analysis(
 
     # Analyze each of the selected files
     for i, file_path in enumerate(verified_files, 1):
-        console.print(f"\nüìã Analyzing file {i}/{len(verified_files)}: {file_path}")
+        console.print(f"\n📋 Analyzing file {i}/{len(verified_files)}: {file_path}")
         console.print(
-            f"‚è±Ô∏è  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
+            f"⏱️  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
         )
 
         # Customize prompt for this specific file
@@ -2525,39 +2542,39 @@ def _handle_claude_analysis(
             )
 
             # Debug: Show process details
-            console.print(f"üîç Process return code: {result.returncode}", style="dim")
+            console.print(f"🔍 Process return code: {result.returncode}", style="dim")
             if result.stderr:
-                console.print(f"üîç stderr: {result.stderr[:200]}...", style="dim")
+                console.print(f"🔍 stderr: {result.stderr[:200]}...", style="dim")
 
             if result.returncode != 0:
                 console.print(
-                    f"‚ùå Analysis failed for {file_path}: {result.stderr}", style="red"
+                    f"❌ Analysis failed for {file_path}: {result.stderr}", style="red"
                 )
                 continue
 
             # Show Claude's response for transparency
             if result.stdout.strip():
-                console.print(f"üìÑ Claude: {result.stdout.strip()}", style="dim")
+                console.print(f"📄 Claude: {result.stdout.strip()}", style="dim")
 
-            console.print(f"‚úÖ Analysis completed for file {i}")
+            console.print(f"✅ Analysis completed for file {i}")
 
         except subprocess.TimeoutExpired:
             console.print(
-                f"‚è∞ Timeout analyzing {file_path} (5 minutes)", style="yellow"
+                f"⏰ Timeout analyzing {file_path} (5 minutes)", style="yellow"
             )
             continue
         except Exception as e:
-            console.print(f"‚ùå Error analyzing {file_path}: {e}", style="red")
+            console.print(f"❌ Error analyzing {file_path}: {e}", style="red")
             continue
 
     # Step 4: Synthesize all analyses into final config
-    console.print("\nüî¨ Synthesizing analyses into final configuration...")
+    console.print("\n🔬 Synthesizing analyses into final configuration...")
 
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
     if not synthesis_prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {synthesis_prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
         return
 
     synthesis_prompt = synthesis_prompt_path.read_text()
@@ -2698,13 +2715,13 @@ def _handle_claude_analysis(
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
                 console.print(
-                    f"\n‚úÖ Configuration saved to: {config_file}", style="green"
+                    f"\n✅ Configuration saved to: {config_file}", style="green"
                 )
 
                 # Show clear usage instructions
                 console.print("\n" + "=" * 60)
                 console.print(
-                    "[bold green]‚ú® Analysis Complete! Here's how to convert your HTML files:[/bold green]"
+                    "[bold green]✨ Analysis Complete! Here's how to convert your HTML files:[/bold green]"
                 )
                 console.print("=" * 60 + "\n")
 
@@ -2736,7 +2753,7 @@ def _handle_claude_analysis(
                 console.print("=" * 60)
             else:
                 console.print(
-                    "\n‚ö†Ô∏è  Could not extract YAML configuration from Claude's response",
+                    "\n⚠️  Could not extract YAML configuration from Claude's response",
                     style="yellow",
                 )
                 console.print(
@@ -2747,17 +2764,17 @@ def _handle_claude_analysis(
                 )
 
         except Exception as e:
-            console.print(f"\n‚ö†Ô∏è  Could not save configuration: {e}", style="yellow")
+            console.print(f"\n⚠️  Could not save configuration: {e}", style="yellow")
             console.print(
                 f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above."
             )
 
     except subprocess.TimeoutExpired:
         console.print(
-            "‚è∞ Timeout synthesizing configuration (5 minutes)", style="yellow"
+            "⏰ Timeout synthesizing configuration (5 minutes)", style="yellow"
         )
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Claude command failed: {e}", style="red")
+        console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
 
     # Ask if temporary analysis files should be deleted
@@ -2777,16 +2794,16 @@ def _handle_claude_analysis(
                     deleted_count += 1
                 except Exception as e:
                     console.print(
-                        f"‚ö†Ô∏è  Could not delete {analysis_file.name}: {e}", style="yellow"
+                        f"⚠️  Could not delete {analysis_file.name}: {e}", style="yellow"
                     )
 
         if deleted_count > 0:
             console.print(
-                f"‚úÖ Deleted {deleted_count} temporary analysis files", style="green"
+                f"✅ Deleted {deleted_count} temporary analysis files", style="green"
             )
     else:
         console.print(
-            "‚ÑπÔ∏è  Temporary analysis files kept in m1f/ directory", style="blue"
+            "ℹ️  Temporary analysis files kept in m1f/ directory", style="blue"
         )
 
 
@@ -2879,7 +2896,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     # Find all HTML files in source directory
     source_path = args.source
     if not source_path.exists():
-        console.print(f"‚ùå Source path not found: {source_path}", style="red")
+        console.print(f"❌ Source path not found: {source_path}", style="red")
         sys.exit(1)
 
     html_files = []
@@ -2887,7 +2904,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
-            console.print(f"‚ùå Source file is not HTML: {source_path}", style="red")
+            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
             sys.exit(1)
     elif source_path.is_dir():
         # Find all HTML files recursively
@@ -2897,14 +2914,14 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
         console.print(f"Found {len(html_files)} HTML files in {source_path}")
 
     if not html_files:
-        console.print("‚ùå No HTML files found to convert", style="red")
+        console.print("❌ No HTML files found to convert", style="red")
         sys.exit(1)
 
     # Prepare output directory
     output_path = args.output
     if output_path.exists() and output_path.is_file():
         console.print(
-            f"‚ùå Output path is a file, expected directory: {output_path}", style="red"
+            f"❌ Output path is a file, expected directory: {output_path}", style="red"
         )
         sys.exit(1)
 
@@ -2915,7 +2932,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
     if not prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
         sys.exit(1)
 
     prompt_template = prompt_path.read_text()
@@ -2993,7 +3010,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             markdown_content = result.stdout.strip()
             output_file.write_text(markdown_content, encoding="utf-8")
 
-            console.print(f"‚úÖ Converted to: {output_file}", style="green")
+            console.print(f"✅ Converted to: {output_file}", style="green")
             converted_count += 1
 
             # Sleep between API calls (except for the last one)
@@ -3002,12 +3019,12 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
                 time.sleep(args.sleep)
 
         except subprocess.CalledProcessError as e:
-            console.print(f"‚ùå Claude conversion failed: {e}", style="red")
+            console.print(f"❌ Claude conversion failed: {e}", style="red")
             if e.stderr:
                 console.print(f"Error: {e.stderr}", style="red")
             failed_count += 1
         except Exception as e:
-            console.print(f"‚ùå Error processing {html_file}: {e}", style="red")
+            console.print(f"❌ Error processing {html_file}: {e}", style="red")
             failed_count += 1
         finally:
             # Clean up temporary file
@@ -3019,9 +3036,9 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
     # Summary
     console.print(f"\n[bold]Conversion Summary:[/bold]")
-    console.print(f"‚úÖ Successfully converted: {converted_count} files", style="green")
+    console.print(f"✅ Successfully converted: {converted_count} files", style="green")
     if failed_count > 0:
-        console.print(f"‚ùå Failed to convert: {failed_count} files", style="red")
+        console.print(f"❌ Failed to convert: {failed_count} files", style="red")
 
     if converted_count == 0:
         sys.exit(1)
@@ -3050,12 +3067,12 @@ def handle_config(args: argparse.Namespace) -> None:
 
         content = json.dumps(config_dict, indent=2)
     else:
-        console.print(f"‚ùå Unsupported format: {args.format}", style="red")
+        console.print(f"❌ Unsupported format: {args.format}", style="red")
         sys.exit(1)
 
     # Write config file
     args.output.write_text(content, encoding="utf-8")
-    console.print(f"‚úÖ Created configuration file: {args.output}", style="green")
+    console.print(f"✅ Created configuration file: {args.output}", style="green")
 
 
 def create_simple_parser() -> argparse.ArgumentParser:
@@ -3144,14 +3161,14 @@ def main() -> None:
         elif args.command == "config":
             handle_config(args)
         else:
-            console.print(f"‚ùå Unknown command: {args.command}", style="red")
+            console.print(f"❌ Unknown command: {args.command}", style="red")
             sys.exit(1)
 
     except KeyboardInterrupt:
-        console.print("\n‚ùå Interrupted by user", style="yellow")
+        console.print("\n❌ Interrupted by user", style="yellow")
         sys.exit(1)
     except Exception as e:
-        console.print(f"‚ùå Error: {e}", style="red")
+        console.print(f"❌ Error: {e}", style="red")
         if args.verbose:
             import traceback
 

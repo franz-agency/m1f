@@ -20,7 +20,7 @@ The solution? Three commands:
 ```bash
 git clone https://github.com/tailwindlabs/tailwindcss.com
 cd tailwindcss.com && m1f-init
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are
@@ -474,227 +474,10 @@ For comprehensive understanding of each tool:
 - `docs/01_m1f/10_m1f_presets.md` - Preset system documentation
 - `docs/01_m1f/20_auto_bundle_guide.md` - Auto-bundling configuration
 
-======= perfect_bundle_prompt.md ======
-# Perfect Bundle Creation Prompt for m1f-claude
-
-## 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
-
-============================================================
-
-The basic bundles (complete.txt and docs.txt) have already been created. Now
-create additional topic-specific bundles following BEST PRACTICES.
-
-## 📚 REQUIRED READING (IN THIS ORDER):
-
-1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax
-2. READ: @m1f/project_analysis_dirlist.txt for directory structure
-3. READ: @m1f/project_analysis_filelist.txt for complete file listing
-
-⚠️ IMPORTANT: Read ALL three files above before proceeding!
-
-## 🏆 BEST PRACTICES FOR PERFECT BUNDLES
-
-### 1. MODULAR ARCHITECTURE PRINCIPLE
-
-- Identify each logical module, tool, or subsystem in the project
-- Create one bundle per module/tool (e.g., auth-module, payment-module,
-  user-module)
-- Each module bundle should be self-contained and meaningful
-
-### 2. USE PRECISE INCLUDES, NOT BROAD EXCLUDES
-
-Instead of excluding everything except what you want, use precise includes:
-
-```yaml
-# ❌ BAD - Too broad, relies on excludes
-sources:
-  - path: "."
-    excludes: ["tests/", "docs/", "scripts/", "node_modules/"]
-
-# ✅ GOOD - Precise includes
-sources:
-  - path: "tools/"
-    include_extensions: [".py"]
-    includes: ["auth/**", "auth.py", "utils.py", "__init__.py"]
-```
-
-### 3. BUNDLE GROUPING STRATEGY
-
-Organize bundles into logical groups:
-
-- `documentation` - All documentation bundles
-- `source` - Source code bundles by module
-- `tests` - Test code bundles
-- `config` - Configuration bundles
-- `complete` - Aggregated bundles
-
-### 4. NUMBERED OUTPUT FILES
-
-Use numbered prefixes for proper sorting:
-
-```yaml
-output: "m1f/project/87_module1_docs.txt"  # Documentation
-output: "m1f/project/94_module1_code.txt"  # Source code
-output: "m1f/project/95_module2_code.txt"  # Source code
-output: "m1f/project/99_complete.txt"      # Complete bundle
-```
-
-### 5. HIERARCHICAL BUNDLES
-
-Create aggregated bundles that combine related bundles:
-
-- `all-docs` - Combines all documentation
-- `all-tests` - Combines all tests
-- `all-frontend` - Combines all frontend code
-- `complete` - The ultimate bundle with everything
-
-### 6. SHARED FILES STRATEGY
-
-When files are used by multiple modules (like utils, constants, types):
-
-- Include them in each relevant module bundle
-- This ensures each bundle is self-contained
-
-## 🔍 PROJECT ANALYSIS STEPS
-
-### STEP 1: Identify Project Architecture
-
-Analyze the directory structure to find:
-
-- Monorepo with packages? → Create bundle per package
-- Multiple apps/services? → Create bundle per app
-- Modular architecture? → Create bundle per module
-- Plugin/Extension system? → Create bundle per plugin
-- Frontend/Backend split? → Create bundles for each
-
-### STEP 2: Find Logical Boundaries
-
-Look for natural boundaries in the code:
-
-- Directory names that indicate modules (auth/, payment/, user/)
-- File naming patterns (auth.service.ts, auth.controller.ts)
-- Configuration files that define modules
-- Import patterns that show dependencies
-
-### STEP 3: Design Bundle Hierarchy
-
-Plan your bundles in this order:
-
-1. Module/tool-specific bundles (most granular)
-2. Category bundles (tests, docs, config)
-3. Aggregated bundles (all-docs, all-frontend)
-4. Complete bundle (everything)
-
-## 📝 BUNDLE CREATION RULES
-
-### NAMING CONVENTIONS
-
-- Use lowercase with hyphens: `user-service`, `auth-module`
-- Be descriptive but concise
-- Group prefix when applicable: `frontend-components`, `backend-api`
-
-### OUTPUT FILE PATTERNS
-
-```
-m1f/{project_name}/
-├── 80-89_*_docs.txt     # Documentation bundles
-├── 90-93_*_config.txt   # Configuration bundles
-├── 94-98_*_code.txt     # Source code bundles
-└── 99_*_complete.txt    # Complete/aggregated bundles
-```
-
-### SOURCES CONFIGURATION
-
-Always use the most specific configuration:
-
-```yaml
-sources:
-  - path: "src/modules/auth"
-    include_extensions: [".ts", ".js"]
-    includes: ["**/*.service.ts", "**/*.controller.ts"]
-  - path: "src/shared"
-    includes: ["auth-utils.ts", "auth-types.ts"]
-```
-
-## 🚨 CRITICAL RULES - MUST FOLLOW
-
-1. **NO DEFAULT EXCLUDES**: Don't exclude node_modules, .git, **pycache**, etc.
-2. **NO BINARY/ASSET BUNDLES**: Skip images, fonts, compiled files
-3. **MAX 20 BUNDLES**: Including existing complete and docs
-4. **USE INCLUDES OVER EXCLUDES**: Be precise about what to include
-5. **SELF-CONTAINED BUNDLES**: Each bundle should be useful standalone
-
-## 🎯 IMPLEMENTATION CHECKLIST
-
-□ Read all three required files completely □ Identify the project's modular
-structure □ Plan bundle hierarchy (modules → categories → aggregated) □ Design
-precise `includes` patterns for each bundle □ Use numbered output files for
-sorting □ Group bundles logically □ Create aggregated bundles where valuable □
-Keep total count under 20 bundles □ Use MultiEdit to add all bundles at once
-
-## 💡 EXAMPLE PATTERNS TO RECOGNIZE
-
-### For a Multi-Service Project:
-
-```yaml
-bundles:
-  # Service-specific bundles
-  auth-service:
-    group: "services"
-    output: "m1f/project/94_auth_service.txt"
-    sources:
-      - path: "services/auth"
-        include_extensions: [".js", ".ts"]
-      - path: "shared"
-        includes: ["auth/**", "types/auth.ts"]
-
-  user-service:
-    group: "services"
-    output: "m1f/project/95_user_service.txt"
-    sources:
-      - path: "services/user"
-        include_extensions: [".js", ".ts"]
-      - path: "shared"
-        includes: ["user/**", "types/user.ts"]
-```
-
-### For a Plugin-Based System:
-
-```yaml
-bundles:
-  plugin-core:
-    group: "core"
-    output: "m1f/project/94_plugin_core.txt"
-    sources:
-      - path: "core"
-        include_extensions: [".py"]
-      - path: "plugins"
-        includes: ["__init__.py", "base.py"]
-
-  plugin-auth:
-    group: "plugins"
-    output: "m1f/project/95_plugin_auth.txt"
-    sources:
-      - path: "plugins/auth"
-      - path: "core"
-        includes: ["plugin_utils.py"]
-```
-
-## ⚡ FINAL STEPS
-
-1. Analyze the project structure deeply
-2. Design bundles that reflect the project's architecture
-3. Use precise includes to create focused bundles
-4. Test your mental model: "Would each bundle be useful alone?"
-5. Create the configuration with MultiEdit
-
-Remember: The goal is bundles that are **modular**, **focused**, and
-**self-contained**!
-
 ======= requirements.txt ======
 # Core dependencies
 aiofiles==24.1.0
-aiohttp==3.12.14
+aiohttp==3.12.13
 anyio==4.9.0
 application_properties==0.9.0
 beautifulsoup4==4.13.4
@@ -1024,7 +807,7 @@ m1f -s . -i m1f/selected_dirs.txt -o m1f/specific_areas.txt
 For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 #### Example AI Prompts:
@@ -1195,6 +978,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [3.6.0] - 2025-07-19
+
+### Changed
+
+- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
+- **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
+- **Project Organization**: Cleaned up project root directory
+  - Moved development test scripts to `dev/` directory
+  - Moved `perfect_bundle_prompt.md` to `tools/m1f/prompts/`
+  - Moved `wp-cli.example.yml` to `examples/` directory
+
+### Fixed
+
+- **Windows Compatibility**: Major improvements for Windows platform support
+  - **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
+    - Bundles created on Windows can now be extracted on Unix systems and vice versa
+    - Added comprehensive cross-platform path tests
+  - **m1f-claude**: Improved Claude executable detection on Windows
+  - **m1f-claude**: Enhanced subprocess handling and timeout behavior for Windows
+  - **m1f**: Fixed npx execution method compatibility on Windows
+  - **m1f-init**: Improved project type detection across platforms
+  - **Dependencies**: Downgraded httpx to 0.27.2 for better Windows compatibility
+  - **Tests**: Added cross-platform test suite with Windows-specific timeout handling
+  - **Installation**: Fixed PowerShell installation scripts and path handling
 
 ## [3.5.0] - 2025-07-18
 
@@ -1584,7 +1392,7 @@ and this project adheres to
   - **Choice-Based Setup**: Users can choose between quick and advanced
     initialization modes
     - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
-    - Command-line parameters: `--quick-setup` and `--advanced-setup` for
+    - Command-line parameters: `--quick-setup` and `--setup` for
       scripting
     - Quick setup: Creates bundles in 30 seconds without Claude
     - Advanced setup: Claude analyzes project and creates topic-specific bundles
@@ -1620,13 +1428,13 @@ and this project adheres to
   - Generates auxiliary files (filelist, dirlist) for all bundles
   - Creates basic .m1f.config.yml configuration
   - Shows platform-specific next steps
-  - On Linux/macOS: Suggests `m1f-claude --advanced-setup` for topic bundles
+  - On Linux/macOS: Suggests `m1f-claude --setup` for topic bundles
 
 ### Changed
 
 - **m1f-claude Refactoring**: Removed initialization from m1f-claude
   - Removed --init, --quick-setup parameters
-  - Now only handles --advanced-setup for topic-specific bundles
+  - Now only handles --setup for topic-specific bundles
   - Requires m1f-init to be run first (checks for prerequisites)
   - Focuses solely on Claude-assisted advanced configuration
   - Not available on Windows (Linux/macOS only)
@@ -2488,6 +2296,91 @@ improvements and new features.
 - Configurable file filtering
 - Multiple output formats
 - Cross-platform compatibility
+
+======= examples/README.md ======
+# Documentation Scraping Examples
+
+This directory contains practical examples demonstrating how to scrape, convert, and bundle documentation websites into AI-friendly context files using the m1f toolkit.
+
+## 🎯 Current Example
+
+### `scrape_claude_code_docs.py` - Claude Code Documentation Scraper
+
+A specialized Python script that demonstrates the complete m1f workflow for creating AI-ready documentation bundles. This example showcases the irony of Claude Code needing to scrape its own documentation to know itself!
+
+**What it does:**
+1. **Scrapes** Claude Code documentation from `docs.anthropic.com`
+2. **Analyzes** HTML structure using Claude AI for intelligent content extraction
+3. **Converts** HTML to clean Markdown using optimized selectors
+4. **Initializes** the bundle with `m1f-init`
+5. **Creates** `claude-code-doc.txt` - a single context file
+6. **Configures** the bundle with `m1f-claude --advanced-setup`
+
+**Key Features:**
+- Cross-platform (Linux & Windows)
+- Uses Claude AI for HTML analysis
+- Automatic directory reorganization
+- Content verification
+- Token estimation
+- Complete workflow automation
+
+**Usage:**
+```bash
+# Run in current directory
+python scrape_claude_code_docs.py
+
+# Specify output directory
+python scrape_claude_code_docs.py /path/to/output
+```
+
+**Output:**
+- `claude-code-doc.txt` - The final bundle ready for use with m1f-claude
+- `claude-code-html/` - Scraped HTML files (can be deleted after bundling)
+- `claude-code-markdown/` - Converted Markdown files (can be deleted after bundling)
+- `html2md_extract_config.yaml` - Claude's analysis configuration
+
+## 🚀 The Workflow Pattern
+
+This example demonstrates a reusable pattern for documentation scraping:
+
+```
+1. Scrape → HTML files
+2. Analyze → Claude AI finds optimal selectors
+3. Convert → Clean Markdown extraction
+4. Initialize → m1f-init prepares bundle structure
+5. Bundle → Single context file creation
+6. Configure → Advanced setup with project metadata
+```
+
+## 📋 Future Examples
+
+More examples following similar principles will be added here, including:
+- Git-based documentation bundling (for open source projects)
+- API documentation scraping
+- Multi-language documentation handling
+- Incremental documentation updates
+- Custom extractor examples
+
+## 🛠️ Requirements
+
+- Python 3.10+
+- m1f toolkit installed (`pip install m1f`)
+- Claude Code (for AI-powered HTML analysis)
+- Internet connection (for scraping)
+
+## 💡 Why This Approach?
+
+The pattern demonstrated in `scrape_claude_code_docs.py` shows how to:
+- Transform any documentation website into AI-friendly context
+- Use AI to intelligently analyze and extract content
+- Create bundles that enhance AI assistance capabilities
+- Automate the entire workflow from scraping to final bundle
+
+This approach is particularly useful when documentation isn't available via Git repositories or when you need the most up-to-date version from live websites.
+
+---
+
+*The irony that Claude Code needs to scrape its own documentation to know itself is not lost on us! 🤖📚*
 
 ======= m1f/project_analysis_dirlist.txt ======
 bin
@@ -7002,7 +6895,7 @@ my .m1f.config.yml for a React project"
 For topic-specific bundles and Claude-assisted configuration:
 
 ```bash
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 #### Working with File Lists:
@@ -7200,32 +7093,32 @@ This guide provides comprehensive examples of `.m1f.config.yml` files for
 different project types. Each example includes detailed comments explaining the
 configuration choices.
 
-> **‚ö†Ô∏è IMPORTANT**: m1f automatically excludes many common directories
+> **⚠️ IMPORTANT**: m1f automatically excludes many common directories
 > (node_modules, .git, **pycache**, etc.). See the
 > [Default Excludes Guide](./26_default_excludes_guide.md) for the complete
 > list. **Only add project-specific excludes to keep your configs minimal!**
 
-## üö® IMPORTANT: Use Standard Separator for AI Bundles!
+## 🚨 IMPORTANT: Use Standard Separator for AI Bundles!
 
 **The primary purpose of m1f bundles is to provide context to AI assistants like
 Claude, NOT for human reading in Markdown!**
 
-- ‚úÖ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
+- ✅ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
   default)
-- ‚ùå **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
+- ❌ **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
   blocks)
-- üéØ **Why**: Standard format is clean and optimal for AI consumption
+- 🎯 **Why**: Standard format is clean and optimal for AI consumption
 
 ```yaml
 # CORRECT - For AI consumption:
 bundles:
   - name: my-bundle
-    separator_style: Standard  # ‚Üê This is optimal (or just omit it)
+    separator_style: Standard  # ← This is optimal (or just omit it)
 
 # AVOID - Adds unnecessary markdown formatting:
 bundles:
   - name: my-bundle
-    separator_style: Markdown  # ‚Üê Don't use for AI bundles!
+    separator_style: Markdown  # ← Don't use for AI bundles!
 ```
 
 **Note**: `MachineReadable` is only needed when you plan to use `s1f` to split
@@ -7233,12 +7126,12 @@ the bundle back into individual files.
 
 ## Minimal vs Verbose Configurations
 
-### ‚ùå BAD Example - Overly Verbose (Don't Do This!)
+### ❌ BAD Example - Overly Verbose (Don't Do This!)
 
 ```yaml
 global:
   global_excludes:
-    # ‚ùå ALL of these are already excluded by default!
+    # ❌ ALL of these are already excluded by default!
     - "**/node_modules/**" # Auto-excluded
     - "**/vendor/**" # Auto-excluded
     - "**/__pycache__/**" # Auto-excluded
@@ -7249,13 +7142,13 @@ global:
     - "**/.vscode/**" # Auto-excluded
     - "**/.idea/**" # Auto-excluded
 
-    # ‚úÖ Only these are needed (project-specific)
+    # ✅ Only these are needed (project-specific)
     - "**/logs/**"
     - "**/tmp/**"
     - "/m1f/**"
 ```
 
-### ‚úÖ GOOD Example - Minimal Configuration
+### ✅ GOOD Example - Minimal Configuration
 
 ```yaml
 global:
@@ -7391,7 +7284,7 @@ Configuration for a modern React application with TypeScript and testing.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - Only project-specific excludes!
+    # ⚠️ MINIMAL CONFIG - Only project-specific excludes!
     # DON'T add node_modules, dist, build - they're auto-excluded!
 
     # Next.js specific (not in defaults)
@@ -7538,7 +7431,7 @@ Configuration for a Django web application with REST API.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
+    # ⚠️ MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
 
     # Python bytecode (not in defaults)
     - "**/*.pyc"
@@ -7688,7 +7581,7 @@ Configuration for a custom WordPress theme with modern build tools.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
+    # ⚠️ MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
 
     # WordPress specific (not in defaults)
     - "wp-admin/**" # Core files
@@ -8646,12 +8539,12 @@ you plan to use the bundles with AI assistants.
 This guide explains the files and directories that m1f excludes by default,
 helping you write minimal and efficient `.m1f.config.yml` configurations.
 
-## üö® CRITICAL: Correct Bundle Format
+## 🚨 CRITICAL: Correct Bundle Format
 
 **ALWAYS use the `sources:` array format, NOT `source_directory:`!**
 
 ```yaml
-# ‚úÖ CORRECT FORMAT:
+# ✅ CORRECT FORMAT:
 bundles:
   - name: my-bundle
     sources:
@@ -8659,7 +8552,7 @@ bundles:
     output_file: "m1f/my-bundle.txt"
     separator_style: Standard  # Or omit - Standard is default
 
-# ‚ùå WRONG FORMAT (will cause errors):
+# ❌ WRONG FORMAT (will cause errors):
 bundles:
   my-bundle:
     source_directory: "./src"  # This format causes "ERROR: At least one of -s/--source-directory..."
@@ -8718,7 +8611,7 @@ These specific files are also excluded automatically:
 
 ## Writing Minimal Configurations
 
-### ‚ùå BAD - Overly Verbose Configuration
+### ❌ BAD - Overly Verbose Configuration
 
 ```yaml
 # DON'T DO THIS - repeating default excludes unnecessarily!
@@ -8736,7 +8629,7 @@ global:
     - "**/logs/**" # Project-specific - OK
 ```
 
-### ‚úÖ GOOD - Minimal Configuration
+### ✅ GOOD - Minimal Configuration
 
 ```yaml
 # Only add project-specific exclusions!
@@ -8834,7 +8727,7 @@ If you need to include normally excluded directories:
 m1f -s . -o complete.txt --no-default-excludes
 ```
 
-‚ö†Ô∏è **WARNING**: This can create HUGE bundles and include sensitive data!
+⚠️ **WARNING**: This can create HUGE bundles and include sensitive data!
 
 ## Best Practices
 
@@ -8929,10 +8822,10 @@ For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
 # Interactive mode - will prompt for project description and priorities
-m1f-claude --advanced-setup
+m1f-claude --setup
 
 # Or provide project info via command line
-m1f-claude --advanced-setup \
+m1f-claude --setup \
   --project-description "E-commerce platform with React frontend and Django backend" \
   --project-priorities "performance, security, maintainability"
 ```
@@ -9010,12 +8903,12 @@ For advanced project-specific configuration, use m1f-claude (Linux/macOS only):
 m1f-init
 
 # Then for advanced configuration with Claude's help
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 ### What Makes m1f-claude Special?
 
-When you use `m1f-claude --advanced-setup`, it:
+When you use `m1f-claude --setup`, it:
 
 - Analyzes your project in detail with Claude's assistance
 - Creates topic-specific bundles (components, API, tests, etc.)
@@ -9484,10 +9377,10 @@ The `m1f-claude` tool enhances project setup by creating topic-specific bundles 
 
 ```bash
 # Interactive mode - prompts for project details
-m1f-claude --advanced-setup
+m1f-claude --setup
 
 # With project information provided
-m1f-claude --advanced-setup \
+m1f-claude --setup \
   --project-description "SaaS dashboard with React frontend and Express API" \
   --project-priorities "code modularity, API documentation, test coverage"
 ```
@@ -9509,10 +9402,10 @@ For topic-specific bundles and advanced configuration:
 m1f-init
 
 # Then run advanced setup
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
-#### What --advanced-setup Does:
+#### What --setup Does:
 
 - Claude analyzes your project structure in detail
 - Creates topic-specific bundles (models, views, tests, etc.)
@@ -14518,6 +14411,223 @@ Output only the YAML configuration - no additional explanation needed.
 IMPORTANT: After outputting the YAML configuration, print
 "SYNTHESIS_COMPLETE_OK" on the last line to confirm completion.
 
+======= tools/m1f/prompts/perfect_bundle_prompt.md ======
+# Perfect Bundle Creation Prompt for m1f-claude
+
+## 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
+
+============================================================
+
+The basic bundles (complete.txt and docs.txt) have already been created. Now
+create additional topic-specific bundles following BEST PRACTICES.
+
+## 📚 REQUIRED READING (IN THIS ORDER):
+
+1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax
+2. READ: @m1f/project_analysis_dirlist.txt for directory structure
+3. READ: @m1f/project_analysis_filelist.txt for complete file listing
+
+⚠️ IMPORTANT: Read ALL three files above before proceeding!
+
+## 🏆 BEST PRACTICES FOR PERFECT BUNDLES
+
+### 1. MODULAR ARCHITECTURE PRINCIPLE
+
+- Identify each logical module, tool, or subsystem in the project
+- Create one bundle per module/tool (e.g., auth-module, payment-module,
+  user-module)
+- Each module bundle should be self-contained and meaningful
+
+### 2. USE PRECISE INCLUDES, NOT BROAD EXCLUDES
+
+Instead of excluding everything except what you want, use precise includes:
+
+```yaml
+# ❌ BAD - Too broad, relies on excludes
+sources:
+  - path: "."
+    excludes: ["tests/", "docs/", "scripts/", "node_modules/"]
+
+# ✅ GOOD - Precise includes
+sources:
+  - path: "tools/"
+    include_extensions: [".py"]
+    includes: ["auth/**", "auth.py", "utils.py", "__init__.py"]
+```
+
+### 3. BUNDLE GROUPING STRATEGY
+
+Organize bundles into logical groups:
+
+- `documentation` - All documentation bundles
+- `source` - Source code bundles by module
+- `tests` - Test code bundles
+- `config` - Configuration bundles
+- `complete` - Aggregated bundles
+
+### 4. NUMBERED OUTPUT FILES
+
+Use numbered prefixes for proper sorting:
+
+```yaml
+output: "m1f/project/87_module1_docs.txt"  # Documentation
+output: "m1f/project/94_module1_code.txt"  # Source code
+output: "m1f/project/95_module2_code.txt"  # Source code
+output: "m1f/project/99_complete.txt"      # Complete bundle
+```
+
+### 5. HIERARCHICAL BUNDLES
+
+Create aggregated bundles that combine related bundles:
+
+- `all-docs` - Combines all documentation
+- `all-tests` - Combines all tests
+- `all-frontend` - Combines all frontend code
+- `complete` - The ultimate bundle with everything
+
+### 6. SHARED FILES STRATEGY
+
+When files are used by multiple modules (like utils, constants, types):
+
+- Include them in each relevant module bundle
+- This ensures each bundle is self-contained
+
+## 🔍 PROJECT ANALYSIS STEPS
+
+### STEP 1: Identify Project Architecture
+
+Analyze the directory structure to find:
+
+- Monorepo with packages? → Create bundle per package
+- Multiple apps/services? → Create bundle per app
+- Modular architecture? → Create bundle per module
+- Plugin/Extension system? → Create bundle per plugin
+- Frontend/Backend split? → Create bundles for each
+
+### STEP 2: Find Logical Boundaries
+
+Look for natural boundaries in the code:
+
+- Directory names that indicate modules (auth/, payment/, user/)
+- File naming patterns (auth.service.ts, auth.controller.ts)
+- Configuration files that define modules
+- Import patterns that show dependencies
+
+### STEP 3: Design Bundle Hierarchy
+
+Plan your bundles in this order:
+
+1. Module/tool-specific bundles (most granular)
+2. Category bundles (tests, docs, config)
+3. Aggregated bundles (all-docs, all-frontend)
+4. Complete bundle (everything)
+
+## 📝 BUNDLE CREATION RULES
+
+### NAMING CONVENTIONS
+
+- Use lowercase with hyphens: `user-service`, `auth-module`
+- Be descriptive but concise
+- Group prefix when applicable: `frontend-components`, `backend-api`
+
+### OUTPUT FILE PATTERNS
+
+```
+m1f/{project_name}/
+├── 80-89_*_docs.txt     # Documentation bundles
+├── 90-93_*_config.txt   # Configuration bundles
+├── 94-98_*_code.txt     # Source code bundles
+└── 99_*_complete.txt    # Complete/aggregated bundles
+```
+
+### SOURCES CONFIGURATION
+
+Always use the most specific configuration:
+
+```yaml
+sources:
+  - path: "src/modules/auth"
+    include_extensions: [".ts", ".js"]
+    includes: ["**/*.service.ts", "**/*.controller.ts"]
+  - path: "src/shared"
+    includes: ["auth-utils.ts", "auth-types.ts"]
+```
+
+## 🚨 CRITICAL RULES - MUST FOLLOW
+
+1. **NO DEFAULT EXCLUDES**: Don't exclude node_modules, .git, **pycache**, etc.
+2. **NO BINARY/ASSET BUNDLES**: Skip images, fonts, compiled files
+3. **MAX 20 BUNDLES**: Including existing complete and docs
+4. **USE INCLUDES OVER EXCLUDES**: Be precise about what to include
+5. **SELF-CONTAINED BUNDLES**: Each bundle should be useful standalone
+
+## 🎯 IMPLEMENTATION CHECKLIST
+
+□ Read all three required files completely □ Identify the project's modular
+structure □ Plan bundle hierarchy (modules → categories → aggregated) □ Design
+precise `includes` patterns for each bundle □ Use numbered output files for
+sorting □ Group bundles logically □ Create aggregated bundles where valuable □
+Keep total count under 20 bundles □ Use MultiEdit to add all bundles at once
+
+## 💡 EXAMPLE PATTERNS TO RECOGNIZE
+
+### For a Multi-Service Project:
+
+```yaml
+bundles:
+  # Service-specific bundles
+  auth-service:
+    group: "services"
+    output: "m1f/project/94_auth_service.txt"
+    sources:
+      - path: "services/auth"
+        include_extensions: [".js", ".ts"]
+      - path: "shared"
+        includes: ["auth/**", "types/auth.ts"]
+
+  user-service:
+    group: "services"
+    output: "m1f/project/95_user_service.txt"
+    sources:
+      - path: "services/user"
+        include_extensions: [".js", ".ts"]
+      - path: "shared"
+        includes: ["user/**", "types/user.ts"]
+```
+
+### For a Plugin-Based System:
+
+```yaml
+bundles:
+  plugin-core:
+    group: "core"
+    output: "m1f/project/94_plugin_core.txt"
+    sources:
+      - path: "core"
+        include_extensions: [".py"]
+      - path: "plugins"
+        includes: ["__init__.py", "base.py"]
+
+  plugin-auth:
+    group: "plugins"
+    output: "m1f/project/95_plugin_auth.txt"
+    sources:
+      - path: "plugins/auth"
+      - path: "core"
+        includes: ["plugin_utils.py"]
+```
+
+## ⚡ FINAL STEPS
+
+1. Analyze the project structure deeply
+2. Design bundles that reflect the project's architecture
+3. Use precise includes to create focused bundles
+4. Test your mental model: "Would each bundle be useful alone?"
+5. Create the configuration with MultiEdit
+
+Remember: The goal is bundles that are **modular**, **focused**, and
+**self-contained**!
+
 ======= tools/m1f/prompts/segmentation_prompt.md ======
 # 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
 
@@ -14692,6 +14802,148 @@ common-errors:
 
 Remember: Each bundle should answer "What would I need to understand this
 module?" - size appropriately based on the use case!
+
+======= tools/m1f/prompts/verification_prompt.md ======
+# 🔍 VERIFY AND IMPROVE M1F CONFIGURATION
+
+Your task is to verify the .m1f.config.yml that was just created and improve it
+if needed.
+
+📋 VERIFICATION CHECKLIST:
+
+1. **Read .m1f.config.yml** - Check the current configuration
+2. **Check Generated Bundles** - Look in m1f/ directory for .txt files
+3. **Verify Bundle Quality**:
+   - Are focused/task bundles ideally under 180KB for Claude Code usage?
+   - Are larger reference bundles under 5MB for Claude AI?
+   - Complete/full bundles can be larger - that's OK!
+   - Do they contain the expected content?
+   - Are there any errors or warnings?
+4. **Test a Bundle** - Read at least one generated bundle (e.g.,
+   @m1f/{project_name}\_complete.txt)
+5. **Check for Common Issues**:
+   - Redundant excludes (node_modules, .git, etc. are auto-excluded)
+   - Missing important files
+   - Bundles that are too large or too small
+   - Incorrect separator_style (should be Standard or omitted)
+   - Wrong sources format (should use 'sources:' array, not 'source_directory:')
+
+🛠️ IMPROVEMENT ACTIONS:
+
+If you find issues:
+
+1. **Fix Configuration Errors** - Update .m1f.config.yml
+2. **Optimize Bundle Organization** - Better grouping or splitting
+3. **Add Missing Bundles** - If important areas aren't covered
+4. **Remove Redundant Bundles** - If there's too much overlap
+5. **Fix Size Issues** - Split large bundles or combine small ones
+
+📝 SPECIFIC CHECKS:
+
+1. Run: `ls -lah m1f/` to see all generated bundles and their sizes
+2. SIZE GUIDELINES:
+   - Task-focused bundles: Ideally < 180KB for Claude Code
+   - Reference bundles: Ideally < 5MB for Claude AI
+   - Complete/full bundles: Can be much larger (40MB+ is fine)
+   - TOO SMALL: Bundles under 10KB likely have configuration errors
+3. Check for m1f-update errors in the output above
+4. Read the complete bundle (e.g., @m1f/{project_name}\_complete.txt) to verify
+   content inclusion
+5. Ensure each bundle serves a clear, distinct purpose
+6. CRITICAL: Check for bundles under 10KB - these often indicate:
+   - Wrong file paths in includes
+   - Non-existent directories
+   - Incorrect glob patterns Action: Remove these bundle sections from the
+     config!
+
+⚠️ SIZE OPTIMIZATION GUIDELINES: For bundles intended for Claude Code that
+exceed 180KB:
+
+1. Consider splitting into smaller, more focused bundles
+2. Use more specific includes patterns
+3. Create sub-bundles for large topics (e.g., api-core-1, api-core-2) Note: This
+   is a guideline - some bundles naturally need to be larger!
+
+📊 PROJECT CONTEXT:
+
+- Type: {project_type}
+- Languages: {languages}
+- Total Files: {total_files}
+
+🎯 EXPECTED OUTCOME:
+
+After verification:
+
+1. The .m1f.config.yml should be optimal for this project
+2. All bundles should generate without errors
+3. Each bundle should be appropriately sized for its purpose:
+   - Task-focused bundles: Ideally < 180KB for Claude Code
+   - Reference bundles: Ideally < 5MB for Claude AI
+   - Complete bundles: Any size that captures the full scope
+4. The configuration should follow all best practices
+
+If everything looks good, just confirm. If improvements are needed, make them!
+
+📈 SIZE OPTIMIZATION STRATEGIES:
+
+For bundles that are too large:
+
+```yaml
+# Instead of this (too large):
+api-documentation:
+  sources:
+    - path: "docs/api"
+
+# Do this (split by topic):
+api-01-authentication:
+  sources:
+    - path: "docs/api"
+      includes: ["auth*.md", "login*.md", "session*.md"]
+
+api-02-data-models:
+  sources:
+    - path: "docs/api"
+      includes: ["models/*.md", "schema*.md"]
+
+api-03-endpoints:
+  sources:
+    - path: "docs/api"
+      includes: ["endpoints/*.md", "routes*.md"]
+```
+
+For bundles that are too small (<10KB):
+
+```yaml
+# If you see this in ls -lah output:
+# 108   m1f/some-bundle.txt
+# 2.1K  m1f/another-bundle.txt
+
+# Check the bundle content:
+cat m1f/some-bundle.txt
+# Output: "# No files processed from /path/to/nowhere"
+
+# ACTION: Remove the bundle from config:
+# DELETE this entire section:
+some-bundle:
+  description: "..."
+  sources:
+    - path: "nonexistent/path"  # <-- This path doesn't exist!
+```
+
+🔍 FINAL VERIFICATION: After making any changes, run `m1f-update` again and
+verify:
+
+1. All bundles generate without errors
+2. No bundles are under 10KB (unless intentionally small)
+3. Task-focused bundles are ideally under 180KB
+4. The configuration follows best practices
+
+⚠️ PATH VERIFICATION CHECKLIST: Before finalizing, double-check:
+
+- All paths in sources exist in the project
+- Paths use relative format (e.g., "src/api" not "/home/user/src/api")
+- Include patterns match actual files (check with `ls` command)
+- No typos in directory names (e.g., "dot" vs ".")
 
 ======= tools/scrape_tool/scrapers/README.md ======
 # HTML2MD Web Scrapers

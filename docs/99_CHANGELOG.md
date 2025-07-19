@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2025-07-19
+
+### Changed
+
+- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
+- **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
+- **Project Organization**: Cleaned up project root directory
+  - Moved development test scripts to `dev/` directory
+  - Moved `perfect_bundle_prompt.md` to `tools/m1f/prompts/`
+  - Moved `wp-cli.example.yml` to `examples/` directory
+
+### Fixed
+
+- **Windows Compatibility**: Major improvements for Windows platform support
+  - **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
+    - Bundles created on Windows can now be extracted on Unix systems and vice versa
+    - Added comprehensive cross-platform path tests
+  - **m1f-claude**: Improved Claude executable detection on Windows
+  - **m1f-claude**: Enhanced subprocess handling and timeout behavior for Windows
+  - **m1f**: Fixed npx execution method compatibility on Windows
+  - **m1f-init**: Improved project type detection across platforms
+  - **Dependencies**: Downgraded httpx to 0.27.2 for better Windows compatibility
+  - **Tests**: Added cross-platform test suite with Windows-specific timeout handling
+  - **Installation**: Fixed PowerShell installation scripts and path handling
+
 ## [3.5.0] - 2025-07-18
 
 ### Added
@@ -394,7 +419,7 @@ and this project adheres to
   - **Choice-Based Setup**: Users can choose between quick and advanced
     initialization modes
     - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
-    - Command-line parameters: `--quick-setup` and `--advanced-setup` for
+    - Command-line parameters: `--quick-setup` and `--setup` for
       scripting
     - Quick setup: Creates bundles in 30 seconds without Claude
     - Advanced setup: Claude analyzes project and creates topic-specific bundles
@@ -430,13 +455,13 @@ and this project adheres to
   - Generates auxiliary files (filelist, dirlist) for all bundles
   - Creates basic .m1f.config.yml configuration
   - Shows platform-specific next steps
-  - On Linux/macOS: Suggests `m1f-claude --advanced-setup` for topic bundles
+  - On Linux/macOS: Suggests `m1f-claude --setup` for topic bundles
 
 ### Changed
 
 - **m1f-claude Refactoring**: Removed initialization from m1f-claude
   - Removed --init, --quick-setup parameters
-  - Now only handles --advanced-setup for topic-specific bundles
+  - Now only handles --setup for topic-specific bundles
   - Requires m1f-init to be run first (checks for prerequisites)
   - Focuses solely on Claude-assisted advanced configuration
   - Not available on Windows (Linux/macOS only)
