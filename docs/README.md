@@ -78,13 +78,8 @@ Work efficiently with Claude and other LLMs.
 git clone https://github.com/Karrtii/m1f.git
 cd m1f
 
-# Set up Python environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-
 # Install tools
-./install.sh  # On Windows: install.bat
+./scripts/install.sh  # On Windows: ./scripts/install.ps1
 ```
 
 ### Basic Usage
