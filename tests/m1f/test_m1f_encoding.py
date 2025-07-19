@@ -85,9 +85,9 @@ class TestM1FEncoding(BaseM1FTest):
         # Check what files are mentioned in the output
         for filename in ["utf8.txt", "latin1.txt", "utf16.txt"]:
             if filename in content:
-                print(f"  ✓ Found {filename} in output")
+                print(f"  [OK] Found {filename} in output")
             else:
-                print(f"  ✗ {filename} NOT found in output")
+                print(f"  [FAIL] {filename} NOT found in output")
 
         assert "UTF-8 content: Hello 世界" in content
         assert "Latin-1 content: café" in content

@@ -147,6 +147,9 @@ class FileProcessor:
                         for line in f
                         if line.strip() and not line.strip().startswith("#")
                     ]
+                # Explicitly close file handle on Windows for immediate cleanup
+                # The context manager should handle this, but ensure it's done
+                f = None
 
                 # Detect if it's gitignore format
                 is_gitignore = exclude_file.name == ".gitignore" or any(
@@ -208,6 +211,8 @@ class FileProcessor:
                             for line in f
                             if line.strip() and not line.strip().startswith("#")
                         ]
+                    # Explicitly ensure file handle is released
+                    f = None
 
                     # Detect if it's gitignore format
                     is_gitignore = any(
@@ -318,37 +323,41 @@ class FileProcessor:
 
         try:
             with open(input_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
+                content_lines = f.readlines()
+            # Explicitly ensure file handle is released before processing
+            f = None
+            
+            for line in content_lines:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
 
-                    # Handle glob patterns
-                    if any(ch in line for ch in ["*", "?", "["]):
-                        pattern_path = Path(line)
-                        if not pattern_path.is_absolute():
-                            pattern_path = base_dir / pattern_path
+                # Handle glob patterns
+                if any(ch in line for ch in ["*", "?", "["]):
+                    pattern_path = Path(line)
+                    if not pattern_path.is_absolute():
+                        pattern_path = base_dir / pattern_path
 
-                        matches = glob.glob(str(pattern_path), recursive=True)
-                        for m in matches:
-                            try:
-                                validated_path = validate_path_traversal(
-                                    Path(m).resolve()
-                                )
-                                paths.append(validated_path)
-                            except ValueError as e:
-                                self.logger.warning(
-                                    f"Skipping invalid glob match '{m}': {e}"
-                                )
-                    else:
-                        path = Path(line)
-                        if not path.is_absolute():
-                            path = base_dir / path
+                    matches = glob.glob(str(pattern_path), recursive=True)
+                    for m in matches:
                         try:
-                            validated_path = validate_path_traversal(path.resolve())
+                            validated_path = validate_path_traversal(
+                                Path(m).resolve()
+                            )
                             paths.append(validated_path)
                         except ValueError as e:
-                            self.logger.warning(f"Skipping invalid path '{line}': {e}")
+                            self.logger.warning(
+                                f"Skipping invalid glob match '{m}': {e}"
+                            )
+                else:
+                    path = Path(line)
+                    if not path.is_absolute():
+                        path = base_dir / path
+                    try:
+                        validated_path = validate_path_traversal(path.resolve())
+                        paths.append(validated_path)
+                    except ValueError as e:
+                        self.logger.warning(f"Skipping invalid path '{line}': {e}")
 
             # Deduplicate paths
             paths = self._deduplicate_paths(paths)
@@ -489,7 +498,8 @@ class FileProcessor:
                     rel_path = dir_path
                 
                 # For directory matching, we need to append a trailing slash
-                rel_path_str = str(rel_path).replace(os.sep, "/")
+                # Always use forward slashes for gitignore pattern matching
+                rel_path_str = str(rel_path).replace("\\", "/")
                 if not rel_path_str.endswith("/"):
                     rel_path_str += "/"
                 
@@ -552,6 +562,7 @@ class FileProcessor:
                 rel_path = get_relative_path(
                     file_path, self._get_base_dir_for_path(file_path)
                 )
+                # Note: get_relative_path already returns forward slashes via as_posix()
                 if self.include_gitignore_spec.match_file(rel_path):
                     include_matched = True
 
@@ -572,6 +583,7 @@ class FileProcessor:
             rel_path = get_relative_path(
                 file_path, self._get_base_dir_for_path(file_path)
             )
+            # Note: get_relative_path already returns forward slashes via as_posix()
             if self.gitignore_spec.match_file(rel_path):
                 return False
 
@@ -802,6 +814,8 @@ class FileProcessor:
                     for line in f
                     if line.strip() and not line.strip().startswith("#")
                 ]
+            # Explicitly ensure file handle is released
+            f = None
 
             # Add to gitignore spec if patterns found
             patterns = [

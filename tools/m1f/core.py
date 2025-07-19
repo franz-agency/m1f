@@ -19,7 +19,9 @@ Core functionality for m1f - the main FileCombiner class.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -190,6 +192,10 @@ class FileCombiner:
             execution_time = format_duration(time.time() - start_time)
             self.logger.error(f"Processing failed after {execution_time}: {e}")
             raise
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _validate_config(self) -> None:
         """Validate the configuration."""
@@ -416,6 +422,8 @@ class FileCombiner:
                 with open(path, "w", encoding="utf-8") as f:
                     for p in sorted_paths:
                         f.write(f"{p}\n")
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_file)
 
@@ -433,6 +441,8 @@ class FileCombiner:
             def write_empty():
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(content)
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_empty)
 
@@ -451,8 +461,12 @@ class FileCombiner:
 
             # Read file content
             def read_file():
+                content = None
                 with open(output_path, "r", encoding="utf-8") as f:
-                    return f.read()
+                    content = f.read()
+                # Explicitly ensure file handle is released
+                f = None
+                return content
 
             content = await asyncio.to_thread(read_file)
 

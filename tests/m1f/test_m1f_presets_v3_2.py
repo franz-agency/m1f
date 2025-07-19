@@ -46,7 +46,7 @@ class TestM1FPresetsV32(BaseM1FTest):
 test_group:
   description: "Test source directory from preset"
   global_settings:
-    source_directory: "{source_dir}"
+    source_directory: "{source_dir.as_posix()}"
     include_extensions: [".txt"]
 """
         preset_file = self.create_test_preset(temp_dir, preset_content)
@@ -84,7 +84,7 @@ test_group:
 test_group:
   description: "Test output file from preset"
   global_settings:
-    output_file: "{output_path}"
+    output_file: "{output_path.as_posix()}"
 """
         preset_file = self.create_test_preset(temp_dir, preset_content)
 
@@ -120,8 +120,8 @@ test_group:
   description: "Test input include files"
   global_settings:
     input_include_files:
-      - "{temp_dir}/intro.md"
-      - "{temp_dir}/license.txt"
+      - "{temp_dir.as_posix()}/intro.md"
+      - "{temp_dir.as_posix()}/license.txt"
 """
         preset_file = self.create_test_preset(temp_dir, preset_content)
         output_file = temp_dir / "output.txt"
@@ -305,7 +305,7 @@ test_group:
 test_group:
   description: "Test CLI override"
   global_settings:
-    source_directory: "{preset_dir}"
+    source_directory: "{preset_dir.as_posix()}"
     separator_style: "Markdown"
     verbose: true
 """
@@ -358,8 +358,8 @@ production:
   
   global_settings:
     # All inputs
-    source_directory: "{src_dir}"
-    input_include_files: "{src_dir}/readme.md"
+    source_directory: "{src_dir.as_posix()}"
+    input_include_files: "{src_dir.as_posix()}/readme.md"
     
     # Output settings
     add_timestamp: false
