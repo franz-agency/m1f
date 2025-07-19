@@ -37,6 +37,11 @@ Features:
     - Compatible with m1f --remove-scraped-metadata option
 """
 
+import os
+import subprocess
+import socket
+import platform
+import logging
 import requests
 import sys
 from pathlib import Path
@@ -46,8 +51,141 @@ from urllib.parse import urljoin
 import time
 import pytest
 
+# Add logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Test server configuration
 TEST_SERVER_URL = "http://localhost:8080"
+
+
+def is_port_in_use(port):
+    """Check if a port is currently in use."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('localhost', port))
+            return False
+        except OSError:
+            return True
+
+
+@pytest.fixture(scope="module", autouse=True)
+def test_server():
+    """Start the test server before running tests."""
+    server_port = 8080
+    server_path = Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
+    
+    # Check if server script exists
+    if not server_path.exists():
+        pytest.fail(f"Server script not found: {server_path}")
+    
+    # Check if port is already in use
+    if is_port_in_use(server_port):
+        logger.warning(f"Port {server_port} is already in use. Assuming server is already running.")
+        # Try to connect to existing server
+        try:
+            response = requests.get(TEST_SERVER_URL, timeout=5)
+            if response.status_code == 200:
+                logger.info("Connected to existing server")
+                yield
+                return
+        except requests.exceptions.RequestException:
+            pytest.fail(f"Port {server_port} is in use but server is not responding")
+    
+    # Start server process
+    logger.info(f"Starting test server on port {server_port}...")
+    
+    # Environment variables for the server
+    env = os.environ.copy()
+    env['FLASK_ENV'] = 'testing'
+    env['FLASK_DEBUG'] = '0'
+    env['HTML2MD_SERVER_PORT'] = str(server_port)
+    
+    # Platform-specific process creation
+    if platform.system() == "Windows":
+        # Windows-specific handling
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            bufsize=1,
+            universal_newlines=True
+        )
+    else:
+        # Unix-like systems
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            preexec_fn=os.setsid,
+            bufsize=1,
+            universal_newlines=True
+        )
+    
+    # Wait for server to start
+    max_wait = 30  # seconds
+    start_time = time.time()
+    server_ready = False
+    
+    while time.time() - start_time < max_wait:
+        # Check if process is still running
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            logger.error(f"Server process terminated with code {process.returncode}")
+            if stdout:
+                logger.error(f"stdout: {stdout}")
+            if stderr:
+                logger.error(f"stderr: {stderr}")
+            pytest.fail("Server process terminated unexpectedly")
+        
+        # Try to connect to server
+        try:
+            response = requests.get(f"{TEST_SERVER_URL}/api/test-pages", timeout=2)
+            if response.status_code == 200:
+                logger.info(f"Server started successfully after {time.time() - start_time:.2f} seconds")
+                server_ready = True
+                break
+        except requests.exceptions.RequestException:
+            # Server not ready yet
+            pass
+        
+        time.sleep(0.5)
+    
+    if not server_ready:
+        # Try to get process output for debugging
+        process.terminate()
+        stdout, stderr = process.communicate(timeout=5)
+        logger.error("Server failed to start within timeout")
+        if stdout:
+            logger.error(f"stdout: {stdout}")
+        if stderr:
+            logger.error(f"stderr: {stderr}")
+        pytest.fail(f"Server failed to start within {max_wait} seconds")
+    
+    # Run tests
+    yield
+    
+    # Cleanup: stop the server
+    logger.info("Stopping test server...")
+    try:
+        if platform.system() == "Windows":
+            # Windows: use terminate
+            process.terminate()
+        else:
+            # Unix: send SIGTERM to process group
+            import signal
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        
+        # Wait for process to terminate
+        process.wait(timeout=5)
+    except Exception as e:
+        logger.error(f"Error stopping server: {e}")
+        # Force kill if needed
+        process.kill()
+        process.wait()
 
 
 def check_server_connectivity():
@@ -71,10 +209,10 @@ def check_server_connectivity():
         return False
 
 
-def test_server_connectivity():
+def test_server_connectivity(test_server):
     """Test if the test server is running and accessible (pytest compatible)."""
-    if not check_server_connectivity():
-        pytest.skip("Test server is not accessible - skipping test")
+    # The test_server fixture already ensures the server is running
+    assert check_server_connectivity(), "Test server should be accessible"
 
 
 def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None):

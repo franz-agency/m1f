@@ -82,8 +82,18 @@ class TestIntegration(unittest.TestCase):
             normalize_path_for_subprocess(self.md_dir),
         ]
 
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
         # Run the command with explicit encoding for Windows
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
+        try:
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check that the command completed successfully
         self.assertEqual(result.returncode, 0)
@@ -120,8 +130,18 @@ class TestIntegration(unittest.TestCase):
             normalize_path_for_subprocess(self.md_dir),
         ]
 
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
         # Run the command with explicit encoding for Windows
-        subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check output
         output_file = self.md_dir / "sample.md"
@@ -160,8 +180,18 @@ class TestIntegration(unittest.TestCase):
             normalize_path_for_subprocess(self.md_dir),
         ]
 
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
         # Run the command with explicit encoding for Windows
-        subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check output
         output_file = self.md_dir / "sample.md"
