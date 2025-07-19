@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
+- **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
+
+### Fixed
+
+- **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
+  - Bundles created on Windows can now be extracted on Unix systems and vice versa
+
+## [3.5.0] - 2025-07-18
+
+### Added
+
+- **m1f-claude**: Add project description and priorities input functionality
+
+### Fixed
+
+- **m1f-init**: Correct project type detection to use file count for all languages
+- **m1f**: Support npx execution method for m1f tool
+- **m1f-init**: Preserve dots in project names for bundle generation
+
+### Changed
+
+- Updated package dependencies
+
 ## [3.4.2] - 2025-07-08
 
 ### Fixed
