@@ -6620,12 +6620,17 @@ def is_documentation_file(file_path: Path) -> bool:
 
 
 def get_relative_path(file_path: Path, base_path: Path) -> str:
-    """Get relative path from base path, handling edge cases."""
+    """Get relative path from base path, handling edge cases.
+    
+    Returns path with forward slashes regardless of platform for consistent
+    bundle format across different operating systems.
+    """
     try:
-        return str(file_path.relative_to(base_path))
+        # Use as_posix() to ensure forward slashes on all platforms
+        return file_path.relative_to(base_path).as_posix()
     except ValueError:
-        # If file is not under base path, return absolute path
-        return str(file_path)
+        # If file is not under base path, return absolute path with forward slashes
+        return file_path.as_posix()
 
 
 def parse_file_size(size_str: str) -> int:
