@@ -505,7 +505,7 @@ limitations under the License.
   },
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
-  "version": "3.4.0",
+  "version": "3.6.0",
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
@@ -2282,7 +2282,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.6.0] - 2025-07-19
 
 ### Changed
 
@@ -2291,8 +2291,17 @@ and this project adheres to
 
 ### Fixed
 
-- **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
-  - Bundles created on Windows can now be extracted on Unix systems and vice versa
+- **Windows Compatibility**: Major improvements for Windows platform support
+  - **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
+    - Bundles created on Windows can now be extracted on Unix systems and vice versa
+    - Added comprehensive cross-platform path tests
+  - **m1f-claude**: Improved Claude executable detection on Windows
+  - **m1f-claude**: Enhanced subprocess handling and timeout behavior for Windows
+  - **m1f**: Fixed npx execution method compatibility on Windows
+  - **m1f-init**: Improved project type detection across platforms
+  - **Dependencies**: Downgraded httpx to 0.27.2 for better Windows compatibility
+  - **Tests**: Added cross-platform test suite with Windows-specific timeout handling
+  - **Installation**: Fixed PowerShell installation scripts and path handling
 
 ## [3.5.0] - 2025-07-18
 
@@ -8988,7 +8997,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.4.2"
+__version__ = "3.6.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
