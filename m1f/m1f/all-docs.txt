@@ -20,7 +20,7 @@ The solution? Three commands:
 ```bash
 git clone https://github.com/tailwindlabs/tailwindcss.com
 cd tailwindcss.com && m1f-init
-m1f-claude --setup
+m1f-claude --advanced-setup
 ```
 
 Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are
@@ -694,7 +694,7 @@ Remember: The goal is bundles that are **modular**, **focused**, and
 ======= requirements.txt ======
 # Core dependencies
 aiofiles==24.1.0
-aiohttp==3.12.13
+aiohttp==3.12.14
 anyio==4.9.0
 application_properties==0.9.0
 beautifulsoup4==4.13.4
@@ -1024,7 +1024,7 @@ m1f -s . -i m1f/selected_dirs.txt -o m1f/specific_areas.txt
 For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
-m1f-claude --setup
+m1f-claude --advanced-setup
 ```
 
 #### Example AI Prompts:
@@ -1195,18 +1195,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Changed
-
-- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
-- **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
-
-### Fixed
-
-- **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
-  - Bundles created on Windows can now be extracted on Unix systems and vice versa
 
 ## [3.5.0] - 2025-07-18
 
@@ -1596,7 +1584,7 @@ and this project adheres to
   - **Choice-Based Setup**: Users can choose between quick and advanced
     initialization modes
     - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
-    - Command-line parameters: `--quick-setup` and `--setup` for
+    - Command-line parameters: `--quick-setup` and `--advanced-setup` for
       scripting
     - Quick setup: Creates bundles in 30 seconds without Claude
     - Advanced setup: Claude analyzes project and creates topic-specific bundles
@@ -1632,13 +1620,13 @@ and this project adheres to
   - Generates auxiliary files (filelist, dirlist) for all bundles
   - Creates basic .m1f.config.yml configuration
   - Shows platform-specific next steps
-  - On Linux/macOS: Suggests `m1f-claude --setup` for topic bundles
+  - On Linux/macOS: Suggests `m1f-claude --advanced-setup` for topic bundles
 
 ### Changed
 
 - **m1f-claude Refactoring**: Removed initialization from m1f-claude
   - Removed --init, --quick-setup parameters
-  - Now only handles --setup for topic-specific bundles
+  - Now only handles --advanced-setup for topic-specific bundles
   - Requires m1f-init to be run first (checks for prerequisites)
   - Focuses solely on Claude-assisted advanced configuration
   - Not available on Windows (Linux/macOS only)
@@ -2500,91 +2488,6 @@ improvements and new features.
 - Configurable file filtering
 - Multiple output formats
 - Cross-platform compatibility
-
-======= examples/README.md ======
-# Documentation Scraping Examples
-
-This directory contains practical examples demonstrating how to scrape, convert, and bundle documentation websites into AI-friendly context files using the m1f toolkit.
-
-## 🎯 Current Example
-
-### `scrape_claude_code_docs.py` - Claude Code Documentation Scraper
-
-A specialized Python script that demonstrates the complete m1f workflow for creating AI-ready documentation bundles. This example showcases the irony of Claude Code needing to scrape its own documentation to know itself!
-
-**What it does:**
-1. **Scrapes** Claude Code documentation from `docs.anthropic.com`
-2. **Analyzes** HTML structure using Claude AI for intelligent content extraction
-3. **Converts** HTML to clean Markdown using optimized selectors
-4. **Initializes** the bundle with `m1f-init`
-5. **Creates** `claude-code-doc.txt` - a single context file
-6. **Configures** the bundle with `m1f-claude --advanced-setup`
-
-**Key Features:**
-- Cross-platform (Linux & Windows)
-- Uses Claude AI for HTML analysis
-- Automatic directory reorganization
-- Content verification
-- Token estimation
-- Complete workflow automation
-
-**Usage:**
-```bash
-# Run in current directory
-python scrape_claude_code_docs.py
-
-# Specify output directory
-python scrape_claude_code_docs.py /path/to/output
-```
-
-**Output:**
-- `claude-code-doc.txt` - The final bundle ready for use with m1f-claude
-- `claude-code-html/` - Scraped HTML files (can be deleted after bundling)
-- `claude-code-markdown/` - Converted Markdown files (can be deleted after bundling)
-- `html2md_extract_config.yaml` - Claude's analysis configuration
-
-## 🚀 The Workflow Pattern
-
-This example demonstrates a reusable pattern for documentation scraping:
-
-```
-1. Scrape → HTML files
-2. Analyze → Claude AI finds optimal selectors
-3. Convert → Clean Markdown extraction
-4. Initialize → m1f-init prepares bundle structure
-5. Bundle → Single context file creation
-6. Configure → Advanced setup with project metadata
-```
-
-## 📋 Future Examples
-
-More examples following similar principles will be added here, including:
-- Git-based documentation bundling (for open source projects)
-- API documentation scraping
-- Multi-language documentation handling
-- Incremental documentation updates
-- Custom extractor examples
-
-## 🛠️ Requirements
-
-- Python 3.10+
-- m1f toolkit installed (`pip install m1f`)
-- Claude Code (for AI-powered HTML analysis)
-- Internet connection (for scraping)
-
-## 💡 Why This Approach?
-
-The pattern demonstrated in `scrape_claude_code_docs.py` shows how to:
-- Transform any documentation website into AI-friendly context
-- Use AI to intelligently analyze and extract content
-- Create bundles that enhance AI assistance capabilities
-- Automate the entire workflow from scraping to final bundle
-
-This approach is particularly useful when documentation isn't available via Git repositories or when you need the most up-to-date version from live websites.
-
----
-
-*The irony that Claude Code needs to scrape its own documentation to know itself is not lost on us! 🤖📚*
 
 ======= m1f/project_analysis_dirlist.txt ======
 bin
@@ -7099,7 +7002,7 @@ my .m1f.config.yml for a React project"
 For topic-specific bundles and Claude-assisted configuration:
 
 ```bash
-m1f-claude --setup
+m1f-claude --advanced-setup
 ```
 
 #### Working with File Lists:
@@ -9026,10 +8929,10 @@ For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
 # Interactive mode - will prompt for project description and priorities
-m1f-claude --setup
+m1f-claude --advanced-setup
 
 # Or provide project info via command line
-m1f-claude --setup \
+m1f-claude --advanced-setup \
   --project-description "E-commerce platform with React frontend and Django backend" \
   --project-priorities "performance, security, maintainability"
 ```
@@ -9107,12 +9010,12 @@ For advanced project-specific configuration, use m1f-claude (Linux/macOS only):
 m1f-init
 
 # Then for advanced configuration with Claude's help
-m1f-claude --setup
+m1f-claude --advanced-setup
 ```
 
 ### What Makes m1f-claude Special?
 
-When you use `m1f-claude --setup`, it:
+When you use `m1f-claude --advanced-setup`, it:
 
 - Analyzes your project in detail with Claude's assistance
 - Creates topic-specific bundles (components, API, tests, etc.)
@@ -9581,10 +9484,10 @@ The `m1f-claude` tool enhances project setup by creating topic-specific bundles 
 
 ```bash
 # Interactive mode - prompts for project details
-m1f-claude --setup
+m1f-claude --advanced-setup
 
 # With project information provided
-m1f-claude --setup \
+m1f-claude --advanced-setup \
   --project-description "SaaS dashboard with React frontend and Express API" \
   --project-priorities "code modularity, API documentation, test coverage"
 ```
@@ -9606,10 +9509,10 @@ For topic-specific bundles and advanced configuration:
 m1f-init
 
 # Then run advanced setup
-m1f-claude --setup
+m1f-claude --advanced-setup
 ```
 
-#### What --setup Does:
+#### What --advanced-setup Does:
 
 - Claude analyzes your project structure in detail
 - Creates topic-specific bundles (models, views, tests, etc.)

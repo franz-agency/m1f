@@ -320,7 +320,7 @@ robots.
 ======= requirements.txt ======
 # Core dependencies
 aiofiles==24.1.0
-aiohttp==3.12.13
+aiohttp==3.12.14
 anyio==4.9.0
 application_properties==0.9.0
 beautifulsoup4==4.13.4
@@ -3114,7 +3114,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.4.2"
+__version__ = "3.5.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
