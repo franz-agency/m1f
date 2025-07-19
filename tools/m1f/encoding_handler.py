@@ -19,6 +19,8 @@ Encoding handler module for character encoding detection and conversion.
 from __future__ import annotations
 
 import asyncio
+import gc
+import sys
 from pathlib import Path
 from typing import Tuple, Optional
 from dataclasses import dataclass
@@ -84,13 +86,18 @@ class EncodingHandler:
 
     async def _detect_encoding(self, file_path: Path) -> str:
         """Detect the encoding of a file."""
+        # Default to utf-8 if chardet is not available
         if not CHARDET_AVAILABLE:
+            self.logger.debug(f"chardet not available, using UTF-8 for {file_path}")
             return "utf-8"
 
         try:
-            # Read file in binary mode
+            # Read file in binary mode with explicit handle cleanup
+            raw_data = None
             with open(file_path, "rb") as f:
                 raw_data = f.read(65536)  # Read up to 64KB
+            # Explicitly ensure file handle is released
+            f = None
 
             if not raw_data:
                 return "utf-8"
@@ -112,37 +119,62 @@ class EncodingHandler:
                 if self._looks_like_utf16(raw_data):
                     return "utf-16-le"
 
+            # Try to decode as UTF-8 first (most common encoding)
+            try:
+                raw_data.decode('utf-8', errors='strict')
+                self.logger.debug(f"Successfully decoded {file_path} as UTF-8")
+                return "utf-8"
+            except UnicodeDecodeError:
+                # UTF-8 decoding failed, use chardet
+                pass
+
             # Use chardet for detection
             result = chardet.detect(raw_data)
 
             # If chardet returns None or empty encoding, default to utf-8
             if not result or not result.get("encoding"):
-                return "utf-8"
-
-            if result["confidence"] < 0.7:
-                self.logger.debug(
-                    f"Low confidence encoding detection for {file_path}: "
-                    f"{result['encoding']} ({result['confidence']:.2f})"
-                )
+                self.logger.debug(f"chardet returned no encoding for {file_path}, using UTF-8")
                 return "utf-8"
 
             encoding = result["encoding"]
+            confidence = result["confidence"]
+
+            self.logger.debug(
+                f"chardet detected {encoding} with confidence {confidence:.2f} for {file_path}"
+            )
+
+            # Low confidence threshold
+            if confidence < 0.7:
+                self.logger.debug(
+                    f"Low confidence encoding detection for {file_path}: "
+                    f"{encoding} ({confidence:.2f}), defaulting to UTF-8"
+                )
+                return "utf-8"
 
             # Map some common encoding names
             encoding_map = {
                 "iso-8859-8": "windows-1255",  # Hebrew
                 "ascii": "utf-8",  # Treat ASCII as UTF-8
-                "windows-1252": "utf-8",  # Prefer UTF-8 over Windows-1252 for better emoji support
             }
 
-            # Check if file extension suggests documentation files that should be UTF-8
-            if (
-                self.config.encoding.prefer_utf8_for_text_files
-                and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
-            ):
-                # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
-                # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
-                if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:
+            # Special handling for Windows-1252 detection
+            if encoding.lower() == "windows-1252":
+                # Check if file extension suggests documentation files that should be UTF-8
+                if (
+                    self.config.encoding.prefer_utf8_for_text_files
+                    and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
+                ):
+                    # For documentation files, prefer UTF-8 over Windows-1252
+                    # unless we have very high confidence
+                    if confidence < 0.95:
+                        self.logger.debug(
+                            f"Preferring UTF-8 over {encoding} for documentation file {file_path}"
+                        )
+                        return "utf-8"
+                
+                # For other files, only use Windows-1252 if we have high confidence
+                # and the file really can't be decoded as UTF-8
+                if confidence < 0.9:
                     return "utf-8"
 
             return encoding_map.get(encoding.lower(), encoding.lower())
@@ -150,6 +182,10 @@ class EncodingHandler:
         except Exception as e:
             self.logger.warning(f"Error detecting encoding for {file_path}: {e}")
             return "utf-8"
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _looks_like_utf16(self, data: bytes) -> bool:
         """Check if data looks like UTF-16 encoded text."""
@@ -171,13 +207,27 @@ class EncodingHandler:
         had_errors = False
 
         try:
-            # Read file with source encoding
-            with open(file_path, "r", encoding=source_encoding) as f:
-                content = f.read()
+            # Read file with source encoding and explicit handle cleanup
+            content = None
+            try:
+                with open(file_path, "r", encoding=source_encoding) as f:
+                    content = f.read()
+            except UnicodeDecodeError as e:
+                # If initial read fails, try with error handling
+                self.logger.debug(
+                    f"Initial read failed for {file_path} with {source_encoding}, "
+                    f"retrying with error replacement"
+                )
+                with open(file_path, "r", encoding=source_encoding, errors="replace") as f:
+                    content = f.read()
+                had_errors = True
+            
+            # Explicitly ensure file handle is released
+            f = None
 
             # If no conversion needed, return as is
             if source_encoding.lower() == target_encoding.lower():
-                return content, False
+                return content, had_errors
 
             # Try to encode to target encoding
             try:
@@ -190,7 +240,7 @@ class EncodingHandler:
                         f"Converted {file_path} from {source_encoding} to {target_encoding}"
                     )
 
-                return decoded, False
+                return decoded, had_errors
 
             except UnicodeEncodeError as e:
                 if self.config.encoding.abort_on_error:
@@ -211,42 +261,54 @@ class EncodingHandler:
                 return decoded, True
 
         except UnicodeDecodeError as e:
+            # This shouldn't happen since we handle it above, but just in case
             if self.config.encoding.abort_on_error:
                 raise EncodingError(
                     f"Cannot decode {file_path} with encoding {source_encoding}: {e}"
                 )
 
-            # Try reading with error replacement
+            # Last resort: read as binary and decode with replacement
             try:
-                with open(
-                    file_path, "r", encoding=source_encoding, errors="replace"
-                ) as f:
-                    content = f.read()
+                binary_data = None
+                with open(file_path, "rb") as f:
+                    binary_data = f.read()
+                # Explicitly ensure file handle is released
+                f = None
 
-                self.logger.warning(
-                    f"Decoding errors in {file_path} with {source_encoding}"
-                )
+                # Try UTF-8 first, then fallback to latin-1
+                for fallback_encoding in ["utf-8", "latin-1"]:
+                    try:
+                        content = binary_data.decode(fallback_encoding, errors="replace")
+                        self.logger.warning(
+                            f"Failed to decode {file_path} with {source_encoding}, "
+                            f"using {fallback_encoding} fallback"
+                        )
+                        break
+                    except Exception:
+                        continue
+                else:
+                    # Ultimate fallback - decode as latin-1 which accepts all bytes
+                    content = binary_data.decode("latin-1", errors="replace")
+                    self.logger.error(
+                        f"Failed to decode {file_path} properly, using latin-1 fallback"
+                    )
 
                 return content, True
 
             except Exception as e2:
-                # Last resort: read as binary and decode with replacement
-                with open(file_path, "rb") as f:
-                    binary_data = f.read()
-
-                content = binary_data.decode("utf-8", errors="replace")
-
-                self.logger.error(
-                    f"Failed to decode {file_path} properly, using UTF-8 fallback"
-                )
-
-                return content, True
+                # Final fallback
+                error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e2}]"
+                return error_content, True
 
         except Exception as e:
-            # Handle other errors
+            # Handle other errors (file not found, permissions, etc.)
             if self.config.encoding.abort_on_error:
                 raise EncodingError(f"Error reading {file_path}: {e}")
 
             # Return error message as content
-            error_content = f"[ERROR: Unable to read file. Reason: {e}]"
+            error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e}]"
             return error_content, True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()

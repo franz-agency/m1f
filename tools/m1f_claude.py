@@ -2174,12 +2174,12 @@ def main():
 Examples:
   m1f-claude "Help me bundle my Python project"
   m1f-claude -i                    # Interactive mode
-  m1f-claude --advanced-setup     # Add topic bundles to existing setup
+  m1f-claude --setup     # Add topic bundles to existing setup
   m1f-claude --check              # Check setup status
   
 Initialization workflow:
   1. Run 'm1f-init' first to create basic bundles
-  2. Run 'm1f-claude --advanced-setup' for topic-specific bundles
+  2. Run 'm1f-claude --setup' for topic-specific bundles
   
 Note: m1f-init works on all platforms (Windows, Linux, Mac)
   
@@ -2199,7 +2199,7 @@ First time? Run 'm1f-init' to set up your project!
     )
 
     parser.add_argument(
-        "--advanced-setup",
+        "--setup",
         action="store_true",
         help="Add topic-specific bundles to existing m1f setup using Claude",
     )
@@ -2260,8 +2260,8 @@ First time? Run 'm1f-init' to set up your project!
 
     args = parser.parse_args()
 
-    # Handle /advanced-setup command in prompt
-    if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/advanced-setup":
+    # Handle /setup command in prompt
+    if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/setup":
         args.advanced_setup = True
         args.prompt = []
 

@@ -72,12 +72,12 @@ class TestDocsOnlyParameter(BaseM1FTest):
         # Create documentation files
         for filename in doc_files:
             file_path = files_dir / filename
-            file_path.write_text(f"Documentation content in {filename}\n")
+            file_path.write_text(f"Documentation content in {filename}\n", encoding="utf-8")
 
         # Create non-documentation files
         for filename in non_doc_files:
             file_path = files_dir / filename
-            file_path.write_text(f"Non-doc content in {filename}\n")
+            file_path.write_text(f"Non-doc content in {filename}\n", encoding="utf-8")
 
         return files_dir
 
@@ -103,7 +103,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert output_file.exists(), "Output file was not created"
 
         # Read output content
-        content = output_file.read_text()
+        content = output_file.read_text(encoding="utf-8")
 
         # Check that documentation files are included
         assert "README.md" in content
@@ -148,7 +148,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
 
         # Read output content
-        content = output_file.read_text()
+        content = output_file.read_text(encoding="utf-8")
 
         # Check that only .md and .txt documentation files are included
         assert "README.md" in content
@@ -188,7 +188,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
 
         # Read output content
-        content = output_file.read_text()
+        content = output_file.read_text(encoding="utf-8")
 
         # Check that documentation files are included
         assert "README.md" in content
@@ -221,7 +221,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
 
         # Check info file for file count
         if info_file.exists():
-            info_content = info_file.read_text()
+            info_content = info_file.read_text(encoding="utf-8")
             # Should have processed 19 documentation files
             assert "19" in info_content or "Files Processed: 19" in log_output
 
@@ -232,9 +232,9 @@ class TestDocsOnlyParameter(BaseM1FTest):
         source_dir = temp_dir / "no_docs"
         source_dir.mkdir()
 
-        (source_dir / "app.py").write_text("Python code")
-        (source_dir / "style.css").write_text("CSS styles")
-        (source_dir / "data.json").write_text('{"key": "value"}')
+        (source_dir / "app.py").write_text("Python code", encoding="utf-8")
+        (source_dir / "style.css").write_text("CSS styles", encoding="utf-8")
+        (source_dir / "data.json").write_text('{"key": "value"}', encoding="utf-8")
 
         output_file = temp_dir / "no_docs_output.txt"
 
@@ -254,7 +254,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
 
         if output_file.exists():
-            content = output_file.read_text()
+            content = output_file.read_text(encoding="utf-8")
             # Should not contain any of the non-doc files
             assert "app.py" not in content
             assert "style.css" not in content
@@ -282,7 +282,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert output_file.exists(), "Output file was not created"
 
         # Read output content
-        content = output_file.read_text()
+        content = output_file.read_text(encoding="utf-8")
 
         # Should include markdown files
         assert "README.md" in content

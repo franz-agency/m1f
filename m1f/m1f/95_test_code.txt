@@ -712,6 +712,8 @@ from __future__ import annotations
 import sys
 import shutil
 import tempfile
+import gc
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -759,9 +761,9 @@ def temp_dir() -> Iterator[Path]:
     try:
         yield test_dir
     finally:
-        # Clean up
+        # Clean up with Windows-specific handling
         if test_dir.exists():
-            shutil.rmtree(test_dir)
+            _safe_cleanup_directory(test_dir)
 
 
 @pytest.fixture
@@ -797,9 +799,9 @@ def isolated_filesystem() -> Iterator[Path]:
     finally:
         # Restore original working directory
         os.chdir(original_cwd)
-        # Clean up
+        # Clean up with Windows-specific handling
         if test_dir.exists():
-            shutil.rmtree(test_dir)
+            _safe_cleanup_directory(test_dir)
 
 
 @pytest.fixture
@@ -894,6 +896,19 @@ def cleanup_logging():
         logger.setLevel(logging.WARNING)
 
 
+@pytest.fixture(autouse=True)
+def cleanup_file_handles():
+    """Automatically clean up file handles after each test (Windows specific)."""
+    yield
+    
+    # Force garbage collection to close any remaining file handles
+    # This is especially important on Windows where file handles can prevent deletion
+    if sys.platform.startswith("win"):
+        gc.collect()
+        # Give a small delay for Windows to release handles
+        time.sleep(0.01)
+
+
 @pytest.fixture
 def capture_logs():
     """Capture log messages for testing."""
@@ -945,6 +960,74 @@ def is_windows() -> bool:
     return sys.platform.startswith("win")
 
 
+def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
+    """
+    Safely clean up a directory with Windows-specific handling.
+    
+    Windows can have file handle issues that prevent immediate deletion.
+    This function retries with increasing delays and forces garbage collection.
+    """
+    import os
+    import time
+    
+    for attempt in range(max_retries):
+        try:
+            # Force garbage collection to close any remaining file handles
+            gc.collect()
+            
+            # On Windows, try to remove read-only attributes that might prevent deletion
+            if sys.platform.startswith("win"):
+                _remove_readonly_attributes(directory)
+            
+            shutil.rmtree(directory)
+            return
+        except (OSError, PermissionError) as e:
+            if attempt == max_retries - 1:
+                # Final attempt failed, log warning but don't raise
+                print(f"Warning: Could not clean up test directory {directory}: {e}")
+                return
+            
+            # Wait with exponential backoff
+            delay = 0.1 * (2 ** attempt)
+            time.sleep(delay)
+            
+            # Force garbage collection again
+            gc.collect()
+
+
+def _remove_readonly_attributes(directory: Path) -> None:
+    """
+    Remove read-only attributes from files and directories on Windows.
+    
+    This helps with cleanup when files are marked as read-only.
+    """
+    import os
+    import stat
+    
+    if not sys.platform.startswith("win"):
+        return
+        
+    try:
+        for root, dirs, files in os.walk(directory):
+            # Remove read-only flag from files
+            for file in files:
+                file_path = Path(root) / file
+                try:
+                    file_path.chmod(stat.S_IWRITE | stat.S_IREAD)
+                except (OSError, PermissionError):
+                    pass  # Ignore errors, best effort
+            
+            # Remove read-only flag from directories
+            for dir_name in dirs:
+                dir_path = Path(root) / dir_name
+                try:
+                    dir_path.chmod(stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+                except (OSError, PermissionError):
+                    pass  # Ignore errors, best effort
+    except (OSError, PermissionError):
+        pass  # Ignore errors, best effort
+
+
 @pytest.fixture
 def path_separator() -> str:
     """Get the platform-specific path separator."""
@@ -993,16 +1076,37 @@ Tests various HTML structures, edge cases, and conversion options.
 import os
 import sys
 import pytest
+import pytest_asyncio
 import asyncio
 import aiohttp
 import subprocess
 import time
 import tempfile
 import shutil
+import socket
+
+# Optional import for enhanced process management
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    psutil = None
+    HAS_PSUTIL = False
 from pathlib import Path
 from typing import Dict, List, Optional
 import json
 import yaml
+import platform
+import signal
+from contextlib import contextmanager
+import logging
+
+# Configure logging for better debugging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -1011,43 +1115,434 @@ from tools.html2md_tool import HTML2MDConverter, ConversionOptions
 
 
 class TestServer:
-    """Manages the test server lifecycle."""
+    """Manages the test server lifecycle with robust startup and cleanup."""
 
-    def __init__(self, port: int = 8080):
-        self.port = port
+    def __init__(self, port: Optional[int] = None, startup_timeout: int = 30):
+        """Initialize TestServer.
+        
+        Args:
+            port: Specific port to use, or None for dynamic allocation
+            startup_timeout: Maximum time to wait for server startup (seconds)
+        """
+        self.port = port or self._find_free_port()
         self.process = None
-        self.base_url = f"http://localhost:{port}"
+        self.base_url = f"http://localhost:{self.port}"
+        self.startup_timeout = startup_timeout
+        self._is_started = False
+        self._server_output = []  # Store server output for debugging
 
-    def start(self):
-        """Start the test server."""
+    def _find_free_port(self) -> int:
+        """Find a free port for the server."""
+        # Try multiple times to find a free port to avoid race conditions
+        for attempt in range(5):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', 0))
+                s.listen(1)
+                port = s.getsockname()[1]
+            
+            # Verify the port is still free after a small delay
+            time.sleep(0.1)
+            if not self._is_port_in_use(port):
+                logger.info(f"Found free port {port} on attempt {attempt + 1}")
+                return port
+        
+        raise RuntimeError("Could not find a free port after 5 attempts")
+
+    def _is_port_in_use(self, port: int) -> bool:
+        """Check if a port is currently in use."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('localhost', port))
+                return False
+            except OSError:
+                return True
+
+    async def _wait_for_server(self) -> bool:
+        """Wait for server to become responsive with health checks."""
+        start_time = time.time()
+        last_log_time = start_time
+        check_count = 0
+        
+        logger.info(f"Waiting for server to start on port {self.port}...")
+        
+        while time.time() - start_time < self.startup_timeout:
+            check_count += 1
+            
+            try:
+                # Check if process is still running
+                if self.process and self.process.poll() is not None:
+                    # Process has terminated - capture output for debugging
+                    stdout, stderr = self.process.communicate(timeout=1)
+                    logger.error(f"Server process terminated unexpectedly. Exit code: {self.process.returncode}")
+                    if stdout:
+                        logger.error(f"Server stdout: {stdout.decode('utf-8', errors='replace')}")
+                    if stderr:
+                        logger.error(f"Server stderr: {stderr.decode('utf-8', errors='replace')}")
+                    return False
+                
+                # Try to connect to the server with progressive timeout
+                timeout = min(1.0 + (check_count * 0.1), 5.0)  # Increase timeout gradually
+                async with aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=timeout, connect=timeout/2)
+                ) as session:
+                    async with session.get(f"{self.base_url}/api/test-pages") as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            logger.info(f"Server started successfully on port {self.port} after {check_count} checks ({time.time() - start_time:.2f}s)")
+                            logger.info(f"Server has {len(data)} test pages available")
+                            return True
+                        else:
+                            logger.warning(f"Server returned status {response.status}")
+                            
+            except aiohttp.ClientConnectorError as e:
+                # Connection refused - server not ready yet
+                if time.time() - last_log_time > 2.0:  # Log every 2 seconds
+                    logger.debug(f"Server not ready yet: {type(e).__name__}: {e}")
+                    last_log_time = time.time()
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                # Other connection errors
+                if time.time() - last_log_time > 2.0:
+                    logger.debug(f"Connection attempt failed: {type(e).__name__}: {e}")
+                    last_log_time = time.time()
+            except Exception as e:
+                logger.error(f"Unexpected error waiting for server: {type(e).__name__}: {e}")
+            
+            # Progressive backoff - start with short delays, increase over time
+            delay = min(0.1 * (1 + check_count // 10), 0.5)
+            await asyncio.sleep(delay)
+        
+        logger.error(f"Server failed to start within {self.startup_timeout} seconds after {check_count} checks")
+        return False
+
+    def _create_server_process(self) -> subprocess.Popen:
+        """Create the server process with platform-specific handling."""
         server_path = Path(__file__).parent / "html2md_server" / "server.py"
-        self.process = subprocess.Popen(
-            [sys.executable, str(server_path)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        # Wait for server to start
-        time.sleep(2)
+        
+        # Verify server script exists
+        if not server_path.exists():
+            raise FileNotFoundError(f"Server script not found: {server_path}")
+        
+        # Environment variables for the server
+        env = os.environ.copy()
+        env['FLASK_ENV'] = 'testing'
+        env['FLASK_DEBUG'] = '0'  # Disable debug mode for tests
+        # Don't set WERKZEUG_RUN_MAIN as it expects WERKZEUG_SERVER_FD to be set too
+        
+        # Platform-specific process creation
+        if platform.system() == "Windows":
+            # Windows-specific handling
+            process = subprocess.Popen(
+                [sys.executable, "-u", str(server_path)],  # -u for unbuffered output
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                bufsize=1,  # Line buffered
+                universal_newlines=True
+            )
+        else:
+            # Unix-like systems
+            process = subprocess.Popen(
+                [sys.executable, "-u", str(server_path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+                preexec_fn=os.setsid,  # Create new process group
+                bufsize=1,
+                universal_newlines=True
+            )
+        
+        # Start threads to capture output without blocking
+        import threading
+        
+        def capture_output(pipe, name):
+            try:
+                for line in pipe:
+                    if line:
+                        self._server_output.append(f"[{name}] {line.strip()}")
+                        if "Running on" in line or "Serving Flask app" in line:
+                            logger.debug(f"Server {name}: {line.strip()}")
+            except Exception as e:
+                logger.error(f"Error capturing {name}: {e}")
+        
+        if process.stdout:
+            stdout_thread = threading.Thread(
+                target=capture_output, 
+                args=(process.stdout, "stdout"),
+                daemon=True
+            )
+            stdout_thread.start()
+        
+        if process.stderr:
+            stderr_thread = threading.Thread(
+                target=capture_output,
+                args=(process.stderr, "stderr"),
+                daemon=True
+            )
+            stderr_thread.start()
+        
+        return process
+
+    async def start(self) -> bool:
+        """Start the test server with health checks.
+        
+        Returns:
+            bool: True if server started successfully, False otherwise
+        """
+        if self._is_started:
+            logger.info(f"Server already started on port {self.port}")
+            return True
+        
+        # Clear previous output
+        self._server_output = []
+        
+        # Try up to 3 times with different ports if needed
+        for attempt in range(3):
+            # Check if port is already in use
+            if self._is_port_in_use(self.port):
+                logger.warning(f"Port {self.port} is already in use, finding a new port...")
+                old_port = self.port
+                self.port = self._find_free_port()
+                self.base_url = f"http://localhost:{self.port}"
+                logger.info(f"Changed from port {old_port} to {self.port}")
+            
+            try:
+                # Set environment variable for the server port
+                os.environ['HTML2MD_SERVER_PORT'] = str(self.port)
+                
+                logger.info(f"Starting server on port {self.port} (attempt {attempt + 1}/3)...")
+                
+                # Create and start the process
+                self.process = self._create_server_process()
+                
+                # Give the process a moment to fail fast if there's an immediate error
+                await asyncio.sleep(0.5)
+                
+                # Check if process already terminated
+                if self.process.poll() is not None:
+                    logger.error(f"Server process terminated immediately with code {self.process.returncode}")
+                    if self._server_output:
+                        logger.error("Server output:")
+                        for line in self._server_output[-10:]:  # Last 10 lines
+                            logger.error(f"  {line}")
+                    self._cleanup_process()
+                    continue
+                
+                # Wait for server to become responsive
+                if await self._wait_for_server():
+                    self._is_started = True
+                    return True
+                else:
+                    # Server failed to start
+                    logger.error(f"Server failed to start on attempt {attempt + 1}")
+                    if self._server_output:
+                        logger.error("Server output:")
+                        for line in self._server_output[-20:]:  # Last 20 lines
+                            logger.error(f"  {line}")
+                    self._cleanup_process()
+                    
+                    # Try a different port on next attempt
+                    if attempt < 2:
+                        self.port = self._find_free_port()
+                        self.base_url = f"http://localhost:{self.port}"
+                        await asyncio.sleep(1)  # Brief pause before retry
+                        
+            except Exception as e:
+                logger.error(f"Failed to start server on attempt {attempt + 1}: {type(e).__name__}: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                self._cleanup_process()
+                
+                if attempt < 2:
+                    self.port = self._find_free_port()
+                    self.base_url = f"http://localhost:{self.port}"
+                    await asyncio.sleep(1)
+        
+        return False
+
+    def _cleanup_process(self):
+        """Clean up the server process."""
+        if not self.process:
+            return
+        
+        try:
+            # Get process info before termination
+            pid = self.process.pid
+            
+            # Try graceful termination first
+            if platform.system() == "Windows":
+                # Windows doesn't have SIGTERM, use terminate()
+                self.process.terminate()
+            else:
+                # Unix-like systems
+                try:
+                    os.killpg(os.getpgid(pid), signal.SIGTERM)
+                except (ProcessLookupError, OSError):
+                    self.process.terminate()
+            
+            # Wait for process to terminate gracefully
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                # Force kill if graceful termination failed
+                if platform.system() == "Windows":
+                    self.process.kill()
+                else:
+                    try:
+                        os.killpg(os.getpgid(pid), signal.SIGKILL)
+                    except (ProcessLookupError, OSError):
+                        self.process.kill()
+                
+                # Final wait
+                try:
+                    self.process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    pass  # Process might be zombie, but we've done our best
+            
+            # Clean up any child processes using psutil if available
+            if HAS_PSUTIL:
+                try:
+                    parent = psutil.Process(pid)
+                    children = parent.children(recursive=True)
+                    for child in children:
+                        try:
+                            child.terminate()
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+                    
+                    # Wait for children to terminate
+                    psutil.wait_procs(children, timeout=3)
+                    
+                    # Kill any remaining children
+                    for child in children:
+                        try:
+                            if child.is_running():
+                                child.kill()
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+                            
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    # Process already gone
+                    pass
+        
+        except Exception as e:
+            print(f"Error during process cleanup: {e}")
+        
+        finally:
+            self.process = None
+            self._is_started = False
 
     def stop(self):
         """Stop the test server."""
-        if self.process:
-            self.process.terminate()
-            self.process.wait()
+        self._cleanup_process()
+        
+        # Clean up environment variable
+        if 'HTML2MD_SERVER_PORT' in os.environ:
+            del os.environ['HTML2MD_SERVER_PORT']
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        if await self.start():
+            return self
+        else:
+            raise RuntimeError(f"Failed to start test server on port {self.port}")
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        self.stop()
 
     def __enter__(self):
-        self.start()
-        return self
+        """Sync context manager entry - runs async start in event loop."""
+        # For sync usage, we need to handle the async start
+        loop = None
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        if loop.is_running():
+            # If we're already in an async context, we can't use sync context manager
+            raise RuntimeError("Use async context manager (__aenter__) within async functions")
+        
+        if loop.run_until_complete(self.start()):
+            return self
+        else:
+            raise RuntimeError(f"Failed to start test server on port {self.port}")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Sync context manager exit."""
         self.stop()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def test_server():
-    """Fixture to manage test server lifecycle."""
-    with TestServer() as server:
+    """Fixture to manage test server lifecycle.
+    
+    Uses function scope to avoid port conflicts between tests.
+    Each test gets its own server instance with a unique port.
+    """
+    server = TestServer()
+    
+    # Try to start the server with retries
+    import asyncio
+    
+    # Handle existing event loop on different platforms
+    try:
+        loop = asyncio.get_running_loop()
+        # We're already in an async context
+        raise RuntimeError("Cannot use sync test_server fixture in async context. Use async_test_server instead.")
+    except RuntimeError:
+        # No running loop, create a new one
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    try:
+        # Run the async server startup
+        success = loop.run_until_complete(server.start())
+        if not success:
+            # Try to provide more diagnostic info
+            error_msg = f"Failed to start test server on port {server.port}"
+            if server._server_output:
+                error_msg += "\nServer output:\n"
+                error_msg += "\n".join(server._server_output[-20:])
+            raise RuntimeError(error_msg)
+        
         yield server
+    finally:
+        # Clean up
+        try:
+            server.stop()
+        except Exception as e:
+            logger.error(f"Error stopping server: {e}")
+        finally:
+            # Ensure loop is closed
+            try:
+                loop.close()
+            except Exception as e:
+                logger.error(f"Error closing event loop: {e}")
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_test_server():
+    """Async fixture to manage test server lifecycle.
+    
+    Uses function scope to avoid port conflicts between tests.
+    Each test gets its own server instance with a unique port.
+    """
+    server = None
+    try:
+        server = TestServer()
+        if not await server.start():
+            error_msg = f"Failed to start test server on port {server.port}"
+            if server._server_output:
+                error_msg += "\nServer output:\n"
+                error_msg += "\n".join(server._server_output[-20:])
+            raise RuntimeError(error_msg)
+        yield server
+    finally:
+        if server:
+            server.stop()
 
 
 @pytest.fixture
@@ -1062,11 +1557,11 @@ class TestHTML2MDConversion:
     """Test HTML to Markdown conversion with various scenarios."""
 
     @pytest.mark.asyncio
-    async def test_basic_conversion(self, test_server, temp_output_dir):
+    async def test_basic_conversion(self, async_test_server, temp_output_dir):
         """Test basic HTML to Markdown conversion."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=f"{test_server.base_url}/page",
+                source_dir=f"{async_test_server.base_url}/page",
                 destination_dir=temp_output_dir,
             )
         )
@@ -1074,7 +1569,7 @@ class TestHTML2MDConversion:
         # Convert a simple page
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/m1f-documentation"
+                f"{async_test_server.base_url}/page/m1f-documentation"
             ) as resp:
                 html_content = await resp.text()
 
@@ -1093,11 +1588,11 @@ class TestHTML2MDConversion:
         assert len(markdown) > 100  # At least some content was converted
 
     @pytest.mark.asyncio
-    async def test_content_selection(self, test_server, temp_output_dir):
+    async def test_content_selection(self, async_test_server, temp_output_dir):
         """Test CSS selector-based content extraction."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=f"{test_server.base_url}/page",
+                source_dir=f"{async_test_server.base_url}/page",
                 destination_dir=temp_output_dir,
                 outermost_selector="article",
                 ignore_selectors=["nav", ".sidebar", "footer"],
@@ -1106,7 +1601,7 @@ class TestHTML2MDConversion:
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/html2md-documentation"
+                f"{async_test_server.base_url}/page/html2md-documentation"
             ) as resp:
                 html_content = await resp.text()
 
@@ -1122,11 +1617,11 @@ class TestHTML2MDConversion:
         assert "## Key Features" in markdown
 
     @pytest.mark.asyncio
-    async def test_complex_layouts(self, test_server, temp_output_dir):
+    async def test_complex_layouts(self, async_test_server, temp_output_dir):
         """Test conversion of complex CSS layouts."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=f"{test_server.base_url}/page",
+                source_dir=f"{async_test_server.base_url}/page",
                 destination_dir=temp_output_dir,
                 outermost_selector="article",
             )
@@ -1134,7 +1629,7 @@ class TestHTML2MDConversion:
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/complex-layout"
+                f"{async_test_server.base_url}/page/complex-layout"
             ) as resp:
                 html_content = await resp.text()
 
@@ -1150,11 +1645,11 @@ class TestHTML2MDConversion:
         assert "function deeplyNested()" in markdown
 
     @pytest.mark.asyncio
-    async def test_code_examples(self, test_server, temp_output_dir):
+    async def test_code_examples(self, async_test_server, temp_output_dir):
         """Test code block conversion with various languages."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=f"{test_server.base_url}/page",
+                source_dir=f"{async_test_server.base_url}/page",
                 destination_dir=temp_output_dir,
                 convert_code_blocks=True,
             )
@@ -1162,7 +1657,7 @@ class TestHTML2MDConversion:
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{test_server.base_url}/page/code-examples"
+                f"{async_test_server.base_url}/page/code-examples"
             ) as resp:
                 html_content = await resp.text()
 
@@ -1316,11 +1811,11 @@ class TestHTML2MDConversion:
         assert "α" in markdown
 
     @pytest.mark.asyncio
-    async def test_parallel_conversion(self, test_server, temp_output_dir):
+    async def test_parallel_conversion(self, async_test_server, temp_output_dir):
         """Test parallel processing of multiple files."""
         converter = HTML2MDConverter(
             ConversionOptions(
-                source_dir=test_server.base_url,
+                source_dir=async_test_server.base_url,
                 destination_dir=temp_output_dir,
                 parallel=True,
                 max_workers=4,
@@ -1329,12 +1824,12 @@ class TestHTML2MDConversion:
 
         # Get list of test pages
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{test_server.base_url}/api/test-pages") as resp:
+            async with session.get(f"{async_test_server.base_url}/api/test-pages") as resp:
                 pages = await resp.json()
 
         # Convert all pages in parallel
         results = await converter.convert_directory_from_urls(
-            [f"{test_server.base_url}/page/{page}" for page in pages.keys()]
+            [f"{async_test_server.base_url}/page/{page}" for page in pages.keys()]
         )
 
         # Verify all conversions completed
@@ -1472,6 +1967,60 @@ if __name__ == "__main__":
     # Run tests
     pytest.main([__file__, "-v", "--tb=short"])
 
+======= test_html2md_server_fixed.py ======
+#!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Comprehensive test suite for mf1-html2md converter using the test server.
+Tests various HTML structures, edge cases, and conversion options.
+"""
+
+import os
+import sys
+import pytest
+import pytest_asyncio
+import asyncio
+import aiohttp
+import subprocess
+import time
+import tempfile
+import shutil
+import socket
+from pathlib import Path
+
+# Optional import for enhanced process management
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    psutil = None
+    HAS_PSUTIL = False
+from pathlib import Path
+from typing import Dict, List, Optional
+import json
+import yaml
+import platform
+import signal
+from contextlib import contextmanager
+
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from tools.html2md_tool import HTML2MDConverter, ConversionOptions
+
 ======= test_simple_server.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
@@ -1493,12 +2042,153 @@ Simple tests for the HTML2MD test server functionality.
 Tests the server endpoints without complex mf1-html2md integration.
 """
 
-import requests
+import os
+import sys
+import subprocess
+import time
+import socket
 import pytest
+import requests
 from bs4 import BeautifulSoup
+from pathlib import Path
+import platform
+import logging
+
+# Add logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Test server configuration
 TEST_SERVER_URL = "http://localhost:8080"
+
+
+def is_port_in_use(port):
+    """Check if a port is currently in use."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('localhost', port))
+            return False
+        except OSError:
+            return True
+
+
+@pytest.fixture(scope="module", autouse=True)
+def test_server():
+    """Start the test server before running tests."""
+    server_port = 8080
+    server_path = Path(__file__).parent / "html2md_server" / "server.py"
+    
+    # Check if server script exists
+    if not server_path.exists():
+        pytest.fail(f"Server script not found: {server_path}")
+    
+    # Check if port is already in use
+    if is_port_in_use(server_port):
+        logger.warning(f"Port {server_port} is already in use. Assuming server is already running.")
+        # Try to connect to existing server
+        try:
+            response = requests.get(TEST_SERVER_URL, timeout=5)
+            if response.status_code == 200:
+                logger.info("Connected to existing server")
+                yield
+                return
+        except requests.exceptions.RequestException:
+            pytest.fail(f"Port {server_port} is in use but server is not responding")
+    
+    # Start server process
+    logger.info(f"Starting test server on port {server_port}...")
+    
+    # Environment variables for the server
+    env = os.environ.copy()
+    env['FLASK_ENV'] = 'testing'
+    env['FLASK_DEBUG'] = '0'
+    env['HTML2MD_SERVER_PORT'] = str(server_port)
+    
+    # Platform-specific process creation
+    if platform.system() == "Windows":
+        # Windows-specific handling
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            bufsize=1,
+            universal_newlines=True
+        )
+    else:
+        # Unix-like systems
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            preexec_fn=os.setsid,
+            bufsize=1,
+            universal_newlines=True
+        )
+    
+    # Wait for server to start
+    max_wait = 30  # seconds
+    start_time = time.time()
+    server_ready = False
+    
+    while time.time() - start_time < max_wait:
+        # Check if process is still running
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            logger.error(f"Server process terminated with code {process.returncode}")
+            if stdout:
+                logger.error(f"stdout: {stdout}")
+            if stderr:
+                logger.error(f"stderr: {stderr}")
+            pytest.fail("Server process terminated unexpectedly")
+        
+        # Try to connect to server
+        try:
+            response = requests.get(f"{TEST_SERVER_URL}/api/test-pages", timeout=2)
+            if response.status_code == 200:
+                logger.info(f"Server started successfully after {time.time() - start_time:.2f} seconds")
+                server_ready = True
+                break
+        except requests.exceptions.RequestException:
+            # Server not ready yet
+            pass
+        
+        time.sleep(0.5)
+    
+    if not server_ready:
+        # Try to get process output for debugging
+        process.terminate()
+        stdout, stderr = process.communicate(timeout=5)
+        logger.error("Server failed to start within timeout")
+        if stdout:
+            logger.error(f"stdout: {stdout}")
+        if stderr:
+            logger.error(f"stderr: {stderr}")
+        pytest.fail(f"Server failed to start within {max_wait} seconds")
+    
+    # Run tests
+    yield
+    
+    # Cleanup: stop the server
+    logger.info("Stopping test server...")
+    try:
+        if platform.system() == "Windows":
+            # Windows: use terminate
+            process.terminate()
+        else:
+            # Unix: send SIGTERM to process group
+            import signal
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        
+        # Wait for process to terminate
+        process.wait(timeout=5)
+    except Exception as e:
+        logger.error(f"Error stopping server: {e}")
+        # Force kill if needed
+        process.kill()
+        process.wait()
 
 
 class TestHTML2MDServer:
@@ -2202,6 +2892,12 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 
+def normalize_path_for_subprocess(path):
+    """Normalize path for cross-platform subprocess usage."""
+    # Convert Path to string and use forward slashes
+    return str(path).replace('\\', '/')
+
+
 class TestIntegration(unittest.TestCase):
     """Integration tests for HTML to Markdown conversion tools."""
 
@@ -2243,15 +2939,25 @@ class TestIntegration(unittest.TestCase):
         """Test direct conversion with html2md.py."""
         cmd = [
             sys.executable,
-            str(self.html2md_script),
+            normalize_path_for_subprocess(self.html2md_script),
             "convert",
-            str(self.html_dir),
+            normalize_path_for_subprocess(self.html_dir),
             "-o",
-            str(self.md_dir),
+            normalize_path_for_subprocess(self.md_dir),
         ]
 
-        # Run the command
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
+        # Run the command with explicit encoding for Windows
+        try:
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check that the command completed successfully
         self.assertEqual(result.returncode, 0)
@@ -2281,15 +2987,25 @@ class TestIntegration(unittest.TestCase):
         # (The current implementation converts the entire document)
         cmd = [
             sys.executable,
-            str(self.html2md_script),
+            normalize_path_for_subprocess(self.html2md_script),
             "convert",
-            str(self.html_dir),
+            normalize_path_for_subprocess(self.html_dir),
             "-o",
-            str(self.md_dir),
+            normalize_path_for_subprocess(self.md_dir),
         ]
 
-        # Run the command
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
+        # Run the command with explicit encoding for Windows
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check output
         output_file = self.md_dir / "sample.md"
@@ -2321,15 +3037,25 @@ class TestIntegration(unittest.TestCase):
         # Convert the HTML
         cmd = [
             sys.executable,
-            str(self.html2md_script),
+            normalize_path_for_subprocess(self.html2md_script),
             "convert",
-            str(self.html_dir),
+            normalize_path_for_subprocess(self.html_dir),
             "-o",
-            str(self.md_dir),
+            normalize_path_for_subprocess(self.md_dir),
         ]
 
-        # Run the command
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
+        # Run the command with explicit encoding for Windows
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check output
         output_file = self.md_dir / "sample.md"
@@ -2391,6 +3117,11 @@ Features:
     - Compatible with m1f --remove-scraped-metadata option
 """
 
+import os
+import subprocess
+import socket
+import platform
+import logging
 import requests
 import sys
 from pathlib import Path
@@ -2400,8 +3131,141 @@ from urllib.parse import urljoin
 import time
 import pytest
 
+# Add logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Test server configuration
 TEST_SERVER_URL = "http://localhost:8080"
+
+
+def is_port_in_use(port):
+    """Check if a port is currently in use."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('localhost', port))
+            return False
+        except OSError:
+            return True
+
+
+@pytest.fixture(scope="module", autouse=True)
+def test_server():
+    """Start the test server before running tests."""
+    server_port = 8080
+    server_path = Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
+    
+    # Check if server script exists
+    if not server_path.exists():
+        pytest.fail(f"Server script not found: {server_path}")
+    
+    # Check if port is already in use
+    if is_port_in_use(server_port):
+        logger.warning(f"Port {server_port} is already in use. Assuming server is already running.")
+        # Try to connect to existing server
+        try:
+            response = requests.get(TEST_SERVER_URL, timeout=5)
+            if response.status_code == 200:
+                logger.info("Connected to existing server")
+                yield
+                return
+        except requests.exceptions.RequestException:
+            pytest.fail(f"Port {server_port} is in use but server is not responding")
+    
+    # Start server process
+    logger.info(f"Starting test server on port {server_port}...")
+    
+    # Environment variables for the server
+    env = os.environ.copy()
+    env['FLASK_ENV'] = 'testing'
+    env['FLASK_DEBUG'] = '0'
+    env['HTML2MD_SERVER_PORT'] = str(server_port)
+    
+    # Platform-specific process creation
+    if platform.system() == "Windows":
+        # Windows-specific handling
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            bufsize=1,
+            universal_newlines=True
+        )
+    else:
+        # Unix-like systems
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            preexec_fn=os.setsid,
+            bufsize=1,
+            universal_newlines=True
+        )
+    
+    # Wait for server to start
+    max_wait = 30  # seconds
+    start_time = time.time()
+    server_ready = False
+    
+    while time.time() - start_time < max_wait:
+        # Check if process is still running
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            logger.error(f"Server process terminated with code {process.returncode}")
+            if stdout:
+                logger.error(f"stdout: {stdout}")
+            if stderr:
+                logger.error(f"stderr: {stderr}")
+            pytest.fail("Server process terminated unexpectedly")
+        
+        # Try to connect to server
+        try:
+            response = requests.get(f"{TEST_SERVER_URL}/api/test-pages", timeout=2)
+            if response.status_code == 200:
+                logger.info(f"Server started successfully after {time.time() - start_time:.2f} seconds")
+                server_ready = True
+                break
+        except requests.exceptions.RequestException:
+            # Server not ready yet
+            pass
+        
+        time.sleep(0.5)
+    
+    if not server_ready:
+        # Try to get process output for debugging
+        process.terminate()
+        stdout, stderr = process.communicate(timeout=5)
+        logger.error("Server failed to start within timeout")
+        if stdout:
+            logger.error(f"stdout: {stdout}")
+        if stderr:
+            logger.error(f"stderr: {stderr}")
+        pytest.fail(f"Server failed to start within {max_wait} seconds")
+    
+    # Run tests
+    yield
+    
+    # Cleanup: stop the server
+    logger.info("Stopping test server...")
+    try:
+        if platform.system() == "Windows":
+            # Windows: use terminate
+            process.terminate()
+        else:
+            # Unix: send SIGTERM to process group
+            import signal
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        
+        # Wait for process to terminate
+        process.wait(timeout=5)
+    except Exception as e:
+        logger.error(f"Error stopping server: {e}")
+        # Force kill if needed
+        process.kill()
+        process.wait()
 
 
 def check_server_connectivity():
@@ -2425,10 +3289,10 @@ def check_server_connectivity():
         return False
 
 
-def test_server_connectivity():
+def test_server_connectivity(test_server):
     """Test if the test server is running and accessible (pytest compatible)."""
-    if not check_server_connectivity():
-        pytest.skip("Test server is not accessible - skipping test")
+    # The test_server fixture already ensures the server is running
+    assert check_server_connectivity(), "Test server should be accessible"
 
 
 def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None):
@@ -3323,9 +4187,23 @@ import sys
 import os
 import signal
 import time
+import platform
 from pathlib import Path
 
-PID_FILE = Path("/tmp/html2md_test_server.pid")
+# Platform-specific PID file location
+if platform.system() == "Windows":
+    import tempfile
+    PID_FILE = Path(tempfile.gettempdir()) / "html2md_test_server.pid"
+else:
+    PID_FILE = Path("/tmp/html2md_test_server.pid")
+
+# Optional psutil import for better process management
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    psutil = None
+    HAS_PSUTIL = False
 
 
 def start_server():
@@ -3336,12 +4214,22 @@ def start_server():
         return
 
     server_path = Path(__file__).parent / "server.py"
-    process = subprocess.Popen(
-        [sys.executable, str(server_path)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        preexec_fn=os.setsid,  # Create new process group
-    )
+    
+    # Platform-specific process creation
+    if platform.system() == "Windows":
+        process = subprocess.Popen(
+            [sys.executable, str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+        )
+    else:
+        process = subprocess.Popen(
+            [sys.executable, str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            preexec_fn=os.setsid,  # Create new process group
+        )
 
     # Save PID
     PID_FILE.write_text(str(process.pid))
@@ -3357,21 +4245,69 @@ def stop_server():
 
     try:
         pid = int(PID_FILE.read_text())
+        
+        # Use psutil for better process management if available
+        if HAS_PSUTIL:
+            try:
+                process = psutil.Process(pid)
+                
+                # Terminate child processes first
+                children = process.children(recursive=True)
+                for child in children:
+                    try:
+                        child.terminate()
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+                
+                # Wait for children to terminate
+                psutil.wait_procs(children, timeout=3)
+                
+                # Terminate the main process
+                process.terminate()
+                print(f"Sent terminate signal to PID {pid}")
+                
+                # Wait for graceful shutdown
+                try:
+                    process.wait(timeout=5)
+                    print("Server stopped gracefully.")
+                except psutil.TimeoutExpired:
+                    print("Server still running, forcing termination...")
+                    process.kill()
+                    process.wait(timeout=2)
+                    print("Server forcefully terminated.")
+                    
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                print("Process not found or access denied.")
+        else:
+            # Fallback to OS signals
+            if platform.system() == "Windows":
+                # Windows doesn't have SIGTERM, use taskkill
+                import subprocess
+                try:
+                    subprocess.run(["taskkill", "/F", "/PID", str(pid)], 
+                                 check=True, capture_output=True)
+                    print(f"Terminated process {pid}")
+                except subprocess.CalledProcessError as e:
+                    print(f"Failed to terminate process: {e}")
+            else:
+                # Unix-like systems
+                try:
+                    # Send SIGTERM for graceful shutdown
+                    os.kill(pid, signal.SIGTERM)
+                    print(f"Sent SIGTERM to PID {pid}")
 
-        # Send SIGTERM for graceful shutdown
-        os.kill(pid, signal.SIGTERM)
-        print(f"Sent SIGTERM to PID {pid}")
+                    # Wait a bit
+                    time.sleep(1)
 
-        # Wait a bit
-        time.sleep(1)
-
-        # Check if still running
-        try:
-            os.kill(pid, 0)  # Check if process exists
-            print("Server still running, sending SIGKILL...")
-            os.kill(pid, signal.SIGKILL)
-        except ProcessLookupError:
-            print("Server stopped gracefully.")
+                    # Check if still running
+                    try:
+                        os.kill(pid, 0)  # Check if process exists
+                        print("Server still running, sending SIGKILL...")
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        print("Server stopped gracefully.")
+                except ProcessLookupError:
+                    print("Process not found.")
 
         # Clean up PID file
         PID_FILE.unlink()
@@ -3390,10 +4326,47 @@ def status_server():
 
     try:
         pid = int(PID_FILE.read_text())
-        os.kill(pid, 0)  # Check if process exists
-        print(f"Server running with PID: {pid}")
-    except (ValueError, ProcessLookupError):
-        print("Server not running (stale PID file)")
+        
+        # Use psutil for better process information if available
+        if HAS_PSUTIL:
+            try:
+                process = psutil.Process(pid)
+                if process.is_running() and process.name() in ['python', 'python.exe']:
+                    print(f"Server running with PID: {pid}")
+                    print(f"Process name: {process.name()}")
+                    print(f"Memory usage: {process.memory_info().rss / 1024 / 1024:.1f} MB")
+                    print(f"CPU percent: {process.cpu_percent():.1f}%")
+                else:
+                    print("Server not running (stale PID file)")
+                    PID_FILE.unlink()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                print("Server not running (stale PID file)")
+                PID_FILE.unlink()
+        else:
+            # Fallback to basic process check
+            if platform.system() == "Windows":
+                import subprocess
+                try:
+                    result = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], 
+                                          capture_output=True, text=True)
+                    if str(pid) in result.stdout:
+                        print(f"Server running with PID: {pid}")
+                    else:
+                        print("Server not running (stale PID file)")
+                        PID_FILE.unlink()
+                except subprocess.CalledProcessError:
+                    print("Server not running (stale PID file)")
+                    PID_FILE.unlink()
+            else:
+                try:
+                    os.kill(pid, 0)  # Check if process exists
+                    print(f"Server running with PID: {pid}")
+                except ProcessLookupError:
+                    print("Server not running (stale PID file)")
+                    PID_FILE.unlink()
+                    
+    except ValueError:
+        print("Invalid PID file")
         PID_FILE.unlink()
 
 
@@ -3436,6 +4409,7 @@ requests>=2.31.0
 # Utilities
 pyyaml>=6.0
 chardet>=5.2.0
+psutil>=5.9.0
 
 # Development
 black>=23.0.0
@@ -3710,39 +4684,47 @@ def page_not_found(e):
 
 
 if __name__ == "__main__":
+    # Get port from environment variable or use default
+    port = int(os.environ.get('HTML2MD_SERVER_PORT', 8080))
+    
     # Ensure TEST_PAGES is populated
     if not TEST_PAGES:
         logger.warning("No test pages found! Please check the test_pages directory.")
 
-    print(
-        f"""
+    # Only print banner in non-testing mode
+    if os.environ.get('FLASK_ENV') != 'testing':
+        print(
+            f"""
 ╔══════════════════════════════════════════════════════════════╗
 ║                  HTML2MD Test Server                         ║
 ║                                                              ║
-║  Server running at: http://localhost:8080                    ║
+║  Server running at: http://localhost:{port:<4}                    ║
 ║                                                              ║
 ║  Available test pages ({len(TEST_PAGES)} found):            ║
 """
-    )
+        )
 
-    # Sort pages for consistent display
-    for page in sorted(TEST_PAGES.keys()):
-        info = TEST_PAGES[page]
-        # Truncate title if too long
-        title = info["title"][:25]
-        print(f"║  • /page/{page:<20} - {title:<25} ║")
+        # Sort pages for consistent display
+        for page in sorted(TEST_PAGES.keys()):
+            info = TEST_PAGES[page]
+            # Truncate title if too long
+            title = info["title"][:25]
+            print(f"║  • /page/{page:<20} - {title:<25} ║")
 
-    if not TEST_PAGES:
-        print("║  No test pages found in test_pages directory!               ║")
+        if not TEST_PAGES:
+            print("║  No test pages found in test_pages directory!               ║")
 
-    print(
-        """║                                                              ║
+        print(
+            """║                                                              ║
 ║  Press Ctrl+C to stop the server                            ║
 ╚══════════════════════════════════════════════════════════════╝
     """
-    )
+        )
 
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    # Disable debug mode when running in testing environment
+    debug_mode = os.environ.get('FLASK_ENV') != 'testing'
+    
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
 
 ======= m1f/README.md ======
 # m1f Test Suite
@@ -4612,6 +5594,124 @@ def test_deduplication_behavior(tmp_path):
     assert output_content2.count(duplicate_content) == 2
     assert output_content2.count(unique_content) == 1
 
+======= m1f/test_cross_platform_paths.py ======
+#!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
+"""Integration test to verify path separators in actual bundle files."""
+
+import os
+import sys
+import subprocess
+import tempfile
+import shutil
+from pathlib import Path
+
+import pytest
+
+# Add parent directories to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from ..base_test import BaseM1FTest
+
+
+class TestCrossPlatformPaths(BaseM1FTest):
+    """Test cross-platform path handling in m1f and s1f."""
+
+    @pytest.mark.integration
+    def test_bundle_creation_and_extraction(self, run_m1f, temp_dir):
+        """Test that bundles contain forward slashes and extract correctly."""
+        # Create test files in nested directories
+        source_dir = temp_dir / "source"
+        (source_dir / "src" / "components").mkdir(parents=True)
+        (source_dir / "src" / "main.py").write_text("# Main file\nprint('Hello')\n")
+        (source_dir / "src" / "components" / "ui.py").write_text("# UI component\nclass Button: pass\n")
+        (source_dir / "docs").mkdir()
+        (source_dir / "docs" / "README.md").write_text("# Documentation\nTest project\n")
+        
+        # Create output file path
+        output_file = temp_dir / "test_bundle.txt"
+        
+        # Run m1f to create bundle
+        exit_code, log_output = run_m1f(["-s", str(source_dir), "-o", str(output_file)])
+        assert exit_code == 0, f"m1f failed with exit code {exit_code}: {log_output}"
+        
+        # Read the bundle and check for path separators
+        bundle_content = output_file.read_text()
+        
+        # Check that paths use forward slashes
+        assert "src/main.py" in bundle_content, "Expected 'src/main.py' in bundle"
+        assert "src/components/ui.py" in bundle_content, "Expected 'src/components/ui.py' in bundle"
+        assert "docs/README.md" in bundle_content, "Expected 'docs/README.md' in bundle"
+        
+        # Ensure no backslashes in file paths (except in file content)
+        lines = bundle_content.split('\n')
+        for line in lines:
+            # Check lines that look like file separators
+            if line.startswith("===") and "FILE:" in line:
+                assert "\\" not in line, f"Found backslash in separator line: {line}"
+        
+        # Test s1f extraction using subprocess
+        extract_dir = temp_dir / "extracted"
+        extract_dir.mkdir()
+        
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, "-m", "tools.s1f", str(output_file), "-d", str(extract_dir), "-f"],
+            capture_output=True,
+            text=True
+        )
+        assert result.returncode == 0, f"s1f failed: {result.stderr}"
+        
+        # Verify files were extracted correctly
+        assert (extract_dir / "src" / "main.py").exists(), "src/main.py not extracted"
+        assert (extract_dir / "src" / "components" / "ui.py").exists(), "src/components/ui.py not extracted"
+        assert (extract_dir / "docs" / "README.md").exists(), "docs/README.md not extracted"
+        
+        # Verify content matches
+        assert (extract_dir / "src" / "main.py").read_text() == "# Main file\nprint('Hello')\n"
+        assert (extract_dir / "src" / "components" / "ui.py").read_text() == "# UI component\nclass Button: pass\n"
+        assert (extract_dir / "docs" / "README.md").read_text() == "# Documentation\nTest project\n"
+
+    @pytest.mark.integration
+    def test_separator_styles(self, run_m1f, temp_dir):
+        """Test that all separator styles use forward slashes in paths."""
+        # Create a simple test file
+        source_dir = temp_dir / "source"
+        source_dir.mkdir()
+        (source_dir / "test.txt").write_text("Test content")
+        
+        separator_styles = ["Standard", "Detailed", "Markdown", "MachineReadable"]
+        
+        for style in separator_styles:
+            output_file = temp_dir / f"bundle_{style.lower()}.txt"
+            
+            # Run m1f with specific separator style
+            exit_code, log_output = run_m1f([
+                "-s", str(source_dir),
+                "-o", str(output_file),
+                "--separator-style", style
+            ])
+            assert exit_code == 0, f"m1f failed for {style} with exit code {exit_code}: {log_output}"
+            
+            # Check bundle content
+            bundle_content = output_file.read_text()
+            
+            # For any style, the path should not contain backslashes
+            if style == "MachineReadable":
+                # In machine readable format, check the JSON metadata
+                assert '"original_filepath": "test.txt"' in bundle_content or \
+                       '"original_filepath":"test.txt"' in bundle_content, \
+                       f"Path not found in {style} format"
+            else:
+                # For other styles, just ensure no backslashes in paths
+                lines = bundle_content.split('\n')
+                for line in lines:
+                    # Skip actual file content lines
+                    if "FILE:" in line or "test.txt" in line.lower():
+                        assert "\\" not in line, f"Found backslash in {style} style: {line}"
+
 ======= m1f/test_docs_only_parameter.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -4687,12 +5787,12 @@ class TestDocsOnlyParameter(BaseM1FTest):
         # Create documentation files
         for filename in doc_files:
             file_path = files_dir / filename
-            file_path.write_text(f"Documentation content in {filename}\n")
+            file_path.write_text(f"Documentation content in {filename}\n", encoding="utf-8")
 
         # Create non-documentation files
         for filename in non_doc_files:
             file_path = files_dir / filename
-            file_path.write_text(f"Non-doc content in {filename}\n")
+            file_path.write_text(f"Non-doc content in {filename}\n", encoding="utf-8")
 
         return files_dir
 
@@ -4718,7 +5818,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert output_file.exists(), "Output file was not created"
 
         # Read output content
-        content = output_file.read_text()
+        content = output_file.read_text(encoding="utf-8")
 
         # Check that documentation files are included
         assert "README.md" in content
@@ -4763,7 +5863,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
 
         # Read output content
-        content = output_file.read_text()
+        content = output_file.read_text(encoding="utf-8")
 
         # Check that only .md and .txt documentation files are included
         assert "README.md" in content
@@ -4803,7 +5903,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
 
         # Read output content
-        content = output_file.read_text()
+        content = output_file.read_text(encoding="utf-8")
 
         # Check that documentation files are included
         assert "README.md" in content
@@ -4836,7 +5936,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
 
         # Check info file for file count
         if info_file.exists():
-            info_content = info_file.read_text()
+            info_content = info_file.read_text(encoding="utf-8")
             # Should have processed 19 documentation files
             assert "19" in info_content or "Files Processed: 19" in log_output
 
@@ -4847,9 +5947,9 @@ class TestDocsOnlyParameter(BaseM1FTest):
         source_dir = temp_dir / "no_docs"
         source_dir.mkdir()
 
-        (source_dir / "app.py").write_text("Python code")
-        (source_dir / "style.css").write_text("CSS styles")
-        (source_dir / "data.json").write_text('{"key": "value"}')
+        (source_dir / "app.py").write_text("Python code", encoding="utf-8")
+        (source_dir / "style.css").write_text("CSS styles", encoding="utf-8")
+        (source_dir / "data.json").write_text('{"key": "value"}', encoding="utf-8")
 
         output_file = temp_dir / "no_docs_output.txt"
 
@@ -4869,7 +5969,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert exit_code == 0, f"m1f failed with exit code {exit_code}"
 
         if output_file.exists():
-            content = output_file.read_text()
+            content = output_file.read_text(encoding="utf-8")
             # Should not contain any of the non-doc files
             assert "app.py" not in content
             assert "style.css" not in content
@@ -4897,7 +5997,7 @@ class TestDocsOnlyParameter(BaseM1FTest):
         assert output_file.exists(), "Output file was not created"
 
         # Read output content
-        content = output_file.read_text()
+        content = output_file.read_text(encoding="utf-8")
 
         # Should include markdown files
         assert "README.md" in content
@@ -7031,9 +8131,9 @@ class TestM1FEncoding(BaseM1FTest):
         # Check what files are mentioned in the output
         for filename in ["utf8.txt", "latin1.txt", "utf16.txt"]:
             if filename in content:
-                print(f"  ✓ Found {filename} in output")
+                print(f"  [OK] Found {filename} in output")
             else:
-                print(f"  ✗ {filename} NOT found in output")
+                print(f"  [FAIL] {filename} NOT found in output")
 
         assert "UTF-8 content: Hello 世界" in content
         assert "Latin-1 content: café" in content
@@ -8427,8 +9527,8 @@ development:
   description: "Development environment"
   priority: 10
   global_settings:
-    source_directory: "{src_dir}"
-    output_file: "{temp_dir}/dev-bundle.txt"
+    source_directory: "{src_dir.as_posix()}"
+    output_file: "{temp_dir.as_posix()}/dev-bundle.txt"
     verbose: true
     include_extensions: [".js"]
     create_archive: false
@@ -8441,8 +9541,8 @@ production:
   description: "Production environment"
   priority: 10
   global_settings:
-    source_directory: "{dist_dir}"
-    output_file: "{temp_dir}/prod-bundle.txt"
+    source_directory: "{dist_dir.as_posix()}"
+    output_file: "{temp_dir.as_posix()}/prod-bundle.txt"
     quiet: true
     minimal_output: true
     create_archive: true
@@ -8505,7 +9605,7 @@ python_project:
   enabled_if_exists: "setup.py"  # Only active for Python projects
   
   global_settings:
-    source_directory: "{temp_dir}"
+    source_directory: "{temp_dir.as_posix()}"
     include_extensions: [".py", ".txt", ".md", ".yml", ".yaml"]
     exclude_patterns:
       - "__pycache__/**"
@@ -8580,13 +9680,13 @@ web_workflow:
   priority: 100
   
   global_settings:
-    source_directory: "{project_dir}"
-    output_file: "{temp_dir}/web-bundle.txt"
+    source_directory: "{project_dir.as_posix()}"
+    output_file: "{temp_dir.as_posix()}/web-bundle.txt"
     
     # Include docs as intro
     input_include_files:
-      - "{docs_dir}/README.md"
-      - "{docs_dir}/API.md"
+      - "{docs_dir.as_posix()}/README.md"
+      - "{docs_dir.as_posix()}/API.md"
     
     # Output settings
     add_timestamp: true
@@ -8721,13 +9821,13 @@ test_group:
         config_content = f"""
 bundles:
   docs:
-    source: "{temp_dir}"
+    source: "{temp_dir.as_posix()}"
     output: "docs-bundle.txt"
     preset: "docs-preset.yml"
     include_extensions: [".md", ".txt"]
   
   code:
-    source: "{temp_dir}"
+    source: "{temp_dir.as_posix()}"
     output: "code-bundle.txt"
     preset: "code-preset.yml"
     include_extensions: [".py", ".js"]
@@ -8805,7 +9905,7 @@ class TestM1FPresetsV32(BaseM1FTest):
 test_group:
   description: "Test source directory from preset"
   global_settings:
-    source_directory: "{source_dir}"
+    source_directory: "{source_dir.as_posix()}"
     include_extensions: [".txt"]
 """
         preset_file = self.create_test_preset(temp_dir, preset_content)
@@ -8843,7 +9943,7 @@ test_group:
 test_group:
   description: "Test output file from preset"
   global_settings:
-    output_file: "{output_path}"
+    output_file: "{output_path.as_posix()}"
 """
         preset_file = self.create_test_preset(temp_dir, preset_content)
 
@@ -8879,8 +9979,8 @@ test_group:
   description: "Test input include files"
   global_settings:
     input_include_files:
-      - "{temp_dir}/intro.md"
-      - "{temp_dir}/license.txt"
+      - "{temp_dir.as_posix()}/intro.md"
+      - "{temp_dir.as_posix()}/license.txt"
 """
         preset_file = self.create_test_preset(temp_dir, preset_content)
         output_file = temp_dir / "output.txt"
@@ -9064,7 +10164,7 @@ test_group:
 test_group:
   description: "Test CLI override"
   global_settings:
-    source_directory: "{preset_dir}"
+    source_directory: "{preset_dir.as_posix()}"
     separator_style: "Markdown"
     verbose: true
 """
@@ -9117,8 +10217,8 @@ production:
   
   global_settings:
     # All inputs
-    source_directory: "{src_dir}"
-    input_include_files: "{src_dir}/readme.md"
+    source_directory: "{src_dir.as_posix()}"
+    input_include_files: "{src_dir.as_posix()}/readme.md"
     
     # Output settings
     add_timestamp: false
@@ -9553,10 +10653,30 @@ class TestMultipleExcludeIncludeFiles:
 """Tests for parallel file processing in m1f."""
 
 import asyncio
+import gc
+import sys
 import time
 from pathlib import Path
 import tempfile
 import pytest
+
+
+def cleanup_windows_file_handles():
+    """Clean up file handles on Windows to prevent WinError 32."""
+    if sys.platform.startswith("win"):
+        # Close any logging handlers that might be holding file handles
+        import logging
+        for logger_name in ["m1f", "s1f", ""]:
+            logger = logging.getLogger(logger_name)
+            for handler in logger.handlers[:]:
+                if hasattr(handler, "close"):
+                    handler.close()
+                logger.removeHandler(handler)
+        
+        # Force garbage collection
+        gc.collect()
+        # Give Windows time to release handles
+        time.sleep(0.01)
 
 from tools.m1f.config import (
     Config,
@@ -9578,11 +10698,8 @@ from tools.m1f.logging import LoggerManager
 class TestParallelProcessing:
     """Test suite for parallel file processing functionality."""
 
-    @pytest.fixture
-    def temp_dir(self):
-        """Create a temporary directory for tests."""
-        with tempfile.TemporaryDirectory() as td:
-            yield Path(td)
+    # Remove the custom temp_dir fixture to use the one from conftest.py
+    # which has better Windows file handle cleanup
 
     @pytest.fixture
     def create_test_files(self, temp_dir):
@@ -9648,6 +10765,9 @@ class TestParallelProcessing:
 
         # Run the combiner
         result = await combiner.run()
+        
+        # Clean up file handles to prevent WinError 32 on Windows
+        cleanup_windows_file_handles()
 
         # Verify parallel processing was used
         assert parallel_called, "Parallel processing was not used"
@@ -9675,6 +10795,9 @@ class TestParallelProcessing:
 
         # Run the combiner
         await combiner.run()
+        
+        # Clean up file handles to prevent WinError 32 on Windows
+        cleanup_windows_file_handles()
 
         # Read output and verify all test files are present
         output_content = config_parallel.output.output_file.read_text()
@@ -9793,6 +10916,9 @@ class TestParallelProcessing:
 
         # Run the combiner
         result = await combiner.run()
+        
+        # Clean up file handles to prevent WinError 32 on Windows
+        cleanup_windows_file_handles()
 
         # With deduplication, only one file with duplicate content should be included
         output_content = config_parallel.output.output_file.read_text()
@@ -9832,6 +10958,9 @@ class TestParallelProcessing:
 
             # Run should complete despite the error
             result = await combiner.run()
+            
+            # Clean up file handles to prevent WinError 32 on Windows
+            cleanup_windows_file_handles()
 
             # Should process the good files
             assert result.files_processed >= 5
@@ -9875,6 +11004,9 @@ class TestParallelProcessing:
         await output_writer.write_combined_file(
             config_parallel.output.output_file, files
         )
+        
+        # Clean up file handles to prevent WinError 32 on Windows
+        cleanup_windows_file_handles()
 
         # With only one file, it should use sequential mode
         assert sequential_called, "Sequential processing was not used for single file"
@@ -9883,6 +11015,124 @@ class TestParallelProcessing:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+======= m1f/test_path_separators.py ======
+#!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+# SPDX-License-Identifier: Apache-2.0
+
+"""Test to verify path separators are handled correctly across platforms."""
+
+import os
+import sys
+from pathlib import Path
+
+import pytest
+
+# Add parent directories to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from tools.m1f.utils import get_relative_path
+from tools.s1f.utils import convert_to_posix_path
+
+
+class TestPathSeparators:
+    """Test path separator handling across platforms."""
+
+    @pytest.mark.unit
+    def test_m1f_path_normalization(self, tmp_path):
+        """Test that m1f always produces forward slashes."""
+        # Use tmp_path for platform-appropriate paths
+        base_path = tmp_path / "project"
+        base_path.mkdir()
+        
+        # Test normal relative path
+        file_path = base_path / "src" / "main.py"
+        file_path.parent.mkdir(parents=True)
+        file_path.touch()
+        
+        result = get_relative_path(file_path, base_path)
+        assert result == "src/main.py", f"Expected 'src/main.py', got '{result}'"
+        
+        # Test nested path
+        file_path = base_path / "src" / "components" / "ui" / "button.js"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.touch()
+        
+        result = get_relative_path(file_path, base_path)
+        assert result == "src/components/ui/button.js", f"Expected 'src/components/ui/button.js', got '{result}'"
+        
+        # Test path not under base (should return absolute with forward slashes)
+        other_path = tmp_path / "other" / "location" / "file.txt"
+        other_path.parent.mkdir(parents=True)
+        other_path.touch()
+        
+        result = get_relative_path(other_path, base_path)
+        # Result should always use forward slashes
+        assert "/" in result and "\\" not in result, f"Expected forward slashes in '{result}'"
+
+    @pytest.mark.unit
+    def test_s1f_path_conversion(self):
+        """Test that s1f correctly converts paths."""
+        # Test Windows-style paths
+        result = convert_to_posix_path("src\\main.py")
+        assert result == "src/main.py", f"Expected 'src/main.py', got '{result}'"
+        
+        # Test already normalized paths
+        result = convert_to_posix_path("src/main.py")
+        assert result == "src/main.py", f"Expected 'src/main.py', got '{result}'"
+        
+        # Test mixed separators
+        result = convert_to_posix_path("src\\components/ui\\button.js")
+        assert result == "src/components/ui/button.js", f"Expected 'src/components/ui/button.js', got '{result}'"
+        
+        # Test None input
+        result = convert_to_posix_path(None)
+        assert result == "", f"Expected empty string, got '{result}'"
+
+    @pytest.mark.unit
+    def test_path_object_behavior(self):
+        """Test how Path objects handle separators."""
+        # Create path with forward slashes
+        path_str = "src/components/ui/button.js"
+        path_obj = Path(path_str)
+        
+        # Verify that as_posix always gives forward slashes
+        assert "/" in path_obj.as_posix(), "as_posix() should contain forward slashes"
+        assert "\\" not in path_obj.as_posix(), "as_posix() should not contain backslashes"
+
+    @pytest.mark.unit
+    @pytest.mark.skipif(os.name != 'nt', reason="Windows-specific test")
+    def test_windows_paths(self, tmp_path):
+        """Test Windows-specific path handling."""
+        # Test with actual Windows paths
+        base_path = tmp_path / "project"
+        base_path.mkdir()
+        
+        file_path = base_path / "src" / "main.py"
+        file_path.parent.mkdir()
+        file_path.touch()
+        
+        result = get_relative_path(file_path, base_path)
+        assert result == "src/main.py", f"Expected 'src/main.py', got '{result}'"
+        
+        # Test that Windows paths are converted to forward slashes in bundles
+        assert "/" in result and "\\" not in result
+    
+    @pytest.mark.unit
+    def test_path_conversion_edge_cases(self):
+        """Test edge cases in path conversion."""
+        # Test Windows-style paths conversion (works on all platforms)
+        result = convert_to_posix_path("C:\\Users\\test\\file.txt")
+        assert result == "C:/Users/test/file.txt", f"Expected 'C:/Users/test/file.txt', got '{result}'"
+        
+        # Test UNC paths
+        result = convert_to_posix_path("\\\\server\\share\\file.txt")
+        assert result == "//server/share/file.txt", f"Expected '//server/share/file.txt', got '{result}'"
+        
+        # Test paths with multiple consecutive separators
+        result = convert_to_posix_path("path\\\\to\\\\\\file.txt")
+        assert result == "path//to///file.txt", f"Expected 'path//to///file.txt', got '{result}'"
 
 ======= m1f/test_path_traversal_security.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -9999,13 +11249,15 @@ class TestPathTraversalSecurity:
         """Test that Config allows output files outside current directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Output paths should be allowed outside the base directory
+            output_file_path = Path(tmpdir) / "output.txt"
             args = self._create_test_args(
-                source_directory=".", output_file=f"{tmpdir}/output.txt"
+                source_directory=".", output_file=str(output_file_path)
             )
 
             # This should NOT raise an error
             config = Config.from_args(args)
-            assert str(config.output.output_file) == f"{tmpdir}/output.txt"
+            # Compare resolved paths for platform independence
+            assert config.output.output_file.resolve() == output_file_path.resolve()
 
     def test_config_builder_blocks_traversal_include_files(self):
         """Test that Config blocks path traversal in include files."""
@@ -12678,9 +13930,9 @@ class TestS1FEncoding(BaseS1FTest):
         latin_file = s1f_extracted_dir / "latin_test.txt"
         symbols_file = s1f_extracted_dir / "symbols.txt"
 
-        assert unicode_file.read_text() == "Unicode test: 你好 мир 🌍\n"
-        assert latin_file.read_text() == "Latin characters: àèìòù ÀÈÌÒÙ\n"
-        assert symbols_file.read_text() == "Symbols: €£¥ ©®™ ½¼¾\n"
+        assert unicode_file.read_text(encoding="utf-8") == "Unicode test: 你好 мир 🌍\n"
+        assert latin_file.read_text(encoding="utf-8") == "Latin characters: àèìòù ÀÈÌÒÙ\n"
+        assert symbols_file.read_text(encoding="utf-8") == "Symbols: €£¥ ©®™ ½¼¾\n"
 
     @pytest.mark.unit
     @pytest.mark.encoding
@@ -16603,7 +17855,7 @@ function deeplyNested() {
                 <li><a href="#usage">Usage</a></li>
                 <li><a href="#api">API</a></li>
                 <li style="margin-left: auto;">
-                    <button id="theme-toggle" class="btn" style="padding: 0.5rem 1rem;">üåô</button>
+                    <button id="theme-toggle" class="btn" style="padding: 0.5rem 1rem;">🌙</button>
                 </li>
             </ul>
         </div>
@@ -16628,15 +17880,15 @@ function deeplyNested() {
                 
                 <div class="grid">
                     <div class="card">
-                        <h3>üéØ Precise Selection</h3>
+                        <h3>🎯 Precise Selection</h3>
                         <p>Use CSS selectors to extract exactly the content you need</p>
                     </div>
                     <div class="card">
-                        <h3>üöÄ Fast Processing</h3>
+                        <h3>🚀 Fast Processing</h3>
                         <p>Parallel processing for converting large websites quickly</p>
                     </div>
                     <div class="card">
-                        <h3>üîß Highly Configurable</h3>
+                        <h3>🔧 Highly Configurable</h3>
                         <p>Extensive options for customizing the conversion process</p>
                     </div>
                 </div>
@@ -17073,7 +18325,7 @@ m1f-html2md \
     <footer>
         <div class="container">
             <p>&copy; 2024 HTML2MD Documentation. Part of the HTML2MD Test Suite.</p>
-            <p>Built with ‚ù§Ô∏è for the open source community</p>
+            <p>Built with ❤️ for the open source community</p>
         </div>
     </footer>
 
@@ -22746,7 +23998,7 @@ Zero-width spaces and non-breaking spaces below:
 - [ ] (non-breaking space between brackets)
 - Control characters test: test
 
-======= m1f/source/exotic_encodings/big5.txt.utf8 ======
+======= m1f/source/exotic_encodings/big5.txt ======
 繁體中文測試檔案。這是 Big5 編碼測試。
 這是一個測試文件，用於測試不同的字符編碼。
 以下是一些常用詞語：
@@ -22899,7 +24151,7 @@ for filename, encoding in ENCODING_MAP.items():
 
 print("All files converted successfully.")
 
-======= m1f/source/exotic_encodings/euckr.txt.utf8 ======
+======= m1f/source/exotic_encodings/euckr.txt ======
 한국어 텍스트 파일. 이것은 EUC-KR 인코딩 테스트입니다.
 안녕하세요, 세계!
 이것은 한글 텍스트가 있는 테스트 파일입니다.
@@ -23144,7 +24396,7 @@ This test is now part of the main test suite and will help ensure that the
 superior UTF-16-LE handling of exotic encodings is maintained in future versions
 of the tools.
 
-======= m1f/source/exotic_encodings/iso8859-8.txt.utf8 ======
+======= m1f/source/exotic_encodings/iso8859-8.txt ======
 טקסט בעברית לבדיקת קידוד ISO-8859-8.
 שלום עולם!
 זהו קובץ בדיקה עם טקסט בעברית.
@@ -23153,7 +24405,7 @@ of the tools.
 והארץ הייתה תוהו ובוהו, וחושך על פני תהום.
 ורוח אלוהים מרחפת על פני המים. 
 
-======= m1f/source/exotic_encodings/koi8r.txt.utf8 ======
+======= m1f/source/exotic_encodings/koi8r.txt ======
 Русский текст для проверки KOI8-R кодировки.
 Привет, мир!
 Это тестовый файл с текстом на русском языке.
@@ -23163,7 +24415,7 @@ of the tools.
 Он уважать себя заставил
 И лучше выдумать не мог. 
 
-======= m1f/source/exotic_encodings/shiftjis.txt.utf8 ======
+======= m1f/source/exotic_encodings/shiftjis.txt ======
 日本語のテキスト。これは Shift-JIS エンコーディングのテストです。
 こんにちは世界！私の名前はテストです。
 以下は日本の詩：
@@ -24056,6 +25308,15 @@ print(f"Created automated test file: {test_script_path}")
 print(
     "\nTest complete - UTF-16-LE is a better intermediate format for proper character set handling!"
 )
+
+======= m1f/source/exotic_encodings/windows1256.txt ======
+�� ���� ������� ����� Windows-1256.
+����� �������!
+��� ��� ������ ����� ��� �� ������ �������.
+���� ��� ����:
+�� ����� ��� ���� �������� ������.
+����� ����� ���� �����ɡ ���� ��� ����� ����.
+���� ���� ��� ��� ��� ������. 
 
 ======= m1f/source/exotic_encodings/windows1256.txt.utf8 ======
 نص عربي لاختبار ترميز Windows-1256.

@@ -19,7 +19,7 @@ The solution? Three commands:
 ```bash
 git clone https://github.com/tailwindlabs/tailwindcss.com
 cd tailwindcss.com && m1f-init
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are

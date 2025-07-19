@@ -276,10 +276,10 @@ class FileSplitter:
         self.logger.info("")
 
         if result.files_failed == 0 and result.total_files > 0:
-            self.logger.info("✓ All files extracted successfully!")
+            self.logger.info("[OK] All files extracted successfully!")
         elif result.files_failed > 0:
             self.logger.error(
-                f"✗ Extraction completed with {result.files_failed} error(s). "
+                f"[FAIL] Extraction completed with {result.files_failed} error(s). "
                 f"Check the logs above for details."
             )
 

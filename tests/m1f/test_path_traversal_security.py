@@ -112,13 +112,15 @@ class TestPathTraversalSecurity:
         """Test that Config allows output files outside current directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Output paths should be allowed outside the base directory
+            output_file_path = Path(tmpdir) / "output.txt"
             args = self._create_test_args(
-                source_directory=".", output_file=f"{tmpdir}/output.txt"
+                source_directory=".", output_file=str(output_file_path)
             )
 
             # This should NOT raise an error
             config = Config.from_args(args)
-            assert str(config.output.output_file) == f"{tmpdir}/output.txt"
+            # Compare resolved paths for platform independence
+            assert config.output.output_file.resolve() == output_file_path.resolve()
 
     def test_config_builder_blocks_traversal_include_files(self):
         """Test that Config blocks path traversal in include files."""

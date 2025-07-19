@@ -37,10 +37,10 @@ For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
 # Interactive mode - will prompt for project description and priorities
-m1f-claude --advanced-setup
+m1f-claude --setup
 
 # Or provide project info via command line
-m1f-claude --advanced-setup \
+m1f-claude --setup \
   --project-description "E-commerce platform with React frontend and Django backend" \
   --project-priorities "performance, security, maintainability"
 ```
@@ -118,12 +118,12 @@ For advanced project-specific configuration, use m1f-claude (Linux/macOS only):
 m1f-init
 
 # Then for advanced configuration with Claude's help
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 ### What Makes m1f-claude Special?
 
-When you use `m1f-claude --advanced-setup`, it:
+When you use `m1f-claude --setup`, it:
 
 - Analyzes your project in detail with Claude's assistance
 - Creates topic-specific bundles (components, API, tests, etc.)

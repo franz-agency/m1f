@@ -152,6 +152,11 @@ async def async_main() -> int:
 
 def main() -> NoReturn:
     """Entry point for the application."""
+    # Set Windows-specific event loop policy to avoid debug messages
+    if sys.platform.startswith('win'):
+        # This prevents "RuntimeError: Event loop is closed" messages on Windows
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    
     exit_code = asyncio.run(async_main())
     sys.exit(exit_code)
 
@@ -362,6 +367,11 @@ from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+# Set Windows-specific event loop policy to avoid debug messages
+if sys.platform.startswith('win'):
+    # This prevents "RuntimeError: Event loop is closed" messages on Windows
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from tools.m1f import main
 
@@ -2369,7 +2379,9 @@ Core functionality for m1f - the main FileCombiner class.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -2540,6 +2552,10 @@ class FileCombiner:
             execution_time = format_duration(time.time() - start_time)
             self.logger.error(f"Processing failed after {execution_time}: {e}")
             raise
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _validate_config(self) -> None:
         """Validate the configuration."""
@@ -2766,6 +2782,8 @@ class FileCombiner:
                 with open(path, "w", encoding="utf-8") as f:
                     for p in sorted_paths:
                         f.write(f"{p}\n")
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_file)
 
@@ -2783,6 +2801,8 @@ class FileCombiner:
             def write_empty():
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(content)
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_empty)
 
@@ -2801,8 +2821,12 @@ class FileCombiner:
 
             # Read file content
             def read_file():
+                content = None
                 with open(output_path, "r", encoding="utf-8") as f:
-                    return f.read()
+                    content = f.read()
+                # Explicitly ensure file handle is released
+                f = None
+                return content
 
             content = await asyncio.to_thread(read_file)
 
@@ -2850,6 +2874,8 @@ Encoding handler module for character encoding detection and conversion.
 from __future__ import annotations
 
 import asyncio
+import gc
+import sys
 from pathlib import Path
 from typing import Tuple, Optional
 from dataclasses import dataclass
@@ -2915,13 +2941,18 @@ class EncodingHandler:
 
     async def _detect_encoding(self, file_path: Path) -> str:
         """Detect the encoding of a file."""
+        # Default to utf-8 if chardet is not available
         if not CHARDET_AVAILABLE:
+            self.logger.debug(f"chardet not available, using UTF-8 for {file_path}")
             return "utf-8"
 
         try:
-            # Read file in binary mode
+            # Read file in binary mode with explicit handle cleanup
+            raw_data = None
             with open(file_path, "rb") as f:
                 raw_data = f.read(65536)  # Read up to 64KB
+            # Explicitly ensure file handle is released
+            f = None
 
             if not raw_data:
                 return "utf-8"
@@ -2943,37 +2974,62 @@ class EncodingHandler:
                 if self._looks_like_utf16(raw_data):
                     return "utf-16-le"
 
+            # Try to decode as UTF-8 first (most common encoding)
+            try:
+                raw_data.decode('utf-8', errors='strict')
+                self.logger.debug(f"Successfully decoded {file_path} as UTF-8")
+                return "utf-8"
+            except UnicodeDecodeError:
+                # UTF-8 decoding failed, use chardet
+                pass
+
             # Use chardet for detection
             result = chardet.detect(raw_data)
 
             # If chardet returns None or empty encoding, default to utf-8
             if not result or not result.get("encoding"):
-                return "utf-8"
-
-            if result["confidence"] < 0.7:
-                self.logger.debug(
-                    f"Low confidence encoding detection for {file_path}: "
-                    f"{result['encoding']} ({result['confidence']:.2f})"
-                )
+                self.logger.debug(f"chardet returned no encoding for {file_path}, using UTF-8")
                 return "utf-8"
 
             encoding = result["encoding"]
+            confidence = result["confidence"]
+
+            self.logger.debug(
+                f"chardet detected {encoding} with confidence {confidence:.2f} for {file_path}"
+            )
+
+            # Low confidence threshold
+            if confidence < 0.7:
+                self.logger.debug(
+                    f"Low confidence encoding detection for {file_path}: "
+                    f"{encoding} ({confidence:.2f}), defaulting to UTF-8"
+                )
+                return "utf-8"
 
             # Map some common encoding names
             encoding_map = {
                 "iso-8859-8": "windows-1255",  # Hebrew
                 "ascii": "utf-8",  # Treat ASCII as UTF-8
-                "windows-1252": "utf-8",  # Prefer UTF-8 over Windows-1252 for better emoji support
             }
 
-            # Check if file extension suggests documentation files that should be UTF-8
-            if (
-                self.config.encoding.prefer_utf8_for_text_files
-                and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
-            ):
-                # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
-                # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
-                if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:
+            # Special handling for Windows-1252 detection
+            if encoding.lower() == "windows-1252":
+                # Check if file extension suggests documentation files that should be UTF-8
+                if (
+                    self.config.encoding.prefer_utf8_for_text_files
+                    and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
+                ):
+                    # For documentation files, prefer UTF-8 over Windows-1252
+                    # unless we have very high confidence
+                    if confidence < 0.95:
+                        self.logger.debug(
+                            f"Preferring UTF-8 over {encoding} for documentation file {file_path}"
+                        )
+                        return "utf-8"
+                
+                # For other files, only use Windows-1252 if we have high confidence
+                # and the file really can't be decoded as UTF-8
+                if confidence < 0.9:
                     return "utf-8"
 
             return encoding_map.get(encoding.lower(), encoding.lower())
@@ -2981,6 +3037,10 @@ class EncodingHandler:
         except Exception as e:
             self.logger.warning(f"Error detecting encoding for {file_path}: {e}")
             return "utf-8"
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _looks_like_utf16(self, data: bytes) -> bool:
         """Check if data looks like UTF-16 encoded text."""
@@ -3002,13 +3062,27 @@ class EncodingHandler:
         had_errors = False
 
         try:
-            # Read file with source encoding
-            with open(file_path, "r", encoding=source_encoding) as f:
-                content = f.read()
+            # Read file with source encoding and explicit handle cleanup
+            content = None
+            try:
+                with open(file_path, "r", encoding=source_encoding) as f:
+                    content = f.read()
+            except UnicodeDecodeError as e:
+                # If initial read fails, try with error handling
+                self.logger.debug(
+                    f"Initial read failed for {file_path} with {source_encoding}, "
+                    f"retrying with error replacement"
+                )
+                with open(file_path, "r", encoding=source_encoding, errors="replace") as f:
+                    content = f.read()
+                had_errors = True
+            
+            # Explicitly ensure file handle is released
+            f = None
 
             # If no conversion needed, return as is
             if source_encoding.lower() == target_encoding.lower():
-                return content, False
+                return content, had_errors
 
             # Try to encode to target encoding
             try:
@@ -3021,7 +3095,7 @@ class EncodingHandler:
                         f"Converted {file_path} from {source_encoding} to {target_encoding}"
                     )
 
-                return decoded, False
+                return decoded, had_errors
 
             except UnicodeEncodeError as e:
                 if self.config.encoding.abort_on_error:
@@ -3042,45 +3116,57 @@ class EncodingHandler:
                 return decoded, True
 
         except UnicodeDecodeError as e:
+            # This shouldn't happen since we handle it above, but just in case
             if self.config.encoding.abort_on_error:
                 raise EncodingError(
                     f"Cannot decode {file_path} with encoding {source_encoding}: {e}"
                 )
 
-            # Try reading with error replacement
+            # Last resort: read as binary and decode with replacement
             try:
-                with open(
-                    file_path, "r", encoding=source_encoding, errors="replace"
-                ) as f:
-                    content = f.read()
+                binary_data = None
+                with open(file_path, "rb") as f:
+                    binary_data = f.read()
+                # Explicitly ensure file handle is released
+                f = None
 
-                self.logger.warning(
-                    f"Decoding errors in {file_path} with {source_encoding}"
-                )
+                # Try UTF-8 first, then fallback to latin-1
+                for fallback_encoding in ["utf-8", "latin-1"]:
+                    try:
+                        content = binary_data.decode(fallback_encoding, errors="replace")
+                        self.logger.warning(
+                            f"Failed to decode {file_path} with {source_encoding}, "
+                            f"using {fallback_encoding} fallback"
+                        )
+                        break
+                    except Exception:
+                        continue
+                else:
+                    # Ultimate fallback - decode as latin-1 which accepts all bytes
+                    content = binary_data.decode("latin-1", errors="replace")
+                    self.logger.error(
+                        f"Failed to decode {file_path} properly, using latin-1 fallback"
+                    )
 
                 return content, True
 
             except Exception as e2:
-                # Last resort: read as binary and decode with replacement
-                with open(file_path, "rb") as f:
-                    binary_data = f.read()
-
-                content = binary_data.decode("utf-8", errors="replace")
-
-                self.logger.error(
-                    f"Failed to decode {file_path} properly, using UTF-8 fallback"
-                )
-
-                return content, True
+                # Final fallback
+                error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e2}]"
+                return error_content, True
 
         except Exception as e:
-            # Handle other errors
+            # Handle other errors (file not found, permissions, etc.)
             if self.config.encoding.abort_on_error:
                 raise EncodingError(f"Error reading {file_path}: {e}")
 
             # Return error message as content
-            error_content = f"[ERROR: Unable to read file. Reason: {e}]"
+            error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e}]"
             return error_content, True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
 ======= m1f/exceptions.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -3306,6 +3392,9 @@ class FileProcessor:
                         for line in f
                         if line.strip() and not line.strip().startswith("#")
                     ]
+                # Explicitly close file handle on Windows for immediate cleanup
+                # The context manager should handle this, but ensure it's done
+                f = None
 
                 # Detect if it's gitignore format
                 is_gitignore = exclude_file.name == ".gitignore" or any(
@@ -3367,6 +3456,8 @@ class FileProcessor:
                             for line in f
                             if line.strip() and not line.strip().startswith("#")
                         ]
+                    # Explicitly ensure file handle is released
+                    f = None
 
                     # Detect if it's gitignore format
                     is_gitignore = any(
@@ -3477,37 +3568,41 @@ class FileProcessor:
 
         try:
             with open(input_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
+                content_lines = f.readlines()
+            # Explicitly ensure file handle is released before processing
+            f = None
+            
+            for line in content_lines:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
 
-                    # Handle glob patterns
-                    if any(ch in line for ch in ["*", "?", "["]):
-                        pattern_path = Path(line)
-                        if not pattern_path.is_absolute():
-                            pattern_path = base_dir / pattern_path
+                # Handle glob patterns
+                if any(ch in line for ch in ["*", "?", "["]):
+                    pattern_path = Path(line)
+                    if not pattern_path.is_absolute():
+                        pattern_path = base_dir / pattern_path
 
-                        matches = glob.glob(str(pattern_path), recursive=True)
-                        for m in matches:
-                            try:
-                                validated_path = validate_path_traversal(
-                                    Path(m).resolve()
-                                )
-                                paths.append(validated_path)
-                            except ValueError as e:
-                                self.logger.warning(
-                                    f"Skipping invalid glob match '{m}': {e}"
-                                )
-                    else:
-                        path = Path(line)
-                        if not path.is_absolute():
-                            path = base_dir / path
+                    matches = glob.glob(str(pattern_path), recursive=True)
+                    for m in matches:
                         try:
-                            validated_path = validate_path_traversal(path.resolve())
+                            validated_path = validate_path_traversal(
+                                Path(m).resolve()
+                            )
                             paths.append(validated_path)
                         except ValueError as e:
-                            self.logger.warning(f"Skipping invalid path '{line}': {e}")
+                            self.logger.warning(
+                                f"Skipping invalid glob match '{m}': {e}"
+                            )
+                else:
+                    path = Path(line)
+                    if not path.is_absolute():
+                        path = base_dir / path
+                    try:
+                        validated_path = validate_path_traversal(path.resolve())
+                        paths.append(validated_path)
+                    except ValueError as e:
+                        self.logger.warning(f"Skipping invalid path '{line}': {e}")
 
             # Deduplicate paths
             paths = self._deduplicate_paths(paths)
@@ -3648,7 +3743,8 @@ class FileProcessor:
                     rel_path = dir_path
                 
                 # For directory matching, we need to append a trailing slash
-                rel_path_str = str(rel_path).replace(os.sep, "/")
+                # Always use forward slashes for gitignore pattern matching
+                rel_path_str = str(rel_path).replace("\\", "/")
                 if not rel_path_str.endswith("/"):
                     rel_path_str += "/"
                 
@@ -3711,6 +3807,7 @@ class FileProcessor:
                 rel_path = get_relative_path(
                     file_path, self._get_base_dir_for_path(file_path)
                 )
+                # Note: get_relative_path already returns forward slashes via as_posix()
                 if self.include_gitignore_spec.match_file(rel_path):
                     include_matched = True
 
@@ -3731,6 +3828,7 @@ class FileProcessor:
             rel_path = get_relative_path(
                 file_path, self._get_base_dir_for_path(file_path)
             )
+            # Note: get_relative_path already returns forward slashes via as_posix()
             if self.gitignore_spec.match_file(rel_path):
                 return False
 
@@ -3961,6 +4059,8 @@ class FileProcessor:
                     for line in f
                     if line.strip() and not line.strip().startswith("#")
                 ]
+            # Explicitly ensure file handle is released
+            f = None
 
             # Add to gitignore spec if patterns found
             patterns = [
@@ -4231,7 +4331,9 @@ Output writer module for writing combined files with separators.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 from pathlib import Path
 from typing import List, Tuple, Set, Optional
 import re
@@ -4464,6 +4566,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _write_combined_file_parallel(
         self, output_path: Path, all_files: List[Tuple[Path, str]]
@@ -4506,6 +4612,10 @@ class OutputWriter:
                         self.logger.error(f"Failed to process {file_path}: {result}")
                     elif result is not None:
                         processed_files.append((batch[j], result))
+                
+                # Force garbage collection after each batch on Windows to release file handles
+                if sys.platform.startswith("win"):
+                    gc.collect()
 
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
@@ -4558,6 +4668,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _process_single_file_parallel(
         self, file_path: Path, rel_path: str, file_num: int, total_files: int
@@ -4658,6 +4772,10 @@ class OutputWriter:
         except Exception as e:
             self.logger.error(f"Error processing file {file_path}: {e}")
             raise
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _prepare_include_files(self) -> List[Tuple[Path, str]]:
         """Prepare include files from configuration."""
@@ -4831,6 +4949,10 @@ class OutputWriter:
             outfile.write(self.config.output.line_ending.value)
 
             return True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
 ======= m1f/presets.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -6580,13 +6702,16 @@ def is_binary_file(file_path: Path) -> bool:
 
     # Try reading first few bytes
     try:
+        chunk = None
         with open(file_path, "rb") as f:
             # Read first 1024 bytes
             chunk = f.read(1024)
+        # Explicitly ensure file handle is released
+        f = None
 
-            # Check for null bytes
-            if b"\0" in chunk:
-                return True
+        # Check for null bytes
+        if b"\0" in chunk:
+            return True
 
             # Try to decode as UTF-8
             try:
@@ -6620,12 +6745,23 @@ def is_documentation_file(file_path: Path) -> bool:
 
 
 def get_relative_path(file_path: Path, base_path: Path) -> str:
-    """Get relative path from base path, handling edge cases."""
+    """Get relative path from base path, handling edge cases.
+    
+    Returns path with forward slashes regardless of platform for consistent
+    bundle format across different operating systems.
+    """
     try:
-        return str(file_path.relative_to(base_path))
+        # Ensure both paths are resolved to handle edge cases
+        resolved_file = file_path.resolve()
+        resolved_base = base_path.resolve()
+        
+        # Get relative path and convert to forward slashes
+        rel_path = resolved_file.relative_to(resolved_base)
+        # Use as_posix() to ensure forward slashes on all platforms
+        return rel_path.as_posix()
     except ValueError:
-        # If file is not under base path, return absolute path
-        return str(file_path)
+        # If file is not under base path, return absolute path with forward slashes
+        return file_path.resolve().as_posix()
 
 
 def parse_file_size(size_str: str) -> int:
@@ -6782,8 +6918,11 @@ def validate_path_traversal(
     if path_str.startswith("~"):
         return resolved_path
 
-    # Check for excessive parent directory traversals
-    parent_traversals = path_str.count("../")
+    # Normalize path separators for consistent checking
+    normalized_path_str = path_str.replace("\\", "/")
+    
+    # Check for excessive parent directory traversals (both Unix and Windows style)
+    parent_traversals = normalized_path_str.count("../") + normalized_path_str.count("..\\") + path_str.count("..\\")
     if parent_traversals >= 3 and not (allow_outside or from_preset):
         # Three or more parent directory traversals are suspicious
         raise ValueError(
@@ -6802,13 +6941,29 @@ def validate_path_traversal(
 
     # Allow access to home directory for config files
     home_dir = Path.home()
-    if resolved_path.is_relative_to(home_dir / ".m1f"):
-        return resolved_path
+    try:
+        if resolved_path.is_relative_to(home_dir / ".m1f"):
+            return resolved_path
+    except (ValueError, AttributeError):
+        # is_relative_to might not exist in older Python versions
+        try:
+            resolved_path.relative_to(home_dir / ".m1f")
+            return resolved_path
+        except ValueError:
+            pass
 
     # Allow access to project's tmp directory for tests
     project_root = resolved_base
-    if resolved_path.is_relative_to(project_root / "tmp"):
-        return resolved_path
+    try:
+        if resolved_path.is_relative_to(project_root / "tmp"):
+            return resolved_path
+    except (ValueError, AttributeError):
+        # is_relative_to might not exist in older Python versions
+        try:
+            resolved_path.relative_to(project_root / "tmp")
+            return resolved_path
+        except ValueError:
+            pass
 
     # Check if the resolved path is within the base directory
     try:
@@ -6816,10 +6971,11 @@ def validate_path_traversal(
         resolved_path.relative_to(resolved_base)
         return resolved_path
     except ValueError:
-        # Check if we're in a test environment
+        # Check if we're in a test environment (handle Windows temp paths)
+        resolved_str = str(resolved_path).replace("\\", "/")
         if any(
-            part in str(resolved_path)
-            for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
+            part in resolved_str.lower()
+            for part in ["/tmp/", "/var/folders/", "pytest-", "test_", "\\temp\\", "\\tmp\\", "/temp/", "appdata/local/temp"]
         ):
             # Allow temporary test directories
             return resolved_path

@@ -218,7 +218,7 @@ m1f -s . -i m1f/selected_dirs.txt -o m1f/specific_areas.txt
 For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 #### Example AI Prompts:

@@ -28,6 +28,12 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 
+def normalize_path_for_subprocess(path):
+    """Normalize path for cross-platform subprocess usage."""
+    # Convert Path to string and use forward slashes
+    return str(path).replace('\\', '/')
+
+
 class TestIntegration(unittest.TestCase):
     """Integration tests for HTML to Markdown conversion tools."""
 
@@ -69,15 +75,25 @@ class TestIntegration(unittest.TestCase):
         """Test direct conversion with html2md.py."""
         cmd = [
             sys.executable,
-            str(self.html2md_script),
+            normalize_path_for_subprocess(self.html2md_script),
             "convert",
-            str(self.html_dir),
+            normalize_path_for_subprocess(self.html_dir),
             "-o",
-            str(self.md_dir),
+            normalize_path_for_subprocess(self.md_dir),
         ]
 
-        # Run the command
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
+        # Run the command with explicit encoding for Windows
+        try:
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check that the command completed successfully
         self.assertEqual(result.returncode, 0)
@@ -107,15 +123,25 @@ class TestIntegration(unittest.TestCase):
         # (The current implementation converts the entire document)
         cmd = [
             sys.executable,
-            str(self.html2md_script),
+            normalize_path_for_subprocess(self.html2md_script),
             "convert",
-            str(self.html_dir),
+            normalize_path_for_subprocess(self.html_dir),
             "-o",
-            str(self.md_dir),
+            normalize_path_for_subprocess(self.md_dir),
         ]
 
-        # Run the command
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
+        # Run the command with explicit encoding for Windows
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check output
         output_file = self.md_dir / "sample.md"
@@ -147,15 +173,25 @@ class TestIntegration(unittest.TestCase):
         # Convert the HTML
         cmd = [
             sys.executable,
-            str(self.html2md_script),
+            normalize_path_for_subprocess(self.html2md_script),
             "convert",
-            str(self.html_dir),
+            normalize_path_for_subprocess(self.html_dir),
             "-o",
-            str(self.md_dir),
+            normalize_path_for_subprocess(self.md_dir),
         ]
 
-        # Run the command
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Set up environment with UTF-8 encoding for Windows compatibility
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+
+        # Run the command with explicit encoding for Windows
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            raise
 
         # Check output
         output_file = self.md_dir / "sample.md"

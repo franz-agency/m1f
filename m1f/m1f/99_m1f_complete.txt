@@ -20,7 +20,7 @@ The solution? Three commands:
 ```bash
 git clone https://github.com/tailwindlabs/tailwindcss.com
 cd tailwindcss.com && m1f-init
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are
@@ -505,229 +505,12 @@ limitations under the License.
   },
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
-  "version": "3.4.0",
+  "version": "3.6.0",
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
   "license": "Apache-2.0"
 }
-
-======= perfect_bundle_prompt.md ======
-# Perfect Bundle Creation Prompt for m1f-claude
-
-## 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
-
-============================================================
-
-The basic bundles (complete.txt and docs.txt) have already been created. Now
-create additional topic-specific bundles following BEST PRACTICES.
-
-## 📚 REQUIRED READING (IN THIS ORDER):
-
-1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax
-2. READ: @m1f/project_analysis_dirlist.txt for directory structure
-3. READ: @m1f/project_analysis_filelist.txt for complete file listing
-
-⚠️ IMPORTANT: Read ALL three files above before proceeding!
-
-## 🏆 BEST PRACTICES FOR PERFECT BUNDLES
-
-### 1. MODULAR ARCHITECTURE PRINCIPLE
-
-- Identify each logical module, tool, or subsystem in the project
-- Create one bundle per module/tool (e.g., auth-module, payment-module,
-  user-module)
-- Each module bundle should be self-contained and meaningful
-
-### 2. USE PRECISE INCLUDES, NOT BROAD EXCLUDES
-
-Instead of excluding everything except what you want, use precise includes:
-
-```yaml
-# ❌ BAD - Too broad, relies on excludes
-sources:
-  - path: "."
-    excludes: ["tests/", "docs/", "scripts/", "node_modules/"]
-
-# ✅ GOOD - Precise includes
-sources:
-  - path: "tools/"
-    include_extensions: [".py"]
-    includes: ["auth/**", "auth.py", "utils.py", "__init__.py"]
-```
-
-### 3. BUNDLE GROUPING STRATEGY
-
-Organize bundles into logical groups:
-
-- `documentation` - All documentation bundles
-- `source` - Source code bundles by module
-- `tests` - Test code bundles
-- `config` - Configuration bundles
-- `complete` - Aggregated bundles
-
-### 4. NUMBERED OUTPUT FILES
-
-Use numbered prefixes for proper sorting:
-
-```yaml
-output: "m1f/project/87_module1_docs.txt"  # Documentation
-output: "m1f/project/94_module1_code.txt"  # Source code
-output: "m1f/project/95_module2_code.txt"  # Source code
-output: "m1f/project/99_complete.txt"      # Complete bundle
-```
-
-### 5. HIERARCHICAL BUNDLES
-
-Create aggregated bundles that combine related bundles:
-
-- `all-docs` - Combines all documentation
-- `all-tests` - Combines all tests
-- `all-frontend` - Combines all frontend code
-- `complete` - The ultimate bundle with everything
-
-### 6. SHARED FILES STRATEGY
-
-When files are used by multiple modules (like utils, constants, types):
-
-- Include them in each relevant module bundle
-- This ensures each bundle is self-contained
-
-## 🔍 PROJECT ANALYSIS STEPS
-
-### STEP 1: Identify Project Architecture
-
-Analyze the directory structure to find:
-
-- Monorepo with packages? → Create bundle per package
-- Multiple apps/services? → Create bundle per app
-- Modular architecture? → Create bundle per module
-- Plugin/Extension system? → Create bundle per plugin
-- Frontend/Backend split? → Create bundles for each
-
-### STEP 2: Find Logical Boundaries
-
-Look for natural boundaries in the code:
-
-- Directory names that indicate modules (auth/, payment/, user/)
-- File naming patterns (auth.service.ts, auth.controller.ts)
-- Configuration files that define modules
-- Import patterns that show dependencies
-
-### STEP 3: Design Bundle Hierarchy
-
-Plan your bundles in this order:
-
-1. Module/tool-specific bundles (most granular)
-2. Category bundles (tests, docs, config)
-3. Aggregated bundles (all-docs, all-frontend)
-4. Complete bundle (everything)
-
-## 📝 BUNDLE CREATION RULES
-
-### NAMING CONVENTIONS
-
-- Use lowercase with hyphens: `user-service`, `auth-module`
-- Be descriptive but concise
-- Group prefix when applicable: `frontend-components`, `backend-api`
-
-### OUTPUT FILE PATTERNS
-
-```
-m1f/{project_name}/
-├── 80-89_*_docs.txt     # Documentation bundles
-├── 90-93_*_config.txt   # Configuration bundles
-├── 94-98_*_code.txt     # Source code bundles
-└── 99_*_complete.txt    # Complete/aggregated bundles
-```
-
-### SOURCES CONFIGURATION
-
-Always use the most specific configuration:
-
-```yaml
-sources:
-  - path: "src/modules/auth"
-    include_extensions: [".ts", ".js"]
-    includes: ["**/*.service.ts", "**/*.controller.ts"]
-  - path: "src/shared"
-    includes: ["auth-utils.ts", "auth-types.ts"]
-```
-
-## 🚨 CRITICAL RULES - MUST FOLLOW
-
-1. **NO DEFAULT EXCLUDES**: Don't exclude node_modules, .git, **pycache**, etc.
-2. **NO BINARY/ASSET BUNDLES**: Skip images, fonts, compiled files
-3. **MAX 20 BUNDLES**: Including existing complete and docs
-4. **USE INCLUDES OVER EXCLUDES**: Be precise about what to include
-5. **SELF-CONTAINED BUNDLES**: Each bundle should be useful standalone
-
-## 🎯 IMPLEMENTATION CHECKLIST
-
-□ Read all three required files completely □ Identify the project's modular
-structure □ Plan bundle hierarchy (modules → categories → aggregated) □ Design
-precise `includes` patterns for each bundle □ Use numbered output files for
-sorting □ Group bundles logically □ Create aggregated bundles where valuable □
-Keep total count under 20 bundles □ Use MultiEdit to add all bundles at once
-
-## 💡 EXAMPLE PATTERNS TO RECOGNIZE
-
-### For a Multi-Service Project:
-
-```yaml
-bundles:
-  # Service-specific bundles
-  auth-service:
-    group: "services"
-    output: "m1f/project/94_auth_service.txt"
-    sources:
-      - path: "services/auth"
-        include_extensions: [".js", ".ts"]
-      - path: "shared"
-        includes: ["auth/**", "types/auth.ts"]
-
-  user-service:
-    group: "services"
-    output: "m1f/project/95_user_service.txt"
-    sources:
-      - path: "services/user"
-        include_extensions: [".js", ".ts"]
-      - path: "shared"
-        includes: ["user/**", "types/user.ts"]
-```
-
-### For a Plugin-Based System:
-
-```yaml
-bundles:
-  plugin-core:
-    group: "core"
-    output: "m1f/project/94_plugin_core.txt"
-    sources:
-      - path: "core"
-        include_extensions: [".py"]
-      - path: "plugins"
-        includes: ["__init__.py", "base.py"]
-
-  plugin-auth:
-    group: "plugins"
-    output: "m1f/project/95_plugin_auth.txt"
-    sources:
-      - path: "plugins/auth"
-      - path: "core"
-        includes: ["plugin_utils.py"]
-```
-
-## ⚡ FINAL STEPS
-
-1. Analyze the project structure deeply
-2. Design bundles that reflect the project's architecture
-3. Use precise includes to create focused bundles
-4. Test your mental model: "Would each bundle be useful alone?"
-5. Create the configuration with MultiEdit
-
-Remember: The goal is bundles that are **modular**, **focused**, and
-**self-contained**!
 
 ======= pyproject.toml ======
 [tool.black]
@@ -1177,7 +960,7 @@ m1f -s . -i m1f/selected_dirs.txt -o m1f/specific_areas.txt
 For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 #### Example AI Prompts:
@@ -1231,707 +1014,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
   [M1F Development Workflow](docs/01_m1f/04_m1f_development_workflow.md)
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options
-
-======= test.log ======
-2025-07-04 13:24:40,563 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/docs/01_m1f
-2025-07-04 13:24:40,563 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 13:24:40,566 - tools.m1f.core - INFO    : Found 16 files to process
-2025-07-04 13:24:40,566 - tools.m1f.output_writer - INFO    : Processing 16 file(s) for inclusion...
-2025-07-04 13:24:40,566 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 13:24:40,751 - tools.m1f.core - INFO    : Successfully combined 16 files into '/home/fuf-user/git/m1f/test.txt'
-2025-07-04 13:24:40,751 - m1f_main - INFO    : Total execution time: 0.19 seconds
-2025-07-04 13:24:40,752 - m1f_main - INFO    : Processed 16 files
-
-======= test_claude_runner_improvements.py ======
-#!/usr/bin/env python3
-"""
-Test script to demonstrate m1f-claude improvements based on html2md enhancements.
-"""
-
-import sys
-import time
-from pathlib import Path
-
-# Add tools directory to path
-sys.path.insert(0, str(Path(__file__).parent / "tools"))
-
-from m1f_claude_runner import M1FClaudeRunner
-
-
-def test_basic_streaming():
-    """Test basic streaming functionality."""
-    print("🧪 Testing basic streaming output...")
-    
-    try:
-        runner = M1FClaudeRunner()
-        print(f"✅ Found Claude at: {runner.claude_binary}")
-    except FileNotFoundError as e:
-        print(f"❌ {e}")
-        return False
-    
-    # Simple test prompt
-    test_prompt = "List 3 benefits of using m1f for code bundling. Be brief."
-    
-    print("\n📝 Sending test prompt to Claude...")
-    start_time = time.time()
-    
-    returncode, stdout, stderr = runner.run_claude_streaming(
-        prompt=test_prompt,
-        working_dir=".",
-        timeout=60,
-        show_output=True
-    )
-    
-    elapsed = time.time() - start_time
-    
-    if returncode == 0:
-        print(f"\n✅ Test completed successfully in {elapsed:.1f}s")
-        print(f"📊 Output length: {len(stdout)} characters")
-        return True
-    else:
-        print(f"\n❌ Test failed with code {returncode}")
-        if stderr:
-            print(f"Error: {stderr}")
-        return False
-
-
-def test_timeout_handling():
-    """Test timeout handling with a prompt that might take longer."""
-    print("\n🧪 Testing timeout handling...")
-    
-    try:
-        runner = M1FClaudeRunner()
-    except FileNotFoundError:
-        print("⚠️  Skipping timeout test - Claude not found")
-        return
-    
-    # Prompt that asks for a complex task
-    complex_prompt = """
-    Create a detailed analysis of a hypothetical large codebase with 1000+ files.
-    Include directory structure, file naming conventions, and best practices.
-    Make it very detailed and comprehensive.
-    """
-    
-    print("📝 Sending complex prompt with 30s timeout...")
-    
-    returncode, stdout, stderr = runner.run_claude_streaming(
-        prompt=complex_prompt,
-        working_dir=".",
-        timeout=30,  # Short timeout for testing
-        show_output=True
-    )
-    
-    if returncode == -1 and "timeout" in stderr.lower():
-        print("\n✅ Timeout handling works correctly")
-    else:
-        print("\n📊 Command completed within timeout")
-
-
-def compare_implementations():
-    """Compare old vs new implementation characteristics."""
-    print("\n📊 Comparison: Old vs New Implementation")
-    print("="*60)
-    
-    print("\n🔴 OLD Implementation (subprocess.run):")
-    print("  • Blocks until completion - no progress feedback")
-    print("  • No timeout specified - can hang indefinitely")
-    print("  • User sees nothing during execution")
-    print("  • No way to cancel gracefully")
-    print("  • capture_output=False but no streaming")
-    
-    print("\n🟢 NEW Implementation (streaming with timeout):")
-    print("  • Real-time output with timestamps")
-    print("  • Configurable timeout (default 10 minutes)")
-    print("  • Inactivity detection (60s no output)")
-    print("  • Progress indicators during waiting")
-    print("  • Graceful cancellation with Ctrl-C")
-    print("  • Based on proven html2md improvements")
-    
-    print("\n💡 Key Improvements:")
-    print("  1. User sees progress - no more 'dauert ewigkeiten' feeling")
-    print("  2. Automatic timeout prevents infinite hangs")
-    print("  3. Better error handling and diagnostics")
-    print("  4. Can handle large projects without appearing frozen")
-
-
-if __name__ == "__main__":
-    print("🚀 m1f-claude Runner Improvements Test")
-    print("="*60)
-    
-    # Run tests
-    if test_basic_streaming():
-        test_timeout_handling()
-    
-    # Show comparison
-    compare_implementations()
-    
-    print("\n✅ Test completed!")
-
-======= test_debug.log ======
-2025-07-04 14:17:46,646 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 14:17:46,646 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 14:17:46,674 - tools.m1f.core - INFO    : Found 71 files to process
-2025-07-04 14:17:46,675 - tools.m1f.output_writer - INFO    : Processing 71 file(s) for inclusion...
-2025-07-04 14:17:46,675 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 14:17:47,076 - tools.m1f.core - INFO    : Successfully combined 71 files into '/home/fuf-user/git/m1f/test_debug.txt'
-2025-07-04 14:17:47,076 - m1f_main - INFO    : Total execution time: 0.43 seconds
-2025-07-04 14:17:47,077 - m1f_main - INFO    : Processed 71 files
-
-======= test_debug2.log ======
-2025-07-04 14:23:25,987 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 14:23:25,988 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 14:23:25,988 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/__pycache__
-2025-07-04 14:23:25,988 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f_init.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/_version.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f_claude.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/prepare_docs.py
-2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/__init__.py
-2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/setup.py
-2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/wp_export_md.py
-2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/token_counter.py
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md.py
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/__pycache__
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/core.py
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/__main__.py
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner_simple.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/analyze_html.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/preprocessors.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/cli_claude.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/__init__.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/extractors.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/utils.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/api.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/convert_claude.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/cli.py
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/select_files_from_project.md
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_selected_files.md
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/convert_html_to_md.md
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_individual_file.md
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/synthesize_config.md
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/config/__pycache__
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/loader.py
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/__init__.py
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/models.py
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/__pycache__
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/__main__.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/__init__.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/config.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/utils.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/crawlers.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/cli.py
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__pycache__
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/httrack.py
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/selectolax.py
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/beautifulsoup.py
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__init__.py
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/README.md
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/scrapy_scraper.py
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/base.py
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/playwright.py
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/cloudflare.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/playwright.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/beautifulsoup.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/httrack.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/scrapy.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/selectolax.yaml
-2025-07-04 14:23:26,000 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/m1f/__pycache__
-2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/segmentation_prompt.md
-2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/verification_prompt.md
-2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/s1f/__pycache__
-2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/core.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/__main__.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/exceptions.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/parsers.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/__init__.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/config.py
-2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/utils.py
-2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/writers.py
-2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/models.py
-2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/logging.py
-2025-07-04 14:23:26,007 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/cli.py
-2025-07-04 14:23:26,007 - tools.m1f.core - INFO    : Found 20 files to process
-2025-07-04 14:23:26,007 - tools.m1f.core - DEBUG   : Files sorted by depth and name
-2025-07-04 14:23:26,007 - tools.m1f.output_writer - INFO    : Processing 20 file(s) for inclusion...
-2025-07-04 14:23:26,007 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 14:23:26,008 - tools.m1f.output_writer - DEBUG   : Processing file (1/20): m1f.py
-2025-07-04 14:23:26,009 - tools.m1f.output_writer - DEBUG   : Processing file (2/20): path_utils.py
-2025-07-04 14:23:26,009 - tools.m1f.output_writer - DEBUG   : Processing file (3/20): __init__.py
-2025-07-04 14:23:26,010 - tools.m1f.output_writer - DEBUG   : Processing file (4/20): __main__.py
-2025-07-04 14:23:26,010 - tools.m1f.output_writer - DEBUG   : Processing file (5/20): archive_creator.py
-2025-07-04 14:23:26,011 - tools.m1f.output_writer - DEBUG   : Processing file (6/20): auto_bundle.py
-2025-07-04 14:23:26,014 - tools.m1f.output_writer - DEBUG   : Processing file (7/20): cli.py
-2025-07-04 14:23:26,027 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2788
-2025-07-04 14:23:26,028 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 2790
-2025-07-04 14:23:26,029 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2788
-2025-07-04 14:23:26,030 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2788
-2025-07-04 14:23:26,031 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2790
-2025-07-04 14:23:26,031 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2788
-2025-07-04 14:23:26,032 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 2788
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12799495392693638
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.7080353101079013
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 14:23:26,044 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 14:23:26,044 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 14:23:26,044 - tools.m1f.output_writer - DEBUG   : Processing file (8/20): config.py
-2025-07-04 14:23:26,047 - tools.m1f.output_writer - DEBUG   : Processing file (9/20): config_loader.py
-2025-07-04 14:23:26,048 - tools.m1f.output_writer - DEBUG   : Processing file (10/20): constants.py
-2025-07-04 14:23:26,050 - tools.m1f.output_writer - DEBUG   : Processing file (11/20): core.py
-2025-07-04 14:23:26,053 - tools.m1f.output_writer - DEBUG   : Processing file (12/20): encoding_handler.py
-2025-07-04 14:23:26,055 - tools.m1f.output_writer - DEBUG   : Processing file (13/20): exceptions.py
-2025-07-04 14:23:26,055 - tools.m1f.output_writer - DEBUG   : Processing file (14/20): file_processor.py
-2025-07-04 14:23:26,061 - tools.m1f.output_writer - DEBUG   : Processing file (15/20): logging.py
-2025-07-04 14:23:26,062 - tools.m1f.output_writer - DEBUG   : Processing file (16/20): output_writer.py
-2025-07-04 14:23:26,067 - tools.m1f.output_writer - DEBUG   : Processing file (17/20): presets.py
-2025-07-04 14:23:26,074 - tools.m1f.output_writer - DEBUG   : Processing file (18/20): security_scanner.py
-2025-07-04 14:23:26,075 - tools.m1f.output_writer - DEBUG   : Processing file (19/20): separator_generator.py
-2025-07-04 14:23:26,077 - tools.m1f.output_writer - DEBUG   : Processing file (20/20): utils.py
-2025-07-04 14:23:26,080 - tools.m1f.core - INFO    : Successfully combined 20 files into '/home/fuf-user/git/m1f/test_debug2.txt'
-2025-07-04 14:23:26,080 - m1f_main - INFO    : Total execution time: 0.09 seconds
-2025-07-04 14:23:26,080 - m1f_main - INFO    : Processed 20 files
-
-======= test_exact.log ======
-2025-07-04 14:24:06,392 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 14:24:06,392 - tools.m1f.core - INFO    : Separator style: Standard
-2025-07-04 14:24:06,398 - tools.m1f.core - INFO    : Found 2 files to process
-2025-07-04 14:24:06,398 - tools.m1f.output_writer - INFO    : Processing 2 file(s) for inclusion...
-2025-07-04 14:24:06,398 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 14:24:06,399 - tools.m1f.core - INFO    : Successfully combined 2 files into '/home/fuf-user/git/m1f/test_exact.txt'
-2025-07-04 14:24:06,399 - m1f_main - INFO    : Total execution time: 0.01 seconds
-2025-07-04 14:24:06,399 - m1f_main - INFO    : Processed 2 files
-
-======= test_fixed.log ======
-2025-07-04 14:19:51,125 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 14:19:51,125 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 14:19:51,135 - tools.m1f.core - INFO    : Found 26 files to process
-2025-07-04 14:19:51,136 - tools.m1f.output_writer - INFO    : Processing 26 file(s) for inclusion...
-2025-07-04 14:19:51,136 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 14:19:51,204 - tools.m1f.core - INFO    : Successfully combined 26 files into '/home/fuf-user/git/m1f/test_fixed.txt'
-2025-07-04 14:19:51,205 - m1f_main - INFO    : Total execution time: 0.08 seconds
-2025-07-04 14:19:51,205 - m1f_main - INFO    : Processed 26 files
-
-======= test_includes.log ======
-2025-07-04 13:25:33,820 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 13:25:33,820 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 13:25:33,820 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/__pycache__
-2025-07-04 13:25:33,822 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/__pycache__
-2025-07-04 13:25:33,823 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/select_files_from_project.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_selected_files.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/convert_html_to_md.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_individual_file.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/synthesize_config.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/config/__pycache__
-2025-07-04 13:25:33,825 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/__pycache__
-2025-07-04 13:25:33,826 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__pycache__
-2025-07-04 13:25:33,827 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/README.md
-2025-07-04 13:25:33,827 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/cloudflare.yaml
-2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/playwright.yaml
-2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/beautifulsoup.yaml
-2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/httrack.yaml
-2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/scrapy.yaml
-2025-07-04 13:25:33,829 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/selectolax.yaml
-2025-07-04 13:25:33,829 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/m1f/__pycache__
-2025-07-04 13:25:33,831 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/segmentation_prompt.md
-2025-07-04 13:25:33,831 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/verification_prompt.md
-2025-07-04 13:25:33,832 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/s1f/__pycache__
-2025-07-04 13:25:33,834 - tools.m1f.core - INFO    : Found 71 files to process
-2025-07-04 13:25:33,834 - tools.m1f.core - DEBUG   : Files sorted by depth and name
-2025-07-04 13:25:33,834 - tools.m1f.output_writer - INFO    : Processing 71 file(s) for inclusion...
-2025-07-04 13:25:33,834 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 13:25:33,835 - tools.m1f.output_writer - DEBUG   : Processing file (1/71): __init__.py
-2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (2/71): _version.py
-2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (3/71): html2md.py
-2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (4/71): m1f.py
-2025-07-04 13:25:33,837 - tools.m1f.output_writer - DEBUG   : Processing file (5/71): m1f_claude.py
-2025-07-04 13:25:33,855 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 13166
-2025-07-04 13:25:33,857 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 3268
-2025-07-04 13:25:33,860 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 7058
-2025-07-04 13:25:33,861 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 3268
-2025-07-04 13:25:33,862 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 3268
-2025-07-04 13:25:33,863 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 3269
-2025-07-04 13:25:33,864 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 3268
-2025-07-04 13:25:33,866 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 7058
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0008665978698776126
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.06669660909212169
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.020260163830146078
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.004826885702612296
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5598521267355432
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,908 - tools.m1f.output_writer - DEBUG   : Processing file (6/71): m1f_init.py
-2025-07-04 13:25:33,916 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 4912
-2025-07-04 13:25:33,917 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2073
-2025-07-04 13:25:33,918 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 3571
-2025-07-04 13:25:33,919 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2073
-2025-07-04 13:25:33,920 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2073
-2025-07-04 13:25:33,920 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2074
-2025-07-04 13:25:33,921 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2073
-2025-07-04 13:25:33,922 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 3571
-2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12132476743738871
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.592066659710789
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,940 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,940 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/m1f_init.py: MacRoman (0.67)
-2025-07-04 13:25:33,940 - tools.m1f.output_writer - DEBUG   : Processing file (7/71): path_utils.py
-2025-07-04 13:25:33,940 - tools.m1f.output_writer - DEBUG   : Processing file (8/71): prepare_docs.py
-2025-07-04 13:25:33,942 - tools.m1f.output_writer - DEBUG   : Processing file (9/71): s1f.py
-2025-07-04 13:25:33,942 - tools.m1f.output_writer - DEBUG   : Processing file (10/71): scrape.py
-2025-07-04 13:25:33,943 - tools.m1f.output_writer - DEBUG   : Processing file (11/71): setup.py
-2025-07-04 13:25:33,944 - tools.m1f.output_writer - DEBUG   : Processing file (12/71): token_counter.py
-2025-07-04 13:25:33,944 - tools.m1f.output_writer - DEBUG   : Processing file (13/71): wp_export_md.py
-2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (14/71): __init__.py
-2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (15/71): __main__.py
-2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (16/71): analyze_html.py
-2025-07-04 13:25:33,947 - tools.m1f.output_writer - DEBUG   : Processing file (17/71): api.py
-2025-07-04 13:25:33,952 - tools.m1f.output_writer - DEBUG   : Processing file (18/71): claude_runner.py
-2025-07-04 13:25:33,957 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 2574
-2025-07-04 13:25:33,959 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2571
-2025-07-04 13:25:33,960 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 3330
-2025-07-04 13:25:33,961 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2571
-2025-07-04 13:25:33,962 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2571
-2025-07-04 13:25:33,963 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 3329
-2025-07-04 13:25:33,964 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2571
-2025-07-04 13:25:33,965 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 3330
-2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.6232257237634873
-2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:33,974 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner.py: MacRoman (0.70)
-2025-07-04 13:25:33,974 - tools.m1f.output_writer - DEBUG   : Processing file (19/71): claude_runner_simple.py
-2025-07-04 13:25:33,975 - tools.m1f.output_writer - DEBUG   : Processing file (20/71): cli.py
-2025-07-04 13:25:33,995 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 9630
-2025-07-04 13:25:34,001 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 9331
-2025-07-04 13:25:34,005 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 9333
-2025-07-04 13:25:34,007 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 9331
-2025-07-04 13:25:34,010 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 9331
-2025-07-04 13:25:34,014 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 9332
-2025-07-04 13:25:34,017 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 9331
-2025-07-04 13:25:34,022 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 9333
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.048832383505359254
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.009640882524843783
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5756326357520669
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,063 - tools.m1f.output_writer - DEBUG   : Processing file (21/71): cli_claude.py
-2025-07-04 13:25:34,067 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 669
-2025-07-04 13:25:34,067 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 667
-2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 880
-2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 667
-2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 667
-2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 879
-2025-07-04 13:25:34,069 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 667
-2025-07-04 13:25:34,069 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 667
-2025-07-04 13:25:34,082 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.05279906430788877
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.027787128136305905
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5623391748928872
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,084 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/cli_claude.py: MacRoman (0.69)
-2025-07-04 13:25:34,085 - tools.m1f.output_writer - DEBUG   : Processing file (22/71): convert_claude.py
-2025-07-04 13:25:34,088 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 875
-2025-07-04 13:25:34,088 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 873
-2025-07-04 13:25:34,089 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 875
-2025-07-04 13:25:34,089 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 873
-2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 873
-2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 874
-2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 873
-2025-07-04 13:25:34,091 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 875
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5804167545150976
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,097 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/convert_claude.py: MacRoman (0.70)
-2025-07-04 13:25:34,097 - tools.m1f.output_writer - DEBUG   : Processing file (23/71): core.py
-2025-07-04 13:25:34,099 - tools.m1f.output_writer - DEBUG   : Processing file (24/71): extractors.py
-2025-07-04 13:25:34,100 - tools.m1f.output_writer - DEBUG   : Processing file (25/71): preprocessors.py
-2025-07-04 13:25:34,101 - tools.m1f.output_writer - DEBUG   : Processing file (26/71): utils.py
-2025-07-04 13:25:34,103 - tools.m1f.output_writer - DEBUG   : Processing file (27/71): __init__.py
-2025-07-04 13:25:34,104 - tools.m1f.output_writer - DEBUG   : Processing file (28/71): __main__.py
-2025-07-04 13:25:34,104 - tools.m1f.output_writer - DEBUG   : Processing file (29/71): archive_creator.py
-2025-07-04 13:25:34,105 - tools.m1f.output_writer - DEBUG   : Processing file (30/71): auto_bundle.py
-2025-07-04 13:25:34,109 - tools.m1f.output_writer - DEBUG   : Processing file (31/71): cli.py
-2025-07-04 13:25:34,121 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2788
-2025-07-04 13:25:34,122 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 2790
-2025-07-04 13:25:34,123 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2788
-2025-07-04 13:25:34,124 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2788
-2025-07-04 13:25:34,125 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2790
-2025-07-04 13:25:34,126 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2788
-2025-07-04 13:25:34,127 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 2788
-2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
-2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
-2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,136 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 13:25:34,136 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12799495392693638
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.7080353101079013
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 13:25:34,139 - tools.m1f.output_writer - DEBUG   : Processing file (32/71): config.py
-2025-07-04 13:25:34,143 - tools.m1f.output_writer - DEBUG   : Processing file (33/71): config_loader.py
-2025-07-04 13:25:34,144 - tools.m1f.output_writer - DEBUG   : Processing file (34/71): constants.py
-2025-07-04 13:25:34,145 - tools.m1f.output_writer - DEBUG   : Processing file (35/71): core.py
-2025-07-04 13:25:34,148 - tools.m1f.output_writer - DEBUG   : Processing file (36/71): encoding_handler.py
-2025-07-04 13:25:34,150 - tools.m1f.output_writer - DEBUG   : Processing file (37/71): exceptions.py
-2025-07-04 13:25:34,150 - tools.m1f.output_writer - DEBUG   : Processing file (38/71): file_processor.py
-2025-07-04 13:25:34,155 - tools.m1f.output_writer - DEBUG   : Processing file (39/71): logging.py
-2025-07-04 13:25:34,156 - tools.m1f.output_writer - DEBUG   : Processing file (40/71): output_writer.py
-2025-07-04 13:25:34,161 - tools.m1f.output_writer - DEBUG   : Processing file (41/71): presets.py
-2025-07-04 13:25:34,168 - tools.m1f.output_writer - DEBUG   : Processing file (42/71): security_scanner.py
-2025-07-04 13:25:34,169 - tools.m1f.output_writer - DEBUG   : Processing file (43/71): separator_generator.py
-2025-07-04 13:25:34,171 - tools.m1f.output_writer - DEBUG   : Processing file (44/71): utils.py
-2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (45/71): __init__.py
-2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (46/71): __main__.py
-2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (47/71): cli.py
-2025-07-04 13:25:34,174 - tools.m1f.output_writer - DEBUG   : Processing file (48/71): config.py
-2025-07-04 13:25:34,175 - tools.m1f.output_writer - DEBUG   : Processing file (49/71): core.py
-2025-07-04 13:25:34,185 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 10280
-2025-07-04 13:25:34,191 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 10278
-2025-07-04 13:25:34,194 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 10280
-2025-07-04 13:25:34,197 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 10278
-2025-07-04 13:25:34,200 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 10278
-2025-07-04 13:25:34,203 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 10279
-2025-07-04 13:25:34,206 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 10278
-2025-07-04 13:25:34,210 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 10280
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.585116903119894
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,219 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 13:25:34,219 - tools.m1f.output_writer - DEBUG   : Processing file (50/71): exceptions.py
-2025-07-04 13:25:34,220 - tools.m1f.output_writer - DEBUG   : Processing file (51/71): logging.py
-2025-07-04 13:25:34,221 - tools.m1f.output_writer - DEBUG   : Processing file (52/71): models.py
-2025-07-04 13:25:34,221 - tools.m1f.output_writer - DEBUG   : Processing file (53/71): parsers.py
-2025-07-04 13:25:34,225 - tools.m1f.output_writer - DEBUG   : Processing file (54/71): utils.py
-2025-07-04 13:25:34,226 - tools.m1f.output_writer - DEBUG   : Processing file (55/71): writers.py
-2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (56/71): __init__.py
-2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (57/71): __main__.py
-2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (58/71): cli.py
-2025-07-04 13:25:34,233 - tools.m1f.output_writer - DEBUG   : Processing file (59/71): config.py
-2025-07-04 13:25:34,234 - tools.m1f.output_writer - DEBUG   : Processing file (60/71): crawlers.py
-2025-07-04 13:25:34,238 - tools.m1f.output_writer - DEBUG   : Processing file (61/71): utils.py
-2025-07-04 13:25:34,239 - tools.m1f.output_writer - DEBUG   : Processing file (62/71): __init__.py
-2025-07-04 13:25:34,239 - tools.m1f.output_writer - DEBUG   : Processing file (63/71): loader.py
-2025-07-04 13:25:34,242 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 2254
-2025-07-04 13:25:34,243 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2252
-2025-07-04 13:25:34,245 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2252
-2025-07-04 13:25:34,246 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2252
-2025-07-04 13:25:34,247 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2253
-2025-07-04 13:25:34,247 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2252
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : GB2312 Chinese confidence = 0.01
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : Johab Korean confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.6826397542769941
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.0
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.6198389013021715
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : GB2312 Chinese confidence = 0.01
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : Johab Korean confidence = 0.01
-2025-07-04 13:25:34,255 - tools.m1f.output_writer - DEBUG   : Processing file (64/71): models.py
-2025-07-04 13:25:34,257 - tools.m1f.output_writer - DEBUG   : Processing file (65/71): __init__.py
-2025-07-04 13:25:34,258 - tools.m1f.output_writer - DEBUG   : Processing file (66/71): base.py
-2025-07-04 13:25:34,260 - tools.m1f.output_writer - DEBUG   : Processing file (67/71): beautifulsoup.py
-2025-07-04 13:25:34,264 - tools.m1f.output_writer - DEBUG   : Processing file (68/71): httrack.py
-2025-07-04 13:25:34,267 - tools.m1f.output_writer - DEBUG   : Processing file (69/71): playwright.py
-2025-07-04 13:25:34,269 - tools.m1f.output_writer - DEBUG   : Processing file (70/71): scrapy_scraper.py
-2025-07-04 13:25:34,272 - tools.m1f.output_writer - DEBUG   : Processing file (71/71): selectolax.py
-2025-07-04 13:25:34,276 - tools.m1f.core - INFO    : Successfully combined 71 files into '/home/fuf-user/git/m1f/test_includes.txt'
-2025-07-04 13:25:34,276 - m1f_main - INFO    : Total execution time: 0.46 seconds
-2025-07-04 13:25:34,277 - m1f_main - INFO    : Processed 71 files
-
-======= test_multi.log ======
-2025-07-04 13:24:47,416 - tools.m1f.core - INFO    : Source directories: /home/fuf-user/git/m1f/docs/04_scrape, /home/fuf-user/git/m1f/tools/scrape_tool
-2025-07-04 13:24:47,416 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 13:24:47,417 - tools.m1f.core - INFO    : Found 3 files to process
-2025-07-04 13:24:47,417 - tools.m1f.output_writer - INFO    : Processing 3 file(s) for inclusion...
-2025-07-04 13:24:47,417 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 13:24:47,425 - tools.m1f.core - INFO    : Successfully combined 3 files into '/home/fuf-user/git/m1f/test_multi.txt'
-2025-07-04 13:24:47,425 - m1f_main - INFO    : Total execution time: 0.01 seconds
-2025-07-04 13:24:47,425 - m1f_main - INFO    : Processed 3 files
-
-======= test_output.log ======
-
-======= test_scraper_docs.log ======
-2025-07-04 13:12:05,005 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools/scrape_tool
-2025-07-04 13:12:05,005 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 13:12:05,006 - tools.m1f.core - INFO    : Found 1 files to process
-2025-07-04 13:12:05,006 - tools.m1f.output_writer - INFO    : Processing 1 file(s) for inclusion...
-2025-07-04 13:12:05,007 - tools.m1f.core - INFO    : Successfully combined 1 files into '/home/fuf-user/git/m1f/test_scraper_docs.txt'
-2025-07-04 13:12:05,007 - m1f_main - INFO    : Total execution time: 0.00 seconds
-2025-07-04 13:12:05,007 - m1f_main - INFO    : Processed 1 files
-
-======= wp-cli.example.yml ======
-# Example configuration for WP-CLI
-# Copy to `wp-cli.yml` and adjust the settings for your environment.
-path: /var/www/html
-url: https://example.com
-user: admin
 
 ======= bin/m1f ======
 #!/usr/bin/env bash
@@ -2282,6 +1364,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2025-07-19
+
+### Changed
+
+- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
+- **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
+- **Project Organization**: Cleaned up project root directory
+  - Moved development test scripts to `dev/` directory
+  - Moved `perfect_bundle_prompt.md` to `tools/m1f/prompts/`
+  - Moved `wp-cli.example.yml` to `examples/` directory
+
+### Fixed
+
+- **Windows Compatibility**: Major improvements for Windows platform support
+  - **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
+    - Bundles created on Windows can now be extracted on Unix systems and vice versa
+    - Added comprehensive cross-platform path tests
+  - **m1f-claude**: Improved Claude executable detection on Windows
+  - **m1f-claude**: Enhanced subprocess handling and timeout behavior for Windows
+  - **m1f**: Fixed npx execution method compatibility on Windows
+  - **m1f-init**: Improved project type detection across platforms
+  - **Dependencies**: Downgraded httpx to 0.27.2 for better Windows compatibility
+  - **Tests**: Added cross-platform test suite with Windows-specific timeout handling
+  - **Installation**: Fixed PowerShell installation scripts and path handling
 ## [3.5.0] - 2025-07-18
 
 ### Added
@@ -2670,7 +1776,7 @@ and this project adheres to
   - **Choice-Based Setup**: Users can choose between quick and advanced
     initialization modes
     - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
-    - Command-line parameters: `--quick-setup` and `--advanced-setup` for
+    - Command-line parameters: `--quick-setup` and `--setup` for
       scripting
     - Quick setup: Creates bundles in 30 seconds without Claude
     - Advanced setup: Claude analyzes project and creates topic-specific bundles
@@ -2706,13 +1812,13 @@ and this project adheres to
   - Generates auxiliary files (filelist, dirlist) for all bundles
   - Creates basic .m1f.config.yml configuration
   - Shows platform-specific next steps
-  - On Linux/macOS: Suggests `m1f-claude --advanced-setup` for topic bundles
+  - On Linux/macOS: Suggests `m1f-claude --setup` for topic bundles
 
 ### Changed
 
 - **m1f-claude Refactoring**: Removed initialization from m1f-claude
   - Removed --init, --quick-setup parameters
-  - Now only handles --advanced-setup for topic-specific bundles
+  - Now only handles --setup for topic-specific bundles
   - Requires m1f-init to be run first (checks for prerequisites)
   - Focuses solely on Claude-assisted advanced configuration
   - Not available on Windows (Linux/macOS only)
@@ -3574,6 +2680,456 @@ improvements and new features.
 - Configurable file filtering
 - Multiple output formats
 - Cross-platform compatibility
+
+======= examples/README.md ======
+# Documentation Scraping Examples
+
+This directory contains practical examples demonstrating how to scrape, convert, and bundle documentation websites into AI-friendly context files using the m1f toolkit.
+
+## 🎯 Current Example
+
+### `scrape_claude_code_docs.py` - Claude Code Documentation Scraper
+
+A specialized Python script that demonstrates the complete m1f workflow for creating AI-ready documentation bundles. This example showcases the irony of Claude Code needing to scrape its own documentation to know itself!
+
+**What it does:**
+1. **Scrapes** Claude Code documentation from `docs.anthropic.com`
+2. **Analyzes** HTML structure using Claude AI for intelligent content extraction
+3. **Converts** HTML to clean Markdown using optimized selectors
+4. **Initializes** the bundle with `m1f-init`
+5. **Creates** `claude-code-doc.txt` - a single context file
+6. **Configures** the bundle with `m1f-claude --advanced-setup`
+
+**Key Features:**
+- Cross-platform (Linux & Windows)
+- Uses Claude AI for HTML analysis
+- Automatic directory reorganization
+- Content verification
+- Token estimation
+- Complete workflow automation
+
+**Usage:**
+```bash
+# Run in current directory
+python scrape_claude_code_docs.py
+
+# Specify output directory
+python scrape_claude_code_docs.py /path/to/output
+```
+
+**Output:**
+- `claude-code-doc.txt` - The final bundle ready for use with m1f-claude
+- `claude-code-html/` - Scraped HTML files (can be deleted after bundling)
+- `claude-code-markdown/` - Converted Markdown files (can be deleted after bundling)
+- `html2md_extract_config.yaml` - Claude's analysis configuration
+
+## 🚀 The Workflow Pattern
+
+This example demonstrates a reusable pattern for documentation scraping:
+
+```
+1. Scrape → HTML files
+2. Analyze → Claude AI finds optimal selectors
+3. Convert → Clean Markdown extraction
+4. Initialize → m1f-init prepares bundle structure
+5. Bundle → Single context file creation
+6. Configure → Advanced setup with project metadata
+```
+
+## 📋 Future Examples
+
+More examples following similar principles will be added here, including:
+- Git-based documentation bundling (for open source projects)
+- API documentation scraping
+- Multi-language documentation handling
+- Incremental documentation updates
+- Custom extractor examples
+
+## 🛠️ Requirements
+
+- Python 3.10+
+- m1f toolkit installed (`pip install m1f`)
+- Claude Code (for AI-powered HTML analysis)
+- Internet connection (for scraping)
+
+## 💡 Why This Approach?
+
+The pattern demonstrated in `scrape_claude_code_docs.py` shows how to:
+- Transform any documentation website into AI-friendly context
+- Use AI to intelligently analyze and extract content
+- Create bundles that enhance AI assistance capabilities
+- Automate the entire workflow from scraping to final bundle
+
+This approach is particularly useful when documentation isn't available via Git repositories or when you need the most up-to-date version from live websites.
+
+---
+
+*The irony that Claude Code needs to scrape its own documentation to know itself is not lost on us! 🤖📚*
+
+======= examples/scrape_claude_code_docs.py ======
+#!/usr/bin/env python3
+"""
+Claude Code Documentation Scraper
+=================================
+
+A focused Python script to scrape and bundle Claude Code documentation.
+Works on both Linux and Windows.
+
+This script:
+1. Scrapes Claude Code docs from docs.anthropic.com
+2. Converts HTML to clean Markdown
+3. Runs m1f-init to prepare the bundle
+4. Runs m1f-claude with advanced setup
+5. Creates claude-code-doc.txt for Claude to use
+"""
+
+import subprocess
+import sys
+import os
+from pathlib import Path
+import argparse
+import shutil
+
+
+# Configuration - all hardcoded for Claude Code
+CLAUDE_DOCS_URL = "https://docs.anthropic.com/en/docs/claude-code"
+SCRAPE_DELAY = 15  # seconds between requests
+CONTENT_SELECTOR = "main"
+IGNORE_SELECTORS = ["nav", "header", "footer"]
+BUNDLE_NAME = "claude-code-doc.txt"
+PROJECT_NAME = "Claude Code Documentation"
+PROJECT_DESCRIPTION = "Official documentation for Claude Code - Anthropic's AI coding assistant"
+
+
+def run_command(cmd, description, capture_output=True):
+    """Run a command and handle errors"""
+    print(f"🔄 {description}...")
+    
+    try:
+        if capture_output:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            return True, result.stdout
+        else:
+            subprocess.run(cmd, check=True)
+            return True, None
+    except subprocess.CalledProcessError as e:
+        print(f"❌ {description} failed!")
+        if e.stderr:
+            print(f"   Error: {e.stderr}")
+        return False, None
+    except FileNotFoundError:
+        print(f"❌ Command not found: {cmd[0]}")
+        print(f"   Make sure m1f tools are installed and in PATH")
+        return False, None
+
+
+def main():
+    # Parse arguments
+    parser = argparse.ArgumentParser(description="Scrape Claude Code documentation")
+    parser.add_argument("path", nargs="?", help="Output directory path (optional)")
+    args = parser.parse_args()
+    
+    # Determine output directory
+    if args.path:
+        output_path = Path(args.path).absolute()
+    else:
+        output_path = Path.cwd()
+    
+    print("🤖 Claude Code Documentation Scraper")
+    print("=" * 50)
+    print(f"Target: {CLAUDE_DOCS_URL}")
+    print(f"Output: {output_path / BUNDLE_NAME}")
+    print("=" * 50)
+    
+    # Create output directory if needed
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Save current directory and change to output
+    original_dir = Path.cwd()
+    os.chdir(output_path)
+    
+    # Paths for intermediate files
+    html_dir = Path("html")
+    markdown_dir = Path("claude-code-markdown")
+    
+    print(f"\n📁 Working directory: {output_path.absolute()}")
+    
+    # Step 1: Scrape Claude Code documentation
+    print(f"\n{'='*50}")
+    print("STEP 1: Scraping Claude Code Documentation")
+    print(f"{'='*50}")
+    print(f"⏱️  This will take ~5-10 minutes due to {SCRAPE_DELAY}s delays...")
+    
+    scrape_cmd = [
+        "m1f-scrape",
+        CLAUDE_DOCS_URL,
+        "-o", str(html_dir),
+        "--request-delay", str(SCRAPE_DELAY),
+        "-v"
+    ]
+    
+    success, _ = run_command(scrape_cmd, "Scraping documentation", capture_output=False)
+    if not success:
+        print("\n💡 Tip: Make sure m1f-scrape is installed:")
+        print("   pip install m1f")
+        return 1
+    
+    # Verify scraping results
+    if not html_dir.exists():
+        print("❌ HTML directory not created")
+        return 1
+    
+    # Find the actual scraped directory (docs.anthropic.com/en/docs/claude-code)
+    scraped_dir = html_dir / "docs.anthropic.com" / "en" / "docs" / "claude-code"
+    if scraped_dir.exists():
+        print(f"📁 Found scraped content in: {scraped_dir}")
+        # Move content up and rename
+        new_html_dir = Path("claude-code-html")
+        if new_html_dir.exists():
+            shutil.rmtree(new_html_dir)
+        shutil.move(str(scraped_dir), str(new_html_dir))
+        # Clean up empty directories
+        shutil.rmtree(html_dir)
+        html_dir = new_html_dir
+        print(f"✅ Moved content to: {html_dir}")
+    
+    html_files = list(html_dir.glob("**/*.html"))
+    print(f"✅ Scraped {len(html_files)} HTML files")
+    
+    if len(html_files) < 5:
+        print("⚠️  Warning: Fewer files than expected. The site structure may have changed.")
+    
+    # Step 2: Analyze HTML structure with Claude
+    print(f"\n{'='*50}")
+    print("STEP 2: Analyzing HTML Structure with Claude")
+    print(f"{'='*50}")
+    
+    analyze_cmd = [
+        "m1f-html2md",
+        "analyze",
+        str(html_dir),
+        "--claude",
+        "--project-description", PROJECT_DESCRIPTION
+    ]
+    
+    print("🤖 Using Claude AI for intelligent HTML analysis...")
+    success, output = run_command(analyze_cmd, "Analyzing HTML with Claude", capture_output=False)
+    
+    # Check if Claude created the config file
+    config_file = Path("html2md_extract_config.yaml")
+    use_config = False
+    
+    if success and config_file.exists():
+        print(f"📊 Claude analysis complete")
+        print(f"   📌 Using Claude's config: {config_file}")
+        use_config = True
+    else:
+        if not success:
+            print("⚠️  Claude analysis failed, using defaults")
+        if not config_file.exists():
+            print("⚠️  Config file not created, using defaults")
+    
+    # Step 3: Convert HTML to Markdown
+    print(f"\n{'='*50}")
+    print("STEP 3: Converting to Markdown")
+    print(f"{'='*50}")
+    
+    convert_cmd = [
+        "m1f-html2md",
+        "convert",
+        str(html_dir),
+        "-o", str(markdown_dir)
+    ]
+    
+    # Use Claude's config file if it exists
+    if use_config and config_file.exists():
+        convert_cmd.extend(["-c", str(config_file)])
+        print(f"   📄 Using Claude's configuration file")
+    else:
+        # Use defaults
+        convert_cmd.extend(["--content-selector", CONTENT_SELECTOR])
+        for selector in IGNORE_SELECTORS:
+            convert_cmd.extend(["--ignore-selectors", selector])
+        print(f"   📌 Using default selectors")
+    
+    success, _ = run_command(convert_cmd, "Converting HTML to Markdown", capture_output=False)
+    if not success:
+        return 1
+    
+    # Verify conversion
+    md_files = list(markdown_dir.glob("**/*.md"))
+    print(f"✅ Converted {len(md_files)} Markdown files")
+    
+    # Step 4: Run m1f-init in markdown directory
+    print(f"\n{'='*50}")
+    print("STEP 4: Initializing m1f Bundle")
+    print(f"{'='*50}")
+    
+    # Change to markdown directory for m1f-init
+    original_output_dir = Path.cwd()
+    os.chdir(markdown_dir)
+    
+    init_cmd = ["m1f-init"]
+    success, _ = run_command(init_cmd, "Running m1f-init", capture_output=False)
+    
+    # Change back
+    os.chdir(original_output_dir)
+    
+    if not success:
+        print("⚠️  m1f-init failed, continuing anyway...")
+    
+    # Step 5: Create bundle
+    print(f"\n{'='*50}")
+    print("STEP 5: Creating Bundle")
+    print(f"{'='*50}")
+    
+    bundle_path = Path(BUNDLE_NAME)
+    
+    bundle_cmd = [
+        "m1f",
+        "-s", str(markdown_dir),
+        "-o", str(bundle_path),
+        "-v"
+    ]
+    
+    success, _ = run_command(bundle_cmd, "Creating bundle", capture_output=False)
+    if not success:
+        return 1
+    
+    # Verify bundle
+    if not bundle_path.exists():
+        print("❌ Bundle file not created")
+        return 1
+    
+    # Get bundle stats
+    bundle_size = bundle_path.stat().st_size / (1024 * 1024)  # MB
+    
+    # Try to estimate tokens
+    print("\n📊 Estimating tokens...")
+    token_cmd = ["m1f-token-counter", str(bundle_path)]
+    success, output = run_command(token_cmd, "Counting tokens")
+    
+    token_count = "unknown"
+    if success and output:
+        # Extract token count from output
+        import re
+        match = re.search(r'(\d+)\s*tokens', output)
+        if match:
+            token_count = f"{int(match.group(1)):,}"
+    
+    # Step 6: Run m1f-claude with advanced setup
+    print(f"\n{'='*50}")
+    print("STEP 6: Running m1f-claude Advanced Setup")
+    print(f"{'='*50}")
+    
+    # Prepare input for m1f-claude
+    claude_input = f"{PROJECT_NAME}\n{PROJECT_DESCRIPTION}\n"
+    
+    claude_cmd = [
+        "m1f-claude",
+        str(bundle_path),
+        "--advanced-setup"
+    ]
+    
+    print(f"📝 Providing project info:")
+    print(f"   Name: {PROJECT_NAME}")
+    print(f"   Description: {PROJECT_DESCRIPTION}")
+    
+    try:
+        # Run m1f-claude with input
+        process = subprocess.Popen(
+            claude_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        stdout, stderr = process.communicate(input=claude_input)
+        
+        if process.returncode == 0:
+            print("✅ m1f-claude advanced setup completed")
+        else:
+            print("⚠️  m1f-claude setup had issues, but bundle is still created")
+            if stderr:
+                print(f"   Error: {stderr}")
+    except Exception as e:
+        print(f"⚠️  Could not run m1f-claude: {e}")
+        print("   Bundle is still created and usable")
+    
+    # Step 7: Verify content
+    print(f"\n{'='*50}")
+    print("STEP 7: Verifying Content")
+    print(f"{'='*50}")
+    
+    with open(bundle_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Check for expected Claude Code content
+    checks = {
+        "Keyboard shortcuts": ["Ctrl+", "Cmd+"],
+        "CLI parameters": ["allowedTools", "disallowedTools"],
+        "MCP servers": ["mcp", "server"],
+        "Interactive mode": ["interactive", "mode"],
+        "Slash commands": ["slash", "command"]
+    }
+    
+    print("🔍 Content verification:")
+    all_good = True
+    for check_name, keywords in checks.items():
+        found = sum(1 for kw in keywords if kw in content)
+        if found > 0:
+            print(f"  ✅ {check_name}: Found {found}/{len(keywords)} keywords")
+        else:
+            print(f"  ❌ {check_name}: Not found")
+            all_good = False
+    
+    # Final summary
+    print(f"\n{'='*50}")
+    print("📝 FINAL SUMMARY")
+    print(f"{'='*50}")
+    
+    print(f"✅ Bundle created successfully!")
+    print(f"📁 Location: {bundle_path.absolute()}")
+    print(f"📏 Size: {bundle_size:.2f} MB")
+    print(f"🔢 Tokens: ~{token_count}")
+    print(f"📄 Source files: {len(html_files)} HTML → {len(md_files)} Markdown")
+    
+    if all_good:
+        print(f"\n✨ Content verification: PASSED")
+    else:
+        print(f"\n⚠️  Content verification: Some expected content missing")
+    
+    print(f"\n💡 Usage:")
+    print(f"   m1f-claude {bundle_path.absolute()}")
+    
+    print(f"\n🧹 Cleanup (optional):")
+    print(f"   Remove HTML files: rm -rf claude-code-html (Linux) or rmdir /s claude-code-html (Windows)")
+    print(f"   Remove Markdown files: rm -rf {markdown_dir} (Linux) or rmdir /s {markdown_dir} (Windows)")
+    
+    # Change back to original directory
+    os.chdir(original_dir)
+    
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+======= examples/wp-cli.example.yml ======
+# Example configuration for WP-CLI
+# Copy to `wp-cli.yml` and adjust the settings for your environment.
+path: /var/www/html
+url: https://example.com
+user: admin
 
 ======= m1f/project_analysis.log ======
 2025-07-05 16:31:05,072 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f
@@ -8533,7 +8089,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.5.0"
+__version__ = "3.6.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -8545,13 +8101,30 @@ __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 HTML to Markdown converter - wrapper script.
 """
 
+import sys
+import os
+from pathlib import Path
+
 if __name__ == "__main__":
-    # Try absolute imports first (for module execution), fall back to relative
+    # Add the parent directory to sys.path for proper imports
+    script_dir = Path(__file__).parent
+    parent_dir = script_dir.parent
+    
+    # Try different import strategies based on execution context
     try:
+        # First try as if we're in the m1f package
         from tools.html2md_tool.cli import main
     except ImportError:
-        # Fallback for direct script execution
-        from html2md_tool.cli import main
+        try:
+            # Try adding parent to path and importing
+            if str(parent_dir) not in sys.path:
+                sys.path.insert(0, str(parent_dir))
+            from tools.html2md_tool.cli import main
+        except ImportError:
+            # Fallback for direct script execution
+            if str(script_dir) not in sys.path:
+                sys.path.insert(0, str(script_dir))
+            from html2md_tool.cli import main
 
     main()
 
@@ -8709,6 +8282,11 @@ async def async_main() -> int:
 
 def main() -> NoReturn:
     """Entry point for the application."""
+    # Set Windows-specific event loop policy to avoid debug messages
+    if sys.platform.startswith('win'):
+        # This prevents "RuntimeError: Event loop is closed" messages on Windows
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    
     exit_code = asyncio.run(async_main())
     sys.exit(exit_code)
 
@@ -10893,12 +10471,12 @@ def main():
 Examples:
   m1f-claude "Help me bundle my Python project"
   m1f-claude -i                    # Interactive mode
-  m1f-claude --advanced-setup     # Add topic bundles to existing setup
+  m1f-claude --setup     # Add topic bundles to existing setup
   m1f-claude --check              # Check setup status
   
 Initialization workflow:
   1. Run 'm1f-init' first to create basic bundles
-  2. Run 'm1f-claude --advanced-setup' for topic-specific bundles
+  2. Run 'm1f-claude --setup' for topic-specific bundles
   
 Note: m1f-init works on all platforms (Windows, Linux, Mac)
   
@@ -10918,7 +10496,7 @@ First time? Run 'm1f-init' to set up your project!
     )
 
     parser.add_argument(
-        "--advanced-setup",
+        "--setup",
         action="store_true",
         help="Add topic-specific bundles to existing m1f setup using Claude",
     )
@@ -10979,8 +10557,8 @@ First time? Run 'm1f-init' to set up your project!
 
     args = parser.parse_args()
 
-    # Handle /advanced-setup command in prompt
-    if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/advanced-setup":
+    # Handle /setup command in prompt
+    if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/setup":
         args.advanced_setup = True
         args.prompt = []
 
@@ -11172,7 +10750,7 @@ class M1FClaudeRunner:
         # Signal handler for graceful interruption
         def handle_interrupt(signum, frame):
             if self.process:
-                print("\nüõë Interrupting Claude... Press Ctrl-C again to force quit.")
+                print("\n🛑 Interrupting Claude... Press Ctrl-C again to force quit.")
                 self.process.terminate()
                 try:
                     self.process.wait(timeout=5)
@@ -11204,7 +10782,7 @@ class M1FClaudeRunner:
             last_output_time = start_time
             
             # Progress indicators
-            spinner_chars = "‚†ã‚†ô‚†π‚†∏‚†º‚†¥‚†¶‚†ß‚†á‚†è"
+            spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
             spinner_idx = 0
 
             # Read output line by line
@@ -11238,20 +10816,20 @@ class M1FClaudeRunner:
                     # Check absolute timeout
                     if elapsed > actual_timeout:
                         if show_output:
-                            print(f"\n‚è∞ Claude timed out after {actual_timeout}s")
+                            print(f"\n⏰ Claude timed out after {actual_timeout}s")
                         self.process.kill()
                         return -1, "\n".join(stdout_lines), f"Process timed out after {actual_timeout}s"
                     
                     # Check inactivity timeout (60 seconds)
                     if current_time - last_output_time > 60:
                         if show_output:
-                            print(f"\n‚è∞ Claude inactive for 60s (total time: {elapsed:.1f}s)")
+                            print(f"\n⏰ Claude inactive for 60s (total time: {elapsed:.1f}s)")
                         self.process.kill()
                         return -1, "\n".join(stdout_lines), "Process inactive for 60 seconds"
                     
                     # Show spinner to indicate we're still waiting
                     if show_output and int(elapsed) % 5 == 0:
-                        sys.stdout.write(f"\r‚è≥ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]")
+                        sys.stdout.write(f"\r⏳ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]")
                         sys.stdout.flush()
                         spinner_idx = (spinner_idx + 1) % len(spinner_chars)
                     
@@ -11277,17 +10855,17 @@ class M1FClaudeRunner:
 
             if show_output:
                 total_time = time.time() - start_time
-                print(f"\n‚úÖ Claude completed in {total_time:.1f}s")
+                print(f"\n✅ Claude completed in {total_time:.1f}s")
 
             return self.process.returncode, stdout, stderr
 
         except KeyboardInterrupt:
             if show_output:
-                print("\n‚ùå Operation cancelled by user")
+                print("\n❌ Operation cancelled by user")
             return -1, "\n".join(stdout_lines), "Cancelled by user"
         except Exception as e:
             if show_output:
-                print(f"\n‚ùå Error running Claude: {e}")
+                print(f"\n❌ Error running Claude: {e}")
             return -1, "\n".join(stdout_lines), str(e)
         finally:
             # Restore signal handler
@@ -11325,7 +10903,7 @@ This tool provides cross-platform initialization for m1f projects:
 2. Analyzes project structure
 3. Creates basic bundles (complete and docs)
 4. Generates .m1f.config.yml
-5. Shows next steps (including m1f-claude --advanced-setup on non-Windows)
+5. Shows next steps (including m1f-claude --setup on non-Windows)
 """
 
 import argparse
@@ -11927,7 +11505,7 @@ class M1FInit:
 """
 
         yaml_content = f"""# m1f Configuration - Generated by m1f-init
-# Use 'm1f-claude --advanced-setup' to add topic-specific bundles (non-Windows only)
+# Use 'm1f-claude --setup' to add topic-specific bundles (non-Windows only)
 
 global:
   global_excludes:
@@ -11981,7 +11559,7 @@ global:
         if not self.is_windows:
             print(f"\n🚀 Advanced Setup Available!")
             print(f"For topic-specific bundles (components, API, tests, etc.), run:")
-            print(f"  m1f-claude --advanced-setup")
+            print(f"  m1f-claude --setup")
             print(f"\nThis will:")
             print(f"  • Analyze your project structure in detail")
             print(f"  • Create focused bundles for different aspects")
@@ -12010,7 +11588,7 @@ Examples:
   
 After initialization:
   • Use 'm1f-update' to regenerate bundles
-  • On Linux/Mac: Use 'm1f-claude --advanced-setup' for topic bundles
+  • On Linux/Mac: Use 'm1f-claude --setup' for topic bundles
   • Reference @m1f/m1f.txt in AI tools
 """,
     )
@@ -16122,7 +15700,7 @@ my .m1f.config.yml for a React project"
 For topic-specific bundles and Claude-assisted configuration:
 
 ```bash
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 #### Working with File Lists:
@@ -16320,32 +15898,32 @@ This guide provides comprehensive examples of `.m1f.config.yml` files for
 different project types. Each example includes detailed comments explaining the
 configuration choices.
 
-> **‚ö†Ô∏è IMPORTANT**: m1f automatically excludes many common directories
+> **⚠️ IMPORTANT**: m1f automatically excludes many common directories
 > (node_modules, .git, **pycache**, etc.). See the
 > [Default Excludes Guide](./26_default_excludes_guide.md) for the complete
 > list. **Only add project-specific excludes to keep your configs minimal!**
 
-## üö® IMPORTANT: Use Standard Separator for AI Bundles!
+## 🚨 IMPORTANT: Use Standard Separator for AI Bundles!
 
 **The primary purpose of m1f bundles is to provide context to AI assistants like
 Claude, NOT for human reading in Markdown!**
 
-- ‚úÖ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
+- ✅ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
   default)
-- ‚ùå **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
+- ❌ **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
   blocks)
-- üéØ **Why**: Standard format is clean and optimal for AI consumption
+- 🎯 **Why**: Standard format is clean and optimal for AI consumption
 
 ```yaml
 # CORRECT - For AI consumption:
 bundles:
   - name: my-bundle
-    separator_style: Standard  # ‚Üê This is optimal (or just omit it)
+    separator_style: Standard  # ← This is optimal (or just omit it)
 
 # AVOID - Adds unnecessary markdown formatting:
 bundles:
   - name: my-bundle
-    separator_style: Markdown  # ‚Üê Don't use for AI bundles!
+    separator_style: Markdown  # ← Don't use for AI bundles!
 ```
 
 **Note**: `MachineReadable` is only needed when you plan to use `s1f` to split
@@ -16353,12 +15931,12 @@ the bundle back into individual files.
 
 ## Minimal vs Verbose Configurations
 
-### ‚ùå BAD Example - Overly Verbose (Don't Do This!)
+### ❌ BAD Example - Overly Verbose (Don't Do This!)
 
 ```yaml
 global:
   global_excludes:
-    # ‚ùå ALL of these are already excluded by default!
+    # ❌ ALL of these are already excluded by default!
     - "**/node_modules/**" # Auto-excluded
     - "**/vendor/**" # Auto-excluded
     - "**/__pycache__/**" # Auto-excluded
@@ -16369,13 +15947,13 @@ global:
     - "**/.vscode/**" # Auto-excluded
     - "**/.idea/**" # Auto-excluded
 
-    # ‚úÖ Only these are needed (project-specific)
+    # ✅ Only these are needed (project-specific)
     - "**/logs/**"
     - "**/tmp/**"
     - "/m1f/**"
 ```
 
-### ‚úÖ GOOD Example - Minimal Configuration
+### ✅ GOOD Example - Minimal Configuration
 
 ```yaml
 global:
@@ -16511,7 +16089,7 @@ Configuration for a modern React application with TypeScript and testing.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - Only project-specific excludes!
+    # ⚠️ MINIMAL CONFIG - Only project-specific excludes!
     # DON'T add node_modules, dist, build - they're auto-excluded!
 
     # Next.js specific (not in defaults)
@@ -16658,7 +16236,7 @@ Configuration for a Django web application with REST API.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
+    # ⚠️ MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
 
     # Python bytecode (not in defaults)
     - "**/*.pyc"
@@ -16808,7 +16386,7 @@ Configuration for a custom WordPress theme with modern build tools.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
+    # ⚠️ MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
 
     # WordPress specific (not in defaults)
     - "wp-admin/**" # Core files
@@ -17766,12 +17344,12 @@ you plan to use the bundles with AI assistants.
 This guide explains the files and directories that m1f excludes by default,
 helping you write minimal and efficient `.m1f.config.yml` configurations.
 
-## üö® CRITICAL: Correct Bundle Format
+## 🚨 CRITICAL: Correct Bundle Format
 
 **ALWAYS use the `sources:` array format, NOT `source_directory:`!**
 
 ```yaml
-# ‚úÖ CORRECT FORMAT:
+# ✅ CORRECT FORMAT:
 bundles:
   - name: my-bundle
     sources:
@@ -17779,7 +17357,7 @@ bundles:
     output_file: "m1f/my-bundle.txt"
     separator_style: Standard  # Or omit - Standard is default
 
-# ‚ùå WRONG FORMAT (will cause errors):
+# ❌ WRONG FORMAT (will cause errors):
 bundles:
   my-bundle:
     source_directory: "./src"  # This format causes "ERROR: At least one of -s/--source-directory..."
@@ -17838,7 +17416,7 @@ These specific files are also excluded automatically:
 
 ## Writing Minimal Configurations
 
-### ‚ùå BAD - Overly Verbose Configuration
+### ❌ BAD - Overly Verbose Configuration
 
 ```yaml
 # DON'T DO THIS - repeating default excludes unnecessarily!
@@ -17856,7 +17434,7 @@ global:
     - "**/logs/**" # Project-specific - OK
 ```
 
-### ‚úÖ GOOD - Minimal Configuration
+### ✅ GOOD - Minimal Configuration
 
 ```yaml
 # Only add project-specific exclusions!
@@ -17954,7 +17532,7 @@ If you need to include normally excluded directories:
 m1f -s . -o complete.txt --no-default-excludes
 ```
 
-‚ö†Ô∏è **WARNING**: This can create HUGE bundles and include sensitive data!
+⚠️ **WARNING**: This can create HUGE bundles and include sensitive data!
 
 ## Best Practices
 
@@ -18049,10 +17627,10 @@ For advanced setup with topic-specific bundles (Linux/macOS only):
 
 ```bash
 # Interactive mode - will prompt for project description and priorities
-m1f-claude --advanced-setup
+m1f-claude --setup
 
 # Or provide project info via command line
-m1f-claude --advanced-setup \
+m1f-claude --setup \
   --project-description "E-commerce platform with React frontend and Django backend" \
   --project-priorities "performance, security, maintainability"
 ```
@@ -18130,12 +17708,12 @@ For advanced project-specific configuration, use m1f-claude (Linux/macOS only):
 m1f-init
 
 # Then for advanced configuration with Claude's help
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
 ### What Makes m1f-claude Special?
 
-When you use `m1f-claude --advanced-setup`, it:
+When you use `m1f-claude --setup`, it:
 
 - Analyzes your project in detail with Claude's assistance
 - Creates topic-specific bundles (components, API, tests, etc.)
@@ -18604,10 +18182,10 @@ The `m1f-claude` tool enhances project setup by creating topic-specific bundles 
 
 ```bash
 # Interactive mode - prompts for project details
-m1f-claude --advanced-setup
+m1f-claude --setup
 
 # With project information provided
-m1f-claude --advanced-setup \
+m1f-claude --setup \
   --project-description "SaaS dashboard with React frontend and Express API" \
   --project-priorities "code modularity, API documentation, test coverage"
 ```
@@ -18629,10 +18207,10 @@ For topic-specific bundles and advanced configuration:
 m1f-init
 
 # Then run advanced setup
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
-#### What --advanced-setup Does:
+#### What --setup Does:
 
 - Claude analyzes your project structure in detail
 - Creates topic-specific bundles (models, views, tests, etc.)
@@ -24983,15 +24561,15 @@ def handle_convert(args: argparse.Namespace) -> None:
     if args.source.is_file():
         console.print(f"Converting file: {args.source}")
         output = converter.convert_file(args.source)
-        console.print(f"‚úÖ Converted to: {output}", style="green")
+        console.print(f"✅ Converted to: {output}", style="green")
 
     elif args.source.is_dir():
         console.print(f"Converting directory: {args.source}")
         outputs = converter.convert_directory()
-        console.print(f"‚úÖ Converted {len(outputs)} files", style="green")
+        console.print(f"✅ Converted {len(outputs)} files", style="green")
 
     else:
-        console.print(f"‚ùå Source not found: {args.source}", style="red")
+        console.print(f"❌ Source not found: {args.source}", style="red")
         sys.exit(1)
 
 
@@ -25005,7 +24583,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     html_files = []
     for path in args.paths:
         if not path.exists():
-            console.print(f"‚ùå Path not found: {path}", style="red")
+            console.print(f"❌ Path not found: {path}", style="red")
             continue
 
         if path.is_file():
@@ -25013,7 +24591,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
             if path.suffix.lower() in [".html", ".htm"]:
                 html_files.append(path)
             else:
-                console.print(f"‚ö†Ô∏è  Skipping non-HTML file: {path}", style="yellow")
+                console.print(f"⚠️  Skipping non-HTML file: {path}", style="yellow")
         elif path.is_dir():
             # Directory - find all HTML files recursively
             found_files = list(path.rglob("*.html")) + list(path.rglob("*.htm"))
@@ -25023,10 +24601,10 @@ def handle_analyze(args: argparse.Namespace) -> None:
                     f"Found {len(found_files)} HTML files in {path}", style="blue"
                 )
             else:
-                console.print(f"‚ö†Ô∏è  No HTML files found in {path}", style="yellow")
+                console.print(f"⚠️  No HTML files found in {path}", style="yellow")
 
     if not html_files:
-        console.print("‚ùå No HTML files to analyze", style="red")
+        console.print("❌ No HTML files to analyze", style="red")
         sys.exit(1)
 
     # If --claude flag is set, use Claude AI for analysis
@@ -25055,9 +24633,9 @@ def handle_analyze(args: argparse.Namespace) -> None:
                 relative_path = file_path.relative_to(Path.cwd())
             except ValueError:
                 relative_path = file_path
-            console.print(f"‚úÖ Parsed: {relative_path}", style="green")
+            console.print(f"✅ Parsed: {relative_path}", style="green")
         except Exception as e:
-            console.print(f"‚ùå Error parsing {file_path}: {e}", style="red")
+            console.print(f"❌ Error parsing {file_path}: {e}", style="red")
 
     if not parsed_files:
         console.print("No files could be parsed", style="red")
@@ -25195,7 +24773,7 @@ def _handle_claude_analysis(
 
     # Find the common parent directory of all HTML files
     if not html_files:
-        console.print("‚ùå No HTML files to analyze", style="red")
+        console.print("❌ No HTML files to analyze", style="red")
         return
 
     common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
@@ -25204,7 +24782,7 @@ def _handle_claude_analysis(
 
     # Check if we have enough files
     if len(html_files) == 0:
-        console.print("‚ùå No HTML files found in the specified directory", style="red")
+        console.print("❌ No HTML files found in the specified directory", style="red")
         return
 
     # We'll work from the current directory and use --add-dir for Claude
@@ -25228,7 +24806,7 @@ def _handle_claude_analysis(
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
     # Create a filelist with all HTML files using m1f
-    console.print("\nüîß Creating HTML file list using m1f...")
+    console.print("\n🔧 Creating HTML file list using m1f...")
     console.print(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
@@ -25251,13 +24829,13 @@ def _handle_claude_analysis(
         # The filelist will be created with this name
         html_filelist = m1f_dir / "all_html_files_filelist.txt"
         if not html_filelist.exists():
-            console.print("‚ùå m1f filelist not created", style="red")
+            console.print("❌ m1f filelist not created", style="red")
             return
 
-        console.print(f"‚úÖ Created HTML file list: {html_filelist}")
+        console.print(f"✅ Created HTML file list: {html_filelist}")
 
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
+        console.print(f"❌ Failed to create HTML file list: {e.stderr}", style="red")
         return
 
     # Get relative paths from the common parent (still needed for filtering)
@@ -25274,7 +24852,7 @@ def _handle_claude_analysis(
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
     if not select_prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {select_prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
         return
 
     # Load the prompt from external file
@@ -25389,10 +24967,10 @@ def _handle_claude_analysis(
             console.print(f"  - {f}", style="blue")
 
     except subprocess.TimeoutExpired:
-        console.print("‚è∞ Timeout selecting files (3 minutes)", style="yellow")
+        console.print("⏰ Timeout selecting files (3 minutes)", style="yellow")
         return
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Claude command failed: {e}", style="red")
+        console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
         return
     except FileNotFoundError:
@@ -25463,7 +25041,7 @@ def _handle_claude_analysis(
 
         if not claude_found:
             console.print(
-                "‚ùå claude command not found. Please install Claude CLI.", style="red"
+                "❌ claude command not found. Please install Claude CLI.", style="red"
             )
             console.print(
                 "If claude is installed as an alias, try adding it to your PATH or creating a symlink.",
@@ -25482,12 +25060,12 @@ def _handle_claude_analysis(
         full_path = common_parent / file_path
         if full_path.exists():
             verified_files.append(file_path)
-            console.print(f"‚úÖ Found: {file_path}", style="green")
+            console.print(f"✅ Found: {file_path}", style="green")
         else:
-            console.print(f"‚ö†Ô∏è  Not found: {file_path}", style="yellow")
+            console.print(f"⚠️  Not found: {file_path}", style="yellow")
 
     if not verified_files:
-        console.print("‚ùå No HTML files could be verified", style="red")
+        console.print("❌ No HTML files could be verified", style="red")
         return
 
     # Write the verified files to a reference list
@@ -25495,7 +25073,7 @@ def _handle_claude_analysis(
     with open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
-    console.print(f"‚úÖ Wrote selected files list to: {selected_files_path}")
+    console.print(f"✅ Wrote selected files list to: {selected_files_path}")
 
     # Step 3: Analyze each file individually with Claude
     console.print("\nAnalyzing each file individually with Claude...")
@@ -25505,7 +25083,7 @@ def _handle_claude_analysis(
 
     if not individual_prompt_path.exists():
         console.print(
-            f"‚ùå Prompt file not found: {individual_prompt_path}", style="red"
+            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
         )
         return
 
@@ -25513,9 +25091,9 @@ def _handle_claude_analysis(
 
     # Analyze each of the selected files
     for i, file_path in enumerate(verified_files, 1):
-        console.print(f"\nüìã Analyzing file {i}/{len(verified_files)}: {file_path}")
+        console.print(f"\n📋 Analyzing file {i}/{len(verified_files)}: {file_path}")
         console.print(
-            f"‚è±Ô∏è  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
+            f"⏱️  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
         )
 
         # Customize prompt for this specific file
@@ -25567,39 +25145,39 @@ def _handle_claude_analysis(
             )
 
             # Debug: Show process details
-            console.print(f"üîç Process return code: {result.returncode}", style="dim")
+            console.print(f"🔍 Process return code: {result.returncode}", style="dim")
             if result.stderr:
-                console.print(f"üîç stderr: {result.stderr[:200]}...", style="dim")
+                console.print(f"🔍 stderr: {result.stderr[:200]}...", style="dim")
 
             if result.returncode != 0:
                 console.print(
-                    f"‚ùå Analysis failed for {file_path}: {result.stderr}", style="red"
+                    f"❌ Analysis failed for {file_path}: {result.stderr}", style="red"
                 )
                 continue
 
             # Show Claude's response for transparency
             if result.stdout.strip():
-                console.print(f"üìÑ Claude: {result.stdout.strip()}", style="dim")
+                console.print(f"📄 Claude: {result.stdout.strip()}", style="dim")
 
-            console.print(f"‚úÖ Analysis completed for file {i}")
+            console.print(f"✅ Analysis completed for file {i}")
 
         except subprocess.TimeoutExpired:
             console.print(
-                f"‚è∞ Timeout analyzing {file_path} (5 minutes)", style="yellow"
+                f"⏰ Timeout analyzing {file_path} (5 minutes)", style="yellow"
             )
             continue
         except Exception as e:
-            console.print(f"‚ùå Error analyzing {file_path}: {e}", style="red")
+            console.print(f"❌ Error analyzing {file_path}: {e}", style="red")
             continue
 
     # Step 4: Synthesize all analyses into final config
-    console.print("\nüî¨ Synthesizing analyses into final configuration...")
+    console.print("\n🔬 Synthesizing analyses into final configuration...")
 
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
     if not synthesis_prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {synthesis_prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
         return
 
     synthesis_prompt = synthesis_prompt_path.read_text()
@@ -25740,13 +25318,13 @@ def _handle_claude_analysis(
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
                 console.print(
-                    f"\n‚úÖ Configuration saved to: {config_file}", style="green"
+                    f"\n✅ Configuration saved to: {config_file}", style="green"
                 )
 
                 # Show clear usage instructions
                 console.print("\n" + "=" * 60)
                 console.print(
-                    "[bold green]‚ú® Analysis Complete! Here's how to convert your HTML files:[/bold green]"
+                    "[bold green]✨ Analysis Complete! Here's how to convert your HTML files:[/bold green]"
                 )
                 console.print("=" * 60 + "\n")
 
@@ -25778,7 +25356,7 @@ def _handle_claude_analysis(
                 console.print("=" * 60)
             else:
                 console.print(
-                    "\n‚ö†Ô∏è  Could not extract YAML configuration from Claude's response",
+                    "\n⚠️  Could not extract YAML configuration from Claude's response",
                     style="yellow",
                 )
                 console.print(
@@ -25789,17 +25367,17 @@ def _handle_claude_analysis(
                 )
 
         except Exception as e:
-            console.print(f"\n‚ö†Ô∏è  Could not save configuration: {e}", style="yellow")
+            console.print(f"\n⚠️  Could not save configuration: {e}", style="yellow")
             console.print(
                 f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above."
             )
 
     except subprocess.TimeoutExpired:
         console.print(
-            "‚è∞ Timeout synthesizing configuration (5 minutes)", style="yellow"
+            "⏰ Timeout synthesizing configuration (5 minutes)", style="yellow"
         )
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Claude command failed: {e}", style="red")
+        console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
 
     # Ask if temporary analysis files should be deleted
@@ -25819,16 +25397,16 @@ def _handle_claude_analysis(
                     deleted_count += 1
                 except Exception as e:
                     console.print(
-                        f"‚ö†Ô∏è  Could not delete {analysis_file.name}: {e}", style="yellow"
+                        f"⚠️  Could not delete {analysis_file.name}: {e}", style="yellow"
                     )
 
         if deleted_count > 0:
             console.print(
-                f"‚úÖ Deleted {deleted_count} temporary analysis files", style="green"
+                f"✅ Deleted {deleted_count} temporary analysis files", style="green"
             )
     else:
         console.print(
-            "‚ÑπÔ∏è  Temporary analysis files kept in m1f/ directory", style="blue"
+            "ℹ️  Temporary analysis files kept in m1f/ directory", style="blue"
         )
 
 
@@ -25921,7 +25499,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     # Find all HTML files in source directory
     source_path = args.source
     if not source_path.exists():
-        console.print(f"‚ùå Source path not found: {source_path}", style="red")
+        console.print(f"❌ Source path not found: {source_path}", style="red")
         sys.exit(1)
 
     html_files = []
@@ -25929,7 +25507,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
-            console.print(f"‚ùå Source file is not HTML: {source_path}", style="red")
+            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
             sys.exit(1)
     elif source_path.is_dir():
         # Find all HTML files recursively
@@ -25939,14 +25517,14 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
         console.print(f"Found {len(html_files)} HTML files in {source_path}")
 
     if not html_files:
-        console.print("‚ùå No HTML files found to convert", style="red")
+        console.print("❌ No HTML files found to convert", style="red")
         sys.exit(1)
 
     # Prepare output directory
     output_path = args.output
     if output_path.exists() and output_path.is_file():
         console.print(
-            f"‚ùå Output path is a file, expected directory: {output_path}", style="red"
+            f"❌ Output path is a file, expected directory: {output_path}", style="red"
         )
         sys.exit(1)
 
@@ -25957,7 +25535,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
     if not prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
         sys.exit(1)
 
     prompt_template = prompt_path.read_text()
@@ -26035,7 +25613,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             markdown_content = result.stdout.strip()
             output_file.write_text(markdown_content, encoding="utf-8")
 
-            console.print(f"‚úÖ Converted to: {output_file}", style="green")
+            console.print(f"✅ Converted to: {output_file}", style="green")
             converted_count += 1
 
             # Sleep between API calls (except for the last one)
@@ -26044,12 +25622,12 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
                 time.sleep(args.sleep)
 
         except subprocess.CalledProcessError as e:
-            console.print(f"‚ùå Claude conversion failed: {e}", style="red")
+            console.print(f"❌ Claude conversion failed: {e}", style="red")
             if e.stderr:
                 console.print(f"Error: {e.stderr}", style="red")
             failed_count += 1
         except Exception as e:
-            console.print(f"‚ùå Error processing {html_file}: {e}", style="red")
+            console.print(f"❌ Error processing {html_file}: {e}", style="red")
             failed_count += 1
         finally:
             # Clean up temporary file
@@ -26061,9 +25639,9 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
     # Summary
     console.print(f"\n[bold]Conversion Summary:[/bold]")
-    console.print(f"‚úÖ Successfully converted: {converted_count} files", style="green")
+    console.print(f"✅ Successfully converted: {converted_count} files", style="green")
     if failed_count > 0:
-        console.print(f"‚ùå Failed to convert: {failed_count} files", style="red")
+        console.print(f"❌ Failed to convert: {failed_count} files", style="red")
 
     if converted_count == 0:
         sys.exit(1)
@@ -26092,12 +25670,12 @@ def handle_config(args: argparse.Namespace) -> None:
 
         content = json.dumps(config_dict, indent=2)
     else:
-        console.print(f"‚ùå Unsupported format: {args.format}", style="red")
+        console.print(f"❌ Unsupported format: {args.format}", style="red")
         sys.exit(1)
 
     # Write config file
     args.output.write_text(content, encoding="utf-8")
-    console.print(f"‚úÖ Created configuration file: {args.output}", style="green")
+    console.print(f"✅ Created configuration file: {args.output}", style="green")
 
 
 def create_simple_parser() -> argparse.ArgumentParser:
@@ -26186,14 +25764,14 @@ def main() -> None:
         elif args.command == "config":
             handle_config(args)
         else:
-            console.print(f"‚ùå Unknown command: {args.command}", style="red")
+            console.print(f"❌ Unknown command: {args.command}", style="red")
             sys.exit(1)
 
     except KeyboardInterrupt:
-        console.print("\n‚ùå Interrupted by user", style="yellow")
+        console.print("\n❌ Interrupted by user", style="yellow")
         sys.exit(1)
     except Exception as e:
-        console.print(f"‚ùå Error: {e}", style="red")
+        console.print(f"❌ Error: {e}", style="red")
         if args.verbose:
             import traceback
 
@@ -27971,6 +27549,11 @@ from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+# Set Windows-specific event loop policy to avoid debug messages
+if sys.platform.startswith('win'):
+    # This prevents "RuntimeError: Event loop is closed" messages on Windows
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from tools.m1f import main
 
@@ -29978,7 +29561,9 @@ Core functionality for m1f - the main FileCombiner class.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -30149,6 +29734,10 @@ class FileCombiner:
             execution_time = format_duration(time.time() - start_time)
             self.logger.error(f"Processing failed after {execution_time}: {e}")
             raise
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _validate_config(self) -> None:
         """Validate the configuration."""
@@ -30375,6 +29964,8 @@ class FileCombiner:
                 with open(path, "w", encoding="utf-8") as f:
                     for p in sorted_paths:
                         f.write(f"{p}\n")
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_file)
 
@@ -30392,6 +29983,8 @@ class FileCombiner:
             def write_empty():
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(content)
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_empty)
 
@@ -30410,8 +30003,12 @@ class FileCombiner:
 
             # Read file content
             def read_file():
+                content = None
                 with open(output_path, "r", encoding="utf-8") as f:
-                    return f.read()
+                    content = f.read()
+                # Explicitly ensure file handle is released
+                f = None
+                return content
 
             content = await asyncio.to_thread(read_file)
 
@@ -30459,6 +30056,8 @@ Encoding handler module for character encoding detection and conversion.
 from __future__ import annotations
 
 import asyncio
+import gc
+import sys
 from pathlib import Path
 from typing import Tuple, Optional
 from dataclasses import dataclass
@@ -30524,13 +30123,18 @@ class EncodingHandler:
 
     async def _detect_encoding(self, file_path: Path) -> str:
         """Detect the encoding of a file."""
+        # Default to utf-8 if chardet is not available
         if not CHARDET_AVAILABLE:
+            self.logger.debug(f"chardet not available, using UTF-8 for {file_path}")
             return "utf-8"
 
         try:
-            # Read file in binary mode
+            # Read file in binary mode with explicit handle cleanup
+            raw_data = None
             with open(file_path, "rb") as f:
                 raw_data = f.read(65536)  # Read up to 64KB
+            # Explicitly ensure file handle is released
+            f = None
 
             if not raw_data:
                 return "utf-8"
@@ -30552,37 +30156,62 @@ class EncodingHandler:
                 if self._looks_like_utf16(raw_data):
                     return "utf-16-le"
 
+            # Try to decode as UTF-8 first (most common encoding)
+            try:
+                raw_data.decode('utf-8', errors='strict')
+                self.logger.debug(f"Successfully decoded {file_path} as UTF-8")
+                return "utf-8"
+            except UnicodeDecodeError:
+                # UTF-8 decoding failed, use chardet
+                pass
+
             # Use chardet for detection
             result = chardet.detect(raw_data)
 
             # If chardet returns None or empty encoding, default to utf-8
             if not result or not result.get("encoding"):
-                return "utf-8"
-
-            if result["confidence"] < 0.7:
-                self.logger.debug(
-                    f"Low confidence encoding detection for {file_path}: "
-                    f"{result['encoding']} ({result['confidence']:.2f})"
-                )
+                self.logger.debug(f"chardet returned no encoding for {file_path}, using UTF-8")
                 return "utf-8"
 
             encoding = result["encoding"]
+            confidence = result["confidence"]
+
+            self.logger.debug(
+                f"chardet detected {encoding} with confidence {confidence:.2f} for {file_path}"
+            )
+
+            # Low confidence threshold
+            if confidence < 0.7:
+                self.logger.debug(
+                    f"Low confidence encoding detection for {file_path}: "
+                    f"{encoding} ({confidence:.2f}), defaulting to UTF-8"
+                )
+                return "utf-8"
 
             # Map some common encoding names
             encoding_map = {
                 "iso-8859-8": "windows-1255",  # Hebrew
                 "ascii": "utf-8",  # Treat ASCII as UTF-8
-                "windows-1252": "utf-8",  # Prefer UTF-8 over Windows-1252 for better emoji support
             }
 
-            # Check if file extension suggests documentation files that should be UTF-8
-            if (
-                self.config.encoding.prefer_utf8_for_text_files
-                and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
-            ):
-                # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
-                # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
-                if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:
+            # Special handling for Windows-1252 detection
+            if encoding.lower() == "windows-1252":
+                # Check if file extension suggests documentation files that should be UTF-8
+                if (
+                    self.config.encoding.prefer_utf8_for_text_files
+                    and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
+                ):
+                    # For documentation files, prefer UTF-8 over Windows-1252
+                    # unless we have very high confidence
+                    if confidence < 0.95:
+                        self.logger.debug(
+                            f"Preferring UTF-8 over {encoding} for documentation file {file_path}"
+                        )
+                        return "utf-8"
+                
+                # For other files, only use Windows-1252 if we have high confidence
+                # and the file really can't be decoded as UTF-8
+                if confidence < 0.9:
                     return "utf-8"
 
             return encoding_map.get(encoding.lower(), encoding.lower())
@@ -30590,6 +30219,10 @@ class EncodingHandler:
         except Exception as e:
             self.logger.warning(f"Error detecting encoding for {file_path}: {e}")
             return "utf-8"
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _looks_like_utf16(self, data: bytes) -> bool:
         """Check if data looks like UTF-16 encoded text."""
@@ -30611,13 +30244,27 @@ class EncodingHandler:
         had_errors = False
 
         try:
-            # Read file with source encoding
-            with open(file_path, "r", encoding=source_encoding) as f:
-                content = f.read()
+            # Read file with source encoding and explicit handle cleanup
+            content = None
+            try:
+                with open(file_path, "r", encoding=source_encoding) as f:
+                    content = f.read()
+            except UnicodeDecodeError as e:
+                # If initial read fails, try with error handling
+                self.logger.debug(
+                    f"Initial read failed for {file_path} with {source_encoding}, "
+                    f"retrying with error replacement"
+                )
+                with open(file_path, "r", encoding=source_encoding, errors="replace") as f:
+                    content = f.read()
+                had_errors = True
+            
+            # Explicitly ensure file handle is released
+            f = None
 
             # If no conversion needed, return as is
             if source_encoding.lower() == target_encoding.lower():
-                return content, False
+                return content, had_errors
 
             # Try to encode to target encoding
             try:
@@ -30630,7 +30277,7 @@ class EncodingHandler:
                         f"Converted {file_path} from {source_encoding} to {target_encoding}"
                     )
 
-                return decoded, False
+                return decoded, had_errors
 
             except UnicodeEncodeError as e:
                 if self.config.encoding.abort_on_error:
@@ -30651,45 +30298,57 @@ class EncodingHandler:
                 return decoded, True
 
         except UnicodeDecodeError as e:
+            # This shouldn't happen since we handle it above, but just in case
             if self.config.encoding.abort_on_error:
                 raise EncodingError(
                     f"Cannot decode {file_path} with encoding {source_encoding}: {e}"
                 )
 
-            # Try reading with error replacement
+            # Last resort: read as binary and decode with replacement
             try:
-                with open(
-                    file_path, "r", encoding=source_encoding, errors="replace"
-                ) as f:
-                    content = f.read()
+                binary_data = None
+                with open(file_path, "rb") as f:
+                    binary_data = f.read()
+                # Explicitly ensure file handle is released
+                f = None
 
-                self.logger.warning(
-                    f"Decoding errors in {file_path} with {source_encoding}"
-                )
+                # Try UTF-8 first, then fallback to latin-1
+                for fallback_encoding in ["utf-8", "latin-1"]:
+                    try:
+                        content = binary_data.decode(fallback_encoding, errors="replace")
+                        self.logger.warning(
+                            f"Failed to decode {file_path} with {source_encoding}, "
+                            f"using {fallback_encoding} fallback"
+                        )
+                        break
+                    except Exception:
+                        continue
+                else:
+                    # Ultimate fallback - decode as latin-1 which accepts all bytes
+                    content = binary_data.decode("latin-1", errors="replace")
+                    self.logger.error(
+                        f"Failed to decode {file_path} properly, using latin-1 fallback"
+                    )
 
                 return content, True
 
             except Exception as e2:
-                # Last resort: read as binary and decode with replacement
-                with open(file_path, "rb") as f:
-                    binary_data = f.read()
-
-                content = binary_data.decode("utf-8", errors="replace")
-
-                self.logger.error(
-                    f"Failed to decode {file_path} properly, using UTF-8 fallback"
-                )
-
-                return content, True
+                # Final fallback
+                error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e2}]"
+                return error_content, True
 
         except Exception as e:
-            # Handle other errors
+            # Handle other errors (file not found, permissions, etc.)
             if self.config.encoding.abort_on_error:
                 raise EncodingError(f"Error reading {file_path}: {e}")
 
             # Return error message as content
-            error_content = f"[ERROR: Unable to read file. Reason: {e}]"
+            error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e}]"
             return error_content, True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
 ======= tools/m1f/exceptions.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -30915,6 +30574,9 @@ class FileProcessor:
                         for line in f
                         if line.strip() and not line.strip().startswith("#")
                     ]
+                # Explicitly close file handle on Windows for immediate cleanup
+                # The context manager should handle this, but ensure it's done
+                f = None
 
                 # Detect if it's gitignore format
                 is_gitignore = exclude_file.name == ".gitignore" or any(
@@ -30976,6 +30638,8 @@ class FileProcessor:
                             for line in f
                             if line.strip() and not line.strip().startswith("#")
                         ]
+                    # Explicitly ensure file handle is released
+                    f = None
 
                     # Detect if it's gitignore format
                     is_gitignore = any(
@@ -31086,37 +30750,41 @@ class FileProcessor:
 
         try:
             with open(input_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
+                content_lines = f.readlines()
+            # Explicitly ensure file handle is released before processing
+            f = None
+            
+            for line in content_lines:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
 
-                    # Handle glob patterns
-                    if any(ch in line for ch in ["*", "?", "["]):
-                        pattern_path = Path(line)
-                        if not pattern_path.is_absolute():
-                            pattern_path = base_dir / pattern_path
+                # Handle glob patterns
+                if any(ch in line for ch in ["*", "?", "["]):
+                    pattern_path = Path(line)
+                    if not pattern_path.is_absolute():
+                        pattern_path = base_dir / pattern_path
 
-                        matches = glob.glob(str(pattern_path), recursive=True)
-                        for m in matches:
-                            try:
-                                validated_path = validate_path_traversal(
-                                    Path(m).resolve()
-                                )
-                                paths.append(validated_path)
-                            except ValueError as e:
-                                self.logger.warning(
-                                    f"Skipping invalid glob match '{m}': {e}"
-                                )
-                    else:
-                        path = Path(line)
-                        if not path.is_absolute():
-                            path = base_dir / path
+                    matches = glob.glob(str(pattern_path), recursive=True)
+                    for m in matches:
                         try:
-                            validated_path = validate_path_traversal(path.resolve())
+                            validated_path = validate_path_traversal(
+                                Path(m).resolve()
+                            )
                             paths.append(validated_path)
                         except ValueError as e:
-                            self.logger.warning(f"Skipping invalid path '{line}': {e}")
+                            self.logger.warning(
+                                f"Skipping invalid glob match '{m}': {e}"
+                            )
+                else:
+                    path = Path(line)
+                    if not path.is_absolute():
+                        path = base_dir / path
+                    try:
+                        validated_path = validate_path_traversal(path.resolve())
+                        paths.append(validated_path)
+                    except ValueError as e:
+                        self.logger.warning(f"Skipping invalid path '{line}': {e}")
 
             # Deduplicate paths
             paths = self._deduplicate_paths(paths)
@@ -31257,7 +30925,8 @@ class FileProcessor:
                     rel_path = dir_path
                 
                 # For directory matching, we need to append a trailing slash
-                rel_path_str = str(rel_path).replace(os.sep, "/")
+                # Always use forward slashes for gitignore pattern matching
+                rel_path_str = str(rel_path).replace("\\", "/")
                 if not rel_path_str.endswith("/"):
                     rel_path_str += "/"
                 
@@ -31320,6 +30989,7 @@ class FileProcessor:
                 rel_path = get_relative_path(
                     file_path, self._get_base_dir_for_path(file_path)
                 )
+                # Note: get_relative_path already returns forward slashes via as_posix()
                 if self.include_gitignore_spec.match_file(rel_path):
                     include_matched = True
 
@@ -31340,6 +31010,7 @@ class FileProcessor:
             rel_path = get_relative_path(
                 file_path, self._get_base_dir_for_path(file_path)
             )
+            # Note: get_relative_path already returns forward slashes via as_posix()
             if self.gitignore_spec.match_file(rel_path):
                 return False
 
@@ -31570,6 +31241,8 @@ class FileProcessor:
                     for line in f
                     if line.strip() and not line.strip().startswith("#")
                 ]
+            # Explicitly ensure file handle is released
+            f = None
 
             # Add to gitignore spec if patterns found
             patterns = [
@@ -31840,7 +31513,9 @@ Output writer module for writing combined files with separators.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 from pathlib import Path
 from typing import List, Tuple, Set, Optional
 import re
@@ -32073,6 +31748,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _write_combined_file_parallel(
         self, output_path: Path, all_files: List[Tuple[Path, str]]
@@ -32115,6 +31794,10 @@ class OutputWriter:
                         self.logger.error(f"Failed to process {file_path}: {result}")
                     elif result is not None:
                         processed_files.append((batch[j], result))
+                
+                # Force garbage collection after each batch on Windows to release file handles
+                if sys.platform.startswith("win"):
+                    gc.collect()
 
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
@@ -32167,6 +31850,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _process_single_file_parallel(
         self, file_path: Path, rel_path: str, file_num: int, total_files: int
@@ -32267,6 +31954,10 @@ class OutputWriter:
         except Exception as e:
             self.logger.error(f"Error processing file {file_path}: {e}")
             raise
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _prepare_include_files(self) -> List[Tuple[Path, str]]:
         """Prepare include files from configuration."""
@@ -32440,6 +32131,10 @@ class OutputWriter:
             outfile.write(self.config.output.line_ending.value)
 
             return True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
 ======= tools/m1f/presets.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -34189,13 +33884,16 @@ def is_binary_file(file_path: Path) -> bool:
 
     # Try reading first few bytes
     try:
+        chunk = None
         with open(file_path, "rb") as f:
             # Read first 1024 bytes
             chunk = f.read(1024)
+        # Explicitly ensure file handle is released
+        f = None
 
-            # Check for null bytes
-            if b"\0" in chunk:
-                return True
+        # Check for null bytes
+        if b"\0" in chunk:
+            return True
 
             # Try to decode as UTF-8
             try:
@@ -34229,12 +33927,23 @@ def is_documentation_file(file_path: Path) -> bool:
 
 
 def get_relative_path(file_path: Path, base_path: Path) -> str:
-    """Get relative path from base path, handling edge cases."""
+    """Get relative path from base path, handling edge cases.
+    
+    Returns path with forward slashes regardless of platform for consistent
+    bundle format across different operating systems.
+    """
     try:
-        return str(file_path.relative_to(base_path))
+        # Ensure both paths are resolved to handle edge cases
+        resolved_file = file_path.resolve()
+        resolved_base = base_path.resolve()
+        
+        # Get relative path and convert to forward slashes
+        rel_path = resolved_file.relative_to(resolved_base)
+        # Use as_posix() to ensure forward slashes on all platforms
+        return rel_path.as_posix()
     except ValueError:
-        # If file is not under base path, return absolute path
-        return str(file_path)
+        # If file is not under base path, return absolute path with forward slashes
+        return file_path.resolve().as_posix()
 
 
 def parse_file_size(size_str: str) -> int:
@@ -34391,8 +34100,11 @@ def validate_path_traversal(
     if path_str.startswith("~"):
         return resolved_path
 
-    # Check for excessive parent directory traversals
-    parent_traversals = path_str.count("../")
+    # Normalize path separators for consistent checking
+    normalized_path_str = path_str.replace("\\", "/")
+    
+    # Check for excessive parent directory traversals (both Unix and Windows style)
+    parent_traversals = normalized_path_str.count("../") + normalized_path_str.count("..\\") + path_str.count("..\\")
     if parent_traversals >= 3 and not (allow_outside or from_preset):
         # Three or more parent directory traversals are suspicious
         raise ValueError(
@@ -34411,13 +34123,29 @@ def validate_path_traversal(
 
     # Allow access to home directory for config files
     home_dir = Path.home()
-    if resolved_path.is_relative_to(home_dir / ".m1f"):
-        return resolved_path
+    try:
+        if resolved_path.is_relative_to(home_dir / ".m1f"):
+            return resolved_path
+    except (ValueError, AttributeError):
+        # is_relative_to might not exist in older Python versions
+        try:
+            resolved_path.relative_to(home_dir / ".m1f")
+            return resolved_path
+        except ValueError:
+            pass
 
     # Allow access to project's tmp directory for tests
     project_root = resolved_base
-    if resolved_path.is_relative_to(project_root / "tmp"):
-        return resolved_path
+    try:
+        if resolved_path.is_relative_to(project_root / "tmp"):
+            return resolved_path
+    except (ValueError, AttributeError):
+        # is_relative_to might not exist in older Python versions
+        try:
+            resolved_path.relative_to(project_root / "tmp")
+            return resolved_path
+        except ValueError:
+            pass
 
     # Check if the resolved path is within the base directory
     try:
@@ -34425,10 +34153,11 @@ def validate_path_traversal(
         resolved_path.relative_to(resolved_base)
         return resolved_path
     except ValueError:
-        # Check if we're in a test environment
+        # Check if we're in a test environment (handle Windows temp paths)
+        resolved_str = str(resolved_path).replace("\\", "/")
         if any(
-            part in str(resolved_path)
-            for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
+            part in resolved_str.lower()
+            for part in ["/tmp/", "/var/folders/", "pytest-", "test_", "\\temp\\", "\\tmp\\", "/temp/", "appdata/local/temp"]
         ):
             # Allow temporary test directories
             return resolved_path
@@ -35062,10 +34791,10 @@ class FileSplitter:
         self.logger.info("")
 
         if result.files_failed == 0 and result.total_files > 0:
-            self.logger.info("✓ All files extracted successfully!")
+            self.logger.info("[OK] All files extracted successfully!")
         elif result.files_failed > 0:
             self.logger.error(
-                f"✗ Extraction completed with {result.files_failed} error(s). "
+                f"[FAIL] Extraction completed with {result.files_failed} error(s). "
                 f"Check the logs above for details."
             )
 
@@ -38683,6 +38412,223 @@ Output only the YAML configuration - no additional explanation needed.
 IMPORTANT: After outputting the YAML configuration, print
 "SYNTHESIS_COMPLETE_OK" on the last line to confirm completion.
 
+======= tools/m1f/prompts/perfect_bundle_prompt.md ======
+# Perfect Bundle Creation Prompt for m1f-claude
+
+## 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
+
+============================================================
+
+The basic bundles (complete.txt and docs.txt) have already been created. Now
+create additional topic-specific bundles following BEST PRACTICES.
+
+## 📚 REQUIRED READING (IN THIS ORDER):
+
+1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax
+2. READ: @m1f/project_analysis_dirlist.txt for directory structure
+3. READ: @m1f/project_analysis_filelist.txt for complete file listing
+
+⚠️ IMPORTANT: Read ALL three files above before proceeding!
+
+## 🏆 BEST PRACTICES FOR PERFECT BUNDLES
+
+### 1. MODULAR ARCHITECTURE PRINCIPLE
+
+- Identify each logical module, tool, or subsystem in the project
+- Create one bundle per module/tool (e.g., auth-module, payment-module,
+  user-module)
+- Each module bundle should be self-contained and meaningful
+
+### 2. USE PRECISE INCLUDES, NOT BROAD EXCLUDES
+
+Instead of excluding everything except what you want, use precise includes:
+
+```yaml
+# ❌ BAD - Too broad, relies on excludes
+sources:
+  - path: "."
+    excludes: ["tests/", "docs/", "scripts/", "node_modules/"]
+
+# ✅ GOOD - Precise includes
+sources:
+  - path: "tools/"
+    include_extensions: [".py"]
+    includes: ["auth/**", "auth.py", "utils.py", "__init__.py"]
+```
+
+### 3. BUNDLE GROUPING STRATEGY
+
+Organize bundles into logical groups:
+
+- `documentation` - All documentation bundles
+- `source` - Source code bundles by module
+- `tests` - Test code bundles
+- `config` - Configuration bundles
+- `complete` - Aggregated bundles
+
+### 4. NUMBERED OUTPUT FILES
+
+Use numbered prefixes for proper sorting:
+
+```yaml
+output: "m1f/project/87_module1_docs.txt"  # Documentation
+output: "m1f/project/94_module1_code.txt"  # Source code
+output: "m1f/project/95_module2_code.txt"  # Source code
+output: "m1f/project/99_complete.txt"      # Complete bundle
+```
+
+### 5. HIERARCHICAL BUNDLES
+
+Create aggregated bundles that combine related bundles:
+
+- `all-docs` - Combines all documentation
+- `all-tests` - Combines all tests
+- `all-frontend` - Combines all frontend code
+- `complete` - The ultimate bundle with everything
+
+### 6. SHARED FILES STRATEGY
+
+When files are used by multiple modules (like utils, constants, types):
+
+- Include them in each relevant module bundle
+- This ensures each bundle is self-contained
+
+## 🔍 PROJECT ANALYSIS STEPS
+
+### STEP 1: Identify Project Architecture
+
+Analyze the directory structure to find:
+
+- Monorepo with packages? → Create bundle per package
+- Multiple apps/services? → Create bundle per app
+- Modular architecture? → Create bundle per module
+- Plugin/Extension system? → Create bundle per plugin
+- Frontend/Backend split? → Create bundles for each
+
+### STEP 2: Find Logical Boundaries
+
+Look for natural boundaries in the code:
+
+- Directory names that indicate modules (auth/, payment/, user/)
+- File naming patterns (auth.service.ts, auth.controller.ts)
+- Configuration files that define modules
+- Import patterns that show dependencies
+
+### STEP 3: Design Bundle Hierarchy
+
+Plan your bundles in this order:
+
+1. Module/tool-specific bundles (most granular)
+2. Category bundles (tests, docs, config)
+3. Aggregated bundles (all-docs, all-frontend)
+4. Complete bundle (everything)
+
+## 📝 BUNDLE CREATION RULES
+
+### NAMING CONVENTIONS
+
+- Use lowercase with hyphens: `user-service`, `auth-module`
+- Be descriptive but concise
+- Group prefix when applicable: `frontend-components`, `backend-api`
+
+### OUTPUT FILE PATTERNS
+
+```
+m1f/{project_name}/
+├── 80-89_*_docs.txt     # Documentation bundles
+├── 90-93_*_config.txt   # Configuration bundles
+├── 94-98_*_code.txt     # Source code bundles
+└── 99_*_complete.txt    # Complete/aggregated bundles
+```
+
+### SOURCES CONFIGURATION
+
+Always use the most specific configuration:
+
+```yaml
+sources:
+  - path: "src/modules/auth"
+    include_extensions: [".ts", ".js"]
+    includes: ["**/*.service.ts", "**/*.controller.ts"]
+  - path: "src/shared"
+    includes: ["auth-utils.ts", "auth-types.ts"]
+```
+
+## 🚨 CRITICAL RULES - MUST FOLLOW
+
+1. **NO DEFAULT EXCLUDES**: Don't exclude node_modules, .git, **pycache**, etc.
+2. **NO BINARY/ASSET BUNDLES**: Skip images, fonts, compiled files
+3. **MAX 20 BUNDLES**: Including existing complete and docs
+4. **USE INCLUDES OVER EXCLUDES**: Be precise about what to include
+5. **SELF-CONTAINED BUNDLES**: Each bundle should be useful standalone
+
+## 🎯 IMPLEMENTATION CHECKLIST
+
+□ Read all three required files completely □ Identify the project's modular
+structure □ Plan bundle hierarchy (modules → categories → aggregated) □ Design
+precise `includes` patterns for each bundle □ Use numbered output files for
+sorting □ Group bundles logically □ Create aggregated bundles where valuable □
+Keep total count under 20 bundles □ Use MultiEdit to add all bundles at once
+
+## 💡 EXAMPLE PATTERNS TO RECOGNIZE
+
+### For a Multi-Service Project:
+
+```yaml
+bundles:
+  # Service-specific bundles
+  auth-service:
+    group: "services"
+    output: "m1f/project/94_auth_service.txt"
+    sources:
+      - path: "services/auth"
+        include_extensions: [".js", ".ts"]
+      - path: "shared"
+        includes: ["auth/**", "types/auth.ts"]
+
+  user-service:
+    group: "services"
+    output: "m1f/project/95_user_service.txt"
+    sources:
+      - path: "services/user"
+        include_extensions: [".js", ".ts"]
+      - path: "shared"
+        includes: ["user/**", "types/user.ts"]
+```
+
+### For a Plugin-Based System:
+
+```yaml
+bundles:
+  plugin-core:
+    group: "core"
+    output: "m1f/project/94_plugin_core.txt"
+    sources:
+      - path: "core"
+        include_extensions: [".py"]
+      - path: "plugins"
+        includes: ["__init__.py", "base.py"]
+
+  plugin-auth:
+    group: "plugins"
+    output: "m1f/project/95_plugin_auth.txt"
+    sources:
+      - path: "plugins/auth"
+      - path: "core"
+        includes: ["plugin_utils.py"]
+```
+
+## ⚡ FINAL STEPS
+
+1. Analyze the project structure deeply
+2. Design bundles that reflect the project's architecture
+3. Use precise includes to create focused bundles
+4. Test your mental model: "Would each bundle be useful alone?"
+5. Create the configuration with MultiEdit
+
+Remember: The goal is bundles that are **modular**, **focused**, and
+**self-contained**!
+
 ======= tools/m1f/prompts/segmentation_prompt.md ======
 # 🎯 CREATE PERFECT TOPIC-SPECIFIC BUNDLES FOR THIS PROJECT
 
@@ -38857,6 +38803,148 @@ common-errors:
 
 Remember: Each bundle should answer "What would I need to understand this
 module?" - size appropriately based on the use case!
+
+======= tools/m1f/prompts/verification_prompt.md ======
+# 🔍 VERIFY AND IMPROVE M1F CONFIGURATION
+
+Your task is to verify the .m1f.config.yml that was just created and improve it
+if needed.
+
+📋 VERIFICATION CHECKLIST:
+
+1. **Read .m1f.config.yml** - Check the current configuration
+2. **Check Generated Bundles** - Look in m1f/ directory for .txt files
+3. **Verify Bundle Quality**:
+   - Are focused/task bundles ideally under 180KB for Claude Code usage?
+   - Are larger reference bundles under 5MB for Claude AI?
+   - Complete/full bundles can be larger - that's OK!
+   - Do they contain the expected content?
+   - Are there any errors or warnings?
+4. **Test a Bundle** - Read at least one generated bundle (e.g.,
+   @m1f/{project_name}\_complete.txt)
+5. **Check for Common Issues**:
+   - Redundant excludes (node_modules, .git, etc. are auto-excluded)
+   - Missing important files
+   - Bundles that are too large or too small
+   - Incorrect separator_style (should be Standard or omitted)
+   - Wrong sources format (should use 'sources:' array, not 'source_directory:')
+
+🛠️ IMPROVEMENT ACTIONS:
+
+If you find issues:
+
+1. **Fix Configuration Errors** - Update .m1f.config.yml
+2. **Optimize Bundle Organization** - Better grouping or splitting
+3. **Add Missing Bundles** - If important areas aren't covered
+4. **Remove Redundant Bundles** - If there's too much overlap
+5. **Fix Size Issues** - Split large bundles or combine small ones
+
+📝 SPECIFIC CHECKS:
+
+1. Run: `ls -lah m1f/` to see all generated bundles and their sizes
+2. SIZE GUIDELINES:
+   - Task-focused bundles: Ideally < 180KB for Claude Code
+   - Reference bundles: Ideally < 5MB for Claude AI
+   - Complete/full bundles: Can be much larger (40MB+ is fine)
+   - TOO SMALL: Bundles under 10KB likely have configuration errors
+3. Check for m1f-update errors in the output above
+4. Read the complete bundle (e.g., @m1f/{project_name}\_complete.txt) to verify
+   content inclusion
+5. Ensure each bundle serves a clear, distinct purpose
+6. CRITICAL: Check for bundles under 10KB - these often indicate:
+   - Wrong file paths in includes
+   - Non-existent directories
+   - Incorrect glob patterns Action: Remove these bundle sections from the
+     config!
+
+⚠️ SIZE OPTIMIZATION GUIDELINES: For bundles intended for Claude Code that
+exceed 180KB:
+
+1. Consider splitting into smaller, more focused bundles
+2. Use more specific includes patterns
+3. Create sub-bundles for large topics (e.g., api-core-1, api-core-2) Note: This
+   is a guideline - some bundles naturally need to be larger!
+
+📊 PROJECT CONTEXT:
+
+- Type: {project_type}
+- Languages: {languages}
+- Total Files: {total_files}
+
+🎯 EXPECTED OUTCOME:
+
+After verification:
+
+1. The .m1f.config.yml should be optimal for this project
+2. All bundles should generate without errors
+3. Each bundle should be appropriately sized for its purpose:
+   - Task-focused bundles: Ideally < 180KB for Claude Code
+   - Reference bundles: Ideally < 5MB for Claude AI
+   - Complete bundles: Any size that captures the full scope
+4. The configuration should follow all best practices
+
+If everything looks good, just confirm. If improvements are needed, make them!
+
+📈 SIZE OPTIMIZATION STRATEGIES:
+
+For bundles that are too large:
+
+```yaml
+# Instead of this (too large):
+api-documentation:
+  sources:
+    - path: "docs/api"
+
+# Do this (split by topic):
+api-01-authentication:
+  sources:
+    - path: "docs/api"
+      includes: ["auth*.md", "login*.md", "session*.md"]
+
+api-02-data-models:
+  sources:
+    - path: "docs/api"
+      includes: ["models/*.md", "schema*.md"]
+
+api-03-endpoints:
+  sources:
+    - path: "docs/api"
+      includes: ["endpoints/*.md", "routes*.md"]
+```
+
+For bundles that are too small (<10KB):
+
+```yaml
+# If you see this in ls -lah output:
+# 108   m1f/some-bundle.txt
+# 2.1K  m1f/another-bundle.txt
+
+# Check the bundle content:
+cat m1f/some-bundle.txt
+# Output: "# No files processed from /path/to/nowhere"
+
+# ACTION: Remove the bundle from config:
+# DELETE this entire section:
+some-bundle:
+  description: "..."
+  sources:
+    - path: "nonexistent/path"  # <-- This path doesn't exist!
+```
+
+🔍 FINAL VERIFICATION: After making any changes, run `m1f-update` again and
+verify:
+
+1. All bundles generate without errors
+2. No bundles are under 10KB (unless intentionally small)
+3. Task-focused bundles are ideally under 180KB
+4. The configuration follows best practices
+
+⚠️ PATH VERIFICATION CHECKLIST: Before finalizing, double-check:
+
+- All paths in sources exist in the project
+- Paths use relative format (e.g., "src/api" not "/home/user/src/api")
+- Include patterns match actual files (check with `ls` command)
+- No typos in directory names (e.g., "dot" vs ".")
 
 ======= tools/scrape_tool/scrapers/README.md ======
 # HTML2MD Web Scrapers

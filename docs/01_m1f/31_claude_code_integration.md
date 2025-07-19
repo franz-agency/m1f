@@ -103,10 +103,10 @@ The `m1f-claude` tool enhances project setup by creating topic-specific bundles 
 
 ```bash
 # Interactive mode - prompts for project details
-m1f-claude --advanced-setup
+m1f-claude --setup
 
 # With project information provided
-m1f-claude --advanced-setup \
+m1f-claude --setup \
   --project-description "SaaS dashboard with React frontend and Express API" \
   --project-priorities "code modularity, API documentation, test coverage"
 ```
@@ -128,10 +128,10 @@ For topic-specific bundles and advanced configuration:
 m1f-init
 
 # Then run advanced setup
-m1f-claude --advanced-setup
+m1f-claude --setup
 ```
 
-#### What --advanced-setup Does:
+#### What --setup Does:
 
 - Claude analyzes your project structure in detail
 - Creates topic-specific bundles (models, views, tests, etc.)

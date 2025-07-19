@@ -19,7 +19,9 @@ Output writer module for writing combined files with separators.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 from pathlib import Path
 from typing import List, Tuple, Set, Optional
 import re
@@ -252,6 +254,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _write_combined_file_parallel(
         self, output_path: Path, all_files: List[Tuple[Path, str]]
@@ -294,6 +300,10 @@ class OutputWriter:
                         self.logger.error(f"Failed to process {file_path}: {result}")
                     elif result is not None:
                         processed_files.append((batch[j], result))
+                
+                # Force garbage collection after each batch on Windows to release file handles
+                if sys.platform.startswith("win"):
+                    gc.collect()
 
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
@@ -346,6 +356,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _process_single_file_parallel(
         self, file_path: Path, rel_path: str, file_num: int, total_files: int
@@ -446,6 +460,10 @@ class OutputWriter:
         except Exception as e:
             self.logger.error(f"Error processing file {file_path}: {e}")
             raise
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _prepare_include_files(self) -> List[Tuple[Path, str]]:
         """Prepare include files from configuration."""
@@ -619,3 +637,7 @@ class OutputWriter:
             outfile.write(self.config.output.line_ending.value)
 
             return True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()

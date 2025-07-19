@@ -19,6 +19,8 @@ from __future__ import annotations
 import sys
 import shutil
 import tempfile
+import gc
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -66,9 +68,9 @@ def temp_dir() -> Iterator[Path]:
     try:
         yield test_dir
     finally:
-        # Clean up
+        # Clean up with Windows-specific handling
         if test_dir.exists():
-            shutil.rmtree(test_dir)
+            _safe_cleanup_directory(test_dir)
 
 
 @pytest.fixture
@@ -104,9 +106,9 @@ def isolated_filesystem() -> Iterator[Path]:
     finally:
         # Restore original working directory
         os.chdir(original_cwd)
-        # Clean up
+        # Clean up with Windows-specific handling
         if test_dir.exists():
-            shutil.rmtree(test_dir)
+            _safe_cleanup_directory(test_dir)
 
 
 @pytest.fixture
@@ -201,6 +203,19 @@ def cleanup_logging():
         logger.setLevel(logging.WARNING)
 
 
+@pytest.fixture(autouse=True)
+def cleanup_file_handles():
+    """Automatically clean up file handles after each test (Windows specific)."""
+    yield
+    
+    # Force garbage collection to close any remaining file handles
+    # This is especially important on Windows where file handles can prevent deletion
+    if sys.platform.startswith("win"):
+        gc.collect()
+        # Give a small delay for Windows to release handles
+        time.sleep(0.01)
+
+
 @pytest.fixture
 def capture_logs():
     """Capture log messages for testing."""
@@ -250,6 +265,74 @@ def capture_logs():
 def is_windows() -> bool:
     """Check if running on Windows."""
     return sys.platform.startswith("win")
+
+
+def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
+    """
+    Safely clean up a directory with Windows-specific handling.
+    
+    Windows can have file handle issues that prevent immediate deletion.
+    This function retries with increasing delays and forces garbage collection.
+    """
+    import os
+    import time
+    
+    for attempt in range(max_retries):
+        try:
+            # Force garbage collection to close any remaining file handles
+            gc.collect()
+            
+            # On Windows, try to remove read-only attributes that might prevent deletion
+            if sys.platform.startswith("win"):
+                _remove_readonly_attributes(directory)
+            
+            shutil.rmtree(directory)
+            return
+        except (OSError, PermissionError) as e:
+            if attempt == max_retries - 1:
+                # Final attempt failed, log warning but don't raise
+                print(f"Warning: Could not clean up test directory {directory}: {e}")
+                return
+            
+            # Wait with exponential backoff
+            delay = 0.1 * (2 ** attempt)
+            time.sleep(delay)
+            
+            # Force garbage collection again
+            gc.collect()
+
+
+def _remove_readonly_attributes(directory: Path) -> None:
+    """
+    Remove read-only attributes from files and directories on Windows.
+    
+    This helps with cleanup when files are marked as read-only.
+    """
+    import os
+    import stat
+    
+    if not sys.platform.startswith("win"):
+        return
+        
+    try:
+        for root, dirs, files in os.walk(directory):
+            # Remove read-only flag from files
+            for file in files:
+                file_path = Path(root) / file
+                try:
+                    file_path.chmod(stat.S_IWRITE | stat.S_IREAD)
+                except (OSError, PermissionError):
+                    pass  # Ignore errors, best effort
+            
+            # Remove read-only flag from directories
+            for dir_name in dirs:
+                dir_path = Path(root) / dir_name
+                try:
+                    dir_path.chmod(stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+                except (OSError, PermissionError):
+                    pass  # Ignore errors, best effort
+    except (OSError, PermissionError):
+        pass  # Ignore errors, best effort
 
 
 @pytest.fixture

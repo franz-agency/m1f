@@ -176,36 +176,44 @@ def page_not_found(e):
 
 
 if __name__ == "__main__":
+    # Get port from environment variable or use default
+    port = int(os.environ.get('HTML2MD_SERVER_PORT', 8080))
+    
     # Ensure TEST_PAGES is populated
     if not TEST_PAGES:
         logger.warning("No test pages found! Please check the test_pages directory.")
 
-    print(
-        f"""
+    # Only print banner in non-testing mode
+    if os.environ.get('FLASK_ENV') != 'testing':
+        print(
+            f"""
 ╔══════════════════════════════════════════════════════════════╗
 ║                  HTML2MD Test Server                         ║
 ║                                                              ║
-║  Server running at: http://localhost:8080                    ║
+║  Server running at: http://localhost:{port:<4}                    ║
 ║                                                              ║
 ║  Available test pages ({len(TEST_PAGES)} found):            ║
 """
-    )
+        )
 
-    # Sort pages for consistent display
-    for page in sorted(TEST_PAGES.keys()):
-        info = TEST_PAGES[page]
-        # Truncate title if too long
-        title = info["title"][:25]
-        print(f"║  • /page/{page:<20} - {title:<25} ║")
+        # Sort pages for consistent display
+        for page in sorted(TEST_PAGES.keys()):
+            info = TEST_PAGES[page]
+            # Truncate title if too long
+            title = info["title"][:25]
+            print(f"║  • /page/{page:<20} - {title:<25} ║")
 
-    if not TEST_PAGES:
-        print("║  No test pages found in test_pages directory!               ║")
+        if not TEST_PAGES:
+            print("║  No test pages found in test_pages directory!               ║")
 
-    print(
-        """║                                                              ║
+        print(
+            """║                                                              ║
 ║  Press Ctrl+C to stop the server                            ║
 ╚══════════════════════════════════════════════════════════════╝
     """
-    )
+        )
 
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    # Disable debug mode when running in testing environment
+    debug_mode = os.environ.get('FLASK_ENV') != 'testing'
+    
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
