@@ -1232,16 +1232,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options
 
-======= test.log ======
-2025-07-04 13:24:40,563 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/docs/01_m1f
-2025-07-04 13:24:40,563 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 13:24:40,566 - tools.m1f.core - INFO    : Found 16 files to process
-2025-07-04 13:24:40,566 - tools.m1f.output_writer - INFO    : Processing 16 file(s) for inclusion...
-2025-07-04 13:24:40,566 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 13:24:40,751 - tools.m1f.core - INFO    : Successfully combined 16 files into '/home/fuf-user/git/m1f/test.txt'
-2025-07-04 13:24:40,751 - m1f_main - INFO    : Total execution time: 0.19 seconds
-2025-07-04 13:24:40,752 - m1f_main - INFO    : Processed 16 files
-
 ======= test_claude_runner_improvements.py ======
 #!/usr/bin/env python3
 """
@@ -1367,564 +1357,266 @@ if __name__ == "__main__":
     
     print("\n✅ Test completed!")
 
-======= test_debug.log ======
-2025-07-04 14:17:46,646 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 14:17:46,646 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 14:17:46,674 - tools.m1f.core - INFO    : Found 71 files to process
-2025-07-04 14:17:46,675 - tools.m1f.output_writer - INFO    : Processing 71 file(s) for inclusion...
-2025-07-04 14:17:46,675 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 14:17:47,076 - tools.m1f.core - INFO    : Successfully combined 71 files into '/home/fuf-user/git/m1f/test_debug.txt'
-2025-07-04 14:17:47,076 - m1f_main - INFO    : Total execution time: 0.43 seconds
-2025-07-04 14:17:47,077 - m1f_main - INFO    : Processed 71 files
+======= test_windows_file_handles.py ======
+#!/usr/bin/env python3
+"""
+Test script to validate Windows file handle cleanup fixes.
 
-======= test_debug2.log ======
-2025-07-04 14:23:25,987 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 14:23:25,988 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 14:23:25,988 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/__pycache__
-2025-07-04 14:23:25,988 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f_init.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/_version.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f_claude.py
-2025-07-04 14:23:25,989 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/prepare_docs.py
-2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/__init__.py
-2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/setup.py
-2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/wp_export_md.py
-2025-07-04 14:23:25,990 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/token_counter.py
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md.py
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/__pycache__
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/core.py
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/__main__.py
-2025-07-04 14:23:25,991 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner_simple.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/analyze_html.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/preprocessors.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/cli_claude.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner.py
-2025-07-04 14:23:25,992 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/__init__.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/extractors.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/utils.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/api.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/convert_claude.py
-2025-07-04 14:23:25,993 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/cli.py
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/select_files_from_project.md
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_selected_files.md
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/convert_html_to_md.md
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_individual_file.md
-2025-07-04 14:23:25,994 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/synthesize_config.md
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/config/__pycache__
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/loader.py
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/__init__.py
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/config/models.py
-2025-07-04 14:23:25,995 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/__pycache__
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/__main__.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/__init__.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/config.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/utils.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/crawlers.py
-2025-07-04 14:23:25,996 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/cli.py
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__pycache__
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/httrack.py
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/selectolax.py
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/beautifulsoup.py
-2025-07-04 14:23:25,997 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__init__.py
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/README.md
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/scrapy_scraper.py
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/base.py
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/playwright.py
-2025-07-04 14:23:25,998 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/cloudflare.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/playwright.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/beautifulsoup.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/httrack.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/scrapy.yaml
-2025-07-04 14:23:25,999 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/selectolax.yaml
-2025-07-04 14:23:26,000 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/m1f/__pycache__
-2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/segmentation_prompt.md
-2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/verification_prompt.md
-2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/s1f/__pycache__
-2025-07-04 14:23:26,004 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/core.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/__main__.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/exceptions.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/parsers.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/__init__.py
-2025-07-04 14:23:26,005 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/config.py
-2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/utils.py
-2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/writers.py
-2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/models.py
-2025-07-04 14:23:26,006 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/logging.py
-2025-07-04 14:23:26,007 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/s1f/cli.py
-2025-07-04 14:23:26,007 - tools.m1f.core - INFO    : Found 20 files to process
-2025-07-04 14:23:26,007 - tools.m1f.core - DEBUG   : Files sorted by depth and name
-2025-07-04 14:23:26,007 - tools.m1f.output_writer - INFO    : Processing 20 file(s) for inclusion...
-2025-07-04 14:23:26,007 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 14:23:26,008 - tools.m1f.output_writer - DEBUG   : Processing file (1/20): m1f.py
-2025-07-04 14:23:26,009 - tools.m1f.output_writer - DEBUG   : Processing file (2/20): path_utils.py
-2025-07-04 14:23:26,009 - tools.m1f.output_writer - DEBUG   : Processing file (3/20): __init__.py
-2025-07-04 14:23:26,010 - tools.m1f.output_writer - DEBUG   : Processing file (4/20): __main__.py
-2025-07-04 14:23:26,010 - tools.m1f.output_writer - DEBUG   : Processing file (5/20): archive_creator.py
-2025-07-04 14:23:26,011 - tools.m1f.output_writer - DEBUG   : Processing file (6/20): auto_bundle.py
-2025-07-04 14:23:26,014 - tools.m1f.output_writer - DEBUG   : Processing file (7/20): cli.py
-2025-07-04 14:23:26,027 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2788
-2025-07-04 14:23:26,028 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 2790
-2025-07-04 14:23:26,029 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2788
-2025-07-04 14:23:26,030 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2788
-2025-07-04 14:23:26,031 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2790
-2025-07-04 14:23:26,031 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2788
-2025-07-04 14:23:26,032 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 2788
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 14:23:26,041 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12799495392693638
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 14:23:26,042 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.7080353101079013
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 14:23:26,043 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 14:23:26,044 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 14:23:26,044 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 14:23:26,044 - tools.m1f.output_writer - DEBUG   : Processing file (8/20): config.py
-2025-07-04 14:23:26,047 - tools.m1f.output_writer - DEBUG   : Processing file (9/20): config_loader.py
-2025-07-04 14:23:26,048 - tools.m1f.output_writer - DEBUG   : Processing file (10/20): constants.py
-2025-07-04 14:23:26,050 - tools.m1f.output_writer - DEBUG   : Processing file (11/20): core.py
-2025-07-04 14:23:26,053 - tools.m1f.output_writer - DEBUG   : Processing file (12/20): encoding_handler.py
-2025-07-04 14:23:26,055 - tools.m1f.output_writer - DEBUG   : Processing file (13/20): exceptions.py
-2025-07-04 14:23:26,055 - tools.m1f.output_writer - DEBUG   : Processing file (14/20): file_processor.py
-2025-07-04 14:23:26,061 - tools.m1f.output_writer - DEBUG   : Processing file (15/20): logging.py
-2025-07-04 14:23:26,062 - tools.m1f.output_writer - DEBUG   : Processing file (16/20): output_writer.py
-2025-07-04 14:23:26,067 - tools.m1f.output_writer - DEBUG   : Processing file (17/20): presets.py
-2025-07-04 14:23:26,074 - tools.m1f.output_writer - DEBUG   : Processing file (18/20): security_scanner.py
-2025-07-04 14:23:26,075 - tools.m1f.output_writer - DEBUG   : Processing file (19/20): separator_generator.py
-2025-07-04 14:23:26,077 - tools.m1f.output_writer - DEBUG   : Processing file (20/20): utils.py
-2025-07-04 14:23:26,080 - tools.m1f.core - INFO    : Successfully combined 20 files into '/home/fuf-user/git/m1f/test_debug2.txt'
-2025-07-04 14:23:26,080 - m1f_main - INFO    : Total execution time: 0.09 seconds
-2025-07-04 14:23:26,080 - m1f_main - INFO    : Processed 20 files
+This script creates multiple test scenarios that previously caused
+WinError 32 permission errors and verifies they now work correctly.
+"""
 
-======= test_exact.log ======
-2025-07-04 14:24:06,392 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 14:24:06,392 - tools.m1f.core - INFO    : Separator style: Standard
-2025-07-04 14:24:06,398 - tools.m1f.core - INFO    : Found 2 files to process
-2025-07-04 14:24:06,398 - tools.m1f.output_writer - INFO    : Processing 2 file(s) for inclusion...
-2025-07-04 14:24:06,398 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 14:24:06,399 - tools.m1f.core - INFO    : Successfully combined 2 files into '/home/fuf-user/git/m1f/test_exact.txt'
-2025-07-04 14:24:06,399 - m1f_main - INFO    : Total execution time: 0.01 seconds
-2025-07-04 14:24:06,399 - m1f_main - INFO    : Processed 2 files
+import asyncio
+import gc
+import os
+import sys
+import tempfile
+import time
+from pathlib import Path
+import shutil
 
-======= test_fixed.log ======
-2025-07-04 14:19:51,125 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 14:19:51,125 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 14:19:51,135 - tools.m1f.core - INFO    : Found 26 files to process
-2025-07-04 14:19:51,136 - tools.m1f.output_writer - INFO    : Processing 26 file(s) for inclusion...
-2025-07-04 14:19:51,136 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 14:19:51,204 - tools.m1f.core - INFO    : Successfully combined 26 files into '/home/fuf-user/git/m1f/test_fixed.txt'
-2025-07-04 14:19:51,205 - m1f_main - INFO    : Total execution time: 0.08 seconds
-2025-07-04 14:19:51,205 - m1f_main - INFO    : Processed 26 files
+# Add tools directory to path
+sys.path.insert(0, str(Path(__file__).parent / "tools"))
 
-======= test_includes.log ======
-2025-07-04 13:25:33,820 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools
-2025-07-04 13:25:33,820 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 13:25:33,820 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/__pycache__
-2025-07-04 13:25:33,822 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/__pycache__
-2025-07-04 13:25:33,823 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/select_files_from_project.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_selected_files.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/convert_html_to_md.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/analyze_individual_file.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/html2md_tool/prompts/synthesize_config.md
-2025-07-04 13:25:33,824 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/html2md_tool/config/__pycache__
-2025-07-04 13:25:33,825 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/__pycache__
-2025-07-04 13:25:33,826 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/__pycache__
-2025-07-04 13:25:33,827 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/README.md
-2025-07-04 13:25:33,827 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/cloudflare.yaml
-2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/playwright.yaml
-2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/beautifulsoup.yaml
-2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/httrack.yaml
-2025-07-04 13:25:33,828 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/scrapy.yaml
-2025-07-04 13:25:33,829 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/scrape_tool/scrapers/configs/selectolax.yaml
-2025-07-04 13:25:33,829 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/m1f/__pycache__
-2025-07-04 13:25:33,831 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/segmentation_prompt.md
-2025-07-04 13:25:33,831 - tools.m1f.file_processor - DEBUG   : File excluded by filter: /home/fuf-user/git/m1f/tools/m1f/prompts/verification_prompt.md
-2025-07-04 13:25:33,832 - tools.m1f.file_processor - DEBUG   : Directory excluded by name: /home/fuf-user/git/m1f/tools/s1f/__pycache__
-2025-07-04 13:25:33,834 - tools.m1f.core - INFO    : Found 71 files to process
-2025-07-04 13:25:33,834 - tools.m1f.core - DEBUG   : Files sorted by depth and name
-2025-07-04 13:25:33,834 - tools.m1f.output_writer - INFO    : Processing 71 file(s) for inclusion...
-2025-07-04 13:25:33,834 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 13:25:33,835 - tools.m1f.output_writer - DEBUG   : Processing file (1/71): __init__.py
-2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (2/71): _version.py
-2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (3/71): html2md.py
-2025-07-04 13:25:33,836 - tools.m1f.output_writer - DEBUG   : Processing file (4/71): m1f.py
-2025-07-04 13:25:33,837 - tools.m1f.output_writer - DEBUG   : Processing file (5/71): m1f_claude.py
-2025-07-04 13:25:33,855 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 13166
-2025-07-04 13:25:33,857 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 3268
-2025-07-04 13:25:33,860 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 7058
-2025-07-04 13:25:33,861 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 3268
-2025-07-04 13:25:33,862 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 3268
-2025-07-04 13:25:33,863 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 3269
-2025-07-04 13:25:33,864 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 3268
-2025-07-04 13:25:33,866 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 7058
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0008665978698776126
-2025-07-04 13:25:33,906 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.06669660909212169
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.020260163830146078
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.004826885702612296
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5598521267355432
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,907 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,908 - tools.m1f.output_writer - DEBUG   : Processing file (6/71): m1f_init.py
-2025-07-04 13:25:33,916 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 4912
-2025-07-04 13:25:33,917 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2073
-2025-07-04 13:25:33,918 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 3571
-2025-07-04 13:25:33,919 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2073
-2025-07-04 13:25:33,920 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2073
-2025-07-04 13:25:33,920 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2074
-2025-07-04 13:25:33,921 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2073
-2025-07-04 13:25:33,922 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 3571
-2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:33,938 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12132476743738871
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.592066659710789
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,939 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,940 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,940 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/m1f_init.py: MacRoman (0.67)
-2025-07-04 13:25:33,940 - tools.m1f.output_writer - DEBUG   : Processing file (7/71): path_utils.py
-2025-07-04 13:25:33,940 - tools.m1f.output_writer - DEBUG   : Processing file (8/71): prepare_docs.py
-2025-07-04 13:25:33,942 - tools.m1f.output_writer - DEBUG   : Processing file (9/71): s1f.py
-2025-07-04 13:25:33,942 - tools.m1f.output_writer - DEBUG   : Processing file (10/71): scrape.py
-2025-07-04 13:25:33,943 - tools.m1f.output_writer - DEBUG   : Processing file (11/71): setup.py
-2025-07-04 13:25:33,944 - tools.m1f.output_writer - DEBUG   : Processing file (12/71): token_counter.py
-2025-07-04 13:25:33,944 - tools.m1f.output_writer - DEBUG   : Processing file (13/71): wp_export_md.py
-2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (14/71): __init__.py
-2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (15/71): __main__.py
-2025-07-04 13:25:33,945 - tools.m1f.output_writer - DEBUG   : Processing file (16/71): analyze_html.py
-2025-07-04 13:25:33,947 - tools.m1f.output_writer - DEBUG   : Processing file (17/71): api.py
-2025-07-04 13:25:33,952 - tools.m1f.output_writer - DEBUG   : Processing file (18/71): claude_runner.py
-2025-07-04 13:25:33,957 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 2574
-2025-07-04 13:25:33,959 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2571
-2025-07-04 13:25:33,960 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 3330
-2025-07-04 13:25:33,961 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2571
-2025-07-04 13:25:33,962 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2571
-2025-07-04 13:25:33,963 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 3329
-2025-07-04 13:25:33,964 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2571
-2025-07-04 13:25:33,965 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 3330
-2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:33,972 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:33,973 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.6232257237634873
-2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:33,974 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:33,974 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/claude_runner.py: MacRoman (0.70)
-2025-07-04 13:25:33,974 - tools.m1f.output_writer - DEBUG   : Processing file (19/71): claude_runner_simple.py
-2025-07-04 13:25:33,975 - tools.m1f.output_writer - DEBUG   : Processing file (20/71): cli.py
-2025-07-04 13:25:33,995 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 9630
-2025-07-04 13:25:34,001 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 9331
-2025-07-04 13:25:34,005 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 9333
-2025-07-04 13:25:34,007 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 9331
-2025-07-04 13:25:34,010 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 9331
-2025-07-04 13:25:34,014 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 9332
-2025-07-04 13:25:34,017 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 9331
-2025-07-04 13:25:34,022 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 9333
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.048832383505359254
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:34,060 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.009640882524843783
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5756326357520669
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,061 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,063 - tools.m1f.output_writer - DEBUG   : Processing file (21/71): cli_claude.py
-2025-07-04 13:25:34,067 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 669
-2025-07-04 13:25:34,067 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 667
-2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 880
-2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 667
-2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 667
-2025-07-04 13:25:34,068 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 879
-2025-07-04 13:25:34,069 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 667
-2025-07-04 13:25:34,069 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 667
-2025-07-04 13:25:34,082 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.05279906430788877
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:34,083 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.027787128136305905
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5623391748928872
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,084 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,084 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/cli_claude.py: MacRoman (0.69)
-2025-07-04 13:25:34,085 - tools.m1f.output_writer - DEBUG   : Processing file (22/71): convert_claude.py
-2025-07-04 13:25:34,088 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 875
-2025-07-04 13:25:34,088 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 873
-2025-07-04 13:25:34,089 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 875
-2025-07-04 13:25:34,089 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 873
-2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 873
-2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 874
-2025-07-04 13:25:34,090 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 873
-2025-07-04 13:25:34,091 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 875
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 13:25:34,096 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.5804167545150976
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,097 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,097 - tools.m1f.encoding_handler - DEBUG   : Low confidence encoding detection for /home/fuf-user/git/m1f/tools/html2md_tool/convert_claude.py: MacRoman (0.70)
-2025-07-04 13:25:34,097 - tools.m1f.output_writer - DEBUG   : Processing file (23/71): core.py
-2025-07-04 13:25:34,099 - tools.m1f.output_writer - DEBUG   : Processing file (24/71): extractors.py
-2025-07-04 13:25:34,100 - tools.m1f.output_writer - DEBUG   : Processing file (25/71): preprocessors.py
-2025-07-04 13:25:34,101 - tools.m1f.output_writer - DEBUG   : Processing file (26/71): utils.py
-2025-07-04 13:25:34,103 - tools.m1f.output_writer - DEBUG   : Processing file (27/71): __init__.py
-2025-07-04 13:25:34,104 - tools.m1f.output_writer - DEBUG   : Processing file (28/71): __main__.py
-2025-07-04 13:25:34,104 - tools.m1f.output_writer - DEBUG   : Processing file (29/71): archive_creator.py
-2025-07-04 13:25:34,105 - tools.m1f.output_writer - DEBUG   : Processing file (30/71): auto_bundle.py
-2025-07-04 13:25:34,109 - tools.m1f.output_writer - DEBUG   : Processing file (31/71): cli.py
-2025-07-04 13:25:34,121 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2788
-2025-07-04 13:25:34,122 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 2790
-2025-07-04 13:25:34,123 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2788
-2025-07-04 13:25:34,124 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2788
-2025-07-04 13:25:34,125 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2790
-2025-07-04 13:25:34,126 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2788
-2025-07-04 13:25:34,127 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 2788
-2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
-2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
-2025-07-04 13:25:34,135 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,136 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 13:25:34,136 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.12799495392693638
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 13:25:34,137 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.7080353101079013
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.938125
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese confidence = 0.01
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,138 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,139 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 13:25:34,139 - tools.m1f.output_writer - DEBUG   : Processing file (32/71): config.py
-2025-07-04 13:25:34,143 - tools.m1f.output_writer - DEBUG   : Processing file (33/71): config_loader.py
-2025-07-04 13:25:34,144 - tools.m1f.output_writer - DEBUG   : Processing file (34/71): constants.py
-2025-07-04 13:25:34,145 - tools.m1f.output_writer - DEBUG   : Processing file (35/71): core.py
-2025-07-04 13:25:34,148 - tools.m1f.output_writer - DEBUG   : Processing file (36/71): encoding_handler.py
-2025-07-04 13:25:34,150 - tools.m1f.output_writer - DEBUG   : Processing file (37/71): exceptions.py
-2025-07-04 13:25:34,150 - tools.m1f.output_writer - DEBUG   : Processing file (38/71): file_processor.py
-2025-07-04 13:25:34,155 - tools.m1f.output_writer - DEBUG   : Processing file (39/71): logging.py
-2025-07-04 13:25:34,156 - tools.m1f.output_writer - DEBUG   : Processing file (40/71): output_writer.py
-2025-07-04 13:25:34,161 - tools.m1f.output_writer - DEBUG   : Processing file (41/71): presets.py
-2025-07-04 13:25:34,168 - tools.m1f.output_writer - DEBUG   : Processing file (42/71): security_scanner.py
-2025-07-04 13:25:34,169 - tools.m1f.output_writer - DEBUG   : Processing file (43/71): separator_generator.py
-2025-07-04 13:25:34,171 - tools.m1f.output_writer - DEBUG   : Processing file (44/71): utils.py
-2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (45/71): __init__.py
-2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (46/71): __main__.py
-2025-07-04 13:25:34,173 - tools.m1f.output_writer - DEBUG   : Processing file (47/71): cli.py
-2025-07-04 13:25:34,174 - tools.m1f.output_writer - DEBUG   : Processing file (48/71): config.py
-2025-07-04 13:25:34,175 - tools.m1f.output_writer - DEBUG   : Processing file (49/71): core.py
-2025-07-04 13:25:34,185 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 10280
-2025-07-04 13:25:34,191 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 10278
-2025-07-04 13:25:34,194 - chardet.charsetprober - DEBUG   : GB2312 Chinese prober hit error at byte 10280
-2025-07-04 13:25:34,197 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 10278
-2025-07-04 13:25:34,200 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 10278
-2025-07-04 13:25:34,203 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 10279
-2025-07-04 13:25:34,206 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 10278
-2025-07-04 13:25:34,210 - chardet.charsetprober - DEBUG   : Johab Korean prober hit error at byte 10280
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 13:25:34,216 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.0
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.0
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.0
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.585116903119894
-2025-07-04 13:25:34,217 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.01
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : GB2312 not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,218 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,219 - chardet.charsetprober - DEBUG   : Johab not active
-2025-07-04 13:25:34,219 - tools.m1f.output_writer - DEBUG   : Processing file (50/71): exceptions.py
-2025-07-04 13:25:34,220 - tools.m1f.output_writer - DEBUG   : Processing file (51/71): logging.py
-2025-07-04 13:25:34,221 - tools.m1f.output_writer - DEBUG   : Processing file (52/71): models.py
-2025-07-04 13:25:34,221 - tools.m1f.output_writer - DEBUG   : Processing file (53/71): parsers.py
-2025-07-04 13:25:34,225 - tools.m1f.output_writer - DEBUG   : Processing file (54/71): utils.py
-2025-07-04 13:25:34,226 - tools.m1f.output_writer - DEBUG   : Processing file (55/71): writers.py
-2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (56/71): __init__.py
-2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (57/71): __main__.py
-2025-07-04 13:25:34,229 - tools.m1f.output_writer - DEBUG   : Processing file (58/71): cli.py
-2025-07-04 13:25:34,233 - tools.m1f.output_writer - DEBUG   : Processing file (59/71): config.py
-2025-07-04 13:25:34,234 - tools.m1f.output_writer - DEBUG   : Processing file (60/71): crawlers.py
-2025-07-04 13:25:34,238 - tools.m1f.output_writer - DEBUG   : Processing file (61/71): utils.py
-2025-07-04 13:25:34,239 - tools.m1f.output_writer - DEBUG   : Processing file (62/71): __init__.py
-2025-07-04 13:25:34,239 - tools.m1f.output_writer - DEBUG   : Processing file (63/71): loader.py
-2025-07-04 13:25:34,242 - chardet.charsetprober - DEBUG   : SHIFT_JIS Japanese prober hit error at byte 2254
-2025-07-04 13:25:34,243 - chardet.charsetprober - DEBUG   : EUC-JP Japanese prober hit error at byte 2252
-2025-07-04 13:25:34,245 - chardet.charsetprober - DEBUG   : EUC-KR Korean prober hit error at byte 2252
-2025-07-04 13:25:34,246 - chardet.charsetprober - DEBUG   : CP949 Korean prober hit error at byte 2252
-2025-07-04 13:25:34,247 - chardet.charsetprober - DEBUG   : Big5 Chinese prober hit error at byte 2253
-2025-07-04 13:25:34,247 - chardet.charsetprober - DEBUG   : EUC-TW Taiwan prober hit error at byte 2252
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : GB2312 Chinese confidence = 0.01
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,252 - chardet.charsetprober - DEBUG   : Johab Korean confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1251 Russian confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : KOI8-R Russian confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-5 Russian confidence = 0.0
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : MacCyrillic Russian confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : IBM866 Russian confidence = 0.6826397542769941
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : IBM855 Russian confidence = 0.01
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-7 Greek confidence = 0.0
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1253 Greek confidence = 0.0
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : ISO-8859-5 Bulgarian confidence = 0.0
-2025-07-04 13:25:34,253 - chardet.charsetprober - DEBUG   : windows-1251 Bulgarian confidence = 0.01
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : TIS-620 Thai confidence = 0.01
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : ISO-8859-9 Turkish confidence = 0.6198389013021715
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : windows-1255 Hebrew confidence = 0.0
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : utf-8  confidence = 0.7525
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : SHIFT_JIS not active
-2025-07-04 13:25:34,254 - chardet.charsetprober - DEBUG   : EUC-JP not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : GB2312 Chinese confidence = 0.01
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : EUC-KR not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : CP949 not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : Big5 not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : EUC-TW not active
-2025-07-04 13:25:34,255 - chardet.charsetprober - DEBUG   : Johab Korean confidence = 0.01
-2025-07-04 13:25:34,255 - tools.m1f.output_writer - DEBUG   : Processing file (64/71): models.py
-2025-07-04 13:25:34,257 - tools.m1f.output_writer - DEBUG   : Processing file (65/71): __init__.py
-2025-07-04 13:25:34,258 - tools.m1f.output_writer - DEBUG   : Processing file (66/71): base.py
-2025-07-04 13:25:34,260 - tools.m1f.output_writer - DEBUG   : Processing file (67/71): beautifulsoup.py
-2025-07-04 13:25:34,264 - tools.m1f.output_writer - DEBUG   : Processing file (68/71): httrack.py
-2025-07-04 13:25:34,267 - tools.m1f.output_writer - DEBUG   : Processing file (69/71): playwright.py
-2025-07-04 13:25:34,269 - tools.m1f.output_writer - DEBUG   : Processing file (70/71): scrapy_scraper.py
-2025-07-04 13:25:34,272 - tools.m1f.output_writer - DEBUG   : Processing file (71/71): selectolax.py
-2025-07-04 13:25:34,276 - tools.m1f.core - INFO    : Successfully combined 71 files into '/home/fuf-user/git/m1f/test_includes.txt'
-2025-07-04 13:25:34,276 - m1f_main - INFO    : Total execution time: 0.46 seconds
-2025-07-04 13:25:34,277 - m1f_main - INFO    : Processed 71 files
+from m1f.config import Config, OutputConfig, FilterConfig, EncodingConfig, SecurityConfig, ArchiveConfig, LoggingConfig, PresetConfig
+from m1f.core import FileCombiner
+from m1f.logging import LoggerManager
 
-======= test_multi.log ======
-2025-07-04 13:24:47,416 - tools.m1f.core - INFO    : Source directories: /home/fuf-user/git/m1f/docs/04_scrape, /home/fuf-user/git/m1f/tools/scrape_tool
-2025-07-04 13:24:47,416 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 13:24:47,417 - tools.m1f.core - INFO    : Found 3 files to process
-2025-07-04 13:24:47,417 - tools.m1f.output_writer - INFO    : Processing 3 file(s) for inclusion...
-2025-07-04 13:24:47,417 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
-2025-07-04 13:24:47,425 - tools.m1f.core - INFO    : Successfully combined 3 files into '/home/fuf-user/git/m1f/test_multi.txt'
-2025-07-04 13:24:47,425 - m1f_main - INFO    : Total execution time: 0.01 seconds
-2025-07-04 13:24:47,425 - m1f_main - INFO    : Processed 3 files
 
-======= test_output.log ======
+def test_file_handle_cleanup():
+    """Test that file handles are properly cleaned up on Windows."""
+    print("Testing Windows file handle cleanup...")
+    
+    # Create temporary directory
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_file_handles_"))
+    
+    try:
+        # Create test files
+        print(f"Creating test files in {temp_dir}")
+        for i in range(10):
+            test_file = temp_dir / f"test_{i:02d}.txt"
+            test_file.write_text(f"Test content {i}\n" * 100)
+        
+        # Create config for parallel processing
+        config = Config(
+            source_directories=[temp_dir],
+            input_file=None,
+            input_include_files=[],
+            output=OutputConfig(
+                output_file=temp_dir / "output.txt",
+                parallel=True,
+                force_overwrite=True,
+            ),
+            filter=FilterConfig(),
+            encoding=EncodingConfig(),
+            security=SecurityConfig(),
+            archive=ArchiveConfig(),
+            logging=LoggingConfig(quiet=True),
+            preset=PresetConfig(),
+        )
+        
+        # Run combiner
+        print("Running file combiner with parallel processing...")
+        logger_manager = LoggerManager(config.logging)
+        combiner = FileCombiner(config, logger_manager)
+        
+        async def run_test():
+            result = await combiner.run()
+            print(f"Processed {result.files_processed} files")
+            return result
+        
+        # Run the test
+        result = asyncio.run(run_test())
+        
+        # Force garbage collection
+        gc.collect()
+        time.sleep(0.1)  # Give Windows time to release handles
+        
+        # Try to remove files immediately - this would fail with WinError 32 before the fix
+        print("Testing immediate file deletion (this would fail with WinError 32 before fix)...")
+        for i in range(10):
+            test_file = temp_dir / f"test_{i:02d}.txt"
+            try:
+                test_file.unlink()
+                print(f"OK Successfully deleted {test_file.name}")
+            except PermissionError as e:
+                print(f"FAIL Failed to delete {test_file.name}: {e}")
+                return False
+        
+        # Try to remove output file
+        output_file = temp_dir / "output.txt"
+        if output_file.exists():
+            try:
+                output_file.unlink()
+                print(f"OK Successfully deleted {output_file.name}")
+            except PermissionError as e:
+                print(f"FAIL Failed to delete {output_file.name}: {e}")
+                return False
+        
+        print("OK All file handles properly cleaned up!")
+        return True
+        
+    except Exception as e:
+        print(f"FAIL Test failed with error: {e}")
+        return False
+    finally:
+        # Clean up temp directory
+        try:
+            if temp_dir.exists():
+                # Force garbage collection before cleanup
+                gc.collect()
+                time.sleep(0.1)
+                
+                # Remove read-only attributes on Windows
+                if sys.platform.startswith("win"):
+                    for root, dirs, files in os.walk(temp_dir):
+                        for file in files:
+                            try:
+                                file_path = Path(root) / file
+                                file_path.chmod(0o666)
+                            except:
+                                pass
+                        for dir_name in dirs:
+                            try:
+                                dir_path = Path(root) / dir_name
+                                dir_path.chmod(0o777)
+                            except:
+                                pass
+                
+                shutil.rmtree(temp_dir)
+                print(f"OK Cleaned up temporary directory {temp_dir}")
+        except Exception as e:
+            print(f"Warning: Could not clean up {temp_dir}: {e}")
 
-======= test_scraper_docs.log ======
-2025-07-04 13:12:05,005 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/tools/scrape_tool
-2025-07-04 13:12:05,005 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-04 13:12:05,006 - tools.m1f.core - INFO    : Found 1 files to process
-2025-07-04 13:12:05,006 - tools.m1f.output_writer - INFO    : Processing 1 file(s) for inclusion...
-2025-07-04 13:12:05,007 - tools.m1f.core - INFO    : Successfully combined 1 files into '/home/fuf-user/git/m1f/test_scraper_docs.txt'
-2025-07-04 13:12:05,007 - m1f_main - INFO    : Total execution time: 0.00 seconds
-2025-07-04 13:12:05,007 - m1f_main - INFO    : Processed 1 files
+
+def test_encoding_detection_cleanup():
+    """Test that encoding detection properly releases file handles."""
+    print("\nTesting encoding detection file handle cleanup...")
+    
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_encoding_handles_"))
+    
+    try:
+        # Create test files with different encodings
+        test_files = []
+        
+        # UTF-8 file
+        utf8_file = temp_dir / "utf8_test.txt"
+        utf8_file.write_text("Hello, 世界! 🌍", encoding="utf-8")
+        test_files.append(utf8_file)
+        
+        # Latin-1 file
+        latin1_file = temp_dir / "latin1_test.txt"
+        latin1_file.write_text("Café résumé naïve", encoding="latin-1")
+        test_files.append(latin1_file)
+        
+        # Binary file
+        binary_file = temp_dir / "binary_test.bin"
+        binary_file.write_bytes(b"\\x00\\x01\\x02\\x03" * 100)
+        test_files.append(binary_file)
+        
+        # Create config
+        config = Config(
+            source_directories=[temp_dir],
+            input_file=None,
+            input_include_files=[],
+            output=OutputConfig(
+                output_file=temp_dir / "output.txt",
+                force_overwrite=True,
+            ),
+            filter=FilterConfig(include_binary_files=True),
+            encoding=EncodingConfig(target_charset="utf-8"),
+            security=SecurityConfig(),
+            archive=ArchiveConfig(),
+            logging=LoggingConfig(quiet=True),
+            preset=PresetConfig(),
+        )
+        
+        # Run processing
+        print("Running encoding detection and file processing...")
+        logger_manager = LoggerManager(config.logging)
+        combiner = FileCombiner(config, logger_manager)
+        
+        async def run_encoding_test():
+            result = await combiner.run()
+            print(f"Processed {result.files_processed} files with encoding detection")
+            return result
+        
+        result = asyncio.run(run_encoding_test())
+        
+        # Force garbage collection
+        gc.collect()
+        time.sleep(0.1)
+        
+        # Try to delete files immediately
+        print("Testing immediate file deletion after encoding detection...")
+        for test_file in test_files:
+            try:
+                test_file.unlink()
+                print(f"OK Successfully deleted {test_file.name}")
+            except PermissionError as e:
+                print(f"FAIL Failed to delete {test_file.name}: {e}")
+                return False
+        
+        # Try to delete output file
+        output_file = temp_dir / "output.txt"
+        if output_file.exists():
+            try:
+                output_file.unlink()
+                print(f"OK Successfully deleted {output_file.name}")
+            except PermissionError as e:
+                print(f"FAIL Failed to delete {output_file.name}: {e}")
+                return False
+        
+        print("OK Encoding detection file handles properly cleaned up!")
+        return True
+        
+    except Exception as e:
+        print(f"FAIL Encoding test failed with error: {e}")
+        return False
+    finally:
+        # Clean up
+        try:
+            if temp_dir.exists():
+                gc.collect()
+                time.sleep(0.1)
+                shutil.rmtree(temp_dir)
+                print(f"OK Cleaned up encoding test directory {temp_dir}")
+        except Exception as e:
+            print(f"Warning: Could not clean up {temp_dir}: {e}")
+
+
+def main():
+    """Run all Windows file handle tests."""
+    print("Windows File Handle Cleanup Test Suite")
+    print("=" * 50)
+    print(f"Platform: {sys.platform}")
+    print(f"Python: {sys.version}")
+    
+    if not sys.platform.startswith("win"):
+        print("Note: These tests are designed for Windows but will run on other platforms")
+    
+    print()
+    
+    success = True
+    
+    # Test 1: Basic file handle cleanup
+    success &= test_file_handle_cleanup()
+    
+    # Test 2: Encoding detection cleanup
+    success &= test_encoding_detection_cleanup()
+    
+    print("\n" + "=" * 50)
+    if success:
+        print("OK All Windows file handle tests passed!")
+        print("OK WinError 32 permission errors should be resolved")
+        return 0
+    else:
+        print("FAIL Some tests failed - WinError 32 issues may still exist")
+        return 1
+
+
+if __name__ == "__main__":
+    exit(main())
 
 ======= wp-cli.example.yml ======
 # Example configuration for WP-CLI
@@ -9009,13 +8701,30 @@ __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 HTML to Markdown converter - wrapper script.
 """
 
+import sys
+import os
+from pathlib import Path
+
 if __name__ == "__main__":
-    # Try absolute imports first (for module execution), fall back to relative
+    # Add the parent directory to sys.path for proper imports
+    script_dir = Path(__file__).parent
+    parent_dir = script_dir.parent
+    
+    # Try different import strategies based on execution context
     try:
+        # First try as if we're in the m1f package
         from tools.html2md_tool.cli import main
     except ImportError:
-        # Fallback for direct script execution
-        from html2md_tool.cli import main
+        try:
+            # Try adding parent to path and importing
+            if str(parent_dir) not in sys.path:
+                sys.path.insert(0, str(parent_dir))
+            from tools.html2md_tool.cli import main
+        except ImportError:
+            # Fallback for direct script execution
+            if str(script_dir) not in sys.path:
+                sys.path.insert(0, str(script_dir))
+            from html2md_tool.cli import main
 
     main()
 
@@ -9173,6 +8882,11 @@ async def async_main() -> int:
 
 def main() -> NoReturn:
     """Entry point for the application."""
+    # Set Windows-specific event loop policy to avoid debug messages
+    if sys.platform.startswith('win'):
+        # This prevents "RuntimeError: Event loop is closed" messages on Windows
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    
     exit_code = asyncio.run(async_main())
     sys.exit(exit_code)
 
@@ -11636,7 +11350,7 @@ class M1FClaudeRunner:
         # Signal handler for graceful interruption
         def handle_interrupt(signum, frame):
             if self.process:
-                print("\nüõë Interrupting Claude... Press Ctrl-C again to force quit.")
+                print("\n🛑 Interrupting Claude... Press Ctrl-C again to force quit.")
                 self.process.terminate()
                 try:
                     self.process.wait(timeout=5)
@@ -11668,7 +11382,7 @@ class M1FClaudeRunner:
             last_output_time = start_time
             
             # Progress indicators
-            spinner_chars = "‚†ã‚†ô‚†π‚†∏‚†º‚†¥‚†¶‚†ß‚†á‚†è"
+            spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
             spinner_idx = 0
 
             # Read output line by line
@@ -11702,20 +11416,20 @@ class M1FClaudeRunner:
                     # Check absolute timeout
                     if elapsed > actual_timeout:
                         if show_output:
-                            print(f"\n‚è∞ Claude timed out after {actual_timeout}s")
+                            print(f"\n⏰ Claude timed out after {actual_timeout}s")
                         self.process.kill()
                         return -1, "\n".join(stdout_lines), f"Process timed out after {actual_timeout}s"
                     
                     # Check inactivity timeout (60 seconds)
                     if current_time - last_output_time > 60:
                         if show_output:
-                            print(f"\n‚è∞ Claude inactive for 60s (total time: {elapsed:.1f}s)")
+                            print(f"\n⏰ Claude inactive for 60s (total time: {elapsed:.1f}s)")
                         self.process.kill()
                         return -1, "\n".join(stdout_lines), "Process inactive for 60 seconds"
                     
                     # Show spinner to indicate we're still waiting
                     if show_output and int(elapsed) % 5 == 0:
-                        sys.stdout.write(f"\r‚è≥ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]")
+                        sys.stdout.write(f"\r⏳ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]")
                         sys.stdout.flush()
                         spinner_idx = (spinner_idx + 1) % len(spinner_chars)
                     
@@ -11741,17 +11455,17 @@ class M1FClaudeRunner:
 
             if show_output:
                 total_time = time.time() - start_time
-                print(f"\n‚úÖ Claude completed in {total_time:.1f}s")
+                print(f"\n✅ Claude completed in {total_time:.1f}s")
 
             return self.process.returncode, stdout, stderr
 
         except KeyboardInterrupt:
             if show_output:
-                print("\n‚ùå Operation cancelled by user")
+                print("\n❌ Operation cancelled by user")
             return -1, "\n".join(stdout_lines), "Cancelled by user"
         except Exception as e:
             if show_output:
-                print(f"\n‚ùå Error running Claude: {e}")
+                print(f"\n❌ Error running Claude: {e}")
             return -1, "\n".join(stdout_lines), str(e)
         finally:
             # Restore signal handler
@@ -16784,32 +16498,32 @@ This guide provides comprehensive examples of `.m1f.config.yml` files for
 different project types. Each example includes detailed comments explaining the
 configuration choices.
 
-> **‚ö†Ô∏è IMPORTANT**: m1f automatically excludes many common directories
+> **⚠️ IMPORTANT**: m1f automatically excludes many common directories
 > (node_modules, .git, **pycache**, etc.). See the
 > [Default Excludes Guide](./26_default_excludes_guide.md) for the complete
 > list. **Only add project-specific excludes to keep your configs minimal!**
 
-## üö® IMPORTANT: Use Standard Separator for AI Bundles!
+## 🚨 IMPORTANT: Use Standard Separator for AI Bundles!
 
 **The primary purpose of m1f bundles is to provide context to AI assistants like
 Claude, NOT for human reading in Markdown!**
 
-- ‚úÖ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
+- ✅ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
   default)
-- ‚ùå **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
+- ❌ **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
   blocks)
-- üéØ **Why**: Standard format is clean and optimal for AI consumption
+- 🎯 **Why**: Standard format is clean and optimal for AI consumption
 
 ```yaml
 # CORRECT - For AI consumption:
 bundles:
   - name: my-bundle
-    separator_style: Standard  # ‚Üê This is optimal (or just omit it)
+    separator_style: Standard  # ← This is optimal (or just omit it)
 
 # AVOID - Adds unnecessary markdown formatting:
 bundles:
   - name: my-bundle
-    separator_style: Markdown  # ‚Üê Don't use for AI bundles!
+    separator_style: Markdown  # ← Don't use for AI bundles!
 ```
 
 **Note**: `MachineReadable` is only needed when you plan to use `s1f` to split
@@ -16817,12 +16531,12 @@ the bundle back into individual files.
 
 ## Minimal vs Verbose Configurations
 
-### ‚ùå BAD Example - Overly Verbose (Don't Do This!)
+### ❌ BAD Example - Overly Verbose (Don't Do This!)
 
 ```yaml
 global:
   global_excludes:
-    # ‚ùå ALL of these are already excluded by default!
+    # ❌ ALL of these are already excluded by default!
     - "**/node_modules/**" # Auto-excluded
     - "**/vendor/**" # Auto-excluded
     - "**/__pycache__/**" # Auto-excluded
@@ -16833,13 +16547,13 @@ global:
     - "**/.vscode/**" # Auto-excluded
     - "**/.idea/**" # Auto-excluded
 
-    # ‚úÖ Only these are needed (project-specific)
+    # ✅ Only these are needed (project-specific)
     - "**/logs/**"
     - "**/tmp/**"
     - "/m1f/**"
 ```
 
-### ‚úÖ GOOD Example - Minimal Configuration
+### ✅ GOOD Example - Minimal Configuration
 
 ```yaml
 global:
@@ -16975,7 +16689,7 @@ Configuration for a modern React application with TypeScript and testing.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - Only project-specific excludes!
+    # ⚠️ MINIMAL CONFIG - Only project-specific excludes!
     # DON'T add node_modules, dist, build - they're auto-excluded!
 
     # Next.js specific (not in defaults)
@@ -17122,7 +16836,7 @@ Configuration for a Django web application with REST API.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
+    # ⚠️ MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
 
     # Python bytecode (not in defaults)
     - "**/*.pyc"
@@ -17272,7 +16986,7 @@ Configuration for a custom WordPress theme with modern build tools.
 
 global:
   global_excludes:
-    # ‚ö†Ô∏è MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
+    # ⚠️ MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
 
     # WordPress specific (not in defaults)
     - "wp-admin/**" # Core files
@@ -18230,12 +17944,12 @@ you plan to use the bundles with AI assistants.
 This guide explains the files and directories that m1f excludes by default,
 helping you write minimal and efficient `.m1f.config.yml` configurations.
 
-## üö® CRITICAL: Correct Bundle Format
+## 🚨 CRITICAL: Correct Bundle Format
 
 **ALWAYS use the `sources:` array format, NOT `source_directory:`!**
 
 ```yaml
-# ‚úÖ CORRECT FORMAT:
+# ✅ CORRECT FORMAT:
 bundles:
   - name: my-bundle
     sources:
@@ -18243,7 +17957,7 @@ bundles:
     output_file: "m1f/my-bundle.txt"
     separator_style: Standard  # Or omit - Standard is default
 
-# ‚ùå WRONG FORMAT (will cause errors):
+# ❌ WRONG FORMAT (will cause errors):
 bundles:
   my-bundle:
     source_directory: "./src"  # This format causes "ERROR: At least one of -s/--source-directory..."
@@ -18302,7 +18016,7 @@ These specific files are also excluded automatically:
 
 ## Writing Minimal Configurations
 
-### ‚ùå BAD - Overly Verbose Configuration
+### ❌ BAD - Overly Verbose Configuration
 
 ```yaml
 # DON'T DO THIS - repeating default excludes unnecessarily!
@@ -18320,7 +18034,7 @@ global:
     - "**/logs/**" # Project-specific - OK
 ```
 
-### ‚úÖ GOOD - Minimal Configuration
+### ✅ GOOD - Minimal Configuration
 
 ```yaml
 # Only add project-specific exclusions!
@@ -18418,7 +18132,7 @@ If you need to include normally excluded directories:
 m1f -s . -o complete.txt --no-default-excludes
 ```
 
-‚ö†Ô∏è **WARNING**: This can create HUGE bundles and include sensitive data!
+⚠️ **WARNING**: This can create HUGE bundles and include sensitive data!
 
 ## Best Practices
 
@@ -25447,15 +25161,15 @@ def handle_convert(args: argparse.Namespace) -> None:
     if args.source.is_file():
         console.print(f"Converting file: {args.source}")
         output = converter.convert_file(args.source)
-        console.print(f"‚úÖ Converted to: {output}", style="green")
+        console.print(f"✅ Converted to: {output}", style="green")
 
     elif args.source.is_dir():
         console.print(f"Converting directory: {args.source}")
         outputs = converter.convert_directory()
-        console.print(f"‚úÖ Converted {len(outputs)} files", style="green")
+        console.print(f"✅ Converted {len(outputs)} files", style="green")
 
     else:
-        console.print(f"‚ùå Source not found: {args.source}", style="red")
+        console.print(f"❌ Source not found: {args.source}", style="red")
         sys.exit(1)
 
 
@@ -25469,7 +25183,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     html_files = []
     for path in args.paths:
         if not path.exists():
-            console.print(f"‚ùå Path not found: {path}", style="red")
+            console.print(f"❌ Path not found: {path}", style="red")
             continue
 
         if path.is_file():
@@ -25477,7 +25191,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
             if path.suffix.lower() in [".html", ".htm"]:
                 html_files.append(path)
             else:
-                console.print(f"‚ö†Ô∏è  Skipping non-HTML file: {path}", style="yellow")
+                console.print(f"⚠️  Skipping non-HTML file: {path}", style="yellow")
         elif path.is_dir():
             # Directory - find all HTML files recursively
             found_files = list(path.rglob("*.html")) + list(path.rglob("*.htm"))
@@ -25487,10 +25201,10 @@ def handle_analyze(args: argparse.Namespace) -> None:
                     f"Found {len(found_files)} HTML files in {path}", style="blue"
                 )
             else:
-                console.print(f"‚ö†Ô∏è  No HTML files found in {path}", style="yellow")
+                console.print(f"⚠️  No HTML files found in {path}", style="yellow")
 
     if not html_files:
-        console.print("‚ùå No HTML files to analyze", style="red")
+        console.print("❌ No HTML files to analyze", style="red")
         sys.exit(1)
 
     # If --claude flag is set, use Claude AI for analysis
@@ -25519,9 +25233,9 @@ def handle_analyze(args: argparse.Namespace) -> None:
                 relative_path = file_path.relative_to(Path.cwd())
             except ValueError:
                 relative_path = file_path
-            console.print(f"‚úÖ Parsed: {relative_path}", style="green")
+            console.print(f"✅ Parsed: {relative_path}", style="green")
         except Exception as e:
-            console.print(f"‚ùå Error parsing {file_path}: {e}", style="red")
+            console.print(f"❌ Error parsing {file_path}: {e}", style="red")
 
     if not parsed_files:
         console.print("No files could be parsed", style="red")
@@ -25659,7 +25373,7 @@ def _handle_claude_analysis(
 
     # Find the common parent directory of all HTML files
     if not html_files:
-        console.print("‚ùå No HTML files to analyze", style="red")
+        console.print("❌ No HTML files to analyze", style="red")
         return
 
     common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
@@ -25668,7 +25382,7 @@ def _handle_claude_analysis(
 
     # Check if we have enough files
     if len(html_files) == 0:
-        console.print("‚ùå No HTML files found in the specified directory", style="red")
+        console.print("❌ No HTML files found in the specified directory", style="red")
         return
 
     # We'll work from the current directory and use --add-dir for Claude
@@ -25692,7 +25406,7 @@ def _handle_claude_analysis(
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
     # Create a filelist with all HTML files using m1f
-    console.print("\nüîß Creating HTML file list using m1f...")
+    console.print("\n🔧 Creating HTML file list using m1f...")
     console.print(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
@@ -25715,13 +25429,13 @@ def _handle_claude_analysis(
         # The filelist will be created with this name
         html_filelist = m1f_dir / "all_html_files_filelist.txt"
         if not html_filelist.exists():
-            console.print("‚ùå m1f filelist not created", style="red")
+            console.print("❌ m1f filelist not created", style="red")
             return
 
-        console.print(f"‚úÖ Created HTML file list: {html_filelist}")
+        console.print(f"✅ Created HTML file list: {html_filelist}")
 
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Failed to create HTML file list: {e.stderr}", style="red")
+        console.print(f"❌ Failed to create HTML file list: {e.stderr}", style="red")
         return
 
     # Get relative paths from the common parent (still needed for filtering)
@@ -25738,7 +25452,7 @@ def _handle_claude_analysis(
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
     if not select_prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {select_prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
         return
 
     # Load the prompt from external file
@@ -25853,10 +25567,10 @@ def _handle_claude_analysis(
             console.print(f"  - {f}", style="blue")
 
     except subprocess.TimeoutExpired:
-        console.print("‚è∞ Timeout selecting files (3 minutes)", style="yellow")
+        console.print("⏰ Timeout selecting files (3 minutes)", style="yellow")
         return
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Claude command failed: {e}", style="red")
+        console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
         return
     except FileNotFoundError:
@@ -25927,7 +25641,7 @@ def _handle_claude_analysis(
 
         if not claude_found:
             console.print(
-                "‚ùå claude command not found. Please install Claude CLI.", style="red"
+                "❌ claude command not found. Please install Claude CLI.", style="red"
             )
             console.print(
                 "If claude is installed as an alias, try adding it to your PATH or creating a symlink.",
@@ -25946,12 +25660,12 @@ def _handle_claude_analysis(
         full_path = common_parent / file_path
         if full_path.exists():
             verified_files.append(file_path)
-            console.print(f"‚úÖ Found: {file_path}", style="green")
+            console.print(f"✅ Found: {file_path}", style="green")
         else:
-            console.print(f"‚ö†Ô∏è  Not found: {file_path}", style="yellow")
+            console.print(f"⚠️  Not found: {file_path}", style="yellow")
 
     if not verified_files:
-        console.print("‚ùå No HTML files could be verified", style="red")
+        console.print("❌ No HTML files could be verified", style="red")
         return
 
     # Write the verified files to a reference list
@@ -25959,7 +25673,7 @@ def _handle_claude_analysis(
     with open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
-    console.print(f"‚úÖ Wrote selected files list to: {selected_files_path}")
+    console.print(f"✅ Wrote selected files list to: {selected_files_path}")
 
     # Step 3: Analyze each file individually with Claude
     console.print("\nAnalyzing each file individually with Claude...")
@@ -25969,7 +25683,7 @@ def _handle_claude_analysis(
 
     if not individual_prompt_path.exists():
         console.print(
-            f"‚ùå Prompt file not found: {individual_prompt_path}", style="red"
+            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
         )
         return
 
@@ -25977,9 +25691,9 @@ def _handle_claude_analysis(
 
     # Analyze each of the selected files
     for i, file_path in enumerate(verified_files, 1):
-        console.print(f"\nüìã Analyzing file {i}/{len(verified_files)}: {file_path}")
+        console.print(f"\n📋 Analyzing file {i}/{len(verified_files)}: {file_path}")
         console.print(
-            f"‚è±Ô∏è  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
+            f"⏱️  Starting analysis at {time.strftime('%H:%M:%S')}", style="dim"
         )
 
         # Customize prompt for this specific file
@@ -26031,39 +25745,39 @@ def _handle_claude_analysis(
             )
 
             # Debug: Show process details
-            console.print(f"üîç Process return code: {result.returncode}", style="dim")
+            console.print(f"🔍 Process return code: {result.returncode}", style="dim")
             if result.stderr:
-                console.print(f"üîç stderr: {result.stderr[:200]}...", style="dim")
+                console.print(f"🔍 stderr: {result.stderr[:200]}...", style="dim")
 
             if result.returncode != 0:
                 console.print(
-                    f"‚ùå Analysis failed for {file_path}: {result.stderr}", style="red"
+                    f"❌ Analysis failed for {file_path}: {result.stderr}", style="red"
                 )
                 continue
 
             # Show Claude's response for transparency
             if result.stdout.strip():
-                console.print(f"üìÑ Claude: {result.stdout.strip()}", style="dim")
+                console.print(f"📄 Claude: {result.stdout.strip()}", style="dim")
 
-            console.print(f"‚úÖ Analysis completed for file {i}")
+            console.print(f"✅ Analysis completed for file {i}")
 
         except subprocess.TimeoutExpired:
             console.print(
-                f"‚è∞ Timeout analyzing {file_path} (5 minutes)", style="yellow"
+                f"⏰ Timeout analyzing {file_path} (5 minutes)", style="yellow"
             )
             continue
         except Exception as e:
-            console.print(f"‚ùå Error analyzing {file_path}: {e}", style="red")
+            console.print(f"❌ Error analyzing {file_path}: {e}", style="red")
             continue
 
     # Step 4: Synthesize all analyses into final config
-    console.print("\nüî¨ Synthesizing analyses into final configuration...")
+    console.print("\n🔬 Synthesizing analyses into final configuration...")
 
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
     if not synthesis_prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {synthesis_prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
         return
 
     synthesis_prompt = synthesis_prompt_path.read_text()
@@ -26204,13 +25918,13 @@ def _handle_claude_analysis(
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
                 console.print(
-                    f"\n‚úÖ Configuration saved to: {config_file}", style="green"
+                    f"\n✅ Configuration saved to: {config_file}", style="green"
                 )
 
                 # Show clear usage instructions
                 console.print("\n" + "=" * 60)
                 console.print(
-                    "[bold green]‚ú® Analysis Complete! Here's how to convert your HTML files:[/bold green]"
+                    "[bold green]✨ Analysis Complete! Here's how to convert your HTML files:[/bold green]"
                 )
                 console.print("=" * 60 + "\n")
 
@@ -26242,7 +25956,7 @@ def _handle_claude_analysis(
                 console.print("=" * 60)
             else:
                 console.print(
-                    "\n‚ö†Ô∏è  Could not extract YAML configuration from Claude's response",
+                    "\n⚠️  Could not extract YAML configuration from Claude's response",
                     style="yellow",
                 )
                 console.print(
@@ -26253,17 +25967,17 @@ def _handle_claude_analysis(
                 )
 
         except Exception as e:
-            console.print(f"\n‚ö†Ô∏è  Could not save configuration: {e}", style="yellow")
+            console.print(f"\n⚠️  Could not save configuration: {e}", style="yellow")
             console.print(
                 f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above."
             )
 
     except subprocess.TimeoutExpired:
         console.print(
-            "‚è∞ Timeout synthesizing configuration (5 minutes)", style="yellow"
+            "⏰ Timeout synthesizing configuration (5 minutes)", style="yellow"
         )
     except subprocess.CalledProcessError as e:
-        console.print(f"‚ùå Claude command failed: {e}", style="red")
+        console.print(f"❌ Claude command failed: {e}", style="red")
         console.print(f"Error output: {e.stderr}", style="red")
 
     # Ask if temporary analysis files should be deleted
@@ -26283,16 +25997,16 @@ def _handle_claude_analysis(
                     deleted_count += 1
                 except Exception as e:
                     console.print(
-                        f"‚ö†Ô∏è  Could not delete {analysis_file.name}: {e}", style="yellow"
+                        f"⚠️  Could not delete {analysis_file.name}: {e}", style="yellow"
                     )
 
         if deleted_count > 0:
             console.print(
-                f"‚úÖ Deleted {deleted_count} temporary analysis files", style="green"
+                f"✅ Deleted {deleted_count} temporary analysis files", style="green"
             )
     else:
         console.print(
-            "‚ÑπÔ∏è  Temporary analysis files kept in m1f/ directory", style="blue"
+            "ℹ️  Temporary analysis files kept in m1f/ directory", style="blue"
         )
 
 
@@ -26385,7 +26099,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     # Find all HTML files in source directory
     source_path = args.source
     if not source_path.exists():
-        console.print(f"‚ùå Source path not found: {source_path}", style="red")
+        console.print(f"❌ Source path not found: {source_path}", style="red")
         sys.exit(1)
 
     html_files = []
@@ -26393,7 +26107,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
-            console.print(f"‚ùå Source file is not HTML: {source_path}", style="red")
+            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
             sys.exit(1)
     elif source_path.is_dir():
         # Find all HTML files recursively
@@ -26403,14 +26117,14 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
         console.print(f"Found {len(html_files)} HTML files in {source_path}")
 
     if not html_files:
-        console.print("‚ùå No HTML files found to convert", style="red")
+        console.print("❌ No HTML files found to convert", style="red")
         sys.exit(1)
 
     # Prepare output directory
     output_path = args.output
     if output_path.exists() and output_path.is_file():
         console.print(
-            f"‚ùå Output path is a file, expected directory: {output_path}", style="red"
+            f"❌ Output path is a file, expected directory: {output_path}", style="red"
         )
         sys.exit(1)
 
@@ -26421,7 +26135,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
     if not prompt_path.exists():
-        console.print(f"‚ùå Prompt file not found: {prompt_path}", style="red")
+        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
         sys.exit(1)
 
     prompt_template = prompt_path.read_text()
@@ -26499,7 +26213,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             markdown_content = result.stdout.strip()
             output_file.write_text(markdown_content, encoding="utf-8")
 
-            console.print(f"‚úÖ Converted to: {output_file}", style="green")
+            console.print(f"✅ Converted to: {output_file}", style="green")
             converted_count += 1
 
             # Sleep between API calls (except for the last one)
@@ -26508,12 +26222,12 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
                 time.sleep(args.sleep)
 
         except subprocess.CalledProcessError as e:
-            console.print(f"‚ùå Claude conversion failed: {e}", style="red")
+            console.print(f"❌ Claude conversion failed: {e}", style="red")
             if e.stderr:
                 console.print(f"Error: {e.stderr}", style="red")
             failed_count += 1
         except Exception as e:
-            console.print(f"‚ùå Error processing {html_file}: {e}", style="red")
+            console.print(f"❌ Error processing {html_file}: {e}", style="red")
             failed_count += 1
         finally:
             # Clean up temporary file
@@ -26525,9 +26239,9 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
     # Summary
     console.print(f"\n[bold]Conversion Summary:[/bold]")
-    console.print(f"‚úÖ Successfully converted: {converted_count} files", style="green")
+    console.print(f"✅ Successfully converted: {converted_count} files", style="green")
     if failed_count > 0:
-        console.print(f"‚ùå Failed to convert: {failed_count} files", style="red")
+        console.print(f"❌ Failed to convert: {failed_count} files", style="red")
 
     if converted_count == 0:
         sys.exit(1)
@@ -26556,12 +26270,12 @@ def handle_config(args: argparse.Namespace) -> None:
 
         content = json.dumps(config_dict, indent=2)
     else:
-        console.print(f"‚ùå Unsupported format: {args.format}", style="red")
+        console.print(f"❌ Unsupported format: {args.format}", style="red")
         sys.exit(1)
 
     # Write config file
     args.output.write_text(content, encoding="utf-8")
-    console.print(f"‚úÖ Created configuration file: {args.output}", style="green")
+    console.print(f"✅ Created configuration file: {args.output}", style="green")
 
 
 def create_simple_parser() -> argparse.ArgumentParser:
@@ -26650,14 +26364,14 @@ def main() -> None:
         elif args.command == "config":
             handle_config(args)
         else:
-            console.print(f"‚ùå Unknown command: {args.command}", style="red")
+            console.print(f"❌ Unknown command: {args.command}", style="red")
             sys.exit(1)
 
     except KeyboardInterrupt:
-        console.print("\n‚ùå Interrupted by user", style="yellow")
+        console.print("\n❌ Interrupted by user", style="yellow")
         sys.exit(1)
     except Exception as e:
-        console.print(f"‚ùå Error: {e}", style="red")
+        console.print(f"❌ Error: {e}", style="red")
         if args.verbose:
             import traceback
 
@@ -28435,6 +28149,11 @@ from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+# Set Windows-specific event loop policy to avoid debug messages
+if sys.platform.startswith('win'):
+    # This prevents "RuntimeError: Event loop is closed" messages on Windows
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from tools.m1f import main
 
@@ -30442,7 +30161,9 @@ Core functionality for m1f - the main FileCombiner class.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -30613,6 +30334,10 @@ class FileCombiner:
             execution_time = format_duration(time.time() - start_time)
             self.logger.error(f"Processing failed after {execution_time}: {e}")
             raise
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _validate_config(self) -> None:
         """Validate the configuration."""
@@ -30839,6 +30564,8 @@ class FileCombiner:
                 with open(path, "w", encoding="utf-8") as f:
                     for p in sorted_paths:
                         f.write(f"{p}\n")
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_file)
 
@@ -30856,6 +30583,8 @@ class FileCombiner:
             def write_empty():
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(content)
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_empty)
 
@@ -30874,8 +30603,12 @@ class FileCombiner:
 
             # Read file content
             def read_file():
+                content = None
                 with open(output_path, "r", encoding="utf-8") as f:
-                    return f.read()
+                    content = f.read()
+                # Explicitly ensure file handle is released
+                f = None
+                return content
 
             content = await asyncio.to_thread(read_file)
 
@@ -30923,6 +30656,8 @@ Encoding handler module for character encoding detection and conversion.
 from __future__ import annotations
 
 import asyncio
+import gc
+import sys
 from pathlib import Path
 from typing import Tuple, Optional
 from dataclasses import dataclass
@@ -30988,13 +30723,18 @@ class EncodingHandler:
 
     async def _detect_encoding(self, file_path: Path) -> str:
         """Detect the encoding of a file."""
+        # Default to utf-8 if chardet is not available
         if not CHARDET_AVAILABLE:
+            self.logger.debug(f"chardet not available, using UTF-8 for {file_path}")
             return "utf-8"
 
         try:
-            # Read file in binary mode
+            # Read file in binary mode with explicit handle cleanup
+            raw_data = None
             with open(file_path, "rb") as f:
                 raw_data = f.read(65536)  # Read up to 64KB
+            # Explicitly ensure file handle is released
+            f = None
 
             if not raw_data:
                 return "utf-8"
@@ -31016,37 +30756,62 @@ class EncodingHandler:
                 if self._looks_like_utf16(raw_data):
                     return "utf-16-le"
 
+            # Try to decode as UTF-8 first (most common encoding)
+            try:
+                raw_data.decode('utf-8', errors='strict')
+                self.logger.debug(f"Successfully decoded {file_path} as UTF-8")
+                return "utf-8"
+            except UnicodeDecodeError:
+                # UTF-8 decoding failed, use chardet
+                pass
+
             # Use chardet for detection
             result = chardet.detect(raw_data)
 
             # If chardet returns None or empty encoding, default to utf-8
             if not result or not result.get("encoding"):
-                return "utf-8"
-
-            if result["confidence"] < 0.7:
-                self.logger.debug(
-                    f"Low confidence encoding detection for {file_path}: "
-                    f"{result['encoding']} ({result['confidence']:.2f})"
-                )
+                self.logger.debug(f"chardet returned no encoding for {file_path}, using UTF-8")
                 return "utf-8"
 
             encoding = result["encoding"]
+            confidence = result["confidence"]
+
+            self.logger.debug(
+                f"chardet detected {encoding} with confidence {confidence:.2f} for {file_path}"
+            )
+
+            # Low confidence threshold
+            if confidence < 0.7:
+                self.logger.debug(
+                    f"Low confidence encoding detection for {file_path}: "
+                    f"{encoding} ({confidence:.2f}), defaulting to UTF-8"
+                )
+                return "utf-8"
 
             # Map some common encoding names
             encoding_map = {
                 "iso-8859-8": "windows-1255",  # Hebrew
                 "ascii": "utf-8",  # Treat ASCII as UTF-8
-                "windows-1252": "utf-8",  # Prefer UTF-8 over Windows-1252 for better emoji support
             }
 
-            # Check if file extension suggests documentation files that should be UTF-8
-            if (
-                self.config.encoding.prefer_utf8_for_text_files
-                and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
-            ):
-                # For these files, if chardet detected windows-1252 with less than 0.95 confidence,
-                # prefer UTF-8 since these files often contain UTF-8 emojis/special chars
-                if encoding.lower() == "windows-1252" and result["confidence"] < 0.95:
+            # Special handling for Windows-1252 detection
+            if encoding.lower() == "windows-1252":
+                # Check if file extension suggests documentation files that should be UTF-8
+                if (
+                    self.config.encoding.prefer_utf8_for_text_files
+                    and file_path.suffix.lower() in UTF8_PREFERRED_EXTENSIONS
+                ):
+                    # For documentation files, prefer UTF-8 over Windows-1252
+                    # unless we have very high confidence
+                    if confidence < 0.95:
+                        self.logger.debug(
+                            f"Preferring UTF-8 over {encoding} for documentation file {file_path}"
+                        )
+                        return "utf-8"
+                
+                # For other files, only use Windows-1252 if we have high confidence
+                # and the file really can't be decoded as UTF-8
+                if confidence < 0.9:
                     return "utf-8"
 
             return encoding_map.get(encoding.lower(), encoding.lower())
@@ -31054,6 +30819,10 @@ class EncodingHandler:
         except Exception as e:
             self.logger.warning(f"Error detecting encoding for {file_path}: {e}")
             return "utf-8"
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _looks_like_utf16(self, data: bytes) -> bool:
         """Check if data looks like UTF-16 encoded text."""
@@ -31075,13 +30844,27 @@ class EncodingHandler:
         had_errors = False
 
         try:
-            # Read file with source encoding
-            with open(file_path, "r", encoding=source_encoding) as f:
-                content = f.read()
+            # Read file with source encoding and explicit handle cleanup
+            content = None
+            try:
+                with open(file_path, "r", encoding=source_encoding) as f:
+                    content = f.read()
+            except UnicodeDecodeError as e:
+                # If initial read fails, try with error handling
+                self.logger.debug(
+                    f"Initial read failed for {file_path} with {source_encoding}, "
+                    f"retrying with error replacement"
+                )
+                with open(file_path, "r", encoding=source_encoding, errors="replace") as f:
+                    content = f.read()
+                had_errors = True
+            
+            # Explicitly ensure file handle is released
+            f = None
 
             # If no conversion needed, return as is
             if source_encoding.lower() == target_encoding.lower():
-                return content, False
+                return content, had_errors
 
             # Try to encode to target encoding
             try:
@@ -31094,7 +30877,7 @@ class EncodingHandler:
                         f"Converted {file_path} from {source_encoding} to {target_encoding}"
                     )
 
-                return decoded, False
+                return decoded, had_errors
 
             except UnicodeEncodeError as e:
                 if self.config.encoding.abort_on_error:
@@ -31115,45 +30898,57 @@ class EncodingHandler:
                 return decoded, True
 
         except UnicodeDecodeError as e:
+            # This shouldn't happen since we handle it above, but just in case
             if self.config.encoding.abort_on_error:
                 raise EncodingError(
                     f"Cannot decode {file_path} with encoding {source_encoding}: {e}"
                 )
 
-            # Try reading with error replacement
+            # Last resort: read as binary and decode with replacement
             try:
-                with open(
-                    file_path, "r", encoding=source_encoding, errors="replace"
-                ) as f:
-                    content = f.read()
+                binary_data = None
+                with open(file_path, "rb") as f:
+                    binary_data = f.read()
+                # Explicitly ensure file handle is released
+                f = None
 
-                self.logger.warning(
-                    f"Decoding errors in {file_path} with {source_encoding}"
-                )
+                # Try UTF-8 first, then fallback to latin-1
+                for fallback_encoding in ["utf-8", "latin-1"]:
+                    try:
+                        content = binary_data.decode(fallback_encoding, errors="replace")
+                        self.logger.warning(
+                            f"Failed to decode {file_path} with {source_encoding}, "
+                            f"using {fallback_encoding} fallback"
+                        )
+                        break
+                    except Exception:
+                        continue
+                else:
+                    # Ultimate fallback - decode as latin-1 which accepts all bytes
+                    content = binary_data.decode("latin-1", errors="replace")
+                    self.logger.error(
+                        f"Failed to decode {file_path} properly, using latin-1 fallback"
+                    )
 
                 return content, True
 
             except Exception as e2:
-                # Last resort: read as binary and decode with replacement
-                with open(file_path, "rb") as f:
-                    binary_data = f.read()
-
-                content = binary_data.decode("utf-8", errors="replace")
-
-                self.logger.error(
-                    f"Failed to decode {file_path} properly, using UTF-8 fallback"
-                )
-
-                return content, True
+                # Final fallback
+                error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e2}]"
+                return error_content, True
 
         except Exception as e:
-            # Handle other errors
+            # Handle other errors (file not found, permissions, etc.)
             if self.config.encoding.abort_on_error:
                 raise EncodingError(f"Error reading {file_path}: {e}")
 
             # Return error message as content
-            error_content = f"[ERROR: Unable to read file. Reason: {e}]"
+            error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e}]"
             return error_content, True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
 ======= tools/m1f/exceptions.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -31379,6 +31174,9 @@ class FileProcessor:
                         for line in f
                         if line.strip() and not line.strip().startswith("#")
                     ]
+                # Explicitly close file handle on Windows for immediate cleanup
+                # The context manager should handle this, but ensure it's done
+                f = None
 
                 # Detect if it's gitignore format
                 is_gitignore = exclude_file.name == ".gitignore" or any(
@@ -31440,6 +31238,8 @@ class FileProcessor:
                             for line in f
                             if line.strip() and not line.strip().startswith("#")
                         ]
+                    # Explicitly ensure file handle is released
+                    f = None
 
                     # Detect if it's gitignore format
                     is_gitignore = any(
@@ -31550,37 +31350,41 @@ class FileProcessor:
 
         try:
             with open(input_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
+                content_lines = f.readlines()
+            # Explicitly ensure file handle is released before processing
+            f = None
+            
+            for line in content_lines:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
 
-                    # Handle glob patterns
-                    if any(ch in line for ch in ["*", "?", "["]):
-                        pattern_path = Path(line)
-                        if not pattern_path.is_absolute():
-                            pattern_path = base_dir / pattern_path
+                # Handle glob patterns
+                if any(ch in line for ch in ["*", "?", "["]):
+                    pattern_path = Path(line)
+                    if not pattern_path.is_absolute():
+                        pattern_path = base_dir / pattern_path
 
-                        matches = glob.glob(str(pattern_path), recursive=True)
-                        for m in matches:
-                            try:
-                                validated_path = validate_path_traversal(
-                                    Path(m).resolve()
-                                )
-                                paths.append(validated_path)
-                            except ValueError as e:
-                                self.logger.warning(
-                                    f"Skipping invalid glob match '{m}': {e}"
-                                )
-                    else:
-                        path = Path(line)
-                        if not path.is_absolute():
-                            path = base_dir / path
+                    matches = glob.glob(str(pattern_path), recursive=True)
+                    for m in matches:
                         try:
-                            validated_path = validate_path_traversal(path.resolve())
+                            validated_path = validate_path_traversal(
+                                Path(m).resolve()
+                            )
                             paths.append(validated_path)
                         except ValueError as e:
-                            self.logger.warning(f"Skipping invalid path '{line}': {e}")
+                            self.logger.warning(
+                                f"Skipping invalid glob match '{m}': {e}"
+                            )
+                else:
+                    path = Path(line)
+                    if not path.is_absolute():
+                        path = base_dir / path
+                    try:
+                        validated_path = validate_path_traversal(path.resolve())
+                        paths.append(validated_path)
+                    except ValueError as e:
+                        self.logger.warning(f"Skipping invalid path '{line}': {e}")
 
             # Deduplicate paths
             paths = self._deduplicate_paths(paths)
@@ -31721,7 +31525,8 @@ class FileProcessor:
                     rel_path = dir_path
                 
                 # For directory matching, we need to append a trailing slash
-                rel_path_str = str(rel_path).replace(os.sep, "/")
+                # Always use forward slashes for gitignore pattern matching
+                rel_path_str = str(rel_path).replace("\\", "/")
                 if not rel_path_str.endswith("/"):
                     rel_path_str += "/"
                 
@@ -31784,6 +31589,7 @@ class FileProcessor:
                 rel_path = get_relative_path(
                     file_path, self._get_base_dir_for_path(file_path)
                 )
+                # Note: get_relative_path already returns forward slashes via as_posix()
                 if self.include_gitignore_spec.match_file(rel_path):
                     include_matched = True
 
@@ -31804,6 +31610,7 @@ class FileProcessor:
             rel_path = get_relative_path(
                 file_path, self._get_base_dir_for_path(file_path)
             )
+            # Note: get_relative_path already returns forward slashes via as_posix()
             if self.gitignore_spec.match_file(rel_path):
                 return False
 
@@ -32034,6 +31841,8 @@ class FileProcessor:
                     for line in f
                     if line.strip() and not line.strip().startswith("#")
                 ]
+            # Explicitly ensure file handle is released
+            f = None
 
             # Add to gitignore spec if patterns found
             patterns = [
@@ -32304,7 +32113,9 @@ Output writer module for writing combined files with separators.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 from pathlib import Path
 from typing import List, Tuple, Set, Optional
 import re
@@ -32537,6 +32348,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _write_combined_file_parallel(
         self, output_path: Path, all_files: List[Tuple[Path, str]]
@@ -32579,6 +32394,10 @@ class OutputWriter:
                         self.logger.error(f"Failed to process {file_path}: {result}")
                     elif result is not None:
                         processed_files.append((batch[j], result))
+                
+                # Force garbage collection after each batch on Windows to release file handles
+                if sys.platform.startswith("win"):
+                    gc.collect()
 
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
@@ -32631,6 +32450,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _process_single_file_parallel(
         self, file_path: Path, rel_path: str, file_num: int, total_files: int
@@ -32731,6 +32554,10 @@ class OutputWriter:
         except Exception as e:
             self.logger.error(f"Error processing file {file_path}: {e}")
             raise
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _prepare_include_files(self) -> List[Tuple[Path, str]]:
         """Prepare include files from configuration."""
@@ -32904,6 +32731,10 @@ class OutputWriter:
             outfile.write(self.config.output.line_ending.value)
 
             return True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
 ======= tools/m1f/presets.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -34653,13 +34484,16 @@ def is_binary_file(file_path: Path) -> bool:
 
     # Try reading first few bytes
     try:
+        chunk = None
         with open(file_path, "rb") as f:
             # Read first 1024 bytes
             chunk = f.read(1024)
+        # Explicitly ensure file handle is released
+        f = None
 
-            # Check for null bytes
-            if b"\0" in chunk:
-                return True
+        # Check for null bytes
+        if b"\0" in chunk:
+            return True
 
             # Try to decode as UTF-8
             try:
@@ -34699,11 +34533,17 @@ def get_relative_path(file_path: Path, base_path: Path) -> str:
     bundle format across different operating systems.
     """
     try:
+        # Ensure both paths are resolved to handle edge cases
+        resolved_file = file_path.resolve()
+        resolved_base = base_path.resolve()
+        
+        # Get relative path and convert to forward slashes
+        rel_path = resolved_file.relative_to(resolved_base)
         # Use as_posix() to ensure forward slashes on all platforms
-        return file_path.relative_to(base_path).as_posix()
+        return rel_path.as_posix()
     except ValueError:
         # If file is not under base path, return absolute path with forward slashes
-        return file_path.as_posix()
+        return file_path.resolve().as_posix()
 
 
 def parse_file_size(size_str: str) -> int:
@@ -34860,8 +34700,11 @@ def validate_path_traversal(
     if path_str.startswith("~"):
         return resolved_path
 
-    # Check for excessive parent directory traversals
-    parent_traversals = path_str.count("../")
+    # Normalize path separators for consistent checking
+    normalized_path_str = path_str.replace("\\", "/")
+    
+    # Check for excessive parent directory traversals (both Unix and Windows style)
+    parent_traversals = normalized_path_str.count("../") + normalized_path_str.count("..\\") + path_str.count("..\\")
     if parent_traversals >= 3 and not (allow_outside or from_preset):
         # Three or more parent directory traversals are suspicious
         raise ValueError(
@@ -34880,13 +34723,29 @@ def validate_path_traversal(
 
     # Allow access to home directory for config files
     home_dir = Path.home()
-    if resolved_path.is_relative_to(home_dir / ".m1f"):
-        return resolved_path
+    try:
+        if resolved_path.is_relative_to(home_dir / ".m1f"):
+            return resolved_path
+    except (ValueError, AttributeError):
+        # is_relative_to might not exist in older Python versions
+        try:
+            resolved_path.relative_to(home_dir / ".m1f")
+            return resolved_path
+        except ValueError:
+            pass
 
     # Allow access to project's tmp directory for tests
     project_root = resolved_base
-    if resolved_path.is_relative_to(project_root / "tmp"):
-        return resolved_path
+    try:
+        if resolved_path.is_relative_to(project_root / "tmp"):
+            return resolved_path
+    except (ValueError, AttributeError):
+        # is_relative_to might not exist in older Python versions
+        try:
+            resolved_path.relative_to(project_root / "tmp")
+            return resolved_path
+        except ValueError:
+            pass
 
     # Check if the resolved path is within the base directory
     try:
@@ -34894,10 +34753,11 @@ def validate_path_traversal(
         resolved_path.relative_to(resolved_base)
         return resolved_path
     except ValueError:
-        # Check if we're in a test environment
+        # Check if we're in a test environment (handle Windows temp paths)
+        resolved_str = str(resolved_path).replace("\\", "/")
         if any(
-            part in str(resolved_path)
-            for part in ["/tmp/", "/var/folders/", "pytest-", "test_"]
+            part in resolved_str.lower()
+            for part in ["/tmp/", "/var/folders/", "pytest-", "test_", "\\temp\\", "\\tmp\\", "/temp/", "appdata/local/temp"]
         ):
             # Allow temporary test directories
             return resolved_path
@@ -35531,10 +35391,10 @@ class FileSplitter:
         self.logger.info("")
 
         if result.files_failed == 0 and result.total_files > 0:
-            self.logger.info("✓ All files extracted successfully!")
+            self.logger.info("[OK] All files extracted successfully!")
         elif result.files_failed > 0:
             self.logger.error(
-                f"✗ Extraction completed with {result.files_failed} error(s). "
+                f"[FAIL] Extraction completed with {result.files_failed} error(s). "
                 f"Check the logs above for details."
             )
 
@@ -39326,6 +39186,148 @@ common-errors:
 
 Remember: Each bundle should answer "What would I need to understand this
 module?" - size appropriately based on the use case!
+
+======= tools/m1f/prompts/verification_prompt.md ======
+# 🔍 VERIFY AND IMPROVE M1F CONFIGURATION
+
+Your task is to verify the .m1f.config.yml that was just created and improve it
+if needed.
+
+📋 VERIFICATION CHECKLIST:
+
+1. **Read .m1f.config.yml** - Check the current configuration
+2. **Check Generated Bundles** - Look in m1f/ directory for .txt files
+3. **Verify Bundle Quality**:
+   - Are focused/task bundles ideally under 180KB for Claude Code usage?
+   - Are larger reference bundles under 5MB for Claude AI?
+   - Complete/full bundles can be larger - that's OK!
+   - Do they contain the expected content?
+   - Are there any errors or warnings?
+4. **Test a Bundle** - Read at least one generated bundle (e.g.,
+   @m1f/{project_name}\_complete.txt)
+5. **Check for Common Issues**:
+   - Redundant excludes (node_modules, .git, etc. are auto-excluded)
+   - Missing important files
+   - Bundles that are too large or too small
+   - Incorrect separator_style (should be Standard or omitted)
+   - Wrong sources format (should use 'sources:' array, not 'source_directory:')
+
+🛠️ IMPROVEMENT ACTIONS:
+
+If you find issues:
+
+1. **Fix Configuration Errors** - Update .m1f.config.yml
+2. **Optimize Bundle Organization** - Better grouping or splitting
+3. **Add Missing Bundles** - If important areas aren't covered
+4. **Remove Redundant Bundles** - If there's too much overlap
+5. **Fix Size Issues** - Split large bundles or combine small ones
+
+📝 SPECIFIC CHECKS:
+
+1. Run: `ls -lah m1f/` to see all generated bundles and their sizes
+2. SIZE GUIDELINES:
+   - Task-focused bundles: Ideally < 180KB for Claude Code
+   - Reference bundles: Ideally < 5MB for Claude AI
+   - Complete/full bundles: Can be much larger (40MB+ is fine)
+   - TOO SMALL: Bundles under 10KB likely have configuration errors
+3. Check for m1f-update errors in the output above
+4. Read the complete bundle (e.g., @m1f/{project_name}\_complete.txt) to verify
+   content inclusion
+5. Ensure each bundle serves a clear, distinct purpose
+6. CRITICAL: Check for bundles under 10KB - these often indicate:
+   - Wrong file paths in includes
+   - Non-existent directories
+   - Incorrect glob patterns Action: Remove these bundle sections from the
+     config!
+
+⚠️ SIZE OPTIMIZATION GUIDELINES: For bundles intended for Claude Code that
+exceed 180KB:
+
+1. Consider splitting into smaller, more focused bundles
+2. Use more specific includes patterns
+3. Create sub-bundles for large topics (e.g., api-core-1, api-core-2) Note: This
+   is a guideline - some bundles naturally need to be larger!
+
+📊 PROJECT CONTEXT:
+
+- Type: {project_type}
+- Languages: {languages}
+- Total Files: {total_files}
+
+🎯 EXPECTED OUTCOME:
+
+After verification:
+
+1. The .m1f.config.yml should be optimal for this project
+2. All bundles should generate without errors
+3. Each bundle should be appropriately sized for its purpose:
+   - Task-focused bundles: Ideally < 180KB for Claude Code
+   - Reference bundles: Ideally < 5MB for Claude AI
+   - Complete bundles: Any size that captures the full scope
+4. The configuration should follow all best practices
+
+If everything looks good, just confirm. If improvements are needed, make them!
+
+📈 SIZE OPTIMIZATION STRATEGIES:
+
+For bundles that are too large:
+
+```yaml
+# Instead of this (too large):
+api-documentation:
+  sources:
+    - path: "docs/api"
+
+# Do this (split by topic):
+api-01-authentication:
+  sources:
+    - path: "docs/api"
+      includes: ["auth*.md", "login*.md", "session*.md"]
+
+api-02-data-models:
+  sources:
+    - path: "docs/api"
+      includes: ["models/*.md", "schema*.md"]
+
+api-03-endpoints:
+  sources:
+    - path: "docs/api"
+      includes: ["endpoints/*.md", "routes*.md"]
+```
+
+For bundles that are too small (<10KB):
+
+```yaml
+# If you see this in ls -lah output:
+# 108   m1f/some-bundle.txt
+# 2.1K  m1f/another-bundle.txt
+
+# Check the bundle content:
+cat m1f/some-bundle.txt
+# Output: "# No files processed from /path/to/nowhere"
+
+# ACTION: Remove the bundle from config:
+# DELETE this entire section:
+some-bundle:
+  description: "..."
+  sources:
+    - path: "nonexistent/path"  # <-- This path doesn't exist!
+```
+
+🔍 FINAL VERIFICATION: After making any changes, run `m1f-update` again and
+verify:
+
+1. All bundles generate without errors
+2. No bundles are under 10KB (unless intentionally small)
+3. Task-focused bundles are ideally under 180KB
+4. The configuration follows best practices
+
+⚠️ PATH VERIFICATION CHECKLIST: Before finalizing, double-check:
+
+- All paths in sources exist in the project
+- Paths use relative format (e.g., "src/api" not "/home/user/src/api")
+- Include patterns match actual files (check with `ls` command)
+- No typos in directory names (e.g., "dot" vs ".")
 
 ======= tools/scrape_tool/scrapers/README.md ======
 # HTML2MD Web Scrapers
