@@ -9,9 +9,10 @@ Works on both Linux and Windows.
 This script:
 1. Scrapes Claude Code docs from docs.anthropic.com
 2. Converts HTML to clean Markdown
-3. Runs m1f-init to prepare the bundle
-4. Runs m1f-claude with advanced setup
-5. Creates claude-code-doc.txt for Claude to use
+3. Runs m1f-init to create the documentation bundle
+4. Returns the path to the created bundle
+
+Usage: python scrape_claude_code_docs.py <target_directory>
 """
 
 import subprocess
@@ -27,7 +28,6 @@ CLAUDE_DOCS_URL = "https://docs.anthropic.com/en/docs/claude-code"
 SCRAPE_DELAY = 15  # seconds between requests
 CONTENT_SELECTOR = "main"
 IGNORE_SELECTORS = ["nav", "header", "footer"]
-BUNDLE_NAME = "claude-code-doc.txt"
 PROJECT_NAME = "Claude Code Documentation"
 PROJECT_DESCRIPTION = "Official documentation for Claude Code - Anthropic's AI coding assistant"
 
@@ -56,20 +56,28 @@ def run_command(cmd, description, capture_output=True):
 
 def main():
     # Parse arguments
-    parser = argparse.ArgumentParser(description="Scrape Claude Code documentation")
-    parser.add_argument("path", nargs="?", help="Output directory path (optional)")
+    parser = argparse.ArgumentParser(
+        description="Scrape Claude Code documentation and create a bundle",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Example:
+    python scrape_claude_code_docs.py ~/claude-docs
+    
+This will create the documentation bundle in the specified directory.
+The final bundle will be in the 'm1f' subdirectory of the markdown folder.
+        """
+    )
+    parser.add_argument("path", help="Target directory path (required)")
     args = parser.parse_args()
     
     # Determine output directory
-    if args.path:
-        output_path = Path(args.path).absolute()
-    else:
-        output_path = Path.cwd()
+    output_path = Path(args.path).absolute()
     
     print("🤖 Claude Code Documentation Scraper")
     print("=" * 50)
     print(f"Target: {CLAUDE_DOCS_URL}")
-    print(f"Output: {output_path / BUNDLE_NAME}")
+    print(f"Output directory: {output_path}")
+    print(f"Total time: ~15-20 minutes")
     print("=" * 50)
     
     # Create output directory if needed
@@ -89,7 +97,8 @@ def main():
     print(f"\n{'='*50}")
     print("STEP 1: Scraping Claude Code Documentation")
     print(f"{'='*50}")
-    print(f"⏱️  This will take ~5-10 minutes due to {SCRAPE_DELAY}s delays...")
+    print(f"📄 Will download ~30 HTML pages from Claude Code docs")
+    print(f"⏱️  Expected duration: 7-8 minutes (15s delay between pages)")
     
     scrape_cmd = [
         "m1f-scrape",
@@ -134,6 +143,8 @@ def main():
     print(f"\n{'='*50}")
     print("STEP 2: Analyzing HTML Structure with Claude")
     print(f"{'='*50}")
+    print(f"🤖 Claude will analyze 5 representative HTML files")
+    print(f"⏱️  Expected duration: 5-8 minutes")
     
     analyze_cmd = [
         "m1f-html2md",
@@ -147,7 +158,8 @@ def main():
     success, output = run_command(analyze_cmd, "Analyzing HTML with Claude", capture_output=False)
     
     # Check if Claude created the config file
-    config_file = Path("html2md_extract_config.yaml")
+    # The analyze command creates html2md_config.yaml in the HTML directory
+    config_file = html_dir / "html2md_config.yaml"
     use_config = False
     
     if success and config_file.exists():
@@ -164,6 +176,8 @@ def main():
     print(f"\n{'='*50}")
     print("STEP 3: Converting to Markdown")
     print(f"{'='*50}")
+    print(f"📄 Converting all {len(html_files)} HTML files to Markdown")
+    print(f"⏱️  Expected duration: <1 minute")
     
     convert_cmd = [
         "m1f-html2md",
@@ -193,8 +207,10 @@ def main():
     
     # Step 4: Run m1f-init in markdown directory
     print(f"\n{'='*50}")
-    print("STEP 4: Initializing m1f Bundle")
+    print("STEP 4: Creating m1f Bundle")
     print(f"{'='*50}")
+    print(f"📦 Running m1f-init to create documentation bundle")
+    print(f"⏱️  Expected duration: <1 minute")
     
     # Change to markdown directory for m1f-init
     original_output_dir = Path.cwd()
@@ -207,30 +223,27 @@ def main():
     os.chdir(original_output_dir)
     
     if not success:
-        print("⚠️  m1f-init failed, continuing anyway...")
-    
-    # Step 5: Create bundle
-    print(f"\n{'='*50}")
-    print("STEP 5: Creating Bundle")
-    print(f"{'='*50}")
-    
-    bundle_path = Path(BUNDLE_NAME)
-    
-    bundle_cmd = [
-        "m1f",
-        "-s", str(markdown_dir),
-        "-o", str(bundle_path),
-        "-v"
-    ]
-    
-    success, _ = run_command(bundle_cmd, "Creating bundle", capture_output=False)
-    if not success:
+        print("❌ m1f-init failed!")
         return 1
     
-    # Verify bundle
-    if not bundle_path.exists():
-        print("❌ Bundle file not created")
+    # Find the bundle created by m1f-init
+    bundle_dir = markdown_dir / "m1f"
+    if not bundle_dir.exists():
+        print("❌ Bundle directory not created by m1f-init")
         return 1
+    
+    # Find the documentation bundle file
+    bundle_files = list(bundle_dir.glob("*_docs.txt"))
+    if not bundle_files:
+        # Try to find any .txt file in the m1f directory
+        bundle_files = list(bundle_dir.glob("*.txt"))
+    
+    if not bundle_files:
+        print("❌ No bundle file found in m1f directory")
+        return 1
+    
+    # Use the first bundle file found
+    bundle_path = bundle_files[0].absolute()
     
     # Get bundle stats
     bundle_size = bundle_path.stat().st_size / (1024 * 1024)  # MB
@@ -248,94 +261,27 @@ def main():
         if match:
             token_count = f"{int(match.group(1)):,}"
     
-    # Step 6: Run m1f-claude with advanced setup
-    print(f"\n{'='*50}")
-    print("STEP 6: Running m1f-claude Advanced Setup")
-    print(f"{'='*50}")
-    
-    # Prepare input for m1f-claude
-    claude_input = f"{PROJECT_NAME}\n{PROJECT_DESCRIPTION}\n"
-    
-    claude_cmd = [
-        "m1f-claude",
-        str(bundle_path),
-        "--setup"
-    ]
-    
-    print(f"📝 Providing project info:")
-    print(f"   Name: {PROJECT_NAME}")
-    print(f"   Description: {PROJECT_DESCRIPTION}")
-    
-    try:
-        # Run m1f-claude with input
-        process = subprocess.Popen(
-            claude_cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        stdout, stderr = process.communicate(input=claude_input)
-        
-        if process.returncode == 0:
-            print("✅ m1f-claude advanced setup completed")
-        else:
-            print("⚠️  m1f-claude setup had issues, but bundle is still created")
-            if stderr:
-                print(f"   Error: {stderr}")
-    except Exception as e:
-        print(f"⚠️  Could not run m1f-claude: {e}")
-        print("   Bundle is still created and usable")
-    
-    # Step 7: Verify content
-    print(f"\n{'='*50}")
-    print("STEP 7: Verifying Content")
-    print(f"{'='*50}")
-    
-    with open(bundle_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    
-    # Check for expected Claude Code content
-    checks = {
-        "Keyboard shortcuts": ["Ctrl+", "Cmd+"],
-        "CLI parameters": ["allowedTools", "disallowedTools"],
-        "MCP servers": ["mcp", "server"],
-        "Interactive mode": ["interactive", "mode"],
-        "Slash commands": ["slash", "command"]
-    }
-    
-    print("🔍 Content verification:")
-    all_good = True
-    for check_name, keywords in checks.items():
-        found = sum(1 for kw in keywords if kw in content)
-        if found > 0:
-            print(f"  ✅ {check_name}: Found {found}/{len(keywords)} keywords")
-        else:
-            print(f"  ❌ {check_name}: Not found")
-            all_good = False
-    
     # Final summary
     print(f"\n{'='*50}")
-    print("📝 FINAL SUMMARY")
+    print("✅ DOCUMENTATION BUNDLE CREATED")
     print(f"{'='*50}")
     
-    print(f"✅ Bundle created successfully!")
-    print(f"📁 Location: {bundle_path.absolute()}")
-    print(f"📏 Size: {bundle_size:.2f} MB")
-    print(f"🔢 Tokens: ~{token_count}")
-    print(f"📄 Source files: {len(html_files)} HTML → {len(md_files)} Markdown")
+    print(f"\n📦 Bundle location:")
+    print(f"   {bundle_path}")
     
-    if all_good:
-        print(f"\n✨ Content verification: PASSED")
-    else:
-        print(f"\n⚠️  Content verification: Some expected content missing")
+    print(f"\n📊 Bundle statistics:")
+    print(f"   Size: {bundle_size:.2f} MB")
+    print(f"   Tokens: ~{token_count}")
+    print(f"   Source: {len(html_files)} HTML → {len(md_files)} Markdown files")
     
-    print(f"\n💡 Usage:")
-    print(f"   m1f-claude {bundle_path.absolute()}")
+    print(f"\n💡 Usage options:")
+    print(f"   1. Create a symlink: ln -s {bundle_path} ~/claude-code-docs.txt")
+    print(f"   2. Copy the file: cp {bundle_path} <destination>")
+    print(f"   3. Use with Claude: m1f-claude {bundle_path}")
     
     print(f"\n🧹 Cleanup (optional):")
-    print(f"   Remove HTML files: rm -rf claude-code-html (Linux) or rmdir /s claude-code-html (Windows)")
-    print(f"   Remove Markdown files: rm -rf {markdown_dir} (Linux) or rmdir /s {markdown_dir} (Windows)")
+    print(f"   Remove HTML: rm -rf {output_path}/claude-code-html")
+    print(f"   Keep Markdown: {markdown_dir} (contains the bundle)")
     
     # Change back to original directory
     os.chdir(original_dir)
