@@ -27,7 +27,6 @@ critical data.
    ```
 
 2. **Use the provided validation utilities**:
-
    - `validate_safe_path()` in `tools/m1f/utils.py` ensures paths stay within
      allowed boundaries
    - All user-provided paths should be validated before use

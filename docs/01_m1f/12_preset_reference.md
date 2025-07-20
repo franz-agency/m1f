@@ -205,25 +205,21 @@ CLI defaults:
 ### Built-in Actions
 
 1. **`minify`** - Remove unnecessary whitespace and formatting
-
    - Reduces file size
    - Maintains functionality
    - Best for: JS, CSS, HTML
 
 2. **`strip_tags`** - Remove HTML/XML tags
-
    - Extracts text content only
    - Preserves text between tags
    - Best for: HTML, XML, Markdown with HTML
 
 3. **`strip_comments`** - Remove code comments
-
    - Removes single and multi-line comments
    - Language-aware (JS, Python, CSS, etc.)
    - Best for: Production code bundles
 
 4. **`compress_whitespace`** - Reduce multiple spaces/newlines
-
    - Converts multiple spaces to single space
    - Reduces multiple newlines to double newline
    - Best for: Documentation, logs
@@ -346,13 +342,11 @@ exclude files:
 Understanding where settings can be applied:
 
 1. **Global Settings Level** (`globals.global_settings`):
-
    - `include_patterns` / `exclude_patterns`
    - `include_extensions` / `exclude_extensions`
    - All general m1f settings
 
 2. **Preset Level** (individual presets):
-
    - `patterns` and `extensions` (for matching)
    - `actions` (processing actions)
    - Override settings like `security_check`
@@ -384,11 +378,9 @@ Understanding where settings can be applied:
 2. **Actions vs Settings**
 
    **Actions** (go in `actions` list):
-
    - `minify`, `strip_tags`, `strip_comments`, etc.
 
    **Settings** (separate fields):
-
    - `strip_tags: ["script", "style"]` (configuration)
    - `max_lines: 100` (configuration)
 
@@ -607,13 +599,11 @@ m1f --preset environments.yml --preset-group production
 ### Common Issues
 
 1. **Preset not applied**
-
    - Check pattern matching
    - Verify preset group is enabled
    - Use verbose mode to debug
 
 2. **Wrong action order**
-
    - Actions are applied sequentially
    - Order matters (e.g., minify before strip_comments)
 

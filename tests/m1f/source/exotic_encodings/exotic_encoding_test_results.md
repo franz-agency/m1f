@@ -82,7 +82,6 @@ python s1f.py --input-file ./output/exotic_encodings_test.txt --destination-dire
    first conversion.
 
 4. The `--respect-encoding` option in s1f works best when:
-
    - The original file's encoding is accurately detected by m1f
    - The conversion to UTF-8 happened without encoding errors
    - The encoding is well-supported by Python's encoding/decoding functions

@@ -10,8 +10,10 @@ and this project adheres to
 
 ### Changed
 
-- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
-- **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
+- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for
+  simplicity
+- **m1f**: Ensure cross-platform compatibility by using forward slashes in
+  bundle paths
 - **Project Organization**: Cleaned up project root directory
   - Moved `perfect_bundle_prompt.md` to `tools/m1f/prompts/`
   - Moved `wp-cli.example.yml` to `examples/` directory
@@ -19,15 +21,20 @@ and this project adheres to
 ### Fixed
 
 - **Windows Compatibility**: Major improvements for Windows platform support
-  - **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
-    - Bundles created on Windows can now be extracted on Unix systems and vice versa
+  - **m1f**: Fixed path separators to always use forward slashes in bundles for
+    cross-platform compatibility
+    - Bundles created on Windows can now be extracted on Unix systems and vice
+      versa
     - Added comprehensive cross-platform path tests
   - **m1f-claude**: Improved Claude executable detection on Windows
-  - **m1f-claude**: Enhanced subprocess handling and timeout behavior for Windows
+  - **m1f-claude**: Enhanced subprocess handling and timeout behavior for
+    Windows
   - **m1f**: Fixed npx execution method compatibility on Windows
   - **m1f-init**: Improved project type detection across platforms
-  - **Dependencies**: Downgraded httpx to 0.27.2 for better Windows compatibility
-  - **Tests**: Added cross-platform test suite with Windows-specific timeout handling
+  - **Dependencies**: Downgraded httpx to 0.27.2 for better Windows
+    compatibility
+  - **Tests**: Added cross-platform test suite with Windows-specific timeout
+    handling
   - **Installation**: Fixed PowerShell installation scripts and path handling
 
 ## [3.5.0] - 2025-07-18
@@ -38,7 +45,8 @@ and this project adheres to
 
 ### Fixed
 
-- **m1f-init**: Correct project type detection to use file count for all languages
+- **m1f-init**: Correct project type detection to use file count for all
+  languages
 - **m1f**: Support npx execution method for m1f tool
 - **m1f-init**: Preserve dots in project names for bundle generation
 
@@ -51,13 +59,17 @@ and this project adheres to
 ### Fixed
 
 - **Version Conflict**: Resolved version conflict issues
-- **httpx Compatibility**: Downgraded httpx from newer version to 0.27.2 for improved compatibility
-- **Configuration Consistency**: Updated `source_directory` to `source_directories` in configuration for consistency
-- **m1f-claude Subprocess Handling**: Improved subprocess handling and timeout behavior for Claude executable detection
+- **httpx Compatibility**: Downgraded httpx from newer version to 0.27.2 for
+  improved compatibility
+- **Configuration Consistency**: Updated `source_directory` to
+  `source_directories` in configuration for consistency
+- **m1f-claude Subprocess Handling**: Improved subprocess handling and timeout
+  behavior for Claude executable detection
 
 ### Changed
 
-- **Dependencies Update**: Updated multiple dependencies to newer versions for improved compatibility and performance
+- **Dependencies Update**: Updated multiple dependencies to newer versions for
+  improved compatibility and performance
 
 ### Removed
 
@@ -70,16 +82,20 @@ and this project adheres to
 - **m1f-init Enhancements**: Improved project initialization tool
   - Added `--no-symlink` parameter to skip creating symlink to m1f documentation
   - Added file tracking to show only actually created files in output
-  - Improved output formatting with "Here is your file:" / "Here are your files:" section
+  - Improved output formatting with "Here is your file:" / "Here are your
+    files:" section
   - Added proper spacing and bullet points for created files list
-  - Now runs `m1f-update` when `.m1f.config.yml` already exists instead of creating default bundles
+  - Now runs `m1f-update` when `.m1f.config.yml` already exists instead of
+    creating default bundles
 
-- **Multiple Source Directories**: m1f now supports multiple `-s` source directories
+- **Multiple Source Directories**: m1f now supports multiple `-s` source
+  directories
   - Use `-s dir1 -s dir2` to combine files from multiple directories
   - All source directories are processed and files are merged into single output
   - Useful for documentation bundles that need files from different locations
 
-- **Include Patterns**: Added `--includes` parameter for pattern-based file filtering
+- **Include Patterns**: Added `--includes` parameter for pattern-based file
+  filtering
   - Works with gitignore-style patterns (e.g., `*.py`, `src/**`, `!test.py`)
   - When combined with `--include-extensions`, files must match both criteria
   - Allows precise control over which files to include in bundles
@@ -87,44 +103,55 @@ and this project adheres to
 ### Changed
 
 - **m1f-init Git Detection**: Improved Git repository detection messages
-  - Simplified output for parent directory Git repositories (no longer shows paths)
+  - Simplified output for parent directory Git repositories (no longer shows
+    paths)
   - Only shows messages for current directory Git repos or no Git repo at all
   - Better handling of subdirectories within larger Git projects
 
 - **m1f-init Language Detection**: Enhanced programming language detection
   - Changed "Not detected" to "No programming languages detected" for clarity
   - Added file counting for all supported languages (Java, C#, Go, Rust, Ruby)
-  - Only shows "Programming Languages:" line when languages are actually detected
-  - Better label clarity with "Programming Languages:" instead of just "Languages:"
+  - Only shows "Programming Languages:" line when languages are actually
+    detected
+  - Better label clarity with "Programming Languages:" instead of just
+    "Languages:"
 
 ### Fixed
 
 - **m1f-init .gitignore Handling**: Fixed .gitignore usage in subdirectories
   - Now only uses .gitignore from current directory, not parent directories
-  - Prevents errors when running m1f-init in subdirectories without their own .gitignore
-  - All m1f commands now check for .gitignore existence before using --exclude-paths-file
+  - Prevents errors when running m1f-init in subdirectories without their own
+    .gitignore
+  - All m1f commands now check for .gitignore existence before using
+    --exclude-paths-file
 
 - **m1f-init Python Project Detection**: Fixed language detection prioritization
   - Now prioritizes by file count to correctly identify primary language
   - Python projects are now properly detected even with mixed language codebases
 
-- **m1f-init Behavior with Existing Config**: Fixed to run m1f-update when config exists
+- **m1f-init Behavior with Existing Config**: Fixed to run m1f-update when
+  config exists
   - No longer creates default bundles when `.m1f.config.yml` already exists
   - Automatically runs `m1f-update` to use existing configuration
 
-- **m1f Directory Exclusion Performance**: Fixed severe performance issue with directory filtering
-  - Directory exclusions from .gitignore now properly applied at directory traversal level
-  - Reduced bundle creation time from 42+ seconds to ~1.2 seconds (35x improvement)
+- **m1f Directory Exclusion Performance**: Fixed severe performance issue with
+  directory filtering
+  - Directory exclusions from .gitignore now properly applied at directory
+    traversal level
+  - Reduced bundle creation time from 42+ seconds to ~1.2 seconds (35x
+    improvement)
   - Fixed tmp/ directory exclusion that was scanning 362,419 unnecessary files
 
-- **m1f Multiple Source Directories**: Fixed CLI to support multiple source directories
+- **m1f Multiple Source Directories**: Fixed CLI to support multiple source
+  directories
   - Changed from single source to List[Path] throughout codebase
-  - Now properly processes all specified source directories with `-s dir1 -s dir2`
+  - Now properly processes all specified source directories with
+    `-s dir1 -s dir2`
   - All files from multiple sources are combined into single output
 
 - **m1f Include Patterns**: Fixed include pattern filtering
   - Include patterns now properly applied from config files
-  - Fixed _load_include_patterns() to run even without include_paths_file
+  - Fixed \_load_include_patterns() to run even without include_paths_file
   - Patterns correctly filter files when combined with extension filters
 
 - **m1f Bundle Configuration**: Fixed output directory exclusion pattern
@@ -134,7 +161,8 @@ and this project adheres to
 - **m1f-html2md Streaming**: Fixed streaming output for Claude AI analysis
   - Fixed common_parent variable scope issue (used before definition)
   - Implemented proper streaming in run_claude_streaming method
-  - Fixed ColoredFormatter modifying LogRecord objects (causing ANSI codes in logs)
+  - Fixed ColoredFormatter modifying LogRecord objects (causing ANSI codes in
+    logs)
   - Added elapsed time tracking for progress messages
   - Improved subprocess handling for reliable Claude CLI integration
 
@@ -173,7 +201,6 @@ and this project adheres to
 
 - **HTML2MD Claude AI Integration Enhancements**: Major improvements to
   AI-powered HTML analysis
-
   - **External Prompt System**: All prompts now loaded from external markdown
     files in `prompts/` directory
     - `select_files_from_project.md`: Strategic selection of 5 representative
@@ -226,7 +253,6 @@ and this project adheres to
 
 - **WebScraper Content Deduplication**: Memory-efficient duplicate prevention
   system (enabled by default)
-
   - **Database-Backed Deduplication**: Optimized for large scraping sessions
     - Uses SQLite queries instead of loading all checksums into memory
     - Stores checksums in `content_checksums` table with first URL and timestamp
@@ -252,7 +278,6 @@ and this project adheres to
 
 - **WebScraper Subdirectory Restriction**: Automatic crawling restriction to
   specified paths
-
   - When URL contains a path (e.g., `https://example.com/docs`), only pages
     under that path are scraped
   - Prevents crawling outside the specified subdirectory (e.g., won't scrape
@@ -265,7 +290,6 @@ and this project adheres to
 
 - **WebScraper Ignore GET Parameters**: New option to prevent duplicate content
   from URLs with different query strings
-
   - **--ignore-get-params Flag**: Strips GET parameters from URLs during
     scraping
     - Prevents duplicate downloads from URLs like `page.html?tab=linux` and
@@ -317,7 +341,6 @@ and this project adheres to
   - Removed accidental triple nesting (m1f/m1f/m1f/)
   - Created proper symlink from m1f/m1f.txt to m1f/m1f/87_m1f_only_docs.txt
 - **WebScraper Logging**: Fixed duplicate content detection logging
-
   - Duplicates no longer logged as "unexpected errors"
   - Changed from exception-based to graceful skip-based handling
 
@@ -347,7 +370,6 @@ and this project adheres to
     warnings =======
 - **m1f-html2md Claude AI Integration**: Intelligent HTML analysis and
   conversion using Claude
-
   - **Analyze Command Enhancement**: Added `--claude` flag for AI-powered
     analysis
     - Automatically finds all HTML files in directories (no need to specify
@@ -377,7 +399,6 @@ and this project adheres to
 
 - **--docs-only Parameter**: New command-line flag for documentation-only
   bundles
-
   - Filters to include only 62 documentation file extensions
   - Simplifies command: `m1f -s . -o docs.txt --docs-only`
   - Replaces verbose `--include-extensions` with 62 extensions
@@ -385,7 +406,6 @@ and this project adheres to
   - Overrides include-extensions when set
 
 - **Documentation File Extensions**: Centralized definition in constants.py
-
   - Added DOCUMENTATION_EXTENSIONS constant with 62 file extensions
   - Added UTF8_PREFERRED_EXTENSIONS constant with 45 UTF-8 preferred formats
   - Includes man pages, markup formats, text files, and developer docs
@@ -396,12 +416,10 @@ and this project adheres to
     > > > > > > > a5263cc2954dda4397238b4001d4bbae4cea973d
 
 - **m1f-claude --init Improvements**: Enhanced project initialization process
-
   - **Choice-Based Setup**: Users can choose between quick and advanced
     initialization modes
     - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
-    - Command-line parameters: `--quick-setup` and `--setup` for
-      scripting
+    - Command-line parameters: `--quick-setup` and `--setup` for scripting
     - Quick setup: Creates bundles in 30 seconds without Claude
     - Advanced setup: Claude analyzes project and creates topic-specific bundles
   - **Project-Specific Bundle Naming**: All bundles include project directory
@@ -456,7 +474,6 @@ and this project adheres to
 ### Enhanced
 
 - **Auxiliary File Documentation**: Added comprehensive documentation
-
   - Documented filelist and dirlist generation in main m1f documentation
   - Added "Output Files" section explaining all generated files
   - Included examples of working with file lists for custom bundles
@@ -542,7 +559,6 @@ and this project adheres to
 ### Changed
 
 - **m1f-claude --init Workflow**: Completely redesigned initialization process
-
   - Now automatically creates complete.txt and docs.txt bundles without Claude
   - Generates .m1f.config.yml with both bundles pre-configured
   - Uses new --docs-only parameter for documentation bundle creation
@@ -550,7 +566,6 @@ and this project adheres to
   - Simplified workflow: git clone → m1f-link → m1f-claude --init → done!
 
 - **Dependencies**: Updated claude-code-sdk to use flexible version constraint
-
   - Changed from `claude-code-sdk==0.0.10` to `claude-code-sdk>=0.0.10`
   - Ensures automatic updates to latest compatible versions
   - Maintains backward compatibility with current version
@@ -566,7 +581,6 @@ and this project adheres to
 ### Fixed
 
 - **m1f-claude --init Command**: Fixed Claude Code subprocess execution
-
   - Resolved parameter ordering issue with `--add-dir` flag
   - Changed from stdin-based prompt delivery to `-p` parameter method
   - Implemented fallback to display manual command when subprocess hangs
@@ -574,7 +588,6 @@ and this project adheres to
   - Ensures Claude has directory access permissions for file operations
 
 - **PowerShell Installation**: Fixed missing m1f_aliases.ps1 file
-
   - Created m1f_aliases.ps1 with all PowerShell functions and aliases
   - Added file existence check in setup_m1f_aliases.ps1 before sourcing
   - Fixed hardcoded path issue that caused PowerShell profile errors
@@ -634,7 +647,6 @@ and this project adheres to
 ### Added
 
 - **Git Hooks Integration**: Automatic bundle generation on every commit
-
   - Pre-commit hook that runs `m1f auto-bundle` before each commit
   - Installation script with remote download support:
     `curl -sSL https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/install-git-hooks.sh | bash`
@@ -644,7 +656,6 @@ and this project adheres to
 
 - **Bundle Directory Migration**: Moved from `.m1f/` to `m1f/` for better AI
   tool compatibility
-
   - AI tools like Claude Code can now access bundled files directly
   - Generated bundles are included in version control by default
   - Automatic migration of configuration paths
@@ -653,7 +664,6 @@ and this project adheres to
 
 - **Complete Preset Parameter Support**: ALL m1f parameters can now be
   configured via presets
-
   - Input/Output settings: source_directory, input_file, output_file,
     input_include_files
   - Output control: add_timestamp, filename_mtime_hash, force, minimal_output,
@@ -667,7 +677,6 @@ and this project adheres to
 
 - **Auto-Bundle Subcommand**: Integrated auto-bundle functionality directly into
   m1f
-
   - New `auto-bundle` subcommand for creating multiple bundles from YAML config
   - Reads `.m1f.config.yml` from project root
   - Supports creating all bundles or specific bundles by name
@@ -681,7 +690,6 @@ and this project adheres to
 
 - **Simplified Installation System**: Complete installer scripts for all
   platforms
-
   - New `install.sh` handles entire setup process (3 commands total!)
   - New `install.ps1` for Windows with full automation
   - Automatic Python 3.10+ version checking
@@ -691,14 +699,12 @@ and this project adheres to
   - `uninstall.sh` for clean removal
 
 - **PATH-based Command System**: Replaced aliases with executable wrappers
-
   - Created `bin/` directory with standalone executable scripts
   - Each wrapper activates venv and runs appropriate tool
   - Works consistently across all shells and platforms
   - Optional symlink creation in ~/.local/bin
 
 - **m1f-claude Command**: Smart prompt enhancement for Claude AI
-
   - New `m1f-claude` command that enhances prompts with m1f knowledge
   - Automatically injects m1f documentation context into prompts
   - Interactive mode for continued conversations
@@ -709,7 +715,6 @@ and this project adheres to
   - Comprehensive workflow guide at docs/01_m1f/30_claude_workflows.md
 
 - **Enhanced Auto-Bundle Functionality**: Improved usability and flexibility
-
   - Config file search now traverses from current directory up to root
   - New `--group` parameter to create bundles by group (e.g.,
     `m1f auto-bundle --group documentation`)
@@ -720,7 +725,6 @@ and this project adheres to
   - Examples for server-wide bundle management and automation
 
 - **Join Paragraphs Feature**: Markdown optimization for LLMs
-
   - New `JOIN_PARAGRAPHS` processing action to compress markdown
   - Intelligently joins multi-line paragraphs while preserving structure
   - Preserves code blocks, tables, lists, and other markdown elements
@@ -728,7 +732,6 @@ and this project adheres to
   - Available in presets for documentation bundles
 
 - **S1F List Command**: Display archive contents without extraction
-
   - New `--list` flag to show files in m1f archives
   - Displays file information including size, encoding, and type
   - No longer shows SHA256 hashes for cleaner output
@@ -736,7 +739,6 @@ and this project adheres to
 
 - **Configurable UTF-8 Preference**: Made UTF-8 encoding preference for text
   files configurable
-
   - Added `prefer_utf8_for_text_files` option to EncodingConfig (defaults to
     True)
   - New CLI flag `--no-prefer-utf8-for-text-files` to disable UTF-8 preference
@@ -755,7 +757,6 @@ and this project adheres to
 ### Fixed
 
 - **Security**: Comprehensive path traversal protection across all tools
-
   - Added path validation to prevent directory traversal attacks
   - Block paths with `../` or `..\` patterns
   - Reject absolute paths in s1f extraction
@@ -763,14 +764,12 @@ and this project adheres to
   - Allow legitimate exceptions: home directory configs (~/.m1f/), output files
 
 - **Markdown Format**: Fixed separator and content formatting issues
-
   - Content now properly starts on new line after code fence in markdown format
   - Added blank line between separator and content in parallel processing mode
   - Fixed S1F markdown parser to correctly handle language hint and newline
   - Fixed closing ``` for markdown format in parallel processing
 
 - **S1F List Output**: Simplified file information display
-
   - Removed SHA256 hash display from list output
   - No longer shows "[Unknown]" for missing file sizes
   - Only displays file size when available
@@ -783,7 +782,6 @@ and this project adheres to
 ### Changed
 
 - **Parallel File Processing**: Enhanced performance for large projects
-
   - Added optional `--parallel` flag for concurrent file processing
   - Implemented asyncio-based batch handling with proper thread safety
   - Added locks for thread-safe checksum operations
@@ -792,13 +790,11 @@ and this project adheres to
 
 - **Auto-bundle config file** (`.m1f.config.yml`) updated with group
   categorization
-
   - Documentation bundles grouped under "documentation"
   - Source code bundles grouped under "source"
   - Complete project bundle in "complete" group
 
 - **Command Naming Standardization**: All tools now use m1f- prefix
-
   - `s1f` → `m1f-s1f`
   - `html2md` → `m1f-html2md`
   - `webscraper` → `m1f-scrape`
@@ -806,13 +802,11 @@ and this project adheres to
   - Prevents naming conflicts with system commands
 
 - **Module Execution**: Fixed import errors with proper module syntax
-
   - All scripts now use `python -m tools.m1f` format
   - Ensures reliable imports across different environments
   - Updated all documentation examples
 
 - **WebScraper Rate Limiting**: Conservative defaults for Cloudflare protection
-
   - Changed default request delay from 0.5s to 15s
   - Reduced concurrent requests from 5 to 2
   - Added bandwidth limiting (100KB/s) and connection rate limits
@@ -827,7 +821,6 @@ and this project adheres to
 ### Security
 
 - **Path Traversal Protection**: Comprehensive validation across all tools
-
   - Prevents attackers from using paths like `../../../etc/passwd`
   - Validates resolved paths against project boundaries
   - Allows legitimate exceptions for configs and output files
@@ -842,21 +835,18 @@ and this project adheres to
 ### Improved
 
 - **HTML2MD Enhancement**: Better file path handling
-
   - Improved source path logic for file inputs
   - Enhanced relative path resolution for edge cases
   - Consistent output path generation with fallback mechanisms
   - Removed hardcoded Anthropic-specific navigation selectors
 
 - **Encoding Detection**: Enhanced fallback logic
-
   - Default to UTF-8 if chardet fails or returns empty
   - Prefer UTF-8 over Windows-1252 for markdown files
   - Expanded encoding map for better emoji support
   - Better handling of exotic encodings
 
 - **Async I/O Support**: Performance optimizations
-
   - S1F now supports optional aiofiles for async file reading
   - Better handling of deprecated asyncio methods
   - Improved concurrent operation handling
@@ -1046,7 +1036,6 @@ and this project adheres to
 ### Added
 
 - **Preset System**: Flexible file-specific processing rules
-
   - Hierarchical preset loading: global (~/.m1f/) → user → project
   - Global settings: encoding, separator style, line endings, includes/excludes
   - Extension-specific processing: HTML minification, CSS compression, comment
@@ -1079,7 +1068,6 @@ and this project adheres to
   - `scripts/watch_and_bundle.sh` - File watcher for automatic updates
   - Bundle types: docs, src, tests, complete, and custom focus areas
 - **Claude Code Integration** (optional): AI-powered tool automation
-
   - `tools/claude_orchestrator.py` - Natural language command processing
   - Integration with Claude Code CLI for workflow automation
   - Project-specific `.claude/settings.json` configuration

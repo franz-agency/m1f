@@ -45,7 +45,7 @@ contain navigation, ads, and other non-content elements that must be excluded.
 
 ### 2. Code Formatting
 
-````markdown
+```markdown
 # Inline code
 
 Use `backticks` for inline code, commands, or file names
@@ -57,7 +57,7 @@ Use `backticks` for inline code, commands, or file names
 # Shell commands
 
 ​`bash $ command here ​`
-````
+```
 
 ### 3. Special Content Types
 

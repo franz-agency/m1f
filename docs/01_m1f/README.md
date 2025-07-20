@@ -52,7 +52,7 @@ Language Models (LLMs) and creating bundled documentation.
 ## Quick Start
 
 ```bash
-# Basic usage 
+# Basic usage
 m1f -s ./your_project -o ./combined.txt
 
 # With file type filtering

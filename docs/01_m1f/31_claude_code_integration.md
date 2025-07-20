@@ -73,18 +73,15 @@ m1f-init --verbose
 #### What m1f-init Does:
 
 1. **Links m1f Documentation**
-
    - Creates m1f/m1f.txt symlink (or copies on Windows)
    - Makes documentation accessible to AI tools
 
 2. **Project Analysis**
-
    - Detects git repository boundaries
    - Analyzes project structure and languages
    - Creates file and directory lists in `m1f/` directory
 
 3. **Creates Initial Bundles with Auxiliary Files**
-
    - `<project>_complete.txt` - Full project bundle
    - `<project>_complete_filelist.txt` - List of all included files
    - `<project>_complete_dirlist.txt` - List of all directories
@@ -99,7 +96,8 @@ m1f-init --verbose
 
 ### Advanced Setup with m1f-claude (Linux/macOS only)
 
-The `m1f-claude` tool enhances project setup by creating topic-specific bundles based on your project's needs:
+The `m1f-claude` tool enhances project setup by creating topic-specific bundles
+based on your project's needs:
 
 ```bash
 # Interactive mode - prompts for project details
@@ -113,10 +111,13 @@ m1f-claude --setup \
 
 #### Project Information Options:
 
-- **--project-description**: Brief description of what your project does and its main technologies
-- **--project-priorities**: What's important for this project (e.g., performance, security, documentation, maintainability)
+- **--project-description**: Brief description of what your project does and its
+  main technologies
+- **--project-priorities**: What's important for this project (e.g.,
+  performance, security, documentation, maintainability)
 
 This information helps Claude create better-targeted bundles. For example:
+
 - If "security" is a priority, it will create dedicated auth/security bundles
 - If "documentation" is important, it will create more granular doc bundles
 - If "performance" matters, it will separate performance-critical code
@@ -165,7 +166,6 @@ m1f -s src/components -o m1f/components_only.txt
 ```
 
 3. **Configuration File**
-
    - Creates `.m1f.config.yml` with complete and docs bundles
    - Uses `docs_only: true` for documentation bundle
    - No global file size limits

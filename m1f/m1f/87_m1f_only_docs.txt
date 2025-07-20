@@ -53,7 +53,7 @@ Language Models (LLMs) and creating bundled documentation.
 ## Quick Start
 
 ```bash
-# Basic usage 
+# Basic usage
 m1f -s ./your_project -o ./combined.txt
 
 # With file type filtering
@@ -80,10 +80,10 @@ with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool solves a common challenge when working with LLMs:
-providing sufficient context without exceeding token limits. It creates optimized reference files
-from multiple sources while automatically handling duplicates and providing
-comprehensive metadata.
+The m1f tool solves a common challenge when working with LLMs: providing
+sufficient context without exceeding token limits. It creates optimized
+reference files from multiple sources while automatically handling duplicates
+and providing comprehensive metadata.
 
 ## Key Features
 
@@ -395,7 +395,6 @@ For each m1f operation, auxiliary files are automatically created alongside the
 main output file:
 
 1. **File List** (`<output>_filelist.txt`)
-
    - Complete list of all files included in the bundle
    - One file path per line
    - Useful for:
@@ -405,7 +404,6 @@ main output file:
      - Selective inclusion/exclusion in future bundles
 
 2. **Directory List** (`<output>_dirlist.txt`)
-
    - Complete list of all directories containing processed files
    - One directory path per line
    - Useful for:
@@ -1598,23 +1596,19 @@ my_project:
 ### Built-in Actions
 
 1. **`minify`** - Reduces file size by removing unnecessary whitespace
-
    - HTML: Removes comments, compresses whitespace
    - CSS: Removes comments, compresses rules
    - JS: Basic minification (removes comments and newlines)
 
 2. **`strip_tags`** - Removes HTML tags
-
    - Use `strip_tags` to list tags to remove
    - Use `preserve_tags` to protect specific tags
 
 3. **`strip_comments`** - Removes comments based on file type
-
    - Python: Removes # comments (preserves docstrings)
    - JS/Java/C/C++: Removes // and /\* \*/ comments
 
 4. **`compress_whitespace`** - Normalizes whitespace
-
    - Replaces multiple spaces with single space
    - Reduces multiple newlines to double newline
 
@@ -1965,7 +1959,6 @@ m1f -s . -o bundle.txt \
    ```
 
 2. **Customize for your project**:
-
    - Identify file types needing special handling
    - Choose appropriate actions
    - Test with a small subset first
@@ -2016,7 +2009,6 @@ The preset system integrates seamlessly with the auto-bundling scripts:
 ### Using Presets with Auto-Bundle
 
 1. **With VS Code Tasks**:
-
    - Use the "Auto Bundle: With Preset" task
    - Select your preset file and optional group
    - The bundle will apply file-specific processing
@@ -2531,25 +2523,21 @@ CLI defaults:
 ### Built-in Actions
 
 1. **`minify`** - Remove unnecessary whitespace and formatting
-
    - Reduces file size
    - Maintains functionality
    - Best for: JS, CSS, HTML
 
 2. **`strip_tags`** - Remove HTML/XML tags
-
    - Extracts text content only
    - Preserves text between tags
    - Best for: HTML, XML, Markdown with HTML
 
 3. **`strip_comments`** - Remove code comments
-
    - Removes single and multi-line comments
    - Language-aware (JS, Python, CSS, etc.)
    - Best for: Production code bundles
 
 4. **`compress_whitespace`** - Reduce multiple spaces/newlines
-
    - Converts multiple spaces to single space
    - Reduces multiple newlines to double newline
    - Best for: Documentation, logs
@@ -2672,13 +2660,11 @@ exclude files:
 Understanding where settings can be applied:
 
 1. **Global Settings Level** (`globals.global_settings`):
-
    - `include_patterns` / `exclude_patterns`
    - `include_extensions` / `exclude_extensions`
    - All general m1f settings
 
 2. **Preset Level** (individual presets):
-
    - `patterns` and `extensions` (for matching)
    - `actions` (processing actions)
    - Override settings like `security_check`
@@ -2710,11 +2696,9 @@ Understanding where settings can be applied:
 2. **Actions vs Settings**
 
    **Actions** (go in `actions` list):
-
    - `minify`, `strip_tags`, `strip_comments`, etc.
 
    **Settings** (separate fields):
-
    - `strip_tags: ["script", "style"]` (configuration)
    - `max_lines: 100` (configuration)
 
@@ -2933,13 +2917,11 @@ m1f --preset environments.yml --preset-group production
 ### Common Issues
 
 1. **Preset not applied**
-
    - Check pattern matching
    - Verify preset group is enabled
    - Use verbose mode to debug
 
 2. **Wrong action order**
-
    - Actions are applied sequentially
    - Order matters (e.g., minify before strip_comments)
 
@@ -3377,13 +3359,11 @@ m1f-init
 #### What m1f-init does:
 
 1. **Links m1f documentation** (creates `m1f/m1f.txt`)
-
    - Makes m1f docs available to AI tools
    - Creates symlink on Linux/macOS, copies on Windows
    - Use `--no-symlink` to skip this step if not needed
 
 2. **Analyzes your project**
-
    - Detects project type and programming languages
    - Supports Python, JavaScript, TypeScript, PHP, Java, C#, Go, Rust, Ruby
    - Creates file and directory listings
@@ -3391,7 +3371,6 @@ m1f-init
    - Automatically cleans up temporary analysis files
 
 3. **Generates initial bundles with auxiliary files**
-
    - `m1f/<project>_complete.txt` - Full project bundle
    - `m1f/<project>_complete_filelist.txt` - List of all included files
    - `m1f/<project>_complete_dirlist.txt` - List of all directories
@@ -5881,18 +5860,15 @@ m1f-init --verbose
 #### What m1f-init Does:
 
 1. **Links m1f Documentation**
-
    - Creates m1f/m1f.txt symlink (or copies on Windows)
    - Makes documentation accessible to AI tools
 
 2. **Project Analysis**
-
    - Detects git repository boundaries
    - Analyzes project structure and languages
    - Creates file and directory lists in `m1f/` directory
 
 3. **Creates Initial Bundles with Auxiliary Files**
-
    - `<project>_complete.txt` - Full project bundle
    - `<project>_complete_filelist.txt` - List of all included files
    - `<project>_complete_dirlist.txt` - List of all directories
@@ -5907,7 +5883,8 @@ m1f-init --verbose
 
 ### Advanced Setup with m1f-claude (Linux/macOS only)
 
-The `m1f-claude` tool enhances project setup by creating topic-specific bundles based on your project's needs:
+The `m1f-claude` tool enhances project setup by creating topic-specific bundles
+based on your project's needs:
 
 ```bash
 # Interactive mode - prompts for project details
@@ -5921,10 +5898,13 @@ m1f-claude --setup \
 
 #### Project Information Options:
 
-- **--project-description**: Brief description of what your project does and its main technologies
-- **--project-priorities**: What's important for this project (e.g., performance, security, documentation, maintainability)
+- **--project-description**: Brief description of what your project does and its
+  main technologies
+- **--project-priorities**: What's important for this project (e.g.,
+  performance, security, documentation, maintainability)
 
 This information helps Claude create better-targeted bundles. For example:
+
 - If "security" is a priority, it will create dedicated auth/security bundles
 - If "documentation" is important, it will create more granular doc bundles
 - If "performance" matters, it will separate performance-critical code
@@ -5973,7 +5953,6 @@ m1f -s src/components -o m1f/components_only.txt
 ```
 
 3. **Configuration File**
-
    - Creates `.m1f.config.yml` with complete and docs bundles
    - Uses `docs_only: true` for documentation bundle
    - No global file size limits
@@ -6248,7 +6227,6 @@ critical data.
    ```
 
 2. **Use the provided validation utilities**:
-
    - `validate_safe_path()` in `tools/m1f/utils.py` ensures paths stay within
      allowed boundaries
    - All user-provided paths should be validated before use
@@ -6688,17 +6666,14 @@ per_file_settings:
 ### From v3.1 to v3.2
 
 1. **Review Security Settings**:
-
    - Default security scanning may flag legitimate content
    - Use `--security-check warn` during migration
 
 2. **Check SSL Requirements**:
-
    - Sites with self-signed certificates need `--ignore-https-errors`
    - Review and update scraping scripts
 
 3. **Update Separator Parsing**:
-
    - If you parse m1f output, update to handle new separator format
    - s1f handles both formats automatically
 

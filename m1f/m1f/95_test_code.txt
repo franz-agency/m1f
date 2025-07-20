@@ -11447,7 +11447,6 @@ def test_security_check_warn():
    ```
 
 2. **Focus on fixing one test at a time**, starting with the simplest:
-
    - `test_no_default_excludes_with_excludes` - likely a logic issue with
      exclude handling
    - `test_filename_mtime_hash_with_add_timestamp` - filename format issue
@@ -11740,7 +11739,6 @@ pytest tests/s1f/test_s1f.py -xvs
 The test suite includes the following test cases:
 
 1. **Separator Style Tests**:
-
    - Tests extraction with Standard separator style
    - Tests extraction with Detailed separator style
    - Tests extraction with Markdown separator style
@@ -11748,7 +11746,6 @@ The test suite includes the following test cases:
      processing)
 
 2. **Feature Tests**:
-
    - Tests force overwrite of existing files
    - Tests setting file timestamps to original or current time
 
@@ -23785,7 +23782,6 @@ python s1f.py --input-file ./output/exotic_encodings_test.txt --destination-dire
    first conversion.
 
 4. The `--respect-encoding` option in s1f works best when:
-
    - The original file's encoding is accurately detected by m1f
    - The conversion to UTF-8 happened without encoding errors
    - The encoding is well-supported by Python's encoding/decoding functions
@@ -23870,7 +23866,6 @@ python s1f.py --input-file ./output/exotic_encodings_test.txt --destination-dire
 
 - All files were successfully extracted
 - Superior encoding preservation compared to UTF-8:
-
   - big5.txt: Successfully restored to Big5 encoding
   - koi8r.txt: Successfully restored to KOI8-R encoding
   - windows1256.txt: Successfully restored to Windows-1256 encoding
@@ -23901,7 +23896,6 @@ The difference in results is significant:
 
 3. The `--respect-encoding` option in s1f works best when combined with
    UTF-16-LE conversion in m1f, especially for:
-
    - Big5 (Traditional Chinese)
    - KOI8-R (Russian)
    - Windows-1256 (Arabic)

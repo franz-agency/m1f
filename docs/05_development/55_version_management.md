@@ -12,7 +12,6 @@ all components.
 ## Files That Use Version
 
 1. **Python Modules**:
-
    - `tools/__init__.py` - imports from `_version.py`
    - `tools/m1f/__init__.py` - imports from `../_version.py`
    - `tools/s1f/__init__.py` - imports from `../_version.py`
@@ -20,11 +19,9 @@ all components.
    - `tools/webscraper/__init__.py` - imports from `../_version.py`
 
 2. **Setup Files**:
-
    - `tools/setup.py` - reads version dynamically from `_version.py`
 
 3. **NPM Package**:
-
    - `package.json` - synced using `sync_version.py`
 
 4. **Main Script**:

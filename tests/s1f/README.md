@@ -49,7 +49,6 @@ pytest tests/s1f/test_s1f.py -xvs
 The test suite includes the following test cases:
 
 1. **Separator Style Tests**:
-
    - Tests extraction with Standard separator style
    - Tests extraction with Detailed separator style
    - Tests extraction with Markdown separator style
@@ -57,7 +56,6 @@ The test suite includes the following test cases:
      processing)
 
 2. **Feature Tests**:
-
    - Tests force overwrite of existing files
    - Tests setting file timestamps to original or current time
 

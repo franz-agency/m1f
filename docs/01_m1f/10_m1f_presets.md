@@ -79,23 +79,19 @@ my_project:
 ### Built-in Actions
 
 1. **`minify`** - Reduces file size by removing unnecessary whitespace
-
    - HTML: Removes comments, compresses whitespace
    - CSS: Removes comments, compresses rules
    - JS: Basic minification (removes comments and newlines)
 
 2. **`strip_tags`** - Removes HTML tags
-
    - Use `strip_tags` to list tags to remove
    - Use `preserve_tags` to protect specific tags
 
 3. **`strip_comments`** - Removes comments based on file type
-
    - Python: Removes # comments (preserves docstrings)
    - JS/Java/C/C++: Removes // and /\* \*/ comments
 
 4. **`compress_whitespace`** - Normalizes whitespace
-
    - Replaces multiple spaces with single space
    - Reduces multiple newlines to double newline
 
@@ -446,7 +442,6 @@ m1f -s . -o bundle.txt \
    ```
 
 2. **Customize for your project**:
-
    - Identify file types needing special handling
    - Choose appropriate actions
    - Test with a small subset first
@@ -497,7 +492,6 @@ The preset system integrates seamlessly with the auto-bundling scripts:
 ### Using Presets with Auto-Bundle
 
 1. **With VS Code Tasks**:
-
    - Use the "Auto Bundle: With Preset" task
    - Select your preset file and optional group
    - The bundle will apply file-specific processing
