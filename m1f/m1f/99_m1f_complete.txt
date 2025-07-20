@@ -3109,6 +3109,13 @@ if __name__ == "__main__":
 ======= examples/test_hook.md ======
 # Test
 
+======= examples/test_hook.py ======
+def test_function():
+    print("This should be formatted by Black")
+    x = 1 + 2
+    y = {"a": 1, "b": 2}
+    return x, y
+
 ======= examples/wp-cli.example.yml ======
 # Example configuration for WP-CLI
 # Copy to `wp-cli.yml` and adjust the settings for your environment.
