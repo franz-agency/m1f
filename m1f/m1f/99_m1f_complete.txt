@@ -3106,6 +3106,9 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
 
+======= examples/test_hook.md ======
+# Test
+
 ======= examples/wp-cli.example.yml ======
 # Example configuration for WP-CLI
 # Copy to `wp-cli.yml` and adjust the settings for your environment.
