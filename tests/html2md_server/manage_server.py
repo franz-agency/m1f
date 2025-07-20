@@ -26,6 +26,7 @@ from pathlib import Path
 # Platform-specific PID file location
 if platform.system() == "Windows":
     import tempfile
+
     PID_FILE = Path(tempfile.gettempdir()) / "html2md_test_server.pid"
 else:
     PID_FILE = Path("/tmp/html2md_test_server.pid")
@@ -33,6 +34,7 @@ else:
 # Optional psutil import for better process management
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     psutil = None
@@ -47,14 +49,14 @@ def start_server():
         return
 
     server_path = Path(__file__).parent / "server.py"
-    
+
     # Platform-specific process creation
     if platform.system() == "Windows":
         process = subprocess.Popen(
             [sys.executable, str(server_path)],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
         )
     else:
         process = subprocess.Popen(
@@ -78,12 +80,12 @@ def stop_server():
 
     try:
         pid = int(PID_FILE.read_text())
-        
+
         # Use psutil for better process management if available
         if HAS_PSUTIL:
             try:
                 process = psutil.Process(pid)
-                
+
                 # Terminate child processes first
                 children = process.children(recursive=True)
                 for child in children:
@@ -91,14 +93,14 @@ def stop_server():
                         child.terminate()
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         pass
-                
+
                 # Wait for children to terminate
                 psutil.wait_procs(children, timeout=3)
-                
+
                 # Terminate the main process
                 process.terminate()
                 print(f"Sent terminate signal to PID {pid}")
-                
+
                 # Wait for graceful shutdown
                 try:
                     process.wait(timeout=5)
@@ -108,7 +110,7 @@ def stop_server():
                     process.kill()
                     process.wait(timeout=2)
                     print("Server forcefully terminated.")
-                    
+
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 print("Process not found or access denied.")
         else:
@@ -116,9 +118,13 @@ def stop_server():
             if platform.system() == "Windows":
                 # Windows doesn't have SIGTERM, use taskkill
                 import subprocess
+
                 try:
-                    subprocess.run(["taskkill", "/F", "/PID", str(pid)], 
-                                 check=True, capture_output=True)
+                    subprocess.run(
+                        ["taskkill", "/F", "/PID", str(pid)],
+                        check=True,
+                        capture_output=True,
+                    )
                     print(f"Terminated process {pid}")
                 except subprocess.CalledProcessError as e:
                     print(f"Failed to terminate process: {e}")
@@ -159,15 +165,17 @@ def status_server():
 
     try:
         pid = int(PID_FILE.read_text())
-        
+
         # Use psutil for better process information if available
         if HAS_PSUTIL:
             try:
                 process = psutil.Process(pid)
-                if process.is_running() and process.name() in ['python', 'python.exe']:
+                if process.is_running() and process.name() in ["python", "python.exe"]:
                     print(f"Server running with PID: {pid}")
                     print(f"Process name: {process.name()}")
-                    print(f"Memory usage: {process.memory_info().rss / 1024 / 1024:.1f} MB")
+                    print(
+                        f"Memory usage: {process.memory_info().rss / 1024 / 1024:.1f} MB"
+                    )
                     print(f"CPU percent: {process.cpu_percent():.1f}%")
                 else:
                     print("Server not running (stale PID file)")
@@ -179,9 +187,13 @@ def status_server():
             # Fallback to basic process check
             if platform.system() == "Windows":
                 import subprocess
+
                 try:
-                    result = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], 
-                                          capture_output=True, text=True)
+                    result = subprocess.run(
+                        ["tasklist", "/FI", f"PID eq {pid}"],
+                        capture_output=True,
+                        text=True,
+                    )
                     if str(pid) in result.stdout:
                         print(f"Server running with PID: {pid}")
                     else:
@@ -197,7 +209,7 @@ def status_server():
                 except ProcessLookupError:
                     print("Server not running (stale PID file)")
                     PID_FILE.unlink()
-                    
+
     except ValueError:
         print("Invalid PID file")
         PID_FILE.unlink()

@@ -33,6 +33,7 @@ import socket
 # Optional import for enhanced process management
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     psutil = None
@@ -48,8 +49,7 @@ import logging
 
 # Configure logging for better debugging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class TestServer:
 
     def __init__(self, port: Optional[int] = None, startup_timeout: int = 30):
         """Initialize TestServer.
-        
+
         Args:
             port: Specific port to use, or None for dynamic allocation
             startup_timeout: Maximum time to wait for server startup (seconds)
@@ -81,23 +81,23 @@ class TestServer:
         # Try multiple times to find a free port to avoid race conditions
         for attempt in range(5):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('', 0))
+                s.bind(("", 0))
                 s.listen(1)
                 port = s.getsockname()[1]
-            
+
             # Verify the port is still free after a small delay
             time.sleep(0.1)
             if not self._is_port_in_use(port):
                 logger.info(f"Found free port {port} on attempt {attempt + 1}")
                 return port
-        
+
         raise RuntimeError("Could not find a free port after 5 attempts")
 
     def _is_port_in_use(self, port: int) -> bool:
         """Check if a port is currently in use."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.bind(('localhost', port))
+                s.bind(("localhost", port))
                 return False
             except OSError:
                 return True
@@ -107,38 +107,50 @@ class TestServer:
         start_time = time.time()
         last_log_time = start_time
         check_count = 0
-        
+
         logger.info(f"Waiting for server to start on port {self.port}...")
-        
+
         while time.time() - start_time < self.startup_timeout:
             check_count += 1
-            
+
             try:
                 # Check if process is still running
                 if self.process and self.process.poll() is not None:
                     # Process has terminated - capture output for debugging
                     stdout, stderr = self.process.communicate(timeout=1)
-                    logger.error(f"Server process terminated unexpectedly. Exit code: {self.process.returncode}")
+                    logger.error(
+                        f"Server process terminated unexpectedly. Exit code: {self.process.returncode}"
+                    )
                     if stdout:
-                        logger.error(f"Server stdout: {stdout.decode('utf-8', errors='replace')}")
+                        logger.error(
+                            f"Server stdout: {stdout.decode('utf-8', errors='replace')}"
+                        )
                     if stderr:
-                        logger.error(f"Server stderr: {stderr.decode('utf-8', errors='replace')}")
+                        logger.error(
+                            f"Server stderr: {stderr.decode('utf-8', errors='replace')}"
+                        )
                     return False
-                
+
                 # Try to connect to the server with progressive timeout
-                timeout = min(1.0 + (check_count * 0.1), 5.0)  # Increase timeout gradually
+                timeout = min(
+                    1.0 + (check_count * 0.1), 5.0
+                )  # Increase timeout gradually
                 async with aiohttp.ClientSession(
-                    timeout=aiohttp.ClientTimeout(total=timeout, connect=timeout/2)
+                    timeout=aiohttp.ClientTimeout(total=timeout, connect=timeout / 2)
                 ) as session:
-                    async with session.get(f"{self.base_url}/api/test-pages") as response:
+                    async with session.get(
+                        f"{self.base_url}/api/test-pages"
+                    ) as response:
                         if response.status == 200:
                             data = await response.json()
-                            logger.info(f"Server started successfully on port {self.port} after {check_count} checks ({time.time() - start_time:.2f}s)")
+                            logger.info(
+                                f"Server started successfully on port {self.port} after {check_count} checks ({time.time() - start_time:.2f}s)"
+                            )
                             logger.info(f"Server has {len(data)} test pages available")
                             return True
                         else:
                             logger.warning(f"Server returned status {response.status}")
-                            
+
             except aiohttp.ClientConnectorError as e:
                 # Connection refused - server not ready yet
                 if time.time() - last_log_time > 2.0:  # Log every 2 seconds
@@ -150,29 +162,33 @@ class TestServer:
                     logger.debug(f"Connection attempt failed: {type(e).__name__}: {e}")
                     last_log_time = time.time()
             except Exception as e:
-                logger.error(f"Unexpected error waiting for server: {type(e).__name__}: {e}")
-            
+                logger.error(
+                    f"Unexpected error waiting for server: {type(e).__name__}: {e}"
+                )
+
             # Progressive backoff - start with short delays, increase over time
             delay = min(0.1 * (1 + check_count // 10), 0.5)
             await asyncio.sleep(delay)
-        
-        logger.error(f"Server failed to start within {self.startup_timeout} seconds after {check_count} checks")
+
+        logger.error(
+            f"Server failed to start within {self.startup_timeout} seconds after {check_count} checks"
+        )
         return False
 
     def _create_server_process(self) -> subprocess.Popen:
         """Create the server process with platform-specific handling."""
         server_path = Path(__file__).parent / "html2md_server" / "server.py"
-        
+
         # Verify server script exists
         if not server_path.exists():
             raise FileNotFoundError(f"Server script not found: {server_path}")
-        
+
         # Environment variables for the server
         env = os.environ.copy()
-        env['FLASK_ENV'] = 'testing'
-        env['FLASK_DEBUG'] = '0'  # Disable debug mode for tests
+        env["FLASK_ENV"] = "testing"
+        env["FLASK_DEBUG"] = "0"  # Disable debug mode for tests
         # Don't set WERKZEUG_RUN_MAIN as it expects WERKZEUG_SERVER_FD to be set too
-        
+
         # Platform-specific process creation
         if platform.system() == "Windows":
             # Windows-specific handling
@@ -183,7 +199,7 @@ class TestServer:
                 env=env,
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
                 bufsize=1,  # Line buffered
-                universal_newlines=True
+                universal_newlines=True,
             )
         else:
             # Unix-like systems
@@ -194,12 +210,12 @@ class TestServer:
                 env=env,
                 preexec_fn=os.setsid,  # Create new process group
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
             )
-        
+
         # Start threads to capture output without blocking
         import threading
-        
+
         def capture_output(pipe, name):
             try:
                 for line in pipe:
@@ -209,70 +225,72 @@ class TestServer:
                             logger.debug(f"Server {name}: {line.strip()}")
             except Exception as e:
                 logger.error(f"Error capturing {name}: {e}")
-        
+
         if process.stdout:
             stdout_thread = threading.Thread(
-                target=capture_output, 
-                args=(process.stdout, "stdout"),
-                daemon=True
+                target=capture_output, args=(process.stdout, "stdout"), daemon=True
             )
             stdout_thread.start()
-        
+
         if process.stderr:
             stderr_thread = threading.Thread(
-                target=capture_output,
-                args=(process.stderr, "stderr"),
-                daemon=True
+                target=capture_output, args=(process.stderr, "stderr"), daemon=True
             )
             stderr_thread.start()
-        
+
         return process
 
     async def start(self) -> bool:
         """Start the test server with health checks.
-        
+
         Returns:
             bool: True if server started successfully, False otherwise
         """
         if self._is_started:
             logger.info(f"Server already started on port {self.port}")
             return True
-        
+
         # Clear previous output
         self._server_output = []
-        
+
         # Try up to 3 times with different ports if needed
         for attempt in range(3):
             # Check if port is already in use
             if self._is_port_in_use(self.port):
-                logger.warning(f"Port {self.port} is already in use, finding a new port...")
+                logger.warning(
+                    f"Port {self.port} is already in use, finding a new port..."
+                )
                 old_port = self.port
                 self.port = self._find_free_port()
                 self.base_url = f"http://localhost:{self.port}"
                 logger.info(f"Changed from port {old_port} to {self.port}")
-            
+
             try:
                 # Set environment variable for the server port
-                os.environ['HTML2MD_SERVER_PORT'] = str(self.port)
-                
-                logger.info(f"Starting server on port {self.port} (attempt {attempt + 1}/3)...")
-                
+                os.environ["HTML2MD_SERVER_PORT"] = str(self.port)
+
+                logger.info(
+                    f"Starting server on port {self.port} (attempt {attempt + 1}/3)..."
+                )
+
                 # Create and start the process
                 self.process = self._create_server_process()
-                
+
                 # Give the process a moment to fail fast if there's an immediate error
                 await asyncio.sleep(0.5)
-                
+
                 # Check if process already terminated
                 if self.process.poll() is not None:
-                    logger.error(f"Server process terminated immediately with code {self.process.returncode}")
+                    logger.error(
+                        f"Server process terminated immediately with code {self.process.returncode}"
+                    )
                     if self._server_output:
                         logger.error("Server output:")
                         for line in self._server_output[-10:]:  # Last 10 lines
                             logger.error(f"  {line}")
                     self._cleanup_process()
                     continue
-                
+
                 # Wait for server to become responsive
                 if await self._wait_for_server():
                     self._is_started = True
@@ -285,35 +303,38 @@ class TestServer:
                         for line in self._server_output[-20:]:  # Last 20 lines
                             logger.error(f"  {line}")
                     self._cleanup_process()
-                    
+
                     # Try a different port on next attempt
                     if attempt < 2:
                         self.port = self._find_free_port()
                         self.base_url = f"http://localhost:{self.port}"
                         await asyncio.sleep(1)  # Brief pause before retry
-                        
+
             except Exception as e:
-                logger.error(f"Failed to start server on attempt {attempt + 1}: {type(e).__name__}: {e}")
+                logger.error(
+                    f"Failed to start server on attempt {attempt + 1}: {type(e).__name__}: {e}"
+                )
                 import traceback
+
                 logger.error(traceback.format_exc())
                 self._cleanup_process()
-                
+
                 if attempt < 2:
                     self.port = self._find_free_port()
                     self.base_url = f"http://localhost:{self.port}"
                     await asyncio.sleep(1)
-        
+
         return False
 
     def _cleanup_process(self):
         """Clean up the server process."""
         if not self.process:
             return
-        
+
         try:
             # Get process info before termination
             pid = self.process.pid
-            
+
             # Try graceful termination first
             if platform.system() == "Windows":
                 # Windows doesn't have SIGTERM, use terminate()
@@ -324,7 +345,7 @@ class TestServer:
                     os.killpg(os.getpgid(pid), signal.SIGTERM)
                 except (ProcessLookupError, OSError):
                     self.process.terminate()
-            
+
             # Wait for process to terminate gracefully
             try:
                 self.process.wait(timeout=5)
@@ -337,13 +358,13 @@ class TestServer:
                         os.killpg(os.getpgid(pid), signal.SIGKILL)
                     except (ProcessLookupError, OSError):
                         self.process.kill()
-                
+
                 # Final wait
                 try:
                     self.process.wait(timeout=2)
                 except subprocess.TimeoutExpired:
                     pass  # Process might be zombie, but we've done our best
-            
+
             # Clean up any child processes using psutil if available
             if HAS_PSUTIL:
                 try:
@@ -354,10 +375,10 @@ class TestServer:
                             child.terminate()
                         except (psutil.NoSuchProcess, psutil.AccessDenied):
                             pass
-                    
+
                     # Wait for children to terminate
                     psutil.wait_procs(children, timeout=3)
-                    
+
                     # Kill any remaining children
                     for child in children:
                         try:
@@ -365,14 +386,14 @@ class TestServer:
                                 child.kill()
                         except (psutil.NoSuchProcess, psutil.AccessDenied):
                             pass
-                            
+
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     # Process already gone
                     pass
-        
+
         except Exception as e:
             print(f"Error during process cleanup: {e}")
-        
+
         finally:
             self.process = None
             self._is_started = False
@@ -380,10 +401,10 @@ class TestServer:
     def stop(self):
         """Stop the test server."""
         self._cleanup_process()
-        
+
         # Clean up environment variable
-        if 'HTML2MD_SERVER_PORT' in os.environ:
-            del os.environ['HTML2MD_SERVER_PORT']
+        if "HTML2MD_SERVER_PORT" in os.environ:
+            del os.environ["HTML2MD_SERVER_PORT"]
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -405,11 +426,13 @@ class TestServer:
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         if loop.is_running():
             # If we're already in an async context, we can't use sync context manager
-            raise RuntimeError("Use async context manager (__aenter__) within async functions")
-        
+            raise RuntimeError(
+                "Use async context manager (__aenter__) within async functions"
+            )
+
         if loop.run_until_complete(self.start()):
             return self
         else:
@@ -423,25 +446,27 @@ class TestServer:
 @pytest.fixture(scope="function")
 def test_server():
     """Fixture to manage test server lifecycle.
-    
+
     Uses function scope to avoid port conflicts between tests.
     Each test gets its own server instance with a unique port.
     """
     server = TestServer()
-    
+
     # Try to start the server with retries
     import asyncio
-    
+
     # Handle existing event loop on different platforms
     try:
         loop = asyncio.get_running_loop()
         # We're already in an async context
-        raise RuntimeError("Cannot use sync test_server fixture in async context. Use async_test_server instead.")
+        raise RuntimeError(
+            "Cannot use sync test_server fixture in async context. Use async_test_server instead."
+        )
     except RuntimeError:
         # No running loop, create a new one
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     try:
         # Run the async server startup
         success = loop.run_until_complete(server.start())
@@ -452,7 +477,7 @@ def test_server():
                 error_msg += "\nServer output:\n"
                 error_msg += "\n".join(server._server_output[-20:])
             raise RuntimeError(error_msg)
-        
+
         yield server
     finally:
         # Clean up
@@ -471,7 +496,7 @@ def test_server():
 @pytest_asyncio.fixture(scope="function")
 async def async_test_server():
     """Async fixture to manage test server lifecycle.
-    
+
     Uses function scope to avoid port conflicts between tests.
     Each test gets its own server instance with a unique port.
     """
@@ -769,7 +794,9 @@ class TestHTML2MDConversion:
 
         # Get list of test pages
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{async_test_server.base_url}/api/test-pages") as resp:
+            async with session.get(
+                f"{async_test_server.base_url}/api/test-pages"
+            ) as resp:
                 pages = await resp.json()
 
         # Convert all pages in parallel

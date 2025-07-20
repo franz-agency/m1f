@@ -152,10 +152,10 @@ async def async_main() -> int:
 def main() -> NoReturn:
     """Entry point for the application."""
     # Set Windows-specific event loop policy to avoid debug messages
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         # This prevents "RuntimeError: Event loop is closed" messages on Windows
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-    
+
     exit_code = asyncio.run(async_main())
     sys.exit(exit_code)
 

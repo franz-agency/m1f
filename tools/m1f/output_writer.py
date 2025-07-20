@@ -300,7 +300,7 @@ class OutputWriter:
                         self.logger.error(f"Failed to process {file_path}: {result}")
                     elif result is not None:
                         processed_files.append((batch[j], result))
-                
+
                 # Force garbage collection after each batch on Windows to release file handles
                 if sys.platform.startswith("win"):
                     gc.collect()

@@ -2786,13 +2786,15 @@ SCRAPE_DELAY = 15  # seconds between requests
 CONTENT_SELECTOR = "main"
 IGNORE_SELECTORS = ["nav", "header", "footer"]
 PROJECT_NAME = "Claude Code Documentation"
-PROJECT_DESCRIPTION = "Official documentation for Claude Code - Anthropic's AI coding assistant"
+PROJECT_DESCRIPTION = (
+    "Official documentation for Claude Code - Anthropic's AI coding assistant"
+)
 
 
 def run_command(cmd, description, capture_output=True):
     """Run a command and handle errors"""
     print(f"🔄 {description}...")
-    
+
     try:
         if capture_output:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -2822,60 +2824,62 @@ Example:
     
 This will create the documentation bundle in the specified directory.
 The final bundle will be in the 'm1f' subdirectory of the markdown folder.
-        """
+        """,
     )
     parser.add_argument("path", help="Target directory path (required)")
     args = parser.parse_args()
-    
+
     # Determine output directory
     output_path = Path(args.path).absolute()
-    
+
     print("🤖 Claude Code Documentation Scraper")
     print("=" * 50)
     print(f"Target: {CLAUDE_DOCS_URL}")
     print(f"Output directory: {output_path}")
     print(f"Total time: ~15-20 minutes")
     print("=" * 50)
-    
+
     # Create output directory if needed
     output_path.mkdir(parents=True, exist_ok=True)
-    
+
     # Save current directory and change to output
     original_dir = Path.cwd()
     os.chdir(output_path)
-    
+
     # Paths for intermediate files
     html_dir = Path("html")
     markdown_dir = Path("claude-code-markdown")
-    
+
     print(f"\n📁 Working directory: {output_path.absolute()}")
-    
+
     # Step 1: Scrape Claude Code documentation
     print(f"\n{'='*50}")
     print("STEP 1: Scraping Claude Code Documentation")
     print(f"{'='*50}")
     print(f"📄 Will download ~30 HTML pages from Claude Code docs")
     print(f"⏱️  Expected duration: 7-8 minutes (15s delay between pages)")
-    
+
     scrape_cmd = [
         "m1f-scrape",
         CLAUDE_DOCS_URL,
-        "-o", str(html_dir),
-        "--request-delay", str(SCRAPE_DELAY),
-        "-v"
+        "-o",
+        str(html_dir),
+        "--request-delay",
+        str(SCRAPE_DELAY),
+        "-v",
     ]
-    
+
     success, _ = run_command(scrape_cmd, "Scraping documentation", capture_output=False)
     if not success:
         print("\n💡 Tip: Make sure m1f-scrape is installed:")
         print("   pip install m1f")
         return 1
-    
+
     # Verify scraping results
     if not html_dir.exists():
         print("❌ HTML directory not created")
         return 1
-    
+
     # Find the actual scraped directory (docs.anthropic.com/en/docs/claude-code)
     scraped_dir = html_dir / "docs.anthropic.com" / "en" / "docs" / "claude-code"
     if scraped_dir.exists():
@@ -2889,36 +2893,41 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
         shutil.rmtree(html_dir)
         html_dir = new_html_dir
         print(f"✅ Moved content to: {html_dir}")
-    
+
     html_files = list(html_dir.glob("**/*.html"))
     print(f"✅ Scraped {len(html_files)} HTML files")
-    
+
     if len(html_files) < 5:
-        print("⚠️  Warning: Fewer files than expected. The site structure may have changed.")
-    
+        print(
+            "⚠️  Warning: Fewer files than expected. The site structure may have changed."
+        )
+
     # Step 2: Analyze HTML structure with Claude
     print(f"\n{'='*50}")
     print("STEP 2: Analyzing HTML Structure with Claude")
     print(f"{'='*50}")
     print(f"🤖 Claude will analyze 5 representative HTML files")
     print(f"⏱️  Expected duration: 5-8 minutes")
-    
+
     analyze_cmd = [
         "m1f-html2md",
         "analyze",
         str(html_dir),
         "--claude",
-        "--project-description", PROJECT_DESCRIPTION
+        "--project-description",
+        PROJECT_DESCRIPTION,
     ]
-    
+
     print("🤖 Using Claude AI for intelligent HTML analysis...")
-    success, output = run_command(analyze_cmd, "Analyzing HTML with Claude", capture_output=False)
-    
+    success, output = run_command(
+        analyze_cmd, "Analyzing HTML with Claude", capture_output=False
+    )
+
     # Check if Claude created the config file
     # The analyze command creates html2md_config.yaml in the HTML directory
     config_file = html_dir / "html2md_config.yaml"
     use_config = False
-    
+
     if success and config_file.exists():
         print(f"📊 Claude analysis complete")
         print(f"   📌 Using Claude's config: {config_file}")
@@ -2928,21 +2937,16 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
             print("⚠️  Claude analysis failed, using defaults")
         if not config_file.exists():
             print("⚠️  Config file not created, using defaults")
-    
+
     # Step 3: Convert HTML to Markdown
     print(f"\n{'='*50}")
     print("STEP 3: Converting to Markdown")
     print(f"{'='*50}")
     print(f"📄 Converting all {len(html_files)} HTML files to Markdown")
     print(f"⏱️  Expected duration: <1 minute")
-    
-    convert_cmd = [
-        "m1f-html2md",
-        "convert",
-        str(html_dir),
-        "-o", str(markdown_dir)
-    ]
-    
+
+    convert_cmd = ["m1f-html2md", "convert", str(html_dir), "-o", str(markdown_dir)]
+
     # Use Claude's config file if it exists
     if use_config and config_file.exists():
         convert_cmd.extend(["-c", str(config_file)])
@@ -2953,96 +2957,99 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
         for selector in IGNORE_SELECTORS:
             convert_cmd.extend(["--ignore-selectors", selector])
         print(f"   📌 Using default selectors")
-    
-    success, _ = run_command(convert_cmd, "Converting HTML to Markdown", capture_output=False)
+
+    success, _ = run_command(
+        convert_cmd, "Converting HTML to Markdown", capture_output=False
+    )
     if not success:
         return 1
-    
+
     # Verify conversion
     md_files = list(markdown_dir.glob("**/*.md"))
     print(f"✅ Converted {len(md_files)} Markdown files")
-    
+
     # Step 4: Run m1f-init in markdown directory
     print(f"\n{'='*50}")
     print("STEP 4: Creating m1f Bundle")
     print(f"{'='*50}")
     print(f"📦 Running m1f-init to create documentation bundle")
     print(f"⏱️  Expected duration: <1 minute")
-    
+
     # Change to markdown directory for m1f-init
     original_output_dir = Path.cwd()
     os.chdir(markdown_dir)
-    
+
     init_cmd = ["m1f-init"]
     success, _ = run_command(init_cmd, "Running m1f-init", capture_output=False)
-    
+
     # Change back
     os.chdir(original_output_dir)
-    
+
     if not success:
         print("❌ m1f-init failed!")
         return 1
-    
+
     # Find the bundle created by m1f-init
     bundle_dir = markdown_dir / "m1f"
     if not bundle_dir.exists():
         print("❌ Bundle directory not created by m1f-init")
         return 1
-    
+
     # Find the documentation bundle file
     bundle_files = list(bundle_dir.glob("*_docs.txt"))
     if not bundle_files:
         # Try to find any .txt file in the m1f directory
         bundle_files = list(bundle_dir.glob("*.txt"))
-    
+
     if not bundle_files:
         print("❌ No bundle file found in m1f directory")
         return 1
-    
+
     # Use the first bundle file found
     bundle_path = bundle_files[0].absolute()
-    
+
     # Get bundle stats
     bundle_size = bundle_path.stat().st_size / (1024 * 1024)  # MB
-    
+
     # Try to estimate tokens
     print("\n📊 Estimating tokens...")
     token_cmd = ["m1f-token-counter", str(bundle_path)]
     success, output = run_command(token_cmd, "Counting tokens")
-    
+
     token_count = "unknown"
     if success and output:
         # Extract token count from output
         import re
-        match = re.search(r'(\d+)\s*tokens', output)
+
+        match = re.search(r"(\d+)\s*tokens", output)
         if match:
             token_count = f"{int(match.group(1)):,}"
-    
+
     # Final summary
     print(f"\n{'='*50}")
     print("✅ DOCUMENTATION BUNDLE CREATED")
     print(f"{'='*50}")
-    
+
     print(f"\n📦 Bundle location:")
     print(f"   {bundle_path}")
-    
+
     print(f"\n📊 Bundle statistics:")
     print(f"   Size: {bundle_size:.2f} MB")
     print(f"   Tokens: ~{token_count}")
     print(f"   Source: {len(html_files)} HTML → {len(md_files)} Markdown files")
-    
+
     print(f"\n💡 Usage options:")
     print(f"   1. Create a symlink: ln -s {bundle_path} ~/claude-code-docs.txt")
     print(f"   2. Copy the file: cp {bundle_path} <destination>")
     print(f"   3. Use with Claude: m1f-claude {bundle_path}")
-    
+
     print(f"\n🧹 Cleanup (optional):")
     print(f"   Remove HTML: rm -rf {output_path}/claude-code-html")
     print(f"   Keep Markdown: {markdown_dir} (contains the bundle)")
-    
+
     # Change back to original directory
     os.chdir(original_dir)
-    
+
     return 0
 
 
@@ -3055,6 +3062,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n\n❌ Unexpected error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
@@ -8033,7 +8041,7 @@ if __name__ == "__main__":
     # Add the parent directory to sys.path for proper imports
     script_dir = Path(__file__).parent
     parent_dir = script_dir.parent
-    
+
     # Try different import strategies based on execution context
     try:
         # First try as if we're in the m1f package
@@ -8207,10 +8215,10 @@ async def async_main() -> int:
 def main() -> NoReturn:
     """Entry point for the application."""
     # Set Windows-specific event loop policy to avoid debug messages
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         # This prevents "RuntimeError: Event loop is closed" messages on Windows
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-    
+
     exit_code = asyncio.run(async_main())
     sys.exit(exit_code)
 
@@ -8274,16 +8282,13 @@ def find_claude_executable() -> Optional[str]:
     # First check if claude is available via npx
     try:
         result = subprocess.run(
-            ["npx", "claude", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["npx", "claude", "--version"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
             return "npx claude"
     except:
         pass
-    
+
     # Check common Claude installation paths
     possible_paths = [
         # Global npm install
@@ -8297,31 +8302,28 @@ def find_claude_executable() -> Optional[str]:
         Path.home() / ".npm-global" / "bin" / "claude",
         # Check if npm prefix is set
     ]
-    
+
     # Add npm global bin to search if npm is available
     try:
         npm_prefix = subprocess.run(
             ["npm", "config", "get", "prefix"],
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         if npm_prefix.returncode == 0:
             npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
             possible_paths.append(npm_bin)
     except:
         pass
-    
+
     # Check each possible path
     for path in possible_paths:
         if isinstance(path, str):
             # Try as command in PATH
             try:
                 result = subprocess.run(
-                    [path, "--version"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
+                    [path, "--version"], capture_output=True, text=True, timeout=5
                 )
                 if result.returncode == 0:
                     return path
@@ -8335,13 +8337,13 @@ def find_claude_executable() -> Optional[str]:
                         [str(path), "--version"],
                         capture_output=True,
                         text=True,
-                        timeout=5
+                        timeout=5,
                     )
                     if result.returncode == 0:
                         return str(path)
                 except:
                     continue
-    
+
     return None
 
 
@@ -8371,7 +8373,9 @@ class M1FClaude:
         self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
         self.debug = debug  # Enable debug output
         self.verbose = verbose  # Show all prompts and parameters
-        self.project_description = project_description  # User-provided project description
+        self.project_description = (
+            project_description  # User-provided project description
+        )
         self.project_priorities = project_priorities  # User-provided project priorities
 
         # Check for m1f documentation in various locations
@@ -8481,7 +8485,7 @@ class M1FClaude:
 
                 # Analyze the file and directory lists to determine project type
                 project_context = self._analyze_project_files(files_list, dirs_list)
-                
+
                 # Add user-provided info if available
                 if self.project_description:
                     project_context["user_description"] = self.project_description
@@ -9449,7 +9453,7 @@ I'll analyze your project and create an optimal m1f configuration that:
         try:
             # Find claude executable
             claude_path = find_claude_executable()
-            
+
             if not claude_path:
                 if self.debug:
                     logger.info("Claude Code not found via subprocess")
@@ -9587,25 +9591,31 @@ I'll analyze your project and create an optimal m1f configuration that:
         if not self.project_description and not self.project_priorities:
             print("\n📝 Project Information")
             print("=" * 50)
-            print("Please provide some information about your project to help create better bundles.")
+            print(
+                "Please provide some information about your project to help create better bundles."
+            )
             print()
-            
+
             # Interactive project description input
             if not self.project_description:
                 print("📋 Project Description")
-                print("Describe your project briefly (what it does, main technologies):")
+                print(
+                    "Describe your project briefly (what it does, main technologies):"
+                )
                 self.project_description = input("> ").strip()
                 if not self.project_description:
                     self.project_description = "Not provided"
-            
+
             # Interactive project priorities input
             if not self.project_priorities:
-                print("\n🎯 Project Priorities") 
-                print("What's important for this project? (e.g., performance, security, maintainability, documentation):")
+                print("\n🎯 Project Priorities")
+                print(
+                    "What's important for this project? (e.g., performance, security, maintainability, documentation):"
+                )
                 self.project_priorities = input("> ").strip()
                 if not self.project_priorities:
                     self.project_priorities = "Not provided"
-            
+
             print()
 
         # Check if we're in a git repository
@@ -9643,12 +9653,14 @@ I'll analyze your project and create an optimal m1f configuration that:
         # Check for Claude Code availability
         has_claude_code = False
         claude_path = find_claude_executable()
-        
+
         if claude_path:
             print(f"✅ Claude Code is available")
             has_claude_code = True
         else:
-            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
+            print(
+                f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
+            )
             return
 
         print(f"\n📊 Project Analysis")
@@ -9709,7 +9721,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Analyze the file and directory lists to determine project type
             context = self._analyze_project_files(files_list, dirs_list)
-            
+
             # Add user-provided info to context
             if self.project_description:
                 context["user_description"] = self.project_description
@@ -9724,7 +9736,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             print(f"💻 Languages: {context.get('languages', 'Unknown')}")
             if context.get("main_code_dirs"):
                 print(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
-            
+
             # Display user-provided info
             if self.project_description:
                 print(f"\n📝 User Description: {self.project_description}")
@@ -9776,7 +9788,7 @@ I'll analyze your project and create an optimal m1f configuration that:
         try:
             # PHASE 1: Run Claude with streaming output
             runner = M1FClaudeRunner(claude_binary=claude_path)
-            
+
             # Execute with streaming and timeout handling
             returncode, stdout, stderr = runner.run_claude_streaming(
                 prompt=segmentation_prompt,
@@ -9784,10 +9796,10 @@ I'll analyze your project and create an optimal m1f configuration that:
                 allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep",
                 add_dir=str(self.project_path),
                 timeout=300,  # 5 minutes timeout
-                show_output=True
+                show_output=True,
             )
-            
-            result = type('Result', (), {'returncode': returncode})
+
+            result = type("Result", (), {"returncode": returncode})
 
             if result.returncode == 0:
                 print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
@@ -9834,16 +9846,18 @@ I'll analyze your project and create an optimal m1f configuration that:
             )
 
             # Run Claude again to verify and improve
-            returncode_verify, stdout_verify, stderr_verify = runner.run_claude_streaming(
-                prompt=verification_prompt,
-                working_dir=str(self.project_path),
-                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
-                add_dir=str(self.project_path),
-                timeout=300,  # 5 minutes timeout
-                show_output=True
+            returncode_verify, stdout_verify, stderr_verify = (
+                runner.run_claude_streaming(
+                    prompt=verification_prompt,
+                    working_dir=str(self.project_path),
+                    allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
+                    add_dir=str(self.project_path),
+                    timeout=300,  # 5 minutes timeout
+                    show_output=True,
+                )
             )
-            
-            verify_result = type('Result', (), {'returncode': returncode_verify})
+
+            verify_result = type("Result", (), {"returncode": returncode_verify})
 
             if verify_result.returncode == 0:
                 print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
@@ -10001,9 +10015,11 @@ bundles:
             # Find claude executable
             claude_cmd = find_claude_executable()
             if not claude_cmd:
-                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
+                logger.error(
+                    "Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
+                )
                 return None, None
-            
+
             # Build command - use stream-json for real-time feedback
             if claude_cmd == "npx claude":
                 cmd = [
@@ -10474,7 +10490,7 @@ First time? Run 'm1f-init' to set up your project!
     )
 
     parser.add_argument(
-        "--project-priorities", 
+        "--project-priorities",
         type=str,
         help="What's important for this project (performance, security, maintainability, etc.)",
     )
@@ -10488,11 +10504,11 @@ First time? Run 'm1f-init' to set up your project!
 
     # Initialize m1f-claude
     m1f_claude = M1FClaude(
-        allowed_tools=args.allowed_tools, 
-        debug=args.debug, 
+        allowed_tools=args.allowed_tools,
+        debug=args.debug,
         verbose=args.verbose,
         project_description=args.project_description,
-        project_priorities=args.project_priorities
+        project_priorities=args.project_priorities,
     )
 
     # Check status
@@ -10614,7 +10630,7 @@ class M1FClaudeRunner:
                 ["npm", "config", "get", "prefix"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
             if npm_prefix.returncode == 0:
                 npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
@@ -10696,7 +10712,7 @@ class M1FClaudeRunner:
                 bufsize=1,
                 universal_newlines=True,
             )
-            
+
             # Send the prompt and close stdin
             self.process.stdin.write(prompt)
             self.process.stdin.close()
@@ -10704,7 +10720,7 @@ class M1FClaudeRunner:
             # Track timing
             start_time = time.time()
             last_output_time = start_time
-            
+
             # Progress indicators
             spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
             spinner_idx = 0
@@ -10714,7 +10730,7 @@ class M1FClaudeRunner:
                 line = self.process.stdout.readline()
                 if line == "" and self.process.poll() is not None:
                     break
-                    
+
                 if line:
                     line = line.rstrip()
                     stdout_lines.append(line)
@@ -10727,7 +10743,7 @@ class M1FClaudeRunner:
                             print(f"[{elapsed:5.1f}s] {line[:147]}...")
                         else:
                             print(f"[{elapsed:5.1f}s] {line}")
-                    
+
                     if output_handler:
                         output_handler(line, elapsed)
 
@@ -10736,27 +10752,39 @@ class M1FClaudeRunner:
                     # No output, check for timeout
                     current_time = time.time()
                     elapsed = current_time - start_time
-                    
+
                     # Check absolute timeout
                     if elapsed > actual_timeout:
                         if show_output:
                             print(f"\n⏰ Claude timed out after {actual_timeout}s")
                         self.process.kill()
-                        return -1, "\n".join(stdout_lines), f"Process timed out after {actual_timeout}s"
-                    
+                        return (
+                            -1,
+                            "\n".join(stdout_lines),
+                            f"Process timed out after {actual_timeout}s",
+                        )
+
                     # Check inactivity timeout (60 seconds)
                     if current_time - last_output_time > 60:
                         if show_output:
-                            print(f"\n⏰ Claude inactive for 60s (total time: {elapsed:.1f}s)")
+                            print(
+                                f"\n⏰ Claude inactive for 60s (total time: {elapsed:.1f}s)"
+                            )
                         self.process.kill()
-                        return -1, "\n".join(stdout_lines), "Process inactive for 60 seconds"
-                    
+                        return (
+                            -1,
+                            "\n".join(stdout_lines),
+                            "Process inactive for 60 seconds",
+                        )
+
                     # Show spinner to indicate we're still waiting
                     if show_output and int(elapsed) % 5 == 0:
-                        sys.stdout.write(f"\r⏳ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]")
+                        sys.stdout.write(
+                            f"\r⏳ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]"
+                        )
                         sys.stdout.flush()
                         spinner_idx = (spinner_idx + 1) % len(spinner_chars)
-                    
+
                     time.sleep(0.1)  # Small delay to prevent busy waiting
 
             # Get any remaining output
@@ -10852,11 +10880,12 @@ class M1FInit:
         self.project_path = Path.cwd()
         self.is_windows = platform.system() == "Windows"
         self.created_files = []  # Track created files
-        
+
         # Create safe project name (remove special characters)
         import re
+
         project_name = self.project_path.name
-        self.safe_name = re.sub(r'[^a-zA-Z0-9_.-]', '_', project_name)
+        self.safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", project_name)
 
         # Find m1f installation directory
         self.m1f_root = Path(__file__).parent.parent
@@ -10889,7 +10918,7 @@ class M1FInit:
             print(f"\n📦 Creating Initial Bundles")
             print("=" * 30)
             self._create_bundles(context)
-            
+
             # Step 5: Create config
             self._create_config(context)
 
@@ -10900,7 +10929,7 @@ class M1FInit:
         """Link m1f documentation (replaces m1f-link functionality)."""
         if self.no_symlink:
             return
-            
+
         print("\n📋 Setting up m1f documentation...")
 
         # Create m1f directory if it doesn't exist
@@ -10970,7 +10999,7 @@ class M1FInit:
         else:
             print(f"⚠️  No m1f configuration found - will create one")
             return False
-    
+
     def _run_m1f_update(self):
         """Run m1f-update to create bundles from existing config."""
         try:
@@ -10978,28 +11007,31 @@ class M1FInit:
             cmd = [sys.executable, "-m", "tools.m1f.auto_bundle"]
             if self.verbose:
                 cmd.append("--verbose")
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
-            
+
             if result.returncode == 0:
                 # Parse output to track created files
-                for line in result.stdout.split('\n'):
-                    if '[SUCCESS] Created:' in line:
-                        bundle_name = line.split('Created:')[1].strip()
+                for line in result.stdout.split("\n"):
+                    if "[SUCCESS] Created:" in line:
+                        bundle_name = line.split("Created:")[1].strip()
                         # Get the output path from config
                         import yaml
+
                         config_path = self.project_path / ".m1f.config.yml"
-                        with open(config_path, 'r') as f:
+                        with open(config_path, "r") as f:
                             config = yaml.safe_load(f)
-                        
+
                         # Find the bundle output path
-                        for bundle_key, bundle_config in config.get('bundles', {}).items():
+                        for bundle_key, bundle_config in config.get(
+                            "bundles", {}
+                        ).items():
                             if bundle_key == bundle_name:
-                                output_path = bundle_config.get('output', '')
+                                output_path = bundle_config.get("output", "")
                                 if output_path:
                                     self.created_files.append(output_path)
                                 break
-                
+
                 if not self.created_files:
                     # Fallback: list files in m1f directory
                     m1f_dir = self.project_path / "m1f"
@@ -11009,7 +11041,7 @@ class M1FInit:
                                 self.created_files.append(f"m1f/{file.name}")
             else:
                 print(f"⚠️  Failed to run m1f-update: {result.stderr}")
-                
+
         except Exception as e:
             print(f"⚠️  Error running m1f-update: {e}")
 
@@ -11039,7 +11071,7 @@ class M1FInit:
                 "m1f/",
                 "--quiet",  # Suppress console output and log file creation
             ]
-            
+
             # Only use .gitignore if it exists in current directory
             if (self.project_path / ".gitignore").exists():
                 cmd.extend(["--exclude-paths-file", ".gitignore"])
@@ -11066,7 +11098,7 @@ class M1FInit:
 
             # Analyze files to determine project type
             context = self._determine_project_type(files_list, dirs_list)
-            
+
             # Clean up temporary analysis files
             if filelist_path.exists():
                 filelist_path.unlink()
@@ -11075,14 +11107,21 @@ class M1FInit:
 
             print(f"✅ Found {len(files_list)} files in {len(dirs_list)} directories")
             print(f"📁 Project Type: {context.get('type', 'Unknown')}")
-            if context.get('languages') != 'No programming languages detected':
-                print(f"💻 Programming Languages: {context.get('languages', 'Unknown')}")
+            if context.get("languages") != "No programming languages detected":
+                print(
+                    f"💻 Programming Languages: {context.get('languages', 'Unknown')}"
+                )
 
             return context
 
         except Exception as e:
             print(f"⚠️  Failed to analyze project: {e}")
-            return {"type": "Unknown", "languages": "No programming languages detected", "files": [], "dirs": []}
+            return {
+                "type": "Unknown",
+                "languages": "No programming languages detected",
+                "files": [],
+                "dirs": [],
+            }
 
     def _determine_project_type(self, files: List[str], dirs: List[str]) -> Dict:
         """Determine project type from file and directory lists."""
@@ -11096,9 +11135,9 @@ class M1FInit:
 
         # Count file extensions
         ext_count = {}
-        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
+        doc_extensions = {".md", ".txt", ".rst", ".adoc", ".org"}
         doc_file_count = 0
-        
+
         for file in files:
             ext = Path(file).suffix.lower()
             if ext:
@@ -11139,15 +11178,20 @@ class M1FInit:
                 context["frameworks"].append("Docusaurus")
             elif any("hugo" in f.lower() or "jekyll" in f.lower() for f in files):
                 context["frameworks"].append("Static Site Generator")
-        
+
         # Determine project type from files (if not already documentation)
         if context["type"] == "Unknown":
             # Check all project type indicators first
             has_package_json = any("package.json" in f for f in files)
             has_python_indicators = any(
-                indicator in f 
-                for f in files 
-                for indicator in ["requirements.txt", "setup.py", "pyproject.toml", "__init__.py"]
+                indicator in f
+                for f in files
+                for indicator in [
+                    "requirements.txt",
+                    "setup.py",
+                    "pyproject.toml",
+                    "__init__.py",
+                ]
             )
             has_composer = any("composer.json" in f for f in files)
             has_maven = any("pom.xml" in f for f in files)
@@ -11155,7 +11199,7 @@ class M1FInit:
             has_cargo = any("Cargo.toml" in f for f in files)
             has_go_mod = any("go.mod" in f for f in files)
             has_gemfile = any("Gemfile" in f for f in files)
-            
+
             # Count language files
             py_count = ext_count.get(".py", 0)
             js_count = ext_count.get(".js", 0) + ext_count.get(".jsx", 0)
@@ -11166,7 +11210,7 @@ class M1FInit:
             rust_count = ext_count.get(".rs", 0)
             cs_count = ext_count.get(".cs", 0)
             rb_count = ext_count.get(".rb", 0)
-            
+
             # Determine primary language based on file count
             # Create a list of (count, language, has_indicator) tuples
             language_counts = [
@@ -11178,20 +11222,20 @@ class M1FInit:
                 (go_count, "Go", has_go_mod),
                 (rust_count, "Rust", has_cargo),
                 (cs_count, "C#", False),  # No specific indicator for C#
-                (rb_count, "Ruby", has_gemfile)
+                (rb_count, "Ruby", has_gemfile),
             ]
-            
+
             # Sort by count (descending) to find the language with most files
             language_counts.sort(key=lambda x: x[0], reverse=True)
-            
+
             # Get the language with the most files
             max_count = language_counts[0][0]
-            
+
             if max_count > 0:
                 # Find the primary language (the one with most files)
                 primary_lang = language_counts[0][1]
                 primary_has_indicator = language_counts[0][2]
-                
+
                 # Determine project type based on the primary language
                 if primary_lang == "Python":
                     context["type"] = "Python Project"
@@ -11292,17 +11336,19 @@ class M1FInit:
         """Create complete and docs bundles."""
         m1f_dir = self.project_path / "m1f"
         project_name = self.safe_name
-        
+
         # Check if all files in the project are documentation files
-        files_list = context.get('files', [])
-        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
-        
+        files_list = context.get("files", [])
+        doc_extensions = {".md", ".txt", ".rst", ".adoc", ".org"}
+
         # Count doc files
-        doc_file_count = sum(1 for f in files_list if Path(f).suffix.lower() in doc_extensions)
+        doc_file_count = sum(
+            1 for f in files_list if Path(f).suffix.lower() in doc_extensions
+        )
         total_file_count = len(files_list)
-        
+
         # If all files are docs, only create docs bundle
-        only_docs = (doc_file_count == total_file_count and total_file_count > 0)
+        only_docs = doc_file_count == total_file_count and total_file_count > 0
 
         # Create complete bundle only if not all files are docs
         if not only_docs:
@@ -11323,7 +11369,7 @@ class M1FInit:
                 "--minimal-output",  # Don't create auxiliary files
                 "--quiet",  # Suppress console output and log file creation
             ]
-            
+
             # Only use .gitignore if it exists in current directory
             if (self.project_path / ".gitignore").exists():
                 idx = complete_cmd.index("--excludes")
@@ -11361,7 +11407,7 @@ class M1FInit:
             "--minimal-output",  # Don't create auxiliary files
             "--quiet",  # Suppress console output and log file creation
         ]
-        
+
         # Only use .gitignore if it exists in current directory
         if (self.project_path / ".gitignore").exists():
             idx = docs_cmd.index("--excludes")
@@ -11378,7 +11424,9 @@ class M1FInit:
             print(f"✅ Created: m1f/{project_name}_docs.txt")
             self.created_files.append(f"m1f/{project_name}_docs.txt")
             if only_docs:
-                print(f"ℹ️  Skipped complete bundle (all {total_file_count} files are documentation)")
+                print(
+                    f"ℹ️  Skipped complete bundle (all {total_file_count} files are documentation)"
+                )
         else:
             print(f"⚠️  Failed to create docs bundle: {result.stderr}")
 
@@ -11388,13 +11436,15 @@ class M1FInit:
         config_path = self.project_path / ".m1f.config.yml"
 
         print(f"\n📝 Creating .m1f.config.yml...")
-        
+
         # Check if all files are documentation
-        files_list = context.get('files', [])
-        doc_extensions = {'.md', '.txt', '.rst', '.adoc', '.org'}
-        doc_file_count = sum(1 for f in files_list if Path(f).suffix.lower() in doc_extensions)
+        files_list = context.get("files", [])
+        doc_extensions = {".md", ".txt", ".rst", ".adoc", ".org"}
+        doc_file_count = sum(
+            1 for f in files_list if Path(f).suffix.lower() in doc_extensions
+        )
         total_file_count = len(files_list)
-        only_docs = (doc_file_count == total_file_count and total_file_count > 0)
+        only_docs = doc_file_count == total_file_count and total_file_count > 0
 
         # Build bundles section based on project content
         if only_docs:
@@ -11460,21 +11510,25 @@ global:
     def _show_next_steps(self):
         """Show next steps to the user."""
         print(f"\n✅ Quick Setup Complete!")
-        
+
         # Show created files nicely formatted
         if self.created_files:
-            print(f"\n📁 {'Here is your file:' if len(self.created_files) == 1 else 'Here are your files:'}\n")
+            print(
+                f"\n📁 {'Here is your file:' if len(self.created_files) == 1 else 'Here are your files:'}\n"
+            )
             for file in self.created_files:
                 print(f"   • {file}")
             print()  # Empty line for spacing
-        
+
         # Show next steps
         print(f"📌 Next Steps:")
         print(f"1. Use 'm1f-update' to regenerate bundles after changes")
         print(f"2. Reference @m1f/m1f.txt in AI tools for m1f documentation")
-        
+
         # Show preview command only for actual bundle files
-        bundle_files = [f for f in self.created_files if f.endswith('.txt') and 'symlink' not in f]
+        bundle_files = [
+            f for f in self.created_files if f.endswith(".txt") and "symlink" not in f
+        ]
         if bundle_files:
             # Use the first bundle file for the preview example
             first_bundle = bundle_files[0]
@@ -27450,7 +27504,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Set Windows-specific event loop policy to avoid debug messages
-if sys.platform.startswith('win'):
+if sys.platform.startswith("win"):
     # This prevents "RuntimeError: Event loop is closed" messages on Windows
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
@@ -27810,7 +27864,7 @@ class AutoBundler:
                 # Add includes patterns
                 cmd_parts.append("--includes")
                 cmd_parts.extend(source["includes"])
-                
+
             # Collect excludes from source
             if "excludes" in source:
                 all_excludes.extend(source["excludes"])
@@ -27887,7 +27941,7 @@ class AutoBundler:
         # Other options
         if bundle_config.get("filename_mtime_hash"):
             cmd_parts.append("--filename-mtime-hash")
-            
+
         if bundle_config.get("docs_only"):
             cmd_parts.append("--docs-only")
 
@@ -29646,9 +29700,7 @@ class FileCombiner:
         if self.config.source_directories:
             for source_dir in self.config.source_directories:
                 if not source_dir.exists():
-                    raise FileNotFoundError(
-                        f"Source directory not found: {source_dir}"
-                    )
+                    raise FileNotFoundError(f"Source directory not found: {source_dir}")
 
         if self.config.input_file and not self.config.input_file.exists():
             raise FileNotFoundError(f"Input file not found: {self.config.input_file}")
@@ -29718,9 +29770,13 @@ class FileCombiner:
         """Log initial information about the processing."""
         if self.config.source_directories:
             if len(self.config.source_directories) == 1:
-                self.logger.info(f"Source directory: {self.config.source_directories[0]}")
+                self.logger.info(
+                    f"Source directory: {self.config.source_directories[0]}"
+                )
             else:
-                self.logger.info(f"Source directories: {', '.join(str(d) for d in self.config.source_directories)}")
+                self.logger.info(
+                    f"Source directories: {', '.join(str(d) for d in self.config.source_directories)}"
+                )
 
         if self.config.input_file:
             self.logger.info(f"Input file: {self.config.input_file}")
@@ -29876,7 +29932,11 @@ class FileCombiner:
     async def _create_empty_output(self, output_path: Path) -> None:
         """Create an empty output file with a note."""
         try:
-            source = ", ".join(str(d) for d in self.config.source_directories) if self.config.source_directories else "input file"
+            source = (
+                ", ".join(str(d) for d in self.config.source_directories)
+                if self.config.source_directories
+                else "input file"
+            )
             content = f"# No files processed from {source}\n"
 
             def write_empty():
@@ -30057,7 +30117,7 @@ class EncodingHandler:
 
             # Try to decode as UTF-8 first (most common encoding)
             try:
-                raw_data.decode('utf-8', errors='strict')
+                raw_data.decode("utf-8", errors="strict")
                 self.logger.debug(f"Successfully decoded {file_path} as UTF-8")
                 return "utf-8"
             except UnicodeDecodeError:
@@ -30069,7 +30129,9 @@ class EncodingHandler:
 
             # If chardet returns None or empty encoding, default to utf-8
             if not result or not result.get("encoding"):
-                self.logger.debug(f"chardet returned no encoding for {file_path}, using UTF-8")
+                self.logger.debug(
+                    f"chardet returned no encoding for {file_path}, using UTF-8"
+                )
                 return "utf-8"
 
             encoding = result["encoding"]
@@ -30107,7 +30169,7 @@ class EncodingHandler:
                             f"Preferring UTF-8 over {encoding} for documentation file {file_path}"
                         )
                         return "utf-8"
-                
+
                 # For other files, only use Windows-1252 if we have high confidence
                 # and the file really can't be decoded as UTF-8
                 if confidence < 0.9:
@@ -30154,10 +30216,12 @@ class EncodingHandler:
                     f"Initial read failed for {file_path} with {source_encoding}, "
                     f"retrying with error replacement"
                 )
-                with open(file_path, "r", encoding=source_encoding, errors="replace") as f:
+                with open(
+                    file_path, "r", encoding=source_encoding, errors="replace"
+                ) as f:
                     content = f.read()
                 had_errors = True
-            
+
             # Explicitly ensure file handle is released
             f = None
 
@@ -30214,7 +30278,9 @@ class EncodingHandler:
                 # Try UTF-8 first, then fallback to latin-1
                 for fallback_encoding in ["utf-8", "latin-1"]:
                     try:
-                        content = binary_data.decode(fallback_encoding, errors="replace")
+                        content = binary_data.decode(
+                            fallback_encoding, errors="replace"
+                        )
                         self.logger.warning(
                             f"Failed to decode {file_path} with {source_encoding}, "
                             f"using {fallback_encoding} fallback"
@@ -30233,7 +30299,9 @@ class EncodingHandler:
 
             except Exception as e2:
                 # Final fallback
-                error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e2}]"
+                error_content = (
+                    f"[ERROR: Unable to read file {file_path}. Reason: {e2}]"
+                )
                 return error_content, True
 
         except Exception as e:
@@ -30513,7 +30581,7 @@ class FileProcessor:
     def _load_include_patterns(self) -> None:
         """Load inclusion patterns from file(s) and/or config."""
         all_gitignore_lines = []
-        
+
         # First, load patterns from include_paths_file if specified
         include_files_param = self.config.filter.include_paths_file
         if include_files_param:
@@ -30527,7 +30595,9 @@ class FileProcessor:
                 include_file = Path(include_file_str)
 
                 if not include_file.exists():
-                    self.logger.info(f"Include file not found (skipping): {include_file}")
+                    self.logger.info(
+                        f"Include file not found (skipping): {include_file}"
+                    )
                     continue
 
                 try:
@@ -30547,13 +30617,20 @@ class FileProcessor:
                     )
 
                     if is_gitignore:
-                        self.logger.info(f"Processing {include_file} as gitignore format")
+                        self.logger.info(
+                            f"Processing {include_file} as gitignore format"
+                        )
                         all_gitignore_lines.extend(lines)
                     else:
-                        self.logger.info(f"Processing {include_file} as exact path list")
+                        self.logger.info(
+                            f"Processing {include_file} as exact path list"
+                        )
                         for line in lines:
                             path = Path(line)
-                            if not path.is_absolute() and self.config.source_directories:
+                            if (
+                                not path.is_absolute()
+                                and self.config.source_directories
+                            ):
                                 # Use the first source directory as base
                                 path = self.config.source_directories[0] / path
                             try:
@@ -30565,12 +30642,14 @@ class FileProcessor:
                                 )
 
                 except Exception as e:
-                    self.logger.warning(f"Error reading include file {include_file}: {e}")
+                    self.logger.warning(
+                        f"Error reading include file {include_file}: {e}"
+                    )
 
         # Add include patterns from config
         if self.config.filter.include_patterns:
             all_gitignore_lines.extend(self.config.filter.include_patterns)
-            
+
         # Build combined gitignore spec from all collected lines
         if all_gitignore_lines:
             self.include_gitignore_spec = pathspec.PathSpec.from_lines(
@@ -30645,14 +30724,18 @@ class FileProcessor:
         input_file = self.config.input_file
         paths = []
 
-        base_dir = self.config.source_directories[0] if self.config.source_directories else input_file.parent
+        base_dir = (
+            self.config.source_directories[0]
+            if self.config.source_directories
+            else input_file.parent
+        )
 
         try:
             with open(input_file, "r", encoding="utf-8") as f:
                 content_lines = f.readlines()
             # Explicitly ensure file handle is released before processing
             f = None
-            
+
             for line in content_lines:
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -30667,9 +30750,7 @@ class FileProcessor:
                     matches = glob.glob(str(pattern_path), recursive=True)
                     for m in matches:
                         try:
-                            validated_path = validate_path_traversal(
-                                Path(m).resolve()
-                            )
+                            validated_path = validate_path_traversal(Path(m).resolve())
                             paths.append(validated_path)
                         except ValueError as e:
                             self.logger.warning(
@@ -30816,22 +30897,28 @@ class FileProcessor:
             # Check gitignore patterns - this is the critical performance fix!
             if self.gitignore_spec:
                 # Get relative path from source directory or current root
-                base_dir = self.config.source_directories[0] if self.config.source_directories else Path.cwd()
+                base_dir = (
+                    self.config.source_directories[0]
+                    if self.config.source_directories
+                    else Path.cwd()
+                )
                 try:
                     rel_path = dir_path.relative_to(base_dir)
                 except ValueError:
                     # If dir_path is not relative to base_dir, use as is
                     rel_path = dir_path
-                
+
                 # For directory matching, we need to append a trailing slash
                 # Always use forward slashes for gitignore pattern matching
                 rel_path_str = str(rel_path).replace("\\", "/")
                 if not rel_path_str.endswith("/"):
                     rel_path_str += "/"
-                
+
                 # Check if directory matches any exclude pattern
                 if self.gitignore_spec.match_file(rel_path_str):
-                    self.logger.debug(f"Directory excluded by gitignore pattern: {dir_path}")
+                    self.logger.debug(
+                        f"Directory excluded by gitignore pattern: {dir_path}"
+                    )
                     continue
 
             filtered.append(dirname)
@@ -31693,7 +31780,7 @@ class OutputWriter:
                         self.logger.error(f"Failed to process {file_path}: {result}")
                     elif result is not None:
                         processed_files.append((batch[j], result))
-                
+
                 # Force garbage collection after each batch on Windows to release file handles
                 if sys.platform.startswith("win"):
                     gc.collect()
@@ -33827,7 +33914,7 @@ def is_documentation_file(file_path: Path) -> bool:
 
 def get_relative_path(file_path: Path, base_path: Path) -> str:
     """Get relative path from base path, handling edge cases.
-    
+
     Returns path with forward slashes regardless of platform for consistent
     bundle format across different operating systems.
     """
@@ -33835,7 +33922,7 @@ def get_relative_path(file_path: Path, base_path: Path) -> str:
         # Ensure both paths are resolved to handle edge cases
         resolved_file = file_path.resolve()
         resolved_base = base_path.resolve()
-        
+
         # Get relative path and convert to forward slashes
         rel_path = resolved_file.relative_to(resolved_base)
         # Use as_posix() to ensure forward slashes on all platforms
@@ -34001,9 +34088,13 @@ def validate_path_traversal(
 
     # Normalize path separators for consistent checking
     normalized_path_str = path_str.replace("\\", "/")
-    
+
     # Check for excessive parent directory traversals (both Unix and Windows style)
-    parent_traversals = normalized_path_str.count("../") + normalized_path_str.count("..\\") + path_str.count("..\\")
+    parent_traversals = (
+        normalized_path_str.count("../")
+        + normalized_path_str.count("..\\")
+        + path_str.count("..\\")
+    )
     if parent_traversals >= 3 and not (allow_outside or from_preset):
         # Three or more parent directory traversals are suspicious
         raise ValueError(
@@ -34056,7 +34147,16 @@ def validate_path_traversal(
         resolved_str = str(resolved_path).replace("\\", "/")
         if any(
             part in resolved_str.lower()
-            for part in ["/tmp/", "/var/folders/", "pytest-", "test_", "\\temp\\", "\\tmp\\", "/temp/", "appdata/local/temp"]
+            for part in [
+                "/tmp/",
+                "/var/folders/",
+                "pytest-",
+                "test_",
+                "\\temp\\",
+                "\\tmp\\",
+                "/temp/",
+                "appdata/local/temp",
+            ]
         ):
             # Allow temporary test directories
             return resolved_path

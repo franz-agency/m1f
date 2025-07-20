@@ -177,14 +177,14 @@ def page_not_found(e):
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
-    port = int(os.environ.get('HTML2MD_SERVER_PORT', 8080))
-    
+    port = int(os.environ.get("HTML2MD_SERVER_PORT", 8080))
+
     # Ensure TEST_PAGES is populated
     if not TEST_PAGES:
         logger.warning("No test pages found! Please check the test_pages directory.")
 
     # Only print banner in non-testing mode
-    if os.environ.get('FLASK_ENV') != 'testing':
+    if os.environ.get("FLASK_ENV") != "testing":
         print(
             f"""
 ╔══════════════════════════════════════════════════════════════╗
@@ -214,6 +214,6 @@ if __name__ == "__main__":
         )
 
     # Disable debug mode when running in testing environment
-    debug_mode = os.environ.get('FLASK_ENV') != 'testing'
-    
+    debug_mode = os.environ.get("FLASK_ENV") != "testing"
+
     app.run(host="0.0.0.0", port=port, debug=debug_mode)

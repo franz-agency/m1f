@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 def normalize_path_for_subprocess(path):
     """Normalize path for cross-platform subprocess usage."""
     # Convert Path to string and use forward slashes
-    return str(path).replace('\\', '/')
+    return str(path).replace("\\", "/")
 
 
 class TestIntegration(unittest.TestCase):
@@ -84,11 +84,18 @@ class TestIntegration(unittest.TestCase):
 
         # Set up environment with UTF-8 encoding for Windows compatibility
         env = os.environ.copy()
-        env['PYTHONIOENCODING'] = 'utf-8'
+        env["PYTHONIOENCODING"] = "utf-8"
 
         # Run the command with explicit encoding for Windows
         try:
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+            result = subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=env,
+            )
         except subprocess.CalledProcessError as e:
             print(f"Command failed with return code {e.returncode}")
             print(f"STDOUT: {e.stdout}")
@@ -132,11 +139,18 @@ class TestIntegration(unittest.TestCase):
 
         # Set up environment with UTF-8 encoding for Windows compatibility
         env = os.environ.copy()
-        env['PYTHONIOENCODING'] = 'utf-8'
+        env["PYTHONIOENCODING"] = "utf-8"
 
         # Run the command with explicit encoding for Windows
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+            subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=env,
+            )
         except subprocess.CalledProcessError as e:
             print(f"Command failed with return code {e.returncode}")
             print(f"STDOUT: {e.stdout}")
@@ -182,11 +196,18 @@ class TestIntegration(unittest.TestCase):
 
         # Set up environment with UTF-8 encoding for Windows compatibility
         env = os.environ.copy()
-        env['PYTHONIOENCODING'] = 'utf-8'
+        env["PYTHONIOENCODING"] = "utf-8"
 
         # Run the command with explicit encoding for Windows
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+            subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=env,
+            )
         except subprocess.CalledProcessError as e:
             print(f"Command failed with return code {e.returncode}")
             print(f"STDOUT: {e.stdout}")

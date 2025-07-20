@@ -53,16 +53,13 @@ def find_claude_executable() -> Optional[str]:
     # First check if claude is available via npx
     try:
         result = subprocess.run(
-            ["npx", "claude", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["npx", "claude", "--version"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
             return "npx claude"
     except:
         pass
-    
+
     # Check common Claude installation paths
     possible_paths = [
         # Global npm install
@@ -76,31 +73,28 @@ def find_claude_executable() -> Optional[str]:
         Path.home() / ".npm-global" / "bin" / "claude",
         # Check if npm prefix is set
     ]
-    
+
     # Add npm global bin to search if npm is available
     try:
         npm_prefix = subprocess.run(
             ["npm", "config", "get", "prefix"],
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         if npm_prefix.returncode == 0:
             npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
             possible_paths.append(npm_bin)
     except:
         pass
-    
+
     # Check each possible path
     for path in possible_paths:
         if isinstance(path, str):
             # Try as command in PATH
             try:
                 result = subprocess.run(
-                    [path, "--version"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
+                    [path, "--version"], capture_output=True, text=True, timeout=5
                 )
                 if result.returncode == 0:
                     return path
@@ -114,13 +108,13 @@ def find_claude_executable() -> Optional[str]:
                         [str(path), "--version"],
                         capture_output=True,
                         text=True,
-                        timeout=5
+                        timeout=5,
                     )
                     if result.returncode == 0:
                         return str(path)
                 except:
                     continue
-    
+
     return None
 
 
@@ -150,7 +144,9 @@ class M1FClaude:
         self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
         self.debug = debug  # Enable debug output
         self.verbose = verbose  # Show all prompts and parameters
-        self.project_description = project_description  # User-provided project description
+        self.project_description = (
+            project_description  # User-provided project description
+        )
         self.project_priorities = project_priorities  # User-provided project priorities
 
         # Check for m1f documentation in various locations
@@ -260,7 +256,7 @@ class M1FClaude:
 
                 # Analyze the file and directory lists to determine project type
                 project_context = self._analyze_project_files(files_list, dirs_list)
-                
+
                 # Add user-provided info if available
                 if self.project_description:
                     project_context["user_description"] = self.project_description
@@ -1228,7 +1224,7 @@ I'll analyze your project and create an optimal m1f configuration that:
         try:
             # Find claude executable
             claude_path = find_claude_executable()
-            
+
             if not claude_path:
                 if self.debug:
                     logger.info("Claude Code not found via subprocess")
@@ -1366,25 +1362,31 @@ I'll analyze your project and create an optimal m1f configuration that:
         if not self.project_description and not self.project_priorities:
             print("\n📝 Project Information")
             print("=" * 50)
-            print("Please provide some information about your project to help create better bundles.")
+            print(
+                "Please provide some information about your project to help create better bundles."
+            )
             print()
-            
+
             # Interactive project description input
             if not self.project_description:
                 print("📋 Project Description")
-                print("Describe your project briefly (what it does, main technologies):")
+                print(
+                    "Describe your project briefly (what it does, main technologies):"
+                )
                 self.project_description = input("> ").strip()
                 if not self.project_description:
                     self.project_description = "Not provided"
-            
+
             # Interactive project priorities input
             if not self.project_priorities:
-                print("\n🎯 Project Priorities") 
-                print("What's important for this project? (e.g., performance, security, maintainability, documentation):")
+                print("\n🎯 Project Priorities")
+                print(
+                    "What's important for this project? (e.g., performance, security, maintainability, documentation):"
+                )
                 self.project_priorities = input("> ").strip()
                 if not self.project_priorities:
                     self.project_priorities = "Not provided"
-            
+
             print()
 
         # Check if we're in a git repository
@@ -1422,12 +1424,14 @@ I'll analyze your project and create an optimal m1f configuration that:
         # Check for Claude Code availability
         has_claude_code = False
         claude_path = find_claude_executable()
-        
+
         if claude_path:
             print(f"✅ Claude Code is available")
             has_claude_code = True
         else:
-            print(f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
+            print(
+                f"⚠️  Claude Code not found - install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
+            )
             return
 
         print(f"\n📊 Project Analysis")
@@ -1488,7 +1492,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Analyze the file and directory lists to determine project type
             context = self._analyze_project_files(files_list, dirs_list)
-            
+
             # Add user-provided info to context
             if self.project_description:
                 context["user_description"] = self.project_description
@@ -1503,7 +1507,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             print(f"💻 Languages: {context.get('languages', 'Unknown')}")
             if context.get("main_code_dirs"):
                 print(f"📂 Code Dirs: {', '.join(context['main_code_dirs'][:3])}")
-            
+
             # Display user-provided info
             if self.project_description:
                 print(f"\n📝 User Description: {self.project_description}")
@@ -1555,7 +1559,7 @@ I'll analyze your project and create an optimal m1f configuration that:
         try:
             # PHASE 1: Run Claude with streaming output
             runner = M1FClaudeRunner(claude_binary=claude_path)
-            
+
             # Execute with streaming and timeout handling
             returncode, stdout, stderr = runner.run_claude_streaming(
                 prompt=segmentation_prompt,
@@ -1563,10 +1567,10 @@ I'll analyze your project and create an optimal m1f configuration that:
                 allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep",
                 add_dir=str(self.project_path),
                 timeout=300,  # 5 minutes timeout
-                show_output=True
+                show_output=True,
             )
-            
-            result = type('Result', (), {'returncode': returncode})
+
+            result = type("Result", (), {"returncode": returncode})
 
             if result.returncode == 0:
                 print(f"\n✅ Phase 1 complete: Topic-specific bundles added!")
@@ -1613,16 +1617,18 @@ I'll analyze your project and create an optimal m1f configuration that:
             )
 
             # Run Claude again to verify and improve
-            returncode_verify, stdout_verify, stderr_verify = runner.run_claude_streaming(
-                prompt=verification_prompt,
-                working_dir=str(self.project_path),
-                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
-                add_dir=str(self.project_path),
-                timeout=300,  # 5 minutes timeout
-                show_output=True
+            returncode_verify, stdout_verify, stderr_verify = (
+                runner.run_claude_streaming(
+                    prompt=verification_prompt,
+                    working_dir=str(self.project_path),
+                    allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
+                    add_dir=str(self.project_path),
+                    timeout=300,  # 5 minutes timeout
+                    show_output=True,
+                )
             )
-            
-            verify_result = type('Result', (), {'returncode': returncode_verify})
+
+            verify_result = type("Result", (), {"returncode": returncode_verify})
 
             if verify_result.returncode == 0:
                 print(f"\n✅ Phase 2 complete: Configuration verified and improved!")
@@ -1780,9 +1786,11 @@ bundles:
             # Find claude executable
             claude_cmd = find_claude_executable()
             if not claude_cmd:
-                logger.error("Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code")
+                logger.error(
+                    "Claude Code not found. Install with: npm install -g @anthropic-ai/claude-code or use npx @anthropic-ai/claude-code"
+                )
                 return None, None
-            
+
             # Build command - use stream-json for real-time feedback
             if claude_cmd == "npx claude":
                 cmd = [
@@ -2253,7 +2261,7 @@ First time? Run 'm1f-init' to set up your project!
     )
 
     parser.add_argument(
-        "--project-priorities", 
+        "--project-priorities",
         type=str,
         help="What's important for this project (performance, security, maintainability, etc.)",
     )
@@ -2267,11 +2275,11 @@ First time? Run 'm1f-init' to set up your project!
 
     # Initialize m1f-claude
     m1f_claude = M1FClaude(
-        allowed_tools=args.allowed_tools, 
-        debug=args.debug, 
+        allowed_tools=args.allowed_tools,
+        debug=args.debug,
         verbose=args.verbose,
         project_description=args.project_description,
-        project_priorities=args.project_priorities
+        project_priorities=args.project_priorities,
     )
 
     # Check status

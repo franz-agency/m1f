@@ -121,7 +121,7 @@ class EncodingHandler:
 
             # Try to decode as UTF-8 first (most common encoding)
             try:
-                raw_data.decode('utf-8', errors='strict')
+                raw_data.decode("utf-8", errors="strict")
                 self.logger.debug(f"Successfully decoded {file_path} as UTF-8")
                 return "utf-8"
             except UnicodeDecodeError:
@@ -133,7 +133,9 @@ class EncodingHandler:
 
             # If chardet returns None or empty encoding, default to utf-8
             if not result or not result.get("encoding"):
-                self.logger.debug(f"chardet returned no encoding for {file_path}, using UTF-8")
+                self.logger.debug(
+                    f"chardet returned no encoding for {file_path}, using UTF-8"
+                )
                 return "utf-8"
 
             encoding = result["encoding"]
@@ -171,7 +173,7 @@ class EncodingHandler:
                             f"Preferring UTF-8 over {encoding} for documentation file {file_path}"
                         )
                         return "utf-8"
-                
+
                 # For other files, only use Windows-1252 if we have high confidence
                 # and the file really can't be decoded as UTF-8
                 if confidence < 0.9:
@@ -218,10 +220,12 @@ class EncodingHandler:
                     f"Initial read failed for {file_path} with {source_encoding}, "
                     f"retrying with error replacement"
                 )
-                with open(file_path, "r", encoding=source_encoding, errors="replace") as f:
+                with open(
+                    file_path, "r", encoding=source_encoding, errors="replace"
+                ) as f:
                     content = f.read()
                 had_errors = True
-            
+
             # Explicitly ensure file handle is released
             f = None
 
@@ -278,7 +282,9 @@ class EncodingHandler:
                 # Try UTF-8 first, then fallback to latin-1
                 for fallback_encoding in ["utf-8", "latin-1"]:
                     try:
-                        content = binary_data.decode(fallback_encoding, errors="replace")
+                        content = binary_data.decode(
+                            fallback_encoding, errors="replace"
+                        )
                         self.logger.warning(
                             f"Failed to decode {file_path} with {source_encoding}, "
                             f"using {fallback_encoding} fallback"
@@ -297,7 +303,9 @@ class EncodingHandler:
 
             except Exception as e2:
                 # Final fallback
-                error_content = f"[ERROR: Unable to read file {file_path}. Reason: {e2}]"
+                error_content = (
+                    f"[ERROR: Unable to read file {file_path}. Reason: {e2}]"
+                )
                 return error_content, True
 
         except Exception as e:

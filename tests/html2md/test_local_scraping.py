@@ -63,7 +63,7 @@ def is_port_in_use(port):
     """Check if a port is currently in use."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
-            s.bind(('localhost', port))
+            s.bind(("localhost", port))
             return False
         except OSError:
             return True
@@ -73,15 +73,19 @@ def is_port_in_use(port):
 def test_server():
     """Start the test server before running tests."""
     server_port = 8080
-    server_path = Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
-    
+    server_path = (
+        Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
+    )
+
     # Check if server script exists
     if not server_path.exists():
         pytest.fail(f"Server script not found: {server_path}")
-    
+
     # Check if port is already in use
     if is_port_in_use(server_port):
-        logger.warning(f"Port {server_port} is already in use. Assuming server is already running.")
+        logger.warning(
+            f"Port {server_port} is already in use. Assuming server is already running."
+        )
         # Try to connect to existing server
         try:
             response = requests.get(TEST_SERVER_URL, timeout=5)
@@ -91,16 +95,16 @@ def test_server():
                 return
         except requests.exceptions.RequestException:
             pytest.fail(f"Port {server_port} is in use but server is not responding")
-    
+
     # Start server process
     logger.info(f"Starting test server on port {server_port}...")
-    
+
     # Environment variables for the server
     env = os.environ.copy()
-    env['FLASK_ENV'] = 'testing'
-    env['FLASK_DEBUG'] = '0'
-    env['HTML2MD_SERVER_PORT'] = str(server_port)
-    
+    env["FLASK_ENV"] = "testing"
+    env["FLASK_DEBUG"] = "0"
+    env["HTML2MD_SERVER_PORT"] = str(server_port)
+
     # Platform-specific process creation
     if platform.system() == "Windows":
         # Windows-specific handling
@@ -111,7 +115,7 @@ def test_server():
             env=env,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
     else:
         # Unix-like systems
@@ -122,14 +126,14 @@ def test_server():
             env=env,
             preexec_fn=os.setsid,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
-    
+
     # Wait for server to start
     max_wait = 30  # seconds
     start_time = time.time()
     server_ready = False
-    
+
     while time.time() - start_time < max_wait:
         # Check if process is still running
         if process.poll() is not None:
@@ -140,20 +144,22 @@ def test_server():
             if stderr:
                 logger.error(f"stderr: {stderr}")
             pytest.fail("Server process terminated unexpectedly")
-        
+
         # Try to connect to server
         try:
             response = requests.get(f"{TEST_SERVER_URL}/api/test-pages", timeout=2)
             if response.status_code == 200:
-                logger.info(f"Server started successfully after {time.time() - start_time:.2f} seconds")
+                logger.info(
+                    f"Server started successfully after {time.time() - start_time:.2f} seconds"
+                )
                 server_ready = True
                 break
         except requests.exceptions.RequestException:
             # Server not ready yet
             pass
-        
+
         time.sleep(0.5)
-    
+
     if not server_ready:
         # Try to get process output for debugging
         process.terminate()
@@ -164,10 +170,10 @@ def test_server():
         if stderr:
             logger.error(f"stderr: {stderr}")
         pytest.fail(f"Server failed to start within {max_wait} seconds")
-    
+
     # Run tests
     yield
-    
+
     # Cleanup: stop the server
     logger.info("Stopping test server...")
     try:
@@ -177,8 +183,9 @@ def test_server():
         else:
             # Unix: send SIGTERM to process group
             import signal
+
             os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        
+
         # Wait for process to terminate
         process.wait(timeout=5)
     except Exception as e:

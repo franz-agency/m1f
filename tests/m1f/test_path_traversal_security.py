@@ -61,8 +61,8 @@ class TestPathTraversalSecurity:
             "quiet": False,
         }
         # Handle source_directory as a list
-        if 'source_directory' in overrides:
-            overrides['source_directory'] = [overrides['source_directory']]
+        if "source_directory" in overrides:
+            overrides["source_directory"] = [overrides["source_directory"]]
         defaults.update(overrides)
         return argparse.Namespace(**defaults)
 
