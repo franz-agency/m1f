@@ -1,18 +1,16 @@
 # m1f Documentation
 
-This directory contains detailed documentation for the m1f project v3.4.0.
+This directory contains detailed documentation for the m1f project v3.6.0.
 
 ## Contents
 
 ### Core Tools
 
-- [m1f (Make One File)](01_m1f/00_m1f.md) - Documentation for the main tool that
+- [m1f (Make One File)](01_m1f/00_m1f.md) - The main tool that
   combines multiple files into a single file with content deduplication and
   async I/O
-- [s1f (Split One File)](02_s1f/20_s1f.md) - Documentation for the tool that
-  extracts individual files from a combined file with modern Python architecture
-- [token_counter](99_misc/98_token_counter.md) - Documentation for the token
-  estimation tool
+- [s1f (Split One File)](02_s1f/20_s1f.md) - Extracts individual files from a combined file with 
+  modern Python architecture
 
 ### Web Scraping and HTML Conversion
 
@@ -37,6 +35,8 @@ This directory contains detailed documentation for the m1f project v3.4.0.
   rules and configurations
 - [Per-File-Type Settings](01_m1f/11_preset_per_file_settings.md) - Fine-grained
   control over file processing
+- [token_counter](99_misc/98_token_counter.md) - Documentation for the token
+  estimation tool
 
 ### Development
 
@@ -49,7 +49,8 @@ This directory contains detailed documentation for the m1f project v3.4.0.
 
 ### Common Workflows
 
-- **First-time setup**: Install Python 3.10+ and requirements:
+- **First-time setup** for developers: Install Python 3.10+ and requirements:
+  
   ```bash
   python -m venv .venv
   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -76,22 +77,10 @@ This directory contains detailed documentation for the m1f project v3.4.0.
 
 ## Project Overview
 
-m1f v3.4.0 is a comprehensive toolkit designed to help you work more efficiently
+m1f is a comprehensive toolkit designed to help you work more efficiently
 with Large Language Models (LLMs) by managing context. Built with modern Python
 3.10+ architecture, these tools solve core challenges when working with AI
 assistants.
-
-### Key Features
-
-- **Modern Architecture**: Complete modular rewrite with async I/O, type hints,
-  and clean architecture
-- **Content Deduplication**: Automatically detect and skip duplicate files based
-  on SHA256 checksums
-- **Performance**: Async operations and parallel processing for large projects
-- **Type Safety**: Full type annotations for better IDE support and fewer
-  runtime errors
-- **Professional Tools**: HTTrack integration for website scraping, CSS
-  selectors for content extraction
 
 ### What You Can Do
 
@@ -99,7 +88,7 @@ assistants.
   deduplication
 - Extract individual files from a combined file with preserved structure and
   metadata
-- Convert entire websites to clean Markdown format with HTTrack integration
+- Convert entire doc websites to clean Markdown format, bundle the complete doc in one file
 - Filter files by size, type, or custom patterns
 - Detect and handle symlinks with cycle prevention
 - Remove scraped metadata for clean documentation bundles

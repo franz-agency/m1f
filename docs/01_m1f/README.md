@@ -4,16 +4,6 @@ Welcome to the m1f (Make One File) documentation. This tool combines multiple
 text files into a single output file, perfect for providing context to Large
 Language Models (LLMs) and creating bundled documentation.
 
-## What's New in v3.2
-
-- **Enhanced Security**: Path traversal protection, SSRF prevention, automatic
-  robots.txt compliance
-- **Performance**: Parallel file processing enabled by default (3-5x faster)
-- **Flexibility**: Control content deduplication and UTF-8 encoding preferences
-- **Reliability**: Improved error handling and security scanning
-
-See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
-
 ## Table of Contents
 
 ### Getting Started
@@ -62,7 +52,7 @@ See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
 ## Quick Start
 
 ```bash
-# Basic usage (parallel processing is automatic in v3.2)
+# Basic usage 
 m1f -s ./your_project -o ./combined.txt
 
 # With file type filtering

@@ -477,7 +477,7 @@ For comprehensive understanding of each tool:
 ======= requirements.txt ======
 # Core dependencies
 aiofiles==24.1.0
-aiohttp==3.12.13
+aiohttp==3.12.14
 anyio==4.9.0
 application_properties==0.9.0
 beautifulsoup4==4.13.4
@@ -865,19 +865,17 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ======= docs/README.md ======
 # m1f Documentation
 
-This directory contains detailed documentation for the m1f project v3.4.0.
+This directory contains detailed documentation for the m1f project v3.6.0.
 
 ## Contents
 
 ### Core Tools
 
-- [m1f (Make One File)](01_m1f/00_m1f.md) - Documentation for the main tool that
+- [m1f (Make One File)](01_m1f/00_m1f.md) - The main tool that
   combines multiple files into a single file with content deduplication and
   async I/O
-- [s1f (Split One File)](02_s1f/20_s1f.md) - Documentation for the tool that
-  extracts individual files from a combined file with modern Python architecture
-- [token_counter](99_misc/98_token_counter.md) - Documentation for the token
-  estimation tool
+- [s1f (Split One File)](02_s1f/20_s1f.md) - Extracts individual files from a combined file with 
+  modern Python architecture
 
 ### Web Scraping and HTML Conversion
 
@@ -902,6 +900,8 @@ This directory contains detailed documentation for the m1f project v3.4.0.
   rules and configurations
 - [Per-File-Type Settings](01_m1f/11_preset_per_file_settings.md) - Fine-grained
   control over file processing
+- [token_counter](99_misc/98_token_counter.md) - Documentation for the token
+  estimation tool
 
 ### Development
 
@@ -914,7 +914,8 @@ This directory contains detailed documentation for the m1f project v3.4.0.
 
 ### Common Workflows
 
-- **First-time setup**: Install Python 3.10+ and requirements:
+- **First-time setup** for developers: Install Python 3.10+ and requirements:
+  
   ```bash
   python -m venv .venv
   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -941,22 +942,10 @@ This directory contains detailed documentation for the m1f project v3.4.0.
 
 ## Project Overview
 
-m1f v3.4.0 is a comprehensive toolkit designed to help you work more efficiently
+m1f is a comprehensive toolkit designed to help you work more efficiently
 with Large Language Models (LLMs) by managing context. Built with modern Python
 3.10+ architecture, these tools solve core challenges when working with AI
 assistants.
-
-### Key Features
-
-- **Modern Architecture**: Complete modular rewrite with async I/O, type hints,
-  and clean architecture
-- **Content Deduplication**: Automatically detect and skip duplicate files based
-  on SHA256 checksums
-- **Performance**: Async operations and parallel processing for large projects
-- **Type Safety**: Full type annotations for better IDE support and fewer
-  runtime errors
-- **Professional Tools**: HTTrack integration for website scraping, CSS
-  selectors for content extraction
 
 ### What You Can Do
 
@@ -964,7 +953,7 @@ assistants.
   deduplication
 - Extract individual files from a combined file with preserved structure and
   metadata
-- Convert entire websites to clean Markdown format with HTTrack integration
+- Convert entire doc websites to clean Markdown format, bundle the complete doc in one file
 - Filter files by size, type, or custom patterns
 - Detect and handle symlinks with cycle prevention
 - Remove scraped metadata for clean documentation bundles
@@ -986,7 +975,6 @@ and this project adheres to
 - **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
 - **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
 - **Project Organization**: Cleaned up project root directory
-  - Moved development test scripts to `dev/` directory
   - Moved `perfect_bundle_prompt.md` to `tools/m1f/prompts/`
   - Moved `wp-cli.example.yml` to `examples/` directory
 
@@ -1032,24 +1020,6 @@ and this project adheres to
 ### Changed
 
 - **Dependencies Update**: Updated multiple dependencies to newer versions for improved compatibility and performance
-  - Updated aiofiles to 24.1.0
-  - Updated application_properties to 0.9.0
-  - Updated beautifulsoup4 to 4.13.4
-  - Updated certifi to 2025.6.15
-  - Updated click to 8.2.1
-  - Updated markdownify to 1.1.0
-  - Updated pydantic to 2.11.7
-  - Updated pymarkdownlnt to 0.9.30
-  - Updated pytest to 8.4.1
-  - Updated pytest-asyncio to 1.1.0a1
-  - Updated rich to 14.0.0
-  - Updated typing_extensions to 4.14.1
-  - Updated claude-code-sdk to 0.0.14
-  - Updated Flask to 3.1.1
-  - Updated lxml to 6.0.0
-  - Updated playwright to 1.53.0
-  - Updated scrapy to 2.13.3
-  - Updated selectolax to 0.3.31
 
 ### Removed
 
@@ -3448,16 +3418,6 @@ Welcome to the m1f (Make One File) documentation. This tool combines multiple
 text files into a single output file, perfect for providing context to Large
 Language Models (LLMs) and creating bundled documentation.
 
-## What's New in v3.2
-
-- **Enhanced Security**: Path traversal protection, SSRF prevention, automatic
-  robots.txt compliance
-- **Performance**: Parallel file processing enabled by default (3-5x faster)
-- **Flexibility**: Control content deduplication and UTF-8 encoding preferences
-- **Reliability**: Improved error handling and security scanning
-
-See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
-
 ## Table of Contents
 
 ### Getting Started
@@ -3506,7 +3466,7 @@ See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
 ## Quick Start
 
 ```bash
-# Basic usage (parallel processing is automatic in v3.2)
+# Basic usage 
 m1f -s ./your_project -o ./combined.txt
 
 # With file type filtering
@@ -3533,9 +3493,8 @@ with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool (v3.4.0) solves a common challenge when working with LLMs:
-providing sufficient context without exceeding token limits. Built with Python
-3.10+ and modern architecture patterns, it creates optimized reference files
+The m1f tool solves a common challenge when working with LLMs:
+providing sufficient context without exceeding token limits. It creates optimized reference files
 from multiple sources while automatically handling duplicates and providing
 comprehensive metadata.
 
@@ -3545,14 +3504,11 @@ comprehensive metadata.
   based on SHA256 checksums
 - **Async I/O**: High-performance file operations with concurrent processing
 - **Type Safety**: Full type annotations throughout the codebase
-- **Modern Architecture**: Modular package structure with clean separation of
-  concerns
 - **Smart Filtering**: Advanced file filtering with size limits, extensions, and
   patterns
 - **Symlink Support**: Intelligent symlink handling with cycle detection
 - **Professional Security**: Integration with detect-secrets for sensitive data
   detection
-- **Colorized Output**: Beautiful console output with progress indicators
 
 ## Quick Start
 
@@ -3563,17 +3519,8 @@ comprehensive metadata.
 cd /your/project
 m1f-init
 
-# Initialize without creating symlink to m1f documentation
-m1f-init --no-symlink
-
 # This creates in the m1f/ directory:
-# - <project>_complete.txt          # Full project bundle
-# - <project>_complete_filelist.txt # List of all included files
-# - <project>_complete_dirlist.txt  # List of all directories
-# - <project>_docs.txt              # Documentation bundle
-# - <project>_docs_filelist.txt    # List of documentation files
-# - <project>_docs_dirlist.txt     # Documentation directories
-# - .m1f.config.yml                # Configuration file
+# The place for your bundled files of the current project
 ```
 
 ### Basic m1f Commands
@@ -9965,8 +9912,6 @@ a comprehensive overview of all v3.2 features and changes.
   - Automatic robots.txt fetching and parsing
   - Per-path access validation
   - User-agent specific rule support
-  - No configuration needed - always enabled
-- **Previously**: Only HTTrack respected robots.txt
 
 ### 4. SSL/TLS Certificate Validation
 

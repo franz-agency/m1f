@@ -38,8 +38,6 @@ a comprehensive overview of all v3.2 features and changes.
   - Automatic robots.txt fetching and parsing
   - Per-path access validation
   - User-agent specific rule support
-  - No configuration needed - always enabled
-- **Previously**: Only HTTrack respected robots.txt
 
 ### 4. SSL/TLS Certificate Validation
 

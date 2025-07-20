@@ -13,7 +13,6 @@ and this project adheres to
 - **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
 - **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
 - **Project Organization**: Cleaned up project root directory
-  - Moved development test scripts to `dev/` directory
   - Moved `perfect_bundle_prompt.md` to `tools/m1f/prompts/`
   - Moved `wp-cli.example.yml` to `examples/` directory
 
@@ -59,24 +58,6 @@ and this project adheres to
 ### Changed
 
 - **Dependencies Update**: Updated multiple dependencies to newer versions for improved compatibility and performance
-  - Updated aiofiles to 24.1.0
-  - Updated application_properties to 0.9.0
-  - Updated beautifulsoup4 to 4.13.4
-  - Updated certifi to 2025.6.15
-  - Updated click to 8.2.1
-  - Updated markdownify to 1.1.0
-  - Updated pydantic to 2.11.7
-  - Updated pymarkdownlnt to 0.9.30
-  - Updated pytest to 8.4.1
-  - Updated pytest-asyncio to 1.1.0a1
-  - Updated rich to 14.0.0
-  - Updated typing_extensions to 4.14.1
-  - Updated claude-code-sdk to 0.0.14
-  - Updated Flask to 3.1.1
-  - Updated lxml to 6.0.0
-  - Updated playwright to 1.53.0
-  - Updated scrapy to 2.13.3
-  - Updated selectolax to 0.3.31
 
 ### Removed
 
