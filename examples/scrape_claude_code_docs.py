@@ -259,7 +259,7 @@ def main():
     claude_cmd = [
         "m1f-claude",
         str(bundle_path),
-        "--advanced-setup"
+        "--setup"
     ]
     
     print(f"📝 Providing project info:")
