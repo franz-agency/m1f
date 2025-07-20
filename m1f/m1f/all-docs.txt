@@ -2409,9 +2409,6 @@ You can then:
 - m1f toolkit installed (`pip install m1f`)
 - Internet connection
 
-======= examples/test_hook.md ======
-# Test
-
 ======= m1f/project_analysis_dirlist.txt ======
 bin
 docs
