@@ -2042,8 +2042,8 @@ $commands = @{
     "m1f-scrape.bat" = "m1f-scrape"
     "m1f-token-counter.bat" = "m1f-token-counter"
     "m1f-update.bat" = "m1f auto-bundle"
-    "m1f-init.bat" = "m1f-init"
-    "m1f-claude.bat" = "m1f-claude"
+    "m1f-init.bat" = "python `"%~dp0..\tools\m1f_init.py`" %*"
+    "m1f-claude.bat" = "python `"%~dp0..\tools\m1f_claude.py`" %*"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files
@@ -2452,6 +2452,20 @@ function m1f-update {
     & python -m tools.m1f auto-bundle @args
 }
 
+# Initialize m1f for a project
+function m1f-init {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python "$M1F_ROOT/tools/m1f_init.py" @args
+}
+
+# Enhance Claude prompts with m1f knowledge
+function m1f-claude {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python "$M1F_ROOT/tools/m1f_claude.py" @args
+}
+
 # Link function - creates symlinks to m1f documentation
 function m1f-link {
     $docsSource = Join-Path $M1F_ROOT "m1f\m1f-docs.txt"
@@ -2508,6 +2522,8 @@ function m1f-help {
     Write-Host "  m1f-scrape        - Download websites for offline viewing" -ForegroundColor Green
     Write-Host "  m1f-token-counter - Count tokens in files" -ForegroundColor Green
     Write-Host "  m1f-update        - Update m1f bundle files" -ForegroundColor Green
+    Write-Host "  m1f-init          - Initialize m1f for your project" -ForegroundColor Green
+    Write-Host "  m1f-claude        - Advanced setup with topic-specific bundles" -ForegroundColor Green
     Write-Host "  m1f-link          - Link m1f documentation for AI tools" -ForegroundColor Green
     Write-Host "  m1f-help          - Show this help message" -ForegroundColor Green
     Write-Host ""
@@ -6454,6 +6470,20 @@ if __name__ == "__main__":
     main()
 
 ======= tools/m1f_claude_runner.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Claude runner with streaming output and timeout handling for m1f-claude.
 Based on improvements from html2md tool.
@@ -9861,6 +9891,20 @@ def convert_html(html_content: str, **kwargs) -> str:
     return converter.convert_html(html_content)
 
 ======= tools/html2md_tool/claude_runner.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Claude runner with reliable subprocess execution and streaming support.
 """
@@ -10201,6 +10245,20 @@ class ClaudeRunner:
         return results
 
 ======= tools/html2md_tool/claude_runner_simple.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Simplified Claude runner for debugging.
 """
@@ -11809,6 +11867,20 @@ if __name__ == "__main__":
     main()
 
 ======= tools/html2md_tool/cli_claude.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Improved Claude analysis functions for HTML to Markdown converter."""
 
 import os
@@ -12275,6 +12347,20 @@ def handle_claude_analysis_improved(
     console.print("\n✅ Analysis complete!", style="green bold")
 
 ======= tools/html2md_tool/convert_claude.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Improved Claude conversion functions for HTML to Markdown converter."""
 
 import os
