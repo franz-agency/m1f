@@ -2,7 +2,61 @@
 # Install m1f Git Hooks (PowerShell version)
 # This script installs the m1f git hooks into your project
 
+param(
+    [switch]$Help
+)
+
 $ErrorActionPreference = "Stop"
+
+# Show help if requested
+if ($Help) {
+    Write-Host @"
+m1f Git Hook Installer (PowerShell)
+===================================
+
+USAGE:
+    .\install-git-hooks.ps1 [OPTIONS]
+
+DESCRIPTION:
+    This script installs m1f git hooks into your project's .git/hooks directory.
+    The hooks automatically run m1f bundling operations before commits.
+
+OPTIONS:
+    -Help          Show this help message and exit
+
+HOOK TYPES:
+    Internal Hook (m1f project development):
+        - Formats Python files with Black
+        - Formats Markdown files with Prettier
+        - Runs m1f auto-bundle
+
+    External Hook (projects using m1f):
+        - Runs m1f auto-bundle only (if .m1f.config.yml exists)
+
+REQUIREMENTS:
+    - Git repository
+    - m1f installed and in PATH
+    - For internal hook: Black (pip install black) and Prettier (npm install -g prettier)
+
+EXAMPLES:
+    # Install hook interactively
+    .\scripts\install-git-hooks.ps1
+
+    # Show help
+    .\scripts\install-git-hooks.ps1 -Help
+
+BYPASS HOOK:
+    To commit without running the hook:
+    git commit --no-verify
+
+UNINSTALL:
+    Remove-Item .\.git\hooks\pre-commit
+    Remove-Item .\.git\hooks\pre-commit.ps1
+
+For more information, visit: https://github.com/denoland/m1f
+"@
+    exit 0
+}
 
 # Colors for output
 $colors = @{
@@ -29,6 +83,7 @@ try {
 } catch {
     Write-ColorOutput "Error: Not in a git repository!" -Color $colors.Red
     Write-ColorOutput "Please run this script from the root of your git project." -Color $colors.Red
+    Write-ColorOutput "Run '.\install-git-hooks.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -46,6 +101,7 @@ $hooksDir = Join-Path $scriptDir "hooks"
 $useRemote = $false
 if (-not (Test-Path $hooksDir)) {
     Write-ColorOutput "Error: Hooks directory not found. Please run from the m1f repository." -Color $colors.Red
+    Write-ColorOutput "Run '.\install-git-hooks.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -77,6 +133,7 @@ exit $?
     $sourceFile = Join-Path $hooksDir "pre-commit-$HookType.ps1"
     if (-not (Test-Path $sourceFile)) {
         Write-ColorOutput "Error: Hook file not found: $sourceFile" -Color $colors.Red
+        Write-ColorOutput "Run '.\install-git-hooks.ps1 -Help' for more information." -Color $colors.Yellow
         exit 1
     }
     

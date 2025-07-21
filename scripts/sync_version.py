@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sys
+import argparse
 from pathlib import Path
 
 # Get project root
@@ -51,17 +52,78 @@ def update_package_json(version):
 
 def main():
     """Main function."""
+    parser = argparse.ArgumentParser(
+        description="Sync version between Python and package.json",
+        epilog="""
+This script ensures version consistency across the m1f project by:
+  1. Reading the version from tools/_version.py (source of truth)
+  2. Updating package.json to match the Python version
+
+Examples:
+  # Sync versions
+  %(prog)s
+  
+  # Check current versions without syncing
+  %(prog)s --check
+  
+  # Show verbose output
+  %(prog)s --verbose
+
+Version Management:
+  The version in tools/_version.py is the single source of truth.
+  All other version references should be synchronized from this file.
+  
+  To change the version:
+  1. Update tools/_version.py
+  2. Run this script to sync package.json
+  3. Commit both changes together
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--check", action="store_true", help="Check versions without updating (dry run)"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show detailed output"
+    )
+
+    args = parser.parse_args()
+
     try:
         # Get Python version
         python_version = get_python_version()
-        print(f"Python version: {python_version}")
+        if args.verbose or args.check:
+            print(f"Python version (tools/_version.py): {python_version}")
+
+        # Get current package.json version
+        package_file = PROJECT_ROOT / "package.json"
+        with open(package_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            npm_version = data.get("version", "unknown")
+
+        if args.check:
+            # Check mode - just display versions
+            print(f"package.json version: {npm_version}")
+            if python_version == npm_version:
+                print("\n✓ Versions are in sync!")
+                return 0
+            else:
+                print(f"\n✗ Version mismatch detected!")
+                print(f"  Python:  {python_version}")
+                print(f"  npm:     {npm_version}")
+                return 1
 
         # Update package.json
-        old_npm_version = update_package_json(python_version)
-        print(f"Updated package.json: {old_npm_version} → {python_version}")
+        if python_version != npm_version:
+            old_npm_version = update_package_json(python_version)
+            print(f"Updated package.json: {old_npm_version} → {python_version}")
+            print("\n✓ Version sync complete!")
+        else:
+            print("✓ Versions already in sync!")
 
-        print("\nVersion sync complete!")
-        print(f"All files now use version: {python_version}")
+        if args.verbose:
+            print(f"\nAll files now use version: {python_version}")
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

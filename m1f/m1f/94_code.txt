@@ -996,6 +996,33 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
+# Function to show help
+show_help() {
+    cat << EOF
+Auto-bundle with preset support for m1f
+
+Usage: $0 [OPTIONS] [COMMAND]
+
+OPTIONS:
+    --help, -h              Show this help message
+    --preset <file>         Use preset file for configuration
+    --group <group>         Process only bundles in specified group
+
+COMMANDS:
+    all                     Run auto-bundle for all configured bundles
+    focus <bundle>          Run auto-bundle for specific bundle
+    preset <file> [group]   Use preset file (legacy syntax)
+
+EXAMPLES:
+    $0 all                              # Bundle all configured bundles
+    $0 focus docs                       # Bundle only the 'docs' bundle
+    $0 --preset wordpress.yml           # Use WordPress preset
+    $0 --preset django.yml --group api  # Use Django preset, only API group
+
+This script is used by VS Code tasks for preset-based bundling.
+EOF
+}
+
 # Default values
 PRESET=""
 GROUP=""
@@ -1003,6 +1030,10 @@ GROUP=""
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --help|-h)
+            show_help
+            exit 0
+            ;;
         --preset)
             PRESET="$2"
             shift 2
@@ -1030,13 +1061,14 @@ while [[ $# -gt 0 ]]; do
                 shift
                 [ -n "$GROUP" ] && shift
             else
-                echo "Usage: $0 [all|focus <bundle>|preset <file> [group]]"
-                echo "   or: $0 --preset <file> [--group <group>]"
+                echo "Error: Invalid arguments"
+                echo "Try '$0 --help' for usage information"
                 exit 1
             fi
             ;;
         *)
-            echo "Unknown option: $1"
+            echo "Error: Unknown option: $1"
+            echo "Try '$0 --help' for usage information"
             exit 1
             ;;
     esac
@@ -1073,6 +1105,7 @@ import os
 import sys
 import fnmatch
 import re
+import argparse
 from pathlib import Path
 
 # Default ignore patterns if no config is found
@@ -1222,36 +1255,83 @@ def patterns_to_fswatch(patterns):
 
 def main():
     """Main entry point"""
-    patterns = get_ignore_patterns()
+    parser = argparse.ArgumentParser(
+        description="Extract watcher ignore paths from .m1f.config.yml",
+        epilog="""
+Examples:
+  # Get patterns as a list (default)
+  %(prog)s
+  
+  # Get patterns as regex for grep
+  %(prog)s --regex
+  
+  # Get patterns for fswatch on macOS
+  %(prog)s --fswatch
+  
+  # Get patterns for inotifywait on Linux
+  %(prog)s --inotify
+  
+  # Debug mode - show all patterns with count
+  %(prog)s --debug
 
+This script reads ignore patterns from:
+  1. .m1f.config.yml (global.global_excludes and global.watcher.ignored_paths)
+  2. .gitignore file
+  3. .m1fignore file
+  4. Falls back to default patterns if no config is found
+
+The patterns are normalized and duplicates are removed while preserving order.
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    # Create mutually exclusive group for output formats
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument(
+        "--regex",
+        action="store_true",
+        help="Output as a single POSIX regex pattern for grep (e.g., '(pattern1|pattern2|...)')",
+    )
+    output_group.add_argument(
+        "--fswatch",
+        action="store_true",
+        help="Output as fswatch exclude arguments for macOS (e.g., --exclude 'pattern1' --exclude 'pattern2')",
+    )
+    output_group.add_argument(
+        "--inotify",
+        action="store_true",
+        help="Output as inotify exclude pattern for Linux (similar to --regex)",
+    )
+    output_group.add_argument(
+        "--debug",
+        action="store_true",
+        help="Debug mode: show all patterns with their count and source information",
+    )
+
+    args = parser.parse_args()
+
+    # Get the ignore patterns
+    patterns = get_ignore_patterns()
     if not patterns:
         patterns = DEFAULT_PATTERNS
 
-    # Output format depends on argument
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--regex":
-            # Output as regex pattern for grep
-            print(patterns_to_regex(patterns))
-        elif sys.argv[1] == "--fswatch":
-            # Output as fswatch exclude arguments
-            print(patterns_to_fswatch(patterns))
-        elif sys.argv[1] == "--inotify":
-            # Output as inotify exclude pattern (similar to regex)
-            print(patterns_to_regex(patterns))
-        elif sys.argv[1] == "--debug":
-            # Debug mode: show all patterns with their sources
-            print("# Ignore patterns for file watchers")
-            print("# Total patterns:", len(patterns))
-            print()
-            for pattern in patterns:
-                print(pattern)
-        else:
-            # Unknown argument, show usage
-            print(
-                "Usage: get_watcher_ignores.py [--regex|--fswatch|--inotify|--debug]",
-                file=sys.stderr,
-            )
-            sys.exit(1)
+    # Output based on selected format
+    if args.regex:
+        # Output as regex pattern for grep
+        print(patterns_to_regex(patterns))
+    elif args.fswatch:
+        # Output as fswatch exclude arguments
+        print(patterns_to_fswatch(patterns))
+    elif args.inotify:
+        # Output as inotify exclude pattern (similar to regex)
+        print(patterns_to_regex(patterns))
+    elif args.debug:
+        # Debug mode: show all patterns with their sources
+        print("# Ignore patterns for file watchers")
+        print("# Total patterns:", len(patterns))
+        print()
+        for pattern in patterns:
+            print(pattern)
     else:
         # Default: one pattern per line
         for pattern in patterns:
@@ -1266,7 +1346,61 @@ if __name__ == "__main__":
 # Install m1f Git Hooks (PowerShell version)
 # This script installs the m1f git hooks into your project
 
+param(
+    [switch]$Help
+)
+
 $ErrorActionPreference = "Stop"
+
+# Show help if requested
+if ($Help) {
+    Write-Host @"
+m1f Git Hook Installer (PowerShell)
+===================================
+
+USAGE:
+    .\install-git-hooks.ps1 [OPTIONS]
+
+DESCRIPTION:
+    This script installs m1f git hooks into your project's .git/hooks directory.
+    The hooks automatically run m1f bundling operations before commits.
+
+OPTIONS:
+    -Help          Show this help message and exit
+
+HOOK TYPES:
+    Internal Hook (m1f project development):
+        - Formats Python files with Black
+        - Formats Markdown files with Prettier
+        - Runs m1f auto-bundle
+
+    External Hook (projects using m1f):
+        - Runs m1f auto-bundle only (if .m1f.config.yml exists)
+
+REQUIREMENTS:
+    - Git repository
+    - m1f installed and in PATH
+    - For internal hook: Black (pip install black) and Prettier (npm install -g prettier)
+
+EXAMPLES:
+    # Install hook interactively
+    .\scripts\install-git-hooks.ps1
+
+    # Show help
+    .\scripts\install-git-hooks.ps1 -Help
+
+BYPASS HOOK:
+    To commit without running the hook:
+    git commit --no-verify
+
+UNINSTALL:
+    Remove-Item .\.git\hooks\pre-commit
+    Remove-Item .\.git\hooks\pre-commit.ps1
+
+For more information, visit: https://github.com/denoland/m1f
+"@
+    exit 0
+}
 
 # Colors for output
 $colors = @{
@@ -1293,6 +1427,7 @@ try {
 } catch {
     Write-ColorOutput "Error: Not in a git repository!" -Color $colors.Red
     Write-ColorOutput "Please run this script from the root of your git project." -Color $colors.Red
+    Write-ColorOutput "Run '.\install-git-hooks.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -1310,6 +1445,7 @@ $hooksDir = Join-Path $scriptDir "hooks"
 $useRemote = $false
 if (-not (Test-Path $hooksDir)) {
     Write-ColorOutput "Error: Hooks directory not found. Please run from the m1f repository." -Color $colors.Red
+    Write-ColorOutput "Run '.\install-git-hooks.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -1341,6 +1477,7 @@ exit $?
     $sourceFile = Join-Path $hooksDir "pre-commit-$HookType.ps1"
     if (-not (Test-Path $sourceFile)) {
         Write-ColorOutput "Error: Hook file not found: $sourceFile" -Color $colors.Red
+        Write-ColorOutput "Run '.\install-git-hooks.ps1 -Help' for more information." -Color $colors.Yellow
         exit 1
     }
     
@@ -1438,6 +1575,54 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Function to show help
+show_help() {
+    cat << EOF
+m1f Git Hooks Installer
+
+Usage: $0 [OPTIONS]
+
+OPTIONS:
+    --help, -h    Show this help message
+
+DESCRIPTION:
+    This script installs m1f Git hooks into your project.
+    
+    Two types of hooks are available:
+    1. Internal - For m1f project development
+       • Formats Python files with Black
+       • Formats Markdown files with Prettier
+       • Runs m1f auto-bundle
+    
+    2. External - For projects using m1f
+       • Runs m1f auto-bundle when .m1f.config.yml exists
+
+    The script will automatically detect your project type and offer
+    the appropriate hook option(s).
+
+REQUIREMENTS:
+    - Must be run from within a Git repository
+    - m1f must be installed locally
+    - For internal hooks: Black and Prettier (optional)
+
+EXAMPLES:
+    $0              # Interactive installation
+    
+To uninstall:
+    rm .git/hooks/pre-commit
+    rm .git/hooks/pre-commit.ps1  # Windows only
+
+For more information, see:
+    docs/05_development/56_git_hooks_setup.md
+EOF
+}
+
+# Check for help flag
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    show_help
+    exit 0
+fi
+
 # This script must be run from a local m1f installation
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HOOKS_DIR="$SCRIPT_DIR/hooks"
@@ -1447,6 +1632,7 @@ if [ ! -d "$HOOKS_DIR" ]; then
     echo -e "${RED}Error: Hooks directory not found!${NC}"
     echo "This script must be run from a local m1f installation."
     echo "Please clone m1f first: git clone https://github.com/franz-agency/m1f.git"
+    echo -e "${YELLOW}Run '$0 --help' for more information.${NC}"
     exit 1
 fi
 
@@ -1454,6 +1640,7 @@ fi
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
     echo -e "${RED}Error: Not in a git repository!${NC}"
     echo "Please run this script from the root of your git project."
+    echo -e "${YELLOW}Run '$0 --help' for more information.${NC}"
     exit 1
 fi
 
@@ -1502,6 +1689,7 @@ EOF
     local source_file="$HOOKS_DIR/pre-commit-${hook_type}${HOOK_EXTENSION}"
     if [ ! -f "$source_file" ]; then
         echo -e "${RED}Error: Hook file not found: $source_file${NC}"
+        echo -e "${YELLOW}Run '$0 --help' for more information.${NC}"
         exit 1
     fi
     
@@ -1606,8 +1794,65 @@ fi
 # Complete installation script for m1f tools
 # This script handles the entire setup process after git clone
 
+param(
+    [switch]$Help
+)
+
 # Script requires administrator privileges for some operations
 $ErrorActionPreference = "Stop"
+
+# Show help if requested
+if ($Help) {
+    Write-Host @"
+m1f Installation Script (PowerShell)
+====================================
+
+USAGE:
+    .\install.ps1 [OPTIONS]
+
+DESCRIPTION:
+    This script installs the m1f (Make One File) toolkit and all its dependencies.
+    It performs a complete setup including:
+    - Creating a Python virtual environment
+    - Installing all required dependencies
+    - Setting up PowerShell functions
+    - Creating batch files for Command Prompt
+
+OPTIONS:
+    -Help          Show this help message and exit
+
+REQUIREMENTS:
+    - Windows operating system
+    - Python 3.10 or higher
+    - pip package manager
+    - PowerShell 5.0 or higher
+
+EXAMPLES:
+    # Basic installation
+    .\scripts\install.ps1
+
+    # Show help
+    .\scripts\install.ps1 -Help
+
+WHAT IT DOES:
+    1. Creates a Python virtual environment in .venv\
+    2. Installs all dependencies from requirements.txt
+    3. Tests the m1f installation
+    4. Adds m1f functions to your PowerShell profile
+    5. Creates batch files for Command Prompt usage
+
+AFTER INSTALLATION:
+    - Restart PowerShell or run: . `$PROFILE
+    - For Command Prompt: Add the batch directory to PATH
+    - Test with 'm1f --help'
+
+TO UNINSTALL:
+    Run: .\scripts\uninstall.ps1
+
+For more information, visit: https://github.com/denoland/m1f
+"@
+    exit 0
+}
 
 # Colors for output
 $colors = @{
@@ -1645,6 +1890,7 @@ if ($executionPolicy -eq "Restricted") {
     } catch {
         Write-ColorOutput "Error: Could not update execution policy. Please run as administrator or run:" -Color $colors.Red
         Write-ColorOutput "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -Color $colors.Blue
+        Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
         exit 1
     }
 }
@@ -1670,6 +1916,7 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
 } else {
     Write-ColorOutput "Error: Python is not installed. Please install Python 3.10 or higher." -Color $colors.Red
     Write-ColorOutput "Download from: https://www.python.org/downloads/" -Color $colors.Yellow
+    Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -1682,12 +1929,14 @@ try {
     
     if ($major -lt 3 -or ($major -eq 3 -and $minor -lt 10)) {
         Write-ColorOutput "Error: Python 3.10 or higher is required. Found Python $versionOutput" -Color $colors.Red
+        Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
         exit 1
     }
     
     Write-ColorOutput "✓ Python $versionOutput found" -Color $colors.Green
 } catch {
     Write-ColorOutput "Error: Could not determine Python version" -Color $colors.Red
+    Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -1721,6 +1970,7 @@ if (Test-Path "requirements.txt") {
     Write-ColorOutput "✓ Dependencies installed" -Color $colors.Green
 } else {
     Write-ColorOutput "Error: requirements.txt not found" -Color $colors.Red
+    Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -1890,6 +2140,67 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Help function
+show_help() {
+    cat << EOF
+${BLUE}m1f Installation Script${NC}
+${BLUE}======================${NC}
+
+${YELLOW}USAGE:${NC}
+    ./install.sh [OPTIONS]
+
+${YELLOW}DESCRIPTION:${NC}
+    This script installs the m1f (Make One File) toolkit and all its dependencies.
+    It performs a complete setup including:
+    - Creating a Python virtual environment
+    - Installing all required dependencies
+    - Setting up PATH configuration
+    - Creating command shortcuts
+
+${YELLOW}OPTIONS:${NC}
+    -h, --help     Show this help message and exit
+
+${YELLOW}REQUIREMENTS:${NC}
+    - Python 3.10 or higher
+    - pip package manager
+    - bash or zsh shell
+
+${YELLOW}EXAMPLES:${NC}
+    # Basic installation
+    ./scripts/install.sh
+
+    # Run with source to immediately enable commands
+    source ./scripts/install.sh
+
+${YELLOW}WHAT IT DOES:${NC}
+    1. Creates a Python virtual environment in .venv/
+    2. Installs all dependencies from requirements.txt
+    3. Tests the m1f installation
+    4. Adds m1f/bin to your PATH in ~/.bashrc or ~/.zshrc
+    5. Optionally creates symlinks in ~/.local/bin
+
+${YELLOW}AFTER INSTALLATION:${NC}
+    - Run 'source ~/.bashrc' (or ~/.zshrc) to activate PATH changes
+    - Or simply open a new terminal window
+    - Test with 'm1f --help'
+
+${YELLOW}TO UNINSTALL:${NC}
+    Run: ./scripts/uninstall.sh
+
+For more information, visit: https://github.com/denoland/m1f
+EOF
+}
+
+# Check for help flag
+for arg in "$@"; do
+    case $arg in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+    esac
+done
+
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
@@ -1914,6 +2225,7 @@ elif command -v python &> /dev/null; then
     PYTHON_CMD="python"
 else
     echo -e "${RED}Error: Python is not installed. Please install Python 3.10 or higher.${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 
@@ -1924,6 +2236,7 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)")
 
 if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
     echo -e "${RED}Error: Python 3.10 or higher is required. Found Python $PYTHON_VERSION${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 
@@ -1956,6 +2269,7 @@ if [ -f "requirements.txt" ]; then
     echo -e "${GREEN}✓ Dependencies installed${NC}"
 else
     echo -e "${RED}Error: requirements.txt not found${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 
@@ -2225,6 +2539,7 @@ import json
 import os
 import re
 import sys
+import argparse
 from pathlib import Path
 
 # Get project root
@@ -2263,17 +2578,78 @@ def update_package_json(version):
 
 def main():
     """Main function."""
+    parser = argparse.ArgumentParser(
+        description="Sync version between Python and package.json",
+        epilog="""
+This script ensures version consistency across the m1f project by:
+  1. Reading the version from tools/_version.py (source of truth)
+  2. Updating package.json to match the Python version
+
+Examples:
+  # Sync versions
+  %(prog)s
+  
+  # Check current versions without syncing
+  %(prog)s --check
+  
+  # Show verbose output
+  %(prog)s --verbose
+
+Version Management:
+  The version in tools/_version.py is the single source of truth.
+  All other version references should be synchronized from this file.
+  
+  To change the version:
+  1. Update tools/_version.py
+  2. Run this script to sync package.json
+  3. Commit both changes together
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--check", action="store_true", help="Check versions without updating (dry run)"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show detailed output"
+    )
+
+    args = parser.parse_args()
+
     try:
         # Get Python version
         python_version = get_python_version()
-        print(f"Python version: {python_version}")
+        if args.verbose or args.check:
+            print(f"Python version (tools/_version.py): {python_version}")
+
+        # Get current package.json version
+        package_file = PROJECT_ROOT / "package.json"
+        with open(package_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            npm_version = data.get("version", "unknown")
+
+        if args.check:
+            # Check mode - just display versions
+            print(f"package.json version: {npm_version}")
+            if python_version == npm_version:
+                print("\n✓ Versions are in sync!")
+                return 0
+            else:
+                print(f"\n✗ Version mismatch detected!")
+                print(f"  Python:  {python_version}")
+                print(f"  npm:     {npm_version}")
+                return 1
 
         # Update package.json
-        old_npm_version = update_package_json(python_version)
-        print(f"Updated package.json: {old_npm_version} → {python_version}")
+        if python_version != npm_version:
+            old_npm_version = update_package_json(python_version)
+            print(f"Updated package.json: {old_npm_version} → {python_version}")
+            print("\n✓ Version sync complete!")
+        else:
+            print("✓ Versions already in sync!")
 
-        print("\nVersion sync complete!")
-        print(f"All files now use version: {python_version}")
+        if args.verbose:
+            print(f"\nAll files now use version: {python_version}")
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -2289,7 +2665,60 @@ if __name__ == "__main__":
 # Uninstall script for m1f tools on Windows
 # This removes m1f from your system and cleans up all components
 
+param(
+    [switch]$Help
+)
+
 $ErrorActionPreference = "Stop"
+
+# Show help if requested
+if ($Help) {
+    Write-Host @"
+m1f Uninstallation Script (PowerShell)
+======================================
+
+USAGE:
+    .\uninstall.ps1 [OPTIONS]
+
+DESCRIPTION:
+    This script safely removes the m1f (Make One File) toolkit from your Windows system.
+    It cleans up all components installed by the install.ps1 script.
+
+OPTIONS:
+    -Help          Show this help message and exit
+
+WHAT IT REMOVES:
+    - PowerShell functions added to your profile
+    - Command Prompt batch files directory
+    - Python virtual environment (optional)
+    - Generated m1f bundles (optional)
+
+INTERACTIVE MODE:
+    The script will ask for confirmation before:
+    - Proceeding with uninstallation
+    - Removing generated m1f bundles
+    - Removing the Python virtual environment
+
+SAFETY FEATURES:
+    - Prompts for confirmation before destructive actions
+    - Provides manual cleanup instructions if automatic removal fails
+    - Checks for PATH entries that may need manual removal
+
+EXAMPLES:
+    # Run the uninstaller
+    .\scripts\uninstall.ps1
+
+    # Show help
+    .\scripts\uninstall.ps1 -Help
+
+AFTER UNINSTALLATION:
+    - Reload PowerShell or open a new session
+    - Manually remove batch directory from PATH if needed
+
+For more information, visit: https://github.com/denoland/m1f
+"@
+    exit 0
+}
 
 # Colors for output
 $colors = @{
@@ -2352,6 +2781,7 @@ if (Test-Path "m1f") {
 # Show what will be removed
 if ($componentsToRemove.Count -eq 0) {
     Write-ColorOutput "No m1f installation found." -Color $colors.Yellow
+    Write-ColorOutput "Run '.\uninstall.ps1 -Help' for more information." -Color $colors.Yellow
     exit 0
 }
 
@@ -2461,8 +2891,67 @@ set -e
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-# RED='\033[0;31m'  # Currently unused
+RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Help function
+show_help() {
+    cat << EOF
+${BLUE}m1f Uninstallation Script${NC}
+${BLUE}========================${NC}
+
+${YELLOW}USAGE:${NC}
+    ./uninstall.sh [OPTIONS]
+
+${YELLOW}DESCRIPTION:${NC}
+    This script safely removes the m1f (Make One File) toolkit from your system.
+    It cleans up all components installed by the install.sh script.
+
+${YELLOW}OPTIONS:${NC}
+    -h, --help     Show this help message and exit
+
+${YELLOW}WHAT IT REMOVES:${NC}
+    - PATH entries added to shell configuration files
+    - Symbolic links in ~/.local/bin
+    - Python virtual environment (optional)
+    - Generated m1f bundles (optional)
+    - Creates backups of modified shell configs
+
+${YELLOW}INTERACTIVE MODE:${NC}
+    The script will ask for confirmation before:
+    - Proceeding with uninstallation
+    - Removing generated m1f bundles
+    - Removing the Python virtual environment
+
+${YELLOW}SAFETY FEATURES:${NC}
+    - Creates backups of shell configuration files
+    - Only removes symlinks that point to m1f binaries
+    - Prompts for confirmation before destructive actions
+
+${YELLOW}EXAMPLES:${NC}
+    # Run the uninstaller
+    ./scripts/uninstall.sh
+
+    # Show help
+    ./scripts/uninstall.sh --help
+
+${YELLOW}AFTER UNINSTALLATION:${NC}
+    - Reload your shell or open a new terminal
+    - Shell config backups are saved with .m1f-backup suffix
+
+For more information, visit: https://github.com/denoland/m1f
+EOF
+}
+
+# Check for help flag
+for arg in "$@"; do
+    case $arg in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+    esac
+done
 
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -2536,6 +3025,7 @@ done
 # Show what will be removed
 if [ ${#FOUND_IN_CONFIGS[@]} -eq 0 ] && [ ${#FOUND_SYMLINKS[@]} -eq 0 ] && [ "$OLD_STYLE_FOUND" = false ] && [ ${#COMPONENTS_TO_REMOVE[@]} -eq 0 ]; then
     echo -e "${YELLOW}No m1f installation found.${NC}"
+    echo -e "${YELLOW}Run './uninstall.sh --help' for more information.${NC}"
     exit 0
 fi
 

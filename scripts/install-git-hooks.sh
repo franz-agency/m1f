@@ -11,6 +11,54 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Function to show help
+show_help() {
+    cat << EOF
+m1f Git Hooks Installer
+
+Usage: $0 [OPTIONS]
+
+OPTIONS:
+    --help, -h    Show this help message
+
+DESCRIPTION:
+    This script installs m1f Git hooks into your project.
+    
+    Two types of hooks are available:
+    1. Internal - For m1f project development
+       • Formats Python files with Black
+       • Formats Markdown files with Prettier
+       • Runs m1f auto-bundle
+    
+    2. External - For projects using m1f
+       • Runs m1f auto-bundle when .m1f.config.yml exists
+
+    The script will automatically detect your project type and offer
+    the appropriate hook option(s).
+
+REQUIREMENTS:
+    - Must be run from within a Git repository
+    - m1f must be installed locally
+    - For internal hooks: Black and Prettier (optional)
+
+EXAMPLES:
+    $0              # Interactive installation
+    
+To uninstall:
+    rm .git/hooks/pre-commit
+    rm .git/hooks/pre-commit.ps1  # Windows only
+
+For more information, see:
+    docs/05_development/56_git_hooks_setup.md
+EOF
+}
+
+# Check for help flag
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    show_help
+    exit 0
+fi
+
 # This script must be run from a local m1f installation
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HOOKS_DIR="$SCRIPT_DIR/hooks"
@@ -20,6 +68,7 @@ if [ ! -d "$HOOKS_DIR" ]; then
     echo -e "${RED}Error: Hooks directory not found!${NC}"
     echo "This script must be run from a local m1f installation."
     echo "Please clone m1f first: git clone https://github.com/franz-agency/m1f.git"
+    echo -e "${YELLOW}Run '$0 --help' for more information.${NC}"
     exit 1
 fi
 
@@ -27,6 +76,7 @@ fi
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
     echo -e "${RED}Error: Not in a git repository!${NC}"
     echo "Please run this script from the root of your git project."
+    echo -e "${YELLOW}Run '$0 --help' for more information.${NC}"
     exit 1
 fi
 
@@ -75,6 +125,7 @@ EOF
     local source_file="$HOOKS_DIR/pre-commit-${hook_type}${HOOK_EXTENSION}"
     if [ ! -f "$source_file" ]; then
         echo -e "${RED}Error: Hook file not found: $source_file${NC}"
+        echo -e "${YELLOW}Run '$0 --help' for more information.${NC}"
         exit 1
     fi
     

@@ -8,8 +8,67 @@ set -e
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-# RED='\033[0;31m'  # Currently unused
+RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Help function
+show_help() {
+    cat << EOF
+${BLUE}m1f Uninstallation Script${NC}
+${BLUE}========================${NC}
+
+${YELLOW}USAGE:${NC}
+    ./uninstall.sh [OPTIONS]
+
+${YELLOW}DESCRIPTION:${NC}
+    This script safely removes the m1f (Make One File) toolkit from your system.
+    It cleans up all components installed by the install.sh script.
+
+${YELLOW}OPTIONS:${NC}
+    -h, --help     Show this help message and exit
+
+${YELLOW}WHAT IT REMOVES:${NC}
+    - PATH entries added to shell configuration files
+    - Symbolic links in ~/.local/bin
+    - Python virtual environment (optional)
+    - Generated m1f bundles (optional)
+    - Creates backups of modified shell configs
+
+${YELLOW}INTERACTIVE MODE:${NC}
+    The script will ask for confirmation before:
+    - Proceeding with uninstallation
+    - Removing generated m1f bundles
+    - Removing the Python virtual environment
+
+${YELLOW}SAFETY FEATURES:${NC}
+    - Creates backups of shell configuration files
+    - Only removes symlinks that point to m1f binaries
+    - Prompts for confirmation before destructive actions
+
+${YELLOW}EXAMPLES:${NC}
+    # Run the uninstaller
+    ./scripts/uninstall.sh
+
+    # Show help
+    ./scripts/uninstall.sh --help
+
+${YELLOW}AFTER UNINSTALLATION:${NC}
+    - Reload your shell or open a new terminal
+    - Shell config backups are saved with .m1f-backup suffix
+
+For more information, visit: https://github.com/denoland/m1f
+EOF
+}
+
+# Check for help flag
+for arg in "$@"; do
+    case $arg in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+    esac
+done
 
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -83,6 +142,7 @@ done
 # Show what will be removed
 if [ ${#FOUND_IN_CONFIGS[@]} -eq 0 ] && [ ${#FOUND_SYMLINKS[@]} -eq 0 ] && [ "$OLD_STYLE_FOUND" = false ] && [ ${#COMPONENTS_TO_REMOVE[@]} -eq 0 ]; then
     echo -e "${YELLOW}No m1f installation found.${NC}"
+    echo -e "${YELLOW}Run './uninstall.sh --help' for more information.${NC}"
     exit 0
 fi
 

@@ -11,6 +11,67 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Help function
+show_help() {
+    cat << EOF
+${BLUE}m1f Installation Script${NC}
+${BLUE}======================${NC}
+
+${YELLOW}USAGE:${NC}
+    ./install.sh [OPTIONS]
+
+${YELLOW}DESCRIPTION:${NC}
+    This script installs the m1f (Make One File) toolkit and all its dependencies.
+    It performs a complete setup including:
+    - Creating a Python virtual environment
+    - Installing all required dependencies
+    - Setting up PATH configuration
+    - Creating command shortcuts
+
+${YELLOW}OPTIONS:${NC}
+    -h, --help     Show this help message and exit
+
+${YELLOW}REQUIREMENTS:${NC}
+    - Python 3.10 or higher
+    - pip package manager
+    - bash or zsh shell
+
+${YELLOW}EXAMPLES:${NC}
+    # Basic installation
+    ./scripts/install.sh
+
+    # Run with source to immediately enable commands
+    source ./scripts/install.sh
+
+${YELLOW}WHAT IT DOES:${NC}
+    1. Creates a Python virtual environment in .venv/
+    2. Installs all dependencies from requirements.txt
+    3. Tests the m1f installation
+    4. Adds m1f/bin to your PATH in ~/.bashrc or ~/.zshrc
+    5. Optionally creates symlinks in ~/.local/bin
+
+${YELLOW}AFTER INSTALLATION:${NC}
+    - Run 'source ~/.bashrc' (or ~/.zshrc) to activate PATH changes
+    - Or simply open a new terminal window
+    - Test with 'm1f --help'
+
+${YELLOW}TO UNINSTALL:${NC}
+    Run: ./scripts/uninstall.sh
+
+For more information, visit: https://github.com/denoland/m1f
+EOF
+}
+
+# Check for help flag
+for arg in "$@"; do
+    case $arg in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+    esac
+done
+
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
@@ -35,6 +96,7 @@ elif command -v python &> /dev/null; then
     PYTHON_CMD="python"
 else
     echo -e "${RED}Error: Python is not installed. Please install Python 3.10 or higher.${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 
@@ -45,6 +107,7 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)")
 
 if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
     echo -e "${RED}Error: Python 3.10 or higher is required. Found Python $PYTHON_VERSION${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 
@@ -77,6 +140,7 @@ if [ -f "requirements.txt" ]; then
     echo -e "${GREEN}✓ Dependencies installed${NC}"
 else
     echo -e "${RED}Error: requirements.txt not found${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 

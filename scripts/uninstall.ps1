@@ -1,7 +1,60 @@
 # Uninstall script for m1f tools on Windows
 # This removes m1f from your system and cleans up all components
 
+param(
+    [switch]$Help
+)
+
 $ErrorActionPreference = "Stop"
+
+# Show help if requested
+if ($Help) {
+    Write-Host @"
+m1f Uninstallation Script (PowerShell)
+======================================
+
+USAGE:
+    .\uninstall.ps1 [OPTIONS]
+
+DESCRIPTION:
+    This script safely removes the m1f (Make One File) toolkit from your Windows system.
+    It cleans up all components installed by the install.ps1 script.
+
+OPTIONS:
+    -Help          Show this help message and exit
+
+WHAT IT REMOVES:
+    - PowerShell functions added to your profile
+    - Command Prompt batch files directory
+    - Python virtual environment (optional)
+    - Generated m1f bundles (optional)
+
+INTERACTIVE MODE:
+    The script will ask for confirmation before:
+    - Proceeding with uninstallation
+    - Removing generated m1f bundles
+    - Removing the Python virtual environment
+
+SAFETY FEATURES:
+    - Prompts for confirmation before destructive actions
+    - Provides manual cleanup instructions if automatic removal fails
+    - Checks for PATH entries that may need manual removal
+
+EXAMPLES:
+    # Run the uninstaller
+    .\scripts\uninstall.ps1
+
+    # Show help
+    .\scripts\uninstall.ps1 -Help
+
+AFTER UNINSTALLATION:
+    - Reload PowerShell or open a new session
+    - Manually remove batch directory from PATH if needed
+
+For more information, visit: https://github.com/denoland/m1f
+"@
+    exit 0
+}
 
 # Colors for output
 $colors = @{
@@ -64,6 +117,7 @@ if (Test-Path "m1f") {
 # Show what will be removed
 if ($componentsToRemove.Count -eq 0) {
     Write-ColorOutput "No m1f installation found." -Color $colors.Yellow
+    Write-ColorOutput "Run '.\uninstall.ps1 -Help' for more information." -Color $colors.Yellow
     exit 0
 }
 

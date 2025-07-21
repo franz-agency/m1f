@@ -12,6 +12,7 @@ import os
 import sys
 import fnmatch
 import re
+import argparse
 from pathlib import Path
 
 # Default ignore patterns if no config is found
@@ -161,36 +162,83 @@ def patterns_to_fswatch(patterns):
 
 def main():
     """Main entry point"""
-    patterns = get_ignore_patterns()
+    parser = argparse.ArgumentParser(
+        description="Extract watcher ignore paths from .m1f.config.yml",
+        epilog="""
+Examples:
+  # Get patterns as a list (default)
+  %(prog)s
+  
+  # Get patterns as regex for grep
+  %(prog)s --regex
+  
+  # Get patterns for fswatch on macOS
+  %(prog)s --fswatch
+  
+  # Get patterns for inotifywait on Linux
+  %(prog)s --inotify
+  
+  # Debug mode - show all patterns with count
+  %(prog)s --debug
 
+This script reads ignore patterns from:
+  1. .m1f.config.yml (global.global_excludes and global.watcher.ignored_paths)
+  2. .gitignore file
+  3. .m1fignore file
+  4. Falls back to default patterns if no config is found
+
+The patterns are normalized and duplicates are removed while preserving order.
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    # Create mutually exclusive group for output formats
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument(
+        "--regex",
+        action="store_true",
+        help="Output as a single POSIX regex pattern for grep (e.g., '(pattern1|pattern2|...)')",
+    )
+    output_group.add_argument(
+        "--fswatch",
+        action="store_true",
+        help="Output as fswatch exclude arguments for macOS (e.g., --exclude 'pattern1' --exclude 'pattern2')",
+    )
+    output_group.add_argument(
+        "--inotify",
+        action="store_true",
+        help="Output as inotify exclude pattern for Linux (similar to --regex)",
+    )
+    output_group.add_argument(
+        "--debug",
+        action="store_true",
+        help="Debug mode: show all patterns with their count and source information",
+    )
+
+    args = parser.parse_args()
+
+    # Get the ignore patterns
+    patterns = get_ignore_patterns()
     if not patterns:
         patterns = DEFAULT_PATTERNS
 
-    # Output format depends on argument
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--regex":
-            # Output as regex pattern for grep
-            print(patterns_to_regex(patterns))
-        elif sys.argv[1] == "--fswatch":
-            # Output as fswatch exclude arguments
-            print(patterns_to_fswatch(patterns))
-        elif sys.argv[1] == "--inotify":
-            # Output as inotify exclude pattern (similar to regex)
-            print(patterns_to_regex(patterns))
-        elif sys.argv[1] == "--debug":
-            # Debug mode: show all patterns with their sources
-            print("# Ignore patterns for file watchers")
-            print("# Total patterns:", len(patterns))
-            print()
-            for pattern in patterns:
-                print(pattern)
-        else:
-            # Unknown argument, show usage
-            print(
-                "Usage: get_watcher_ignores.py [--regex|--fswatch|--inotify|--debug]",
-                file=sys.stderr,
-            )
-            sys.exit(1)
+    # Output based on selected format
+    if args.regex:
+        # Output as regex pattern for grep
+        print(patterns_to_regex(patterns))
+    elif args.fswatch:
+        # Output as fswatch exclude arguments
+        print(patterns_to_fswatch(patterns))
+    elif args.inotify:
+        # Output as inotify exclude pattern (similar to regex)
+        print(patterns_to_regex(patterns))
+    elif args.debug:
+        # Debug mode: show all patterns with their sources
+        print("# Ignore patterns for file watchers")
+        print("# Total patterns:", len(patterns))
+        print()
+        for pattern in patterns:
+            print(pattern)
     else:
         # Default: one pattern per line
         for pattern in patterns:

@@ -1,8 +1,65 @@
 # Complete installation script for m1f tools
 # This script handles the entire setup process after git clone
 
+param(
+    [switch]$Help
+)
+
 # Script requires administrator privileges for some operations
 $ErrorActionPreference = "Stop"
+
+# Show help if requested
+if ($Help) {
+    Write-Host @"
+m1f Installation Script (PowerShell)
+====================================
+
+USAGE:
+    .\install.ps1 [OPTIONS]
+
+DESCRIPTION:
+    This script installs the m1f (Make One File) toolkit and all its dependencies.
+    It performs a complete setup including:
+    - Creating a Python virtual environment
+    - Installing all required dependencies
+    - Setting up PowerShell functions
+    - Creating batch files for Command Prompt
+
+OPTIONS:
+    -Help          Show this help message and exit
+
+REQUIREMENTS:
+    - Windows operating system
+    - Python 3.10 or higher
+    - pip package manager
+    - PowerShell 5.0 or higher
+
+EXAMPLES:
+    # Basic installation
+    .\scripts\install.ps1
+
+    # Show help
+    .\scripts\install.ps1 -Help
+
+WHAT IT DOES:
+    1. Creates a Python virtual environment in .venv\
+    2. Installs all dependencies from requirements.txt
+    3. Tests the m1f installation
+    4. Adds m1f functions to your PowerShell profile
+    5. Creates batch files for Command Prompt usage
+
+AFTER INSTALLATION:
+    - Restart PowerShell or run: . `$PROFILE
+    - For Command Prompt: Add the batch directory to PATH
+    - Test with 'm1f --help'
+
+TO UNINSTALL:
+    Run: .\scripts\uninstall.ps1
+
+For more information, visit: https://github.com/denoland/m1f
+"@
+    exit 0
+}
 
 # Colors for output
 $colors = @{
@@ -40,6 +97,7 @@ if ($executionPolicy -eq "Restricted") {
     } catch {
         Write-ColorOutput "Error: Could not update execution policy. Please run as administrator or run:" -Color $colors.Red
         Write-ColorOutput "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -Color $colors.Blue
+        Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
         exit 1
     }
 }
@@ -65,6 +123,7 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
 } else {
     Write-ColorOutput "Error: Python is not installed. Please install Python 3.10 or higher." -Color $colors.Red
     Write-ColorOutput "Download from: https://www.python.org/downloads/" -Color $colors.Yellow
+    Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -77,12 +136,14 @@ try {
     
     if ($major -lt 3 -or ($major -eq 3 -and $minor -lt 10)) {
         Write-ColorOutput "Error: Python 3.10 or higher is required. Found Python $versionOutput" -Color $colors.Red
+        Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
         exit 1
     }
     
     Write-ColorOutput "✓ Python $versionOutput found" -Color $colors.Green
 } catch {
     Write-ColorOutput "Error: Could not determine Python version" -Color $colors.Red
+    Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
@@ -116,6 +177,7 @@ if (Test-Path "requirements.txt") {
     Write-ColorOutput "✓ Dependencies installed" -Color $colors.Green
 } else {
     Write-ColorOutput "Error: requirements.txt not found" -Color $colors.Red
+    Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
     exit 1
 }
 
