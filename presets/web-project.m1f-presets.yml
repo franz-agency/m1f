@@ -8,13 +8,11 @@ frontend:
   
   # Global settings for frontend projects
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # encoding and separator_style use defaults
     security_check: "warn"
     
-    # Common frontend excludes
+    # Frontend-specific excludes (beyond defaults)
     exclude_patterns:
-      - "node_modules/**"
       - "dist/**"
       - "build/**"
       - ".next/**"
@@ -41,10 +39,8 @@ frontend:
       patterns:
         - "src/components/**/*"
         - "src/pages/**/*"
-      actions:
-        - strip_comments
-        - compress_whitespace
-      separator_style: "Detailed"
+      actions: []  # Keep component code as-is for context
+      # separator_style defaults to "Standard" (best for AI)
     
     # HTML files
     html:
@@ -56,10 +52,6 @@ frontend:
         - "script"
         - "link"
         - "meta"
-      preserve_tags:
-        - "main"
-        - "article"
-        - "section"
     
     # Stylesheets
     styles:
@@ -70,8 +62,7 @@ frontend:
       actions:
         - minify
       exclude_patterns:
-        - "*.min.css"
-        - "node_modules/**"
+        - "*.min.css"  # Exclude since we prefer original for processing
     
     # TypeScript/JavaScript
     scripts:
@@ -80,7 +71,6 @@ frontend:
         - "src/**/*.js"
         - "src/**/*.ts"
       actions:
-        - strip_comments
         - remove_empty_lines
       exclude_patterns:
         - "*.min.js"
@@ -90,8 +80,7 @@ frontend:
     # JSON data files
     data:
       extensions: [".json"]
-      actions:
-        - compress_whitespace
+      actions: []  # Keep JSON readable
       # Truncate large data files
       max_lines: 100
       max_file_size: "50KB"
@@ -104,8 +93,7 @@ frontend:
     svg_images:
       extensions: [".svg"]
       actions:
-        - compress_whitespace
-      include_metadata: true
+        - minify  # SVGs can benefit from minification
       max_file_size: "100KB"  # SVGs can be included as text
     
     # Configuration
@@ -116,14 +104,10 @@ frontend:
         - "webpack.config.*"
         - "vite.config.*"
         - ".env*"
-      actions:
-        - custom
-      custom_processor: "redact_secrets"
-      include_metadata: true
+      actions: []  # Handle secrets via security_check setting
     
     default:
       actions: []
-      include_metadata: true
 
 backend:
   description: "Backend API project processing"
@@ -132,15 +116,11 @@ backend:
   
   # Global settings for backend projects
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # encoding and separator_style use defaults
     security_check: "abort"  # Stricter for backend
     
-    # Backend-specific excludes
+    # Backend-specific excludes (beyond defaults)
     exclude_patterns:
-      - "node_modules/**"
-      - "venv/**"
-      - "__pycache__/**"
       - "*.pyc"
       - ".pytest_cache/**"
       - "coverage/**"
@@ -159,10 +139,8 @@ backend:
         - "api/**/*.py"
         - "controllers/**/*"
       actions:
-        - strip_comments
-        - custom
-      custom_processor: "extract_functions"
-      separator_style: "Detailed"
+        - remove_empty_lines  # Keep comments for API documentation
+      # separator_style defaults to "Standard" (best for AI)
       max_file_size: "500KB"
     
     # Database models
@@ -172,9 +150,8 @@ backend:
         - "entities/**/*"
         - "schemas/**/*"
       actions:
-        - strip_comments
-        - remove_empty_lines
-      separator_style: "Detailed"
+        - remove_empty_lines  # Keep model documentation
+      # separator_style defaults to "Standard" (best for AI)
     
     # Tests - only structure
     tests:
@@ -183,8 +160,7 @@ backend:
         - "tests/**/*"
         - "__tests__/**/*"
       actions:
-        - custom
-      custom_processor: "extract_functions"
+        - remove_empty_lines  # Keep test context
       max_lines: 50
     
     # SQL/Migrations
@@ -194,7 +170,7 @@ backend:
         - "migrations/**/*.sql"
         - "db/**/*.sql"
       actions:
-        - strip_comments
+        - remove_empty_lines  # Keep SQL comments for context
       max_lines: 200
       exclude_patterns:
         - "**/backups/**"
@@ -203,4 +179,3 @@ backend:
     default:
       actions:
         - remove_empty_lines
-      include_metadata: true

@@ -32,13 +32,10 @@ wordpress:
         actions:
           - remove_empty_lines
       .js:
-        actions:
-          - strip_comments
-          - compress_whitespace
+        actions: []  # Keep JS as-is for context
       .css:
         actions:
-          - minify
-          - strip_comments
+          - minify  # Minify CSS to save space
   
   presets:
     # PHP files - WordPress core and plugins
@@ -50,8 +47,6 @@ wordpress:
         - "wp-content/themes/**/*.php"
       actions:
         - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"
       # Exclude WordPress core files
       exclude_patterns:
         - "wp-includes/**"  # WordPress core
@@ -70,10 +65,6 @@ wordpress:
         - "script"
         - "style"
         - "noscript"
-      preserve_tags:
-        - "pre"
-        - "code"
-      separator_style: "Standard"
     
     # Markdown documentation
     md:
@@ -84,7 +75,6 @@ wordpress:
         - "docs/**/*.md"
       actions:
         - remove_empty_lines
-      include_metadata: true
       separator_style: "Markdown"
     
     # JavaScript files - prefer minified versions
@@ -95,10 +85,7 @@ wordpress:
         - "wp-content/plugins/**/*.min.js"
         - "wp-content/themes/**/*.js"  # Fallback to non-minified
         - "wp-content/plugins/**/*.js"
-      actions:
-        - strip_comments
-        - compress_whitespace
-      separator_style: "Standard"
+      actions: []  # Keep JS as-is for context
     
     # CSS files - prefer minified versions
     css:
@@ -107,9 +94,7 @@ wordpress:
         - "wp-content/themes/**/*.min.css"  # Prefer minified
         - "wp-content/themes/**/*.css"  # Fallback to non-minified
       actions:
-        - minify
-        - strip_comments
-      separator_style: "Standard"
+        - minify  # Minify CSS to save space
     
     # Configuration files - exclude most sensitive ones
     config:
@@ -119,21 +104,18 @@ wordpress:
         - "*.yaml"
         - "composer.json"
         - "package.json"
-      actions:
-        - compress_whitespace
+      actions: []  # Keep config files as-is
       # wp-config.php is excluded globally for security
       exclude_patterns:
         - "wp-config*.php"
         - ".env*"
-      include_metadata: true
       max_file_size: "100KB"
     
     # SQL files
     sql:
       extensions: [".sql"]
       actions:
-        - strip_comments
-        - compress_whitespace
+        - remove_empty_lines  # Keep SQL readable
       # Truncate large dump files
       max_lines: 500  # Truncate large SQL dumps
     
@@ -141,5 +123,3 @@ wordpress:
     default:
       actions:
         - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"

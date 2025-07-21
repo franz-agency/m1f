@@ -8,9 +8,7 @@ web_project:
   # Global settings that apply to all files
   global_settings:
     # General settings
-    encoding: "utf-8"
-    separator_style: "Detailed"
-    line_ending: "lf"
+    # encoding, separator_style, and line_ending use defaults
     
     # Global exclude patterns - prefer minified versions
     exclude_patterns:
@@ -21,9 +19,9 @@ web_project:
       - ".cache"
     
     # File filtering options
-    include_dot_paths: false        # Include hidden files/directories
-    include_binary_files: false     # Include binary files
-    include_symlinks: false         # Follow symbolic links
+    # include_dot_paths defaults to false
+    # include_binary_files defaults to false
+    # include_symlinks defaults to false
     max_file_size: "10MB"          # Skip files larger than this
     # Use multiple exclude files - they are merged
     exclude_paths_file:
@@ -49,21 +47,16 @@ web_project:
           - "style"
           - "meta"
           - "link"
-        preserve_tags:
-          - "main"
-          - "article"
       
       # All CSS files get minified by default
       .css:
         actions:
-          - minify
-          - strip_comments
+          - minify  # Only minify CSS
       
       # All JS files get comments stripped by default
       .js:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines  # Keep JS comments
   
   presets:
     # Documentation HTML - override global settings
@@ -74,7 +67,7 @@ web_project:
       # Override global - don't strip any tags from docs
       strip_tags: []
       actions:
-        - compress_whitespace  # Only compress, no tag stripping
+        - remove_empty_lines  # Only remove empty lines, no tag stripping
     
     # Main site HTML - use global defaults
     site:
@@ -108,14 +101,13 @@ m1f_project:
   priority: 20  # Higher priority than web_project
   
   global_settings:
-    # Override encoding for this project
-    encoding: "utf-8"
+    # Use default encoding
     
     extensions:
       .html:
         # For m1f project, don't strip tags from HTML
         actions:
-          - compress_whitespace
+          - remove_empty_lines
   
   presets:
     # Test HTML files need full content
@@ -128,4 +120,4 @@ m1f_project:
     examples:
       patterns:
         - "examples/**/*.html"
-      # Uses global (only compress_whitespace)
+      # Uses global settings

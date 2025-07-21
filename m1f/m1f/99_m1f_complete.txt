@@ -3462,16 +3462,16 @@ code_review:
     extensions:
       .py:
         actions:
-          - remove_empty_lines  # Keep comments for context
+          - remove_empty_lines
       .js:
         actions:
-          - remove_empty_lines  # Keep comments for context
+          - remove_empty_lines
       .tsx:
         actions:
-          - remove_empty_lines  # Keep comments for context
+          - remove_empty_lines
       .jsx:
         actions:
-          - remove_empty_lines  # Keep comments for context
+          - remove_empty_lines
   
   presets:
     # Source code
@@ -3559,7 +3559,7 @@ docs_chat:
         - "**/examples/**/*"
         - "**/snippets/**/*"
       actions:
-        - remove_empty_lines  # Keep comments for context
+        - remove_empty_lines
       max_lines: 100
     
     # API reference
@@ -3746,11 +3746,6 @@ documentation:
         - "nav"
         - "header"
         - "footer"
-      preserve_tags:
-        - "main"
-        - "article"
-        - "pre"
-        - "code"
     
     # SVG images in documentation (text-based)
     svg_images:
@@ -3861,9 +3856,6 @@ web_project:
           - "style"
           - "meta"
           - "link"
-        preserve_tags:
-          - "main"
-          - "article"
       
       # All CSS files get minified by default
       .css:
@@ -3997,7 +3989,7 @@ size_limits_per_type:
         actions: [minify]       # Also minify them
       .js:
         max_file_size: "100KB"  # 100KB limit for JS
-        actions: [remove_empty_lines]  # Keep comments for context
+        actions: [remove_empty_lines]
       
       # More lenient for backend code
       .php:
@@ -4056,7 +4048,7 @@ web_project_complete:
       .js:
         max_file_size: "100KB"
         security_check: "warn"
-        actions: [remove_empty_lines]  # Keep comments for context
+        actions: [remove_empty_lines]
       .min.js:  # Minified JS - no further processing
         max_file_size: "100KB"
         security_check: "warn"
@@ -4201,10 +4193,6 @@ example_group_name:
   # Priority for this group (higher = processed first)
   # When multiple groups match a file, higher priority wins
   priority: 10
-  
-  # Base path for relative patterns (optional)
-  # All patterns in this group will be relative to this path
-  base_path: "src"
   
   # Global settings that apply to all files in this group
   global_settings:
@@ -4385,9 +4373,6 @@ example_group_name:
           - "style"        # Remove style tags
           - "meta"
           - "link"
-        preserve_tags:
-          - "pre"          # Keep pre tags
-          - "code"         # Keep code tags
         # File-specific overrides
         max_file_size: "500KB"  # HTML-specific size limit
         security_check: "warn"  # Less strict for HTML
@@ -4662,10 +4647,6 @@ frontend:
         - "script"
         - "link"
         - "meta"
-      preserve_tags:
-        - "main"
-        - "article"
-        - "section"
     
     # Stylesheets
     styles:
@@ -4685,7 +4666,7 @@ frontend:
         - "src/**/*.js"
         - "src/**/*.ts"
       actions:
-        - remove_empty_lines  # Keep comments for context
+        - remove_empty_lines
       exclude_patterns:
         - "*.min.js"
         - "dist/**"
@@ -4862,9 +4843,6 @@ wordpress:
         - "script"
         - "style"
         - "noscript"
-      preserve_tags:
-        - "pre"
-        - "code"
     
     # Markdown documentation
     md:
@@ -14677,8 +14655,8 @@ Instead of applying the same settings to all files, presets let you:
 - Strip comments from production code but keep them in documentation
 - Apply different separator styles for different file types
 - Truncate large data files while keeping full source code
-- **NEW**: Override security checks and size limits per file type
-- **NEW**: Integrate with auto-bundling for intelligent project organization
+- Override security checks and size limits per file type
+- Integrate with auto-bundling for intelligent project organization
 
 ## Quick Start
 
@@ -14709,7 +14687,6 @@ my_project:
   description: "Processing rules for my project"
   enabled: true
   priority: 10 # Higher priority groups are checked first
-  base_path: "src" # Optional base path for patterns
 
   presets:
     # Preset for Python files
@@ -14717,6 +14694,7 @@ my_project:
       extensions: [".py"]
       patterns:
         - "*.py"
+        - "src/**/*.py"  # Must include full path
         - "lib/**/*.py"
       actions:
         - strip_comments
@@ -14724,15 +14702,24 @@ my_project:
       separator_style: "Detailed"
       include_metadata: true
 
-    # Preset for HTML files
+    # Preset for HTML files - remove specific tags
     html:
       extensions: [".html", ".htm"]
       actions:
         - minify
         - strip_tags
-      strip_tags: ["script", "style"]
-      preserve_tags: ["pre", "code"]
+      strip_tags: ["script", "style", "meta", "link"]
       max_lines: 500 # Truncate after 500 lines
+    
+    # Preset for HTML to text conversion - strip all but content tags
+    html_to_text:
+      extensions: [".html"]
+      actions:
+        - strip_tags
+      # Empty strip_tags means remove ALL tags
+      strip_tags: []
+      # But preserve content-relevant tags
+      preserve_tags: ["p", "h1", "h2", "h3", "pre", "code", "blockquote"]
 
     # Default preset for unmatched files
     default:
@@ -14744,7 +14731,7 @@ my_project:
 
 ### Built-in Actions
 
-1. **`minify`** - Reduces file size by removing unnecessary whitespace
+1. **`minify`** - Reduces file size by removing unnecessary whitespace. Keep in mind
    - HTML: Removes comments, compresses whitespace
    - CSS: Removes comments, compresses rules
    - JS: Basic minification (removes comments and newlines)
@@ -14754,8 +14741,11 @@ my_project:
    - Use `preserve_tags` to protect specific tags
 
 3. **`strip_comments`** - Removes comments based on file type
+   - **WARNING**: Removing comments removes valuable context for AI models. Comments often explain the "why" behind code, making it harder for AI to understand intent. Only use this when file size reduction is critical.
    - Python: Removes # comments (preserves docstrings)
    - JS/Java/C/C++: Removes // and /\* \*/ comments
+   - CSS: Removes /\* \*/ comments
+   - HTML: Removes <!-- --> comments
 
 4. **`compress_whitespace`** - Normalizes whitespace
    - Replaces multiple spaces with single space
@@ -14763,7 +14753,12 @@ my_project:
 
 5. **`remove_empty_lines`** - Removes all empty lines
 
-6. **`custom`** - Apply custom processor
+6. **`join_paragraphs`** - Joins multi-line paragraphs into single lines (Markdown files)
+   - Intelligently preserves code blocks, lists, tables, and other markdown structures
+   - Helps maximize content density for LLMs that focus on first 200 lines
+   - Only affects regular paragraph text
+
+7. **`custom`** - Apply custom processor
    - Specify processor with `custom_processor`
    - Pass arguments with `processor_args`
 
@@ -14809,9 +14804,14 @@ my_project:
 - **`actions`**: List of processing actions to apply
 - **`strip_tags`**: HTML tags to remove
 - **`preserve_tags`**: HTML tags to keep when stripping
-- **`separator_style`**: Override default separator ("Standard", "Detailed",
-  "Markdown", "None")
-- **`include_metadata`**: Whether to include file metadata (default: true)
+- **`separator_style`**: Override separator style
+  - `"Standard"` (default) - Best for AI consumption: `--- FILE: path ---`
+  - `"Detailed"` - Includes metadata: `===== FILE: path | ENCODING: utf-8 =====`
+  - `"Markdown"` - Uses markdown code blocks
+  - `"MachineReadable"` - Structured format for parsing
+  - `"None"` - No separators
+- **`include_metadata`**: Whether to include file metadata
+  - **Note**: This option was never implemented in m1f. It can be safely removed from presets.
 - **`max_lines`**: Truncate file after N lines
 
 ### Custom Processing
@@ -14831,8 +14831,7 @@ wordpress:
     php:
       extensions: [".php"]
       actions:
-        - strip_comments
-        - remove_empty_lines
+        - remove_empty_lines  # Keep comments for context
 
     config:
       patterns: ["wp-config*.php", ".env*"]
@@ -14843,7 +14842,7 @@ wordpress:
     sql:
       extensions: [".sql"]
       actions:
-        - strip_comments
+        - remove_empty_lines  # Keep SQL comments
       max_lines: 1000 # Truncate large dumps
 ```
 
@@ -14857,8 +14856,8 @@ frontend:
     components:
       extensions: [".jsx", ".tsx", ".vue"]
       actions:
-        - strip_comments
         - compress_whitespace
+        - remove_empty_lines
 
     styles:
       extensions: [".css", ".scss"]
@@ -14891,7 +14890,7 @@ documentation:
     code_examples:
       patterns: ["examples/**/*"]
       actions:
-        - strip_comments
+        - remove_empty_lines  # Keep comments in examples
       max_lines: 50 # Keep examples concise
 ```
 
@@ -14932,9 +14931,9 @@ These apply to all files unless overridden:
 ```yaml
 global_settings:
   # Encoding and formatting
-  encoding: "utf-8"
-  separator_style: "Detailed"
-  line_ending: "lf"
+  # encoding: "utf-8"  # Default encoding - supports: utf-8, utf-16, latin-1, cp1252, ascii, etc.
+  # separator_style: "Standard"  # Default - best for AI consumption
+  # line_ending: "lf"  # Default - Unix style (use "crlf" for Windows)
 
   # Include/exclude patterns
   include_patterns: ["src/**/*", "lib/**/*"]
@@ -14970,6 +14969,28 @@ global_settings:
 
   # Security
   security_check: "warn" # abort, skip, warn
+```
+
+### Encoding Options
+
+m1f provides comprehensive encoding support:
+
+**Supported Encodings**:
+- `utf-8` (default) - Unicode UTF-8
+- `utf-16` - Unicode UTF-16 with BOM detection
+- `utf-16-le` - UTF-16 Little Endian
+- `utf-16-be` - UTF-16 Big Endian
+- `ascii` - Basic ASCII (7-bit)
+- `latin-1` / `iso-8859-1` - Western European
+- `cp1252` / `windows-1252` - Windows Western European
+- Many more via Python's codecs module
+
+**Encoding Configuration**:
+```yaml
+global_settings:
+  encoding: "utf-8"  # Target encoding for output (default)
+  abort_on_encoding_error: false  # Continue on errors (default)
+  prefer_utf8_for_text_files: true  # Auto UTF-8 for .md, .txt (default)
 ```
 
 ### Extension-Specific Settings
@@ -15518,7 +15539,6 @@ group_name:
   description: "Optional description of this preset group"
   enabled: true # Can disable entire group
   priority: 10 # Higher numbers are processed first (default: 0)
-  base_path: "src" # Optional base path for all patterns in this group
 
   presets:
     # Preset name (for internal reference)
@@ -15592,7 +15612,6 @@ globals:
 | `description`       | string  | none    | Human-readable description      |
 | `enabled`           | boolean | true    | Enable/disable this group       |
 | `priority`          | integer | 0       | Processing order (higher first) |
-| `base_path`         | string  | none    | Base path for pattern matching  |
 | `enabled_if_exists` | string  | none    | Only enable if this path exists |
 
 ### Global Settings (NEW in v3.2.0)
@@ -15757,15 +15776,6 @@ illustrative and would need to be implemented.
    patterns: ["src/**/*"]
    ```
 
-### Base Path Behavior
-
-```yaml
-group_name:
-  base_path: "src"
-  presets:
-    example:
-      patterns: ["components/*.js"] # Actually matches: src/components/*.js
-```
 
 ## Processing Order
 
