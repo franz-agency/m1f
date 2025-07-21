@@ -8,7 +8,7 @@
   },
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
-  "version": "3.7.0",
+  "version": "3.7.1",
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
