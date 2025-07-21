@@ -2307,8 +2307,8 @@ First time? Run 'm1f-init' to set up your project!
 
         return
 
-    # Advanced setup mode
-    if args.advanced_setup:
+    # Setup mode
+    if args.setup:
         m1f_claude.advanced_setup()
         return
 
