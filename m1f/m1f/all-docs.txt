@@ -845,7 +845,6 @@ and this project adheres to
   - **Tests**: Added cross-platform test suite with Windows-specific timeout
     handling
   - **Installation**: Fixed PowerShell installation scripts and path handling
-
 ## [3.5.0] - 2025-07-18
 
 ### Added
