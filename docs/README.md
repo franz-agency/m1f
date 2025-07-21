@@ -93,8 +93,6 @@ Work efficiently with Claude and other LLMs.
 
 - [**Development Workflow**](01_m1f/21_development_workflow.md) - Best practices
   for development with m1f
-- [**Version Management**](05_development/55_version_management.md) - Version
-  management and release process
 - [**Git Hooks Setup**](05_development/56_git_hooks_setup.md) - Automated
   bundling with git hooks
 - [**Version 3.2 Features**](01_m1f/41_version_3_2_features.md) - Feature
