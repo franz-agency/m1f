@@ -701,7 +701,7 @@ global:
             print(f"3. Preview your bundle: cat {first_bundle} | head -50")
 
         if not self.is_windows:
-            print(f"\n🚀 Advanced Setup Available!")
+            print(f"\n🚀 Additional Setup Available!")
             print(f"For topic-specific bundles (components, API, tests, etc.), run:")
             print(f"  m1f-claude --setup")
             print(f"\nThis will:")
@@ -709,7 +709,9 @@ global:
             print(f"  • Create focused bundles for different aspects")
             print(f"  • Optimize configuration for your project type")
         else:
-            print(f"\n💡 Note: Advanced setup with Claude is not available on Windows")
+            print(
+                f"\n💡 Note: Additional setup with Claude is not available on Windows"
+            )
             print(f"You can manually add topic-specific bundles to .m1f.config.yml")
 
 

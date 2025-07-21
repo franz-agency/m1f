@@ -1346,9 +1346,9 @@ I'll analyze your project and create an optimal m1f configuration that:
             except Exception as e:
                 logger.error(f"Error: {e}")
 
-    def advanced_setup(self):
-        """Run advanced setup with Claude Code for topic-specific bundles."""
-        print("\n🤖 m1f Advanced Setup with Claude")
+    def setup(self):
+        """Run setup with Claude Code for topic-specific bundles."""
+        print("\n🤖 m1f Setup with Claude")
         print("=" * 50)
 
         print("\nThis command adds topic-specific bundles to your existing m1f setup.")
@@ -2270,7 +2270,7 @@ First time? Run 'm1f-init' to set up your project!
 
     # Handle /setup command in prompt
     if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/setup":
-        args.advanced_setup = True
+        args.setup = True
         args.prompt = []
 
     # Initialize m1f-claude
@@ -2309,7 +2309,7 @@ First time? Run 'm1f-init' to set up your project!
 
     # Setup mode
     if args.setup:
-        m1f_claude.advanced_setup()
+        m1f_claude.setup()
         return
 
     # Interactive mode

@@ -5096,9 +5096,9 @@ I'll analyze your project and create an optimal m1f configuration that:
             except Exception as e:
                 logger.error(f"Error: {e}")
 
-    def advanced_setup(self):
-        """Run advanced setup with Claude Code for topic-specific bundles."""
-        print("\n🤖 m1f Advanced Setup with Claude")
+    def setup(self):
+        """Run setup with Claude Code for topic-specific bundles."""
+        print("\n🤖 m1f Setup with Claude")
         print("=" * 50)
 
         print("\nThis command adds topic-specific bundles to your existing m1f setup.")
@@ -6020,7 +6020,7 @@ First time? Run 'm1f-init' to set up your project!
 
     # Handle /setup command in prompt
     if args.prompt and len(args.prompt) == 1 and args.prompt[0] == "/setup":
-        args.advanced_setup = True
+        args.setup = True
         args.prompt = []
 
     # Initialize m1f-claude
@@ -6059,7 +6059,7 @@ First time? Run 'm1f-init' to set up your project!
 
     # Setup mode
     if args.setup:
-        m1f_claude.advanced_setup()
+        m1f_claude.setup()
         return
 
     # Interactive mode
@@ -7056,7 +7056,7 @@ global:
             print(f"3. Preview your bundle: cat {first_bundle} | head -50")
 
         if not self.is_windows:
-            print(f"\n🚀 Advanced Setup Available!")
+            print(f"\n🚀 Additional Setup Available!")
             print(f"For topic-specific bundles (components, API, tests, etc.), run:")
             print(f"  m1f-claude --setup")
             print(f"\nThis will:")
@@ -7064,7 +7064,9 @@ global:
             print(f"  • Create focused bundles for different aspects")
             print(f"  • Optimize configuration for your project type")
         else:
-            print(f"\n💡 Note: Advanced setup with Claude is not available on Windows")
+            print(
+                f"\n💡 Note: Additional setup with Claude is not available on Windows"
+            )
             print(f"You can manually add topic-specific bundles to .m1f.config.yml")
 
 
