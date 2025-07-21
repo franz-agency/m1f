@@ -81,7 +81,7 @@ cd /path/to/m1f
 
 ```powershell
 cd C:\path\to\m1f
-.\scripts\setup_m1f_aliases.ps1 -Remove
+.\scripts\uninstall.ps1
 ```
 
 ---
@@ -143,10 +143,9 @@ source ~/.bashrc  # or ~/.zshrc
 
 **Option A: PowerShell Functions**
 
-Run the setup script:
+The install script already configures PowerShell functions. To reload them:
 
 ```powershell
-.\scripts\setup_m1f_aliases.ps1
 . $PROFILE
 ```
 

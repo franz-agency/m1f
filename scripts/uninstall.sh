@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Uninstall script for m1f tools
-# This removes m1f from your PATH and cleans up symlinks
+# This removes m1f from your system and cleans up all components
 
 set -e
 
@@ -8,13 +8,14 @@ set -e
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-RED='\033[0;31m'
+# RED='\033[0;31m'  # Currently unused
 NC='\033[0m' # No Color
 
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 BIN_DIR="$PROJECT_ROOT/bin"
+VENV_DIR="$PROJECT_ROOT/.venv"
 
 echo -e "${BLUE}m1f Uninstallation${NC}"
 echo -e "${BLUE}==================${NC}"
@@ -29,6 +30,12 @@ SHELL_CONFIGS=()
 # Track what we'll remove
 FOUND_IN_CONFIGS=()
 FOUND_SYMLINKS=()
+COMPONENTS_TO_REMOVE=()
+
+# Check for virtual environment
+if [ -d "$VENV_DIR" ]; then
+    COMPONENTS_TO_REMOVE+=("Python virtual environment (.venv)")
+fi
 
 # Check shell configs
 for config in "${SHELL_CONFIGS[@]}"; do
@@ -39,7 +46,7 @@ done
 
 # Check for symlinks in ~/.local/bin
 if [ -d "$HOME/.local/bin" ]; then
-    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-token-counter m1f-update m1f-link m1f-help; do
+    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-token-counter m1f-update m1f-link m1f-help m1f-init m1f-claude; do
         if [ -L "$HOME/.local/bin/$cmd" ]; then
             # Check if symlink points to our bin directory
             link_target=$(readlink -f "$HOME/.local/bin/$cmd" 2>/dev/null || true)
@@ -48,6 +55,20 @@ if [ -d "$HOME/.local/bin" ]; then
             fi
         fi
     done
+fi
+
+# Check for generated bundles
+BUNDLE_FILES=()
+if [ -d "$PROJECT_ROOT/m1f" ]; then
+    while IFS= read -r -d '' file; do
+        # Skip config files
+        if [[ ! "$file" =~ config ]]; then
+            BUNDLE_FILES+=("$file")
+        fi
+    done < <(find "$PROJECT_ROOT/m1f" -name "*.txt" -type f -print0)
+    if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
+        COMPONENTS_TO_REMOVE+=("Generated m1f bundles (${#BUNDLE_FILES[@]} files)")
+    fi
 fi
 
 # Check for old-style aliases
@@ -60,7 +81,7 @@ for config in "${SHELL_CONFIGS[@]}"; do
 done
 
 # Show what will be removed
-if [ ${#FOUND_IN_CONFIGS[@]} -eq 0 ] && [ ${#FOUND_SYMLINKS[@]} -eq 0 ] && [ "$OLD_STYLE_FOUND" = false ]; then
+if [ ${#FOUND_IN_CONFIGS[@]} -eq 0 ] && [ ${#FOUND_SYMLINKS[@]} -eq 0 ] && [ "$OLD_STYLE_FOUND" = false ] && [ ${#COMPONENTS_TO_REMOVE[@]} -eq 0 ]; then
     echo -e "${YELLOW}No m1f installation found.${NC}"
     exit 0
 fi
@@ -68,10 +89,18 @@ fi
 echo "The following will be removed:"
 echo
 
+if [ ${#COMPONENTS_TO_REMOVE[@]} -gt 0 ]; then
+    echo "Components:"
+    for component in "${COMPONENTS_TO_REMOVE[@]}"; do
+        echo "  • $component"
+    done
+    echo
+fi
+
 if [ ${#FOUND_IN_CONFIGS[@]} -gt 0 ]; then
     echo "PATH entries in:"
     for config in "${FOUND_IN_CONFIGS[@]}"; do
-        echo "  - $config"
+        echo "  • $config"
     done
     echo
 fi
@@ -79,7 +108,7 @@ fi
 if [ ${#FOUND_SYMLINKS[@]} -gt 0 ]; then
     echo "Symlinks:"
     for link in "${FOUND_SYMLINKS[@]}"; do
-        echo "  - $link"
+        echo "  • $link"
     done
     echo
 fi
@@ -113,6 +142,40 @@ for link in "${FOUND_SYMLINKS[@]}"; do
     echo -e "${GREEN}Removing symlink: $link${NC}"
     rm -f "$link"
 done
+
+# Ask about generated bundles
+if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
+    echo
+    echo -e "${YELLOW}Do you want to remove generated m1f bundles? (y/N)${NC}"
+    read -r bundle_response
+    if [[ "$bundle_response" =~ ^[Yy]$ ]]; then
+        echo -e "${GREEN}Removing generated bundles...${NC}"
+        for file in "${BUNDLE_FILES[@]}"; do
+            rm -f "$file"
+        done
+        echo -e "${GREEN}✓ Bundles removed${NC}"
+    else
+        echo "Keeping generated bundles"
+    fi
+fi
+
+# Ask about virtual environment
+if [ -d "$VENV_DIR" ]; then
+    echo
+    echo -e "${YELLOW}Do you want to remove the Python virtual environment? (y/N)${NC}"
+    read -r venv_response
+    if [[ "$venv_response" =~ ^[Yy]$ ]]; then
+        echo -e "${GREEN}Removing virtual environment...${NC}"
+        # Deactivate if we're in the virtual environment
+        if [ "$VIRTUAL_ENV" = "$VENV_DIR" ]; then
+            deactivate 2>/dev/null || true
+        fi
+        rm -rf "$VENV_DIR"
+        echo -e "${GREEN}✓ Virtual environment removed${NC}"
+    else
+        echo "Keeping virtual environment"
+    fi
+fi
 
 echo
 echo -e "${GREEN}✓ Uninstallation complete!${NC}"

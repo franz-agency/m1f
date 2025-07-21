@@ -27,10 +27,12 @@ while [[ $# -gt 0 ]]; do
             # Legacy command support - convert to m1f-update
             if [ "$1" = "all" ]; then
                 # Run auto-bundle for all bundles
+                # shellcheck source=/dev/null
                 cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update
                 exit 0
             elif [ "$1" = "focus" ] && [ -n "$2" ]; then
                 # Run auto-bundle for specific bundle
+                # shellcheck source=/dev/null
                 cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update "$2"
                 exit 0
             elif [ "$1" = "preset" ] && [ -n "$2" ]; then
@@ -54,6 +56,7 @@ done
 
 # If preset is specified, use m1f with preset
 if [ -n "$PRESET" ]; then
+    # shellcheck source=/dev/null
     cd "$PROJECT_ROOT" && source .venv/bin/activate
     
     if [ -n "$GROUP" ]; then
@@ -63,5 +66,6 @@ if [ -n "$PRESET" ]; then
     fi
 else
     # Default to running auto-bundle
+    # shellcheck source=/dev/null
     cd "$PROJECT_ROOT" && source .venv/bin/activate && m1f-update
 fi
