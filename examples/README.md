@@ -40,6 +40,19 @@ cd /path/to/m1f
 script -c "python examples/scrape_claude_code_docs.py ~/claude-doc" ~/claude-code-doc-scrape.txt
 ```
 
+### Ideal usage (with virtual environment)
+
+The recommended way to run this script with full output capture:
+
+```bash
+# Create output directory
+mkdir ~/claude-code-doc
+
+# Run with virtual environment and capture output
+script -c "source ./.venv/bin/activate && python examples/scrape_claude_code_docs.py ~/claude-code-doc" \
+    ~/claude-code-doc/claude-code-doc-scrape.txt
+```
+
 ### Output
 
 The script creates a documentation bundle at:
