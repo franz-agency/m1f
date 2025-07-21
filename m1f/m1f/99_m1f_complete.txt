@@ -516,7 +516,7 @@ limitations under the License.
   },
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
-  "version": "3.7.0",
+  "version": "3.7.2",
   "description": "Python Development Tools by Franz Agency",
   "main": "index.js",
   "author": "Franz Agency",
@@ -3055,8 +3055,9 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
             scrape_cmd, "Scraping documentation", capture_output=False
         )
         if not success:
-            print("\n💡 Tip: Make sure m1f-scrape is installed:")
-            print("   pip install m1f")
+            print("\n💡 Tip: Make sure m1f tools are installed:")
+            print("   Run: ./scripts/install.sh (Linux/macOS)")
+            print("   Run: .\\scripts\\install.ps1 (Windows)")
             return 1
 
         # Verify scraping results
@@ -8601,7 +8602,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.7.0"
+__version__ = "3.7.2"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -12551,10 +12552,17 @@ if __name__ == "__main__":
 
 """Wrapper script for m1f-scrape module."""
 
-from scrape_tool.cli import main
+import sys
+
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from tools.scrape_tool.cli import main
+except ImportError:
+    # Fallback for direct script execution
+    from scrape_tool.cli import main
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
 
 ======= tools/setup.py ======
 # Copyright 2025 Franz und Franz GmbH

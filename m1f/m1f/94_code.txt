@@ -3909,7 +3909,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.7.0"
+__version__ = "3.7.2"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -7859,10 +7859,17 @@ if __name__ == "__main__":
 
 """Wrapper script for m1f-scrape module."""
 
-from scrape_tool.cli import main
+import sys
+
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from tools.scrape_tool.cli import main
+except ImportError:
+    # Fallback for direct script execution
+    from scrape_tool.cli import main
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
 
 ======= tools/setup.py ======
 # Copyright 2025 Franz und Franz GmbH
