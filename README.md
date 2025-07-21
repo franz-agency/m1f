@@ -2,7 +2,7 @@
 
 **Feed your AI the whole story.**
 
-## Quick Start (3 Steps)
+## Quick Start
 
 ### Installation
 
@@ -43,7 +43,7 @@ m1f-init
 # - tailwind_complete.txt (all text files)
 # - tailwind_docs.txt (documentation only)
 
-# 3. Optional: Create special Claude-optimized bundles
+# 3. Optional: Create Claude-optimized topic bundles
 m1f-claude --setup
 ```
 

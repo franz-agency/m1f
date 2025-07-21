@@ -472,7 +472,8 @@ The project implements comprehensive security measures:
 ### Version Management
 - Single source of truth in `tools/_version.py`
 - Automatic syncing across all components
-- Use `scripts/bump_version.py` for version updates
+- Use `dev/bump_version.py` for version updates
+- Use `dev/sync_version.py` to sync package.json
 
 ### Async Architecture
 All file operations use async I/O patterns:
