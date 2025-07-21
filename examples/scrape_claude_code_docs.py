@@ -64,12 +64,18 @@ def main():
         epilog="""
 Example:
     python scrape_claude_code_docs.py ~/claude-docs
+    python scrape_claude_code_docs.py ~/claude-docs --force-download
     
 This will create the documentation bundle in the specified directory.
 The final bundle will be in the 'm1f' subdirectory of the markdown folder.
         """,
     )
     parser.add_argument("path", help="Target directory path (required)")
+    parser.add_argument(
+        "--force-download",
+        action="store_true",
+        help="Force re-download even if HTML files exist",
+    )
     args = parser.parse_args()
 
     # Determine output directory
@@ -95,47 +101,61 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
 
     print(f"\n📁 Working directory: {output_path.absolute()}")
 
-    # Step 1: Scrape Claude Code documentation
-    print(f"\n{'='*50}")
-    print("STEP 1: Scraping Claude Code Documentation")
-    print(f"{'='*50}")
-    print(f"📄 Will download ~30 HTML pages from Claude Code docs")
-    print(f"⏱️  Expected duration: 7-8 minutes (15s delay between pages)")
+    # Check if HTML files already exist
+    final_html_dir = Path("claude-code-html")
+    skip_scraping = False
 
-    scrape_cmd = [
-        "m1f-scrape",
-        CLAUDE_DOCS_URL,
-        "-o",
-        str(html_dir),
-        "--request-delay",
-        str(SCRAPE_DELAY),
-        "-v",
-    ]
+    if final_html_dir.exists() and not args.force_download:
+        existing_html_files = list(final_html_dir.glob("**/*.html"))
+        if len(existing_html_files) >= 25:  # Allow some margin for missing files
+            print(f"📁 Found existing HTML files: {len(existing_html_files)} files")
+            print("⏭️  Skipping download step (use --force-download to re-download)")
+            skip_scraping = True
+            html_dir = final_html_dir
 
-    success, _ = run_command(scrape_cmd, "Scraping documentation", capture_output=False)
-    if not success:
-        print("\n💡 Tip: Make sure m1f-scrape is installed:")
-        print("   pip install m1f")
-        return 1
+    if not skip_scraping:
+        # Step 1: Scrape Claude Code documentation
+        print(f"\n{'='*50}")
+        print("STEP 1: Scraping Claude Code Documentation")
+        print(f"{'='*50}")
+        print(f"📄 Will download ~30 HTML pages from Claude Code docs")
+        print(f"⏱️  Expected duration: 7-8 minutes (15s delay between pages)")
 
-    # Verify scraping results
-    if not html_dir.exists():
-        print("❌ HTML directory not created")
-        return 1
+        scrape_cmd = [
+            "m1f-scrape",
+            CLAUDE_DOCS_URL,
+            "-o",
+            str(html_dir),
+            "--request-delay",
+            str(SCRAPE_DELAY),
+            "-v",
+        ]
 
-    # Find the actual scraped directory (docs.anthropic.com/en/docs/claude-code)
-    scraped_dir = html_dir / "docs.anthropic.com" / "en" / "docs" / "claude-code"
-    if scraped_dir.exists():
-        print(f"📁 Found scraped content in: {scraped_dir}")
-        # Move content up and rename
-        new_html_dir = Path("claude-code-html")
-        if new_html_dir.exists():
-            shutil.rmtree(new_html_dir)
-        shutil.move(str(scraped_dir), str(new_html_dir))
-        # Clean up empty directories
-        shutil.rmtree(html_dir)
-        html_dir = new_html_dir
-        print(f"✅ Moved content to: {html_dir}")
+        success, _ = run_command(
+            scrape_cmd, "Scraping documentation", capture_output=False
+        )
+        if not success:
+            print("\n💡 Tip: Make sure m1f-scrape is installed:")
+            print("   pip install m1f")
+            return 1
+
+        # Verify scraping results
+        if not html_dir.exists():
+            print("❌ HTML directory not created")
+            return 1
+
+        # Find the actual scraped directory (docs.anthropic.com/en/docs/claude-code)
+        scraped_dir = html_dir / "docs.anthropic.com" / "en" / "docs" / "claude-code"
+        if scraped_dir.exists():
+            print(f"📁 Found scraped content in: {scraped_dir}")
+            # Move content up and rename
+            if final_html_dir.exists():
+                shutil.rmtree(final_html_dir)
+            shutil.move(str(scraped_dir), str(final_html_dir))
+            # Clean up empty directories
+            shutil.rmtree(html_dir)
+            html_dir = final_html_dir
+            print(f"✅ Moved content to: {html_dir}")
 
     html_files = list(html_dir.glob("**/*.html"))
     print(f"✅ Scraped {len(html_files)} HTML files")
@@ -145,71 +165,118 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
             "⚠️  Warning: Fewer files than expected. The site structure may have changed."
         )
 
-    # Step 2: Analyze HTML structure with Claude
-    print(f"\n{'='*50}")
-    print("STEP 2: Analyzing HTML Structure with Claude")
-    print(f"{'='*50}")
-    print(f"🤖 Claude will analyze 5 representative HTML files")
-    print(f"⏱️  Expected duration: 5-8 minutes")
+    # Check if we should skip analysis if markdown already exists
+    skip_analysis = False
+    if markdown_dir.exists() and not args.force_download:
+        existing_md_files = list(markdown_dir.glob("**/*.md"))
+        if len(existing_md_files) >= 25:
+            print(f"\n📁 Found existing Markdown files: {len(existing_md_files)} files")
+            print("⏭️  Skipping HTML analysis and conversion")
+            skip_analysis = True
+            md_files = existing_md_files
 
-    analyze_cmd = [
-        "m1f-html2md",
-        "analyze",
-        str(html_dir),
-        "--claude",
-        "--project-description",
-        PROJECT_DESCRIPTION,
-    ]
+    if not skip_analysis:
+        # Step 2: Analyze HTML structure with Claude
+        print(f"\n{'='*50}")
+        print("STEP 2: Analyzing HTML Structure with Claude")
+        print(f"{'='*50}")
+        print(f"🤖 Claude will analyze 5 representative HTML files")
+        print(f"⏱️  Expected duration: 5-8 minutes")
 
-    print("🤖 Using Claude AI for intelligent HTML analysis...")
-    success, output = run_command(
-        analyze_cmd, "Analyzing HTML with Claude", capture_output=False
-    )
+        analyze_cmd = [
+            "m1f-html2md",
+            "analyze",
+            str(html_dir),
+            "--claude",
+            "--project-description",
+            PROJECT_DESCRIPTION,
+        ]
 
-    # Check if Claude created the config file
-    # The analyze command creates html2md_config.yaml in the HTML directory
-    config_file = html_dir / "html2md_config.yaml"
-    use_config = False
+        print("🤖 Using Claude AI for intelligent HTML analysis...")
+        success, output = run_command(
+            analyze_cmd, "Analyzing HTML with Claude", capture_output=False
+        )
 
-    if success and config_file.exists():
-        print(f"📊 Claude analysis complete")
-        print(f"   📌 Using Claude's config: {config_file}")
-        use_config = True
-    else:
+        # Check if Claude created the config file
+        # The analyze command creates html2md_config.yaml in the HTML directory
+        config_file = html_dir / "html2md_config.yaml"
+        use_config = False
+
+        if success and config_file.exists():
+            print(f"📊 Claude analysis complete")
+            print(f"   📌 Using Claude's config: {config_file}")
+            use_config = True
+        else:
+            if not success:
+                print("⚠️  Claude analysis failed, using defaults")
+            if not config_file.exists():
+                print("⚠️  Config file not created, using defaults")
+
+        # Step 3: Convert HTML to Markdown
+        print(f"\n{'='*50}")
+        print("STEP 3: Converting to Markdown")
+        print(f"{'='*50}")
+        print(f"📄 Converting all {len(html_files)} HTML files to Markdown")
+        print(f"⏱️  Expected duration: <1 minute")
+
+        convert_cmd = ["m1f-html2md", "convert", str(html_dir), "-o", str(markdown_dir)]
+
+        # Use Claude's config file if it exists
+        if use_config and config_file.exists():
+            convert_cmd.extend(["-c", str(config_file)])
+            print(f"   📄 Using Claude's configuration file")
+        else:
+            # Use defaults
+            convert_cmd.extend(["--content-selector", CONTENT_SELECTOR])
+            for selector in IGNORE_SELECTORS:
+                convert_cmd.extend(["--ignore-selectors", selector])
+            print(f"   📌 Using default selectors")
+
+        success, _ = run_command(
+            convert_cmd, "Converting HTML to Markdown", capture_output=False
+        )
         if not success:
-            print("⚠️  Claude analysis failed, using defaults")
-        if not config_file.exists():
-            print("⚠️  Config file not created, using defaults")
+            return 1
 
-    # Step 3: Convert HTML to Markdown
-    print(f"\n{'='*50}")
-    print("STEP 3: Converting to Markdown")
-    print(f"{'='*50}")
-    print(f"📄 Converting all {len(html_files)} HTML files to Markdown")
-    print(f"⏱️  Expected duration: <1 minute")
+        # Verify conversion
+        if not markdown_dir.exists():
+            print("❌ Markdown directory was not created!")
+            print("   This might be due to configuration issues.")
+            print("   Trying conversion with default settings...")
 
-    convert_cmd = ["m1f-html2md", "convert", str(html_dir), "-o", str(markdown_dir)]
+            # Retry with default settings
+            convert_cmd = [
+                "m1f-html2md",
+                "convert",
+                str(html_dir),
+                "-o",
+                str(markdown_dir),
+            ]
+            convert_cmd.extend(["--content-selector", CONTENT_SELECTOR])
+            for selector in IGNORE_SELECTORS:
+                convert_cmd.extend(["--ignore-selectors", selector])
 
-    # Use Claude's config file if it exists
-    if use_config and config_file.exists():
-        convert_cmd.extend(["-c", str(config_file)])
-        print(f"   📄 Using Claude's configuration file")
-    else:
-        # Use defaults
-        convert_cmd.extend(["--content-selector", CONTENT_SELECTOR])
-        for selector in IGNORE_SELECTORS:
-            convert_cmd.extend(["--ignore-selectors", selector])
-        print(f"   📌 Using default selectors")
+            success, _ = run_command(
+                convert_cmd,
+                "Converting HTML to Markdown (retry with defaults)",
+                capture_output=False,
+            )
 
-    success, _ = run_command(
-        convert_cmd, "Converting HTML to Markdown", capture_output=False
-    )
-    if not success:
-        return 1
+            if not success or not markdown_dir.exists():
+                print("❌ Failed to convert HTML to Markdown")
+                return 1
 
-    # Verify conversion
-    md_files = list(markdown_dir.glob("**/*.md"))
-    print(f"✅ Converted {len(md_files)} Markdown files")
+        md_files = list(markdown_dir.glob("**/*.md"))
+        if len(md_files) == 0:
+            print("❌ No Markdown files were created!")
+            print("   Check if the HTML files are in the expected location.")
+            # List what's in the HTML directory
+            print(f"\n📁 Contents of {html_dir}:")
+            for item in html_dir.iterdir():
+                print(f"   - {item.name}")
+            return 1
+
+        print(f"✅ Converted {len(md_files)} Markdown files")
 
     # Step 4: Run m1f-init in markdown directory
     print(f"\n{'='*50}")
