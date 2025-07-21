@@ -16,10 +16,9 @@ docs_bundle:
     remove_scraped_metadata: true  # Clean up scraped docs
     docs_only: true  # Include all 62 documentation extensions
     
-    # Exclude build outputs
+    # Exclude documentation build outputs (only what's not already excluded by default)
     exclude_patterns:
       - "_build/**"
-      - "build/**"
       - "site/**"
       - "public/**"
   

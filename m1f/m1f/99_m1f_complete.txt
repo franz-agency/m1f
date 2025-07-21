@@ -3460,17 +3460,9 @@ code_review:
     separator_style: "MachineReadable"  # Best for AI parsing
     security_check: "warn"  # Warn but don't stop
     
-    # Exclude generated and dependency files
+    # Exclude only AI-context specific files (most are already excluded by default)
     exclude_patterns:
-      - "**/node_modules/**"
-      - "**/venv/**"
-      - "**/__pycache__/**"
-      - "**/dist/**"
-      - "**/build/**"
-      - "**/.git/**"
-      - "**/*.min.js"
-      - "**/*.min.css"
-      - "**/*.map"
+      - "**/*.map"  # Source maps not needed for AI context
     
     # Size limits for AI context windows
     max_file_size: "500KB"  # Keep individual files reasonable
@@ -3533,7 +3525,7 @@ code_review:
         - join_paragraphs  # Compress for AI
         - remove_empty_lines
       max_lines: 500  # Limit doc length
-      # Note: Consider using docs_only: true in global_settings for complete documentation bundles
+      # To include all documentation, use docs_only: true in global_settings instead
     
     # Tests - just structure
     tests:
@@ -3611,11 +3603,10 @@ debug_context:
     include_dot_paths: true  # Include .env, .config, etc
     max_file_size: "10MB"   # Allow larger files
     
-    # Less strict excludes
+    # Less strict excludes for debugging
     exclude_patterns:
-      - "**/node_modules/**"
-      - "**/.git/objects/**"
-      - "**/*.log"
+      - "**/.git/objects/**"  # Git internal objects
+      - "**/*.log"  # Will be truncated anyway
   
   presets:
     # Everything in the current directory
@@ -3663,10 +3654,9 @@ docs_bundle:
     remove_scraped_metadata: true  # Clean up scraped docs
     docs_only: true  # Include all 62 documentation extensions
     
-    # Exclude build outputs
+    # Exclude documentation build outputs (only what's not already excluded by default)
     exclude_patterns:
       - "_build/**"
-      - "build/**"
       - "site/**"
       - "public/**"
   
@@ -3697,16 +3687,14 @@ documentation:
     separator_style: "Standard"
     security_check: null  # Documentation rarely has secrets
     
-    # Documentation-specific excludes
+    # Documentation-specific excludes (only what's not already excluded by default)
     exclude_patterns:
       - "_build/**"
-      - "build/**"
       - ".tox/**"
       - "htmlcov/**"
       - "site/**"  # MkDocs build output
       - "public/**"  # Hugo/Jekyll output
       - "*.pyc"
-      - "__pycache__/**"
     
     # Allow larger documentation files
     max_file_size: "5MB"
@@ -3785,19 +3773,17 @@ documentation:
         - "pre"
         - "code"
     
-    # Images in documentation
-    images:
-      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg"]
+    # SVG images in documentation (text-based)
+    svg_images:
+      extensions: [".svg"]
       patterns:
-        - "images/**/*"
-        - "assets/**/*"
-        - "_static/**/*"
+        - "images/**/*.svg"
+        - "assets/**/*.svg"
+        - "_static/**/*.svg"
       actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 200  # Show path and alt text if available
+        - compress_whitespace
       include_metadata: true
+      max_file_size: "200KB"  # SVGs can be larger in docs
     
     # Configuration files
     config:
@@ -3868,11 +3854,9 @@ web_project:
     separator_style: "Detailed"
     line_ending: "lf"
     
-    # Global include/exclude patterns
+    # Global exclude patterns - prefer minified versions
     exclude_patterns:
-      - "*.min.js"
-      - "*.min.css"
-      - "*.map"
+      - "*.map"  # Source maps not needed
     exclude_extensions:
       - ".log"
       - ".tmp"
@@ -3882,7 +3866,6 @@ web_project:
     include_dot_paths: false        # Include hidden files/directories
     include_binary_files: false     # Include binary files
     include_symlinks: false         # Follow symbolic links
-    no_default_excludes: false      # Disable default exclusions (node_modules, etc)
     max_file_size: "10MB"          # Skip files larger than this
     # Use multiple exclude files - they are merged
     exclude_paths_file:
@@ -3949,11 +3932,11 @@ web_project:
         - "dev/**/*.js"
       actions: []  # No processing for dev files
       
-    # Vendor CSS - keep as-is
+    # Vendor CSS - prefer minified
     vendor_styles:
       patterns:
-        - "vendor/**/*.css"
-        - "node_modules/**/*.css"
+        - "vendor/**/*.min.css"  # Prefer minified
+        - "vendor/**/*.css"  # Fallback
       actions: []  # Override global - no processing
     
     # Default for other files
@@ -4081,12 +4064,9 @@ web_project_complete:
     security_check: "warn"  # Default: warn
     max_file_size: "2MB"    # Default: 2MB
     
-    # Global excludes
+    # Global excludes - only patterns not already excluded by default
     exclude_patterns:
-      - "*.min.js"
-      - "*.min.css"
-      - "vendor/**"
-      - "node_modules/**"
+      # Empty - rely on defaults and extension-specific rules
     
     # Extension-specific rules
     extensions:
@@ -4103,10 +4083,18 @@ web_project_complete:
         max_file_size: "50KB"
         security_check: "skip"
         actions: [minify, strip_comments]
+      .min.css:  # Minified CSS - no further processing
+        max_file_size: "50KB"
+        security_check: "skip"
+        actions: []  # Already minified
       .js:
         max_file_size: "100KB"
         security_check: "warn"
         actions: [strip_comments, compress_whitespace]
+      .min.js:  # Minified JS - no further processing
+        max_file_size: "100KB"
+        security_check: "warn"
+        actions: []  # Already minified
       
       # Backend code - larger files allowed, strict security
       .php:
@@ -4155,15 +4143,13 @@ web_project_complete:
       max_file_size: "200KB"  # Strict for production
       security_check: "abort"
     
-    # Third-party code - skip most processing
-    vendor:
+    # Bower components (not excluded by default like node_modules/vendor)
+    bower:
       patterns:
-        - "vendor/**/*"
-        - "node_modules/**/*"
         - "bower_components/**/*"
       actions: []  # No processing
-      max_file_size: "50KB"  # Only include small vendor files
-      security_check: null  # Don't check vendor code
+      max_file_size: "50KB"  # Only include small files
+      security_check: null  # Don't check third-party code
 
 # v3.2 feature example: Control deduplication and encoding
 v3_2_features:
@@ -4453,12 +4439,18 @@ example_group_name:
         actions:
           - minify
           - strip_comments
+      # Minified CSS - no processing needed
+      .min.css:
+        actions: []
       
       # JavaScript files
       .js:
         actions:
           - strip_comments
           - compress_whitespace
+      # Minified JS - no processing needed
+      .min.js:
+        actions: []
       
       # Python files
       .py:
@@ -4537,12 +4529,12 @@ example_group_name:
         - remove_empty_lines
       include_metadata: true
     
-    # Minified files - skip processing
+    # Minified files - prefer these over non-minified
     minified:
       patterns:
-        - "*.min.js"
-        - "*.min.css"
-      actions: []  # Empty list = no processing
+        - "**/*.min.js"  # Include minified JS
+        - "**/*.min.css"  # Include minified CSS
+      actions: []  # Empty list = no processing needed
       include_metadata: false
     
     # Large data files
@@ -4582,7 +4574,7 @@ production:
     encoding: "utf-8"
     separator_style: "MachineReadable"
     
-    # Exclude all development files
+    # Exclude all development files (beyond defaults)
     exclude_patterns:
       - "test/**"
       - "tests/**"
@@ -4590,8 +4582,6 @@ production:
       - "*.test.*"
       - "*.spec.*"
       - "__tests__/**"
-      - "node_modules/**"
-      - ".git/**"
     
     # Strict file size limits
     max_file_size: "1MB"
@@ -4765,16 +4755,13 @@ frontend:
         - "mock/**/*.json"
         - "fixtures/**/*.json"
     
-    # Images - just include reference
-    images:
-      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"]
+    # SVG images (text-based, so included by default)
+    svg_images:
+      extensions: [".svg"]
       actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 100  # Just show filename and basic info
+        - compress_whitespace
       include_metadata: true
-      max_file_size: "10KB"  # Only process small images
+      max_file_size: "100KB"  # SVGs can be included as text
     
     # Configuration
     config:
@@ -4884,16 +4871,10 @@ wordpress:
   
   # Global settings for WordPress projects
   global_settings:
-    # Default encoding and formatting
-    encoding: "utf-8"
-    separator_style: "Standard"
-    line_ending: "lf"
-    
     # Security - warn for WordPress since config files may have keys
     security_check: "warn"
     
-    
-    # WordPress-specific excludes
+    # WordPress-specific excludes (only what's not already excluded by default)
     exclude_patterns:
       - "wp-content/uploads/**"
       - "wp-content/cache/**"
@@ -4907,20 +4888,6 @@ wordpress:
       - "debug.log"
       - ".htaccess"  # Usually contains sensitive server configs
       - "wp-config.php"  # Contains database credentials
-    
-    # Common WordPress file extensions to exclude
-    exclude_extensions:
-      - ".exe"
-      - ".dll"
-      - ".so"
-      - ".dylib"
-      - ".zip"
-      - ".tar"
-      - ".gz"
-      - ".sql"
-      - ".sql.gz"
-      - ".bak"
-      - ".tmp"
     
     # Extension-specific processing defaults
     extensions:
@@ -4948,11 +4915,10 @@ wordpress:
         - remove_empty_lines
       include_metadata: true
       separator_style: "Standard"
-      # Exclude vendor and library files
+      # Exclude WordPress core files
       exclude_patterns:
         - "wp-includes/**"  # WordPress core
         - "wp-admin/**"      # WordPress admin
-        - "**/vendor/**"     # Composer dependencies
     
     # HTML templates and output
     html:
@@ -4984,32 +4950,28 @@ wordpress:
       include_metadata: true
       separator_style: "Markdown"
     
-    # JavaScript files
+    # JavaScript files - prefer minified versions
     js:
       extensions: [".js"]
       patterns:
-        - "wp-content/themes/**/*.js"
+        - "wp-content/themes/**/*.min.js"  # Prefer minified
+        - "wp-content/plugins/**/*.min.js"
+        - "wp-content/themes/**/*.js"  # Fallback to non-minified
         - "wp-content/plugins/**/*.js"
       actions:
         - strip_comments
         - compress_whitespace
-      # Exclude minified and vendor files
-      exclude_patterns:
-        - "*.min.js"
-        - "**/vendor/**"
-        - "**/node_modules/**"
       separator_style: "Standard"
     
-    # CSS files
+    # CSS files - prefer minified versions
     css:
       extensions: [".css", ".scss", ".sass"]
       patterns:
-        - "wp-content/themes/**/*.css"
+        - "wp-content/themes/**/*.min.css"  # Prefer minified
+        - "wp-content/themes/**/*.css"  # Fallback to non-minified
       actions:
         - minify
         - strip_comments
-      exclude_patterns:
-        - "*.min.css"
       separator_style: "Standard"
     
     # Configuration files - exclude most sensitive ones

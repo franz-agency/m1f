@@ -100,16 +100,13 @@ frontend:
         - "mock/**/*.json"
         - "fixtures/**/*.json"
     
-    # Images - just include reference
-    images:
-      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"]
+    # SVG images (text-based, so included by default)
+    svg_images:
+      extensions: [".svg"]
       actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 100  # Just show filename and basic info
+        - compress_whitespace
       include_metadata: true
-      max_file_size: "10KB"  # Only process small images
+      max_file_size: "100KB"  # SVGs can be included as text
     
     # Configuration
     config:

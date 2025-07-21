@@ -8,16 +8,10 @@ wordpress:
   
   # Global settings for WordPress projects
   global_settings:
-    # Default encoding and formatting
-    encoding: "utf-8"
-    separator_style: "Standard"
-    line_ending: "lf"
-    
     # Security - warn for WordPress since config files may have keys
     security_check: "warn"
     
-    
-    # WordPress-specific excludes
+    # WordPress-specific excludes (only what's not already excluded by default)
     exclude_patterns:
       - "wp-content/uploads/**"
       - "wp-content/cache/**"
@@ -31,20 +25,6 @@ wordpress:
       - "debug.log"
       - ".htaccess"  # Usually contains sensitive server configs
       - "wp-config.php"  # Contains database credentials
-    
-    # Common WordPress file extensions to exclude
-    exclude_extensions:
-      - ".exe"
-      - ".dll"
-      - ".so"
-      - ".dylib"
-      - ".zip"
-      - ".tar"
-      - ".gz"
-      - ".sql"
-      - ".sql.gz"
-      - ".bak"
-      - ".tmp"
     
     # Extension-specific processing defaults
     extensions:
@@ -72,11 +52,10 @@ wordpress:
         - remove_empty_lines
       include_metadata: true
       separator_style: "Standard"
-      # Exclude vendor and library files
+      # Exclude WordPress core files
       exclude_patterns:
         - "wp-includes/**"  # WordPress core
         - "wp-admin/**"      # WordPress admin
-        - "**/vendor/**"     # Composer dependencies
     
     # HTML templates and output
     html:
@@ -108,32 +87,28 @@ wordpress:
       include_metadata: true
       separator_style: "Markdown"
     
-    # JavaScript files
+    # JavaScript files - prefer minified versions
     js:
       extensions: [".js"]
       patterns:
-        - "wp-content/themes/**/*.js"
+        - "wp-content/themes/**/*.min.js"  # Prefer minified
+        - "wp-content/plugins/**/*.min.js"
+        - "wp-content/themes/**/*.js"  # Fallback to non-minified
         - "wp-content/plugins/**/*.js"
       actions:
         - strip_comments
         - compress_whitespace
-      # Exclude minified and vendor files
-      exclude_patterns:
-        - "*.min.js"
-        - "**/vendor/**"
-        - "**/node_modules/**"
       separator_style: "Standard"
     
-    # CSS files
+    # CSS files - prefer minified versions
     css:
       extensions: [".css", ".scss", ".sass"]
       patterns:
-        - "wp-content/themes/**/*.css"
+        - "wp-content/themes/**/*.min.css"  # Prefer minified
+        - "wp-content/themes/**/*.css"  # Fallback to non-minified
       actions:
         - minify
         - strip_comments
-      exclude_patterns:
-        - "*.min.css"
       separator_style: "Standard"
     
     # Configuration files - exclude most sensitive ones

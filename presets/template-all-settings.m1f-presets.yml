@@ -220,12 +220,18 @@ example_group_name:
         actions:
           - minify
           - strip_comments
+      # Minified CSS - no processing needed
+      .min.css:
+        actions: []
       
       # JavaScript files
       .js:
         actions:
           - strip_comments
           - compress_whitespace
+      # Minified JS - no processing needed
+      .min.js:
+        actions: []
       
       # Python files
       .py:
@@ -304,12 +310,12 @@ example_group_name:
         - remove_empty_lines
       include_metadata: true
     
-    # Minified files - skip processing
+    # Minified files - prefer these over non-minified
     minified:
       patterns:
-        - "*.min.js"
-        - "*.min.css"
-      actions: []  # Empty list = no processing
+        - "**/*.min.js"  # Include minified JS
+        - "**/*.min.css"  # Include minified CSS
+      actions: []  # Empty list = no processing needed
       include_metadata: false
     
     # Large data files
@@ -349,7 +355,7 @@ production:
     encoding: "utf-8"
     separator_style: "MachineReadable"
     
-    # Exclude all development files
+    # Exclude all development files (beyond defaults)
     exclude_patterns:
       - "test/**"
       - "tests/**"
@@ -357,8 +363,6 @@ production:
       - "*.test.*"
       - "*.spec.*"
       - "__tests__/**"
-      - "node_modules/**"
-      - ".git/**"
     
     # Strict file size limits
     max_file_size: "1MB"

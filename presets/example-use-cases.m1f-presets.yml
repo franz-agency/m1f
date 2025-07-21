@@ -89,12 +89,9 @@ web_project_complete:
     security_check: "warn"  # Default: warn
     max_file_size: "2MB"    # Default: 2MB
     
-    # Global excludes
+    # Global excludes - only patterns not already excluded by default
     exclude_patterns:
-      - "*.min.js"
-      - "*.min.css"
-      - "vendor/**"
-      - "node_modules/**"
+      # Empty - rely on defaults and extension-specific rules
     
     # Extension-specific rules
     extensions:
@@ -111,10 +108,18 @@ web_project_complete:
         max_file_size: "50KB"
         security_check: "skip"
         actions: [minify, strip_comments]
+      .min.css:  # Minified CSS - no further processing
+        max_file_size: "50KB"
+        security_check: "skip"
+        actions: []  # Already minified
       .js:
         max_file_size: "100KB"
         security_check: "warn"
         actions: [strip_comments, compress_whitespace]
+      .min.js:  # Minified JS - no further processing
+        max_file_size: "100KB"
+        security_check: "warn"
+        actions: []  # Already minified
       
       # Backend code - larger files allowed, strict security
       .php:
@@ -163,15 +168,13 @@ web_project_complete:
       max_file_size: "200KB"  # Strict for production
       security_check: "abort"
     
-    # Third-party code - skip most processing
-    vendor:
+    # Bower components (not excluded by default like node_modules/vendor)
+    bower:
       patterns:
-        - "vendor/**/*"
-        - "node_modules/**/*"
         - "bower_components/**/*"
       actions: []  # No processing
-      max_file_size: "50KB"  # Only include small vendor files
-      security_check: null  # Don't check vendor code
+      max_file_size: "50KB"  # Only include small files
+      security_check: null  # Don't check third-party code
 
 # v3.2 feature example: Control deduplication and encoding
 v3_2_features:

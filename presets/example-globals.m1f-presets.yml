@@ -12,11 +12,9 @@ web_project:
     separator_style: "Detailed"
     line_ending: "lf"
     
-    # Global include/exclude patterns
+    # Global exclude patterns - prefer minified versions
     exclude_patterns:
-      - "*.min.js"
-      - "*.min.css"
-      - "*.map"
+      - "*.map"  # Source maps not needed
     exclude_extensions:
       - ".log"
       - ".tmp"
@@ -26,7 +24,6 @@ web_project:
     include_dot_paths: false        # Include hidden files/directories
     include_binary_files: false     # Include binary files
     include_symlinks: false         # Follow symbolic links
-    no_default_excludes: false      # Disable default exclusions (node_modules, etc)
     max_file_size: "10MB"          # Skip files larger than this
     # Use multiple exclude files - they are merged
     exclude_paths_file:
@@ -93,11 +90,11 @@ web_project:
         - "dev/**/*.js"
       actions: []  # No processing for dev files
       
-    # Vendor CSS - keep as-is
+    # Vendor CSS - prefer minified
     vendor_styles:
       patterns:
-        - "vendor/**/*.css"
-        - "node_modules/**/*.css"
+        - "vendor/**/*.min.css"  # Prefer minified
+        - "vendor/**/*.css"  # Fallback
       actions: []  # Override global - no processing
     
     # Default for other files

@@ -12,16 +12,14 @@ documentation:
     separator_style: "Standard"
     security_check: null  # Documentation rarely has secrets
     
-    # Documentation-specific excludes
+    # Documentation-specific excludes (only what's not already excluded by default)
     exclude_patterns:
       - "_build/**"
-      - "build/**"
       - ".tox/**"
       - "htmlcov/**"
       - "site/**"  # MkDocs build output
       - "public/**"  # Hugo/Jekyll output
       - "*.pyc"
-      - "__pycache__/**"
     
     # Allow larger documentation files
     max_file_size: "5MB"
@@ -100,19 +98,17 @@ documentation:
         - "pre"
         - "code"
     
-    # Images in documentation
-    images:
-      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg"]
+    # SVG images in documentation (text-based)
+    svg_images:
+      extensions: [".svg"]
       patterns:
-        - "images/**/*"
-        - "assets/**/*"
-        - "_static/**/*"
+        - "images/**/*.svg"
+        - "assets/**/*.svg"
+        - "_static/**/*.svg"
       actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 200  # Show path and alt text if available
+        - compress_whitespace
       include_metadata: true
+      max_file_size: "200KB"  # SVGs can be larger in docs
     
     # Configuration files
     config:

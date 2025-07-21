@@ -12,17 +12,9 @@ code_review:
     separator_style: "MachineReadable"  # Best for AI parsing
     security_check: "warn"  # Warn but don't stop
     
-    # Exclude generated and dependency files
+    # Exclude only AI-context specific files (most are already excluded by default)
     exclude_patterns:
-      - "**/node_modules/**"
-      - "**/venv/**"
-      - "**/__pycache__/**"
-      - "**/dist/**"
-      - "**/build/**"
-      - "**/.git/**"
-      - "**/*.min.js"
-      - "**/*.min.css"
-      - "**/*.map"
+      - "**/*.map"  # Source maps not needed for AI context
     
     # Size limits for AI context windows
     max_file_size: "500KB"  # Keep individual files reasonable
@@ -85,7 +77,7 @@ code_review:
         - join_paragraphs  # Compress for AI
         - remove_empty_lines
       max_lines: 500  # Limit doc length
-      # Note: Consider using docs_only: true in global_settings for complete documentation bundles
+      # To include all documentation, use docs_only: true in global_settings instead
     
     # Tests - just structure
     tests:
@@ -163,11 +155,10 @@ debug_context:
     include_dot_paths: true  # Include .env, .config, etc
     max_file_size: "10MB"   # Allow larger files
     
-    # Less strict excludes
+    # Less strict excludes for debugging
     exclude_patterns:
-      - "**/node_modules/**"
-      - "**/.git/objects/**"
-      - "**/*.log"
+      - "**/.git/objects/**"  # Git internal objects
+      - "**/*.log"  # Will be truncated anyway
   
   presets:
     # Everything in the current directory
