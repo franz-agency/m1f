@@ -219,75 +219,74 @@ class M1FInit:
         m1f_dir = self.project_path / "m1f"
         m1f_dir.mkdir(exist_ok=True)
 
-        # Run m1f to generate file and directory lists
-        project_name = self.project_path.name
-        analysis_path = m1f_dir / f"{project_name}_analysis.txt"
+        # Create temporary directory for analysis files
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Run m1f to generate file and directory lists in temp directory
+            project_name = self.project_path.name
+            analysis_path = Path(temp_dir) / f"{project_name}_analysis.txt"
 
-        try:
-            cmd = [
-                sys.executable,
-                "-m",
-                "tools.m1f",
-                "-s",
-                str(self.project_path),
-                "-o",
-                str(analysis_path),
-                "--skip-output-file",
-                "--excludes",
-                "m1f/",
-                "--quiet",  # Suppress console output and log file creation
-            ]
+            try:
+                cmd = [
+                    sys.executable,
+                    "-m",
+                    "tools.m1f",
+                    "-s",
+                    str(self.project_path),
+                    "-o",
+                    str(analysis_path),
+                    "--skip-output-file",
+                    "--excludes",
+                    "m1f/",
+                    "--quiet",  # Suppress console output and log file creation
+                ]
 
-            # Only use .gitignore if it exists in current directory
-            if (self.project_path / ".gitignore").exists():
-                cmd.extend(["--exclude-paths-file", ".gitignore"])
+                # Only use .gitignore if it exists in current directory
+                if (self.project_path / ".gitignore").exists():
+                    cmd.extend(["--exclude-paths-file", ".gitignore"])
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
+                result = subprocess.run(cmd, capture_output=True, text=True)
 
-            # Read the generated lists
-            base_name = str(analysis_path).replace(".txt", "")
-            filelist_path = Path(f"{base_name}_filelist.txt")
-            dirlist_path = Path(f"{base_name}_dirlist.txt")
+                # Read the generated lists
+                base_name = str(analysis_path).replace(".txt", "")
+                filelist_path = Path(f"{base_name}_filelist.txt")
+                dirlist_path = Path(f"{base_name}_dirlist.txt")
 
-            files_list = []
-            dirs_list = []
+                files_list = []
+                dirs_list = []
 
-            if filelist_path.exists():
-                content = filelist_path.read_text().strip()
-                if content:
-                    files_list = content.split("\n")
+                if filelist_path.exists():
+                    content = filelist_path.read_text().strip()
+                    if content:
+                        files_list = content.split("\n")
 
-            if dirlist_path.exists():
-                content = dirlist_path.read_text().strip()
-                if content:
-                    dirs_list = content.split("\n")
+                if dirlist_path.exists():
+                    content = dirlist_path.read_text().strip()
+                    if content:
+                        dirs_list = content.split("\n")
 
-            # Analyze files to determine project type
-            context = self._determine_project_type(files_list, dirs_list)
+                # Analyze files to determine project type
+                context = self._determine_project_type(files_list, dirs_list)
 
-            # Clean up temporary analysis files
-            if filelist_path.exists():
-                filelist_path.unlink()
-            if dirlist_path.exists():
-                dirlist_path.unlink()
+                # Note: Temporary files are automatically cleaned up when exiting the context
 
-            print(f"✅ Found {len(files_list)} files in {len(dirs_list)} directories")
-            print(f"📁 Project Type: {context.get('type', 'Unknown')}")
-            if context.get("languages") != "No programming languages detected":
-                print(
-                    f"💻 Programming Languages: {context.get('languages', 'Unknown')}"
-                )
+                print(f"✅ Found {len(files_list)} files in {len(dirs_list)} directories")
+                print(f"📁 Project Type: {context.get('type', 'Unknown')}")
+                if context.get("languages") != "No programming languages detected":
+                    print(
+                        f"💻 Programming Languages: {context.get('languages', 'Unknown')}"
+                    )
 
-            return context
+                return context
 
-        except Exception as e:
-            print(f"⚠️  Failed to analyze project: {e}")
-            return {
-                "type": "Unknown",
-                "languages": "No programming languages detected",
-                "files": [],
-                "dirs": [],
-            }
+            except Exception as e:
+                print(f"⚠️  Failed to analyze project: {e}")
+                return {
+                    "type": "Unknown",
+                    "languages": "No programming languages detected",
+                    "files": [],
+                    "dirs": [],
+                }
 
     def _determine_project_type(self, files: List[str], dirs: List[str]) -> Dict:
         """Determine project type from file and directory lists."""
