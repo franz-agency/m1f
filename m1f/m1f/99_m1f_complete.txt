@@ -238,7 +238,7 @@ Out of the box, m1f:
 - ✅ Skips binary files (unless you really want them)
 - ✅ Handles any text encoding (UTF-8, UTF-16, that weird Windows-1252 file
   from 2003)
-- ✅ Respects `.gitignore` rules
+- ✅ Respects `.gitignore` rules (that wasn't easy ;-)
 - ✅ Warns about potential secrets
 - ✅ Adds clear file separators
 
