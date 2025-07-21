@@ -51,7 +51,6 @@ group_name:
   description: "Optional description of this preset group"
   enabled: true # Can disable entire group
   priority: 10 # Higher numbers are processed first (default: 0)
-  base_path: "src" # Optional base path for all patterns in this group
 
   presets:
     # Preset name (for internal reference)
@@ -120,13 +119,11 @@ globals:
 
 ### Group-Level Settings
 
-| Setting             | Type    | Default | Description                     |
-| ------------------- | ------- | ------- | ------------------------------- |
-| `description`       | string  | none    | Human-readable description      |
-| `enabled`           | boolean | true    | Enable/disable this group       |
-| `priority`          | integer | 0       | Processing order (higher first) |
-| `base_path`         | string  | none    | Base path for pattern matching  |
-| `enabled_if_exists` | string  | none    | Only enable if this path exists |
+| Setting       | Type    | Default | Description                     |
+| ------------- | ------- | ------- | ------------------------------- |
+| `description` | string  | none    | Human-readable description      |
+| `enabled`     | boolean | true    | Enable/disable this group       |
+| `priority`    | integer | 0       | Processing order (higher first) |
 
 ### Global Settings (NEW in v3.2.0)
 
@@ -294,16 +291,6 @@ illustrative and would need to be implemented.
    patterns: ["src/**/*"]
    ```
 
-### Base Path Behavior
-
-```yaml
-group_name:
-  base_path: "src"
-  presets:
-    example:
-      patterns: ["components/*.js"] # Actually matches: src/components/*.js
-```
-
 ## Processing Order
 
 1. **Group Priority** - Higher priority groups are checked first
@@ -394,16 +381,21 @@ Understanding where settings can be applied:
 
 ## Advanced Features
 
-### Conditional Presets
+### Conditional Enabling
+
+To conditionally enable/disable preset groups:
 
 ```yaml
 production:
-  enabled_if_exists: ".env.production" # Only active in production
+  enabled: false # Manually disable this group
   presets:
     minify_all:
       extensions: [".js", ".css", ".html"]
-      actions: ["minify", "strip_comments"]
+      actions: ["minify"]
 ```
+
+**Note**: The `enabled_if_exists` feature is only available in auto-bundle
+configurations (`.m1f.config.yml`), not in preset files.
 
 ### Multiple Preset Files
 

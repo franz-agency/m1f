@@ -34,6 +34,7 @@ from pathlib import Path
 # Optional import for enhanced process management
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     psutil = None

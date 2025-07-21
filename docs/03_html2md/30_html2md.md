@@ -207,8 +207,10 @@ m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
 - **Transparent Process**: Creates temporary analysis files in m1f/ directory
 - **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI
   integration
-- **Streaming Output**: Real-time progress display during Claude analysis (v3.4.0)
-- **Robust Config Loading**: Handles Claude-generated configs with unknown fields gracefully (v3.4.0)
+- **Streaming Output**: Real-time progress display during Claude analysis
+  (v3.4.0)
+- **Robust Config Loading**: Handles Claude-generated configs with unknown
+  fields gracefully (v3.4.0)
 
 ### AI-Powered Conversion
 

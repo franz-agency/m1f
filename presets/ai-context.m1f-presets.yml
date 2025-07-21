@@ -8,21 +8,11 @@ code_review:
   priority: 20
   
   global_settings:
-    encoding: "utf-8"
-    separator_style: "MachineReadable"  # Best for AI parsing
-    security_check: "warn"  # Warn but don't stop
+    # encoding, separator_style, and security_check all use defaults
     
-    # Exclude generated and dependency files
+    # Exclude only AI-context specific files (most are already excluded by default)
     exclude_patterns:
-      - "**/node_modules/**"
-      - "**/venv/**"
-      - "**/__pycache__/**"
-      - "**/dist/**"
-      - "**/build/**"
-      - "**/.git/**"
-      - "**/*.min.js"
-      - "**/*.min.css"
-      - "**/*.map"
+      - "**/*.map"  # Source maps not needed for AI context
     
     # Size limits for AI context windows
     max_file_size: "500KB"  # Keep individual files reasonable
@@ -31,20 +21,16 @@ code_review:
     extensions:
       .py:
         actions:
-          - strip_comments  # Remove comments but keep docstrings
           - remove_empty_lines
       .js:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines
       .tsx:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines
       .jsx:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines
   
   presets:
     # Source code
@@ -57,8 +43,7 @@ code_review:
         - "**/*.test.*"
         - "**/*.spec.*"
         - "**/__tests__/**"
-      separator_style: "MachineReadable"
-      include_metadata: true
+      # separator_style defaults to "Standard" which is best
     
     # Configuration and setup
     config:
@@ -73,7 +58,6 @@ code_review:
         - "Makefile"
         - "docker-compose*.yml"
       actions: []  # Keep configs as-is
-      include_metadata: true
     
     # Documentation
     docs:
@@ -85,18 +69,17 @@ code_review:
         - join_paragraphs  # Compress for AI
         - remove_empty_lines
       max_lines: 500  # Limit doc length
-      # Note: Consider using docs_only: true in global_settings for complete documentation bundles
+      # To include all 62 documentation extensions, use docs_only: true in global_settings
     
-    # Tests - just structure
+    # Tests - include for full context
     tests:
       patterns:
         - "**/*.test.*"
         - "**/*.spec.*"
         - "**/test_*.py"
       actions:
-        - custom
-      custom_processor: "extract_functions"
-      max_lines: 50
+        - remove_empty_lines
+      max_lines: 200  # Include more test context
 
 # For documentation chat
 docs_chat:
@@ -105,11 +88,11 @@ docs_chat:
   priority: 15
   
   global_settings:
-    encoding: "utf-8"
+    # encoding uses default
     separator_style: "Markdown"  # Better for chat context
     security_check: null  # No secrets in docs
     remove_scraped_metadata: true
-    docs_only: true  # Use --docs-only to include all 62 documentation extensions
+    docs_only: true  # Use built-in docs_only feature - includes all 62 documentation extensions
     
     exclude_patterns:
       - "_build/**"
@@ -127,7 +110,7 @@ docs_chat:
         - join_paragraphs
         - remove_empty_lines
       max_file_size: "1MB"
-      separator_style: "Markdown"
+      separator_style: "Markdown"  # Keep for markdown display
     
     # Code examples in docs
     examples:
@@ -135,8 +118,7 @@ docs_chat:
         - "**/examples/**/*"
         - "**/snippets/**/*"
       actions:
-        - strip_comments
-        - compress_whitespace
+        - remove_empty_lines
       max_lines: 100
     
     # API reference
@@ -145,7 +127,7 @@ docs_chat:
         - "**/api/**/*.md"
         - "**/reference/**/*.md"
       actions:
-        - compress_whitespace
+        - remove_empty_lines
       max_file_size: "2MB"
 
 # For debugging and problem-solving
@@ -155,19 +137,17 @@ debug_context:
   priority: 30
   
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Detailed"  # Maximum detail
-    security_check: "warn"
+    # encoding and separator_style use defaults (Standard is better for AI)
+    # security_check defaults to "warn"
     
     # Include more for debugging
     include_dot_paths: true  # Include .env, .config, etc
     max_file_size: "10MB"   # Allow larger files
     
-    # Less strict excludes
+    # Less strict excludes for debugging
     exclude_patterns:
-      - "**/node_modules/**"
-      - "**/.git/objects/**"
-      - "**/*.log"
+      - "**/.git/objects/**"  # Git internal objects
+      - "**/*.log"  # Will be truncated anyway
   
   presets:
     # Everything in the current directory
@@ -175,8 +155,7 @@ debug_context:
       patterns:
         - "**/*"
       actions: []  # No processing - keep original
-      include_metadata: true
-      separator_style: "Detailed"
+      # separator_style defaults to "Standard"
     
     # Logs and debug output
     logs:

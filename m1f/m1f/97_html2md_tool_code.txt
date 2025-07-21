@@ -15,7 +15,7 @@ if __name__ == "__main__":
     # Add the parent directory to sys.path for proper imports
     script_dir = Path(__file__).parent
     parent_dir = script_dir.parent
-    
+
     # Try different import strategies based on execution context
     try:
         # First try as if we're in the m1f package
@@ -1232,6 +1232,20 @@ def convert_html(html_content: str, **kwargs) -> str:
     return converter.convert_html(html_content)
 
 ======= html2md_tool/claude_runner.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Claude runner with reliable subprocess execution and streaming support.
 """
@@ -1572,6 +1586,20 @@ class ClaudeRunner:
         return results
 
 ======= html2md_tool/claude_runner_simple.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Simplified Claude runner for debugging.
 """
@@ -3180,6 +3208,20 @@ if __name__ == "__main__":
     main()
 
 ======= html2md_tool/cli_claude.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Improved Claude analysis functions for HTML to Markdown converter."""
 
 import os
@@ -3646,6 +3688,20 @@ def handle_claude_analysis_improved(
     console.print("\n✅ Analysis complete!", style="green bold")
 
 ======= html2md_tool/convert_claude.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Improved Claude conversion functions for HTML to Markdown converter."""
 
 import os

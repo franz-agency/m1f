@@ -8,26 +8,26 @@ documentation:
   
   # Global settings for documentation projects
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # separator_style defaults to "Standard" (best for AI)
+    # encoding defaults to "utf-8"
     security_check: null  # Documentation rarely has secrets
     
-    # Documentation-specific excludes
+    # Use built-in docs_only feature - includes all 62 documentation extensions
+    docs_only: true
+    
+    # Documentation-specific excludes (only what's not already excluded by default)
     exclude_patterns:
       - "_build/**"
-      - "build/**"
       - ".tox/**"
       - "htmlcov/**"
       - "site/**"  # MkDocs build output
       - "public/**"  # Hugo/Jekyll output
-      - "*.pyc"
-      - "__pycache__/**"
     
     # Allow larger documentation files
     max_file_size: "5MB"
     
-    # Keep all metadata by default
-    remove_scraped_metadata: false
+    # Clean scraped metadata from HTML2MD files
+    remove_scraped_metadata: true
   
   presets:
     # Markdown files - main content
@@ -35,15 +35,14 @@ documentation:
       extensions: [".md", ".mdx", ".markdown"]
       actions:
         - remove_empty_lines
-      separator_style: "Standard"
-      include_metadata: true
+      # separator_style defaults to "Standard"
     
     # reStructuredText
     rst:
       extensions: [".rst", ".rest"]
       actions:
         - remove_empty_lines
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
     
     # Code examples in docs
     code_examples:
@@ -51,12 +50,10 @@ documentation:
         - "examples/**/*"
         - "snippets/**/*"
         - "code/**/*"
-      actions:
-        - strip_comments
-        - compress_whitespace
+      actions: []  # Keep code examples as-is
       # Keep examples concise but useful
       max_lines: 100  # Show more of examples
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
       max_file_size: "200KB"
     
     # API documentation
@@ -67,8 +64,8 @@ documentation:
         - "openapi*.yml"
         - "swagger*.json"
       actions:
-        - compress_whitespace
-      separator_style: "Standard"
+        - remove_empty_lines
+      # separator_style defaults to "Standard"
       max_file_size: "1MB"  # API docs can be large
     
     # Jupyter notebooks
@@ -77,7 +74,7 @@ documentation:
       actions:
         - custom
       custom_processor: "extract_markdown_cells"
-      separator_style: "Markdown"
+      separator_style: "Markdown"  # Override for notebooks
     
     # HTML documentation
     html_docs:
@@ -94,25 +91,17 @@ documentation:
         - "nav"
         - "header"
         - "footer"
-      preserve_tags:
-        - "main"
-        - "article"
-        - "pre"
-        - "code"
     
-    # Images in documentation
-    images:
-      extensions: [".png", ".jpg", ".jpeg", ".gif", ".svg"]
+    # SVG images in documentation (text-based)
+    svg_images:
+      extensions: [".svg"]
       patterns:
-        - "images/**/*"
-        - "assets/**/*"
-        - "_static/**/*"
+        - "images/**/*.svg"
+        - "assets/**/*.svg"
+        - "_static/**/*.svg"
       actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 200  # Show path and alt text if available
-      include_metadata: true
+        - minify  # SVGs can be minified
+      max_file_size: "200KB"  # SVGs can be larger in docs
     
     # Configuration files
     config:
@@ -123,12 +112,10 @@ documentation:
         - "_config.yml"  # Jekyll
         - "book.toml"  # mdBook
       actions: []
-      include_metadata: true
     
     default:
       actions: []
-      include_metadata: true
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
 
 # Technical writing specific
 technical_writing:
@@ -137,8 +124,7 @@ technical_writing:
   priority: 15
   
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # encoding and separator_style use defaults
     max_file_size: "10MB"  # LaTeX files can be large
   
   presets:
@@ -147,23 +133,20 @@ technical_writing:
       extensions: [".adoc", ".asciidoc", ".asc"]
       actions:
         - remove_empty_lines
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
     
     # LaTeX documents
     latex:
       extensions: [".tex", ".latex"]
       actions:
-        - strip_comments
-        - compress_whitespace
-      separator_style: "Standard"
+        - remove_empty_lines  # Keep LaTeX readable
+      # separator_style defaults to "Standard"
     
     # Diagrams as code
     diagrams:
       extensions: [".puml", ".plantuml", ".mermaid", ".dot"]
-      actions:
-        - strip_comments
-      separator_style: "Standard"
+      actions: []  # Keep diagram source as-is
+      # separator_style defaults to "Standard"
       
     default:
       actions: []
-      include_metadata: true

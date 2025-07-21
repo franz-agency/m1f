@@ -9,7 +9,7 @@ You only need:
 
 That's all! The installer handles everything else.
 
-## Installation (3 Commands!)
+## Installation
 
 ### Linux/macOS
 
@@ -20,7 +20,7 @@ source ./scripts/install.sh
 ```
 
 **Important**: Use `source` (not just `./scripts/install.sh`) to activate
-commands immediately!
+commands immediately.
 
 ### Windows
 
@@ -42,16 +42,15 @@ The installation script automatically:
 - ✅ Checks Python version (3.10+ required)
 - ✅ Creates virtual environment
 - ✅ Installs all dependencies
-- ✅ Generates initial m1f bundles
 - ✅ Adds commands to your PATH
 - ✅ Creates global command shortcuts
-- ✅ Sets up symlinks (optional)
+- ✅ Sets up symlinks
 
 ## Test Your Installation
 
 ```bash
+m1f-help
 m1f --help
-m1f-update
 ```
 
 ## Available Commands
@@ -65,7 +64,8 @@ After installation, these commands are available globally:
 - `m1f-token-counter` - Count tokens in files
 - `m1f-update` - Regenerate all m1f bundles
 - `m1f-init` - Initialize m1f for your project (replaces m1f-link)
-- `m1f-claude` - Enhance prompts with m1f knowledge for Claude
+- `m1f-claude` - A wrapper for Claude AI and send infos about m1f. So claude now
+  knows how to work with m1f
 - `m1f-help` - Show help for all commands
 
 ## Uninstall
@@ -81,7 +81,7 @@ cd /path/to/m1f
 
 ```powershell
 cd C:\path\to\m1f
-.\scripts\setup_m1f_aliases.ps1 -Remove
+.\scripts\uninstall.ps1
 ```
 
 ---
@@ -143,10 +143,9 @@ source ~/.bashrc  # or ~/.zshrc
 
 **Option A: PowerShell Functions**
 
-Run the setup script:
+The install script already configures PowerShell functions. To reload them:
 
 ```powershell
-.\scripts\setup_m1f_aliases.ps1
 . $PROFILE
 ```
 

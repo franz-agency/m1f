@@ -2,10 +2,10 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Auto Bundle: Docs Bundle",
+            "label": "Auto Bundle: All Documentation",
             "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["docs"],
+            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
+            "args": ["focus", "all-docs"],
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -22,10 +22,10 @@
             "detail": "Creates a documentation bundle with all README files, docs/, and markdown content"
         },
         {
-            "label": "Auto Bundle: Source Bundle",
+            "label": "Auto Bundle: All Code",
             "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["src"],
+            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
+            "args": ["focus", "m1f-code"],
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -42,10 +42,10 @@
             "detail": "Creates a source code bundle with all Python scripts and modules"
         },
         {
-            "label": "Auto Bundle: Tests Bundle",
+            "label": "Auto Bundle: Test Code",
             "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["tests"],
+            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
+            "args": ["focus", "m1f-test-code"],
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -64,8 +64,8 @@
         {
             "label": "Auto Bundle: Complete Bundle",
             "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["complete"],
+            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
+            "args": ["all"],
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -84,8 +84,8 @@
         {
             "label": "Auto Bundle: Custom Focus",
             "type": "shell",
-            "command": "${workspaceFolder}/scripts/auto_bundle.sh",
-            "args": ["${input:bundleFocus}"],
+            "command": "${workspaceFolder}/scripts/auto_bundle_preset.sh",
+            "args": ["focus", "${input:bundleFocus}"],
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -128,7 +128,7 @@
             "command": "bash",
             "args": [
                 "-c",
-                "for type in docs src tests complete; do echo \"=== Generating $type bundle ===\"; ${workspaceFolder}/scripts/auto_bundle.sh $type; done"
+                "${workspaceFolder}/scripts/auto_bundle_preset.sh all"
             ],
             "problemMatcher": [],
             "group": {
@@ -245,12 +245,17 @@
             "type": "pickString",
             "description": "Select bundle focus area",
             "options": [
-                "html2md",
-                "m1f", 
-                "s1f",
-                "presets",
-                "auto-bundle",
-                "claude-code"
+                "m1f-docs",
+                "html2md-docs",
+                "scraper-docs",
+                "all-docs",
+                "m1f-code",
+                "m1f-test-code",
+                "m1f-tool-code",
+                "s1f-code",
+                "html2md-code",
+                "scraper-code",
+                "all"
             ]
         },
         {
@@ -258,12 +263,12 @@
             "type": "pickString",
             "description": "Select bundle type to watch",
             "options": [
-                "docs",
-                "src",
-                "tests",
-                "complete"
+                "all-docs",
+                "m1f-code",
+                "m1f-test-code",
+                "all"
             ],
-            "default": "complete"
+            "default": "all"
         },
         {
             "id": "presetType",

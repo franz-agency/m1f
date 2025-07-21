@@ -322,7 +322,6 @@ files that represent the functionality or problem area you're focusing on.
 Consider these categories:
 
 - **Core Theme Files**:
-
   - `style.css` (for theme identity and metadata)
   - `functions.php` (critical for theme logic, hooks, and filters)
   - `index.php`, `header.php`, `footer.php`, `sidebar.php` (main template
@@ -336,7 +335,6 @@ Consider these categories:
   - Key JavaScript (e.g., `assets/js/custom.js`) and CSS files.
 
 - **Core Plugin Files**:
-
   - The main plugin file (e.g., `your-plugin-name/your-plugin-name.php`) which
     includes the plugin header.
   - Files containing main classes, action/filter hooks, shortcodes, and admin
@@ -348,7 +346,6 @@ Consider these categories:
 
 - **Feature-Specific Files**: If you are working on a particular feature (e.g.,
   WooCommerce integration, a custom contact form, a specific admin page):
-
   - Include all files directly related to that feature from both your theme and
     any relevant plugins.
   - For example, for WooCommerce: relevant template overrides in

@@ -194,7 +194,7 @@ def is_documentation_file(file_path: Path) -> bool:
 
 def get_relative_path(file_path: Path, base_path: Path) -> str:
     """Get relative path from base path, handling edge cases.
-    
+
     Returns path with forward slashes regardless of platform for consistent
     bundle format across different operating systems.
     """
@@ -202,7 +202,7 @@ def get_relative_path(file_path: Path, base_path: Path) -> str:
         # Ensure both paths are resolved to handle edge cases
         resolved_file = file_path.resolve()
         resolved_base = base_path.resolve()
-        
+
         # Get relative path and convert to forward slashes
         rel_path = resolved_file.relative_to(resolved_base)
         # Use as_posix() to ensure forward slashes on all platforms
@@ -368,9 +368,13 @@ def validate_path_traversal(
 
     # Normalize path separators for consistent checking
     normalized_path_str = path_str.replace("\\", "/")
-    
+
     # Check for excessive parent directory traversals (both Unix and Windows style)
-    parent_traversals = normalized_path_str.count("../") + normalized_path_str.count("..\\") + path_str.count("..\\")
+    parent_traversals = (
+        normalized_path_str.count("../")
+        + normalized_path_str.count("..\\")
+        + path_str.count("..\\")
+    )
     if parent_traversals >= 3 and not (allow_outside or from_preset):
         # Three or more parent directory traversals are suspicious
         raise ValueError(
@@ -423,7 +427,16 @@ def validate_path_traversal(
         resolved_str = str(resolved_path).replace("\\", "/")
         if any(
             part in resolved_str.lower()
-            for part in ["/tmp/", "/var/folders/", "pytest-", "test_", "\\temp\\", "\\tmp\\", "/temp/", "appdata/local/temp"]
+            for part in [
+                "/tmp/",
+                "/var/folders/",
+                "pytest-",
+                "test_",
+                "\\temp\\",
+                "\\tmp\\",
+                "/temp/",
+                "appdata/local/temp",
+            ]
         ):
             # Allow temporary test directories
             return resolved_path

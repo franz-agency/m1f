@@ -312,7 +312,6 @@ pytest tests/test_html2md_server.py --pdb
 ## Future Enhancements
 
 1. **Additional Test Pages**
-
    - SVG content handling
    - MathML equations
    - Microdata and structured data
@@ -321,7 +320,6 @@ pytest tests/test_html2md_server.py --pdb
    - Shadow DOM content extraction
 
 2. **Test Automation**
-
    - Visual regression testing
    - Performance benchmarking
    - Memory leak detection

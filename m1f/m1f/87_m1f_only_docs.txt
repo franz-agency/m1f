@@ -5,16 +5,6 @@ Welcome to the m1f (Make One File) documentation. This tool combines multiple
 text files into a single output file, perfect for providing context to Large
 Language Models (LLMs) and creating bundled documentation.
 
-## What's New in v3.2
-
-- **Enhanced Security**: Path traversal protection, SSRF prevention, automatic
-  robots.txt compliance
-- **Performance**: Parallel file processing enabled by default (3-5x faster)
-- **Flexibility**: Control content deduplication and UTF-8 encoding preferences
-- **Reliability**: Improved error handling and security scanning
-
-See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
-
 ## Table of Contents
 
 ### Getting Started
@@ -63,7 +53,7 @@ See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
 ## Quick Start
 
 ```bash
-# Basic usage (parallel processing is automatic in v3.2)
+# Basic usage
 m1f -s ./your_project -o ./combined.txt
 
 # With file type filtering
@@ -90,11 +80,10 @@ with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool (v3.4.0) solves a common challenge when working with LLMs:
-providing sufficient context without exceeding token limits. Built with Python
-3.10+ and modern architecture patterns, it creates optimized reference files
-from multiple sources while automatically handling duplicates and providing
-comprehensive metadata.
+The m1f tool solves a common challenge when working with LLMs: providing
+sufficient context without exceeding token limits. It creates optimized
+reference files from multiple sources while automatically handling duplicates
+and providing comprehensive metadata.
 
 ## Key Features
 
@@ -102,14 +91,11 @@ comprehensive metadata.
   based on SHA256 checksums
 - **Async I/O**: High-performance file operations with concurrent processing
 - **Type Safety**: Full type annotations throughout the codebase
-- **Modern Architecture**: Modular package structure with clean separation of
-  concerns
 - **Smart Filtering**: Advanced file filtering with size limits, extensions, and
   patterns
 - **Symlink Support**: Intelligent symlink handling with cycle detection
 - **Professional Security**: Integration with detect-secrets for sensitive data
   detection
-- **Colorized Output**: Beautiful console output with progress indicators
 
 ## Quick Start
 
@@ -120,17 +106,8 @@ comprehensive metadata.
 cd /your/project
 m1f-init
 
-# Initialize without creating symlink to m1f documentation
-m1f-init --no-symlink
-
 # This creates in the m1f/ directory:
-# - <project>_complete.txt          # Full project bundle
-# - <project>_complete_filelist.txt # List of all included files
-# - <project>_complete_dirlist.txt  # List of all directories
-# - <project>_docs.txt              # Documentation bundle
-# - <project>_docs_filelist.txt    # List of documentation files
-# - <project>_docs_dirlist.txt     # Documentation directories
-# - .m1f.config.yml                # Configuration file
+# The place for your bundled files of the current project
 ```
 
 ### Basic m1f Commands
@@ -418,7 +395,6 @@ For each m1f operation, auxiliary files are automatically created alongside the
 main output file:
 
 1. **File List** (`<output>_filelist.txt`)
-
    - Complete list of all files included in the bundle
    - One file path per line
    - Useful for:
@@ -428,7 +404,6 @@ main output file:
      - Selective inclusion/exclusion in future bundles
 
 2. **Directory List** (`<output>_dirlist.txt`)
-
    - Complete list of all directories containing processed files
    - One directory path per line
    - Useful for:
@@ -1539,6 +1514,204 @@ else
 fi
 ```
 
+======= 05_getting_started.md ======
+# Getting Started with m1f
+
+This guide will walk you through installing m1f and creating your first bundles
+using a real-world example.
+
+## Installation (3 Simple Steps)
+
+### For Users
+
+```bash
+# Step 1: Clone the repository
+git clone https://github.com/franz-agency/m1f.git
+
+# Step 2: Navigate to the directory
+cd m1f
+
+# Step 3: Run the installer
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows (restart your shell after)
+```
+
+That's it! The installer automatically:
+
+- ✅ Checks for Python 3.10+
+- ✅ Creates a virtual environment
+- ✅ Installs all dependencies
+- ✅ Sets up global command aliases
+- ✅ Generates initial m1f bundles
+
+### For Developers
+
+If you want to contribute or modify m1f:
+
+```bash
+# Clone and enter directory
+git clone https://github.com/franz-agency/m1f.git
+cd m1f
+
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate it
+source .venv/bin/activate    # Linux/macOS
+.venv\Scripts\activate       # Windows
+
+# Install in development mode
+pip install -e .
+pip install -r requirements.txt
+```
+
+## Real Example: Bundling TailwindCSS Documentation
+
+Let's walk through a complete example of bundling the TailwindCSS documentation
+for use with AI assistants.
+
+### Step 1: Get the Repository
+
+```bash
+git clone https://github.com/tailwindlabs/tailwindcss.com
+cd tailwindcss.com
+```
+
+### Step 2: Initialize m1f
+
+```bash
+m1f-init
+```
+
+This command:
+
+- Scans the entire repository
+- Creates a `.m1f.config.yml` configuration file
+- Generates two default bundles in the `m1f/` directory:
+  - `tailwind_complete.txt` - All text files in the repository
+  - `tailwind_docs.txt` - Documentation files only
+
+### Step 3: Optional - Create Claude-Optimized Bundles
+
+```bash
+m1f-claude --setup
+```
+
+This creates additional bundles specifically optimized for Claude AI, with
+proper formatting and structure.
+
+### Using Your Bundles
+
+Now you can:
+
+1. **In Claude Desktop**: Reference files with `@m1f/tailwind_complete.txt`
+2. **Copy & Paste**: Open the bundle file and paste into any LLM
+3. **Check Token Count**: Run `m1f-token-counter m1f/tailwind_docs.txt`
+
+## Understanding m1f-init
+
+When you run `m1f-init` in any project directory:
+
+1. **Scans the repository** - Analyzes file types and structure
+2. **Creates `.m1f.config.yml`** - A configuration file with:
+   - Default bundle definitions
+   - Smart file patterns based on your project
+   - Sensible exclusions (node_modules, .git, etc.)
+3. **Generates bundles** - Creates initial bundles in the `m1f/` directory
+
+## Customizing Your Bundles
+
+After initialization, you can edit `.m1f.config.yml` to create custom bundles:
+
+```yaml
+bundles:
+  # Existing bundles...
+
+  # Add your custom bundle
+  api-docs:
+    description: "API documentation only"
+    patterns:
+      - "docs/api/**/*.md"
+      - "src/**/README.md"
+    exclude_patterns:
+      - "**/*test*"
+    output: "m1f/api_documentation.txt"
+```
+
+Then regenerate bundles:
+
+```bash
+m1f-update  # Updates all bundles
+# or
+m1f auto-bundle api-docs  # Update specific bundle
+```
+
+## Common Workflows
+
+### 1. Documentation Sites
+
+```bash
+# Clone documentation
+git clone https://github.com/vuejs/docs vuejs-docs
+cd vuejs-docs
+
+# Initialize and create bundles
+m1f-init
+
+# Feed to your AI
+#  m1f/vuejs-docs_complete.txt
+#  m1f/vuejs-docs_docs.txt
+```
+
+### 2. Your Own Projects
+
+```bash
+# In your project directory
+# This creates a .m1f.config.yml with default bundles
+m1f-init
+
+# Let claude check your project to create smaller bundles sorted by topics
+m1f-claude --setup
+
+# Edit .m1f.config.yml to customize
+# Then update bundles after code or config changes
+m1f-update
+```
+
+### 3. Web Documentation
+
+```bash
+# Scrape online docs
+m1f-scrape https://docs.python.org/3/ -o python-docs-html
+
+# Convert to markdown
+m1f-html2md convert python-docs-html -o python-docs-md
+
+# Bundle for AI
+cd python-docs-md
+m1f-init
+```
+
+## Next Steps
+
+- Learn about [configuration options](./25_m1f_config_examples.md)
+- Explore [preset systems](./10_m1f_presets.md) for specialized file handling
+- Set up [auto-bundling](./20_auto_bundle_guide.md) with git hooks
+- Read the [complete m1f documentation](./00_m1f.md)
+
+## Tips
+
+- **Start Simple**: Use `m1f-init` first, customize later
+- **Check Token Counts**: Always verify with `m1f-token-counter`
+- **Use Presets**: For WordPress, documentation sites, etc.
+- **Security**: m1f automatically scans for secrets before bundling
+
+## Getting Help
+
+- Run `m1f --help` for command options
+- Check [troubleshooting guide](./03_troubleshooting.md)
+- Visit [m1f.dev](https://m1f.dev) for updates
+
 ======= 10_m1f_presets.md ======
 # m1f Preset System Documentation
 
@@ -1553,8 +1726,8 @@ Instead of applying the same settings to all files, presets let you:
 - Strip comments from production code but keep them in documentation
 - Apply different separator styles for different file types
 - Truncate large data files while keeping full source code
-- **NEW**: Override security checks and size limits per file type
-- **NEW**: Integrate with auto-bundling for intelligent project organization
+- Override security checks and size limits per file type
+- Integrate with auto-bundling for intelligent project organization
 
 ## Quick Start
 
@@ -1585,7 +1758,6 @@ my_project:
   description: "Processing rules for my project"
   enabled: true
   priority: 10 # Higher priority groups are checked first
-  base_path: "src" # Optional base path for patterns
 
   presets:
     # Preset for Python files
@@ -1593,6 +1765,7 @@ my_project:
       extensions: [".py"]
       patterns:
         - "*.py"
+        - "src/**/*.py" # Must include full path
         - "lib/**/*.py"
       actions:
         - strip_comments
@@ -1600,15 +1773,24 @@ my_project:
       separator_style: "Detailed"
       include_metadata: true
 
-    # Preset for HTML files
+    # Preset for HTML files - remove specific tags
     html:
       extensions: [".html", ".htm"]
       actions:
         - minify
         - strip_tags
-      strip_tags: ["script", "style"]
-      preserve_tags: ["pre", "code"]
+      strip_tags: ["script", "style", "meta", "link"]
       max_lines: 500 # Truncate after 500 lines
+
+    # Preset for HTML to text conversion - strip all but content tags
+    html_to_text:
+      extensions: [".html"]
+      actions:
+        - strip_tags
+      # Empty strip_tags means remove ALL tags
+      strip_tags: []
+      # But preserve content-relevant tags
+      preserve_tags: ["p", "h1", "h2", "h3", "pre", "code", "blockquote"]
 
     # Default preset for unmatched files
     default:
@@ -1620,7 +1802,8 @@ my_project:
 
 ### Built-in Actions
 
-1. **`minify`** - Reduces file size by removing unnecessary whitespace
+1. **`minify`** - Reduces file size by removing unnecessary whitespace. Keep in
+   mind that removing comments may remove valuable context for AI models.
 
    - HTML: Removes comments, compresses whitespace
    - CSS: Removes comments, compresses rules
@@ -1633,8 +1816,13 @@ my_project:
 
 3. **`strip_comments`** - Removes comments based on file type
 
+   - **WARNING**: Removing comments removes valuable context for AI models.
+     Comments often explain the "why" behind code, making it harder for AI to
+     understand intent. Only use this when file size reduction is critical.
    - Python: Removes # comments (preserves docstrings)
    - JS/Java/C/C++: Removes // and /\* \*/ comments
+   - CSS: Removes /\* \*/ comments
+   - HTML: Removes <!-- --> comments
 
 4. **`compress_whitespace`** - Normalizes whitespace
 
@@ -1643,39 +1831,80 @@ my_project:
 
 5. **`remove_empty_lines`** - Removes all empty lines
 
-6. **`custom`** - Apply custom processor
+6. **`join_paragraphs`** - Joins multi-line paragraphs into single lines
+   (Markdown files)
+
+   - Intelligently preserves code blocks, lists, tables, and other markdown
+     structures
+   - Helps maximize content density for LLMs that focus on first 200 lines
+   - Only affects regular paragraph text
+
+7. **`custom`** - Apply custom processor
    - Specify processor with `custom_processor`
    - Pass arguments with `processor_args`
 
 ### Built-in Custom Processors
 
+m1f includes three built-in custom processors:
+
 1. **`truncate`** - Limit content length
+
+   - Truncates content to specified number of characters
+   - Adds "[... truncated ...]" marker at the end
+   - Useful for large log files or data files
 
    ```yaml
    actions:
      - custom
    custom_processor: "truncate"
    processor_args:
-     max_chars: 1000
+     max_chars: 1000 # Default: 1000
    ```
 
 2. **`redact_secrets`** - Remove sensitive data
+
+   - Uses regex patterns to find and replace secrets
+   - Default patterns include: API keys, secrets, passwords, tokens, bearer
+     tokens
+   - Replaces matches with "[REDACTED]"
 
    ```yaml
    actions:
      - custom
    custom_processor: "redact_secrets"
    processor_args:
-     patterns:
+     patterns:  # Optional custom patterns
        - '(?i)api[_-]?key\s*[:=]\s*["\']?[\w-]+["\']?'
+       - '(?i)bearer\s+[\w-]+'
    ```
 
-3. **`extract_functions`** - Extract only function definitions (Python)
+3. **`extract_functions`** - Extract only function definitions (Python only)
+
+   - Uses Python's AST parser to extract function definitions
+   - Includes function names, signatures, and docstrings
+   - Only works with `.py` files
+
    ```yaml
    actions:
      - custom
    custom_processor: "extract_functions"
+   # No processor_args needed
    ```
+
+## Important Notes on Binary Files
+
+**m1f is designed for text files only.** Binary files (images, videos,
+executables, etc.) are:
+
+- Excluded by default
+- Cannot be meaningfully processed even with `include_binary_files: true`
+- Would need base64 encoding for proper inclusion (not implemented)
+
+For binary file references, consider:
+
+- Including just the filenames in a text list
+- Using external tools to convert binary to text formats first
+- Focusing on text-based assets for AI context
 
 ## Preset Options
 
@@ -1689,9 +1918,12 @@ my_project:
 - **`actions`**: List of processing actions to apply
 - **`strip_tags`**: HTML tags to remove
 - **`preserve_tags`**: HTML tags to keep when stripping
-- **`separator_style`**: Override default separator ("Standard", "Detailed",
-  "Markdown", "None")
-- **`include_metadata`**: Whether to include file metadata (default: true)
+- **`separator_style`**: Override separator style
+  - `"Standard"` (default) - Best for AI consumption: `--- FILE: path ---`
+  - `"Detailed"` - Includes metadata: `===== FILE: path | ENCODING: utf-8 =====`
+  - `"Markdown"` - Uses markdown code blocks
+  - `"MachineReadable"` - Structured format for parsing
+  - `"None"` - No separators
 - **`max_lines`**: Truncate file after N lines
 
 ### Custom Processing
@@ -1711,8 +1943,7 @@ wordpress:
     php:
       extensions: [".php"]
       actions:
-        - strip_comments
-        - remove_empty_lines
+        - remove_empty_lines # Keep comments for context
 
     config:
       patterns: ["wp-config*.php", ".env*"]
@@ -1723,7 +1954,7 @@ wordpress:
     sql:
       extensions: [".sql"]
       actions:
-        - strip_comments
+        - remove_empty_lines # Keep SQL comments
       max_lines: 1000 # Truncate large dumps
 ```
 
@@ -1737,8 +1968,8 @@ frontend:
     components:
       extensions: [".jsx", ".tsx", ".vue"]
       actions:
-        - strip_comments
         - compress_whitespace
+        - remove_empty_lines
 
     styles:
       extensions: [".css", ".scss"]
@@ -1746,13 +1977,14 @@ frontend:
         - minify
       # Note: exclude_patterns is available in global_settings, not in presets
 
-    images:
-      extensions: [".png", ".jpg", ".svg"]
+    # Large log files - show only beginning
+    logs:
+      extensions: [".log"]
       actions:
         - custom
       custom_processor: "truncate"
       processor_args:
-        max_chars: 50 # Just filename
+        max_chars: 5000 # Show first 5KB
 ```
 
 ### Documentation Project
@@ -1771,7 +2003,7 @@ documentation:
     code_examples:
       patterns: ["examples/**/*"]
       actions:
-        - strip_comments
+        - remove_empty_lines # Keep comments in examples
       max_lines: 50 # Keep examples concise
 ```
 
@@ -1812,9 +2044,9 @@ These apply to all files unless overridden:
 ```yaml
 global_settings:
   # Encoding and formatting
-  encoding: "utf-8"
-  separator_style: "Detailed"
-  line_ending: "lf"
+  # encoding: "utf-8"  # Default encoding - supports: utf-8, utf-16, latin-1, cp1252, ascii, etc.
+  # separator_style: "Standard"  # Default - best for AI consumption
+  # line_ending: "lf"  # Default - Unix style (use "crlf" for Windows)
 
   # Include/exclude patterns
   include_patterns: ["src/**/*", "lib/**/*"]
@@ -1850,6 +2082,30 @@ global_settings:
 
   # Security
   security_check: "warn" # abort, skip, warn
+```
+
+### Encoding Options
+
+m1f provides comprehensive encoding support:
+
+**Supported Encodings**:
+
+- `utf-8` (default) - Unicode UTF-8
+- `utf-16` - Unicode UTF-16 with BOM detection
+- `utf-16-le` - UTF-16 Little Endian
+- `utf-16-be` - UTF-16 Big Endian
+- `ascii` - Basic ASCII (7-bit)
+- `latin-1` / `iso-8859-1` - Western European
+- `cp1252` / `windows-1252` - Windows Western European
+- Many more via Python's codecs module
+
+**Encoding Configuration**:
+
+```yaml
+global_settings:
+  encoding: "utf-8" # Target encoding for output (default)
+  abort_on_encoding_error: false # Continue on errors (default)
+  prefer_utf8_for_text_files: true # Auto UTF-8 for .md, .txt (default)
 ```
 
 ### Extension-Specific Settings
@@ -1936,9 +2192,9 @@ size_limits:
 
   presets:
     # Override for specific patterns
-    vendor_files:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      max_file_size: "10KB" # Very small for vendor files
+    config_files:
+      patterns: ["config/**/*.json", "*.config.js"]
+      max_file_size: "10KB" # Keep config files small in bundle
 ```
 
 ### Different Processing by Location
@@ -1948,20 +2204,21 @@ Process files differently based on their location:
 ```yaml
 conditional:
   presets:
-    # Production files - minify and strip
-    production:
-      patterns: ["dist/**/*", "build/**/*"]
-      actions: [minify, strip_comments]
-
-    # Development files - keep readable
-    development:
-      patterns: ["src/**/*", "dev/**/*"]
+    # Source files - keep readable
+    source:
+      patterns: ["src/**/*", "lib/**/*"]
       actions: [remove_empty_lines]
 
-    # Vendor files - skip processing
-    vendor:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      actions: [] # No processing
+    # Test files - minimal processing
+    tests:
+      patterns: ["test/**/*", "tests/**/*", "*.test.*"]
+      actions: [] # No processing needed
+
+    # Example/demo files - compress
+    examples:
+      patterns: ["examples/**/*", "demo/**/*"]
+      actions: [compress_whitespace]
+      max_lines: 100 # Keep examples concise
 ```
 
 ### Combining Multiple Presets
@@ -2183,11 +2440,11 @@ my_project:
       max_file_size: "50KB"
       include_dot_paths: true
 
-    vendor_code:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      security_check: null # Don't check third-party code
-      max_file_size: "100KB" # Only include small files
-      actions: [] # No processing
+    documentation:
+      patterns: ["docs/**/*", "*.md"]
+      security_check: null # Don't check documentation
+      max_file_size: "100KB" # Keep docs concise
+      actions: [remove_empty_lines]
 ```
 
 ## Real-World Examples
@@ -2400,7 +2657,6 @@ group_name:
   description: "Optional description of this preset group"
   enabled: true # Can disable entire group
   priority: 10 # Higher numbers are processed first (default: 0)
-  base_path: "src" # Optional base path for all patterns in this group
 
   presets:
     # Preset name (for internal reference)
@@ -2469,13 +2725,11 @@ globals:
 
 ### Group-Level Settings
 
-| Setting             | Type    | Default | Description                     |
-| ------------------- | ------- | ------- | ------------------------------- |
-| `description`       | string  | none    | Human-readable description      |
-| `enabled`           | boolean | true    | Enable/disable this group       |
-| `priority`          | integer | 0       | Processing order (higher first) |
-| `base_path`         | string  | none    | Base path for pattern matching  |
-| `enabled_if_exists` | string  | none    | Only enable if this path exists |
+| Setting       | Type    | Default | Description                     |
+| ------------- | ------- | ------- | ------------------------------- |
+| `description` | string  | none    | Human-readable description      |
+| `enabled`     | boolean | true    | Enable/disable this group       |
+| `priority`    | integer | 0       | Processing order (higher first) |
 
 ### Global Settings (NEW in v3.2.0)
 
@@ -2643,16 +2897,6 @@ illustrative and would need to be implemented.
    patterns: ["src/**/*"]
    ```
 
-### Base Path Behavior
-
-```yaml
-group_name:
-  base_path: "src"
-  presets:
-    example:
-      patterns: ["components/*.js"] # Actually matches: src/components/*.js
-```
-
 ## Processing Order
 
 1. **Group Priority** - Higher priority groups are checked first
@@ -2743,16 +2987,21 @@ Understanding where settings can be applied:
 
 ## Advanced Features
 
-### Conditional Presets
+### Conditional Enabling
+
+To conditionally enable/disable preset groups:
 
 ```yaml
 production:
-  enabled_if_exists: ".env.production" # Only active in production
+  enabled: false # Manually disable this group
   presets:
     minify_all:
       extensions: [".js", ".css", ".html"]
-      actions: ["minify", "strip_comments"]
+      actions: ["minify"]
 ```
+
+**Note**: The `enabled_if_exists` feature is only available in auto-bundle
+configurations (`.m1f.config.yml`), not in preset files.
 
 ### Multiple Preset Files
 
@@ -3139,18 +3388,28 @@ Set up a cron job for automatic updates:
 0 2 * * * /usr/local/bin/update-all-bundles.sh
 ```
 
-### Centralized Bundle Storage
+### Organized Bundle Output
 
-Configure bundles to output to a central location:
+Keep bundles organized within your project:
 
 ```yaml
 bundles:
   project-bundle:
-    description: "Project bundle for central storage"
-    output: "/var/m1f-bundles/myproject/latest.txt"
+    description: "Main project bundle"
+    output: "bundles/latest/project.txt" # Relative to project root
+    sources:
+      - path: "src"
+
+  archived-bundle:
+    description: "Archived version with timestamp"
+    output: "bundles/archive/project-{timestamp}.txt"
+    add_timestamp: true
     sources:
       - path: "."
 ```
+
+**Note**: For security reasons, m1f only allows output paths within the project
+directory. Use relative paths for portability.
 
 ## Advanced Features
 
@@ -3400,13 +3659,11 @@ m1f-init
 #### What m1f-init does:
 
 1. **Links m1f documentation** (creates `m1f/m1f.txt`)
-
    - Makes m1f docs available to AI tools
    - Creates symlink on Linux/macOS, copies on Windows
    - Use `--no-symlink` to skip this step if not needed
 
 2. **Analyzes your project**
-
    - Detects project type and programming languages
    - Supports Python, JavaScript, TypeScript, PHP, Java, C#, Go, Rust, Ruby
    - Creates file and directory listings
@@ -3414,7 +3671,6 @@ m1f-init
    - Automatically cleans up temporary analysis files
 
 3. **Generates initial bundles with auxiliary files**
-
    - `m1f/<project>_complete.txt` - Full project bundle
    - `m1f/<project>_complete_filelist.txt` - List of all included files
    - `m1f/<project>_complete_dirlist.txt` - List of all directories
@@ -5444,7 +5700,7 @@ Claude, I need different bundles for dev/staging/prod.
 Using m1f v3.2's preset system:
 
 1. Create environment-specific presets
-2. Use conditional presets (enabled_if_exists)
+2. Use enabled flag for environment control
 3. Set different security levels per environment
 4. Configure appropriate output formats
 
@@ -5904,18 +6160,15 @@ m1f-init --verbose
 #### What m1f-init Does:
 
 1. **Links m1f Documentation**
-
    - Creates m1f/m1f.txt symlink (or copies on Windows)
    - Makes documentation accessible to AI tools
 
 2. **Project Analysis**
-
    - Detects git repository boundaries
    - Analyzes project structure and languages
    - Creates file and directory lists in `m1f/` directory
 
 3. **Creates Initial Bundles with Auxiliary Files**
-
    - `<project>_complete.txt` - Full project bundle
    - `<project>_complete_filelist.txt` - List of all included files
    - `<project>_complete_dirlist.txt` - List of all directories
@@ -5930,7 +6183,8 @@ m1f-init --verbose
 
 ### Advanced Setup with m1f-claude (Linux/macOS only)
 
-The `m1f-claude` tool enhances project setup by creating topic-specific bundles based on your project's needs:
+The `m1f-claude` tool enhances project setup by creating topic-specific bundles
+based on your project's needs:
 
 ```bash
 # Interactive mode - prompts for project details
@@ -5944,10 +6198,13 @@ m1f-claude --setup \
 
 #### Project Information Options:
 
-- **--project-description**: Brief description of what your project does and its main technologies
-- **--project-priorities**: What's important for this project (e.g., performance, security, documentation, maintainability)
+- **--project-description**: Brief description of what your project does and its
+  main technologies
+- **--project-priorities**: What's important for this project (e.g.,
+  performance, security, documentation, maintainability)
 
 This information helps Claude create better-targeted bundles. For example:
+
 - If "security" is a priority, it will create dedicated auth/security bundles
 - If "documentation" is important, it will create more granular doc bundles
 - If "performance" matters, it will separate performance-critical code
@@ -5996,7 +6253,6 @@ m1f -s src/components -o m1f/components_only.txt
 ```
 
 3. **Configuration File**
-
    - Creates `.m1f.config.yml` with complete and docs bundles
    - Uses `docs_only: true` for documentation bundle
    - No global file size limits
@@ -6271,7 +6527,6 @@ critical data.
    ```
 
 2. **Use the provided validation utilities**:
-
    - `validate_safe_path()` in `tools/m1f/utils.py` ensures paths stay within
      allowed boundaries
    - All user-provided paths should be validated before use
@@ -6522,8 +6777,6 @@ a comprehensive overview of all v3.2 features and changes.
   - Automatic robots.txt fetching and parsing
   - Per-path access validation
   - User-agent specific rule support
-  - No configuration needed - always enabled
-- **Previously**: Only HTTrack respected robots.txt
 
 ### 4. SSL/TLS Certificate Validation
 
@@ -6713,17 +6966,14 @@ per_file_settings:
 ### From v3.1 to v3.2
 
 1. **Review Security Settings**:
-
    - Default security scanning may flag legitimate content
    - Use `--security-check warn` during migration
 
 2. **Check SSL Requirements**:
-
    - Sites with self-signed certificates need `--ignore-https-errors`
    - Review and update scraping scripts
 
 3. **Update Separator Parsing**:
-
    - If you parse m1f output, update to handle new separator format
    - s1f handles both formats automatically
 

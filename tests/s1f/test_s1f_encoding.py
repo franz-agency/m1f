@@ -246,7 +246,9 @@ class TestS1FEncoding(BaseS1FTest):
         symbols_file = s1f_extracted_dir / "symbols.txt"
 
         assert unicode_file.read_text(encoding="utf-8") == "Unicode test: 你好 мир 🌍\n"
-        assert latin_file.read_text(encoding="utf-8") == "Latin characters: àèìòù ÀÈÌÒÙ\n"
+        assert (
+            latin_file.read_text(encoding="utf-8") == "Latin characters: àèìòù ÀÈÌÒÙ\n"
+        )
         assert symbols_file.read_text(encoding="utf-8") == "Symbols: €£¥ ©®™ ½¼¾\n"
 
     @pytest.mark.unit

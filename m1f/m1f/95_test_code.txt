@@ -900,7 +900,7 @@ def cleanup_logging():
 def cleanup_file_handles():
     """Automatically clean up file handles after each test (Windows specific)."""
     yield
-    
+
     # Force garbage collection to close any remaining file handles
     # This is especially important on Windows where file handles can prevent deletion
     if sys.platform.startswith("win"):
@@ -963,22 +963,22 @@ def is_windows() -> bool:
 def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
     """
     Safely clean up a directory with Windows-specific handling.
-    
+
     Windows can have file handle issues that prevent immediate deletion.
     This function retries with increasing delays and forces garbage collection.
     """
     import os
     import time
-    
+
     for attempt in range(max_retries):
         try:
             # Force garbage collection to close any remaining file handles
             gc.collect()
-            
+
             # On Windows, try to remove read-only attributes that might prevent deletion
             if sys.platform.startswith("win"):
                 _remove_readonly_attributes(directory)
-            
+
             shutil.rmtree(directory)
             return
         except (OSError, PermissionError) as e:
@@ -986,11 +986,11 @@ def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
                 # Final attempt failed, log warning but don't raise
                 print(f"Warning: Could not clean up test directory {directory}: {e}")
                 return
-            
+
             # Wait with exponential backoff
-            delay = 0.1 * (2 ** attempt)
+            delay = 0.1 * (2**attempt)
             time.sleep(delay)
-            
+
             # Force garbage collection again
             gc.collect()
 
@@ -998,15 +998,15 @@ def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
 def _remove_readonly_attributes(directory: Path) -> None:
     """
     Remove read-only attributes from files and directories on Windows.
-    
+
     This helps with cleanup when files are marked as read-only.
     """
     import os
     import stat
-    
+
     if not sys.platform.startswith("win"):
         return
-        
+
     try:
         for root, dirs, files in os.walk(directory):
             # Remove read-only flag from files
@@ -1016,7 +1016,7 @@ def _remove_readonly_attributes(directory: Path) -> None:
                     file_path.chmod(stat.S_IWRITE | stat.S_IREAD)
                 except (OSError, PermissionError):
                     pass  # Ignore errors, best effort
-            
+
             # Remove read-only flag from directories
             for dir_name in dirs:
                 dir_path = Path(root) / dir_name
@@ -1088,6 +1088,7 @@ import socket
 # Optional import for enhanced process management
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     psutil = None
@@ -1103,8 +1104,7 @@ import logging
 
 # Configure logging for better debugging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -1119,7 +1119,7 @@ class TestServer:
 
     def __init__(self, port: Optional[int] = None, startup_timeout: int = 30):
         """Initialize TestServer.
-        
+
         Args:
             port: Specific port to use, or None for dynamic allocation
             startup_timeout: Maximum time to wait for server startup (seconds)
@@ -1136,23 +1136,23 @@ class TestServer:
         # Try multiple times to find a free port to avoid race conditions
         for attempt in range(5):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('', 0))
+                s.bind(("", 0))
                 s.listen(1)
                 port = s.getsockname()[1]
-            
+
             # Verify the port is still free after a small delay
             time.sleep(0.1)
             if not self._is_port_in_use(port):
                 logger.info(f"Found free port {port} on attempt {attempt + 1}")
                 return port
-        
+
         raise RuntimeError("Could not find a free port after 5 attempts")
 
     def _is_port_in_use(self, port: int) -> bool:
         """Check if a port is currently in use."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.bind(('localhost', port))
+                s.bind(("localhost", port))
                 return False
             except OSError:
                 return True
@@ -1162,38 +1162,50 @@ class TestServer:
         start_time = time.time()
         last_log_time = start_time
         check_count = 0
-        
+
         logger.info(f"Waiting for server to start on port {self.port}...")
-        
+
         while time.time() - start_time < self.startup_timeout:
             check_count += 1
-            
+
             try:
                 # Check if process is still running
                 if self.process and self.process.poll() is not None:
                     # Process has terminated - capture output for debugging
                     stdout, stderr = self.process.communicate(timeout=1)
-                    logger.error(f"Server process terminated unexpectedly. Exit code: {self.process.returncode}")
+                    logger.error(
+                        f"Server process terminated unexpectedly. Exit code: {self.process.returncode}"
+                    )
                     if stdout:
-                        logger.error(f"Server stdout: {stdout.decode('utf-8', errors='replace')}")
+                        logger.error(
+                            f"Server stdout: {stdout.decode('utf-8', errors='replace')}"
+                        )
                     if stderr:
-                        logger.error(f"Server stderr: {stderr.decode('utf-8', errors='replace')}")
+                        logger.error(
+                            f"Server stderr: {stderr.decode('utf-8', errors='replace')}"
+                        )
                     return False
-                
+
                 # Try to connect to the server with progressive timeout
-                timeout = min(1.0 + (check_count * 0.1), 5.0)  # Increase timeout gradually
+                timeout = min(
+                    1.0 + (check_count * 0.1), 5.0
+                )  # Increase timeout gradually
                 async with aiohttp.ClientSession(
-                    timeout=aiohttp.ClientTimeout(total=timeout, connect=timeout/2)
+                    timeout=aiohttp.ClientTimeout(total=timeout, connect=timeout / 2)
                 ) as session:
-                    async with session.get(f"{self.base_url}/api/test-pages") as response:
+                    async with session.get(
+                        f"{self.base_url}/api/test-pages"
+                    ) as response:
                         if response.status == 200:
                             data = await response.json()
-                            logger.info(f"Server started successfully on port {self.port} after {check_count} checks ({time.time() - start_time:.2f}s)")
+                            logger.info(
+                                f"Server started successfully on port {self.port} after {check_count} checks ({time.time() - start_time:.2f}s)"
+                            )
                             logger.info(f"Server has {len(data)} test pages available")
                             return True
                         else:
                             logger.warning(f"Server returned status {response.status}")
-                            
+
             except aiohttp.ClientConnectorError as e:
                 # Connection refused - server not ready yet
                 if time.time() - last_log_time > 2.0:  # Log every 2 seconds
@@ -1205,29 +1217,33 @@ class TestServer:
                     logger.debug(f"Connection attempt failed: {type(e).__name__}: {e}")
                     last_log_time = time.time()
             except Exception as e:
-                logger.error(f"Unexpected error waiting for server: {type(e).__name__}: {e}")
-            
+                logger.error(
+                    f"Unexpected error waiting for server: {type(e).__name__}: {e}"
+                )
+
             # Progressive backoff - start with short delays, increase over time
             delay = min(0.1 * (1 + check_count // 10), 0.5)
             await asyncio.sleep(delay)
-        
-        logger.error(f"Server failed to start within {self.startup_timeout} seconds after {check_count} checks")
+
+        logger.error(
+            f"Server failed to start within {self.startup_timeout} seconds after {check_count} checks"
+        )
         return False
 
     def _create_server_process(self) -> subprocess.Popen:
         """Create the server process with platform-specific handling."""
         server_path = Path(__file__).parent / "html2md_server" / "server.py"
-        
+
         # Verify server script exists
         if not server_path.exists():
             raise FileNotFoundError(f"Server script not found: {server_path}")
-        
+
         # Environment variables for the server
         env = os.environ.copy()
-        env['FLASK_ENV'] = 'testing'
-        env['FLASK_DEBUG'] = '0'  # Disable debug mode for tests
+        env["FLASK_ENV"] = "testing"
+        env["FLASK_DEBUG"] = "0"  # Disable debug mode for tests
         # Don't set WERKZEUG_RUN_MAIN as it expects WERKZEUG_SERVER_FD to be set too
-        
+
         # Platform-specific process creation
         if platform.system() == "Windows":
             # Windows-specific handling
@@ -1238,7 +1254,7 @@ class TestServer:
                 env=env,
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
                 bufsize=1,  # Line buffered
-                universal_newlines=True
+                universal_newlines=True,
             )
         else:
             # Unix-like systems
@@ -1249,12 +1265,12 @@ class TestServer:
                 env=env,
                 preexec_fn=os.setsid,  # Create new process group
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
             )
-        
+
         # Start threads to capture output without blocking
         import threading
-        
+
         def capture_output(pipe, name):
             try:
                 for line in pipe:
@@ -1264,70 +1280,72 @@ class TestServer:
                             logger.debug(f"Server {name}: {line.strip()}")
             except Exception as e:
                 logger.error(f"Error capturing {name}: {e}")
-        
+
         if process.stdout:
             stdout_thread = threading.Thread(
-                target=capture_output, 
-                args=(process.stdout, "stdout"),
-                daemon=True
+                target=capture_output, args=(process.stdout, "stdout"), daemon=True
             )
             stdout_thread.start()
-        
+
         if process.stderr:
             stderr_thread = threading.Thread(
-                target=capture_output,
-                args=(process.stderr, "stderr"),
-                daemon=True
+                target=capture_output, args=(process.stderr, "stderr"), daemon=True
             )
             stderr_thread.start()
-        
+
         return process
 
     async def start(self) -> bool:
         """Start the test server with health checks.
-        
+
         Returns:
             bool: True if server started successfully, False otherwise
         """
         if self._is_started:
             logger.info(f"Server already started on port {self.port}")
             return True
-        
+
         # Clear previous output
         self._server_output = []
-        
+
         # Try up to 3 times with different ports if needed
         for attempt in range(3):
             # Check if port is already in use
             if self._is_port_in_use(self.port):
-                logger.warning(f"Port {self.port} is already in use, finding a new port...")
+                logger.warning(
+                    f"Port {self.port} is already in use, finding a new port..."
+                )
                 old_port = self.port
                 self.port = self._find_free_port()
                 self.base_url = f"http://localhost:{self.port}"
                 logger.info(f"Changed from port {old_port} to {self.port}")
-            
+
             try:
                 # Set environment variable for the server port
-                os.environ['HTML2MD_SERVER_PORT'] = str(self.port)
-                
-                logger.info(f"Starting server on port {self.port} (attempt {attempt + 1}/3)...")
-                
+                os.environ["HTML2MD_SERVER_PORT"] = str(self.port)
+
+                logger.info(
+                    f"Starting server on port {self.port} (attempt {attempt + 1}/3)..."
+                )
+
                 # Create and start the process
                 self.process = self._create_server_process()
-                
+
                 # Give the process a moment to fail fast if there's an immediate error
                 await asyncio.sleep(0.5)
-                
+
                 # Check if process already terminated
                 if self.process.poll() is not None:
-                    logger.error(f"Server process terminated immediately with code {self.process.returncode}")
+                    logger.error(
+                        f"Server process terminated immediately with code {self.process.returncode}"
+                    )
                     if self._server_output:
                         logger.error("Server output:")
                         for line in self._server_output[-10:]:  # Last 10 lines
                             logger.error(f"  {line}")
                     self._cleanup_process()
                     continue
-                
+
                 # Wait for server to become responsive
                 if await self._wait_for_server():
                     self._is_started = True
@@ -1340,35 +1358,38 @@ class TestServer:
                         for line in self._server_output[-20:]:  # Last 20 lines
                             logger.error(f"  {line}")
                     self._cleanup_process()
-                    
+
                     # Try a different port on next attempt
                     if attempt < 2:
                         self.port = self._find_free_port()
                         self.base_url = f"http://localhost:{self.port}"
                         await asyncio.sleep(1)  # Brief pause before retry
-                        
+
             except Exception as e:
-                logger.error(f"Failed to start server on attempt {attempt + 1}: {type(e).__name__}: {e}")
+                logger.error(
+                    f"Failed to start server on attempt {attempt + 1}: {type(e).__name__}: {e}"
+                )
                 import traceback
+
                 logger.error(traceback.format_exc())
                 self._cleanup_process()
-                
+
                 if attempt < 2:
                     self.port = self._find_free_port()
                     self.base_url = f"http://localhost:{self.port}"
                     await asyncio.sleep(1)
-        
+
         return False
 
     def _cleanup_process(self):
         """Clean up the server process."""
         if not self.process:
             return
-        
+
         try:
             # Get process info before termination
             pid = self.process.pid
-            
+
             # Try graceful termination first
             if platform.system() == "Windows":
                 # Windows doesn't have SIGTERM, use terminate()
@@ -1379,7 +1400,7 @@ class TestServer:
                     os.killpg(os.getpgid(pid), signal.SIGTERM)
                 except (ProcessLookupError, OSError):
                     self.process.terminate()
-            
+
             # Wait for process to terminate gracefully
             try:
                 self.process.wait(timeout=5)
@@ -1392,13 +1413,13 @@ class TestServer:
                         os.killpg(os.getpgid(pid), signal.SIGKILL)
                     except (ProcessLookupError, OSError):
                         self.process.kill()
-                
+
                 # Final wait
                 try:
                     self.process.wait(timeout=2)
                 except subprocess.TimeoutExpired:
                     pass  # Process might be zombie, but we've done our best
-            
+
             # Clean up any child processes using psutil if available
             if HAS_PSUTIL:
                 try:
@@ -1409,10 +1430,10 @@ class TestServer:
                             child.terminate()
                         except (psutil.NoSuchProcess, psutil.AccessDenied):
                             pass
-                    
+
                     # Wait for children to terminate
                     psutil.wait_procs(children, timeout=3)
-                    
+
                     # Kill any remaining children
                     for child in children:
                         try:
@@ -1420,14 +1441,14 @@ class TestServer:
                                 child.kill()
                         except (psutil.NoSuchProcess, psutil.AccessDenied):
                             pass
-                            
+
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     # Process already gone
                     pass
-        
+
         except Exception as e:
             print(f"Error during process cleanup: {e}")
-        
+
         finally:
             self.process = None
             self._is_started = False
@@ -1435,10 +1456,10 @@ class TestServer:
     def stop(self):
         """Stop the test server."""
         self._cleanup_process()
-        
+
         # Clean up environment variable
-        if 'HTML2MD_SERVER_PORT' in os.environ:
-            del os.environ['HTML2MD_SERVER_PORT']
+        if "HTML2MD_SERVER_PORT" in os.environ:
+            del os.environ["HTML2MD_SERVER_PORT"]
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -1460,11 +1481,13 @@ class TestServer:
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         if loop.is_running():
             # If we're already in an async context, we can't use sync context manager
-            raise RuntimeError("Use async context manager (__aenter__) within async functions")
-        
+            raise RuntimeError(
+                "Use async context manager (__aenter__) within async functions"
+            )
+
         if loop.run_until_complete(self.start()):
             return self
         else:
@@ -1478,25 +1501,27 @@ class TestServer:
 @pytest.fixture(scope="function")
 def test_server():
     """Fixture to manage test server lifecycle.
-    
+
     Uses function scope to avoid port conflicts between tests.
     Each test gets its own server instance with a unique port.
     """
     server = TestServer()
-    
+
     # Try to start the server with retries
     import asyncio
-    
+
     # Handle existing event loop on different platforms
     try:
         loop = asyncio.get_running_loop()
         # We're already in an async context
-        raise RuntimeError("Cannot use sync test_server fixture in async context. Use async_test_server instead.")
+        raise RuntimeError(
+            "Cannot use sync test_server fixture in async context. Use async_test_server instead."
+        )
     except RuntimeError:
         # No running loop, create a new one
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     try:
         # Run the async server startup
         success = loop.run_until_complete(server.start())
@@ -1507,7 +1532,7 @@ def test_server():
                 error_msg += "\nServer output:\n"
                 error_msg += "\n".join(server._server_output[-20:])
             raise RuntimeError(error_msg)
-        
+
         yield server
     finally:
         # Clean up
@@ -1526,7 +1551,7 @@ def test_server():
 @pytest_asyncio.fixture(scope="function")
 async def async_test_server():
     """Async fixture to manage test server lifecycle.
-    
+
     Uses function scope to avoid port conflicts between tests.
     Each test gets its own server instance with a unique port.
     """
@@ -1824,7 +1849,9 @@ class TestHTML2MDConversion:
 
         # Get list of test pages
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{async_test_server.base_url}/api/test-pages") as resp:
+            async with session.get(
+                f"{async_test_server.base_url}/api/test-pages"
+            ) as resp:
                 pages = await resp.json()
 
         # Convert all pages in parallel
@@ -2004,6 +2031,7 @@ from pathlib import Path
 # Optional import for enhanced process management
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     psutil = None
@@ -2066,7 +2094,7 @@ def is_port_in_use(port):
     """Check if a port is currently in use."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
-            s.bind(('localhost', port))
+            s.bind(("localhost", port))
             return False
         except OSError:
             return True
@@ -2077,14 +2105,16 @@ def test_server():
     """Start the test server before running tests."""
     server_port = 8080
     server_path = Path(__file__).parent / "html2md_server" / "server.py"
-    
+
     # Check if server script exists
     if not server_path.exists():
         pytest.fail(f"Server script not found: {server_path}")
-    
+
     # Check if port is already in use
     if is_port_in_use(server_port):
-        logger.warning(f"Port {server_port} is already in use. Assuming server is already running.")
+        logger.warning(
+            f"Port {server_port} is already in use. Assuming server is already running."
+        )
         # Try to connect to existing server
         try:
             response = requests.get(TEST_SERVER_URL, timeout=5)
@@ -2094,16 +2124,16 @@ def test_server():
                 return
         except requests.exceptions.RequestException:
             pytest.fail(f"Port {server_port} is in use but server is not responding")
-    
+
     # Start server process
     logger.info(f"Starting test server on port {server_port}...")
-    
+
     # Environment variables for the server
     env = os.environ.copy()
-    env['FLASK_ENV'] = 'testing'
-    env['FLASK_DEBUG'] = '0'
-    env['HTML2MD_SERVER_PORT'] = str(server_port)
-    
+    env["FLASK_ENV"] = "testing"
+    env["FLASK_DEBUG"] = "0"
+    env["HTML2MD_SERVER_PORT"] = str(server_port)
+
     # Platform-specific process creation
     if platform.system() == "Windows":
         # Windows-specific handling
@@ -2114,7 +2144,7 @@ def test_server():
             env=env,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
     else:
         # Unix-like systems
@@ -2125,14 +2155,14 @@ def test_server():
             env=env,
             preexec_fn=os.setsid,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
-    
+
     # Wait for server to start
     max_wait = 30  # seconds
     start_time = time.time()
     server_ready = False
-    
+
     while time.time() - start_time < max_wait:
         # Check if process is still running
         if process.poll() is not None:
@@ -2143,20 +2173,22 @@ def test_server():
             if stderr:
                 logger.error(f"stderr: {stderr}")
             pytest.fail("Server process terminated unexpectedly")
-        
+
         # Try to connect to server
         try:
             response = requests.get(f"{TEST_SERVER_URL}/api/test-pages", timeout=2)
             if response.status_code == 200:
-                logger.info(f"Server started successfully after {time.time() - start_time:.2f} seconds")
+                logger.info(
+                    f"Server started successfully after {time.time() - start_time:.2f} seconds"
+                )
                 server_ready = True
                 break
         except requests.exceptions.RequestException:
             # Server not ready yet
             pass
-        
+
         time.sleep(0.5)
-    
+
     if not server_ready:
         # Try to get process output for debugging
         process.terminate()
@@ -2167,10 +2199,10 @@ def test_server():
         if stderr:
             logger.error(f"stderr: {stderr}")
         pytest.fail(f"Server failed to start within {max_wait} seconds")
-    
+
     # Run tests
     yield
-    
+
     # Cleanup: stop the server
     logger.info("Stopping test server...")
     try:
@@ -2180,8 +2212,9 @@ def test_server():
         else:
             # Unix: send SIGTERM to process group
             import signal
+
             os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        
+
         # Wait for process to terminate
         process.wait(timeout=5)
     except Exception as e:
@@ -2362,6 +2395,20 @@ if __name__ == "__main__":
 
 ======= html2md/test_claude_improvements.py ======
 #!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Test script for Claude improvements in m1f-html2md."""
 
 import sys
@@ -2525,6 +2572,20 @@ if __name__ == "__main__":
 
 ======= html2md/test_claude_integration.py ======
 #!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Test Claude integration improvements in m1f-html2md."""
 
 import sys
@@ -2895,7 +2956,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 def normalize_path_for_subprocess(path):
     """Normalize path for cross-platform subprocess usage."""
     # Convert Path to string and use forward slashes
-    return str(path).replace('\\', '/')
+    return str(path).replace("\\", "/")
 
 
 class TestIntegration(unittest.TestCase):
@@ -2948,11 +3009,18 @@ class TestIntegration(unittest.TestCase):
 
         # Set up environment with UTF-8 encoding for Windows compatibility
         env = os.environ.copy()
-        env['PYTHONIOENCODING'] = 'utf-8'
+        env["PYTHONIOENCODING"] = "utf-8"
 
         # Run the command with explicit encoding for Windows
         try:
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+            result = subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=env,
+            )
         except subprocess.CalledProcessError as e:
             print(f"Command failed with return code {e.returncode}")
             print(f"STDOUT: {e.stdout}")
@@ -2996,11 +3064,18 @@ class TestIntegration(unittest.TestCase):
 
         # Set up environment with UTF-8 encoding for Windows compatibility
         env = os.environ.copy()
-        env['PYTHONIOENCODING'] = 'utf-8'
+        env["PYTHONIOENCODING"] = "utf-8"
 
         # Run the command with explicit encoding for Windows
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+            subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=env,
+            )
         except subprocess.CalledProcessError as e:
             print(f"Command failed with return code {e.returncode}")
             print(f"STDOUT: {e.stdout}")
@@ -3046,11 +3121,18 @@ class TestIntegration(unittest.TestCase):
 
         # Set up environment with UTF-8 encoding for Windows compatibility
         env = os.environ.copy()
-        env['PYTHONIOENCODING'] = 'utf-8'
+        env["PYTHONIOENCODING"] = "utf-8"
 
         # Run the command with explicit encoding for Windows
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', env=env)
+            subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=env,
+            )
         except subprocess.CalledProcessError as e:
             print(f"Command failed with return code {e.returncode}")
             print(f"STDOUT: {e.stdout}")
@@ -3143,7 +3225,7 @@ def is_port_in_use(port):
     """Check if a port is currently in use."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
-            s.bind(('localhost', port))
+            s.bind(("localhost", port))
             return False
         except OSError:
             return True
@@ -3153,15 +3235,19 @@ def is_port_in_use(port):
 def test_server():
     """Start the test server before running tests."""
     server_port = 8080
-    server_path = Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
-    
+    server_path = (
+        Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
+    )
+
     # Check if server script exists
     if not server_path.exists():
         pytest.fail(f"Server script not found: {server_path}")
-    
+
     # Check if port is already in use
     if is_port_in_use(server_port):
-        logger.warning(f"Port {server_port} is already in use. Assuming server is already running.")
+        logger.warning(
+            f"Port {server_port} is already in use. Assuming server is already running."
+        )
         # Try to connect to existing server
         try:
             response = requests.get(TEST_SERVER_URL, timeout=5)
@@ -3171,16 +3257,16 @@ def test_server():
                 return
         except requests.exceptions.RequestException:
             pytest.fail(f"Port {server_port} is in use but server is not responding")
-    
+
     # Start server process
     logger.info(f"Starting test server on port {server_port}...")
-    
+
     # Environment variables for the server
     env = os.environ.copy()
-    env['FLASK_ENV'] = 'testing'
-    env['FLASK_DEBUG'] = '0'
-    env['HTML2MD_SERVER_PORT'] = str(server_port)
-    
+    env["FLASK_ENV"] = "testing"
+    env["FLASK_DEBUG"] = "0"
+    env["HTML2MD_SERVER_PORT"] = str(server_port)
+
     # Platform-specific process creation
     if platform.system() == "Windows":
         # Windows-specific handling
@@ -3191,7 +3277,7 @@ def test_server():
             env=env,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
     else:
         # Unix-like systems
@@ -3202,14 +3288,14 @@ def test_server():
             env=env,
             preexec_fn=os.setsid,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
-    
+
     # Wait for server to start
     max_wait = 30  # seconds
     start_time = time.time()
     server_ready = False
-    
+
     while time.time() - start_time < max_wait:
         # Check if process is still running
         if process.poll() is not None:
@@ -3220,20 +3306,22 @@ def test_server():
             if stderr:
                 logger.error(f"stderr: {stderr}")
             pytest.fail("Server process terminated unexpectedly")
-        
+
         # Try to connect to server
         try:
             response = requests.get(f"{TEST_SERVER_URL}/api/test-pages", timeout=2)
             if response.status_code == 200:
-                logger.info(f"Server started successfully after {time.time() - start_time:.2f} seconds")
+                logger.info(
+                    f"Server started successfully after {time.time() - start_time:.2f} seconds"
+                )
                 server_ready = True
                 break
         except requests.exceptions.RequestException:
             # Server not ready yet
             pass
-        
+
         time.sleep(0.5)
-    
+
     if not server_ready:
         # Try to get process output for debugging
         process.terminate()
@@ -3244,10 +3332,10 @@ def test_server():
         if stderr:
             logger.error(f"stderr: {stderr}")
         pytest.fail(f"Server failed to start within {max_wait} seconds")
-    
+
     # Run tests
     yield
-    
+
     # Cleanup: stop the server
     logger.info("Stopping test server...")
     try:
@@ -3257,8 +3345,9 @@ def test_server():
         else:
             # Unix: send SIGTERM to process group
             import signal
+
             os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        
+
         # Wait for process to terminate
         process.wait(timeout=5)
     except Exception as e:
@@ -4193,6 +4282,7 @@ from pathlib import Path
 # Platform-specific PID file location
 if platform.system() == "Windows":
     import tempfile
+
     PID_FILE = Path(tempfile.gettempdir()) / "html2md_test_server.pid"
 else:
     PID_FILE = Path("/tmp/html2md_test_server.pid")
@@ -4200,6 +4290,7 @@ else:
 # Optional psutil import for better process management
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     psutil = None
@@ -4214,14 +4305,14 @@ def start_server():
         return
 
     server_path = Path(__file__).parent / "server.py"
-    
+
     # Platform-specific process creation
     if platform.system() == "Windows":
         process = subprocess.Popen(
             [sys.executable, str(server_path)],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
         )
     else:
         process = subprocess.Popen(
@@ -4245,12 +4336,12 @@ def stop_server():
 
     try:
         pid = int(PID_FILE.read_text())
-        
+
         # Use psutil for better process management if available
         if HAS_PSUTIL:
             try:
                 process = psutil.Process(pid)
-                
+
                 # Terminate child processes first
                 children = process.children(recursive=True)
                 for child in children:
@@ -4258,14 +4349,14 @@ def stop_server():
                         child.terminate()
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         pass
-                
+
                 # Wait for children to terminate
                 psutil.wait_procs(children, timeout=3)
-                
+
                 # Terminate the main process
                 process.terminate()
                 print(f"Sent terminate signal to PID {pid}")
-                
+
                 # Wait for graceful shutdown
                 try:
                     process.wait(timeout=5)
@@ -4275,7 +4366,7 @@ def stop_server():
                     process.kill()
                     process.wait(timeout=2)
                     print("Server forcefully terminated.")
-                    
+
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 print("Process not found or access denied.")
         else:
@@ -4283,9 +4374,13 @@ def stop_server():
             if platform.system() == "Windows":
                 # Windows doesn't have SIGTERM, use taskkill
                 import subprocess
+
                 try:
-                    subprocess.run(["taskkill", "/F", "/PID", str(pid)], 
-                                 check=True, capture_output=True)
+                    subprocess.run(
+                        ["taskkill", "/F", "/PID", str(pid)],
+                        check=True,
+                        capture_output=True,
+                    )
                     print(f"Terminated process {pid}")
                 except subprocess.CalledProcessError as e:
                     print(f"Failed to terminate process: {e}")
@@ -4326,15 +4421,17 @@ def status_server():
 
     try:
         pid = int(PID_FILE.read_text())
-        
+
         # Use psutil for better process information if available
         if HAS_PSUTIL:
             try:
                 process = psutil.Process(pid)
-                if process.is_running() and process.name() in ['python', 'python.exe']:
+                if process.is_running() and process.name() in ["python", "python.exe"]:
                     print(f"Server running with PID: {pid}")
                     print(f"Process name: {process.name()}")
-                    print(f"Memory usage: {process.memory_info().rss / 1024 / 1024:.1f} MB")
+                    print(
+                        f"Memory usage: {process.memory_info().rss / 1024 / 1024:.1f} MB"
+                    )
                     print(f"CPU percent: {process.cpu_percent():.1f}%")
                 else:
                     print("Server not running (stale PID file)")
@@ -4346,9 +4443,13 @@ def status_server():
             # Fallback to basic process check
             if platform.system() == "Windows":
                 import subprocess
+
                 try:
-                    result = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], 
-                                          capture_output=True, text=True)
+                    result = subprocess.run(
+                        ["tasklist", "/FI", f"PID eq {pid}"],
+                        capture_output=True,
+                        text=True,
+                    )
                     if str(pid) in result.stdout:
                         print(f"Server running with PID: {pid}")
                     else:
@@ -4364,7 +4465,7 @@ def status_server():
                 except ProcessLookupError:
                     print("Server not running (stale PID file)")
                     PID_FILE.unlink()
-                    
+
     except ValueError:
         print("Invalid PID file")
         PID_FILE.unlink()
@@ -4685,14 +4786,14 @@ def page_not_found(e):
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
-    port = int(os.environ.get('HTML2MD_SERVER_PORT', 8080))
-    
+    port = int(os.environ.get("HTML2MD_SERVER_PORT", 8080))
+
     # Ensure TEST_PAGES is populated
     if not TEST_PAGES:
         logger.warning("No test pages found! Please check the test_pages directory.")
 
     # Only print banner in non-testing mode
-    if os.environ.get('FLASK_ENV') != 'testing':
+    if os.environ.get("FLASK_ENV") != "testing":
         print(
             f"""
 ╔══════════════════════════════════════════════════════════════╗
@@ -4722,8 +4823,8 @@ if __name__ == "__main__":
         )
 
     # Disable debug mode when running in testing environment
-    debug_mode = os.environ.get('FLASK_ENV') != 'testing'
-    
+    debug_mode = os.environ.get("FLASK_ENV") != "testing"
+
     app.run(host="0.0.0.0", port=port, debug=debug_mode)
 
 ======= m1f/README.md ======
@@ -5597,7 +5698,18 @@ def test_deduplication_behavior(tmp_path):
 ======= m1f/test_cross_platform_paths.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
-# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Integration test to verify path separators in actual bundle files."""
 
@@ -5626,53 +5738,78 @@ class TestCrossPlatformPaths(BaseM1FTest):
         source_dir = temp_dir / "source"
         (source_dir / "src" / "components").mkdir(parents=True)
         (source_dir / "src" / "main.py").write_text("# Main file\nprint('Hello')\n")
-        (source_dir / "src" / "components" / "ui.py").write_text("# UI component\nclass Button: pass\n")
+        (source_dir / "src" / "components" / "ui.py").write_text(
+            "# UI component\nclass Button: pass\n"
+        )
         (source_dir / "docs").mkdir()
-        (source_dir / "docs" / "README.md").write_text("# Documentation\nTest project\n")
-        
+        (source_dir / "docs" / "README.md").write_text(
+            "# Documentation\nTest project\n"
+        )
+
         # Create output file path
         output_file = temp_dir / "test_bundle.txt"
-        
+
         # Run m1f to create bundle
         exit_code, log_output = run_m1f(["-s", str(source_dir), "-o", str(output_file)])
         assert exit_code == 0, f"m1f failed with exit code {exit_code}: {log_output}"
-        
+
         # Read the bundle and check for path separators
         bundle_content = output_file.read_text()
-        
+
         # Check that paths use forward slashes
         assert "src/main.py" in bundle_content, "Expected 'src/main.py' in bundle"
-        assert "src/components/ui.py" in bundle_content, "Expected 'src/components/ui.py' in bundle"
+        assert (
+            "src/components/ui.py" in bundle_content
+        ), "Expected 'src/components/ui.py' in bundle"
         assert "docs/README.md" in bundle_content, "Expected 'docs/README.md' in bundle"
-        
+
         # Ensure no backslashes in file paths (except in file content)
-        lines = bundle_content.split('\n')
+        lines = bundle_content.split("\n")
         for line in lines:
             # Check lines that look like file separators
             if line.startswith("===") and "FILE:" in line:
                 assert "\\" not in line, f"Found backslash in separator line: {line}"
-        
+
         # Test s1f extraction using subprocess
         extract_dir = temp_dir / "extracted"
         extract_dir.mkdir()
-        
+
         import subprocess
+
         result = subprocess.run(
-            [sys.executable, "-m", "tools.s1f", str(output_file), "-d", str(extract_dir), "-f"],
+            [
+                sys.executable,
+                "-m",
+                "tools.s1f",
+                str(output_file),
+                "-d",
+                str(extract_dir),
+                "-f",
+            ],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert result.returncode == 0, f"s1f failed: {result.stderr}"
-        
+
         # Verify files were extracted correctly
         assert (extract_dir / "src" / "main.py").exists(), "src/main.py not extracted"
-        assert (extract_dir / "src" / "components" / "ui.py").exists(), "src/components/ui.py not extracted"
-        assert (extract_dir / "docs" / "README.md").exists(), "docs/README.md not extracted"
-        
+        assert (
+            extract_dir / "src" / "components" / "ui.py"
+        ).exists(), "src/components/ui.py not extracted"
+        assert (
+            extract_dir / "docs" / "README.md"
+        ).exists(), "docs/README.md not extracted"
+
         # Verify content matches
-        assert (extract_dir / "src" / "main.py").read_text() == "# Main file\nprint('Hello')\n"
-        assert (extract_dir / "src" / "components" / "ui.py").read_text() == "# UI component\nclass Button: pass\n"
-        assert (extract_dir / "docs" / "README.md").read_text() == "# Documentation\nTest project\n"
+        assert (
+            extract_dir / "src" / "main.py"
+        ).read_text() == "# Main file\nprint('Hello')\n"
+        assert (
+            extract_dir / "src" / "components" / "ui.py"
+        ).read_text() == "# UI component\nclass Button: pass\n"
+        assert (
+            extract_dir / "docs" / "README.md"
+        ).read_text() == "# Documentation\nTest project\n"
 
     @pytest.mark.integration
     def test_separator_styles(self, run_m1f, temp_dir):
@@ -5681,36 +5818,46 @@ class TestCrossPlatformPaths(BaseM1FTest):
         source_dir = temp_dir / "source"
         source_dir.mkdir()
         (source_dir / "test.txt").write_text("Test content")
-        
+
         separator_styles = ["Standard", "Detailed", "Markdown", "MachineReadable"]
-        
+
         for style in separator_styles:
             output_file = temp_dir / f"bundle_{style.lower()}.txt"
-            
+
             # Run m1f with specific separator style
-            exit_code, log_output = run_m1f([
-                "-s", str(source_dir),
-                "-o", str(output_file),
-                "--separator-style", style
-            ])
-            assert exit_code == 0, f"m1f failed for {style} with exit code {exit_code}: {log_output}"
-            
+            exit_code, log_output = run_m1f(
+                [
+                    "-s",
+                    str(source_dir),
+                    "-o",
+                    str(output_file),
+                    "--separator-style",
+                    style,
+                ]
+            )
+            assert (
+                exit_code == 0
+            ), f"m1f failed for {style} with exit code {exit_code}: {log_output}"
+
             # Check bundle content
             bundle_content = output_file.read_text()
-            
+
             # For any style, the path should not contain backslashes
             if style == "MachineReadable":
                 # In machine readable format, check the JSON metadata
-                assert '"original_filepath": "test.txt"' in bundle_content or \
-                       '"original_filepath":"test.txt"' in bundle_content, \
-                       f"Path not found in {style} format"
+                assert (
+                    '"original_filepath": "test.txt"' in bundle_content
+                    or '"original_filepath":"test.txt"' in bundle_content
+                ), f"Path not found in {style} format"
             else:
                 # For other styles, just ensure no backslashes in paths
-                lines = bundle_content.split('\n')
+                lines = bundle_content.split("\n")
                 for line in lines:
                     # Skip actual file content lines
                     if "FILE:" in line or "test.txt" in line.lower():
-                        assert "\\" not in line, f"Found backslash in {style} style: {line}"
+                        assert (
+                            "\\" not in line
+                        ), f"Found backslash in {style} style: {line}"
 
 ======= m1f/test_docs_only_parameter.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -5787,7 +5934,9 @@ class TestDocsOnlyParameter(BaseM1FTest):
         # Create documentation files
         for filename in doc_files:
             file_path = files_dir / filename
-            file_path.write_text(f"Documentation content in {filename}\n", encoding="utf-8")
+            file_path.write_text(
+                f"Documentation content in {filename}\n", encoding="utf-8"
+            )
 
         # Create non-documentation files
         for filename in non_doc_files:
@@ -10666,17 +10815,19 @@ def cleanup_windows_file_handles():
     if sys.platform.startswith("win"):
         # Close any logging handlers that might be holding file handles
         import logging
+
         for logger_name in ["m1f", "s1f", ""]:
             logger = logging.getLogger(logger_name)
             for handler in logger.handlers[:]:
                 if hasattr(handler, "close"):
                     handler.close()
                 logger.removeHandler(handler)
-        
+
         # Force garbage collection
         gc.collect()
         # Give Windows time to release handles
         time.sleep(0.01)
+
 
 from tools.m1f.config import (
     Config,
@@ -10765,7 +10916,7 @@ class TestParallelProcessing:
 
         # Run the combiner
         result = await combiner.run()
-        
+
         # Clean up file handles to prevent WinError 32 on Windows
         cleanup_windows_file_handles()
 
@@ -10795,7 +10946,7 @@ class TestParallelProcessing:
 
         # Run the combiner
         await combiner.run()
-        
+
         # Clean up file handles to prevent WinError 32 on Windows
         cleanup_windows_file_handles()
 
@@ -10916,7 +11067,7 @@ class TestParallelProcessing:
 
         # Run the combiner
         result = await combiner.run()
-        
+
         # Clean up file handles to prevent WinError 32 on Windows
         cleanup_windows_file_handles()
 
@@ -10958,7 +11109,7 @@ class TestParallelProcessing:
 
             # Run should complete despite the error
             result = await combiner.run()
-            
+
             # Clean up file handles to prevent WinError 32 on Windows
             cleanup_windows_file_handles()
 
@@ -11004,7 +11155,7 @@ class TestParallelProcessing:
         await output_writer.write_combined_file(
             config_parallel.output.output_file, files
         )
-        
+
         # Clean up file handles to prevent WinError 32 on Windows
         cleanup_windows_file_handles()
 
@@ -11019,7 +11170,18 @@ if __name__ == "__main__":
 ======= m1f/test_path_separators.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
-# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Test to verify path separators are handled correctly across platforms."""
 
@@ -11045,31 +11207,35 @@ class TestPathSeparators:
         # Use tmp_path for platform-appropriate paths
         base_path = tmp_path / "project"
         base_path.mkdir()
-        
+
         # Test normal relative path
         file_path = base_path / "src" / "main.py"
         file_path.parent.mkdir(parents=True)
         file_path.touch()
-        
+
         result = get_relative_path(file_path, base_path)
         assert result == "src/main.py", f"Expected 'src/main.py', got '{result}'"
-        
+
         # Test nested path
         file_path = base_path / "src" / "components" / "ui" / "button.js"
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.touch()
-        
+
         result = get_relative_path(file_path, base_path)
-        assert result == "src/components/ui/button.js", f"Expected 'src/components/ui/button.js', got '{result}'"
-        
+        assert (
+            result == "src/components/ui/button.js"
+        ), f"Expected 'src/components/ui/button.js', got '{result}'"
+
         # Test path not under base (should return absolute with forward slashes)
         other_path = tmp_path / "other" / "location" / "file.txt"
         other_path.parent.mkdir(parents=True)
         other_path.touch()
-        
+
         result = get_relative_path(other_path, base_path)
         # Result should always use forward slashes
-        assert "/" in result and "\\" not in result, f"Expected forward slashes in '{result}'"
+        assert (
+            "/" in result and "\\" not in result
+        ), f"Expected forward slashes in '{result}'"
 
     @pytest.mark.unit
     def test_s1f_path_conversion(self):
@@ -11077,15 +11243,17 @@ class TestPathSeparators:
         # Test Windows-style paths
         result = convert_to_posix_path("src\\main.py")
         assert result == "src/main.py", f"Expected 'src/main.py', got '{result}'"
-        
+
         # Test already normalized paths
         result = convert_to_posix_path("src/main.py")
         assert result == "src/main.py", f"Expected 'src/main.py', got '{result}'"
-        
+
         # Test mixed separators
         result = convert_to_posix_path("src\\components/ui\\button.js")
-        assert result == "src/components/ui/button.js", f"Expected 'src/components/ui/button.js', got '{result}'"
-        
+        assert (
+            result == "src/components/ui/button.js"
+        ), f"Expected 'src/components/ui/button.js', got '{result}'"
+
         # Test None input
         result = convert_to_posix_path(None)
         assert result == "", f"Expected empty string, got '{result}'"
@@ -11096,43 +11264,51 @@ class TestPathSeparators:
         # Create path with forward slashes
         path_str = "src/components/ui/button.js"
         path_obj = Path(path_str)
-        
+
         # Verify that as_posix always gives forward slashes
         assert "/" in path_obj.as_posix(), "as_posix() should contain forward slashes"
-        assert "\\" not in path_obj.as_posix(), "as_posix() should not contain backslashes"
+        assert (
+            "\\" not in path_obj.as_posix()
+        ), "as_posix() should not contain backslashes"
 
     @pytest.mark.unit
-    @pytest.mark.skipif(os.name != 'nt', reason="Windows-specific test")
+    @pytest.mark.skipif(os.name != "nt", reason="Windows-specific test")
     def test_windows_paths(self, tmp_path):
         """Test Windows-specific path handling."""
         # Test with actual Windows paths
         base_path = tmp_path / "project"
         base_path.mkdir()
-        
+
         file_path = base_path / "src" / "main.py"
         file_path.parent.mkdir()
         file_path.touch()
-        
+
         result = get_relative_path(file_path, base_path)
         assert result == "src/main.py", f"Expected 'src/main.py', got '{result}'"
-        
+
         # Test that Windows paths are converted to forward slashes in bundles
         assert "/" in result and "\\" not in result
-    
+
     @pytest.mark.unit
     def test_path_conversion_edge_cases(self):
         """Test edge cases in path conversion."""
         # Test Windows-style paths conversion (works on all platforms)
         result = convert_to_posix_path("C:\\Users\\test\\file.txt")
-        assert result == "C:/Users/test/file.txt", f"Expected 'C:/Users/test/file.txt', got '{result}'"
-        
+        assert (
+            result == "C:/Users/test/file.txt"
+        ), f"Expected 'C:/Users/test/file.txt', got '{result}'"
+
         # Test UNC paths
         result = convert_to_posix_path("\\\\server\\share\\file.txt")
-        assert result == "//server/share/file.txt", f"Expected '//server/share/file.txt', got '{result}'"
-        
+        assert (
+            result == "//server/share/file.txt"
+        ), f"Expected '//server/share/file.txt', got '{result}'"
+
         # Test paths with multiple consecutive separators
         result = convert_to_posix_path("path\\\\to\\\\\\file.txt")
-        assert result == "path//to///file.txt", f"Expected 'path//to///file.txt', got '{result}'"
+        assert (
+            result == "path//to///file.txt"
+        ), f"Expected 'path//to///file.txt', got '{result}'"
 
 ======= m1f/test_path_traversal_security.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -11198,8 +11374,8 @@ class TestPathTraversalSecurity:
             "quiet": False,
         }
         # Handle source_directory as a list
-        if 'source_directory' in overrides:
-            overrides['source_directory'] = [overrides['source_directory']]
+        if "source_directory" in overrides:
+            overrides["source_directory"] = [overrides["source_directory"]]
         defaults.update(overrides)
         return argparse.Namespace(**defaults)
 
@@ -11685,7 +11861,6 @@ def test_security_check_warn():
    ```
 
 2. **Focus on fixing one test at a time**, starting with the simplest:
-
    - `test_no_default_excludes_with_excludes` - likely a logic issue with
      exclude handling
    - `test_filename_mtime_hash_with_add_timestamp` - filename format issue
@@ -11978,7 +12153,6 @@ pytest tests/s1f/test_s1f.py -xvs
 The test suite includes the following test cases:
 
 1. **Separator Style Tests**:
-
    - Tests extraction with Standard separator style
    - Tests extraction with Detailed separator style
    - Tests extraction with Markdown separator style
@@ -11986,7 +12160,6 @@ The test suite includes the following test cases:
      processing)
 
 2. **Feature Tests**:
-
    - Tests force overwrite of existing files
    - Tests setting file timestamps to original or current time
 
@@ -13931,7 +14104,9 @@ class TestS1FEncoding(BaseS1FTest):
         symbols_file = s1f_extracted_dir / "symbols.txt"
 
         assert unicode_file.read_text(encoding="utf-8") == "Unicode test: 你好 мир 🌍\n"
-        assert latin_file.read_text(encoding="utf-8") == "Latin characters: àèìòù ÀÈÌÒÙ\n"
+        assert (
+            latin_file.read_text(encoding="utf-8") == "Latin characters: àèìòù ÀÈÌÒÙ\n"
+        )
         assert symbols_file.read_text(encoding="utf-8") == "Symbols: €£¥ ©®™ ½¼¾\n"
 
     @pytest.mark.unit
@@ -24246,7 +24421,6 @@ python s1f.py --input-file ./output/exotic_encodings_test.txt --destination-dire
    first conversion.
 
 4. The `--respect-encoding` option in s1f works best when:
-
    - The original file's encoding is accurately detected by m1f
    - The conversion to UTF-8 happened without encoding errors
    - The encoding is well-supported by Python's encoding/decoding functions
@@ -24331,7 +24505,6 @@ python s1f.py --input-file ./output/exotic_encodings_test.txt --destination-dire
 
 - All files were successfully extracted
 - Superior encoding preservation compared to UTF-8:
-
   - big5.txt: Successfully restored to Big5 encoding
   - koi8r.txt: Successfully restored to KOI8-R encoding
   - windows1256.txt: Successfully restored to Windows-1256 encoding
@@ -24362,7 +24535,6 @@ The difference in results is significant:
 
 3. The `--respect-encoding` option in s1f works best when combined with
    UTF-16-LE conversion in m1f, especially for:
-
    - Big5 (Traditional Chinese)
    - KOI8-R (Russian)
    - Windows-1256 (Arabic)

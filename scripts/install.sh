@@ -11,6 +11,67 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Help function
+show_help() {
+    cat << EOF
+${BLUE}m1f Installation Script${NC}
+${BLUE}======================${NC}
+
+${YELLOW}USAGE:${NC}
+    ./install.sh [OPTIONS]
+
+${YELLOW}DESCRIPTION:${NC}
+    This script installs the m1f (Make One File) toolkit and all its dependencies.
+    It performs a complete setup including:
+    - Creating a Python virtual environment
+    - Installing all required dependencies
+    - Setting up PATH configuration
+    - Creating command shortcuts
+
+${YELLOW}OPTIONS:${NC}
+    -h, --help     Show this help message and exit
+
+${YELLOW}REQUIREMENTS:${NC}
+    - Python 3.10 or higher
+    - pip package manager
+    - bash or zsh shell
+
+${YELLOW}EXAMPLES:${NC}
+    # Basic installation
+    ./scripts/install.sh
+
+    # Run with source to immediately enable commands
+    source ./scripts/install.sh
+
+${YELLOW}WHAT IT DOES:${NC}
+    1. Creates a Python virtual environment in .venv/
+    2. Installs all dependencies from requirements.txt
+    3. Tests the m1f installation
+    4. Adds m1f/bin to your PATH in ~/.bashrc or ~/.zshrc
+    5. Optionally creates symlinks in ~/.local/bin
+
+${YELLOW}AFTER INSTALLATION:${NC}
+    - Run 'source ~/.bashrc' (or ~/.zshrc) to activate PATH changes
+    - Or simply open a new terminal window
+    - Test with 'm1f --help'
+
+${YELLOW}TO UNINSTALL:${NC}
+    Run: ./scripts/uninstall.sh
+
+For more information, visit: https://github.com/denoland/m1f
+EOF
+}
+
+# Check for help flag
+for arg in "$@"; do
+    case $arg in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+    esac
+done
+
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
@@ -20,6 +81,13 @@ echo -e "${BLUE}m1f Installation${NC}"
 echo -e "${BLUE}================${NC}"
 echo
 
+# Check if running in virtual environment already
+if [ -n "$VIRTUAL_ENV" ]; then
+    echo -e "${YELLOW}Warning: Script is running inside a virtual environment.${NC}"
+    echo -e "${YELLOW}It's recommended to run the installer outside of any virtual environment.${NC}"
+    echo
+fi
+
 # Check Python version
 echo -e "${GREEN}Checking Python version...${NC}"
 if command -v python3 &> /dev/null; then
@@ -28,6 +96,7 @@ elif command -v python &> /dev/null; then
     PYTHON_CMD="python"
 else
     echo -e "${RED}Error: Python is not installed. Please install Python 3.10 or higher.${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 
@@ -36,8 +105,9 @@ PYTHON_VERSION=$($PYTHON_CMD -c "import sys; print(f'{sys.version_info.major}.{s
 PYTHON_MAJOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.major)")
 PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)")
 
-if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]); then
+if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
     echo -e "${RED}Error: Python 3.10 or higher is required. Found Python $PYTHON_VERSION${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 
@@ -58,6 +128,7 @@ fi
 # Step 2: Activate virtual environment and install dependencies
 echo
 echo -e "${GREEN}Step 2: Installing dependencies...${NC}"
+# shellcheck source=/dev/null
 source .venv/bin/activate
 
 # Upgrade pip first
@@ -69,21 +140,26 @@ if [ -f "requirements.txt" ]; then
     echo -e "${GREEN}✓ Dependencies installed${NC}"
 else
     echo -e "${RED}Error: requirements.txt not found${NC}"
+    echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
     exit 1
 fi
 
-# Step 3: Generate initial m1f bundles
+# Step 3: Test m1f installation
 echo
-echo -e "${GREEN}Step 3: Generating initial m1f bundles...${NC}"
-source .venv/bin/activate && python -m tools.m1f auto-bundle --quiet
-
-# Create symlink for main documentation
-if [ -f "m1f/m1f/87_m1f_only_docs.txt" ] && [ ! -e "m1f/m1f.txt" ]; then
-    ln -sf "m1f/87_m1f_only_docs.txt" "m1f/m1f.txt"
-    echo -e "${GREEN}✓ Created m1f.txt symlink to main documentation${NC}"
+echo -e "${GREEN}Step 3: Testing m1f installation...${NC}"
+# shellcheck source=/dev/null
+if source .venv/bin/activate && python -m tools.m1f --version >/dev/null 2>&1; then
+    echo -e "${GREEN}✓ m1f is working correctly${NC}"
+    
+    # Create symlink for main documentation if needed
+    if [ -f "m1f/m1f/87_m1f_only_docs.txt" ] && [ ! -e "m1f/m1f.txt" ]; then
+        ln -sf "m1f/87_m1f_only_docs.txt" "m1f/m1f.txt"
+        echo -e "${GREEN}✓ Created m1f.txt symlink to main documentation${NC}"
+    fi
+else
+    echo -e "${YELLOW}Warning: Could not verify m1f installation${NC}"
+    echo -e "${YELLOW}You can test it manually with 'm1f --help'${NC}"
 fi
-
-echo -e "${GREEN}✓ Initial bundles generated${NC}"
 
 # Step 4: Setup PATH
 echo
@@ -92,14 +168,11 @@ echo -e "${GREEN}Step 4: Setting up system PATH...${NC}"
 # Detect shell
 if [ -n "$ZSH_VERSION" ]; then
     SHELL_CONFIG="$HOME/.zshrc"
-    SHELL_NAME="zsh"
 elif [ -n "$BASH_VERSION" ]; then
     SHELL_CONFIG="$HOME/.bashrc"
-    SHELL_NAME="bash"
 else
     echo -e "${YELLOW}Warning: Could not detect shell. Assuming bash.${NC}"
     SHELL_CONFIG="$HOME/.bashrc"
-    SHELL_NAME="bash"
 fi
 
 # PATH line to add
@@ -109,6 +182,9 @@ PATH_LINE="export PATH=\"$BIN_DIR:\$PATH\"  # m1f tools"
 if grep -q "# m1f tools" "$SHELL_CONFIG" 2>/dev/null; then
     echo -e "${YELLOW}m1f tools already in PATH${NC}"
 else
+    # Backup shell config
+    cp "$SHELL_CONFIG" "$SHELL_CONFIG.m1f-backup-$(date +%Y%m%d%H%M%S)"
+    
     # Add to PATH
     echo "" >> "$SHELL_CONFIG"
     echo "$PATH_LINE" >> "$SHELL_CONFIG"
@@ -116,14 +192,13 @@ else
 fi
 
 # Step 5: Create symlinks (optional)
-if [ -d "$HOME/.local/bin" ]; then
+if [ -d "$HOME/.local/bin" ] || mkdir -p "$HOME/.local/bin" 2>/dev/null; then
     # Check if any m1f symlinks already exist
     if [ -L "$HOME/.local/bin/m1f" ]; then
         echo -e "${YELLOW}Symlinks already exist in ~/.local/bin${NC}"
     else
         echo
         echo -e "${YELLOW}Creating symlinks in ~/.local/bin for system-wide access...${NC}"
-        mkdir -p "$HOME/.local/bin"
         for cmd in "$BIN_DIR"/*; do
             if [ -x "$cmd" ]; then
                 cmd_name=$(basename "$cmd")
@@ -131,6 +206,11 @@ if [ -d "$HOME/.local/bin" ]; then
             fi
         done
         echo -e "${GREEN}✓ Symlinks created${NC}"
+        
+        # Check if ~/.local/bin is in PATH
+        if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+            echo -e "${YELLOW}Note: ~/.local/bin is not in your PATH. You may want to add it.${NC}"
+        fi
     fi
 fi
 

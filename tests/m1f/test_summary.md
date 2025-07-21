@@ -57,7 +57,6 @@
    ```
 
 2. **Focus on fixing one test at a time**, starting with the simplest:
-
    - `test_no_default_excludes_with_excludes` - likely a logic issue with
      exclude handling
    - `test_filename_mtime_hash_with_add_timestamp` - filename format issue

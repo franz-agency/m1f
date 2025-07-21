@@ -102,7 +102,7 @@ Claude, I need different bundles for dev/staging/prod.
 Using m1f v3.2's preset system:
 
 1. Create environment-specific presets
-2. Use conditional presets (enabled_if_exists)
+2. Use enabled flag for environment control
 3. Set different security levels per environment
 4. Configure appropriate output formats
 

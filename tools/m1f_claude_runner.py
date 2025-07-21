@@ -1,3 +1,17 @@
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Claude runner with streaming output and timeout handling for m1f-claude.
 Based on improvements from html2md tool.
@@ -47,7 +61,7 @@ class M1FClaudeRunner:
                 ["npm", "config", "get", "prefix"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
             if npm_prefix.returncode == 0:
                 npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
@@ -129,7 +143,7 @@ class M1FClaudeRunner:
                 bufsize=1,
                 universal_newlines=True,
             )
-            
+
             # Send the prompt and close stdin
             self.process.stdin.write(prompt)
             self.process.stdin.close()
@@ -137,7 +151,7 @@ class M1FClaudeRunner:
             # Track timing
             start_time = time.time()
             last_output_time = start_time
-            
+
             # Progress indicators
             spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
             spinner_idx = 0
@@ -147,7 +161,7 @@ class M1FClaudeRunner:
                 line = self.process.stdout.readline()
                 if line == "" and self.process.poll() is not None:
                     break
-                    
+
                 if line:
                     line = line.rstrip()
                     stdout_lines.append(line)
@@ -160,7 +174,7 @@ class M1FClaudeRunner:
                             print(f"[{elapsed:5.1f}s] {line[:147]}...")
                         else:
                             print(f"[{elapsed:5.1f}s] {line}")
-                    
+
                     if output_handler:
                         output_handler(line, elapsed)
 
@@ -169,27 +183,39 @@ class M1FClaudeRunner:
                     # No output, check for timeout
                     current_time = time.time()
                     elapsed = current_time - start_time
-                    
+
                     # Check absolute timeout
                     if elapsed > actual_timeout:
                         if show_output:
                             print(f"\n⏰ Claude timed out after {actual_timeout}s")
                         self.process.kill()
-                        return -1, "\n".join(stdout_lines), f"Process timed out after {actual_timeout}s"
-                    
+                        return (
+                            -1,
+                            "\n".join(stdout_lines),
+                            f"Process timed out after {actual_timeout}s",
+                        )
+
                     # Check inactivity timeout (60 seconds)
                     if current_time - last_output_time > 60:
                         if show_output:
-                            print(f"\n⏰ Claude inactive for 60s (total time: {elapsed:.1f}s)")
+                            print(
+                                f"\n⏰ Claude inactive for 60s (total time: {elapsed:.1f}s)"
+                            )
                         self.process.kill()
-                        return -1, "\n".join(stdout_lines), "Process inactive for 60 seconds"
-                    
+                        return (
+                            -1,
+                            "\n".join(stdout_lines),
+                            "Process inactive for 60 seconds",
+                        )
+
                     # Show spinner to indicate we're still waiting
                     if show_output and int(elapsed) % 5 == 0:
-                        sys.stdout.write(f"\r⏳ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]")
+                        sys.stdout.write(
+                            f"\r⏳ Waiting for Claude... {spinner_chars[spinner_idx]} [{elapsed:.0f}s]"
+                        )
                         sys.stdout.flush()
                         spinner_idx = (spinner_idx + 1) % len(spinner_chars)
-                    
+
                     time.sleep(0.1)  # Small delay to prevent busy waiting
 
             # Get any remaining output

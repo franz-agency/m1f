@@ -14,7 +14,6 @@ create additional topic-specific bundles following BEST PRACTICES.
 🏆 BEST PRACTICES FOR PERFECT BUNDLES:
 
 1. **SIZE GUIDELINES** - Optimize for different use cases!
-
    - Claude Code: Ideally under 180KB per bundle for best performance
    - Claude AI: Ideally under 5MB per bundle
    - Complete/full bundles can be larger (even 40MB+) for comprehensive analysis
@@ -44,7 +43,6 @@ create additional topic-specific bundles following BEST PRACTICES.
    ```
 
 4. **HIERARCHICAL NAMING** - Use category-number-topic pattern:
-
    - api-01-core-basics
    - api-02-core-advanced
    - guide-01-getting-started
@@ -102,12 +100,16 @@ STEP 3: Design Bundle Hierarchy
 **Main Code Directories:** {main_code_dirs}
 
 📝 **User-Provided Project Information:**
+
 - **Description:** {user_project_description}
 - **Priorities:** {user_project_priorities}
 
-Please take the user's description and priorities into account when creating bundles. For example:
+Please take the user's description and priorities into account when creating
+bundles. For example:
+
 - If performance is a priority, create focused performance-critical code bundles
-- If security is important, create security-related bundles (auth, validation, etc.)
+- If security is important, create security-related bundles (auth, validation,
+  etc.)
 - If documentation is key, create more granular documentation bundles
 - If maintainability matters, organize bundles by architectural layers
 

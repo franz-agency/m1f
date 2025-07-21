@@ -187,7 +187,7 @@ class FileProcessor:
     def _load_include_patterns(self) -> None:
         """Load inclusion patterns from file(s) and/or config."""
         all_gitignore_lines = []
-        
+
         # First, load patterns from include_paths_file if specified
         include_files_param = self.config.filter.include_paths_file
         if include_files_param:
@@ -201,7 +201,9 @@ class FileProcessor:
                 include_file = Path(include_file_str)
 
                 if not include_file.exists():
-                    self.logger.info(f"Include file not found (skipping): {include_file}")
+                    self.logger.info(
+                        f"Include file not found (skipping): {include_file}"
+                    )
                     continue
 
                 try:
@@ -221,13 +223,20 @@ class FileProcessor:
                     )
 
                     if is_gitignore:
-                        self.logger.info(f"Processing {include_file} as gitignore format")
+                        self.logger.info(
+                            f"Processing {include_file} as gitignore format"
+                        )
                         all_gitignore_lines.extend(lines)
                     else:
-                        self.logger.info(f"Processing {include_file} as exact path list")
+                        self.logger.info(
+                            f"Processing {include_file} as exact path list"
+                        )
                         for line in lines:
                             path = Path(line)
-                            if not path.is_absolute() and self.config.source_directories:
+                            if (
+                                not path.is_absolute()
+                                and self.config.source_directories
+                            ):
                                 # Use the first source directory as base
                                 path = self.config.source_directories[0] / path
                             try:
@@ -239,12 +248,14 @@ class FileProcessor:
                                 )
 
                 except Exception as e:
-                    self.logger.warning(f"Error reading include file {include_file}: {e}")
+                    self.logger.warning(
+                        f"Error reading include file {include_file}: {e}"
+                    )
 
         # Add include patterns from config
         if self.config.filter.include_patterns:
             all_gitignore_lines.extend(self.config.filter.include_patterns)
-            
+
         # Build combined gitignore spec from all collected lines
         if all_gitignore_lines:
             self.include_gitignore_spec = pathspec.PathSpec.from_lines(
@@ -319,14 +330,18 @@ class FileProcessor:
         input_file = self.config.input_file
         paths = []
 
-        base_dir = self.config.source_directories[0] if self.config.source_directories else input_file.parent
+        base_dir = (
+            self.config.source_directories[0]
+            if self.config.source_directories
+            else input_file.parent
+        )
 
         try:
             with open(input_file, "r", encoding="utf-8") as f:
                 content_lines = f.readlines()
             # Explicitly ensure file handle is released before processing
             f = None
-            
+
             for line in content_lines:
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -341,9 +356,7 @@ class FileProcessor:
                     matches = glob.glob(str(pattern_path), recursive=True)
                     for m in matches:
                         try:
-                            validated_path = validate_path_traversal(
-                                Path(m).resolve()
-                            )
+                            validated_path = validate_path_traversal(Path(m).resolve())
                             paths.append(validated_path)
                         except ValueError as e:
                             self.logger.warning(
@@ -490,22 +503,28 @@ class FileProcessor:
             # Check gitignore patterns - this is the critical performance fix!
             if self.gitignore_spec:
                 # Get relative path from source directory or current root
-                base_dir = self.config.source_directories[0] if self.config.source_directories else Path.cwd()
+                base_dir = (
+                    self.config.source_directories[0]
+                    if self.config.source_directories
+                    else Path.cwd()
+                )
                 try:
                     rel_path = dir_path.relative_to(base_dir)
                 except ValueError:
                     # If dir_path is not relative to base_dir, use as is
                     rel_path = dir_path
-                
+
                 # For directory matching, we need to append a trailing slash
                 # Always use forward slashes for gitignore pattern matching
                 rel_path_str = str(rel_path).replace("\\", "/")
                 if not rel_path_str.endswith("/"):
                     rel_path_str += "/"
-                
+
                 # Check if directory matches any exclude pattern
                 if self.gitignore_spec.match_file(rel_path_str):
-                    self.logger.debug(f"Directory excluded by gitignore pattern: {dir_path}")
+                    self.logger.debug(
+                        f"Directory excluded by gitignore pattern: {dir_path}"
+                    )
                     continue
 
             filtered.append(dirname)

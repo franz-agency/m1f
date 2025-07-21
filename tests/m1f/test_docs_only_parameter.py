@@ -72,7 +72,9 @@ class TestDocsOnlyParameter(BaseM1FTest):
         # Create documentation files
         for filename in doc_files:
             file_path = files_dir / filename
-            file_path.write_text(f"Documentation content in {filename}\n", encoding="utf-8")
+            file_path.write_text(
+                f"Documentation content in {filename}\n", encoding="utf-8"
+            )
 
         # Create non-documentation files
         for filename in non_doc_files:

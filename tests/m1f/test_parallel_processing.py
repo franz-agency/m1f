@@ -29,17 +29,19 @@ def cleanup_windows_file_handles():
     if sys.platform.startswith("win"):
         # Close any logging handlers that might be holding file handles
         import logging
+
         for logger_name in ["m1f", "s1f", ""]:
             logger = logging.getLogger(logger_name)
             for handler in logger.handlers[:]:
                 if hasattr(handler, "close"):
                     handler.close()
                 logger.removeHandler(handler)
-        
+
         # Force garbage collection
         gc.collect()
         # Give Windows time to release handles
         time.sleep(0.01)
+
 
 from tools.m1f.config import (
     Config,
@@ -128,7 +130,7 @@ class TestParallelProcessing:
 
         # Run the combiner
         result = await combiner.run()
-        
+
         # Clean up file handles to prevent WinError 32 on Windows
         cleanup_windows_file_handles()
 
@@ -158,7 +160,7 @@ class TestParallelProcessing:
 
         # Run the combiner
         await combiner.run()
-        
+
         # Clean up file handles to prevent WinError 32 on Windows
         cleanup_windows_file_handles()
 
@@ -279,7 +281,7 @@ class TestParallelProcessing:
 
         # Run the combiner
         result = await combiner.run()
-        
+
         # Clean up file handles to prevent WinError 32 on Windows
         cleanup_windows_file_handles()
 
@@ -321,7 +323,7 @@ class TestParallelProcessing:
 
             # Run should complete despite the error
             result = await combiner.run()
-            
+
             # Clean up file handles to prevent WinError 32 on Windows
             cleanup_windows_file_handles()
 
@@ -367,7 +369,7 @@ class TestParallelProcessing:
         await output_writer.write_combined_file(
             config_parallel.output.output_file, files
         )
-        
+
         # Clean up file handles to prevent WinError 32 on Windows
         cleanup_windows_file_handles()
 

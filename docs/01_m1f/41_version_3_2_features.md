@@ -38,8 +38,6 @@ a comprehensive overview of all v3.2 features and changes.
   - Automatic robots.txt fetching and parsing
   - Per-path access validation
   - User-agent specific rule support
-  - No configuration needed - always enabled
-- **Previously**: Only HTTrack respected robots.txt
 
 ### 4. SSL/TLS Certificate Validation
 
@@ -229,17 +227,14 @@ per_file_settings:
 ### From v3.1 to v3.2
 
 1. **Review Security Settings**:
-
    - Default security scanning may flag legitimate content
    - Use `--security-check warn` during migration
 
 2. **Check SSL Requirements**:
-
    - Sites with self-signed certificates need `--ignore-https-errors`
    - Review and update scraping scripts
 
 3. **Update Separator Parsing**:
-
    - If you parse m1f output, update to handle new separator format
    - s1f handles both formats automatically
 

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Set Windows-specific event loop policy to avoid debug messages
-if sys.platform.startswith('win'):
+if sys.platform.startswith("win"):
     # This prevents "RuntimeError: Event loop is closed" messages on Windows
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 

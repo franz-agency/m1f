@@ -207,7 +207,7 @@ def cleanup_logging():
 def cleanup_file_handles():
     """Automatically clean up file handles after each test (Windows specific)."""
     yield
-    
+
     # Force garbage collection to close any remaining file handles
     # This is especially important on Windows where file handles can prevent deletion
     if sys.platform.startswith("win"):
@@ -270,22 +270,22 @@ def is_windows() -> bool:
 def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
     """
     Safely clean up a directory with Windows-specific handling.
-    
+
     Windows can have file handle issues that prevent immediate deletion.
     This function retries with increasing delays and forces garbage collection.
     """
     import os
     import time
-    
+
     for attempt in range(max_retries):
         try:
             # Force garbage collection to close any remaining file handles
             gc.collect()
-            
+
             # On Windows, try to remove read-only attributes that might prevent deletion
             if sys.platform.startswith("win"):
                 _remove_readonly_attributes(directory)
-            
+
             shutil.rmtree(directory)
             return
         except (OSError, PermissionError) as e:
@@ -293,11 +293,11 @@ def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
                 # Final attempt failed, log warning but don't raise
                 print(f"Warning: Could not clean up test directory {directory}: {e}")
                 return
-            
+
             # Wait with exponential backoff
-            delay = 0.1 * (2 ** attempt)
+            delay = 0.1 * (2**attempt)
             time.sleep(delay)
-            
+
             # Force garbage collection again
             gc.collect()
 
@@ -305,15 +305,15 @@ def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
 def _remove_readonly_attributes(directory: Path) -> None:
     """
     Remove read-only attributes from files and directories on Windows.
-    
+
     This helps with cleanup when files are marked as read-only.
     """
     import os
     import stat
-    
+
     if not sys.platform.startswith("win"):
         return
-        
+
     try:
         for root, dirs, files in os.walk(directory):
             # Remove read-only flag from files
@@ -323,7 +323,7 @@ def _remove_readonly_attributes(directory: Path) -> None:
                     file_path.chmod(stat.S_IWRITE | stat.S_IREAD)
                 except (OSError, PermissionError):
                     pass  # Ignore errors, best effort
-            
+
             # Remove read-only flag from directories
             for dir_name in dirs:
                 dir_path = Path(root) / dir_name

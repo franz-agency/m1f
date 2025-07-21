@@ -6,30 +6,91 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2025-07-21
+
+### Added
+
+- **Pre-commit Hook Enhancement**: Added Python (Black) and Markdown formatting
+  to pre-commit hooks for better code quality enforcement
+- **Script Help Parameters**: All scripts now support help parameter (`-h`,
+  `--help`) for improved user experience
+- **PowerShell Commands**: Added missing `m1f-init` and `m1f-claude` commands to
+  PowerShell scripts and aliases
+- **Documentation**: Added comprehensive Getting Started guide for easier
+  onboarding
+
+### Changed
+
+- **README Overhaul**: Complete refresh with engaging, developer-friendly
+  content
+  - Clear problem statement and solution narrative
+  - Enhanced m1f-claude explanation as headless Claude controller
+  - Added personality while maintaining professional quality
+  - Updated tagline: "Where no AI has coded before™"
+  - Improved flow from problem → solution → examples → features
+- **Project Structure**:
+  - Moved `sync_version.py` to dev directory
+  - Moved setup documentation to docs folder
+  - Removed dev/ directory from version control
+- **Installation Process**: Improved installation and uninstallation scripts
+  with better error handling
+- **Hooks System**: Completed migration to dual hook system for better
+  flexibility
+- **Presets Optimization**: Removed redundant defaults for better efficiency
+
+### Fixed
+
+- **Presets**: Removed incorrect `preserve_tags` usage with `strip_tags` to
+  prevent configuration conflicts
+- **m1f-claude**: Fixed attribute name for `--setup` argument
+- **Examples**: Improved robustness of `scrape_claude_code_docs` script
+- **Scripts**: Enhanced watcher ignore patterns and VS Code task integration
+- **Hooks**:
+  - Corrected installation instructions in git hooks installer
+  - Removed unnecessary venv activation from m1f-update calls
+- **Documentation**:
+  - Fixed misleading examples and clarified feature availability
+  - Fixed incorrect `--since` flag example (doesn't exist in m1f)
+  - Simplified and corrected script paths in installation instructions
+
+### Removed
+
+- **Version Management**: Removed version management section from README
+- **Version Bumper**: Removed version bumper from repository
+- **Advanced Terminology**: Removed remaining "advanced" terminology from setup
+- **Cleanup**: Removed leftover files and test artifacts
+
 ## [3.6.0] - 2025-07-19
 
 ### Changed
 
-- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for simplicity
-- **m1f**: Ensure cross-platform compatibility by using forward slashes in bundle paths
+- **m1f-claude**: Renamed `--advanced-setup` parameter to `--setup` for
+  simplicity
+- **m1f**: Ensure cross-platform compatibility by using forward slashes in
+  bundle paths
 - **Project Organization**: Cleaned up project root directory
-  - Moved development test scripts to `dev/` directory
   - Moved `perfect_bundle_prompt.md` to `tools/m1f/prompts/`
   - Moved `wp-cli.example.yml` to `examples/` directory
 
 ### Fixed
 
 - **Windows Compatibility**: Major improvements for Windows platform support
-  - **m1f**: Fixed path separators to always use forward slashes in bundles for cross-platform compatibility
-    - Bundles created on Windows can now be extracted on Unix systems and vice versa
+  - **m1f**: Fixed path separators to always use forward slashes in bundles for
+    cross-platform compatibility
+    - Bundles created on Windows can now be extracted on Unix systems and vice
+      versa
     - Added comprehensive cross-platform path tests
   - **m1f-claude**: Improved Claude executable detection on Windows
-  - **m1f-claude**: Enhanced subprocess handling and timeout behavior for Windows
+  - **m1f-claude**: Enhanced subprocess handling and timeout behavior for
+    Windows
   - **m1f**: Fixed npx execution method compatibility on Windows
   - **m1f-init**: Improved project type detection across platforms
-  - **Dependencies**: Downgraded httpx to 0.27.2 for better Windows compatibility
-  - **Tests**: Added cross-platform test suite with Windows-specific timeout handling
+  - **Dependencies**: Downgraded httpx to 0.27.2 for better Windows
+    compatibility
+  - **Tests**: Added cross-platform test suite with Windows-specific timeout
+    handling
   - **Installation**: Fixed PowerShell installation scripts and path handling
+
 ## [3.5.0] - 2025-07-18
 
 ### Added
@@ -38,7 +99,8 @@ and this project adheres to
 
 ### Fixed
 
-- **m1f-init**: Correct project type detection to use file count for all languages
+- **m1f-init**: Correct project type detection to use file count for all
+  languages
 - **m1f**: Support npx execution method for m1f tool
 - **m1f-init**: Preserve dots in project names for bundle generation
 
@@ -51,31 +113,17 @@ and this project adheres to
 ### Fixed
 
 - **Version Conflict**: Resolved version conflict issues
-- **httpx Compatibility**: Downgraded httpx from newer version to 0.27.2 for improved compatibility
-- **Configuration Consistency**: Updated `source_directory` to `source_directories` in configuration for consistency
-- **m1f-claude Subprocess Handling**: Improved subprocess handling and timeout behavior for Claude executable detection
+- **httpx Compatibility**: Downgraded httpx from newer version to 0.27.2 for
+  improved compatibility
+- **Configuration Consistency**: Updated `source_directory` to
+  `source_directories` in configuration for consistency
+- **m1f-claude Subprocess Handling**: Improved subprocess handling and timeout
+  behavior for Claude executable detection
 
 ### Changed
 
-- **Dependencies Update**: Updated multiple dependencies to newer versions for improved compatibility and performance
-  - Updated aiofiles to 24.1.0
-  - Updated application_properties to 0.9.0
-  - Updated beautifulsoup4 to 4.13.4
-  - Updated certifi to 2025.6.15
-  - Updated click to 8.2.1
-  - Updated markdownify to 1.1.0
-  - Updated pydantic to 2.11.7
-  - Updated pymarkdownlnt to 0.9.30
-  - Updated pytest to 8.4.1
-  - Updated pytest-asyncio to 1.1.0a1
-  - Updated rich to 14.0.0
-  - Updated typing_extensions to 4.14.1
-  - Updated claude-code-sdk to 0.0.14
-  - Updated Flask to 3.1.1
-  - Updated lxml to 6.0.0
-  - Updated playwright to 1.53.0
-  - Updated scrapy to 2.13.3
-  - Updated selectolax to 0.3.31
+- **Dependencies Update**: Updated multiple dependencies to newer versions for
+  improved compatibility and performance
 
 ### Removed
 
@@ -86,18 +134,24 @@ and this project adheres to
 ### Added
 
 - **m1f-init Enhancements**: Improved project initialization tool
+
   - Added `--no-symlink` parameter to skip creating symlink to m1f documentation
   - Added file tracking to show only actually created files in output
-  - Improved output formatting with "Here is your file:" / "Here are your files:" section
+  - Improved output formatting with "Here is your file:" / "Here are your
+    files:" section
   - Added proper spacing and bullet points for created files list
-  - Now runs `m1f-update` when `.m1f.config.yml` already exists instead of creating default bundles
+  - Now runs `m1f-update` when `.m1f.config.yml` already exists instead of
+    creating default bundles
 
-- **Multiple Source Directories**: m1f now supports multiple `-s` source directories
+- **Multiple Source Directories**: m1f now supports multiple `-s` source
+  directories
+
   - Use `-s dir1 -s dir2` to combine files from multiple directories
   - All source directories are processed and files are merged into single output
   - Useful for documentation bundles that need files from different locations
 
-- **Include Patterns**: Added `--includes` parameter for pattern-based file filtering
+- **Include Patterns**: Added `--includes` parameter for pattern-based file
+  filtering
   - Works with gitignore-style patterns (e.g., `*.py`, `src/**`, `!test.py`)
   - When combined with `--include-extensions`, files must match both criteria
   - Allows precise control over which files to include in bundles
@@ -105,54 +159,75 @@ and this project adheres to
 ### Changed
 
 - **m1f-init Git Detection**: Improved Git repository detection messages
-  - Simplified output for parent directory Git repositories (no longer shows paths)
+
+  - Simplified output for parent directory Git repositories (no longer shows
+    paths)
   - Only shows messages for current directory Git repos or no Git repo at all
   - Better handling of subdirectories within larger Git projects
 
 - **m1f-init Language Detection**: Enhanced programming language detection
   - Changed "Not detected" to "No programming languages detected" for clarity
   - Added file counting for all supported languages (Java, C#, Go, Rust, Ruby)
-  - Only shows "Programming Languages:" line when languages are actually detected
-  - Better label clarity with "Programming Languages:" instead of just "Languages:"
+  - Only shows "Programming Languages:" line when languages are actually
+    detected
+  - Better label clarity with "Programming Languages:" instead of just
+    "Languages:"
 
 ### Fixed
 
 - **m1f-init .gitignore Handling**: Fixed .gitignore usage in subdirectories
+
   - Now only uses .gitignore from current directory, not parent directories
-  - Prevents errors when running m1f-init in subdirectories without their own .gitignore
-  - All m1f commands now check for .gitignore existence before using --exclude-paths-file
+  - Prevents errors when running m1f-init in subdirectories without their own
+    .gitignore
+  - All m1f commands now check for .gitignore existence before using
+    --exclude-paths-file
 
 - **m1f-init Python Project Detection**: Fixed language detection prioritization
+
   - Now prioritizes by file count to correctly identify primary language
   - Python projects are now properly detected even with mixed language codebases
 
-- **m1f-init Behavior with Existing Config**: Fixed to run m1f-update when config exists
+- **m1f-init Behavior with Existing Config**: Fixed to run m1f-update when
+  config exists
+
   - No longer creates default bundles when `.m1f.config.yml` already exists
   - Automatically runs `m1f-update` to use existing configuration
 
-- **m1f Directory Exclusion Performance**: Fixed severe performance issue with directory filtering
-  - Directory exclusions from .gitignore now properly applied at directory traversal level
-  - Reduced bundle creation time from 42+ seconds to ~1.2 seconds (35x improvement)
+- **m1f Directory Exclusion Performance**: Fixed severe performance issue with
+  directory filtering
+
+  - Directory exclusions from .gitignore now properly applied at directory
+    traversal level
+  - Reduced bundle creation time from 42+ seconds to ~1.2 seconds (35x
+    improvement)
   - Fixed tmp/ directory exclusion that was scanning 362,419 unnecessary files
 
-- **m1f Multiple Source Directories**: Fixed CLI to support multiple source directories
+- **m1f Multiple Source Directories**: Fixed CLI to support multiple source
+  directories
+
   - Changed from single source to List[Path] throughout codebase
-  - Now properly processes all specified source directories with `-s dir1 -s dir2`
+  - Now properly processes all specified source directories with
+    `-s dir1 -s dir2`
   - All files from multiple sources are combined into single output
 
 - **m1f Include Patterns**: Fixed include pattern filtering
+
   - Include patterns now properly applied from config files
-  - Fixed _load_include_patterns() to run even without include_paths_file
+  - Fixed \_load_include_patterns() to run even without include_paths_file
   - Patterns correctly filter files when combined with extension filters
 
 - **m1f Bundle Configuration**: Fixed output directory exclusion pattern
+
   - Changed `/m1f/**` to `m1f/m1f/**` to only exclude output directory
   - Previously excluded all directories named "m1f" anywhere in the project
 
 - **m1f-html2md Streaming**: Fixed streaming output for Claude AI analysis
+
   - Fixed common_parent variable scope issue (used before definition)
   - Implemented proper streaming in run_claude_streaming method
-  - Fixed ColoredFormatter modifying LogRecord objects (causing ANSI codes in logs)
+  - Fixed ColoredFormatter modifying LogRecord objects (causing ANSI codes in
+    logs)
   - Added elapsed time tracking for progress messages
   - Improved subprocess handling for reliable Claude CLI integration
 
@@ -418,8 +493,7 @@ and this project adheres to
   - **Choice-Based Setup**: Users can choose between quick and advanced
     initialization modes
     - Interactive prompt asks for setup preference (1 for quick, 2 for advanced)
-    - Command-line parameters: `--quick-setup` and `--setup` for
-      scripting
+    - Command-line parameters: `--quick-setup` and `--setup` for scripting
     - Quick setup: Creates bundles in 30 seconds without Claude
     - Advanced setup: Claude analyzes project and creates topic-specific bundles
   - **Project-Specific Bundle Naming**: All bundles include project directory
