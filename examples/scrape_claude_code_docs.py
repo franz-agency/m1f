@@ -135,8 +135,9 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
             scrape_cmd, "Scraping documentation", capture_output=False
         )
         if not success:
-            print("\n💡 Tip: Make sure m1f-scrape is installed:")
-            print("   pip install m1f")
+            print("\n💡 Tip: Make sure m1f tools are installed:")
+            print("   Run: ./scripts/install.sh (Linux/macOS)")
+            print("   Run: .\\scripts\\install.ps1 (Windows)")
             return 1
 
         # Verify scraping results

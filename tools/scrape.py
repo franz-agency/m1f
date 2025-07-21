@@ -4,6 +4,12 @@
 
 """Wrapper script for m1f-scrape module."""
 
+import sys
+import os
+
+# Add the tools directory to Python path for module imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from scrape_tool.cli import main
 
 if __name__ == "__main__":
