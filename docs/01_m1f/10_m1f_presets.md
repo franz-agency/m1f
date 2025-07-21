@@ -11,8 +11,8 @@ Instead of applying the same settings to all files, presets let you:
 - Strip comments from production code but keep them in documentation
 - Apply different separator styles for different file types
 - Truncate large data files while keeping full source code
-- **NEW**: Override security checks and size limits per file type
-- **NEW**: Integrate with auto-bundling for intelligent project organization
+- Override security checks and size limits per file type
+- Integrate with auto-bundling for intelligent project organization
 
 ## Quick Start
 
@@ -43,7 +43,6 @@ my_project:
   description: "Processing rules for my project"
   enabled: true
   priority: 10 # Higher priority groups are checked first
-  base_path: "src" # Optional base path for patterns
 
   presets:
     # Preset for Python files
@@ -51,6 +50,7 @@ my_project:
       extensions: [".py"]
       patterns:
         - "*.py"
+        - "src/**/*.py" # Must include full path
         - "lib/**/*.py"
       actions:
         - strip_comments
@@ -58,15 +58,24 @@ my_project:
       separator_style: "Detailed"
       include_metadata: true
 
-    # Preset for HTML files
+    # Preset for HTML files - remove specific tags
     html:
       extensions: [".html", ".htm"]
       actions:
         - minify
         - strip_tags
-      strip_tags: ["script", "style"]
-      preserve_tags: ["pre", "code"]
+      strip_tags: ["script", "style", "meta", "link"]
       max_lines: 500 # Truncate after 500 lines
+
+    # Preset for HTML to text conversion - strip all but content tags
+    html_to_text:
+      extensions: [".html"]
+      actions:
+        - strip_tags
+      # Empty strip_tags means remove ALL tags
+      strip_tags: []
+      # But preserve content-relevant tags
+      preserve_tags: ["p", "h1", "h2", "h3", "pre", "code", "blockquote"]
 
     # Default preset for unmatched files
     default:
@@ -78,58 +87,109 @@ my_project:
 
 ### Built-in Actions
 
-1. **`minify`** - Reduces file size by removing unnecessary whitespace
+1. **`minify`** - Reduces file size by removing unnecessary whitespace. Keep in
+   mind that removing comments may remove valuable context for AI models.
+
    - HTML: Removes comments, compresses whitespace
    - CSS: Removes comments, compresses rules
    - JS: Basic minification (removes comments and newlines)
 
 2. **`strip_tags`** - Removes HTML tags
+
    - Use `strip_tags` to list tags to remove
    - Use `preserve_tags` to protect specific tags
 
 3. **`strip_comments`** - Removes comments based on file type
+
+   - **WARNING**: Removing comments removes valuable context for AI models.
+     Comments often explain the "why" behind code, making it harder for AI to
+     understand intent. Only use this when file size reduction is critical.
    - Python: Removes # comments (preserves docstrings)
    - JS/Java/C/C++: Removes // and /\* \*/ comments
+   - CSS: Removes /\* \*/ comments
+   - HTML: Removes <!-- --> comments
 
 4. **`compress_whitespace`** - Normalizes whitespace
+
    - Replaces multiple spaces with single space
    - Reduces multiple newlines to double newline
 
 5. **`remove_empty_lines`** - Removes all empty lines
 
-6. **`custom`** - Apply custom processor
+6. **`join_paragraphs`** - Joins multi-line paragraphs into single lines
+   (Markdown files)
+
+   - Intelligently preserves code blocks, lists, tables, and other markdown
+     structures
+   - Helps maximize content density for LLMs that focus on first 200 lines
+   - Only affects regular paragraph text
+
+7. **`custom`** - Apply custom processor
    - Specify processor with `custom_processor`
    - Pass arguments with `processor_args`
 
 ### Built-in Custom Processors
 
+m1f includes three built-in custom processors:
+
 1. **`truncate`** - Limit content length
+
+   - Truncates content to specified number of characters
+   - Adds "[... truncated ...]" marker at the end
+   - Useful for large log files or data files
 
    ```yaml
    actions:
      - custom
    custom_processor: "truncate"
    processor_args:
-     max_chars: 1000
+     max_chars: 1000 # Default: 1000
    ```
 
 2. **`redact_secrets`** - Remove sensitive data
+
+   - Uses regex patterns to find and replace secrets
+   - Default patterns include: API keys, secrets, passwords, tokens, bearer
+     tokens
+   - Replaces matches with "[REDACTED]"
 
    ```yaml
    actions:
      - custom
    custom_processor: "redact_secrets"
    processor_args:
-     patterns:
+     patterns:  # Optional custom patterns
        - '(?i)api[_-]?key\s*[:=]\s*["\']?[\w-]+["\']?'
+       - '(?i)bearer\s+[\w-]+'
    ```
 
-3. **`extract_functions`** - Extract only function definitions (Python)
+3. **`extract_functions`** - Extract only function definitions (Python only)
+
+   - Uses Python's AST parser to extract function definitions
+   - Includes function names, signatures, and docstrings
+   - Only works with `.py` files
+
    ```yaml
    actions:
      - custom
    custom_processor: "extract_functions"
+   # No processor_args needed
    ```
+
+## Important Notes on Binary Files
+
+**m1f is designed for text files only.** Binary files (images, videos,
+executables, etc.) are:
+
+- Excluded by default
+- Cannot be meaningfully processed even with `include_binary_files: true`
+- Would need base64 encoding for proper inclusion (not implemented)
+
+For binary file references, consider:
+
+- Including just the filenames in a text list
+- Using external tools to convert binary to text formats first
+- Focusing on text-based assets for AI context
 
 ## Preset Options
 
@@ -143,9 +203,12 @@ my_project:
 - **`actions`**: List of processing actions to apply
 - **`strip_tags`**: HTML tags to remove
 - **`preserve_tags`**: HTML tags to keep when stripping
-- **`separator_style`**: Override default separator ("Standard", "Detailed",
-  "Markdown", "None")
-- **`include_metadata`**: Whether to include file metadata (default: true)
+- **`separator_style`**: Override separator style
+  - `"Standard"` (default) - Best for AI consumption: `--- FILE: path ---`
+  - `"Detailed"` - Includes metadata: `===== FILE: path | ENCODING: utf-8 =====`
+  - `"Markdown"` - Uses markdown code blocks
+  - `"MachineReadable"` - Structured format for parsing
+  - `"None"` - No separators
 - **`max_lines`**: Truncate file after N lines
 
 ### Custom Processing
@@ -165,8 +228,7 @@ wordpress:
     php:
       extensions: [".php"]
       actions:
-        - strip_comments
-        - remove_empty_lines
+        - remove_empty_lines # Keep comments for context
 
     config:
       patterns: ["wp-config*.php", ".env*"]
@@ -177,7 +239,7 @@ wordpress:
     sql:
       extensions: [".sql"]
       actions:
-        - strip_comments
+        - remove_empty_lines # Keep SQL comments
       max_lines: 1000 # Truncate large dumps
 ```
 
@@ -191,8 +253,8 @@ frontend:
     components:
       extensions: [".jsx", ".tsx", ".vue"]
       actions:
-        - strip_comments
         - compress_whitespace
+        - remove_empty_lines
 
     styles:
       extensions: [".css", ".scss"]
@@ -200,13 +262,14 @@ frontend:
         - minify
       # Note: exclude_patterns is available in global_settings, not in presets
 
-    images:
-      extensions: [".png", ".jpg", ".svg"]
+    # Large log files - show only beginning
+    logs:
+      extensions: [".log"]
       actions:
         - custom
       custom_processor: "truncate"
       processor_args:
-        max_chars: 50 # Just filename
+        max_chars: 5000 # Show first 5KB
 ```
 
 ### Documentation Project
@@ -225,7 +288,7 @@ documentation:
     code_examples:
       patterns: ["examples/**/*"]
       actions:
-        - strip_comments
+        - remove_empty_lines # Keep comments in examples
       max_lines: 50 # Keep examples concise
 ```
 
@@ -266,9 +329,9 @@ These apply to all files unless overridden:
 ```yaml
 global_settings:
   # Encoding and formatting
-  encoding: "utf-8"
-  separator_style: "Detailed"
-  line_ending: "lf"
+  # encoding: "utf-8"  # Default encoding - supports: utf-8, utf-16, latin-1, cp1252, ascii, etc.
+  # separator_style: "Standard"  # Default - best for AI consumption
+  # line_ending: "lf"  # Default - Unix style (use "crlf" for Windows)
 
   # Include/exclude patterns
   include_patterns: ["src/**/*", "lib/**/*"]
@@ -304,6 +367,30 @@ global_settings:
 
   # Security
   security_check: "warn" # abort, skip, warn
+```
+
+### Encoding Options
+
+m1f provides comprehensive encoding support:
+
+**Supported Encodings**:
+
+- `utf-8` (default) - Unicode UTF-8
+- `utf-16` - Unicode UTF-16 with BOM detection
+- `utf-16-le` - UTF-16 Little Endian
+- `utf-16-be` - UTF-16 Big Endian
+- `ascii` - Basic ASCII (7-bit)
+- `latin-1` / `iso-8859-1` - Western European
+- `cp1252` / `windows-1252` - Windows Western European
+- Many more via Python's codecs module
+
+**Encoding Configuration**:
+
+```yaml
+global_settings:
+  encoding: "utf-8" # Target encoding for output (default)
+  abort_on_encoding_error: false # Continue on errors (default)
+  prefer_utf8_for_text_files: true # Auto UTF-8 for .md, .txt (default)
 ```
 
 ### Extension-Specific Settings
@@ -390,9 +477,9 @@ size_limits:
 
   presets:
     # Override for specific patterns
-    vendor_files:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      max_file_size: "10KB" # Very small for vendor files
+    config_files:
+      patterns: ["config/**/*.json", "*.config.js"]
+      max_file_size: "10KB" # Keep config files small in bundle
 ```
 
 ### Different Processing by Location
@@ -402,20 +489,21 @@ Process files differently based on their location:
 ```yaml
 conditional:
   presets:
-    # Production files - minify and strip
-    production:
-      patterns: ["dist/**/*", "build/**/*"]
-      actions: [minify, strip_comments]
-
-    # Development files - keep readable
-    development:
-      patterns: ["src/**/*", "dev/**/*"]
+    # Source files - keep readable
+    source:
+      patterns: ["src/**/*", "lib/**/*"]
       actions: [remove_empty_lines]
 
-    # Vendor files - skip processing
-    vendor:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      actions: [] # No processing
+    # Test files - minimal processing
+    tests:
+      patterns: ["test/**/*", "tests/**/*", "*.test.*"]
+      actions: [] # No processing needed
+
+    # Example/demo files - compress
+    examples:
+      patterns: ["examples/**/*", "demo/**/*"]
+      actions: [compress_whitespace]
+      max_lines: 100 # Keep examples concise
 ```
 
 ### Combining Multiple Presets
@@ -442,6 +530,7 @@ m1f -s . -o bundle.txt \
    ```
 
 2. **Customize for your project**:
+
    - Identify file types needing special handling
    - Choose appropriate actions
    - Test with a small subset first
@@ -492,6 +581,7 @@ The preset system integrates seamlessly with the auto-bundling scripts:
 ### Using Presets with Auto-Bundle
 
 1. **With VS Code Tasks**:
+
    - Use the "Auto Bundle: With Preset" task
    - Select your preset file and optional group
    - The bundle will apply file-specific processing

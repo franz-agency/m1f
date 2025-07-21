@@ -55,12 +55,12 @@ size_limits_per_type:
         actions: [minify]       # Also minify them
       .js:
         max_file_size: "100KB"  # 100KB limit for JS
-        actions: [strip_comments, compress_whitespace]
+        actions: [remove_empty_lines]
       
       # More lenient for backend code
       .php:
         max_file_size: "5MB"    # Allow larger PHP files
-        actions: [strip_comments]
+        actions: [remove_empty_lines]  # Keep comments
       .py:
         max_file_size: "2MB"    # Python files up to 2MB
       
@@ -84,9 +84,8 @@ web_project_complete:
   
   global_settings:
     # General settings
-    encoding: "utf-8"
-    separator_style: "Detailed"
-    security_check: "warn"  # Default: warn
+    # encoding and separator_style use defaults
+    # security_check defaults to "warn"
     max_file_size: "2MB"    # Default: 2MB
     
     # Global excludes - only patterns not already excluded by default
@@ -107,7 +106,7 @@ web_project_complete:
       .css:
         max_file_size: "50KB"
         security_check: "skip"
-        actions: [minify, strip_comments]
+        actions: [minify]  # Only minify CSS
       .min.css:  # Minified CSS - no further processing
         max_file_size: "50KB"
         security_check: "skip"
@@ -115,7 +114,7 @@ web_project_complete:
       .js:
         max_file_size: "100KB"
         security_check: "warn"
-        actions: [strip_comments, compress_whitespace]
+        actions: [remove_empty_lines]
       .min.js:  # Minified JS - no further processing
         max_file_size: "100KB"
         security_check: "warn"
@@ -125,7 +124,7 @@ web_project_complete:
       .php:
         max_file_size: "5MB"
         security_check: "abort"
-        actions: [strip_comments, remove_empty_lines]
+        actions: [remove_empty_lines]  # Keep PHP comments
       
       # Config files - strict security, moderate size
       .env:
@@ -135,7 +134,7 @@ web_project_complete:
       .json:
         max_file_size: "1MB"
         security_check: "warn"
-        actions: [compress_whitespace]
+        actions: []  # Keep JSON as-is
       
       # Binary/data files
       .sql:
@@ -164,7 +163,7 @@ web_project_complete:
         - "dist/**/*"
         - "build/**/*"
         - "public/**/*"
-      actions: [minify, strip_comments, compress_whitespace]
+      actions: [minify]  # Only minify for production
       max_file_size: "200KB"  # Strict for production
       security_check: "abort"
     
@@ -188,7 +187,7 @@ v3_2_features:
     # v3.2: Control UTF-8 preference
     prefer_utf8_for_text_files: false  # Use detected encoding
     
-    # v3.2+: Use --docs-only for documentation bundles
+    # Use built-in docs_only feature for documentation bundles
     docs_only: true  # Include all 62 documentation extensions
     
     # v3.2: Enhanced security options
@@ -213,15 +212,15 @@ v3_2_features:
 
 # Documentation-only bundle example
 documentation_bundle:
-  description: "Extract only documentation files using --docs-only"
+  description: "Extract only documentation files using built-in docs_only feature"
   priority: 10
   
   global_settings:
-    # Use the new --docs-only parameter
-    docs_only: true  # Includes 62 documentation extensions
+    # Use the built-in docs_only feature
+    docs_only: true  # Includes all 62 documentation extensions
     
     # Standard separator for AI consumption
-    separator_style: "Standard"
+    # separator_style defaults to "Standard"
     
     # Documentation-specific settings
     security_check: null  # No security check for docs
