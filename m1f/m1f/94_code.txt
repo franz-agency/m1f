@@ -3,6 +3,24 @@
 
 **Feed your AI the whole story.**
 
+## Quick Start (3 Steps)
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/franz-agency/m1f.git
+
+# 2. Change to the directory
+cd m1f
+
+# 3. Run the installer
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows (restart shell after)
+```
+
+That's it! ✨ Now `m1f` and all tools are available globally.
+
 ## What is m1f?
 
 m1f (Make One File) bundles your entire codebase into a single file that you can
@@ -10,24 +28,28 @@ feed to Claude AI, ChatGPT, Google Gemini, or any LLM. Think of it as a context
 maximizer - it takes hundreds of files from your project and intelligently
 combines them into one mega-file that fits perfectly in an AI's context window.
 
-## Real Example: Tailwind CSS Documentation
+## Your First Bundle - Real Example
 
-Here's the problem: Tailwind's documentation is constantly evolving, but most
-LLMs are stuck with outdated information.
-
-The solution? Three commands:
+Let's bundle the TailwindCSS documentation to feed it to your AI:
 
 ```bash
+# 1. Clone any repository (e.g., TailwindCSS docs)
 git clone https://github.com/tailwindlabs/tailwindcss.com
-cd tailwindcss.com && m1f-init
+cd tailwindcss.com
+
+# 2. Initialize and scan the project
+m1f-init
+
+# This creates in the m1f/ directory:
+# - tailwind_complete.txt (all text files)
+# - tailwind_docs.txt (documentation only)
+
+# 3. Optional: Create special Claude-optimized bundles
 m1f-claude --setup
 ```
 
-Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are
-created in the `m1f/` directory - you can reference them in Claude with
-`@m1f/tailwind_complete.txt` or `@m1f/tailwind_docs.txt`. Your AI assistant just
-became an expert on bleeding-edge tech that didn't exist when it was trained.
-That's the power of m1f.
+Now you can reference these files in Claude with `@m1f/tailwind_complete.txt`.
+Your AI just became an expert on the latest TailwindCSS! 🎉
 
 > **🔐 Security Note**: m1f automatically scans for secrets (API keys,
 > passwords, tokens) using
@@ -36,14 +58,13 @@ That's the power of m1f.
 
 ## The Tool Suite
 
-m1f isn't just one tool - it's a whole squad:
-
-- **m1f** - The main bundler that creates your mega-files
-- **m1f-s1f** - Splits bundles back into individual files
-- **m1f-scrape** - Downloads entire websites for offline processing
-- **m1f-html2md** - Converts HTML docs to clean Markdown
-- **m1f-token-counter** - Checks if your bundle fits in context windows
-- **m1f-claude** - AI assistant that already knows your codebase
+- **m1f** - Main bundler for creating context files
+- **m1f-init** - Quick project scanner and bundle creator
+- **m1f-claude** - AI assistant with codebase knowledge
+- **m1f-s1f** - Extract files back from bundles
+- **m1f-scrape** - Download websites for processing
+- **m1f-html2md** - Convert HTML to clean Markdown
+- **m1f-token-counter** - Check if bundles fit in context windows
 
 Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
 
@@ -182,39 +203,54 @@ m1f-update
 - **🔒 Security**: Automatic secret detection (because accidents happen)
 - **📦 All-in-One**: Download, convert, bundle, done
 
-## Quick Start
+## Developer Setup
 
-### Linux/macOS (3 commands)
-
-```bash
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-source ./scripts/install.sh
-```
-
-### Windows (3 commands + restart)
-
-```powershell
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-.\scripts\install.ps1
-# Restart PowerShell or run: . $PROFILE
-```
-
-That's it! ✨ The installer handles everything:
-
-- ✅ Checks Python 3.10+
-- ✅ Creates virtual environment
-- ✅ Installs all dependencies
-- ✅ Generates initial bundles
-- ✅ Sets up global commands
-
-Test it:
+For contributors and advanced users:
 
 ```bash
-m1f --help
-m1f-update
+# Clone and set up development environment
+git clone https://github.com/franz-agency/m1f.git
+cd m1f
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+.venv\Scripts\activate     # Windows
+
+# Install in development mode
+pip install -e .
+pip install -r requirements.txt
 ```
+
+## Configuration
+
+After running `m1f-init`, you can customize `.m1f.config.yml`:
+
+```yaml
+bundles:
+  docs:
+    description: "Project documentation"
+    patterns:
+      - "docs/**/*.md"
+      - "*.md"
+    output: "m1f/{project_name}_docs.txt"
+
+  custom:
+    description: "My custom bundle"
+    patterns:
+      - "src/**/*.js"
+      - "tests/**/*.test.js"
+    output: "m1f/custom_bundle.txt"
+```
+
+## Documentation
+
+- [Getting Started Guide](docs/01_m1f/05_getting_started.md) - Detailed first
+  steps
+- [m1f Documentation](docs/01_m1f/00_m1f.md) - Complete m1f reference
+- [Configuration Examples](docs/01_m1f/25_m1f_config_examples.md) - Bundle
+  configs
+- [All Documentation](docs/) - Full documentation suite
 
 ## Pro Tips
 
@@ -446,6 +482,8 @@ guides, references, and examples for all tools in the m1f toolkit.
 The main tool that combines multiple files into a single reference file with
 content deduplication.
 
+- [**Getting Started**](01_m1f/05_getting_started.md) - Installation and first
+  steps with real examples
 - [**m1f Overview**](01_m1f/00_m1f.md) - Complete guide with features, usage
   examples, and architecture
 - [**Quick Reference**](01_m1f/01_quick_reference.md) - Common commands and
@@ -586,8 +624,8 @@ m1f auto-bundle documentation
 
 ## Navigation Tips
 
-- **New to m1f?** Start with the [m1f Overview](01_m1f/00_m1f.md) and
-  [Quick Reference](01_m1f/01_quick_reference.md)
+- **New to m1f?** Start with the
+  [Getting Started Guide](01_m1f/05_getting_started.md)
 - **Setting up automation?** Check the
   [Auto Bundle Guide](01_m1f/20_auto_bundle_guide.md) and
   [Configuration Examples](01_m1f/25_m1f_config_examples.md)
@@ -623,7 +661,7 @@ You only need:
 
 That's all! The installer handles everything else.
 
-## Installation (3 Commands!)
+## Installation
 
 ### Linux/macOS
 
@@ -634,7 +672,7 @@ source ./scripts/install.sh
 ```
 
 **Important**: Use `source` (not just `./scripts/install.sh`) to activate
-commands immediately!
+commands immediately.
 
 ### Windows
 
@@ -656,16 +694,15 @@ The installation script automatically:
 - ✅ Checks Python version (3.10+ required)
 - ✅ Creates virtual environment
 - ✅ Installs all dependencies
-- ✅ Generates initial m1f bundles
 - ✅ Adds commands to your PATH
 - ✅ Creates global command shortcuts
-- ✅ Sets up symlinks (optional)
+- ✅ Sets up symlinks
 
 ## Test Your Installation
 
 ```bash
+m1f-help
 m1f --help
-m1f-update
 ```
 
 ## Available Commands
@@ -679,7 +716,8 @@ After installation, these commands are available globally:
 - `m1f-token-counter` - Count tokens in files
 - `m1f-update` - Regenerate all m1f bundles
 - `m1f-init` - Initialize m1f for your project (replaces m1f-link)
-- `m1f-claude` - Enhance prompts with m1f knowledge for Claude
+- `m1f-claude` - A wrapper for Claude AI and send infos about m1f. So claude now
+  knows how to work with m1f
 - `m1f-help` - Show help for all commands
 
 ## Uninstall
@@ -1401,6 +1439,13 @@ if ($executionPolicy -eq "Restricted") {
     }
 }
 
+# Check if running in virtual environment already
+if ($env:VIRTUAL_ENV) {
+    Write-ColorOutput "Warning: Script is running inside a virtual environment." -Color $colors.Yellow
+    Write-ColorOutput "It's recommended to run the installer outside of any virtual environment." -Color $colors.Yellow
+    Write-Host
+}
+
 # Check Python version
 Write-ColorOutput "Checking Python version..." -Color $colors.Green
 $pythonCmd = $null
@@ -1472,9 +1517,22 @@ if (Test-Path "requirements.txt") {
 # Step 3: Generate initial m1f bundles
 Write-Host
 Write-ColorOutput "Step 3: Generating initial m1f bundles..." -Color $colors.Green
-$m1fUpdatePath = Join-Path $projectRoot "bin\m1f-update"
-& python $m1fUpdatePath --quiet
-Write-ColorOutput "✓ Initial bundles generated" -Color $colors.Green
+try {
+    & python -m tools.m1f auto-bundle --quiet
+    
+    # Create symlink for main documentation
+    $m1fDocPath = Join-Path $projectRoot "m1f\m1f\87_m1f_only_docs.txt"
+    $m1fLinkPath = Join-Path $projectRoot "m1f\m1f.txt"
+    if ((Test-Path $m1fDocPath) -and !(Test-Path $m1fLinkPath)) {
+        New-Item -ItemType SymbolicLink -Path $m1fLinkPath -Target "m1f\87_m1f_only_docs.txt" -Force | Out-Null
+        Write-ColorOutput "✓ Created m1f.txt symlink to main documentation" -Color $colors.Green
+    }
+    
+    Write-ColorOutput "✓ Initial bundles generated" -Color $colors.Green
+} catch {
+    Write-ColorOutput "Warning: Could not generate initial bundles" -Color $colors.Yellow
+    Write-ColorOutput "You can run 'm1f-update' later to generate them" -Color $colors.Yellow
+}
 
 # Step 4: Setup PowerShell functions
 Write-Host
@@ -1482,9 +1540,13 @@ Write-ColorOutput "Step 4: Setting up PowerShell functions..." -Color $colors.Gr
 
 # Run the PowerShell setup script
 $setupScript = Join-Path $scriptPath "setup_m1f_aliases.ps1"
-& $setupScript
-
-Write-ColorOutput "✓ PowerShell functions configured" -Color $colors.Green
+try {
+    & $setupScript
+    Write-ColorOutput "✓ PowerShell functions configured" -Color $colors.Green
+} catch {
+    Write-ColorOutput "Warning: Could not configure PowerShell functions automatically" -Color $colors.Yellow
+    Write-ColorOutput "You can run setup_m1f_aliases.ps1 manually later" -Color $colors.Yellow
+}
 
 # Step 5: Create batch files for Command Prompt (optional)
 Write-Host
@@ -1504,6 +1566,8 @@ $commands = @{
     "m1f-scrape.bat" = "m1f-scrape"
     "m1f-token-counter.bat" = "m1f-token-counter"
     "m1f-update.bat" = "m1f auto-bundle"
+    "m1f-init.bat" = "m1f-init"
+    "m1f-claude.bat" = "m1f-claude"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files
@@ -1512,6 +1576,8 @@ echo   m1f-html2md       - Convert HTML to Markdown
 echo   m1f-scrape        - Download websites for offline viewing
 echo   m1f-token-counter - Count tokens in files
 echo   m1f-update        - Update m1f bundle files
+echo   m1f-init          - Initialize m1f for your project
+echo   m1f-claude        - Advanced setup with topic-specific bundles
 echo   m1f-link          - Link m1f documentation for AI tools
 echo   m1f-help          - Show this help message
 echo.
@@ -1563,6 +1629,8 @@ Write-Host "  • m1f-html2md       - Convert HTML to Markdown"
 Write-Host "  • m1f-scrape        - Download websites for offline viewing"
 Write-Host "  • m1f-token-counter - Count tokens in files"
 Write-Host "  • m1f-update        - Regenerate m1f bundles"
+Write-Host "  • m1f-init          - Initialize m1f for your project"
+Write-Host "  • m1f-claude        - Advanced setup with topic-specific bundles"
 Write-Host "  • m1f-link          - Link m1f documentation for AI tools"
 Write-Host "  • m1f-help          - Show available commands"
 Write-Host
@@ -1580,7 +1648,7 @@ Write-ColorOutput "  m1f --help" -Color $colors.Blue
 Write-Host
 
 Write-ColorOutput "To uninstall:" -Color $colors.Yellow
-Write-ColorOutput "  .\scripts\setup_m1f_aliases.ps1 -Remove" -Color $colors.Blue
+Write-ColorOutput "  .\scripts\uninstall.ps1" -Color $colors.Blue
 
 ======= scripts/install.sh ======
 #!/usr/bin/env bash
@@ -1604,6 +1672,13 @@ BIN_DIR="$PROJECT_ROOT/bin"
 echo -e "${BLUE}m1f Installation${NC}"
 echo -e "${BLUE}================${NC}"
 echo
+
+# Check if running in virtual environment already
+if [ -n "$VIRTUAL_ENV" ]; then
+    echo -e "${YELLOW}Warning: Script is running inside a virtual environment.${NC}"
+    echo -e "${YELLOW}It's recommended to run the installer outside of any virtual environment.${NC}"
+    echo
+fi
 
 # Check Python version
 echo -e "${GREEN}Checking Python version...${NC}"
@@ -1660,15 +1735,17 @@ fi
 # Step 3: Generate initial m1f bundles
 echo
 echo -e "${GREEN}Step 3: Generating initial m1f bundles...${NC}"
-source .venv/bin/activate && python -m tools.m1f auto-bundle --quiet
-
-# Create symlink for main documentation
-if [ -f "m1f/m1f/87_m1f_only_docs.txt" ] && [ ! -e "m1f/m1f.txt" ]; then
-    ln -sf "m1f/87_m1f_only_docs.txt" "m1f/m1f.txt"
-    echo -e "${GREEN}✓ Created m1f.txt symlink to main documentation${NC}"
+if source .venv/bin/activate && python -m tools.m1f auto-bundle --quiet; then
+    # Create symlink for main documentation
+    if [ -f "m1f/m1f/87_m1f_only_docs.txt" ] && [ ! -e "m1f/m1f.txt" ]; then
+        ln -sf "m1f/87_m1f_only_docs.txt" "m1f/m1f.txt"
+        echo -e "${GREEN}✓ Created m1f.txt symlink to main documentation${NC}"
+    fi
+    echo -e "${GREEN}✓ Initial bundles generated${NC}"
+else
+    echo -e "${YELLOW}Warning: Could not generate initial bundles${NC}"
+    echo -e "${YELLOW}You can run 'm1f-update' later to generate them${NC}"
 fi
-
-echo -e "${GREEN}✓ Initial bundles generated${NC}"
 
 # Step 4: Setup PATH
 echo
@@ -1694,6 +1771,9 @@ PATH_LINE="export PATH=\"$BIN_DIR:\$PATH\"  # m1f tools"
 if grep -q "# m1f tools" "$SHELL_CONFIG" 2>/dev/null; then
     echo -e "${YELLOW}m1f tools already in PATH${NC}"
 else
+    # Backup shell config
+    cp "$SHELL_CONFIG" "$SHELL_CONFIG.m1f-backup-$(date +%Y%m%d%H%M%S)"
+    
     # Add to PATH
     echo "" >> "$SHELL_CONFIG"
     echo "$PATH_LINE" >> "$SHELL_CONFIG"
@@ -1701,14 +1781,13 @@ else
 fi
 
 # Step 5: Create symlinks (optional)
-if [ -d "$HOME/.local/bin" ]; then
+if [ -d "$HOME/.local/bin" ] || mkdir -p "$HOME/.local/bin" 2>/dev/null; then
     # Check if any m1f symlinks already exist
     if [ -L "$HOME/.local/bin/m1f" ]; then
         echo -e "${YELLOW}Symlinks already exist in ~/.local/bin${NC}"
     else
         echo
         echo -e "${YELLOW}Creating symlinks in ~/.local/bin for system-wide access...${NC}"
-        mkdir -p "$HOME/.local/bin"
         for cmd in "$BIN_DIR"/*; do
             if [ -x "$cmd" ]; then
                 cmd_name=$(basename "$cmd")
@@ -1716,6 +1795,11 @@ if [ -d "$HOME/.local/bin" ]; then
             fi
         done
         echo -e "${GREEN}✓ Symlinks created${NC}"
+        
+        # Check if ~/.local/bin is in PATH
+        if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+            echo -e "${YELLOW}Note: ~/.local/bin is not in your PATH. You may want to add it.${NC}"
+        fi
     fi
 fi
 
@@ -2139,10 +2223,174 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
+======= scripts/uninstall.ps1 ======
+# Uninstall script for m1f tools on Windows
+# This removes m1f from your system and cleans up all components
+
+$ErrorActionPreference = "Stop"
+
+# Colors for output
+$colors = @{
+    Green = "Green"
+    Yellow = "Yellow"
+    Blue = "Cyan"
+    Red = "Red"
+}
+
+function Write-ColorOutput {
+    param(
+        [string]$Message,
+        [string]$Color = "White"
+    )
+    Write-Host $Message -ForegroundColor $Color
+}
+
+# Get script and project paths
+$scriptPath = $PSScriptRoot
+$projectRoot = Split-Path $scriptPath -Parent
+$binDir = Join-Path $projectRoot "bin"
+$batchDir = Join-Path $projectRoot "batch"
+$venvDir = Join-Path $projectRoot ".venv"
+
+Write-ColorOutput "m1f Uninstallation" -Color $colors.Blue
+Write-ColorOutput "==================" -Color $colors.Blue
+Write-Host
+
+# Track what we'll remove
+$componentsToRemove = @()
+
+# Check for virtual environment
+if (Test-Path $venvDir) {
+    $componentsToRemove += "Python virtual environment (.venv)"
+}
+
+# Check for batch directory
+if (Test-Path $batchDir) {
+    $componentsToRemove += "Command Prompt batch files ($batchDir)"
+}
+
+# Check if PowerShell functions are installed
+$profileContent = ""
+if (Test-Path $PROFILE) {
+    $profileContent = Get-Content $PROFILE -Raw
+    if ($profileContent -match "# m1f tools functions") {
+        $componentsToRemove += "PowerShell functions in profile"
+    }
+}
+
+# Check for generated bundles
+$bundleFiles = @()
+if (Test-Path "m1f") {
+    $bundleFiles = Get-ChildItem -Path "m1f" -Filter "*.txt" | Where-Object { $_.Name -notlike "*config*" }
+    if ($bundleFiles.Count -gt 0) {
+        $componentsToRemove += "Generated m1f bundles ($($bundleFiles.Count) files)"
+    }
+}
+
+# Show what will be removed
+if ($componentsToRemove.Count -eq 0) {
+    Write-ColorOutput "No m1f installation found." -Color $colors.Yellow
+    exit 0
+}
+
+Write-Host "The following components will be removed:"
+Write-Host
+foreach ($component in $componentsToRemove) {
+    Write-Host "  • $component"
+}
+Write-Host
+
+# Ask for confirmation
+Write-ColorOutput "Do you want to continue with uninstallation? (y/N) " -Color $colors.Yellow -NoNewline
+$response = Read-Host
+if ($response -notmatch '^[Yy]$') {
+    Write-Host "Uninstallation cancelled."
+    exit 0
+}
+
+Write-Host
+
+# Remove PowerShell functions
+if ($profileContent -match "# m1f tools functions") {
+    Write-ColorOutput "Removing m1f functions from PowerShell profile..." -Color $colors.Green
+    try {
+        $setupScript = Join-Path $scriptPath "setup_m1f_aliases.ps1"
+        & $setupScript -Remove
+        Write-ColorOutput "✓ PowerShell functions removed" -Color $colors.Green
+    } catch {
+        Write-ColorOutput "Warning: Could not remove PowerShell functions automatically" -Color $colors.Yellow
+        Write-ColorOutput "Please manually edit: $PROFILE" -Color $colors.Yellow
+    }
+}
+
+# Remove batch directory
+if (Test-Path $batchDir) {
+    Write-ColorOutput "Removing Command Prompt batch files..." -Color $colors.Green
+    Remove-Item -Path $batchDir -Recurse -Force
+    Write-ColorOutput "✓ Batch files removed" -Color $colors.Green
+}
+
+# Ask about generated bundles
+if ($bundleFiles.Count -gt 0) {
+    Write-Host
+    Write-ColorOutput "Do you want to remove generated m1f bundles? (y/N) " -Color $colors.Yellow -NoNewline
+    $bundleResponse = Read-Host
+    if ($bundleResponse -match '^[Yy]$') {
+        Write-ColorOutput "Removing generated bundles..." -Color $colors.Green
+        foreach ($file in $bundleFiles) {
+            Remove-Item -Path $file.FullName -Force
+        }
+        Write-ColorOutput "✓ Bundles removed" -Color $colors.Green
+    } else {
+        Write-ColorOutput "Keeping generated bundles" -Color $colors.Yellow
+    }
+}
+
+# Remove virtual environment (ask first as it's destructive)
+if (Test-Path $venvDir) {
+    Write-Host
+    Write-ColorOutput "Do you want to remove the Python virtual environment? (y/N) " -Color $colors.Yellow -NoNewline
+    $venvResponse = Read-Host
+    if ($venvResponse -match '^[Yy]$') {
+        Write-ColorOutput "Removing virtual environment..." -Color $colors.Green
+        try {
+            # Deactivate if active
+            if ($env:VIRTUAL_ENV -eq $venvDir) {
+                deactivate 2>$null
+            }
+            Remove-Item -Path $venvDir -Recurse -Force
+            Write-ColorOutput "✓ Virtual environment removed" -Color $colors.Green
+        } catch {
+            Write-ColorOutput "Warning: Could not remove virtual environment completely" -Color $colors.Yellow
+            Write-ColorOutput "You may need to manually delete: $venvDir" -Color $colors.Yellow
+        }
+    } else {
+        Write-ColorOutput "Keeping virtual environment" -Color $colors.Yellow
+    }
+}
+
+Write-Host
+Write-ColorOutput "✓ Uninstallation complete!" -Color $colors.Green
+Write-Host
+
+if ($profileContent -match "# m1f tools functions") {
+    Write-ColorOutput "Please reload your PowerShell profile or start a new PowerShell session for changes to take effect." -Color $colors.Yellow
+}
+
+# Check if PATH still contains batch directory
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($userPath -like "*$batchDir*") {
+    Write-Host
+    Write-ColorOutput "Note: $batchDir may still be in your PATH environment variable." -Color $colors.Yellow
+    Write-ColorOutput "To remove it manually:" -Color $colors.Yellow
+    Write-ColorOutput "  1. Open System Properties > Environment Variables" -Color $colors.Blue
+    Write-ColorOutput "  2. Edit the Path variable and remove: $batchDir" -Color $colors.Blue
+}
+
 ======= scripts/uninstall.sh ======
 #!/usr/bin/env bash
 # Uninstall script for m1f tools
-# This removes m1f from your PATH and cleans up symlinks
+# This removes m1f from your system and cleans up all components
 
 set -e
 
@@ -2157,6 +2405,7 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 BIN_DIR="$PROJECT_ROOT/bin"
+VENV_DIR="$PROJECT_ROOT/.venv"
 
 echo -e "${BLUE}m1f Uninstallation${NC}"
 echo -e "${BLUE}==================${NC}"
@@ -2171,6 +2420,12 @@ SHELL_CONFIGS=()
 # Track what we'll remove
 FOUND_IN_CONFIGS=()
 FOUND_SYMLINKS=()
+COMPONENTS_TO_REMOVE=()
+
+# Check for virtual environment
+if [ -d "$VENV_DIR" ]; then
+    COMPONENTS_TO_REMOVE+=("Python virtual environment (.venv)")
+fi
 
 # Check shell configs
 for config in "${SHELL_CONFIGS[@]}"; do
@@ -2181,7 +2436,7 @@ done
 
 # Check for symlinks in ~/.local/bin
 if [ -d "$HOME/.local/bin" ]; then
-    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-token-counter m1f-update m1f-link m1f-help; do
+    for cmd in m1f m1f-s1f m1f-html2md m1f-scrape m1f-token-counter m1f-update m1f-link m1f-help m1f-init m1f-claude; do
         if [ -L "$HOME/.local/bin/$cmd" ]; then
             # Check if symlink points to our bin directory
             link_target=$(readlink -f "$HOME/.local/bin/$cmd" 2>/dev/null || true)
@@ -2190,6 +2445,20 @@ if [ -d "$HOME/.local/bin" ]; then
             fi
         fi
     done
+fi
+
+# Check for generated bundles
+BUNDLE_FILES=()
+if [ -d "$PROJECT_ROOT/m1f" ]; then
+    while IFS= read -r -d '' file; do
+        # Skip config files
+        if [[ ! "$file" =~ config ]]; then
+            BUNDLE_FILES+=("$file")
+        fi
+    done < <(find "$PROJECT_ROOT/m1f" -name "*.txt" -type f -print0)
+    if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
+        COMPONENTS_TO_REMOVE+=("Generated m1f bundles (${#BUNDLE_FILES[@]} files)")
+    fi
 fi
 
 # Check for old-style aliases
@@ -2202,7 +2471,7 @@ for config in "${SHELL_CONFIGS[@]}"; do
 done
 
 # Show what will be removed
-if [ ${#FOUND_IN_CONFIGS[@]} -eq 0 ] && [ ${#FOUND_SYMLINKS[@]} -eq 0 ] && [ "$OLD_STYLE_FOUND" = false ]; then
+if [ ${#FOUND_IN_CONFIGS[@]} -eq 0 ] && [ ${#FOUND_SYMLINKS[@]} -eq 0 ] && [ "$OLD_STYLE_FOUND" = false ] && [ ${#COMPONENTS_TO_REMOVE[@]} -eq 0 ]; then
     echo -e "${YELLOW}No m1f installation found.${NC}"
     exit 0
 fi
@@ -2210,10 +2479,18 @@ fi
 echo "The following will be removed:"
 echo
 
+if [ ${#COMPONENTS_TO_REMOVE[@]} -gt 0 ]; then
+    echo "Components:"
+    for component in "${COMPONENTS_TO_REMOVE[@]}"; do
+        echo "  • $component"
+    done
+    echo
+fi
+
 if [ ${#FOUND_IN_CONFIGS[@]} -gt 0 ]; then
     echo "PATH entries in:"
     for config in "${FOUND_IN_CONFIGS[@]}"; do
-        echo "  - $config"
+        echo "  • $config"
     done
     echo
 fi
@@ -2221,7 +2498,7 @@ fi
 if [ ${#FOUND_SYMLINKS[@]} -gt 0 ]; then
     echo "Symlinks:"
     for link in "${FOUND_SYMLINKS[@]}"; do
-        echo "  - $link"
+        echo "  • $link"
     done
     echo
 fi
@@ -2255,6 +2532,40 @@ for link in "${FOUND_SYMLINKS[@]}"; do
     echo -e "${GREEN}Removing symlink: $link${NC}"
     rm -f "$link"
 done
+
+# Ask about generated bundles
+if [ ${#BUNDLE_FILES[@]} -gt 0 ]; then
+    echo
+    echo -e "${YELLOW}Do you want to remove generated m1f bundles? (y/N)${NC}"
+    read -r bundle_response
+    if [[ "$bundle_response" =~ ^[Yy]$ ]]; then
+        echo -e "${GREEN}Removing generated bundles...${NC}"
+        for file in "${BUNDLE_FILES[@]}"; do
+            rm -f "$file"
+        done
+        echo -e "${GREEN}✓ Bundles removed${NC}"
+    else
+        echo "Keeping generated bundles"
+    fi
+fi
+
+# Ask about virtual environment
+if [ -d "$VENV_DIR" ]; then
+    echo
+    echo -e "${YELLOW}Do you want to remove the Python virtual environment? (y/N)${NC}"
+    read -r venv_response
+    if [[ "$venv_response" =~ ^[Yy]$ ]]; then
+        echo -e "${GREEN}Removing virtual environment...${NC}"
+        # Deactivate if we're in the virtual environment
+        if [ "$VIRTUAL_ENV" = "$VENV_DIR" ]; then
+            deactivate 2>/dev/null || true
+        fi
+        rm -rf "$VENV_DIR"
+        echo -e "${GREEN}✓ Virtual environment removed${NC}"
+    else
+        echo "Keeping virtual environment"
+    fi
+fi
 
 echo
 echo -e "${GREEN}✓ Uninstallation complete!${NC}"

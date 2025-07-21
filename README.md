@@ -2,6 +2,24 @@
 
 **Feed your AI the whole story.**
 
+## Quick Start (3 Steps)
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/franz-agency/m1f.git
+
+# 2. Change to the directory
+cd m1f
+
+# 3. Run the installer
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows (restart shell after)
+```
+
+That's it! ✨ Now `m1f` and all tools are available globally.
+
 ## What is m1f?
 
 m1f (Make One File) bundles your entire codebase into a single file that you can
@@ -9,24 +27,28 @@ feed to Claude AI, ChatGPT, Google Gemini, or any LLM. Think of it as a context
 maximizer - it takes hundreds of files from your project and intelligently
 combines them into one mega-file that fits perfectly in an AI's context window.
 
-## Real Example: Tailwind CSS Documentation
+## Your First Bundle - Real Example
 
-Here's the problem: Tailwind's documentation is constantly evolving, but most
-LLMs are stuck with outdated information.
-
-The solution? Three commands:
+Let's bundle the TailwindCSS documentation to feed it to your AI:
 
 ```bash
+# 1. Clone any repository (e.g., TailwindCSS docs)
 git clone https://github.com/tailwindlabs/tailwindcss.com
-cd tailwindcss.com && m1f-init
+cd tailwindcss.com
+
+# 2. Initialize and scan the project
+m1f-init
+
+# This creates in the m1f/ directory:
+# - tailwind_complete.txt (all text files)
+# - tailwind_docs.txt (documentation only)
+
+# 3. Optional: Create special Claude-optimized bundles
 m1f-claude --setup
 ```
 
-Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are
-created in the `m1f/` directory - you can reference them in Claude with
-`@m1f/tailwind_complete.txt` or `@m1f/tailwind_docs.txt`. Your AI assistant just
-became an expert on bleeding-edge tech that didn't exist when it was trained.
-That's the power of m1f.
+Now you can reference these files in Claude with `@m1f/tailwind_complete.txt`.
+Your AI just became an expert on the latest TailwindCSS! 🎉
 
 > **🔐 Security Note**: m1f automatically scans for secrets (API keys,
 > passwords, tokens) using
@@ -35,14 +57,13 @@ That's the power of m1f.
 
 ## The Tool Suite
 
-m1f isn't just one tool - it's a whole squad:
-
-- **m1f** - The main bundler that creates your mega-files
-- **m1f-s1f** - Splits bundles back into individual files
-- **m1f-scrape** - Downloads entire websites for offline processing
-- **m1f-html2md** - Converts HTML docs to clean Markdown
-- **m1f-token-counter** - Checks if your bundle fits in context windows
-- **m1f-claude** - AI assistant that already knows your codebase
+- **m1f** - Main bundler for creating context files
+- **m1f-init** - Quick project scanner and bundle creator
+- **m1f-claude** - AI assistant with codebase knowledge
+- **m1f-s1f** - Extract files back from bundles
+- **m1f-scrape** - Download websites for processing
+- **m1f-html2md** - Convert HTML to clean Markdown
+- **m1f-token-counter** - Check if bundles fit in context windows
 
 Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
 
@@ -181,39 +202,54 @@ m1f-update
 - **🔒 Security**: Automatic secret detection (because accidents happen)
 - **📦 All-in-One**: Download, convert, bundle, done
 
-## Quick Start
+## Developer Setup
 
-### Linux/macOS (3 commands)
-
-```bash
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-source ./scripts/install.sh
-```
-
-### Windows (3 commands + restart)
-
-```powershell
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-.\scripts\install.ps1
-# Restart PowerShell or run: . $PROFILE
-```
-
-That's it! ✨ The installer handles everything:
-
-- ✅ Checks Python 3.10+
-- ✅ Creates virtual environment
-- ✅ Installs all dependencies
-- ✅ Generates initial bundles
-- ✅ Sets up global commands
-
-Test it:
+For contributors and advanced users:
 
 ```bash
-m1f --help
-m1f-update
+# Clone and set up development environment
+git clone https://github.com/franz-agency/m1f.git
+cd m1f
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+.venv\Scripts\activate     # Windows
+
+# Install in development mode
+pip install -e .
+pip install -r requirements.txt
 ```
+
+## Configuration
+
+After running `m1f-init`, you can customize `.m1f.config.yml`:
+
+```yaml
+bundles:
+  docs:
+    description: "Project documentation"
+    patterns:
+      - "docs/**/*.md"
+      - "*.md"
+    output: "m1f/{project_name}_docs.txt"
+
+  custom:
+    description: "My custom bundle"
+    patterns:
+      - "src/**/*.js"
+      - "tests/**/*.test.js"
+    output: "m1f/custom_bundle.txt"
+```
+
+## Documentation
+
+- [Getting Started Guide](docs/01_m1f/05_getting_started.md) - Detailed first
+  steps
+- [m1f Documentation](docs/01_m1f/00_m1f.md) - Complete m1f reference
+- [Configuration Examples](docs/01_m1f/25_m1f_config_examples.md) - Bundle
+  configs
+- [All Documentation](docs/) - Full documentation suite
 
 ## Pro Tips
 

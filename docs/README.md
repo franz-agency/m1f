@@ -14,6 +14,8 @@ guides, references, and examples for all tools in the m1f toolkit.
 The main tool that combines multiple files into a single reference file with
 content deduplication.
 
+- [**Getting Started**](01_m1f/05_getting_started.md) - Installation and first
+  steps with real examples
 - [**m1f Overview**](01_m1f/00_m1f.md) - Complete guide with features, usage
   examples, and architecture
 - [**Quick Reference**](01_m1f/01_quick_reference.md) - Common commands and
@@ -154,8 +156,8 @@ m1f auto-bundle documentation
 
 ## Navigation Tips
 
-- **New to m1f?** Start with the [m1f Overview](01_m1f/00_m1f.md) and
-  [Quick Reference](01_m1f/01_quick_reference.md)
+- **New to m1f?** Start with the
+  [Getting Started Guide](01_m1f/05_getting_started.md)
 - **Setting up automation?** Check the
   [Auto Bundle Guide](01_m1f/20_auto_bundle_guide.md) and
   [Configuration Examples](01_m1f/25_m1f_config_examples.md)

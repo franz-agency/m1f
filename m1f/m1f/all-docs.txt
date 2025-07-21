@@ -3,6 +3,24 @@
 
 **Feed your AI the whole story.**
 
+## Quick Start (3 Steps)
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/franz-agency/m1f.git
+
+# 2. Change to the directory
+cd m1f
+
+# 3. Run the installer
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows (restart shell after)
+```
+
+That's it! ✨ Now `m1f` and all tools are available globally.
+
 ## What is m1f?
 
 m1f (Make One File) bundles your entire codebase into a single file that you can
@@ -10,24 +28,28 @@ feed to Claude AI, ChatGPT, Google Gemini, or any LLM. Think of it as a context
 maximizer - it takes hundreds of files from your project and intelligently
 combines them into one mega-file that fits perfectly in an AI's context window.
 
-## Real Example: Tailwind CSS Documentation
+## Your First Bundle - Real Example
 
-Here's the problem: Tailwind's documentation is constantly evolving, but most
-LLMs are stuck with outdated information.
-
-The solution? Three commands:
+Let's bundle the TailwindCSS documentation to feed it to your AI:
 
 ```bash
+# 1. Clone any repository (e.g., TailwindCSS docs)
 git clone https://github.com/tailwindlabs/tailwindcss.com
-cd tailwindcss.com && m1f-init
+cd tailwindcss.com
+
+# 2. Initialize and scan the project
+m1f-init
+
+# This creates in the m1f/ directory:
+# - tailwind_complete.txt (all text files)
+# - tailwind_docs.txt (documentation only)
+
+# 3. Optional: Create special Claude-optimized bundles
 m1f-claude --setup
 ```
 
-Boom. Now Claude knows everything about the latest Tailwind CSS. The bundles are
-created in the `m1f/` directory - you can reference them in Claude with
-`@m1f/tailwind_complete.txt` or `@m1f/tailwind_docs.txt`. Your AI assistant just
-became an expert on bleeding-edge tech that didn't exist when it was trained.
-That's the power of m1f.
+Now you can reference these files in Claude with `@m1f/tailwind_complete.txt`.
+Your AI just became an expert on the latest TailwindCSS! 🎉
 
 > **🔐 Security Note**: m1f automatically scans for secrets (API keys,
 > passwords, tokens) using
@@ -36,14 +58,13 @@ That's the power of m1f.
 
 ## The Tool Suite
 
-m1f isn't just one tool - it's a whole squad:
-
-- **m1f** - The main bundler that creates your mega-files
-- **m1f-s1f** - Splits bundles back into individual files
-- **m1f-scrape** - Downloads entire websites for offline processing
-- **m1f-html2md** - Converts HTML docs to clean Markdown
-- **m1f-token-counter** - Checks if your bundle fits in context windows
-- **m1f-claude** - AI assistant that already knows your codebase
+- **m1f** - Main bundler for creating context files
+- **m1f-init** - Quick project scanner and bundle creator
+- **m1f-claude** - AI assistant with codebase knowledge
+- **m1f-s1f** - Extract files back from bundles
+- **m1f-scrape** - Download websites for processing
+- **m1f-html2md** - Convert HTML to clean Markdown
+- **m1f-token-counter** - Check if bundles fit in context windows
 
 Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
 
@@ -182,39 +203,54 @@ m1f-update
 - **🔒 Security**: Automatic secret detection (because accidents happen)
 - **📦 All-in-One**: Download, convert, bundle, done
 
-## Quick Start
+## Developer Setup
 
-### Linux/macOS (3 commands)
-
-```bash
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-source ./scripts/install.sh
-```
-
-### Windows (3 commands + restart)
-
-```powershell
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-.\scripts\install.ps1
-# Restart PowerShell or run: . $PROFILE
-```
-
-That's it! ✨ The installer handles everything:
-
-- ✅ Checks Python 3.10+
-- ✅ Creates virtual environment
-- ✅ Installs all dependencies
-- ✅ Generates initial bundles
-- ✅ Sets up global commands
-
-Test it:
+For contributors and advanced users:
 
 ```bash
-m1f --help
-m1f-update
+# Clone and set up development environment
+git clone https://github.com/franz-agency/m1f.git
+cd m1f
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+.venv\Scripts\activate     # Windows
+
+# Install in development mode
+pip install -e .
+pip install -r requirements.txt
 ```
+
+## Configuration
+
+After running `m1f-init`, you can customize `.m1f.config.yml`:
+
+```yaml
+bundles:
+  docs:
+    description: "Project documentation"
+    patterns:
+      - "docs/**/*.md"
+      - "*.md"
+    output: "m1f/{project_name}_docs.txt"
+
+  custom:
+    description: "My custom bundle"
+    patterns:
+      - "src/**/*.js"
+      - "tests/**/*.test.js"
+    output: "m1f/custom_bundle.txt"
+```
+
+## Documentation
+
+- [Getting Started Guide](docs/01_m1f/05_getting_started.md) - Detailed first
+  steps
+- [m1f Documentation](docs/01_m1f/00_m1f.md) - Complete m1f reference
+- [Configuration Examples](docs/01_m1f/25_m1f_config_examples.md) - Bundle
+  configs
+- [All Documentation](docs/) - Full documentation suite
 
 ## Pro Tips
 
@@ -322,163 +358,157 @@ robots.
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Context
+This is the m1f (Make One File) project - a comprehensive toolkit for bundling codebases into AI-friendly context files. The project's mission is to "feed your AI the whole story" by converting messy codebases into digestible chunks for LLMs.
+
 ## Core Architecture
 
-m1f is a Python toolkit for efficiently working with Large Language Models (LLMs) by managing context. Built with Python 3.10+ featuring async I/O, type hints, and modular design.
+### Tool Suite
+- **m1f** - Main bundler combining multiple files into AI-ready context
+- **m1f-s1f** - File splitter that extracts files back from bundles
+- **m1f-scrape** - Website scraper with pluggable backends (BeautifulSoup, HTTrack, Playwright, Scrapy, Selectolax)
+- **m1f-html2md** - HTML to Markdown converter with custom extractors
+- **m1f-token-counter** - Token estimation for LLM context planning
+- **m1f-claude** - AI assistant with m1f knowledge integration
 
-### Key Tools
-- **m1f**: Combines multiple files into a single reference file with content deduplication
-- **s1f**: Extracts individual files from combined files, preserving structure  
-- **webscraper**: Downloads websites for offline viewing and processing
-- **html2md**: HTML to Markdown converter with structure analysis
-- **token_counter**: Estimates token usage for LLM context planning
-- **claude_orchestrator**: Optional AI-powered automation via Claude Code
+### Modern Python 3.10+ Design
+- **Async I/O** throughout for performance
+- **Type safety** with comprehensive annotations
+- **Modular architecture** with clean separation of concerns
+- **Plugin systems** for scrapers and custom processors
+- **Security-first** with path traversal protection, secret detection, SSRF protection
 
-### Module Structure
-Each tool follows clean architecture with separate modules:
-- `config.py` / `config_loader.py`: Configuration management
-- `core.py`: Main business logic
-- `cli.py`: Command-line interface
-- `logging.py`: Logging configuration
-- `utils.py`: Utility functions
-- `exceptions.py`: Custom exceptions
+### Key Directories
+```
+tools/
+├── m1f/              # Main bundling tool with async core
+├── s1f/              # File splitting with concurrent writes
+├── html2md_tool/     # HTML conversion with custom extractors
+├── scrape_tool/      # Web scraping backends
+└── _version.py       # Centralized version management
 
-m1f-specific modules:
-- `file_processor.py`: File processing logic
-- `security_scanner.py`: Security checks
-- `output_writer.py`: Output formatting
-- `presets.py`: Preset system implementation
-- `encoding_handler.py`: Encoding detection/conversion
-- `separator_generator.py`: Generates file separators (Standard format now excludes checksums)
-
-### Parser Architecture
-s1f parsers in `tools/s1f/parsers.py`:
-- `CombinedFileParser`: Orchestrates all format parsers
-- Format parsers: PYMK1F, MachineReadable, Markdown, Detailed, Standard
-- Code block detection: Separators inside ``` blocks are ignored
+presets/              # Configuration templates for different project types
+bin/                  # Global command wrappers
+scripts/              # Installation and utility scripts
+```
 
 ## Development Commands
 
-### Setup
+### Installation & Setup
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+# Install from source
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows
 
-# Install git hooks
-./scripts/install-git-hooks.sh
-```
-
-### Running Tools
-```bash
-# Using installed commands (after running install.sh)
-m1f -s ./source -o ./output.txt
-m1f-s1f -i ./combined.txt -d ./extracted
-m1f-scrape https://example.com -o ./html_files
-m1f-html2md convert ./html ./markdown
-m1f-token-counter ./file.txt
-
-# Using Python modules directly
-python -m tools.m1f -s ./source -o ./output.txt
-python -m tools.s1f -i ./combined.txt -d ./extracted
-python -m tools.scrape_tool https://example.com -o ./html_files
-python -m tools.html2md_tool convert ./html ./markdown
-python tools/token_counter.py ./file.txt
-
-# Auto-bundle management
-m1f auto-bundle              # Create all bundles
-m1f auto-bundle --list       # List available bundles
-m1f auto-bundle <name>       # Create specific bundle
-m1f auto-bundle --group documentation  # Create bundles by group
+# Generate m1f bundles
+m1f-update
 ```
 
 ### Testing
 ```bash
-# Run all tests
-pytest
+# Install test dependencies first
+pip install -r requirements.txt
 
-# Run specific test categories
-pytest -m unit
-pytest -m integration
-pytest -m "not slow"
-
-# Run specific test files
-pytest tests/m1f/test_m1f_basic.py
-pytest tests/s1f/test_s1f.py
-
-# Run a single test
-pytest tests/m1f/test_m1f_basic.py::test_basic_functionality -v
-
-# Run tests with coverage
-pytest --cov=tools --cov-report=html
+# Run tests (when pytest is available)
+python3 -m pytest                    # All tests
+python3 -m pytest tests/m1f          # m1f-specific tests
+python3 -m pytest tests/s1f          # s1f-specific tests
+python3 -m pytest tests/html2md      # html2md tests
 ```
 
-### Linting & Formatting
+### Code Quality
 ```bash
-# Format Python code with Black
-black tools/ tests/
+# Format Python code
+black tools/
 
-# Check Python code style
-black --check tools/ tests/
+# Format Markdown
+npm run lint:md
 
-# Format Markdown files
-npm run lint:md        # Auto-fix
-npm run lint:md:check  # Check only
+# Check Markdown formatting
+npm run lint:md:check
 ```
 
-## Testing Architecture
+### Bundle Management
+```bash
+# Update all project bundles
+m1f-update
 
-- pytest-based with markers: unit, integration, slow, encoding, asyncio
-- Test structure mirrors tool structure: `tests/{m1f,s1f,html2md}/`
-- Test fixtures in `conftest.py` files
-- 300-second default timeout (configurable per test)
-- Test data in `tests/*/source/` directories
+# List available bundles
+m1f auto-bundle --list
 
-## Preset System
+# Create specific bundle
+m1f-update docs
+```
 
-m1f uses hierarchical YAML presets for file-specific processing:
-- Global: `~/.m1f/`
-- Project: `presets/` directory
-- Per-file processors: minify, strip tags, remove comments, compress whitespace
+## Documentation
 
-Example presets available:
-- `wordpress.m1f-presets.yml`: WordPress site processing
-- `web-project.m1f-presets.yml`: Web development projects
-- `documentation.m1f-presets.yml`: Documentation bundles
+Project documentation is located in the `docs/` directory with comprehensive guides for each tool.
 
-## Auto-Bundle Configuration
+## Configuration Systems
 
-The `.m1f.config.yml` file defines auto-bundle settings:
-- Bundle definitions with sources, outputs, and filters
-- Global exclusions and settings
-- File watcher configuration
-- Security check levels per file type
+### Preset System
+Located in `presets/` with templates for:
+- WordPress projects (`wordpress.m1f-presets.yml`)
+- Web projects (`web-project.m1f-presets.yml`)
+- Documentation sites (`documentation.m1f-presets.yml`)
+- AI-context optimization (`ai-context.m1f-presets.yml`)
 
-Bundles are automatically generated:
-- On git pre-commit hook
-- Via `m1f auto-bundle` command
-- Through file watcher (`./scripts/watch_and_bundle.sh`)
+### Auto-bundling
+- `.m1f.config.yml` defines project-specific bundle configurations
+- Git hooks available for automatic bundle generation on commits
+- Watch scripts for real-time bundle updates
 
-## Recent Changes
+## Security Considerations
 
-### Separator Format Updates
-- Standard separator format now shows only file path without checksum
-- s1f list output no longer displays SHA256 hashes or "[Unknown]" for missing sizes
-- s1f parser ignores separators inside code blocks to prevent false positives
+The project implements comprehensive security measures:
+- **Path validation** to prevent directory traversal attacks
+- **Secret detection** using detect-secrets integration
+- **SSRF protection** for web scraping backends
+- **robots.txt compliance** (always enabled, cannot be disabled)
+- **SSL/TLS validation** enabled by default
 
-### Key Files Modified
-- `tools/m1f/separator_generator.py`: Standard format generation
-- `tools/s1f/core.py`: List output formatting
-- `tools/s1f/parsers.py`: Code block detection logic
+## Key Development Patterns
 
-## Git Workflow
+### Version Management
+- Single source of truth in `tools/_version.py`
+- Automatic syncing across all components
+- Use `scripts/bump_version.py` for version updates
 
-Conventional commits: `<type>(<scope>): <subject>`
-- Types: feat, fix, docs, style, refactor, test, chore, perf
-- 50 char subject, imperative mood
-- Main branch: `main`
-- Pre-commit hook runs auto-bundle to keep bundles synchronized
+### Async Architecture
+All file operations use async I/O patterns:
+```python
+# Standard pattern for file operations
+async with aiofiles.open(file_path, 'r') as f:
+    content = await f.read()
+```
 
+### Error Handling
+Custom exception hierarchy with specific error types for different failure modes.
+
+### Testing Strategy
+- Comprehensive test coverage with pytest
+- Async test support with pytest-asyncio
+- Integration tests including HTML test server
+- Security-focused tests for path traversal and injection attacks
+
+## m1f Best Practices
+
+When working with m1f functionality:
+- Create focused bundles under 100KB for optimal AI context windows
+- Use appropriate separators: Standard (default) for AI consumption, not Markdown
+- Leverage the preset system for consistent file processing
+- Exclude unnecessary files using default excludes (automatically handles node_modules, .git, etc.)
+- Use security scanning to prevent secrets in bundles
+
+## Key Documentation Files
+
+For comprehensive understanding of each tool:
+- `docs/01_m1f/00_m1f.md` - Main m1f tool documentation
+- `docs/02_s1f/20_s1f.md` - File splitting tool documentation
+- `docs/03_html2md/30_html2md.md` - HTML to Markdown conversion
+- `docs/04_scrape/40_webscraper.md` - Web scraping backends
+- `docs/01_m1f/10_m1f_presets.md` - Preset system documentation
+- `docs/01_m1f/20_auto_bundle_guide.md` - Auto-bundling configuration
 
 ======= requirements.txt ======
 # Core dependencies
@@ -609,6 +639,8 @@ guides, references, and examples for all tools in the m1f toolkit.
 The main tool that combines multiple files into a single reference file with
 content deduplication.
 
+- [**Getting Started**](01_m1f/05_getting_started.md) - Installation and first
+  steps with real examples
 - [**m1f Overview**](01_m1f/00_m1f.md) - Complete guide with features, usage
   examples, and architecture
 - [**Quick Reference**](01_m1f/01_quick_reference.md) - Common commands and
@@ -749,8 +781,8 @@ m1f auto-bundle documentation
 
 ## Navigation Tips
 
-- **New to m1f?** Start with the [m1f Overview](01_m1f/00_m1f.md) and
-  [Quick Reference](01_m1f/01_quick_reference.md)
+- **New to m1f?** Start with the
+  [Getting Started Guide](01_m1f/05_getting_started.md)
 - **Setting up automation?** Check the
   [Auto Bundle Guide](01_m1f/20_auto_bundle_guide.md) and
   [Configuration Examples](01_m1f/25_m1f_config_examples.md)
@@ -2082,7 +2114,7 @@ You only need:
 
 That's all! The installer handles everything else.
 
-## Installation (3 Commands!)
+## Installation
 
 ### Linux/macOS
 
@@ -2093,7 +2125,7 @@ source ./scripts/install.sh
 ```
 
 **Important**: Use `source` (not just `./scripts/install.sh`) to activate
-commands immediately!
+commands immediately.
 
 ### Windows
 
@@ -2115,16 +2147,15 @@ The installation script automatically:
 - ✅ Checks Python version (3.10+ required)
 - ✅ Creates virtual environment
 - ✅ Installs all dependencies
-- ✅ Generates initial m1f bundles
 - ✅ Adds commands to your PATH
 - ✅ Creates global command shortcuts
-- ✅ Sets up symlinks (optional)
+- ✅ Sets up symlinks
 
 ## Test Your Installation
 
 ```bash
+m1f-help
 m1f --help
-m1f-update
 ```
 
 ## Available Commands
@@ -2138,7 +2169,8 @@ After installation, these commands are available globally:
 - `m1f-token-counter` - Count tokens in files
 - `m1f-update` - Regenerate all m1f bundles
 - `m1f-init` - Initialize m1f for your project (replaces m1f-link)
-- `m1f-claude` - Enhance prompts with m1f knowledge for Claude
+- `m1f-claude` - A wrapper for Claude AI and send infos about m1f. So claude now
+  knows how to work with m1f
 - `m1f-help` - Show help for all commands
 
 ## Uninstall
@@ -4980,6 +5012,204 @@ else
     echo "Failed with exit code: $?"
 fi
 ```
+
+======= docs/01_m1f/05_getting_started.md ======
+# Getting Started with m1f
+
+This guide will walk you through installing m1f and creating your first bundles
+using a real-world example.
+
+## Installation (3 Simple Steps)
+
+### For Users
+
+```bash
+# Step 1: Clone the repository
+git clone https://github.com/franz-agency/m1f.git
+
+# Step 2: Navigate to the directory
+cd m1f
+
+# Step 3: Run the installer
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows (restart your shell after)
+```
+
+That's it! The installer automatically:
+
+- ✅ Checks for Python 3.10+
+- ✅ Creates a virtual environment
+- ✅ Installs all dependencies
+- ✅ Sets up global command aliases
+- ✅ Generates initial m1f bundles
+
+### For Developers
+
+If you want to contribute or modify m1f:
+
+```bash
+# Clone and enter directory
+git clone https://github.com/franz-agency/m1f.git
+cd m1f
+
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate it
+source .venv/bin/activate    # Linux/macOS
+.venv\Scripts\activate       # Windows
+
+# Install in development mode
+pip install -e .
+pip install -r requirements.txt
+```
+
+## Real Example: Bundling TailwindCSS Documentation
+
+Let's walk through a complete example of bundling the TailwindCSS documentation
+for use with AI assistants.
+
+### Step 1: Get the Repository
+
+```bash
+git clone https://github.com/tailwindlabs/tailwindcss.com
+cd tailwindcss.com
+```
+
+### Step 2: Initialize m1f
+
+```bash
+m1f-init
+```
+
+This command:
+
+- Scans the entire repository
+- Creates a `.m1f.config.yml` configuration file
+- Generates two default bundles in the `m1f/` directory:
+  - `tailwind_complete.txt` - All text files in the repository
+  - `tailwind_docs.txt` - Documentation files only
+
+### Step 3: Optional - Create Claude-Optimized Bundles
+
+```bash
+m1f-claude --setup
+```
+
+This creates additional bundles specifically optimized for Claude AI, with
+proper formatting and structure.
+
+### Using Your Bundles
+
+Now you can:
+
+1. **In Claude Desktop**: Reference files with `@m1f/tailwind_complete.txt`
+2. **Copy & Paste**: Open the bundle file and paste into any LLM
+3. **Check Token Count**: Run `m1f-token-counter m1f/tailwind_docs.txt`
+
+## Understanding m1f-init
+
+When you run `m1f-init` in any project directory:
+
+1. **Scans the repository** - Analyzes file types and structure
+2. **Creates `.m1f.config.yml`** - A configuration file with:
+   - Default bundle definitions
+   - Smart file patterns based on your project
+   - Sensible exclusions (node_modules, .git, etc.)
+3. **Generates bundles** - Creates initial bundles in the `m1f/` directory
+
+## Customizing Your Bundles
+
+After initialization, you can edit `.m1f.config.yml` to create custom bundles:
+
+```yaml
+bundles:
+  # Existing bundles...
+
+  # Add your custom bundle
+  api-docs:
+    description: "API documentation only"
+    patterns:
+      - "docs/api/**/*.md"
+      - "src/**/README.md"
+    exclude_patterns:
+      - "**/*test*"
+    output: "m1f/api_documentation.txt"
+```
+
+Then regenerate bundles:
+
+```bash
+m1f-update  # Updates all bundles
+# or
+m1f auto-bundle api-docs  # Update specific bundle
+```
+
+## Common Workflows
+
+### 1. Documentation Sites
+
+```bash
+# Clone documentation
+git clone https://github.com/vuejs/docs vuejs-docs
+cd vuejs-docs
+
+# Initialize and create bundles
+m1f-init
+
+# Feed to your AI
+#  m1f/vuejs-docs_complete.txt
+#  m1f/vuejs-docs_docs.txt
+```
+
+### 2. Your Own Projects
+
+```bash
+# In your project directory
+# This creates a .m1f.config.yml with default bundles
+m1f-init
+
+# Let claude check your project to create smaller bundles sorted by topics
+m1f-claude --setup
+
+# Edit .m1f.config.yml to customize
+# Then update bundles after code or config changes
+m1f-update
+```
+
+### 3. Web Documentation
+
+```bash
+# Scrape online docs
+m1f-scrape https://docs.python.org/3/ -o python-docs-html
+
+# Convert to markdown
+m1f-html2md convert python-docs-html -o python-docs-md
+
+# Bundle for AI
+cd python-docs-md
+m1f-init
+```
+
+## Next Steps
+
+- Learn about [configuration options](./25_m1f_config_examples.md)
+- Explore [preset systems](./10_m1f_presets.md) for specialized file handling
+- Set up [auto-bundling](./20_auto_bundle_guide.md) with git hooks
+- Read the [complete m1f documentation](./00_m1f.md)
+
+## Tips
+
+- **Start Simple**: Use `m1f-init` first, customize later
+- **Check Token Counts**: Always verify with `m1f-token-counter`
+- **Use Presets**: For WordPress, documentation sites, etc.
+- **Security**: m1f automatically scans for secrets before bundling
+
+## Getting Help
+
+- Run `m1f --help` for command options
+- Check [troubleshooting guide](./03_troubleshooting.md)
+- Visit [m1f.dev](https://m1f.dev) for updates
 
 ======= docs/01_m1f/10_m1f_presets.md ======
 # m1f Preset System Documentation
