@@ -67,6 +67,20 @@ function m1f-update {
     & python -m tools.m1f auto-bundle @args
 }
 
+# Initialize m1f for a project
+function m1f-init {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python "$M1F_ROOT/tools/m1f_init.py" @args
+}
+
+# Enhance Claude prompts with m1f knowledge
+function m1f-claude {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python "$M1F_ROOT/tools/m1f_claude.py" @args
+}
+
 # Link function - creates symlinks to m1f documentation
 function m1f-link {
     $docsSource = Join-Path $M1F_ROOT "m1f\m1f-docs.txt"
@@ -123,6 +137,8 @@ function m1f-help {
     Write-Host "  m1f-scrape        - Download websites for offline viewing" -ForegroundColor Green
     Write-Host "  m1f-token-counter - Count tokens in files" -ForegroundColor Green
     Write-Host "  m1f-update        - Update m1f bundle files" -ForegroundColor Green
+    Write-Host "  m1f-init          - Initialize m1f for your project" -ForegroundColor Green
+    Write-Host "  m1f-claude        - Advanced setup with topic-specific bundles" -ForegroundColor Green
     Write-Host "  m1f-link          - Link m1f documentation for AI tools" -ForegroundColor Green
     Write-Host "  m1f-help          - Show this help message" -ForegroundColor Green
     Write-Host ""

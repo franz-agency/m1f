@@ -249,8 +249,8 @@ $commands = @{
     "m1f-scrape.bat" = "m1f-scrape"
     "m1f-token-counter.bat" = "m1f-token-counter"
     "m1f-update.bat" = "m1f auto-bundle"
-    "m1f-init.bat" = "m1f-init"
-    "m1f-claude.bat" = "m1f-claude"
+    "m1f-init.bat" = "python `"%~dp0..\tools\m1f_init.py`" %*"
+    "m1f-claude.bat" = "python `"%~dp0..\tools\m1f_claude.py`" %*"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files

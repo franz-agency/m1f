@@ -1,357 +1,343 @@
 ======= README.md ======
 # m1f - Make One File 🚀
 
-**Feed your AI the whole story.**
+**Because your AI assistant deserves the full story, not just fragments.**
 
-## Quick Start
+## You know that moment when...
 
-### Installation
+...you're trying to get Claude, ChatGPT, or Gemini to help with your codebase,
+and you realize you'd need to upload 500+ files individually? Yeah, we've been
+there.
+
+Or when you're excited about Tailwind CSS 4, but your AI is stuck in 2024 and
+keeps suggesting v3 syntax? Frustrating, right?
+
+**That's why we built m1f.**
+
+## The Big Idea 💡
+
+m1f transforms your sprawling codebase into AI-ready context bundles. One
+command, and suddenly your entire project – thousands of files, millions of
+lines – becomes a single, perfectly formatted file that any AI can digest.
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/franz-agency/m1f.git
+# Turn this nightmare...
+src/
+├── components/     (247 files)
+├── utils/          (89 files)
+├── services/       (156 files)
+└── ... (and 2000 more)
 
-# 2. Change to the directory
-cd m1f
-
-# 3. Run the installer
-source ./scripts/install.sh    # Linux/macOS
-.\scripts\install.ps1          # Windows (restart shell after)
+# Into this dream:
+m1f/
+├── project_complete.txt    ← Your entire codebase
+├── project_docs.txt        ← Just the docs
+└── custom_bundles/         ← Whatever you need
 ```
 
-That's it! ✨ Now `m1f` and all tools are available globally.
+## Get Started in 30 Seconds
 
-## What is m1f?
-
-m1f (Make One File) bundles your entire codebase into a single file that you can
-feed to Claude AI, ChatGPT, Google Gemini, or any LLM. Think of it as a context
-maximizer - it takes hundreds of files from your project and intelligently
-combines them into one mega-file that fits perfectly in an AI's context window.
-
-## Your First Bundle - Real Example
-
-Let's bundle the TailwindCSS documentation to feed it to your AI:
+Works on Linux, macOS, and Windows. Because we don't discriminate.
 
 ```bash
-# 1. Clone any repository (e.g., TailwindCSS docs)
+# 1. Clone it
+git clone https://github.com/franz-agency/m1f.git
+cd m1f
+
+# 2. Install it
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows (restart your terminal)
+
+# 3. Use it
+cd /your/amazing/project
+m1f-init
+
+# 💥 Boom! Your AI just became a project expert.
+```
+
+## Why This Changes Everything
+
+### The Problem We All Face
+
+Modern software isn't just code anymore. It's:
+
+- 📁 Hundreds of source files across dozens of directories
+- 📚 Documentation scattered everywhere
+- ⚙️ Config files in every flavor (JSON, YAML, TOML, you name it)
+- 🔧 Build scripts, test files, deployment configs
+- 🎨 Assets, styles, templates
+
+**You can't just "upload a project" to AI.** Until now.
+
+### The m1f Solution
+
+We didn't just build a file concatenator. We built an intelligent context
+creator that:
+
+#### 🧠 Thinks Like a Developer
+
+- Respects your `.gitignore` (because `node_modules` shouldn't go to AI)
+- Deduplicates files automatically (why send the same content twice?)
+- Handles symlinks properly (no infinite loops here)
+- Detects secrets before they leak (your AWS keys are safe)
+
+#### 🚀 Works at Scale
+
+- Async everything (because waiting is so 2010)
+- Streaming processing (10GB repo? No problem)
+
+#### 🔒 Security First
+
+- Automatic secret scanning with
+  [`detect-secrets`](https://github.com/Yelp/detect-secrets)
+- No passwords, API keys, or tokens in your AI conversations
+- Path traversal protection (hackers hate this one trick)
+
+## Real Magic: Teaching AI New Tricks ✨
+
+Here's where it gets really cool. Your AI has a knowledge cutoff, but your
+projects don't wait. When Tailwind CSS 4 drops and Claude is still thinking v3,
+here's what you do:
+
+```bash
+# 1. Grab the latest docs
 git clone https://github.com/tailwindlabs/tailwindcss.com
 cd tailwindcss.com
 
-# 2. Initialize and scan the project
+# 2. Create AI brain food
 m1f-init
+# Creates: m1f/tailwind_complete.txt and m1f/tailwind_docs.txt
 
-# This creates in the m1f/ directory:
-# - tailwind_complete.txt (all text files)
-# - tailwind_docs.txt (documentation only)
-
-# 3. Optional: Create Claude-optimized topic bundles
+# 3. Get fancy with topic bundles (optional but awesome)
 m1f-claude --setup
+# AI analyzes and creates:
+# - m1f/tailwind_utilities.txt
+# - m1f/tailwind_components.txt
+# - m1f/tailwind_configuration.txt
+
+# 4. Link to your project
+cd ~/your-awesome-project
+ln -s ~/tailwindcss.com/m1f/tailwind_docs.txt m1f/
+
+# 5. Blow your AI's mind
+# "Hey @m1f/tailwind_docs.txt, show me how to use the new v4 grid system"
+# *AI proceeds to give you perfect v4 code*
 ```
 
-Now you can reference these files in Claude with `@m1f/tailwind_complete.txt`.
-Your AI just became an expert on the latest TailwindCSS! 🎉
+## The Complete Toolkit 🛠️
 
-> **🔐 Security Note**: m1f automatically scans for secrets (API keys,
-> passwords, tokens) using
-> [`detect-secrets`](https://github.com/Yelp/detect-secrets) to prevent
-> accidental exposure to LLMs. It'll warn you before bundling sensitive data!
+### m1f
 
-## The Tool Suite
-
-- **m1f** - Main bundler for creating context files
-- **m1f-init** - Quick project scanner and bundle creator
-- **m1f-claude** - AI assistant with codebase knowledge
-- **m1f-s1f** - Extract files back from bundles
-- **m1f-scrape** - Download websites for processing
-- **m1f-html2md** - Convert HTML to clean Markdown
-- **m1f-token-counter** - Check if bundles fit in context windows
-
-Want the full story? Check out `docs/` or hit up [m1f.dev](https://m1f.dev).
-
-## Key Features of m1f
-
-### 🎯 Dynamic & Always Fresh
-
-- **Auto-updating bundles** - Configure once, always current
-- **Dynamic paths** - Glob patterns, regex, whatever you need
-- **Smart file selection** - Include/exclude by extension, size, path patterns
-- **Watch mode** - Regenerate bundles on file changes
-- **Git hooks** - Auto-bundle on every commit
-
-### 🚀 Performance
-
-- **Async I/O** - Blazing fast concurrent file processing
-- **Smart deduplication** - Skip identical files automatically (SHA256)
-- **Streaming architecture** - Handle massive codebases without breaking a sweat
-
-### 🔒 Security First
-
-- **Secret detection** - Powered by Yelp's
-  [`detect-secrets`](https://github.com/Yelp/detect-secrets) - scans for API
-  keys, passwords, tokens before bundling
-- **Path traversal protection** - No sneaky directory escapes
-- **SSRF protection** - Safe web scraping by default
-- **robots.txt compliance** - Always respects crawl rules
-
-### 🤖 AI-Optimized
-
-- **Token counting** - Know before you paste
-- **Smart separators** - Choose between human-readable or machine-readable
-  formats
-- **Metadata preservation** - Keep file paths, timestamps, encodings
-- **Size filtering** - Skip those massive log files automatically
-
-## The Squad
-
-### 🎯 **m1f** - The Bundler
-
-Combines multiple files into a single, AI-friendly mega-file. Smart enough to
-deduplicate content, handle any encoding, and even scan for secrets. Because
-nobody wants their API keys in a ChatGPT conversation.
+The core bundler. Smart, fast, and secure.
 
 ```bash
-# Bundle your entire project (but smart about it)
-m1f -s ./your-project -o context.txt --preset presets/wordpress.m1f-presets.yml
+m1f -s ./src -o context.txt --preset code-review
 ```
 
-### ✂️ **m1f-s1f** - The Splitter
+### m1f-init
 
-Extracts files back from bundles. Perfect for when your AI assistant generates
-that perfect codebase and you need it back in actual files.
+One command to rule them all. Analyzes your project and creates instant bundles.
 
 ```bash
-# Unbundle that AI-generated masterpiece
-m1f-s1f -i bundle.txt -d ./extracted
+m1f-init  # That's it. Seriously.
 ```
 
-### 🌐 **m1f-scrape** - The Collector
+### m1f-claude
 
-Downloads entire websites for offline processing. Multiple backends for
-different scenarios - from simple HTML to JavaScript-heavy SPAs.
+The ultimate meta tool: Controls Claude Code headlessly and automatically
+includes m1f's complete documentation in every prompt. This means Claude knows
+ALL m1f parameters and features without you explaining anything.
 
 ```bash
-# Scrape documentation sites for offline reference
-m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-docs -v
+# Ask Claude to create custom bundles for you
+m1f-claude "Create bundles for my React project, separate frontend and backend"
+
+# Claude now operates m1f for you with full knowledge
+m1f-claude "Bundle only TypeScript files modified in the last week"
+
+# Advanced project setup with AI-organized topics
+m1f-claude --setup  # Claude analyzes your project and creates topic bundles
 ```
 
-### 📝 **m1f-html2md** - The Converter
+Since m1f-claude feeds the complete m1f documentation to Claude automatically,
+you can ask it to do anything m1f can do - it's like having an expert m1f user
+as your assistant.
 
-Transforms HTML into clean Markdown. Use AI to analyze structure and suggest
-optimal selectors, then convert with precision.
+### m1f-s1f (Split One File)
+
+When AI generates that perfect codebase and you need real files back.
 
 ```bash
-# AI-powered analysis to find best selectors
-m1f-html2md analyze ./html --claude
-
-# Convert using the suggested selectors
-m1f-html2md convert ./html -o ./markdown \
-  --content-selector "main, article" \
-  --ignore-selectors "nav, .sidebar"
+m1f-s1f -i ai-generated-magic.txt -d ./actual-files/
 ```
 
-### 🔢 **m1f-token-counter** - The Calculator
+### m1f-scrape
 
-Counts tokens before you hit those pesky context limits. Support for all major
-LLM encodings.
+Because not all docs live in git repos.
 
 ```bash
-# Will it fit?
-m1f-token-counter ./bundle.txt
+m1f-scrape https://shiny-new-framework.dev -o ./docs/
 ```
 
-## Real-World Magic
+### m1f-html2md
 
-### Feed Documentation to Your AI Assistant
+Turn that scraped HTML into beautiful Markdown.
 
 ```bash
-# React Documentation - From Git Repository
-git clone https://github.com/reactjs/react.dev
-cd react.dev && m1f-init
-
-# This creates two bundles:
-# - m1f/react_complete.txt (full codebase)
-# - m1f/react_docs.txt (docs only)
-
-# Or create custom bundles
-m1f -s ./src/content -o react-api-docs.txt \
-  --include-extensions .md .mdx \
-  --docs-only
+m1f-html2md convert ./scraped-docs -o ./markdown/
 ```
 
-### Smart WordPress Development
+### m1f-token-counter
+
+Know before you paste. Because context limits are real.
 
 ```bash
-# Bundle your theme with intelligent filtering
-m1f -s ./wp-content/themes/mytheme -o theme-context.txt \
-    --preset presets/wordpress.m1f-presets.yml
+m1f-token-counter bundle.txt
+# Output: 45,231 tokens (fits in Claude's 200k context!)
 ```
 
-### Auto-Bundle Your Project
+## Use Cases That'll Make You Smile 😊
+
+### 1. Code Review Prep
 
 ```bash
-# Set it and forget it
-m1f-update
-# Or watch for changes
-./scripts/watch_and_bundle.sh
+# Get changed files from git and bundle them
+git diff --name-only HEAD~10 | xargs m1f --input-files -o review.txt
+# Or use a code review preset if you have one
+m1f --preset presets/code-review.m1f-presets.yml
 ```
 
-## Why You'll Love It
-
-- **🧠 AI-First**: Built specifically for LLM context windows
-- **⚡ Fast AF**: Async I/O, parallel processing, the works
-- **🎨 Presets**: WordPress, web projects, documentation - we got you
-- **🔒 Security**: Automatic secret detection (because accidents happen)
-- **📦 All-in-One**: Download, convert, bundle, done
-
-## Developer Setup
-
-For contributors and advanced users:
+### 2. Documentation Deep Dive
 
 ```bash
-# Clone and set up development environment
-git clone https://github.com/franz-agency/m1f.git
-cd m1f
-
-# Create and activate virtual environment
-python3 -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-.venv\Scripts\activate     # Windows
-
-# Install in development mode
-pip install -e .
-pip install -r requirements.txt
+m1f --docs-only -o project-knowledge.txt
+# Pure documentation, no code noise
 ```
 
-## Configuration
+### 3. Architecture Overview
 
-After running `m1f-init`, you can customize `.m1f.config.yml`:
+```bash
+m1f --include "**/*.py" --include "**/README.md" \
+    --max-file-size 50kb -o architecture.txt
+# High-level view without implementation details
+```
+
+### 4. The "New Developer Onboarding" Special
+
+```bash
+m1f-init && m1f-claude --setup
+# Generate organized bundles for different aspects of your project
+# Share with new team members → instant project experts
+```
+
+## Smart Defaults Because We Get You
+
+Out of the box, m1f:
+
+- ✅ Ignores `node_modules/`, `vendor/`, `.git/`, and other noise
+- ✅ Skips binary files (unless you really want them)
+- ✅ Handles any text encoding (UTF-8, UTF-16, that weird Windows-1252 file
+  from 2003)
+- ✅ Respects `.gitignore` rules (that wasn't easy ;-)
+- ✅ Warns about potential secrets
+- ✅ Adds clear file separators
+
+## Configuration for Power Users
+
+After `m1f-init`, tweak `.m1f.config.yml` to your heart's content:
 
 ```yaml
 bundles:
-  docs:
-    description: "Project documentation"
+  frontend:
+    description: "React components and styles"
     patterns:
-      - "docs/**/*.md"
-      - "*.md"
-    output: "m1f/{project_name}_docs.txt"
+      - "src/components/**/*.{jsx,tsx}"
+      - "src/styles/**/*.css"
+    exclude_patterns:
+      - "**/*.test.js"
+    output: "m1f/frontend-brain.txt"
 
-  custom:
-    description: "My custom bundle"
+  api:
+    description: "Backend API logic"
     patterns:
-      - "src/**/*.js"
-      - "tests/**/*.test.js"
-    output: "m1f/custom_bundle.txt"
+      - "api/**/*.py"
+      - "!api/**/test_*.py" # Exclude tests
+    output: "m1f/api-brain.txt"
+
+  architecture:
+    description: "High-level project structure"
+    docs_only: true
+    max_file_size: 100kb
+    output: "m1f/architecture-overview.txt"
 ```
 
-## Documentation
+## Beyond AI: Surprise Use Cases 🎁
 
-- [Getting Started Guide](docs/01_m1f/05_getting_started.md) - Detailed first
-  steps
-- [m1f Documentation](docs/01_m1f/00_m1f.md) - Complete m1f reference
-- [Configuration Examples](docs/01_m1f/25_m1f_config_examples.md) - Bundle
-  configs
-- [All Documentation](docs/) - Full documentation suite
-
-## Pro Tips
-
-- Start small: Test with a few files before going wild
-- Use presets: They're there for a reason
-- Check token counts: Your LLM will thank you
-- Read the docs: Seriously, they're pretty good
-
-## Real Example: Scraping Claude Code Documentation 🤖
-
-Want to give Claude its own Claude Code documentation? Here's how to scrape and
-bundle the Anthropic docs:
-
-It's completely baffling to us that Claude Code doesn't have its own
-documentation internally and has to look up parameters and syntax online. But
-now there's help: scrape the documentation, convert it to markdown files, and
-feed it to Claude Code!
+### Universal File Normalizer
 
 ```bash
-# 1. Download Claude Code documentation (specific section only)
-m1f-scrape https://docs.anthropic.com/en/docs/claude-code -o ./claude-code-html
-
-# 2. Analyze HTML structure with AI to get optimal selectors
-# Note: m1f-html2md now auto-detects Claude installations (including ~/.claude/local/claude)
-m1f-html2md analyze ./claude-code-html --claude
-
-# 3. Convert to clean Markdown using the suggested selectors
-m1f-html2md convert ./claude-code-html -o ./claude-code-md \
-  --content-selector "main, article" \
-  --ignore-selectors "nav, .sidebar"
-
-# 4. Create the mega-bundle for Claude
-m1f -s ./claude-code-md -o claude-code-documentation.txt \
-  --remove-scraped-metadata
-
-# 5. Check if it fits (Claude can handle 200k tokens)
-m1f-token-counter ./claude-code-documentation.txt
+# Got files in 17 different encodings?
+m1f --normalize-to utf-8 --output clean-project.txt
+m1f-s1f -i clean-project.txt -d ./clean/
+# Boom. Everything is UTF-8 now.
 ```
 
-### The Result?
-
-Now you can literally tell Claude: "Hey, here's your Claude Code documentation"
-and paste the entire context. Perfect for:
-
-- Building Claude-powered tools with accurate API knowledge
-- Creating Claude Code integration guides
-- Having Claude help debug its own API calls
-- Getting Claude to write better prompts for itself (meta!)
-
-### Pro tip: Keep It Fresh 🌿
-
-Set up a weekly cron job to re-scrape and rebuild:
+### Time Capsule Creator
 
 ```bash
-# Add to your crontab
-0 0 * * 0 cd /path/to/m1f && ./scripts/scrape-claude-docs.sh
+m1f --add-timestamps -o "backup_$(date +%Y%m%d).txt"
+# Perfect snapshot of your project at this moment
 ```
 
-Where `scrape-claude-docs.sh` contains the full pipeline above.
-
-## Beyond AI: Other Cool Uses
-
-m1f isn't just for feeding LLMs. Here's what else you can do:
-
-### 📦 **Backup & Versioning**
-
-Bundle your project → timestamp it → instant versioned backups. Extract
-anywhere, anytime with m1f-s1f.
-
-### 🎨 **CSS/JS Bundler**
-
-Poor man's webpack? Bundle all your CSS and JS files into one. Perfect for
-simple projects that don't need the complexity of modern build tools.
-
-### 🔄 **Universal File Converter**
-
-Got mixed encodings? Latin-1, UTF-16, Windows-1252? m1f auto-detects and
-converts everything to UTF-8 (or whatever you want). One command, all files
-normalized.
-
-### 🚚 **Project Migration**
-
-Bundle on machine A → transfer one file → extract on machine B. All paths and
-metadata preserved. Like tar, but readable as text file.
+### The "Poor Developer's Docker"
 
 ```bash
-# Example: Full project backup with timestamp
-m1f -s . -o backup_$(date +%Y%m%d_%H%M%S).txt --add-timestamp
-
-# Extract it anywhere
-m1f-s1f -i backup_20250115_143022.txt -d ./restored_project
+# Bundle on machine A
+m1f -o myproject.txt
+# Transfer one file
+scp myproject.txt user@machine-b:
+# Extract on machine B
+m1f-s1f -i myproject.txt -d ./project/
+# Entire project structure preserved!
 ```
+
+## Pro Tips from the Trenches 🏆
+
+1. **Start with `m1f-init`** - It's smarter than you think
+2. **Use presets** - We've included configs for WordPress, Django, React, and
+   more
+3. **Chain tools** - `m1f-scrape` → `m1f-html2md` → `m1f` = Documentation power
+   combo
+4. **Set up watches** - `./scripts/watch_and_bundle.sh` for auto-updates
+5. **Check token counts** - Always know what you're pasting
+
+## Join the Revolution
+
+We're building the future of AI-assisted development. Want to help?
+
+- 🐛 [Report bugs](https://github.com/franz-agency/m1f/issues)
+- 💡 [Suggest features](https://github.com/franz-agency/m1f/discussions)
+- 🔧 [Contribute code](https://github.com/franz-agency/m1f/pulls)
+- ⭐ [Star us on GitHub](https://github.com/franz-agency/m1f) (it makes us
+  happy)
+
+## Requirements
+
+- Python 3.10+ (because we use the cool new features)
+- A desire to feed your AI more context
+- That's it. Really.
 
 ## License
 
-Apache 2.0 - Go wild, just don't blame us.
+Apache 2.0 - Use it, love it, build amazing things with it.
 
 ---
 
-Built with ❤️ by [Franz Agency](https://franz.agency) for developers who talk to
-robots.
+**Built with ❤️ by [franz.agency](https://franz.agency) - Where no AI has coded
+before™**
+
+_P.S. If you're reading this, you're probably the kind of developer who reads
+documentation. We like you already._
 
 ======= requirements.txt ======
 # Core dependencies
@@ -471,7 +457,7 @@ zope.interface==7.2
 Welcome to the m1f project documentation. This directory contains comprehensive
 guides, references, and examples for all tools in the m1f toolkit.
 
-**Current Version: 3.6.0** | [Changelog](99_CHANGELOG.md)
+**Current Version: 3.7.0** | [Changelog](99_CHANGELOG.md)
 
 ## Table of Contents
 
@@ -2042,8 +2028,8 @@ $commands = @{
     "m1f-scrape.bat" = "m1f-scrape"
     "m1f-token-counter.bat" = "m1f-token-counter"
     "m1f-update.bat" = "m1f auto-bundle"
-    "m1f-init.bat" = "m1f-init"
-    "m1f-claude.bat" = "m1f-claude"
+    "m1f-init.bat" = "python `"%~dp0..\tools\m1f_init.py`" %*"
+    "m1f-claude.bat" = "python `"%~dp0..\tools\m1f_claude.py`" %*"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files
@@ -2452,6 +2438,20 @@ function m1f-update {
     & python -m tools.m1f auto-bundle @args
 }
 
+# Initialize m1f for a project
+function m1f-init {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python "$M1F_ROOT/tools/m1f_init.py" @args
+}
+
+# Enhance Claude prompts with m1f knowledge
+function m1f-claude {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python "$M1F_ROOT/tools/m1f_claude.py" @args
+}
+
 # Link function - creates symlinks to m1f documentation
 function m1f-link {
     $docsSource = Join-Path $M1F_ROOT "m1f\m1f-docs.txt"
@@ -2508,6 +2508,8 @@ function m1f-help {
     Write-Host "  m1f-scrape        - Download websites for offline viewing" -ForegroundColor Green
     Write-Host "  m1f-token-counter - Count tokens in files" -ForegroundColor Green
     Write-Host "  m1f-update        - Update m1f bundle files" -ForegroundColor Green
+    Write-Host "  m1f-init          - Initialize m1f for your project" -ForegroundColor Green
+    Write-Host "  m1f-claude        - Advanced setup with topic-specific bundles" -ForegroundColor Green
     Write-Host "  m1f-link          - Link m1f documentation for AI tools" -ForegroundColor Green
     Write-Host "  m1f-help          - Show this help message" -ForegroundColor Green
     Write-Host ""
@@ -3894,7 +3896,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.6.0"
+__version__ = "3.7.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -6454,6 +6456,20 @@ if __name__ == "__main__":
     main()
 
 ======= tools/m1f_claude_runner.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Claude runner with streaming output and timeout handling for m1f-claude.
 Based on improvements from html2md tool.
@@ -9861,6 +9877,20 @@ def convert_html(html_content: str, **kwargs) -> str:
     return converter.convert_html(html_content)
 
 ======= tools/html2md_tool/claude_runner.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Claude runner with reliable subprocess execution and streaming support.
 """
@@ -10201,6 +10231,20 @@ class ClaudeRunner:
         return results
 
 ======= tools/html2md_tool/claude_runner_simple.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Simplified Claude runner for debugging.
 """
@@ -11809,6 +11853,20 @@ if __name__ == "__main__":
     main()
 
 ======= tools/html2md_tool/cli_claude.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Improved Claude analysis functions for HTML to Markdown converter."""
 
 import os
@@ -12275,6 +12333,20 @@ def handle_claude_analysis_improved(
     console.print("\n✅ Analysis complete!", style="green bold")
 
 ======= tools/html2md_tool/convert_claude.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Improved Claude conversion functions for HTML to Markdown converter."""
 
 import os
