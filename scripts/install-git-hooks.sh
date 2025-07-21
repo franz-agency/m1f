@@ -1,4 +1,4 @@
-#!/bin/bash
+da#!/bin/bash
 # Install m1f Git Hooks
 # This script installs the m1f git hooks into your project
 
@@ -21,7 +21,7 @@ else
     # Script is being run locally
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     HOOKS_DIR="$SCRIPT_DIR/hooks"
-    USE_REMOTE=false
+    USE_REMOTE=falseHOOK_URL="https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/hooks/pre-commit"
 fi
 
 # Check if we're in a git repository

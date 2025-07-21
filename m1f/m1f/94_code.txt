@@ -1216,79 +1216,207 @@ if __name__ == "__main__":
 #!/usr/bin/env python3
 """
 Helper script to extract watcher ignore paths from .m1f.config.yml
+
+This script provides ignore patterns in different formats for file watchers:
+- Standard format: One pattern per line
+- --regex: POSIX regex for grep
+- --fswatch: Exclude arguments for fswatch (macOS)
+- --inotify: Pattern for inotifywait (Linux)
 """
 import os
 import sys
-import yaml
+import fnmatch
+import re
 from pathlib import Path
+
+# Default ignore patterns if no config is found
+DEFAULT_PATTERNS = [
+    ".m1f/",
+    ".git/",
+    ".venv/",
+    "__pycache__/",
+    "*.pyc",
+    "*.pyo",
+    "*.pyd",
+    ".DS_Store",
+    "*.log",
+    "tmp/",
+    "temp/",
+]
+
+
+def load_gitignore_patterns(project_root):
+    """Load patterns from .gitignore and .m1fignore files"""
+    patterns = []
+
+    for ignore_file in [".gitignore", ".m1fignore"]:
+        ignore_path = project_root / ignore_file
+        if ignore_path.exists():
+            try:
+                with open(ignore_path, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        # Skip comments and empty lines
+                        if line and not line.startswith("#"):
+                            patterns.append(line)
+            except Exception:
+                pass
+
+    return patterns
+
+
+def glob_to_regex(pattern):
+    """Convert glob pattern to regex, handling common cases"""
+    # Handle directory patterns
+    if pattern.endswith("/"):
+        pattern = pattern[:-1] + "/**"
+
+    # Convert glob to regex
+    regex = fnmatch.translate(pattern)
+
+    # Handle ** for recursive matching
+    regex = regex.replace(".*/", "(.*/)?")
+
+    # Remove the \Z that fnmatch adds
+    if regex.endswith("\\Z"):
+        regex = regex[:-2]
+
+    return regex
 
 
 def get_ignore_patterns():
-    """Get combined ignore patterns from config"""
-    config_path = Path(__file__).parent.parent / ".m1f.config.yml"
+    """Get combined ignore patterns from config and ignore files"""
+    project_root = Path(__file__).parent.parent
+    config_path = project_root / ".m1f.config.yml"
 
-    if not config_path.exists():
-        # Return default patterns if no config
-        return [".m1f/", ".git/", ".venv/", "__pycache__/", "*.pyc"]
+    patterns = []
 
-    try:
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
+    # Try to load from config
+    if config_path.exists():
+        try:
+            import yaml
 
-        ignore_patterns = []
+            with open(config_path, "r") as f:
+                config = yaml.safe_load(f)
 
-        # Get watcher ignored paths
-        watcher_config = config.get("global", {}).get("watcher", {})
-        ignored_paths = watcher_config.get("ignored_paths", [])
-        ignore_patterns.extend(ignored_paths)
+            # Get global excludes
+            global_excludes = config.get("global", {}).get("global_excludes", [])
+            patterns.extend(global_excludes)
 
-        # Add global excludes
-        global_excludes = config.get("global", {}).get("global_excludes", [])
-        for pattern in global_excludes:
-            # Convert glob patterns to simpler forms for the watcher
-            if pattern.startswith("**/"):
-                # Remove leading **/ for watcher compatibility
-                ignore_patterns.append(pattern[3:])
-            else:
-                ignore_patterns.append(pattern)
+            # Get watcher-specific patterns (if they exist)
+            watcher_config = config.get("global", {}).get("watcher", {})
+            ignored_paths = watcher_config.get("ignored_paths", [])
+            patterns.extend(ignored_paths)
 
-        # Remove duplicates while preserving order
-        seen = set()
-        unique_patterns = []
-        for pattern in ignore_patterns:
-            if pattern not in seen:
-                seen.add(pattern)
-                unique_patterns.append(pattern)
+        except Exception as e:
+            # Fall back to defaults if config loading fails
+            sys.stderr.write(f"Warning: Could not load config: {e}\n")
+            patterns = DEFAULT_PATTERNS.copy()
+    else:
+        patterns = DEFAULT_PATTERNS.copy()
 
-        return unique_patterns
+    # Add patterns from .gitignore and .m1fignore
+    gitignore_patterns = load_gitignore_patterns(project_root)
+    patterns.extend(gitignore_patterns)
 
-    except Exception as e:
-        # Return default patterns on error
-        return [".m1f/", ".git/", ".venv/", "__pycache__/", "*.pyc"]
+    # Normalize patterns
+    normalized = []
+    for pattern in patterns:
+        # Remove leading **/ for better compatibility
+        if pattern.startswith("**/"):
+            normalized.append(pattern[3:])
+        else:
+            normalized.append(pattern)
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_patterns = []
+    for pattern in normalized:
+        if pattern not in seen:
+            seen.add(pattern)
+            unique_patterns.append(pattern)
+
+    return unique_patterns
 
 
-if __name__ == "__main__":
+def patterns_to_regex(patterns):
+    """Convert patterns to a single regex for grep/inotify"""
+    regex_parts = []
+    for pattern in patterns:
+        try:
+            regex = glob_to_regex(pattern)
+            regex_parts.append(regex)
+        except Exception:
+            # If conversion fails, try simple escaping
+            escaped = re.escape(pattern).replace(r"\*", ".*")
+            regex_parts.append(escaped)
+
+    return "(" + "|".join(regex_parts) + ")"
+
+
+def patterns_to_fswatch(patterns):
+    """Convert patterns to fswatch exclude arguments"""
+    excludes = []
+    for pattern in patterns:
+        # fswatch uses ERE (Extended Regular Expression)
+        if "*" in pattern or "?" in pattern or "[" in pattern:
+            # Convert glob to regex for fswatch
+            try:
+                regex = glob_to_regex(pattern)
+                excludes.append(f"--exclude '{regex}'")
+            except Exception:
+                # Fallback to simple pattern
+                excludes.append(f"--exclude '{pattern}'")
+        else:
+            # Plain string patterns
+            excludes.append(f"--exclude '{pattern}'")
+
+    return " ".join(excludes)
+
+
+def main():
+    """Main entry point"""
     patterns = get_ignore_patterns()
 
+    if not patterns:
+        patterns = DEFAULT_PATTERNS
+
     # Output format depends on argument
-    if len(sys.argv) > 1 and sys.argv[1] == "--regex":
-        # Output as regex pattern for grep
-        escaped = [p.replace(".", r"\.").replace("*", ".*") for p in patterns]
-        print("(" + "|".join(escaped) + ")")
-    elif len(sys.argv) > 1 and sys.argv[1] == "--fswatch":
-        # Output as fswatch exclude arguments
-        for pattern in patterns:
-            print(f"--exclude '{pattern}'")
-    elif len(sys.argv) > 1 and sys.argv[1] == "--inotify":
-        # Output as inotify exclude pattern
-        print("(" + "|".join(patterns) + ")")
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--regex":
+            # Output as regex pattern for grep
+            print(patterns_to_regex(patterns))
+        elif sys.argv[1] == "--fswatch":
+            # Output as fswatch exclude arguments
+            print(patterns_to_fswatch(patterns))
+        elif sys.argv[1] == "--inotify":
+            # Output as inotify exclude pattern (similar to regex)
+            print(patterns_to_regex(patterns))
+        elif sys.argv[1] == "--debug":
+            # Debug mode: show all patterns with their sources
+            print("# Ignore patterns for file watchers")
+            print("# Total patterns:", len(patterns))
+            print()
+            for pattern in patterns:
+                print(pattern)
+        else:
+            # Unknown argument, show usage
+            print(
+                "Usage: get_watcher_ignores.py [--regex|--fswatch|--inotify|--debug]",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     else:
         # Default: one pattern per line
         for pattern in patterns:
             print(pattern)
 
+
+if __name__ == "__main__":
+    main()
+
 ======= scripts/install-git-hooks.sh ======
-#!/bin/bash
+da#!/bin/bash
 # Install m1f Git Hooks
 # This script installs the m1f git hooks into your project
 
@@ -1311,7 +1439,7 @@ else
     # Script is being run locally
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     HOOKS_DIR="$SCRIPT_DIR/hooks"
-    USE_REMOTE=false
+    USE_REMOTE=falseHOOK_URL="https://raw.githubusercontent.com/franzundfranz/m1f/main/scripts/hooks/pre-commit"
 fi
 
 # Check if we're in a git repository
