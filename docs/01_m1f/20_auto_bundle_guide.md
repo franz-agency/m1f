@@ -161,18 +161,28 @@ Set up a cron job for automatic updates:
 0 2 * * * /usr/local/bin/update-all-bundles.sh
 ```
 
-### Centralized Bundle Storage
+### Organized Bundle Output
 
-Configure bundles to output to a central location:
+Keep bundles organized within your project:
 
 ```yaml
 bundles:
   project-bundle:
-    description: "Project bundle for central storage"
-    output: "/var/m1f-bundles/myproject/latest.txt"
+    description: "Main project bundle"
+    output: "bundles/latest/project.txt" # Relative to project root
+    sources:
+      - path: "src"
+
+  archived-bundle:
+    description: "Archived version with timestamp"
+    output: "bundles/archive/project-{timestamp}.txt"
+    add_timestamp: true
     sources:
       - path: "."
 ```
+
+**Note**: For security reasons, m1f only allows output paths within the project
+directory. Use relative paths for portability.
 
 ## Advanced Features
 

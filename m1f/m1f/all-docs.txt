@@ -6221,12 +6221,11 @@ globals:
 
 ### Group-Level Settings
 
-| Setting             | Type    | Default | Description                     |
-| ------------------- | ------- | ------- | ------------------------------- |
-| `description`       | string  | none    | Human-readable description      |
-| `enabled`           | boolean | true    | Enable/disable this group       |
-| `priority`          | integer | 0       | Processing order (higher first) |
-| `enabled_if_exists` | string  | none    | Only enable if this path exists |
+| Setting       | Type    | Default | Description                     |
+| ------------- | ------- | ------- | ------------------------------- |
+| `description` | string  | none    | Human-readable description      |
+| `enabled`     | boolean | true    | Enable/disable this group       |
+| `priority`    | integer | 0       | Processing order (higher first) |
 
 ### Global Settings (NEW in v3.2.0)
 
@@ -6484,16 +6483,21 @@ Understanding where settings can be applied:
 
 ## Advanced Features
 
-### Conditional Presets
+### Conditional Enabling
+
+To conditionally enable/disable preset groups:
 
 ```yaml
 production:
-  enabled_if_exists: ".env.production" # Only active in production
+  enabled: false # Manually disable this group
   presets:
     minify_all:
       extensions: [".js", ".css", ".html"]
-      actions: ["minify", "strip_comments"]
+      actions: ["minify"]
 ```
+
+**Note**: The `enabled_if_exists` feature is only available in auto-bundle
+configurations (`.m1f.config.yml`), not in preset files.
 
 ### Multiple Preset Files
 
@@ -6880,18 +6884,28 @@ Set up a cron job for automatic updates:
 0 2 * * * /usr/local/bin/update-all-bundles.sh
 ```
 
-### Centralized Bundle Storage
+### Organized Bundle Output
 
-Configure bundles to output to a central location:
+Keep bundles organized within your project:
 
 ```yaml
 bundles:
   project-bundle:
-    description: "Project bundle for central storage"
-    output: "/var/m1f-bundles/myproject/latest.txt"
+    description: "Main project bundle"
+    output: "bundles/latest/project.txt" # Relative to project root
+    sources:
+      - path: "src"
+
+  archived-bundle:
+    description: "Archived version with timestamp"
+    output: "bundles/archive/project-{timestamp}.txt"
+    add_timestamp: true
     sources:
       - path: "."
 ```
+
+**Note**: For security reasons, m1f only allows output paths within the project
+directory. Use relative paths for portability.
 
 ## Advanced Features
 
@@ -9182,7 +9196,7 @@ Claude, I need different bundles for dev/staging/prod.
 Using m1f v3.2's preset system:
 
 1. Create environment-specific presets
-2. Use conditional presets (enabled_if_exists)
+2. Use enabled flag for environment control
 3. Set different security levels per environment
 4. Configure appropriate output formats
 

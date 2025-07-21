@@ -119,12 +119,11 @@ globals:
 
 ### Group-Level Settings
 
-| Setting             | Type    | Default | Description                     |
-| ------------------- | ------- | ------- | ------------------------------- |
-| `description`       | string  | none    | Human-readable description      |
-| `enabled`           | boolean | true    | Enable/disable this group       |
-| `priority`          | integer | 0       | Processing order (higher first) |
-| `enabled_if_exists` | string  | none    | Only enable if this path exists |
+| Setting       | Type    | Default | Description                     |
+| ------------- | ------- | ------- | ------------------------------- |
+| `description` | string  | none    | Human-readable description      |
+| `enabled`     | boolean | true    | Enable/disable this group       |
+| `priority`    | integer | 0       | Processing order (higher first) |
 
 ### Global Settings (NEW in v3.2.0)
 
@@ -382,16 +381,21 @@ Understanding where settings can be applied:
 
 ## Advanced Features
 
-### Conditional Presets
+### Conditional Enabling
+
+To conditionally enable/disable preset groups:
 
 ```yaml
 production:
-  enabled_if_exists: ".env.production" # Only active in production
+  enabled: false # Manually disable this group
   presets:
     minify_all:
       extensions: [".js", ".css", ".html"]
-      actions: ["minify", "strip_comments"]
+      actions: ["minify"]
 ```
+
+**Note**: The `enabled_if_exists` feature is only available in auto-bundle
+configurations (`.m1f.config.yml`), not in preset files.
 
 ### Multiple Preset Files
 
