@@ -3202,13 +3202,6 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
 
-======= examples/wp-cli.example.yml ======
-# Example configuration for WP-CLI
-# Copy to `wp-cli.yml` and adjust the settings for your environment.
-path: /var/www/html
-url: https://example.com
-user: admin
-
 ======= m1f/project_analysis.log ======
 2025-07-05 16:31:05,072 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f
 2025-07-05 16:31:05,072 - tools.m1f.core - INFO    : Separator style: Detailed
@@ -3456,9 +3449,7 @@ code_review:
   priority: 20
   
   global_settings:
-    encoding: "utf-8"
-    separator_style: "MachineReadable"  # Best for AI parsing
-    security_check: "warn"  # Warn but don't stop
+    # encoding, separator_style, and security_check all use defaults
     
     # Exclude only AI-context specific files (most are already excluded by default)
     exclude_patterns:
@@ -3471,20 +3462,16 @@ code_review:
     extensions:
       .py:
         actions:
-          - strip_comments  # Remove comments but keep docstrings
-          - remove_empty_lines
+          - remove_empty_lines  # Keep comments for context
       .js:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines  # Keep comments for context
       .tsx:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines  # Keep comments for context
       .jsx:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines  # Keep comments for context
   
   presets:
     # Source code
@@ -3497,8 +3484,7 @@ code_review:
         - "**/*.test.*"
         - "**/*.spec.*"
         - "**/__tests__/**"
-      separator_style: "MachineReadable"
-      include_metadata: true
+      # separator_style defaults to "Standard" which is best
     
     # Configuration and setup
     config:
@@ -3513,7 +3499,6 @@ code_review:
         - "Makefile"
         - "docker-compose*.yml"
       actions: []  # Keep configs as-is
-      include_metadata: true
     
     # Documentation
     docs:
@@ -3525,18 +3510,17 @@ code_review:
         - join_paragraphs  # Compress for AI
         - remove_empty_lines
       max_lines: 500  # Limit doc length
-      # To include all documentation, use docs_only: true in global_settings instead
+      # To include all 62 documentation extensions, use docs_only: true in global_settings
     
-    # Tests - just structure
+    # Tests - include for full context
     tests:
       patterns:
         - "**/*.test.*"
         - "**/*.spec.*"
         - "**/test_*.py"
       actions:
-        - custom
-      custom_processor: "extract_functions"
-      max_lines: 50
+        - remove_empty_lines
+      max_lines: 200  # Include more test context
 
 # For documentation chat
 docs_chat:
@@ -3545,11 +3529,11 @@ docs_chat:
   priority: 15
   
   global_settings:
-    encoding: "utf-8"
+    # encoding uses default
     separator_style: "Markdown"  # Better for chat context
     security_check: null  # No secrets in docs
     remove_scraped_metadata: true
-    docs_only: true  # Use --docs-only to include all 62 documentation extensions
+    docs_only: true  # Use built-in docs_only feature - includes all 62 documentation extensions
     
     exclude_patterns:
       - "_build/**"
@@ -3567,7 +3551,7 @@ docs_chat:
         - join_paragraphs
         - remove_empty_lines
       max_file_size: "1MB"
-      separator_style: "Markdown"
+      separator_style: "Markdown"  # Keep for markdown display
     
     # Code examples in docs
     examples:
@@ -3575,8 +3559,7 @@ docs_chat:
         - "**/examples/**/*"
         - "**/snippets/**/*"
       actions:
-        - strip_comments
-        - compress_whitespace
+        - remove_empty_lines  # Keep comments for context
       max_lines: 100
     
     # API reference
@@ -3585,7 +3568,7 @@ docs_chat:
         - "**/api/**/*.md"
         - "**/reference/**/*.md"
       actions:
-        - compress_whitespace
+        - remove_empty_lines
       max_file_size: "2MB"
 
 # For debugging and problem-solving
@@ -3595,9 +3578,8 @@ debug_context:
   priority: 30
   
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Detailed"  # Maximum detail
-    security_check: "warn"
+    # encoding and separator_style use defaults (Standard is better for AI)
+    # security_check defaults to "warn"
     
     # Include more for debugging
     include_dot_paths: true  # Include .env, .config, etc
@@ -3614,8 +3596,7 @@ debug_context:
       patterns:
         - "**/*"
       actions: []  # No processing - keep original
-      include_metadata: true
-      separator_style: "Detailed"
+      # separator_style defaults to "Standard"
     
     # Logs and debug output
     logs:
@@ -3637,19 +3618,18 @@ debug_context:
 
 ======= presets/docs-bundle.m1f-presets.yml ======
 # Documentation bundle preset group
-# Use --docs-only parameter to include all 62 documentation extensions automatically
+# Uses built-in docs_only feature to include all 62 documentation extensions automatically
 # Claude prefers valid markdown. However, there are LLMs that only read the first 200 lines of a file and then
 # decide whether to continue. This means you need to fit a lot of information into those first 200 lines.
 docs_bundle:
   name: "Documentation Bundle"
-  description: "Includes all documentation files using --docs-only filter and optimizes for LLM processing"
+  description: "Includes all documentation files using built-in docs_only filter and optimizes for LLM processing"
   priority: 10
   enabled: true
   
   # Global settings for documentation bundles
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # encoding and separator_style use defaults (best for AI)
     security_check: null  # Docs rarely have secrets
     remove_scraped_metadata: true  # Clean up scraped docs
     docs_only: true  # Include all 62 documentation extensions
@@ -3669,7 +3649,7 @@ docs_bundle:
       actions:
         - "join_paragraphs"  # Compress paragraphs to single lines
         - "remove_empty_lines"
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
       max_file_size: "2MB"
 
 ======= presets/documentation.m1f-presets.yml ======
@@ -3683,9 +3663,12 @@ documentation:
   
   # Global settings for documentation projects
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # separator_style defaults to "Standard" (best for AI)
+    # encoding defaults to "utf-8"
     security_check: null  # Documentation rarely has secrets
+    
+    # Use built-in docs_only feature - includes all 62 documentation extensions
+    docs_only: true
     
     # Documentation-specific excludes (only what's not already excluded by default)
     exclude_patterns:
@@ -3694,13 +3677,12 @@ documentation:
       - "htmlcov/**"
       - "site/**"  # MkDocs build output
       - "public/**"  # Hugo/Jekyll output
-      - "*.pyc"
     
     # Allow larger documentation files
     max_file_size: "5MB"
     
-    # Keep all metadata by default
-    remove_scraped_metadata: false
+    # Clean scraped metadata from HTML2MD files
+    remove_scraped_metadata: true
   
   presets:
     # Markdown files - main content
@@ -3708,15 +3690,14 @@ documentation:
       extensions: [".md", ".mdx", ".markdown"]
       actions:
         - remove_empty_lines
-      separator_style: "Standard"
-      include_metadata: true
+      # separator_style defaults to "Standard"
     
     # reStructuredText
     rst:
       extensions: [".rst", ".rest"]
       actions:
         - remove_empty_lines
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
     
     # Code examples in docs
     code_examples:
@@ -3724,12 +3705,10 @@ documentation:
         - "examples/**/*"
         - "snippets/**/*"
         - "code/**/*"
-      actions:
-        - strip_comments
-        - compress_whitespace
+      actions: []  # Keep code examples as-is
       # Keep examples concise but useful
       max_lines: 100  # Show more of examples
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
       max_file_size: "200KB"
     
     # API documentation
@@ -3740,8 +3719,8 @@ documentation:
         - "openapi*.yml"
         - "swagger*.json"
       actions:
-        - compress_whitespace
-      separator_style: "Standard"
+        - remove_empty_lines
+      # separator_style defaults to "Standard"
       max_file_size: "1MB"  # API docs can be large
     
     # Jupyter notebooks
@@ -3750,7 +3729,7 @@ documentation:
       actions:
         - custom
       custom_processor: "extract_markdown_cells"
-      separator_style: "Markdown"
+      separator_style: "Markdown"  # Override for notebooks
     
     # HTML documentation
     html_docs:
@@ -3781,8 +3760,7 @@ documentation:
         - "assets/**/*.svg"
         - "_static/**/*.svg"
       actions:
-        - compress_whitespace
-      include_metadata: true
+        - minify  # SVGs can be minified
       max_file_size: "200KB"  # SVGs can be larger in docs
     
     # Configuration files
@@ -3794,12 +3772,10 @@ documentation:
         - "_config.yml"  # Jekyll
         - "book.toml"  # mdBook
       actions: []
-      include_metadata: true
     
     default:
       actions: []
-      include_metadata: true
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
 
 # Technical writing specific
 technical_writing:
@@ -3808,8 +3784,7 @@ technical_writing:
   priority: 15
   
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # encoding and separator_style use defaults
     max_file_size: "10MB"  # LaTeX files can be large
   
   presets:
@@ -3818,26 +3793,23 @@ technical_writing:
       extensions: [".adoc", ".asciidoc", ".asc"]
       actions:
         - remove_empty_lines
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
     
     # LaTeX documents
     latex:
       extensions: [".tex", ".latex"]
       actions:
-        - strip_comments
-        - compress_whitespace
-      separator_style: "Standard"
+        - remove_empty_lines  # Keep LaTeX readable
+      # separator_style defaults to "Standard"
     
     # Diagrams as code
     diagrams:
       extensions: [".puml", ".plantuml", ".mermaid", ".dot"]
-      actions:
-        - strip_comments
-      separator_style: "Standard"
+      actions: []  # Keep diagram source as-is
+      # separator_style defaults to "Standard"
       
     default:
       actions: []
-      include_metadata: true
 
 ======= presets/example-globals.m1f-presets.yml ======
 # Example preset with global settings
@@ -3850,9 +3822,7 @@ web_project:
   # Global settings that apply to all files
   global_settings:
     # General settings
-    encoding: "utf-8"
-    separator_style: "Detailed"
-    line_ending: "lf"
+    # encoding, separator_style, and line_ending use defaults
     
     # Global exclude patterns - prefer minified versions
     exclude_patterns:
@@ -3863,9 +3833,9 @@ web_project:
       - ".cache"
     
     # File filtering options
-    include_dot_paths: false        # Include hidden files/directories
-    include_binary_files: false     # Include binary files
-    include_symlinks: false         # Follow symbolic links
+    # include_dot_paths defaults to false
+    # include_binary_files defaults to false
+    # include_symlinks defaults to false
     max_file_size: "10MB"          # Skip files larger than this
     # Use multiple exclude files - they are merged
     exclude_paths_file:
@@ -3898,14 +3868,12 @@ web_project:
       # All CSS files get minified by default
       .css:
         actions:
-          - minify
-          - strip_comments
+          - minify  # Only minify CSS
       
       # All JS files get comments stripped by default
       .js:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines  # Keep JS comments
   
   presets:
     # Documentation HTML - override global settings
@@ -3916,7 +3884,7 @@ web_project:
       # Override global - don't strip any tags from docs
       strip_tags: []
       actions:
-        - compress_whitespace  # Only compress, no tag stripping
+        - remove_empty_lines  # Only remove empty lines, no tag stripping
     
     # Main site HTML - use global defaults
     site:
@@ -3950,14 +3918,13 @@ m1f_project:
   priority: 20  # Higher priority than web_project
   
   global_settings:
-    # Override encoding for this project
-    encoding: "utf-8"
+    # Use default encoding
     
     extensions:
       .html:
         # For m1f project, don't strip tags from HTML
         actions:
-          - compress_whitespace
+          - remove_empty_lines
   
   presets:
     # Test HTML files need full content
@@ -3970,7 +3937,7 @@ m1f_project:
     examples:
       patterns:
         - "examples/**/*.html"
-      # Uses global (only compress_whitespace)
+      # Uses global settings
 
 ======= presets/example-use-cases.m1f-presets.yml ======
 # Example Use Cases for m1f Presets
@@ -4030,12 +3997,12 @@ size_limits_per_type:
         actions: [minify]       # Also minify them
       .js:
         max_file_size: "100KB"  # 100KB limit for JS
-        actions: [strip_comments, compress_whitespace]
+        actions: [remove_empty_lines]  # Keep comments for context
       
       # More lenient for backend code
       .php:
         max_file_size: "5MB"    # Allow larger PHP files
-        actions: [strip_comments]
+        actions: [remove_empty_lines]  # Keep comments
       .py:
         max_file_size: "2MB"    # Python files up to 2MB
       
@@ -4059,9 +4026,8 @@ web_project_complete:
   
   global_settings:
     # General settings
-    encoding: "utf-8"
-    separator_style: "Detailed"
-    security_check: "warn"  # Default: warn
+    # encoding and separator_style use defaults
+    # security_check defaults to "warn"
     max_file_size: "2MB"    # Default: 2MB
     
     # Global excludes - only patterns not already excluded by default
@@ -4082,7 +4048,7 @@ web_project_complete:
       .css:
         max_file_size: "50KB"
         security_check: "skip"
-        actions: [minify, strip_comments]
+        actions: [minify]  # Only minify CSS
       .min.css:  # Minified CSS - no further processing
         max_file_size: "50KB"
         security_check: "skip"
@@ -4090,7 +4056,7 @@ web_project_complete:
       .js:
         max_file_size: "100KB"
         security_check: "warn"
-        actions: [strip_comments, compress_whitespace]
+        actions: [remove_empty_lines]  # Keep comments for context
       .min.js:  # Minified JS - no further processing
         max_file_size: "100KB"
         security_check: "warn"
@@ -4100,7 +4066,7 @@ web_project_complete:
       .php:
         max_file_size: "5MB"
         security_check: "abort"
-        actions: [strip_comments, remove_empty_lines]
+        actions: [remove_empty_lines]  # Keep PHP comments
       
       # Config files - strict security, moderate size
       .env:
@@ -4110,7 +4076,7 @@ web_project_complete:
       .json:
         max_file_size: "1MB"
         security_check: "warn"
-        actions: [compress_whitespace]
+        actions: []  # Keep JSON as-is
       
       # Binary/data files
       .sql:
@@ -4139,7 +4105,7 @@ web_project_complete:
         - "dist/**/*"
         - "build/**/*"
         - "public/**/*"
-      actions: [minify, strip_comments, compress_whitespace]
+      actions: [minify]  # Only minify for production
       max_file_size: "200KB"  # Strict for production
       security_check: "abort"
     
@@ -4163,7 +4129,7 @@ v3_2_features:
     # v3.2: Control UTF-8 preference
     prefer_utf8_for_text_files: false  # Use detected encoding
     
-    # v3.2+: Use --docs-only for documentation bundles
+    # Use built-in docs_only feature for documentation bundles
     docs_only: true  # Include all 62 documentation extensions
     
     # v3.2: Enhanced security options
@@ -4188,15 +4154,15 @@ v3_2_features:
 
 # Documentation-only bundle example
 documentation_bundle:
-  description: "Extract only documentation files using --docs-only"
+  description: "Extract only documentation files using built-in docs_only feature"
   priority: 10
   
   global_settings:
-    # Use the new --docs-only parameter
-    docs_only: true  # Includes 62 documentation extensions
+    # Use the built-in docs_only feature
+    docs_only: true  # Includes all 62 documentation extensions
     
     # Standard separator for AI consumption
-    separator_style: "Standard"
+    # separator_style defaults to "Standard"
     
     # Documentation-specific settings
     security_check: null  # No security check for docs
@@ -4245,16 +4211,16 @@ example_group_name:
     # === ENCODING AND FORMATTING ===
     
     # Target character encoding for all files
-    # Options: utf-8, utf-16, utf-16-le, utf-16-be, ascii, latin-1, cp1252
-    encoding: "utf-8"
+    # Options: utf-8 (default), utf-16, utf-16-le, utf-16-be, ascii, latin-1, cp1252
+    # encoding: "utf-8"
     
     # Separator style between files in output
-    # Options: Standard, Detailed, Markdown, MachineReadable, None
-    separator_style: "Detailed"
+    # Options: Standard (default, best for AI), Detailed, Markdown, MachineReadable, None
+    # separator_style: "Standard"
     
     # Line ending style for generated content
-    # Options: lf, crlf
-    line_ending: "lf"
+    # Options: lf (default), crlf
+    # line_ending: "lf"
     
     # === INPUT/OUTPUT SETTINGS ===
     
@@ -4348,14 +4314,14 @@ example_group_name:
     include_dot_paths: false
     
     # Include binary files (default: false)
-    include_binary_files: false
+    # include_binary_files: false
     
     # Follow symbolic links (default: false)
     # WARNING: Be careful of symlink cycles!
-    include_symlinks: false
+    # include_symlinks: false
     
     # Disable default exclusions like node_modules, .git, etc (default: false)
-    no_default_excludes: false
+    # no_default_excludes: false
     
     # Include only documentation files (62 extensions) (default: false)
     # Overrides include_extensions when set to true
@@ -4413,7 +4379,7 @@ example_group_name:
         actions:
           - strip_tags      # Remove HTML tags
           - minify         # Remove unnecessary whitespace
-          - compress_whitespace
+          - remove_empty_lines
         strip_tags:
           - "script"       # Remove script tags
           - "style"        # Remove style tags
@@ -4437,8 +4403,7 @@ example_group_name:
       # CSS files
       .css:
         actions:
-          - minify
-          - strip_comments
+          - minify  # Minify CSS
       # Minified CSS - no processing needed
       .min.css:
         actions: []
@@ -4446,8 +4411,7 @@ example_group_name:
       # JavaScript files
       .js:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines  # Keep JS comments
       # Minified JS - no processing needed
       .min.js:
         actions: []
@@ -4455,13 +4419,12 @@ example_group_name:
       # Python files
       .py:
         actions:
-          - strip_comments    # Removes # comments, preserves docstrings
-          - remove_empty_lines
+          - remove_empty_lines    # Keep all comments and docstrings
       
       # JSON files
       .json:
         actions:
-          - compress_whitespace
+          - remove_empty_lines
       
       # Log files
       .log:
@@ -4494,7 +4457,6 @@ example_group_name:
       separator_style: "Markdown"
       
       # Include file metadata in output
-      include_metadata: true
       
       # Maximum lines to include (truncate after this)
       max_lines: 1000
@@ -4525,9 +4487,7 @@ example_group_name:
     source_code:
       extensions: [".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".c", ".cpp"]
       actions:
-        - strip_comments
-        - remove_empty_lines
-      include_metadata: true
+        - remove_empty_lines  # Keep source code comments
     
     # Minified files - prefer these over non-minified
     minified:
@@ -4535,7 +4495,6 @@ example_group_name:
         - "**/*.min.js"  # Include minified JS
         - "**/*.min.css"  # Include minified CSS
       actions: []  # Empty list = no processing needed
-      include_metadata: false
     
     # Large data files
     data_files:
@@ -4560,8 +4519,7 @@ example_group_name:
     default:
       actions:
         - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
 
 # Second group example - Production settings
 production:
@@ -4570,9 +4528,9 @@ production:
   priority: 20    # Higher priority than example_group_name
   
   global_settings:
-    # Override encoding for production
-    encoding: "utf-8"
-    separator_style: "MachineReadable"
+    # Override for production
+    # encoding uses default
+    separator_style: "MachineReadable"  # Override for machine processing
     
     # Exclude all development files (beyond defaults)
     exclude_patterns:
@@ -4596,9 +4554,7 @@ production:
       extensions: [".html", ".css", ".js"]
       actions:
         - minify
-        - strip_tags
-        - strip_comments
-        - compress_whitespace
+        - strip_tags  # Remove unnecessary HTML tags
       strip_tags: ["script", "style", "meta", "link", "comment"]
 
 # Third group example - Development settings
@@ -4609,7 +4565,7 @@ development:
   
   global_settings:
     # Keep everything readable
-    separator_style: "Detailed"
+    # separator_style defaults to "Standard" (better for AI)
     
     # Include test files
     include_patterns:
@@ -4632,12 +4588,11 @@ development:
     source:
       extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
       actions: []  # No processing - keep as-is
-      include_metadata: true
 
 # Available Processing Actions:
 # - minify: Remove unnecessary whitespace (HTML, CSS, JS)
 # - strip_tags: Remove specified HTML tags
-# - strip_comments: Remove comments based on file type
+# - strip_comments: Remove comments (not recommended - removes context)
 # - compress_whitespace: Normalize whitespace
 # - remove_empty_lines: Remove all empty lines
 # - custom: Apply custom processor
@@ -4663,13 +4618,11 @@ frontend:
   
   # Global settings for frontend projects
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # encoding and separator_style use defaults
     security_check: "warn"
     
-    # Common frontend excludes
+    # Frontend-specific excludes (beyond defaults)
     exclude_patterns:
-      - "node_modules/**"
       - "dist/**"
       - "build/**"
       - ".next/**"
@@ -4696,10 +4649,8 @@ frontend:
       patterns:
         - "src/components/**/*"
         - "src/pages/**/*"
-      actions:
-        - strip_comments
-        - compress_whitespace
-      separator_style: "Detailed"
+      actions: []  # Keep component code as-is for context
+      # separator_style defaults to "Standard" (best for AI)
     
     # HTML files
     html:
@@ -4725,8 +4676,7 @@ frontend:
       actions:
         - minify
       exclude_patterns:
-        - "*.min.css"
-        - "node_modules/**"
+        - "*.min.css"  # Exclude since we prefer original for processing
     
     # TypeScript/JavaScript
     scripts:
@@ -4735,8 +4685,7 @@ frontend:
         - "src/**/*.js"
         - "src/**/*.ts"
       actions:
-        - strip_comments
-        - remove_empty_lines
+        - remove_empty_lines  # Keep comments for context
       exclude_patterns:
         - "*.min.js"
         - "dist/**"
@@ -4745,8 +4694,7 @@ frontend:
     # JSON data files
     data:
       extensions: [".json"]
-      actions:
-        - compress_whitespace
+      actions: []  # Keep JSON readable
       # Truncate large data files
       max_lines: 100
       max_file_size: "50KB"
@@ -4759,8 +4707,7 @@ frontend:
     svg_images:
       extensions: [".svg"]
       actions:
-        - compress_whitespace
-      include_metadata: true
+        - minify  # SVGs can benefit from minification
       max_file_size: "100KB"  # SVGs can be included as text
     
     # Configuration
@@ -4771,14 +4718,10 @@ frontend:
         - "webpack.config.*"
         - "vite.config.*"
         - ".env*"
-      actions:
-        - custom
-      custom_processor: "redact_secrets"
-      include_metadata: true
+      actions: []  # Handle secrets via security_check setting
     
     default:
       actions: []
-      include_metadata: true
 
 backend:
   description: "Backend API project processing"
@@ -4787,15 +4730,11 @@ backend:
   
   # Global settings for backend projects
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # encoding and separator_style use defaults
     security_check: "abort"  # Stricter for backend
     
-    # Backend-specific excludes
+    # Backend-specific excludes (beyond defaults)
     exclude_patterns:
-      - "node_modules/**"
-      - "venv/**"
-      - "__pycache__/**"
       - "*.pyc"
       - ".pytest_cache/**"
       - "coverage/**"
@@ -4814,10 +4753,8 @@ backend:
         - "api/**/*.py"
         - "controllers/**/*"
       actions:
-        - strip_comments
-        - custom
-      custom_processor: "extract_functions"
-      separator_style: "Detailed"
+        - remove_empty_lines  # Keep comments for API documentation
+      # separator_style defaults to "Standard" (best for AI)
       max_file_size: "500KB"
     
     # Database models
@@ -4827,9 +4764,8 @@ backend:
         - "entities/**/*"
         - "schemas/**/*"
       actions:
-        - strip_comments
-        - remove_empty_lines
-      separator_style: "Detailed"
+        - remove_empty_lines  # Keep model documentation
+      # separator_style defaults to "Standard" (best for AI)
     
     # Tests - only structure
     tests:
@@ -4838,8 +4774,7 @@ backend:
         - "tests/**/*"
         - "__tests__/**/*"
       actions:
-        - custom
-      custom_processor: "extract_functions"
+        - remove_empty_lines  # Keep test context
       max_lines: 50
     
     # SQL/Migrations
@@ -4849,7 +4784,7 @@ backend:
         - "migrations/**/*.sql"
         - "db/**/*.sql"
       actions:
-        - strip_comments
+        - remove_empty_lines  # Keep SQL comments for context
       max_lines: 200
       exclude_patterns:
         - "**/backups/**"
@@ -4858,7 +4793,6 @@ backend:
     default:
       actions:
         - remove_empty_lines
-      include_metadata: true
 
 ======= presets/wordpress.m1f-presets.yml ======
 # WordPress Project Preset Configuration for m1f
@@ -4895,13 +4829,10 @@ wordpress:
         actions:
           - remove_empty_lines
       .js:
-        actions:
-          - strip_comments
-          - compress_whitespace
+        actions: []  # Keep JS as-is for context
       .css:
         actions:
-          - minify
-          - strip_comments
+          - minify  # Minify CSS to save space
   
   presets:
     # PHP files - WordPress core and plugins
@@ -4913,8 +4844,6 @@ wordpress:
         - "wp-content/themes/**/*.php"
       actions:
         - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"
       # Exclude WordPress core files
       exclude_patterns:
         - "wp-includes/**"  # WordPress core
@@ -4936,7 +4865,6 @@ wordpress:
       preserve_tags:
         - "pre"
         - "code"
-      separator_style: "Standard"
     
     # Markdown documentation
     md:
@@ -4947,7 +4875,6 @@ wordpress:
         - "docs/**/*.md"
       actions:
         - remove_empty_lines
-      include_metadata: true
       separator_style: "Markdown"
     
     # JavaScript files - prefer minified versions
@@ -4958,10 +4885,7 @@ wordpress:
         - "wp-content/plugins/**/*.min.js"
         - "wp-content/themes/**/*.js"  # Fallback to non-minified
         - "wp-content/plugins/**/*.js"
-      actions:
-        - strip_comments
-        - compress_whitespace
-      separator_style: "Standard"
+      actions: []  # Keep JS as-is for context
     
     # CSS files - prefer minified versions
     css:
@@ -4970,9 +4894,7 @@ wordpress:
         - "wp-content/themes/**/*.min.css"  # Prefer minified
         - "wp-content/themes/**/*.css"  # Fallback to non-minified
       actions:
-        - minify
-        - strip_comments
-      separator_style: "Standard"
+        - minify  # Minify CSS to save space
     
     # Configuration files - exclude most sensitive ones
     config:
@@ -4982,21 +4904,18 @@ wordpress:
         - "*.yaml"
         - "composer.json"
         - "package.json"
-      actions:
-        - compress_whitespace
+      actions: []  # Keep config files as-is
       # wp-config.php is excluded globally for security
       exclude_patterns:
         - "wp-config*.php"
         - ".env*"
-      include_metadata: true
       max_file_size: "100KB"
     
     # SQL files
     sql:
       extensions: [".sql"]
       actions:
-        - strip_comments
-        - compress_whitespace
+        - remove_empty_lines  # Keep SQL readable
       # Truncate large dump files
       max_lines: 500  # Truncate large SQL dumps
     
@@ -5004,8 +4923,6 @@ wordpress:
     default:
       actions:
         - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"
 
 ======= scripts/auto_bundle_preset.sh ======
 #!/usr/bin/env bash
