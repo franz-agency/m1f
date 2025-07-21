@@ -85,7 +85,6 @@ creator that:
 
 - Async everything (because waiting is so 2010)
 - Streaming processing (10GB repo? No problem)
-- Smart caching (only processes what changed)
 
 #### 🔒 Security First
 
@@ -145,12 +144,24 @@ m1f-init  # That's it. Seriously.
 
 ### m1f-claude
 
-Let AI organize your bundles by topic. It's like having an AI assistant for your
-AI assistant.
+The ultimate meta tool: Controls Claude Code headlessly and automatically
+includes m1f's complete documentation in every prompt. This means Claude knows
+ALL m1f parameters and features without you explaining anything.
 
 ```bash
-m1f-claude --setup  # Meta? Yes. Useful? Absolutely.
+# Ask Claude to create custom bundles for you
+m1f-claude "Create bundles for my React project, separate frontend and backend"
+
+# Claude now operates m1f for you with full knowledge
+m1f-claude "Bundle only TypeScript files modified in the last week"
+
+# Advanced project setup with AI-organized topics
+m1f-claude --setup  # Claude analyzes your project and creates topic bundles
 ```
+
+Since m1f-claude feeds the complete m1f documentation to Claude automatically,
+you can ask it to do anything m1f can do - it's like having an expert m1f user
+as your assistant.
 
 ### m1f-s1f (Split One File)
 
@@ -190,8 +201,10 @@ m1f-token-counter bundle.txt
 ### 1. Code Review Prep
 
 ```bash
-m1f --preset code-review --since HEAD~10
-# Bundle only changes from last 10 commits
+# Get changed files from git and bundle them
+git diff --name-only HEAD~10 | xargs m1f --input-files -o review.txt
+# Or use a code review preset if you have one
+m1f --preset presets/code-review.m1f-presets.yml
 ```
 
 ### 2. Documentation Deep Dive
