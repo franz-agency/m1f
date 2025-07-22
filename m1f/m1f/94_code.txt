@@ -23795,15 +23795,24 @@ class ResearchOrchestrator:
                     traceback.print_exc()
     
     def _create_output_dir(self, query: str) -> Path:
-        """Create output directory for research results"""
+        """Create output directory with hierarchical structure: YYYY/MM/DD/query_HHMMSS"""
+        now = datetime.now()
+        
+        # Create hierarchical date structure
+        year = now.strftime("%Y")
+        month = now.strftime("%m")
+        day = now.strftime("%d")
+        
         # Sanitize query for directory name
         safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
-        safe_name = safe_name.replace(" ", "-").lower()[:50]
+        safe_name = safe_name.replace(" ", "-").lower()[:40]  # Shorter to allow for timestamp
         
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        dir_name = f"{safe_name}-{timestamp}"
+        # Add time for uniqueness
+        time_suffix = now.strftime("%H%M%S")
+        dir_name = f"{safe_name}_{time_suffix}"
         
-        output_dir = self.config.output.directory / dir_name
+        # Build hierarchical path: research-data/2025/07/22/query_171851/
+        output_dir = self.config.output.directory / year / month / day / dir_name
         output_dir.mkdir(parents=True, exist_ok=True)
         
         return output_dir
