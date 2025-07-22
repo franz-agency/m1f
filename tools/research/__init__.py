@@ -20,8 +20,17 @@ from .bundle_creator import SmartBundleCreator
 from .readme_generator import ReadmeGenerator
 from .analysis_templates import TEMPLATES, get_template
 
-__version__ = "0.1.0"
+try:
+    from .._version import __version__, __version_info__
+except ImportError:
+    # Fallback for when running as a script
+    __version__ = "3.7.2"
+    __version_info__ = (3, 7, 2)
 __all__ = [
+    # Version
+    "__version__",
+    "__version_info__",
+    
     # CLI
     "ResearchCommand",
     "main",

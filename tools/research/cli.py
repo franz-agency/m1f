@@ -10,6 +10,13 @@ import asyncio
 from .config import ResearchConfig
 from .orchestrator import ResearchOrchestrator
 
+# Import version directly to avoid circular imports
+try:
+    from .._version import __version__
+except ImportError:
+    # Fallback for when running as a script
+    __version__ = "3.7.2"
+
 
 class ResearchCommand:
     """Main command class for m1f-research"""
@@ -141,7 +148,7 @@ Examples:
         parser.add_argument(
             '--version',
             action='version',
-            version='%(prog)s 0.1.0'
+            version=f'%(prog)s {__version__}'
         )
         
         return parser

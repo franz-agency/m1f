@@ -37470,8 +37470,17 @@ from .bundle_creator import SmartBundleCreator
 from .readme_generator import ReadmeGenerator
 from .analysis_templates import TEMPLATES, get_template
 
-__version__ = "0.1.0"
+try:
+    from .._version import __version__, __version_info__
+except ImportError:
+    # Fallback for when running as a script
+    __version__ = "3.7.2"
+    __version_info__ = (3, 7, 2)
 __all__ = [
+    # Version
+    "__version__",
+    "__version_info__",
+    
     # CLI
     "ResearchCommand",
     "main",
@@ -38580,6 +38589,13 @@ import asyncio
 from .config import ResearchConfig
 from .orchestrator import ResearchOrchestrator
 
+# Import version directly to avoid circular imports
+try:
+    from .._version import __version__
+except ImportError:
+    # Fallback for when running as a script
+    __version__ = "3.7.2"
+
 
 class ResearchCommand:
     """Main command class for m1f-research"""
@@ -38711,7 +38727,7 @@ Examples:
         parser.add_argument(
             '--version',
             action='version',
-            version='%(prog)s 0.1.0'
+            version=f'%(prog)s {__version__}'
         )
         
         return parser
