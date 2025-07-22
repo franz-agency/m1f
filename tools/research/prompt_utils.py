@@ -7,7 +7,7 @@ from tools.shared.prompts import PromptLoader, format_prompt
 
 # Initialize loader with research-specific prompts
 _loader = PromptLoader([
-    Path(__file__).parent.parent.parent / "shared" / "prompts" / "research",
+    Path(__file__).parent.parent / "shared" / "prompts" / "research",
     Path(__file__).parent / "prompts"  # Fallback to local prompts if any
 ])
 
@@ -21,7 +21,9 @@ def get_analysis_prompt(template_name: str, prompt_type: str, query: str, url: s
     """Get formatted analysis prompt for a specific template."""
     # Try template-specific prompt first
     prompt_name = f"analysis/{template_name}_{prompt_type}.md"
-    fallback_name = f"analysis/general_{prompt_type}.md" if template_name != "general" else "analysis/default_analysis.md"
+    
+    # Set appropriate fallback - always use general as fallback since it exists
+    fallback_name = f"analysis/general_{prompt_type}.md"
     
     try:
         base_prompt = _loader.load_with_fallback(prompt_name, fallback_name)

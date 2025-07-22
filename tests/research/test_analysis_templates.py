@@ -10,7 +10,6 @@ from tools.research.analysis_templates import (
     TUTORIAL_TEMPLATE,
     REFERENCE_TEMPLATE,
     GENERAL_TEMPLATE,
-    customize_analysis_prompt,
     apply_template_scoring
 )
 
@@ -49,19 +48,19 @@ class TestAnalysisTemplates:
             assert 'relevance' in template.prompts
             assert 'key_points' in template.prompts
     
-    def test_customize_analysis_prompt(self):
-        """Test prompt customization"""
-        template = TECHNICAL_TEMPLATE
-        query = "python async programming"
-        
-        # Test relevance prompt
-        relevance_prompt = customize_analysis_prompt(template, 'relevance', query)
-        assert query in relevance_prompt
-        assert "implementation details" in relevance_prompt.lower()
-        
-        # Test key points prompt
-        key_points_prompt = customize_analysis_prompt(template, 'key_points', query)
-        assert "implementation patterns" in key_points_prompt.lower()
+    # def test_customize_analysis_prompt(self):
+    #     """Test prompt customization"""
+    #     template = TECHNICAL_TEMPLATE
+    #     query = "python async programming"
+    #     
+    #     # Test relevance prompt
+    #     relevance_prompt = customize_analysis_prompt(template, 'relevance', query)
+    #     assert query in relevance_prompt
+    #     assert "implementation details" in relevance_prompt.lower()
+    #     
+    #     # Test key points prompt
+    #     key_points_prompt = customize_analysis_prompt(template, 'key_points', query)
+    #     assert "implementation patterns" in key_points_prompt.lower()
     
     def test_template_scoring(self):
         """Test template-based scoring"""

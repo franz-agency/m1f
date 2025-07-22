@@ -138,7 +138,7 @@ class ResearchConfig:
         # Parse output config
         output_data = research_data.get('output', {})
         output_config = OutputConfig(
-            directory=Path(output_data.get('directory', './m1f/research')),
+            directory=Path(output_data.get('directory', './research-data')),
             create_summary=output_data.get('create_summary', True),
             create_index=output_data.get('create_index', True),
             bundle_prefix=output_data.get('bundle_prefix', 'research'),

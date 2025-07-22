@@ -216,10 +216,15 @@ class ContentAnalyzer:
         # Validate content type
         valid_types = [
             'tutorial', 'documentation', 'blog', 'discussion', 
-            'code', 'reference', 'news', 'unknown'
+            'code', 'reference', 'news', 'technical', 'academic', 'unknown'
         ]
         if validated['content_type'] not in valid_types:
             validated['content_type'] = 'unknown'
+        
+        # Preserve any additional fields from the original analysis
+        for key, value in analysis.items():
+            if key not in validated:
+                validated[key] = value
         
         return validated
     

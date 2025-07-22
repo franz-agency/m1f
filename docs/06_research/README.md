@@ -75,7 +75,7 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 # Research a programming topic
 m1f-research "golang error handling"
 
-# Output saved to: ./m1f/research/golang-error-handling-20240120-143022/
+# Output saved to: ./research-data/golang-error-handling-20240120-143022/
 ```
 
 ### Advanced Options
@@ -111,7 +111,7 @@ m1f-research "database optimization" --config research.yml
 | --------------- | ------------------------ | ---------------- |
 | `--urls`        | Number of URLs to find   | 20               |
 | `--scrape`      | Number of URLs to scrape | 10               |
-| `--output`      | Output directory         | ./m1f/research   |
+| `--output`      | Output directory         | ./research-data  |
 | `--name`        | Bundle name              | auto-generated   |
 | `--provider`    | LLM provider             | claude           |
 | `--model`       | Specific model           | provider default |
@@ -151,7 +151,7 @@ research:
 
   # Output settings
   output:
-    directory: ./m1f/research
+    directory: ./research-data
     create_summary: true
     create_index: true
 
@@ -201,7 +201,7 @@ Pre-configured templates optimize research for different needs:
 Research bundles are organized as:
 
 ```
-./m1f/research/
+./research-data/
 └── topic-name-20240120-143022/
     ├── research-bundle.md    # Main bundle
     ├── metadata.json         # Research metadata

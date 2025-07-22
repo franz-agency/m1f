@@ -87,6 +87,7 @@ class ContentFilter:
         
         # Check quality score
         quality_score = self._calculate_quality_score(content.markdown)
+        logger.debug(f"Quality score for {content.url}: {quality_score:.2f}")
         if quality_score < 0.3:  # Minimum quality threshold
             logger.debug(f"Low quality: {content.url} (score: {quality_score:.2f})")
             return False
@@ -160,7 +161,7 @@ class ContentFilter:
         # Check for repeated phrases
         phrases = re.findall(r'\b\w+\s+\w+\s+\w+\b', content_lower)
         phrase_counts = Counter(phrases)
-        if any(count > 5 for count in phrase_counts.values()):
+        if any(count >= 5 for count in phrase_counts.values()):
             spam_score += 1
         
         # Check for common spam indicators
