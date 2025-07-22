@@ -12,6 +12,7 @@ from .models import AnalyzedContent
 from .config import OutputConfig, ResearchConfig
 from .llm_interface import LLMProvider
 from .readme_generator import ReadmeGenerator
+from .prompt_utils import get_subtopic_grouping_prompt, get_topic_summary_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -179,24 +180,10 @@ class SmartBundleCreator:
         for i, item in enumerate(content_list):
             summaries.append(f"{i}. {item.title}: {item.summary[:100]}...")
         
-        prompt = f"""Analyze these research results for "{research_query}" and group them into logical subtopics.
-
-Content items:
-{chr(10).join(summaries)}
-
-Provide a JSON response with this structure:
-{{
-    "subtopics": [
-        {{
-            "name": "Subtopic Name",
-            "description": "Brief description",
-            "item_indices": [0, 2, 5]  // indices of items belonging to this subtopic
-        }}
-    ]
-}}
-
-Create 3-7 subtopics that logically organize the content. Each item should belong to exactly one subtopic.
-Return ONLY valid JSON, no other text."""
+        prompt = get_subtopic_grouping_prompt(
+            query=research_query,
+            summaries=chr(10).join(summaries)
+        )
 
         try:
             response = await self.llm.query(prompt)
@@ -357,11 +344,10 @@ Return ONLY valid JSON, no other text."""
         # Prepare item summaries
         summaries = [f"- {item.title}: {item.summary[:100]}..." for item in items[:5]]
         
-        prompt = f"""Generate a 1-2 sentence overview of the following resources about "{topic}":
-
-{chr(10).join(summaries)}
-
-Write a concise summary that captures what these resources collectively offer about this topic."""
+        prompt = get_topic_summary_prompt(
+            topic=topic,
+            summaries=chr(10).join(summaries)
+        )
 
         try:
             response = await self.llm.query(prompt)

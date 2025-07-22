@@ -11,7 +11,8 @@ import json
 from .models import ScrapedContent, AnalyzedContent
 from .llm_interface import LLMProvider
 from .config import AnalysisConfig
-from .analysis_templates import get_template, customize_analysis_prompt, apply_template_scoring
+from .analysis_templates import get_template, apply_template_scoring
+from .prompt_utils import get_analysis_prompt, get_synthesis_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -113,50 +114,14 @@ class ContentAnalyzer:
         url: str
     ) -> Dict[str, Any]:
         """Get comprehensive analysis from LLM"""
-        # Use template-specific prompt if available
-        template_prompt = customize_analysis_prompt(self.template, "relevance", research_query)
-        
-        if template_prompt:
-            # Template-specific analysis
-            prompt = f"""{template_prompt}
-
-URL: {url}
-
-Content:
-{content}
-
-Provide analysis in JSON format with:
-1. relevance_score: 0-10 (float)
-2. summary: 2-3 sentence summary
-3. key_points: Array of key points
-4. content_type: Type of content
-5. topics: Main topics covered
-6. technical_level: beginner/intermediate/advanced
-7. strengths: Value of this content
-8. limitations: Any limitations
-
-Also include template-specific fields based on the focus areas.
-Return ONLY valid JSON."""
-        else:
-            # Default analysis prompt
-            prompt = f"""Analyze the following content in the context of this research query: "{research_query}"
-
-URL: {url}
-
-Content:
-{content}
-
-Provide a comprehensive analysis in JSON format with the following fields:
-1. relevance_score: Rate relevance to the research query from 0-10 (float)
-2. summary: A concise 2-3 sentence summary of the content
-3. key_points: Array of 3-5 key points or takeaways
-4. content_type: Type of content (tutorial, documentation, blog, discussion, code, reference, news)
-5. topics: Array of main topics covered
-6. technical_level: beginner, intermediate, or advanced
-7. strengths: What makes this content valuable
-8. limitations: Any limitations or caveats
-
-Return ONLY valid JSON, no other text."""
+        # Get template-specific or default analysis prompt
+        prompt = get_analysis_prompt(
+            template_name=self.template.name,
+            prompt_type="relevance",
+            query=research_query,
+            url=url,
+            content=content
+        )
 
         # Get analysis from LLM
         response = await self.llm.query(prompt)
@@ -349,15 +314,10 @@ Return ONLY valid JSON, no other text."""
         for item in analyzed_content[:10]:  # Limit to top 10
             summaries.append(f"- {item.title} (Relevance: {item.relevance_score}): {item.summary}")
         
-        prompt = f"""Based on the following research results for "{research_query}", provide a brief synthesis:
-
-{chr(10).join(summaries)}
-
-Write a 2-3 paragraph synthesis that:
-1. Identifies common themes and patterns
-2. Highlights the most important findings
-3. Notes any conflicting information
-4. Suggests areas that might need more research"""
+        prompt = get_synthesis_prompt(
+            query=research_query,
+            summaries=chr(10).join(summaries)
+        )
 
         response = await self.llm.query(prompt)
         

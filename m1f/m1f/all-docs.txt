@@ -15615,3 +15615,210 @@ All scrapers share common configuration options through `ScraperConfig`:
 - `timeout`: Request timeout in seconds
 
 Backend-specific options can be added as needed in the scraper implementation.
+
+======= tools/shared/prompts/research/analysis/academic_key_points.md ======
+# Academic Analysis - Key Points Prompt
+
+Extract key academic insights from this content.
+Focus on:
+- Theoretical concepts and frameworks
+- Research findings and conclusions
+- Methodological approaches
+- Limitations and future work
+- Connections to existing literature
+
+======= tools/shared/prompts/research/analysis/academic_relevance.md ======
+# Academic Analysis - Relevance Prompt
+
+Analyze this content for academic relevance to "{query}".
+Focus on:
+1. Theoretical contributions and frameworks
+2. Quality of citations and references
+3. Research methodology and rigor
+4. Empirical evidence and validation
+5. Novelty and significance of findings
+
+======= tools/shared/prompts/research/analysis/default_analysis.md ======
+# Default Content Analysis Prompt
+
+Analyze the following content in the context of this research query: "{query}"
+
+URL: {url}
+
+Content:
+{content}
+
+Provide a comprehensive analysis in JSON format with the following fields:
+1. relevance_score: Rate relevance to the research query from 0-10 (float)
+2. summary: A concise 2-3 sentence summary of the content
+3. key_points: Array of 3-5 key points or takeaways
+4. content_type: Type of content (tutorial, documentation, blog, discussion, code, reference, news)
+5. topics: Array of main topics covered
+6. technical_level: beginner, intermediate, or advanced
+7. strengths: What makes this content valuable
+8. limitations: Any limitations or caveats
+
+Return ONLY valid JSON, no other text.
+
+======= tools/shared/prompts/research/analysis/general_key_points.md ======
+# General Analysis - Key Points Prompt
+
+Extract key insights from this content.
+Focus on:
+- Main concepts and ideas
+- Practical applications
+- Important examples
+- Advantages and limitations
+- Connections to related topics
+
+======= tools/shared/prompts/research/analysis/general_relevance.md ======
+# General Analysis - Relevance Prompt
+
+Analyze this content for relevance to "{query}".
+Provide a balanced assessment considering:
+1. How well it addresses the research query
+2. Quality and depth of information
+3. Practical value and applications
+4. Clarity and accessibility
+5. Unique insights or perspectives
+
+======= tools/shared/prompts/research/analysis/reference_key_points.md ======
+# Reference Analysis - Key Points Prompt
+
+Extract key reference information from this content.
+Focus on:
+- API endpoints or function signatures
+- Required and optional parameters
+- Return values and data structures
+- Error codes and handling
+- Usage examples and patterns
+
+======= tools/shared/prompts/research/analysis/reference_relevance.md ======
+# Reference Analysis - Relevance Prompt
+
+Analyze this content for reference relevance to "{query}".
+Focus on:
+1. Completeness of API/interface documentation
+2. Accuracy of parameter and return value descriptions
+3. Quality of usage examples
+4. Coverage of error cases and edge conditions
+5. Organization and searchability
+
+======= tools/shared/prompts/research/analysis/synthesis.md ======
+# Research Synthesis Prompt
+
+Based on the following research results for "{query}", provide a brief synthesis:
+
+{summaries}
+
+Write a 2-3 paragraph synthesis that:
+1. Identifies common themes and patterns
+2. Highlights the most important findings
+3. Notes any conflicting information
+4. Suggests areas that might need more research
+
+======= tools/shared/prompts/research/analysis/technical_key_points.md ======
+# Technical Analysis - Key Points Prompt
+
+Extract key technical insights from this content.
+Focus on:
+- Implementation patterns and techniques
+- Performance optimizations
+- Security considerations
+- Testing strategies
+- Common mistakes to avoid
+
+======= tools/shared/prompts/research/analysis/technical_relevance.md ======
+# Technical Analysis - Relevance Prompt
+
+Analyze this content for technical relevance to "{query}".
+Focus on:
+1. Quality and relevance of code examples
+2. Depth of implementation details
+3. Practical applicability
+4. Technical accuracy
+5. Coverage of edge cases and error handling
+
+======= tools/shared/prompts/research/analysis/tutorial_key_points.md ======
+# Tutorial Analysis - Key Points Prompt
+
+Extract key learning points from this tutorial.
+Focus on:
+- Main concepts being taught
+- Step-by-step procedures
+- Important prerequisites
+- Common mistakes and how to avoid them
+- Practice exercises and challenges
+
+======= tools/shared/prompts/research/analysis/tutorial_relevance.md ======
+# Tutorial Analysis - Relevance Prompt
+
+Analyze this content for tutorial relevance to "{query}".
+Focus on:
+1. Clarity of step-by-step instructions
+2. Completeness of the tutorial
+3. Quality of examples and exercises
+4. Appropriate difficulty progression
+5. Coverage of prerequisites and setup
+
+======= tools/shared/prompts/research/bundle/subtopic_grouping.md ======
+# Subtopic Grouping Prompt
+
+Analyze these research results for "{query}" and group them into logical
+subtopics.
+
+Content items: {summaries}
+
+Provide a JSON response with this structure: {{
+    "subtopics": [
+        {{
+            "name": "Subtopic Name",
+            "description": "Brief description",
+            "item_indices": [0, 2, 5]  // indices of items belonging to this subtopic
+        }} ] }}
+
+Create 3-7 subtopics that logically organize the content. Each item should
+belong to exactly one subtopic. Return ONLY valid JSON, no other text.
+
+======= tools/shared/prompts/research/bundle/topic_summary.md ======
+# Topic Summary Prompt
+
+Generate a 1-2 sentence overview of the following resources about "{topic}":
+
+{summaries}
+
+Write a concise summary that captures what these resources collectively offer
+about this topic.
+
+======= tools/shared/prompts/research/llm/content_analysis.md ======
+# Content Analysis Prompt
+
+Analyze the following content for: "{analysis_type}"
+
+Content: {content}
+
+Provide your analysis in JSON format with appropriate fields based on the
+analysis type. For relevance analysis, include a score from 0-10. For other
+types, provide structured insights.
+
+Return ONLY valid JSON, no other text.
+
+======= tools/shared/prompts/research/llm/web_search.md ======
+# Web Search Prompt
+
+Search for the {num_results} most relevant and high-quality URLs for the
+following research query: "{query}"
+
+Requirements:
+
+1. Focus on authoritative sources (documentation, tutorials, research papers,
+   reputable blogs)
+2. Prioritize recent content when relevant
+3. Include a mix of content types (tutorials, references, discussions)
+4. Avoid low-quality sources (spam, content farms, outdated information)
+
+Return the results as a JSON array with this format: [ {{ "url":
+"https://example.com/article", "title": "Article Title", "description": "Brief
+description of the content and why it's relevant" }} ]
+
+Return ONLY the JSON array, no other text.

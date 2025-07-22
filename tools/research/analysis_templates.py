@@ -12,7 +12,7 @@ class AnalysisTemplate:
     description: str
     focus_areas: List[str]
     evaluation_criteria: Dict[str, float]  # criterion -> weight
-    prompts: Dict[str, str]  # analysis type -> custom prompt
+    prompt_paths: Dict[str, str]  # analysis type -> prompt file path
     content_preferences: Dict[str, Any]
 
 
@@ -33,22 +33,9 @@ TECHNICAL_TEMPLATE = AnalysisTemplate(
         "depth_of_explanation": 0.2,
         "accuracy": 0.2
     },
-    prompts={
-        "relevance": """Analyze this content for technical relevance to "{query}".
-Focus on:
-1. Quality and relevance of code examples
-2. Depth of implementation details
-3. Practical applicability
-4. Technical accuracy
-5. Coverage of edge cases and error handling""",
-        
-        "key_points": """Extract key technical insights from this content.
-Focus on:
-- Implementation patterns and techniques
-- Performance optimizations
-- Security considerations
-- Testing strategies
-- Common mistakes to avoid"""
+    prompt_paths={
+        "relevance": "analysis/technical_relevance.md",
+        "key_points": "analysis/technical_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": True,
@@ -80,22 +67,9 @@ ACADEMIC_TEMPLATE = AnalysisTemplate(
         "novelty": 0.15,
         "clarity": 0.15
     },
-    prompts={
-        "relevance": """Analyze this content for academic relevance to "{query}".
-Focus on:
-1. Theoretical contributions and frameworks
-2. Quality of citations and references
-3. Research methodology and rigor
-4. Empirical evidence and validation
-5. Novelty and significance of findings""",
-        
-        "key_points": """Extract key academic insights from this content.
-Focus on:
-- Theoretical concepts and frameworks
-- Research findings and conclusions
-- Methodological approaches
-- Limitations and future work
-- Connections to existing literature"""
+    prompt_paths={
+        "relevance": "analysis/academic_relevance.md",
+        "key_points": "analysis/academic_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": False,
@@ -126,22 +100,9 @@ TUTORIAL_TEMPLATE = AnalysisTemplate(
         "practical_examples": 0.25,
         "learning_curve": 0.2
     },
-    prompts={
-        "relevance": """Analyze this content for tutorial relevance to "{query}".
-Focus on:
-1. Clarity of step-by-step instructions
-2. Completeness of the tutorial
-3. Quality of examples and exercises
-4. Appropriate difficulty progression
-5. Coverage of prerequisites and setup""",
-        
-        "key_points": """Extract key learning points from this tutorial.
-Focus on:
-- Main concepts being taught
-- Step-by-step procedures
-- Important prerequisites
-- Common mistakes and how to avoid them
-- Practice exercises and challenges"""
+    prompt_paths={
+        "relevance": "analysis/tutorial_relevance.md",
+        "key_points": "analysis/tutorial_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": True,
@@ -172,22 +133,9 @@ REFERENCE_TEMPLATE = AnalysisTemplate(
         "examples": 0.2,
         "organization": 0.2
     },
-    prompts={
-        "relevance": """Analyze this content for reference relevance to "{query}".
-Focus on:
-1. Completeness of API/interface documentation
-2. Accuracy of parameter and return value descriptions
-3. Quality of usage examples
-4. Coverage of error cases and edge conditions
-5. Organization and searchability""",
-        
-        "key_points": """Extract key reference information from this content.
-Focus on:
-- API endpoints or function signatures
-- Required and optional parameters
-- Return values and data structures
-- Error codes and handling
-- Usage examples and patterns"""
+    prompt_paths={
+        "relevance": "analysis/reference_relevance.md",
+        "key_points": "analysis/reference_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": True,
@@ -218,22 +166,9 @@ GENERAL_TEMPLATE = AnalysisTemplate(
         "depth": 0.25,
         "practicality": 0.2
     },
-    prompts={
-        "relevance": """Analyze this content for relevance to "{query}".
-Provide a balanced assessment considering:
-1. How well it addresses the research query
-2. Quality and depth of information
-3. Practical value and applications
-4. Clarity and accessibility
-5. Unique insights or perspectives""",
-        
-        "key_points": """Extract key insights from this content.
-Focus on:
-- Main concepts and ideas
-- Practical applications
-- Important examples
-- Advantages and limitations
-- Connections to related topics"""
+    prompt_paths={
+        "relevance": "analysis/general_relevance.md",
+        "key_points": "analysis/general_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": False,
@@ -259,10 +194,6 @@ def get_template(name: str) -> AnalysisTemplate:
     return TEMPLATES.get(name, GENERAL_TEMPLATE)
 
 
-def customize_analysis_prompt(template: AnalysisTemplate, prompt_type: str, query: str) -> str:
-    """Customize analysis prompt based on template"""
-    base_prompt = template.prompts.get(prompt_type, "")
-    return base_prompt.format(query=query) if base_prompt else ""
 
 
 def apply_template_scoring(template: AnalysisTemplate, analysis_results: Dict[str, Any]) -> float:

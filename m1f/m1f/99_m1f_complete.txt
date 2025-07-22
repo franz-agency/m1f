@@ -36179,7 +36179,7 @@ class AnalysisTemplate:
     description: str
     focus_areas: List[str]
     evaluation_criteria: Dict[str, float]  # criterion -> weight
-    prompts: Dict[str, str]  # analysis type -> custom prompt
+    prompt_paths: Dict[str, str]  # analysis type -> prompt file path
     content_preferences: Dict[str, Any]
 
 
@@ -36200,22 +36200,9 @@ TECHNICAL_TEMPLATE = AnalysisTemplate(
         "depth_of_explanation": 0.2,
         "accuracy": 0.2
     },
-    prompts={
-        "relevance": """Analyze this content for technical relevance to "{query}".
-Focus on:
-1. Quality and relevance of code examples
-2. Depth of implementation details
-3. Practical applicability
-4. Technical accuracy
-5. Coverage of edge cases and error handling""",
-        
-        "key_points": """Extract key technical insights from this content.
-Focus on:
-- Implementation patterns and techniques
-- Performance optimizations
-- Security considerations
-- Testing strategies
-- Common mistakes to avoid"""
+    prompt_paths={
+        "relevance": "analysis/technical_relevance.md",
+        "key_points": "analysis/technical_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": True,
@@ -36247,22 +36234,9 @@ ACADEMIC_TEMPLATE = AnalysisTemplate(
         "novelty": 0.15,
         "clarity": 0.15
     },
-    prompts={
-        "relevance": """Analyze this content for academic relevance to "{query}".
-Focus on:
-1. Theoretical contributions and frameworks
-2. Quality of citations and references
-3. Research methodology and rigor
-4. Empirical evidence and validation
-5. Novelty and significance of findings""",
-        
-        "key_points": """Extract key academic insights from this content.
-Focus on:
-- Theoretical concepts and frameworks
-- Research findings and conclusions
-- Methodological approaches
-- Limitations and future work
-- Connections to existing literature"""
+    prompt_paths={
+        "relevance": "analysis/academic_relevance.md",
+        "key_points": "analysis/academic_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": False,
@@ -36293,22 +36267,9 @@ TUTORIAL_TEMPLATE = AnalysisTemplate(
         "practical_examples": 0.25,
         "learning_curve": 0.2
     },
-    prompts={
-        "relevance": """Analyze this content for tutorial relevance to "{query}".
-Focus on:
-1. Clarity of step-by-step instructions
-2. Completeness of the tutorial
-3. Quality of examples and exercises
-4. Appropriate difficulty progression
-5. Coverage of prerequisites and setup""",
-        
-        "key_points": """Extract key learning points from this tutorial.
-Focus on:
-- Main concepts being taught
-- Step-by-step procedures
-- Important prerequisites
-- Common mistakes and how to avoid them
-- Practice exercises and challenges"""
+    prompt_paths={
+        "relevance": "analysis/tutorial_relevance.md",
+        "key_points": "analysis/tutorial_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": True,
@@ -36339,22 +36300,9 @@ REFERENCE_TEMPLATE = AnalysisTemplate(
         "examples": 0.2,
         "organization": 0.2
     },
-    prompts={
-        "relevance": """Analyze this content for reference relevance to "{query}".
-Focus on:
-1. Completeness of API/interface documentation
-2. Accuracy of parameter and return value descriptions
-3. Quality of usage examples
-4. Coverage of error cases and edge conditions
-5. Organization and searchability""",
-        
-        "key_points": """Extract key reference information from this content.
-Focus on:
-- API endpoints or function signatures
-- Required and optional parameters
-- Return values and data structures
-- Error codes and handling
-- Usage examples and patterns"""
+    prompt_paths={
+        "relevance": "analysis/reference_relevance.md",
+        "key_points": "analysis/reference_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": True,
@@ -36385,22 +36333,9 @@ GENERAL_TEMPLATE = AnalysisTemplate(
         "depth": 0.25,
         "practicality": 0.2
     },
-    prompts={
-        "relevance": """Analyze this content for relevance to "{query}".
-Provide a balanced assessment considering:
-1. How well it addresses the research query
-2. Quality and depth of information
-3. Practical value and applications
-4. Clarity and accessibility
-5. Unique insights or perspectives""",
-        
-        "key_points": """Extract key insights from this content.
-Focus on:
-- Main concepts and ideas
-- Practical applications
-- Important examples
-- Advantages and limitations
-- Connections to related topics"""
+    prompt_paths={
+        "relevance": "analysis/general_relevance.md",
+        "key_points": "analysis/general_key_points.md"
     },
     content_preferences={
         "prefer_code_examples": False,
@@ -36426,10 +36361,6 @@ def get_template(name: str) -> AnalysisTemplate:
     return TEMPLATES.get(name, GENERAL_TEMPLATE)
 
 
-def customize_analysis_prompt(template: AnalysisTemplate, prompt_type: str, query: str) -> str:
-    """Customize analysis prompt based on template"""
-    base_prompt = template.prompts.get(prompt_type, "")
-    return base_prompt.format(query=query) if base_prompt else ""
 
 
 def apply_template_scoring(template: AnalysisTemplate, analysis_results: Dict[str, Any]) -> float:
@@ -36512,7 +36443,8 @@ import json
 from .models import ScrapedContent, AnalyzedContent
 from .llm_interface import LLMProvider
 from .config import AnalysisConfig
-from .analysis_templates import get_template, customize_analysis_prompt, apply_template_scoring
+from .analysis_templates import get_template, apply_template_scoring
+from .prompt_utils import get_analysis_prompt, get_synthesis_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -36614,50 +36546,14 @@ class ContentAnalyzer:
         url: str
     ) -> Dict[str, Any]:
         """Get comprehensive analysis from LLM"""
-        # Use template-specific prompt if available
-        template_prompt = customize_analysis_prompt(self.template, "relevance", research_query)
-        
-        if template_prompt:
-            # Template-specific analysis
-            prompt = f"""{template_prompt}
-
-URL: {url}
-
-Content:
-{content}
-
-Provide analysis in JSON format with:
-1. relevance_score: 0-10 (float)
-2. summary: 2-3 sentence summary
-3. key_points: Array of key points
-4. content_type: Type of content
-5. topics: Main topics covered
-6. technical_level: beginner/intermediate/advanced
-7. strengths: Value of this content
-8. limitations: Any limitations
-
-Also include template-specific fields based on the focus areas.
-Return ONLY valid JSON."""
-        else:
-            # Default analysis prompt
-            prompt = f"""Analyze the following content in the context of this research query: "{research_query}"
-
-URL: {url}
-
-Content:
-{content}
-
-Provide a comprehensive analysis in JSON format with the following fields:
-1. relevance_score: Rate relevance to the research query from 0-10 (float)
-2. summary: A concise 2-3 sentence summary of the content
-3. key_points: Array of 3-5 key points or takeaways
-4. content_type: Type of content (tutorial, documentation, blog, discussion, code, reference, news)
-5. topics: Array of main topics covered
-6. technical_level: beginner, intermediate, or advanced
-7. strengths: What makes this content valuable
-8. limitations: Any limitations or caveats
-
-Return ONLY valid JSON, no other text."""
+        # Get template-specific or default analysis prompt
+        prompt = get_analysis_prompt(
+            template_name=self.template.name,
+            prompt_type="relevance",
+            query=research_query,
+            url=url,
+            content=content
+        )
 
         # Get analysis from LLM
         response = await self.llm.query(prompt)
@@ -36850,15 +36746,10 @@ Return ONLY valid JSON, no other text."""
         for item in analyzed_content[:10]:  # Limit to top 10
             summaries.append(f"- {item.title} (Relevance: {item.relevance_score}): {item.summary}")
         
-        prompt = f"""Based on the following research results for "{research_query}", provide a brief synthesis:
-
-{chr(10).join(summaries)}
-
-Write a 2-3 paragraph synthesis that:
-1. Identifies common themes and patterns
-2. Highlights the most important findings
-3. Notes any conflicting information
-4. Suggests areas that might need more research"""
+        prompt = get_synthesis_prompt(
+            query=research_query,
+            summaries=chr(10).join(summaries)
+        )
 
         response = await self.llm.query(prompt)
         
@@ -36882,6 +36773,7 @@ from .models import AnalyzedContent
 from .config import OutputConfig, ResearchConfig
 from .llm_interface import LLMProvider
 from .readme_generator import ReadmeGenerator
+from .prompt_utils import get_subtopic_grouping_prompt, get_topic_summary_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -37049,24 +36941,10 @@ class SmartBundleCreator:
         for i, item in enumerate(content_list):
             summaries.append(f"{i}. {item.title}: {item.summary[:100]}...")
         
-        prompt = f"""Analyze these research results for "{research_query}" and group them into logical subtopics.
-
-Content items:
-{chr(10).join(summaries)}
-
-Provide a JSON response with this structure:
-{{
-    "subtopics": [
-        {{
-            "name": "Subtopic Name",
-            "description": "Brief description",
-            "item_indices": [0, 2, 5]  // indices of items belonging to this subtopic
-        }}
-    ]
-}}
-
-Create 3-7 subtopics that logically organize the content. Each item should belong to exactly one subtopic.
-Return ONLY valid JSON, no other text."""
+        prompt = get_subtopic_grouping_prompt(
+            query=research_query,
+            summaries=chr(10).join(summaries)
+        )
 
         try:
             response = await self.llm.query(prompt)
@@ -37227,11 +37105,10 @@ Return ONLY valid JSON, no other text."""
         # Prepare item summaries
         summaries = [f"- {item.title}: {item.summary[:100]}..." for item in items[:5]]
         
-        prompt = f"""Generate a 1-2 sentence overview of the following resources about "{topic}":
-
-{chr(10).join(summaries)}
-
-Write a concise summary that captures what these resources collectively offer about this topic."""
+        prompt = get_topic_summary_prompt(
+            topic=topic,
+            summaries=chr(10).join(summaries)
+        )
 
         try:
             response = await self.llm.query(prompt)
@@ -38261,6 +38138,7 @@ import subprocess
 import aiohttp
 import asyncio
 from dataclasses import dataclass
+from .prompt_utils import get_web_search_prompt
 
 
 @dataclass
@@ -39036,6 +38914,62 @@ class ResearchOrchestrator:
         )
         
         return bundle_path
+
+======= tools/research/prompt_utils.py ======
+"""
+Prompt utilities for m1f-research using shared prompt loader
+"""
+
+from pathlib import Path
+from tools.shared.prompts import PromptLoader, format_prompt
+
+# Initialize loader with research-specific prompts
+_loader = PromptLoader([
+    Path(__file__).parent.parent.parent / "shared" / "prompts" / "research",
+    Path(__file__).parent / "prompts"  # Fallback to local prompts if any
+])
+
+
+def get_web_search_prompt(query: str, num_results: int = 20) -> str:
+    """Get formatted web search prompt."""
+    return _loader.format("llm/web_search.md", query=query, num_results=num_results)
+
+
+def get_analysis_prompt(template_name: str, prompt_type: str, query: str, url: str, content: str) -> str:
+    """Get formatted analysis prompt for a specific template."""
+    # Try template-specific prompt first
+    prompt_name = f"analysis/{template_name}_{prompt_type}.md"
+    fallback_name = f"analysis/general_{prompt_type}.md" if template_name != "general" else "analysis/default_analysis.md"
+    
+    try:
+        base_prompt = _loader.load_with_fallback(prompt_name, fallback_name)
+    except FileNotFoundError:
+        # Ultimate fallback
+        base_prompt = _loader.load("analysis/default_analysis.md")
+    
+    # For template-specific prompts, we need to add the full analysis structure
+    if "Return ONLY valid JSON" not in base_prompt:
+        analysis_template = _loader.load("analysis/default_analysis.md")
+        # Replace the focus section with template-specific content
+        base_prompt = f"{base_prompt}\n\nURL: {{url}}\n\nContent:\n{{content}}\n\n" + \
+                     analysis_template.split("Content:")[1].strip()
+    
+    return format_prompt(base_prompt, query=query, url=url, content=content)
+
+
+def get_synthesis_prompt(query: str, summaries: str) -> str:
+    """Get formatted synthesis prompt."""
+    return _loader.format("analysis/synthesis.md", query=query, summaries=summaries)
+
+
+def get_subtopic_grouping_prompt(query: str, summaries: str) -> str:
+    """Get formatted subtopic grouping prompt."""
+    return _loader.format("bundle/subtopic_grouping.md", query=query, summaries=summaries)
+
+
+def get_topic_summary_prompt(topic: str, summaries: str) -> str:
+    """Get formatted topic summary prompt."""
+    return _loader.format("bundle/topic_summary.md", topic=topic, summaries=summaries)
 
 ======= tools/research/readme_generator.py ======
 """
@@ -42826,6 +42760,32 @@ def calculate_content_checksum(html_content: str) -> str:
     """
     text = extract_text_from_html(html_content)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+======= tools/shared/__init__.py ======
+"""
+Shared utilities for m1f tools
+
+This module contains common functionality used across multiple m1f tools:
+- Prompt loading and management
+- Configuration utilities
+- Common helper functions
+"""
+
+from .prompts.loader import PromptLoader, load_prompt, format_prompt
+from .config.loader import load_config_file, save_config_file
+from .utils.paths import ensure_path, get_project_root
+
+__all__ = [
+    'PromptLoader',
+    'load_prompt',
+    'format_prompt',
+    'load_config_file',
+    'save_config_file',
+    'ensure_path',
+    'get_project_root',
+]
+
+__version__ = "0.1.0"
 
 ======= tools/html2md_tool/config/__init__.py ======
 """Configuration system for mf1-html2md."""
@@ -46996,6 +46956,864 @@ class SelectolaxScraper(WebScraperBase):
 
         logger.info(f"Scraping complete. Scraped {pages_scraped} pages")
 
+======= tools/shared/config/__init__.py ======
+"""Configuration utilities"""
+
+from .loader import load_config_file, save_config_file, merge_configs
+
+__all__ = ['load_config_file', 'save_config_file', 'merge_configs']
+
+======= tools/shared/config/loader.py ======
+"""
+Universal configuration loader for m1f tools
+
+Supports JSON, YAML, and TOML formats with automatic format detection.
+"""
+
+import json
+from pathlib import Path
+from typing import Any, Dict, Optional, Union, TypeVar, Type
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Type variable for config classes
+T = TypeVar('T')
+
+
+def load_config_file(path: Union[str, Path]) -> Dict[str, Any]:
+    """
+    Load configuration from a file.
+    
+    Automatically detects format based on file extension.
+    
+    Args:
+        path: Path to configuration file
+        
+    Returns:
+        Configuration as dictionary
+        
+    Raises:
+        FileNotFoundError: If file doesn't exist
+        ValueError: If file format is not supported
+    """
+    path = Path(path)
+    
+    if not path.exists():
+        raise FileNotFoundError(f"Configuration file not found: {path}")
+    
+    suffix = path.suffix.lower()
+    
+    try:
+        if suffix == '.json':
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        
+        elif suffix in ['.yaml', '.yml']:
+            import yaml
+            with open(path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f) or {}
+        
+        elif suffix == '.toml':
+            try:
+                import tomllib  # Python 3.11+
+            except ImportError:
+                import tomli as tomllib  # Fallback for older versions
+            
+            with open(path, 'rb') as f:
+                return tomllib.load(f)
+        
+        else:
+            raise ValueError(f"Unsupported configuration format: {suffix}")
+            
+    except Exception as e:
+        logger.error(f"Error loading config from {path}: {e}")
+        raise
+
+
+def save_config_file(
+    data: Dict[str, Any], 
+    path: Union[str, Path],
+    format: Optional[str] = None,
+    pretty: bool = True
+) -> None:
+    """
+    Save configuration to a file.
+    
+    Args:
+        data: Configuration data
+        path: Path to save to
+        format: Force specific format (json, yaml, toml). If None, detect from extension
+        pretty: Pretty-print the output
+        
+    Raises:
+        ValueError: If format is not supported
+    """
+    path = Path(path)
+    
+    # Determine format
+    if format:
+        suffix = f'.{format}'
+    else:
+        suffix = path.suffix.lower()
+    
+    # Ensure parent directory exists
+    path.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        if suffix in ['.json']:
+            with open(path, 'w', encoding='utf-8') as f:
+                if pretty:
+                    json.dump(data, f, indent=2, sort_keys=True)
+                else:
+                    json.dump(data, f)
+        
+        elif suffix in ['.yaml', '.yml']:
+            import yaml
+            with open(path, 'w', encoding='utf-8') as f:
+                yaml.dump(data, f, default_flow_style=False, sort_keys=True)
+        
+        elif suffix in ['.toml']:
+            try:
+                import tomli_w
+            except ImportError:
+                raise ImportError("tomli-w required for TOML output. Install with: pip install tomli-w")
+            
+            with open(path, 'wb') as f:
+                tomli_w.dump(data, f)
+        
+        else:
+            raise ValueError(f"Unsupported configuration format: {suffix}")
+            
+    except Exception as e:
+        logger.error(f"Error saving config to {path}: {e}")
+        raise
+
+
+def merge_configs(*configs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Deep merge multiple configuration dictionaries.
+    
+    Later configs override earlier ones.
+    
+    Args:
+        *configs: Configuration dictionaries to merge
+        
+    Returns:
+        Merged configuration
+    """
+    result = {}
+    
+    for config in configs:
+        if config:
+            _deep_merge(result, config)
+    
+    return result
+
+
+def _deep_merge(base: Dict[str, Any], update: Dict[str, Any]) -> None:
+    """
+    Deep merge update into base (modifies base in-place).
+    
+    Args:
+        base: Base dictionary to merge into
+        update: Dictionary to merge from
+    """
+    for key, value in update.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            # Recursively merge dictionaries
+            _deep_merge(base[key], value)
+        else:
+            # Override value
+            base[key] = value
+
+
+def load_config_with_defaults(
+    path: Optional[Union[str, Path]] = None,
+    defaults: Optional[Dict[str, Any]] = None,
+    env_prefix: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Load configuration with defaults and environment variable overrides.
+    
+    Args:
+        path: Optional path to config file
+        defaults: Default configuration values
+        env_prefix: Prefix for environment variables (e.g., "M1F_RESEARCH_")
+        
+    Returns:
+        Merged configuration
+    """
+    # Start with defaults
+    config = defaults.copy() if defaults else {}
+    
+    # Load from file if provided
+    if path and Path(path).exists():
+        file_config = load_config_file(path)
+        config = merge_configs(config, file_config)
+    
+    # Apply environment variable overrides
+    if env_prefix:
+        import os
+        env_config = {}
+        
+        for key, value in os.environ.items():
+            if key.startswith(env_prefix):
+                # Convert M1F_RESEARCH_URL_COUNT to url_count
+                config_key = key[len(env_prefix):].lower()
+                
+                # Try to parse as JSON first (for complex values)
+                try:
+                    env_config[config_key] = json.loads(value)
+                except json.JSONDecodeError:
+                    # Keep as string
+                    env_config[config_key] = value
+        
+        if env_config:
+            logger.debug(f"Applying environment overrides: {list(env_config.keys())}")
+            config = merge_configs(config, env_config)
+    
+    return config
+
+
+def validate_config(
+    config: Dict[str, Any],
+    schema: Dict[str, Any],
+    strict: bool = False
+) -> bool:
+    """
+    Validate configuration against a schema.
+    
+    Args:
+        config: Configuration to validate
+        schema: Schema definition
+        strict: If True, fail on extra fields
+        
+    Returns:
+        True if valid
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    # This is a simple implementation. For production, use jsonschema or similar
+    errors = []
+    
+    # Check required fields
+    for field, field_schema in schema.items():
+        if field_schema.get('required', False) and field not in config:
+            errors.append(f"Missing required field: {field}")
+    
+    # Check types
+    for field, value in config.items():
+        if field in schema:
+            expected_type = schema[field].get('type')
+            if expected_type and not isinstance(value, expected_type):
+                errors.append(f"Field '{field}' should be {expected_type.__name__}, got {type(value).__name__}")
+        elif strict:
+            errors.append(f"Unknown field: {field}")
+    
+    if errors:
+        raise ValueError("Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors))
+    
+    return True
+
+======= tools/shared/prompts/__init__.py ======
+"""Prompt management utilities"""
+
+from .loader import PromptLoader, load_prompt, format_prompt
+
+__all__ = ['PromptLoader', 'load_prompt', 'format_prompt']
+
+======= tools/shared/prompts/loader.py ======
+"""
+Universal prompt loader for m1f tools
+
+This module provides a flexible prompt loading system that can be used
+by any m1f tool. It supports:
+- Loading prompts from filesystem
+- Caching for performance
+- Template formatting
+- Fallback mechanisms
+"""
+
+from pathlib import Path
+from typing import Dict, Optional, Union, List
+import logging
+from dataclasses import dataclass
+from functools import lru_cache
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PromptLoader:
+    """
+    Flexible prompt loader that can load from multiple directories.
+    
+    Attributes:
+        base_dirs: List of base directories to search for prompts
+        cache_enabled: Whether to cache loaded prompts
+        encoding: File encoding (default: utf-8)
+    """
+    base_dirs: List[Path]
+    cache_enabled: bool = True
+    encoding: str = 'utf-8'
+    
+    def __post_init__(self):
+        """Ensure base_dirs are Path objects"""
+        self.base_dirs = [Path(d) for d in self.base_dirs]
+        self._cache: Dict[str, str] = {}
+    
+    def add_search_path(self, path: Union[str, Path]):
+        """Add a new search path for prompts"""
+        self.base_dirs.append(Path(path))
+    
+    def load(self, prompt_path: str) -> str:
+        """
+        Load a prompt from the first matching file in search paths.
+        
+        Args:
+            prompt_path: Relative path to prompt (e.g., "analysis/synthesis.md")
+            
+        Returns:
+            Prompt content as string
+            
+        Raises:
+            FileNotFoundError: If prompt not found in any search path
+        """
+        # Check cache first
+        if self.cache_enabled and prompt_path in self._cache:
+            logger.debug(f"Loaded prompt from cache: {prompt_path}")
+            return self._cache[prompt_path]
+        
+        # Search in all base directories
+        for base_dir in self.base_dirs:
+            full_path = base_dir / prompt_path
+            if full_path.exists() and full_path.is_file():
+                content = full_path.read_text(encoding=self.encoding)
+                
+                # Cache if enabled
+                if self.cache_enabled:
+                    self._cache[prompt_path] = content
+                
+                logger.debug(f"Loaded prompt from: {full_path}")
+                return content
+        
+        # Not found in any path
+        searched_paths = [str(base_dir / prompt_path) for base_dir in self.base_dirs]
+        raise FileNotFoundError(
+            f"Prompt '{prompt_path}' not found in any of these locations:\n" + 
+            "\n".join(f"  - {p}" for p in searched_paths)
+        )
+    
+    def load_with_fallback(self, primary_path: str, fallback_path: str) -> str:
+        """
+        Load a prompt with fallback option.
+        
+        Args:
+            primary_path: Primary prompt path to try
+            fallback_path: Fallback path if primary not found
+            
+        Returns:
+            Prompt content from primary or fallback
+        """
+        try:
+            return self.load(primary_path)
+        except FileNotFoundError:
+            logger.debug(f"Primary prompt not found, using fallback: {fallback_path}")
+            return self.load(fallback_path)
+    
+    def format(self, prompt_path: str, **kwargs) -> str:
+        """
+        Load and format a prompt with variables.
+        
+        Args:
+            prompt_path: Path to prompt template
+            **kwargs: Variables to substitute
+            
+        Returns:
+            Formatted prompt
+        """
+        template = self.load(prompt_path)
+        return format_prompt(template, **kwargs)
+    
+    def clear_cache(self):
+        """Clear the prompt cache"""
+        self._cache.clear()
+        logger.debug("Cleared prompt cache")
+
+
+# Global prompt loader instance - tools can add their own paths
+_global_loader: Optional[PromptLoader] = None
+
+
+def get_global_loader() -> PromptLoader:
+    """Get or create the global prompt loader"""
+    global _global_loader
+    if _global_loader is None:
+        # Start with shared prompts directory
+        shared_prompts = Path(__file__).parent.parent / "prompts"
+        _global_loader = PromptLoader([shared_prompts])
+    return _global_loader
+
+
+def load_prompt(prompt_path: str, base_dir: Optional[Path] = None) -> str:
+    """
+    Load a prompt using the global loader or a specific base directory.
+    
+    Args:
+        prompt_path: Relative path to prompt
+        base_dir: Optional specific base directory (adds to search paths)
+        
+    Returns:
+        Prompt content
+    """
+    loader = get_global_loader()
+    
+    # Add base_dir to search paths if provided
+    if base_dir and base_dir not in loader.base_dirs:
+        loader.add_search_path(base_dir)
+    
+    return loader.load(prompt_path)
+
+
+def format_prompt(template: str, **kwargs) -> str:
+    """
+    Format a prompt template with variables.
+    
+    Args:
+        template: Prompt template with {variable} placeholders
+        **kwargs: Variables to substitute
+        
+    Returns:
+        Formatted prompt
+        
+    Raises:
+        ValueError: If required variables are missing
+    """
+    try:
+        # Use format_map for better error messages
+        return template.format_map(kwargs)
+    except KeyError as e:
+        # Find all required variables
+        import re
+        required_vars = set(re.findall(r'\{(\w+)\}', template))
+        provided_vars = set(kwargs.keys())
+        missing_vars = required_vars - provided_vars
+        
+        raise ValueError(
+            f"Missing required variables in prompt template: {', '.join(missing_vars)}\n"
+            f"Required: {required_vars}\n"
+            f"Provided: {provided_vars}"
+        )
+
+
+@lru_cache(maxsize=128)
+def get_prompt_variables(template: str) -> List[str]:
+    """
+    Extract variable names from a prompt template.
+    
+    Args:
+        template: Prompt template
+        
+    Returns:
+        List of variable names
+    """
+    import re
+    return list(set(re.findall(r'\{(\w+)\}', template)))
+
+
+def validate_prompt_args(template: str, **kwargs) -> bool:
+    """
+    Validate that all required variables are provided.
+    
+    Args:
+        template: Prompt template
+        **kwargs: Provided variables
+        
+    Returns:
+        True if all required variables are provided
+    """
+    required = set(get_prompt_variables(template))
+    provided = set(kwargs.keys())
+    return required.issubset(provided)
+
+======= tools/shared/utils/__init__.py ======
+"""Common utilities"""
+
+from .paths import ensure_path, get_project_root, find_files
+from .text import truncate_text, clean_whitespace, extract_between
+
+__all__ = [
+    'ensure_path',
+    'get_project_root',
+    'find_files',
+    'truncate_text',
+    'clean_whitespace',
+    'extract_between',
+]
+
+======= tools/shared/utils/paths.py ======
+"""
+Path utilities for m1f tools
+"""
+
+from pathlib import Path
+from typing import Union, List, Optional, Generator
+import os
+
+
+def ensure_path(path: Union[str, Path], create_parents: bool = False) -> Path:
+    """
+    Ensure a path is a Path object and optionally create parent directories.
+    
+    Args:
+        path: Path string or Path object
+        create_parents: If True, create parent directories if they don't exist
+        
+    Returns:
+        Path object
+    """
+    path = Path(path)
+    
+    if create_parents and path.parent != path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    
+    return path
+
+
+def get_project_root(start_path: Optional[Union[str, Path]] = None) -> Optional[Path]:
+    """
+    Find the project root by looking for marker files.
+    
+    Searches for: .git, pyproject.toml, setup.py, package.json
+    
+    Args:
+        start_path: Path to start searching from (default: current directory)
+        
+    Returns:
+        Project root path or None if not found
+    """
+    if start_path is None:
+        start_path = Path.cwd()
+    else:
+        start_path = Path(start_path)
+    
+    # Marker files that indicate project root
+    markers = ['.git', 'pyproject.toml', 'setup.py', 'package.json', '.m1f']
+    
+    current = start_path.absolute()
+    
+    while current != current.parent:
+        for marker in markers:
+            if (current / marker).exists():
+                return current
+        current = current.parent
+    
+    return None
+
+
+def find_files(
+    root: Union[str, Path],
+    pattern: str = "*",
+    recursive: bool = True,
+    include_hidden: bool = False,
+    exclude_dirs: Optional[List[str]] = None
+) -> Generator[Path, None, None]:
+    """
+    Find files matching a pattern.
+    
+    Args:
+        root: Root directory to search
+        pattern: Glob pattern (e.g., "*.py", "**/*.md")
+        recursive: Search recursively
+        include_hidden: Include hidden files/directories
+        exclude_dirs: Directory names to exclude (e.g., ['node_modules', '.git'])
+        
+    Yields:
+        Matching file paths
+    """
+    root = Path(root)
+    
+    if exclude_dirs is None:
+        exclude_dirs = []
+    
+    # Use rglob for recursive search, glob for non-recursive
+    glob_method = root.rglob if recursive else root.glob
+    
+    for path in glob_method(pattern):
+        # Skip directories
+        if path.is_dir():
+            continue
+        
+        # Skip hidden files if requested
+        if not include_hidden and any(part.startswith('.') for part in path.parts):
+            continue
+        
+        # Skip excluded directories
+        if any(excluded in path.parts for excluded in exclude_dirs):
+            continue
+        
+        yield path
+
+
+def relative_to_cwd(path: Union[str, Path]) -> Path:
+    """
+    Get path relative to current working directory if possible.
+    
+    Args:
+        path: Path to convert
+        
+    Returns:
+        Relative path if under cwd, otherwise absolute path
+    """
+    path = Path(path).absolute()
+    cwd = Path.cwd()
+    
+    try:
+        return path.relative_to(cwd)
+    except ValueError:
+        # Path is not under cwd
+        return path
+
+
+def expand_path(path: Union[str, Path]) -> Path:
+    """
+    Expand user home directory and environment variables in path.
+    
+    Args:
+        path: Path to expand
+        
+    Returns:
+        Expanded path
+    """
+    if isinstance(path, str):
+        # Expand environment variables
+        path = os.path.expandvars(path)
+    
+    path = Path(path)
+    
+    # Expand user home directory
+    return path.expanduser()
+
+
+def is_safe_path(path: Union[str, Path], base_dir: Union[str, Path]) -> bool:
+    """
+    Check if a path is safe (doesn't escape base directory).
+    
+    Args:
+        path: Path to check
+        base_dir: Base directory that path should be under
+        
+    Returns:
+        True if path is under base_dir
+    """
+    path = Path(path).resolve()
+    base_dir = Path(base_dir).resolve()
+    
+    try:
+        path.relative_to(base_dir)
+        return True
+    except ValueError:
+        return False
+
+======= tools/shared/utils/text.py ======
+"""
+Text processing utilities for m1f tools
+"""
+
+import re
+from typing import Optional, Tuple
+
+
+def truncate_text(
+    text: str,
+    max_length: int,
+    suffix: str = "...",
+    break_on_word: bool = True
+) -> str:
+    """
+    Truncate text to a maximum length.
+    
+    Args:
+        text: Text to truncate
+        max_length: Maximum length (including suffix)
+        suffix: Suffix to add when truncated
+        break_on_word: Try to break on word boundaries
+        
+    Returns:
+        Truncated text
+    """
+    if len(text) <= max_length:
+        return text
+    
+    # Account for suffix length
+    target_length = max_length - len(suffix)
+    
+    if target_length <= 0:
+        return suffix
+    
+    if break_on_word:
+        # Try to find last word boundary
+        truncated = text[:target_length]
+        last_space = truncated.rfind(' ')
+        
+        # Only break on word if we're not losing too much text
+        if last_space > target_length * 0.8:
+            truncated = truncated[:last_space]
+    else:
+        truncated = text[:target_length]
+    
+    return truncated + suffix
+
+
+def clean_whitespace(text: str, preserve_paragraphs: bool = True) -> str:
+    """
+    Clean up whitespace in text.
+    
+    Args:
+        text: Text to clean
+        preserve_paragraphs: Keep paragraph breaks (double newlines)
+        
+    Returns:
+        Cleaned text
+    """
+    # Remove trailing whitespace from lines
+    lines = [line.rstrip() for line in text.splitlines()]
+    
+    if preserve_paragraphs:
+        # Join lines, preserving empty lines as paragraph breaks
+        result = []
+        current_paragraph = []
+        
+        for line in lines:
+            if line:
+                current_paragraph.append(line)
+            else:
+                if current_paragraph:
+                    result.append(' '.join(current_paragraph))
+                    current_paragraph = []
+                if result and result[-1]:  # Don't add multiple empty paragraphs
+                    result.append('')
+        
+        if current_paragraph:
+            result.append(' '.join(current_paragraph))
+        
+        return '\n'.join(result)
+    else:
+        # Just join all non-empty lines with spaces
+        return ' '.join(line for line in lines if line)
+
+
+def extract_between(
+    text: str,
+    start: str,
+    end: str,
+    include_markers: bool = False
+) -> Optional[str]:
+    """
+    Extract text between two markers.
+    
+    Args:
+        text: Text to search in
+        start: Start marker
+        end: End marker
+        include_markers: Include the markers in the result
+        
+    Returns:
+        Extracted text or None if not found
+    """
+    start_idx = text.find(start)
+    if start_idx == -1:
+        return None
+    
+    if not include_markers:
+        start_idx += len(start)
+    
+    end_idx = text.find(end, start_idx)
+    if end_idx == -1:
+        return None
+    
+    if include_markers:
+        end_idx += len(end)
+    
+    return text[start_idx:end_idx]
+
+
+def extract_json_from_text(text: str) -> Optional[str]:
+    """
+    Extract JSON from text that might contain other content.
+    
+    Handles common patterns like:
+    - ```json ... ```
+    - JSON array or object at any position
+    
+    Args:
+        text: Text containing JSON
+        
+    Returns:
+        Extracted JSON string or None
+    """
+    # Try markdown code block first
+    json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
+    if json_match:
+        return json_match.group(1)
+    
+    # Try to find JSON object or array
+    # Look for {...} or [...]
+    patterns = [
+        r'(\{[^{}]*\})',  # Simple object
+        r'(\[[^\[\]]*\])',  # Simple array
+        r'(\{(?:[^{}]|(?:\{[^{}]*\}))*\})',  # Nested object
+        r'(\[(?:[^\[\]]|(?:\[[^\[\]]*\]))*\])',  # Nested array
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            potential_json = match.group(1)
+            # Quick validation - should start with { or [
+            if potential_json.strip()[0] in '{[':
+                return potential_json
+    
+    return None
+
+
+def remove_markdown_formatting(text: str) -> str:
+    """
+    Remove common Markdown formatting from text.
+    
+    Args:
+        text: Markdown text
+        
+    Returns:
+        Plain text
+    """
+    # Remove headers
+    text = re.sub(r'^#+\s+', '', text, flags=re.MULTILINE)
+    
+    # Remove emphasis
+    text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)  # Bold
+    text = re.sub(r'\*([^*]+)\*', r'\1', text)  # Italic
+    text = re.sub(r'__([^_]+)__', r'\1', text)  # Bold
+    text = re.sub(r'_([^_]+)_', r'\1', text)  # Italic
+    
+    # Remove links but keep text
+    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+    
+    # Remove code blocks
+    text = re.sub(r'```[^`]*```', '', text, flags=re.DOTALL)
+    text = re.sub(r'`([^`]+)`', r'\1', text)  # Inline code
+    
+    # Remove blockquotes
+    text = re.sub(r'^>\s+', '', text, flags=re.MULTILINE)
+    
+    # Remove list markers
+    text = re.sub(r'^[\*\-\+]\s+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^\d+\.\s+', '', text, flags=re.MULTILINE)
+    
+    return text.strip()
+
 ======= tools/scrape_tool/scrapers/configs/beautifulsoup.yaml ======
 # BeautifulSoup scraper configuration example
 scraper_backend: beautifulsoup
@@ -47257,3 +48075,210 @@ parser_config:
 # Example usage:
 # m1f-scrape https://example.com -o output/ \
 #   --scraper selectolax --scraper-config selectolax.yaml
+
+======= tools/shared/prompts/research/analysis/academic_key_points.md ======
+# Academic Analysis - Key Points Prompt
+
+Extract key academic insights from this content.
+Focus on:
+- Theoretical concepts and frameworks
+- Research findings and conclusions
+- Methodological approaches
+- Limitations and future work
+- Connections to existing literature
+
+======= tools/shared/prompts/research/analysis/academic_relevance.md ======
+# Academic Analysis - Relevance Prompt
+
+Analyze this content for academic relevance to "{query}".
+Focus on:
+1. Theoretical contributions and frameworks
+2. Quality of citations and references
+3. Research methodology and rigor
+4. Empirical evidence and validation
+5. Novelty and significance of findings
+
+======= tools/shared/prompts/research/analysis/default_analysis.md ======
+# Default Content Analysis Prompt
+
+Analyze the following content in the context of this research query: "{query}"
+
+URL: {url}
+
+Content:
+{content}
+
+Provide a comprehensive analysis in JSON format with the following fields:
+1. relevance_score: Rate relevance to the research query from 0-10 (float)
+2. summary: A concise 2-3 sentence summary of the content
+3. key_points: Array of 3-5 key points or takeaways
+4. content_type: Type of content (tutorial, documentation, blog, discussion, code, reference, news)
+5. topics: Array of main topics covered
+6. technical_level: beginner, intermediate, or advanced
+7. strengths: What makes this content valuable
+8. limitations: Any limitations or caveats
+
+Return ONLY valid JSON, no other text.
+
+======= tools/shared/prompts/research/analysis/general_key_points.md ======
+# General Analysis - Key Points Prompt
+
+Extract key insights from this content.
+Focus on:
+- Main concepts and ideas
+- Practical applications
+- Important examples
+- Advantages and limitations
+- Connections to related topics
+
+======= tools/shared/prompts/research/analysis/general_relevance.md ======
+# General Analysis - Relevance Prompt
+
+Analyze this content for relevance to "{query}".
+Provide a balanced assessment considering:
+1. How well it addresses the research query
+2. Quality and depth of information
+3. Practical value and applications
+4. Clarity and accessibility
+5. Unique insights or perspectives
+
+======= tools/shared/prompts/research/analysis/reference_key_points.md ======
+# Reference Analysis - Key Points Prompt
+
+Extract key reference information from this content.
+Focus on:
+- API endpoints or function signatures
+- Required and optional parameters
+- Return values and data structures
+- Error codes and handling
+- Usage examples and patterns
+
+======= tools/shared/prompts/research/analysis/reference_relevance.md ======
+# Reference Analysis - Relevance Prompt
+
+Analyze this content for reference relevance to "{query}".
+Focus on:
+1. Completeness of API/interface documentation
+2. Accuracy of parameter and return value descriptions
+3. Quality of usage examples
+4. Coverage of error cases and edge conditions
+5. Organization and searchability
+
+======= tools/shared/prompts/research/analysis/synthesis.md ======
+# Research Synthesis Prompt
+
+Based on the following research results for "{query}", provide a brief synthesis:
+
+{summaries}
+
+Write a 2-3 paragraph synthesis that:
+1. Identifies common themes and patterns
+2. Highlights the most important findings
+3. Notes any conflicting information
+4. Suggests areas that might need more research
+
+======= tools/shared/prompts/research/analysis/technical_key_points.md ======
+# Technical Analysis - Key Points Prompt
+
+Extract key technical insights from this content.
+Focus on:
+- Implementation patterns and techniques
+- Performance optimizations
+- Security considerations
+- Testing strategies
+- Common mistakes to avoid
+
+======= tools/shared/prompts/research/analysis/technical_relevance.md ======
+# Technical Analysis - Relevance Prompt
+
+Analyze this content for technical relevance to "{query}".
+Focus on:
+1. Quality and relevance of code examples
+2. Depth of implementation details
+3. Practical applicability
+4. Technical accuracy
+5. Coverage of edge cases and error handling
+
+======= tools/shared/prompts/research/analysis/tutorial_key_points.md ======
+# Tutorial Analysis - Key Points Prompt
+
+Extract key learning points from this tutorial.
+Focus on:
+- Main concepts being taught
+- Step-by-step procedures
+- Important prerequisites
+- Common mistakes and how to avoid them
+- Practice exercises and challenges
+
+======= tools/shared/prompts/research/analysis/tutorial_relevance.md ======
+# Tutorial Analysis - Relevance Prompt
+
+Analyze this content for tutorial relevance to "{query}".
+Focus on:
+1. Clarity of step-by-step instructions
+2. Completeness of the tutorial
+3. Quality of examples and exercises
+4. Appropriate difficulty progression
+5. Coverage of prerequisites and setup
+
+======= tools/shared/prompts/research/bundle/subtopic_grouping.md ======
+# Subtopic Grouping Prompt
+
+Analyze these research results for "{query}" and group them into logical
+subtopics.
+
+Content items: {summaries}
+
+Provide a JSON response with this structure: {{
+    "subtopics": [
+        {{
+            "name": "Subtopic Name",
+            "description": "Brief description",
+            "item_indices": [0, 2, 5]  // indices of items belonging to this subtopic
+        }} ] }}
+
+Create 3-7 subtopics that logically organize the content. Each item should
+belong to exactly one subtopic. Return ONLY valid JSON, no other text.
+
+======= tools/shared/prompts/research/bundle/topic_summary.md ======
+# Topic Summary Prompt
+
+Generate a 1-2 sentence overview of the following resources about "{topic}":
+
+{summaries}
+
+Write a concise summary that captures what these resources collectively offer
+about this topic.
+
+======= tools/shared/prompts/research/llm/content_analysis.md ======
+# Content Analysis Prompt
+
+Analyze the following content for: "{analysis_type}"
+
+Content: {content}
+
+Provide your analysis in JSON format with appropriate fields based on the
+analysis type. For relevance analysis, include a score from 0-10. For other
+types, provide structured insights.
+
+Return ONLY valid JSON, no other text.
+
+======= tools/shared/prompts/research/llm/web_search.md ======
+# Web Search Prompt
+
+Search for the {num_results} most relevant and high-quality URLs for the
+following research query: "{query}"
+
+Requirements:
+
+1. Focus on authoritative sources (documentation, tutorials, research papers,
+   reputable blogs)
+2. Prioritize recent content when relevant
+3. Include a mix of content types (tutorials, references, discussions)
+4. Avoid low-quality sources (spam, content farms, outdated information)
+
+Return the results as a JSON array with this format: [ {{ "url":
+"https://example.com/article", "title": "Article Title", "description": "Brief
+description of the content and why it's relevant" }} ]
+
+Return ONLY the JSON array, no other text.

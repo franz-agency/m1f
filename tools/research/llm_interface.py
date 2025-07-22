@@ -9,6 +9,7 @@ import subprocess
 import aiohttp
 import asyncio
 from dataclasses import dataclass
+from .prompt_utils import get_web_search_prompt
 
 
 @dataclass
