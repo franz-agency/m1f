@@ -9,7 +9,7 @@
   "homepage": "https://m1f.dev",
   "name": "m1f-website",
   "version": "3.8.0",
-  "description": "Python Development Tools by Franz Agency",
+  "description": "Make One File - AI-ready codebase bundling toolkit",
   "main": "index.js",
   "author": "Franz Agency",
   "license": "Apache-2.0"
