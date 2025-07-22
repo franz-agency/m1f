@@ -92,7 +92,7 @@ class ResearchConfig:
     verbose: int = 0
     
     # Templates
-    template: Optional[str] = None
+    template: str = "general"
     templates: Dict[str, ResearchTemplate] = field(default_factory=dict)
     
     @classmethod

@@ -83,6 +83,13 @@ Examples:
             help='Specific model to use (provider-dependent)'
         )
         
+        parser.add_argument(
+            '--template', '-t',
+            choices=['general', 'technical', 'academic', 'tutorial', 'reference'],
+            default='general',
+            help='Analysis template to use (default: general)'
+        )
+        
         # Configuration options
         parser.add_argument(
             '--config', '-c',

@@ -13,6 +13,12 @@ from .llm_interface import LLMProvider, ClaudeProvider, GeminiProvider, CLIProvi
 from .config import ResearchConfig, LLMConfig, ScrapingConfig, OutputConfig, AnalysisConfig
 from .orchestrator import ResearchOrchestrator
 from .models import ResearchResult, ScrapedContent, AnalyzedContent, ResearchSource
+from .scraper import SmartScraper
+from .content_filter import ContentFilter
+from .analyzer import ContentAnalyzer
+from .bundle_creator import SmartBundleCreator
+from .readme_generator import ReadmeGenerator
+from .analysis_templates import TEMPLATES, get_template
 
 __version__ = "0.1.0"
 __all__ = [
@@ -36,10 +42,19 @@ __all__ = [
     
     # Core
     "ResearchOrchestrator",
+    "SmartScraper",
+    "ContentFilter",
+    "ContentAnalyzer",
+    "SmartBundleCreator",
+    "ReadmeGenerator",
     
     # Models
     "ResearchResult",
     "ScrapedContent",
     "AnalyzedContent",
     "ResearchSource",
+    
+    # Templates
+    "TEMPLATES",
+    "get_template",
 ]
