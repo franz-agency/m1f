@@ -38641,13 +38641,6 @@ Examples:
             help='Path to configuration file'
         )
         
-        parser.add_argument(
-            '--template', '-t',
-            choices=['technical', 'academic', 'tutorial', 'general'],
-            default='general',
-            help='Research template to use (default: general)'
-        )
-        
         # Behavior options
         parser.add_argument(
             '--interactive', '-i',

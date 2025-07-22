@@ -3,6 +3,7 @@ End-to-end tests for m1f-research workflow
 """
 import pytest
 import asyncio
+import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
 
@@ -17,6 +18,12 @@ from tools.research.models import ScrapedContent, AnalyzedContent
 
 class TestResearchWorkflow:
     """Test the complete research workflow"""
+    
+    @pytest.fixture
+    def temp_dir(self):
+        """Create a temporary directory for test output"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
     
     @pytest.fixture
     def mock_config(self, temp_dir):

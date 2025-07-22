@@ -37,16 +37,16 @@ class TestAnalysisTemplates:
         """Test that all templates have required fields"""
         required_fields = [
             'name', 'description', 'focus_areas', 
-            'evaluation_criteria', 'prompts', 'content_preferences'
+            'evaluation_criteria', 'prompt_paths', 'content_preferences'
         ]
         
         for template_name, template in TEMPLATES.items():
             for field in required_fields:
                 assert hasattr(template, field), f"{template_name} missing {field}"
             
-            # Check prompts has required keys
-            assert 'relevance' in template.prompts
-            assert 'key_points' in template.prompts
+            # Check prompt_paths has required keys
+            assert 'relevance' in template.prompt_paths
+            assert 'key_points' in template.prompt_paths
     
     # def test_customize_analysis_prompt(self):
     #     """Test prompt customization"""
