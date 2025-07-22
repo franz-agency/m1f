@@ -12101,6 +12101,91 @@ class TestSymlinkHandling(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
+======= research/README.md ======
+# m1f-research Integration Tests
+
+This directory contains comprehensive integration tests for the m1f-research
+scraping and content analysis pipeline.
+
+## Test Structure
+
+### test_scraping_integration.py
+
+Tests the complete web scraping workflow including:
+
+- **Full scraping workflow** - End-to-end scraping of multiple URLs
+- **Concurrent scraping behavior** - Validates concurrency limits are respected
+- **Retry mechanism** - Tests automatic retry on failed requests
+- **Rate limiting** - Ensures proper delays between requests
+- **Robots.txt compliance** - Tests respect for robots.txt when enabled
+- **HTML to Markdown conversion** - Validates quality of HTML conversion
+- **Error handling** - Tests graceful failure recovery
+- **Progress tracking** - Validates progress callback functionality
+- **Metadata extraction** - Tests extraction of response metadata
+
+### test_content_analysis.py
+
+Tests the content filtering and LLM-based analysis including:
+
+- **Content filtering pipeline** - Complete filtering workflow
+- **Spam detection** - Identifies and filters spam/low-quality content
+- **Language detection** - Filters content by language
+- **Quality scoring** - Evaluates content structure and readability
+- **Duplicate detection** - Identifies and removes duplicate content
+- **LLM-based analysis** - Integration with LLM for content analysis
+- **Template-based scoring** - Tests scoring adjustments based on templates
+- **Batch processing** - Validates concurrent batch analysis
+- **Error recovery** - Tests fallback mechanisms for LLM failures
+
+## Running Tests
+
+```bash
+# Run all research tests
+pytest tests/research/
+
+# Run specific test file
+pytest tests/research/test_scraping_integration.py
+pytest tests/research/test_content_analysis.py
+
+# Run with verbose output
+pytest tests/research/ -vv
+
+# Run specific test
+pytest tests/research/test_scraping_integration.py::TestScrapingIntegration::test_full_scraping_workflow
+```
+
+## Test Fixtures
+
+The `conftest.py` file provides common fixtures:
+
+- `default_scraping_config` - Standard scraping configuration
+- `default_analysis_config` - Standard analysis configuration
+- `mock_llm_provider` - Mock LLM provider for testing
+- `mock_aiohttp_session` - Mock HTTP session
+- `sample_scraped_content_list` - Sample scraped content
+- `temp_dir` - Temporary directory for test files
+
+## Key Testing Patterns
+
+1. **Async Testing**: Uses `pytest.mark.asyncio` for async functions
+2. **Mocking**: Extensive use of `AsyncMock` for external dependencies
+3. **Integration Focus**: Tests component interactions rather than units
+4. **Error Scenarios**: Covers various failure modes and recovery
+5. **Performance**: Tests concurrency limits and batch processing
+
+## Coverage Areas
+
+- Web scraping with retry and rate limiting
+- Content quality assessment
+- Language detection
+- Spam filtering
+- Duplicate detection
+- LLM integration
+- Template-based scoring
+- Error handling and recovery
+- Progress tracking
+- Metadata extraction
+
 ======= research/__init__.py ======
 """
 Tests for m1f-research module
@@ -12114,6 +12199,13 @@ import pytest
 from pathlib import Path
 import tempfile
 import shutil
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
+import json
+
+from tools.research.models import ScrapedContent, AnalyzedContent
+from tools.research.config import ScrapingConfig, AnalysisConfig
+from tools.research.llm_interface import LLMProvider, LLMResponse
 
 
 @pytest.fixture
@@ -12175,6 +12267,110 @@ It contains multiple paragraphs with useful content.
 ```
 def example(): pass
 ```"""
+
+
+@pytest.fixture
+def mock_aiohttp_session():
+    """Mock aiohttp session for testing"""
+    session = AsyncMock()
+    
+    async def mock_get(url, **kwargs):
+        response = AsyncMock()
+        response.status = 200
+        response.url = url
+        response.headers = {"Content-Type": "text/html"}
+        response.text = AsyncMock(return_value="<html><body>Mock content</body></html>")
+        return response
+    
+    session.get = mock_get
+    return session
+
+
+@pytest.fixture
+def default_scraping_config():
+    """Default scraping configuration for tests"""
+    return ScrapingConfig(
+        max_concurrent=3,
+        timeout_range="0.1-0.2",
+        retry_attempts=2,
+        user_agents=["TestAgent/1.0"],
+        headers={"Accept": "text/html"},
+        respect_robots_txt=False
+    )
+
+
+@pytest.fixture
+def default_analysis_config():
+    """Default analysis configuration for tests"""
+    return AnalysisConfig(
+        min_content_length=100,
+        max_content_length=10000,
+        relevance_threshold=5.0,
+        language="en",
+        prefer_code_examples=True
+    )
+
+
+@pytest.fixture
+def mock_llm_provider():
+    """Create a mock LLM provider for testing"""
+    provider = AsyncMock(spec=LLMProvider)
+    
+    async def mock_query(prompt):
+        # Default mock response
+        return LLMResponse(
+            content=json.dumps({
+                "relevance_score": 7.0,
+                "key_points": ["Test point 1", "Test point 2"],
+                "summary": "Test summary of content",
+                "content_type": "article"
+            }),
+            tokens_used=100
+        )
+    
+    provider.query = mock_query
+    return provider
+
+
+@pytest.fixture
+def sample_scraped_content_list():
+    """List of sample scraped content for testing"""
+    from datetime import datetime
+    
+    return [
+        ScrapedContent(
+            url="https://example.com/article1",
+            title="Test Article 1",
+            html="<html><body>Content 1</body></html>",
+            markdown="# Test Article 1\n\nContent 1",
+            scraped_at=datetime.now(),
+            metadata={"status_code": 200}
+        ),
+        ScrapedContent(
+            url="https://example.com/article2",
+            title="Test Article 2",
+            html="<html><body>Content 2</body></html>",
+            markdown="# Test Article 2\n\nContent 2",
+            scraped_at=datetime.now(),
+            metadata={"status_code": 200}
+        ),
+        ScrapedContent(
+            url="https://example.com/article3",
+            title="Test Article 3",
+            html="<html><body>Content 3</body></html>",
+            markdown="# Test Article 3\n\nContent 3",
+            scraped_at=datetime.now(),
+            metadata={"status_code": 200}
+        ),
+    ]
+
+
+@pytest.fixture
+def event_loop():
+    """Create an instance of the default event loop for async tests"""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 ======= research/test_analysis_templates.py ======
 """
@@ -12290,6 +12486,657 @@ class TestAnalysisTemplates:
             total_weight = sum(template.evaluation_criteria.values())
             # Weights should sum to approximately 1.0
             assert 0.9 <= total_weight <= 1.1, f"{template_name} weights sum to {total_weight}"
+
+======= research/test_content_analysis.py ======
+"""
+Integration tests for m1f-research content analysis pipeline
+"""
+import pytest
+import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
+import json
+import hashlib
+
+from tools.research.content_filter import ContentFilter
+from tools.research.analyzer import ContentAnalyzer
+from tools.research.models import ScrapedContent, AnalyzedContent
+from tools.research.config import AnalysisConfig
+from tools.research.llm_interface import LLMProvider, LLMResponse
+from tools.research.analysis_templates import get_template
+
+
+class TestContentAnalysisIntegration:
+    """Test content filtering and LLM-based analysis integration"""
+    
+    @pytest.fixture
+    def analysis_config(self):
+        """Create test analysis configuration"""
+        return AnalysisConfig(
+            min_content_length=100,
+            max_content_length=10000,
+            relevance_threshold=5.0,
+            language="en",
+            prefer_code_examples=True
+        )
+    
+    @pytest.fixture
+    def sample_scraped_content(self):
+        """Create sample scraped content for testing"""
+        return [
+            ScrapedContent(
+                url="https://example.com/python-tutorial",
+                title="Python Testing Tutorial",
+                html="<html>...</html>",
+                markdown="""# Python Testing Tutorial
+                
+                This is a comprehensive guide to testing in Python.
+                
+                ## Introduction
+                Testing is crucial for maintaining code quality.
+                
+                ## Unit Testing
+                Here's how to write unit tests:
+                
+                ```python
+                import unittest
+                
+                class TestExample(unittest.TestCase):
+                    def test_addition(self):
+                        self.assertEqual(1 + 1, 2)
+                ```
+                
+                ## Best Practices
+                - Write tests first (TDD)
+                - Keep tests isolated
+                - Use meaningful test names
+                """,
+                scraped_at=datetime.now(),
+                metadata={"status_code": 200}
+            ),
+            ScrapedContent(
+                url="https://example.com/spam-article",
+                title="Buy Now!!!",
+                html="<html>...</html>",
+                markdown="""CLICK HERE NOW!!! LIMITED TIME OFFER!!!
+                
+                Buy our amazing product NOW! 100% FREE! No credit card required!
+                CLICK HERE NOW! CLICK HERE NOW! CLICK HERE NOW!
+                
+                Make money fast working from home! You have been selected!
+                Act now! This offer won't last! CLICK HERE NOW!
+                
+                https://spam.com/buy https://spam.com/buy https://spam.com/buy
+                https://spam.com/buy https://spam.com/buy https://spam.com/buy
+                """,
+                scraped_at=datetime.now(),
+                metadata={"status_code": 200}
+            ),
+            ScrapedContent(
+                url="https://example.com/short-content",
+                title="Too Short",
+                html="<html>...</html>",
+                markdown="This content is too short to be useful.",
+                scraped_at=datetime.now(),
+                metadata={"status_code": 200}
+            ),
+            ScrapedContent(
+                url="https://example.com/non-english",
+                title="Article en Français",
+                html="<html>...</html>",
+                markdown="""# Guide de Programmation Python
+                
+                Ceci est un guide complet pour la programmation en Python.
+                
+                ## Introduction
+                Python est un langage de programmation polyvalent.
+                
+                Les variables en Python sont dynamiquement typées.
+                Voici un exemple de code:
+                
+                ```python
+                def bonjour(nom):
+                    return f"Bonjour, {nom}!"
+                ```
+                """,
+                scraped_at=datetime.now(),
+                metadata={"status_code": 200}
+            ),
+            ScrapedContent(
+                url="https://example.com/quality-content",
+                title="Advanced Python Patterns",
+                html="<html>...</html>",
+                markdown="""# Advanced Python Design Patterns
+                
+                ## Introduction
+                Design patterns are reusable solutions to common programming problems.
+                
+                ## Singleton Pattern
+                The Singleton pattern ensures only one instance of a class exists.
+                
+                ```python
+                class Singleton:
+                    _instance = None
+                    
+                    def __new__(cls):
+                        if cls._instance is None:
+                            cls._instance = super().__new__(cls)
+                        return cls._instance
+                ```
+                
+                ## Factory Pattern
+                The Factory pattern provides an interface for creating objects.
+                
+                ```python
+                class AnimalFactory:
+                    @staticmethod
+                    def create_animal(animal_type):
+                        if animal_type == "dog":
+                            return Dog()
+                        elif animal_type == "cat":
+                            return Cat()
+                ```
+                
+                ## Best Practices
+                - Use patterns judiciously
+                - Don't over-engineer
+                - Consider Python's unique features
+                
+                ## Conclusion
+                Understanding design patterns improves code quality and maintainability.
+                """,
+                scraped_at=datetime.now(),
+                metadata={"status_code": 200}
+            ),
+        ]
+    
+    @pytest.fixture
+    def mock_llm_provider(self):
+        """Create mock LLM provider"""
+        provider = AsyncMock(spec=LLMProvider)
+        
+        async def mock_query(prompt):
+            # Parse the prompt to determine response
+            if "Python Testing Tutorial" in prompt:
+                return LLMResponse(
+                    content=json.dumps({
+                        "relevance_score": 9.0,
+                        "key_points": [
+                            "Comprehensive guide to Python testing",
+                            "Covers unit testing with unittest framework",
+                            "Includes practical code examples",
+                            "Discusses testing best practices"
+                        ],
+                        "summary": "A thorough tutorial on Python testing covering unit tests, best practices, and practical examples.",
+                        "content_type": "tutorial",
+                        "topics": ["python", "testing", "unittest", "tdd"],
+                        "code_quality": "high",
+                        "technical_depth": "intermediate"
+                    }),
+                    tokens_used=150
+                )
+            elif "Advanced Python Patterns" in prompt:
+                return LLMResponse(
+                    content=json.dumps({
+                        "relevance_score": 8.5,
+                        "key_points": [
+                            "Explains design patterns in Python",
+                            "Covers Singleton and Factory patterns",
+                            "Provides working code examples",
+                            "Discusses best practices for pattern usage"
+                        ],
+                        "summary": "An advanced guide to design patterns in Python with practical implementations.",
+                        "content_type": "technical",
+                        "topics": ["python", "design patterns", "singleton", "factory"],
+                        "code_quality": "high",
+                        "technical_depth": "advanced"
+                    }),
+                    tokens_used=150
+                )
+            else:
+                # Default response for other content
+                return LLMResponse(
+                    content=json.dumps({
+                        "relevance_score": 3.0,
+                        "key_points": ["Generic content"],
+                        "summary": "Not particularly relevant to the query.",
+                        "content_type": "other"
+                    }),
+                    tokens_used=50
+                )
+        
+        provider.query = mock_query
+        return provider
+    
+    def test_content_filtering_pipeline(self, analysis_config, sample_scraped_content):
+        """Test complete content filtering pipeline"""
+        filter = ContentFilter(analysis_config)
+        
+        # Filter scraped content
+        filtered = filter.filter_scraped_content(sample_scraped_content)
+        
+        # Should filter out spam, short content, and non-English
+        assert len(filtered) == 2
+        
+        # Check that quality content passed
+        urls = [c.url for c in filtered]
+        assert "https://example.com/python-tutorial" in urls
+        assert "https://example.com/quality-content" in urls
+        
+        # Check that filtered content was removed
+        assert "https://example.com/spam-article" not in urls  # Spam
+        assert "https://example.com/short-content" not in urls  # Too short
+        assert "https://example.com/non-english" not in urls  # Wrong language
+        
+        # Verify filter stats
+        stats = filter.get_filter_stats()
+        assert stats['total_seen'] == 2  # Two unique content hashes
+    
+    def test_spam_detection(self, analysis_config):
+        """Test spam and low-quality content detection"""
+        filter = ContentFilter(analysis_config)
+        
+        # Test various spam patterns
+        spam_contents = [
+            "CLICK HERE NOW! LIMITED TIME OFFER! 100% FREE!",
+            "Make money fast! Work from home! No experience needed!",
+            "Congratulations! You have been selected for a special offer!",
+            "Buy viagra cialis online cheap! Best prices guaranteed!",
+            "Join our MLM program! Get rich quick! Passive income!"
+        ]
+        
+        for content in spam_contents:
+            scraped = ScrapedContent(
+                url="https://spam.com/test",
+                title="Spam",
+                html="",
+                markdown=content * 5,  # Repeat to meet length requirement
+                scraped_at=datetime.now(),
+                metadata={}
+            )
+            
+            filtered = filter.filter_scraped_content([scraped])
+            assert len(filtered) == 0, f"Failed to filter spam: {content[:50]}..."
+    
+    def test_quality_scoring(self, analysis_config):
+        """Test content quality scoring mechanism"""
+        filter = ContentFilter(analysis_config)
+        
+        # High quality content
+        high_quality = ScrapedContent(
+            url="https://example.com/high-quality",
+            title="High Quality Article",
+            html="",
+            markdown="""# Well-Structured Technical Article
+            
+            ## Introduction
+            This article provides a comprehensive overview of the topic.
+            
+            ## Main Content
+            Here we discuss the key concepts in detail.
+            
+            ### Subsection 1
+            - Important point 1
+            - Important point 2
+            - Important point 3
+            
+            ### Code Example
+            ```python
+            def example_function(param):
+                # Well-documented code
+                result = process_data(param)
+                return result
+            ```
+            
+            ## Conclusion
+            In summary, we have covered all the essential aspects.
+            """,
+            scraped_at=datetime.now(),
+            metadata={}
+        )
+        
+        # Low quality content
+        low_quality = ScrapedContent(
+            url="https://example.com/low-quality",
+            title="Low Quality Article",
+            html="",
+            markdown="""this is poorly written content with no structure no 
+            capitalization no punctuation just a long run on sentence that 
+            goes on and on without any meaningful information or structure
+            repeated words repeated words repeated words repeated words
+            """ * 10,  # Repeat to meet length
+            scraped_at=datetime.now(),
+            metadata={}
+        )
+        
+        # Filter both
+        filtered = filter.filter_scraped_content([high_quality, low_quality])
+        
+        # High quality should pass, low quality should fail
+        assert len(filtered) == 1
+        assert filtered[0].url == "https://example.com/high-quality"
+    
+    @pytest.mark.asyncio
+    async def test_llm_analysis_integration(self, analysis_config, sample_scraped_content, mock_llm_provider):
+        """Test LLM-based content analysis"""
+        analyzer = ContentAnalyzer(mock_llm_provider, analysis_config)
+        
+        # Filter content first
+        filter = ContentFilter(analysis_config)
+        filtered_content = filter.filter_scraped_content(sample_scraped_content)
+        
+        # Analyze filtered content
+        research_query = "Python testing best practices"
+        analyzed = await analyzer.analyze_content(filtered_content, research_query)
+        
+        # Verify analysis results
+        assert len(analyzed) == 2
+        
+        # Check Python tutorial analysis
+        tutorial = next(a for a in analyzed if "python-tutorial" in a.url)
+        assert tutorial.relevance_score == 9.0
+        assert len(tutorial.key_points) == 4
+        assert "unittest" in str(tutorial.key_points)
+        assert tutorial.content_type == "tutorial"
+        
+        # Check design patterns analysis
+        patterns = next(a for a in analyzed if "quality-content" in a.url)
+        assert patterns.relevance_score == 8.5
+        assert "design patterns" in patterns.summary.lower()
+        assert patterns.content_type == "technical"
+    
+    @pytest.mark.asyncio
+    async def test_template_based_scoring(self, analysis_config, mock_llm_provider):
+        """Test template-based scoring adjustments"""
+        # Test with different templates
+        templates = ["technical", "tutorial", "documentation"]
+        
+        content = ScrapedContent(
+            url="https://example.com/test",
+            title="Test Content",
+            html="",
+            markdown="""# Technical Documentation
+            
+            ## API Reference
+            
+            ### Function: process_data
+            ```python
+            def process_data(input_data: dict) -> dict:
+                '''Process input data and return results'''
+                return {"processed": True}
+            ```
+            
+            ### Parameters
+            - input_data: Dictionary containing raw data
+            
+            ### Returns
+            - Dictionary with processed results
+            """,
+            scraped_at=datetime.now(),
+            metadata={}
+        )
+        
+        for template_name in templates:
+            analyzer = ContentAnalyzer(mock_llm_provider, analysis_config, template_name)
+            
+            # Mock different responses based on template
+            async def mock_query(prompt):
+                return LLMResponse(
+                    content=json.dumps({
+                        "relevance_score": 7.0,
+                        "key_points": ["API documentation"],
+                        "summary": "Technical API documentation",
+                        "content_type": "documentation",
+                        "has_code_examples": True,
+                        "has_api_reference": True
+                    }),
+                    tokens_used=100
+                )
+            
+            mock_llm_provider.query = mock_query
+            
+            analyzed = await analyzer.analyze_content([content], "API documentation")
+            
+            assert len(analyzed) == 1
+            result = analyzed[0]
+            
+            # Template scoring should adjust the relevance score
+            if template_name == "documentation":
+                # Documentation template should boost score for API docs
+                assert hasattr(result.analysis_metadata, 'template_score') or 'template_score' in result.analysis_metadata
+    
+    def test_duplicate_detection(self, analysis_config):
+        """Test duplicate content detection"""
+        filter = ContentFilter(analysis_config)
+        
+        # Create similar content with slight variations
+        base_content = """# Python Programming Guide
+        
+        This is a comprehensive guide to Python programming.
+        
+        ## Getting Started
+        Python is a versatile programming language.
+        
+        ## Basic Syntax
+        Here are the basics of Python syntax.
+        """
+        
+        contents = []
+        for i in range(5):
+            # Create variations
+            if i == 0:
+                markdown = base_content
+            elif i == 1:
+                # Exact duplicate
+                markdown = base_content
+            elif i == 2:
+                # Minor whitespace changes
+                markdown = base_content.replace("\n", "\n\n")
+            elif i == 3:
+                # Minor punctuation changes
+                markdown = base_content.replace(".", "!")
+            else:
+                # Completely different content
+                markdown = """# JavaScript Guide
+                
+                This is about JavaScript, not Python.
+                
+                ## Different Content
+                Completely different from the base content.
+                """
+            
+            contents.append(ScrapedContent(
+                url=f"https://example.com/article{i}",
+                title=f"Article {i}",
+                html="",
+                markdown=markdown,
+                scraped_at=datetime.now(),
+                metadata={}
+            ))
+        
+        # Filter content
+        filtered = filter.filter_scraped_content(contents)
+        
+        # Should keep first occurrence and truly different content
+        assert len(filtered) == 2
+        urls = [c.url for c in filtered]
+        assert "https://example.com/article0" in urls  # First occurrence
+        assert "https://example.com/article4" in urls  # Different content
+    
+    def test_language_detection(self, analysis_config):
+        """Test language detection functionality"""
+        filter = ContentFilter(analysis_config)
+        
+        # Test content in different languages
+        test_cases = [
+            {
+                "lang": "en",
+                "content": "This is an English article about programming. The quick brown fox jumps over the lazy dog.",
+                "should_pass": True
+            },
+            {
+                "lang": "es",
+                "content": "Este es un artículo en español sobre programación. El perro come la comida en el jardín.",
+                "should_pass": False
+            },
+            {
+                "lang": "fr",
+                "content": "Ceci est un article en français sur la programmation. Le chat mange dans la cuisine.",
+                "should_pass": False
+            },
+            {
+                "lang": "de",
+                "content": "Dies ist ein deutscher Artikel über Programmierung. Der Hund spielt im Garten.",
+                "should_pass": False
+            },
+            {
+                "lang": "mixed",
+                "content": "This article mixes English with some español and français words but is mostly English.",
+                "should_pass": True  # Mostly English
+            }
+        ]
+        
+        for test in test_cases:
+            content = ScrapedContent(
+                url=f"https://example.com/{test['lang']}",
+                title=f"Article in {test['lang']}",
+                html="",
+                markdown=test["content"] * 10,  # Repeat to meet length requirement
+                scraped_at=datetime.now(),
+                metadata={}
+            )
+            
+            filtered = filter.filter_scraped_content([content])
+            
+            if test["should_pass"]:
+                assert len(filtered) == 1, f"Failed to pass {test['lang']} content"
+            else:
+                assert len(filtered) == 0, f"Failed to filter {test['lang']} content"
+    
+    @pytest.mark.asyncio
+    async def test_batch_processing(self, analysis_config, mock_llm_provider):
+        """Test batch processing of content analysis"""
+        analyzer = ContentAnalyzer(mock_llm_provider, analysis_config)
+        
+        # Create many content items
+        contents = []
+        for i in range(20):
+            contents.append(ScrapedContent(
+                url=f"https://example.com/article{i}",
+                title=f"Article {i}",
+                html="",
+                markdown=f"# Article {i}\n\nThis is content for article {i}." * 20,
+                scraped_at=datetime.now(),
+                metadata={}
+            ))
+        
+        # Track concurrent calls
+        concurrent_calls = []
+        call_times = []
+        
+        async def mock_query(prompt):
+            call_times.append(asyncio.get_event_loop().time())
+            concurrent_calls.append(len([t for t in call_times if t > asyncio.get_event_loop().time() - 0.1]))
+            
+            await asyncio.sleep(0.05)  # Simulate processing time
+            
+            return LLMResponse(
+                content=json.dumps({
+                    "relevance_score": 5.0,
+                    "key_points": ["Test content"],
+                    "summary": "Test summary",
+                    "content_type": "article"
+                }),
+                tokens_used=50
+            )
+        
+        mock_llm_provider.query = mock_query
+        
+        # Analyze with batch size of 5
+        analyzed = await analyzer.analyze_content(contents, "test query", batch_size=5)
+        
+        # Verify all content was analyzed
+        assert len(analyzed) == 20
+        
+        # Verify batch processing (max 5 concurrent)
+        assert max(concurrent_calls) <= 5
+    
+    @pytest.mark.asyncio
+    async def test_error_recovery(self, analysis_config, sample_scraped_content):
+        """Test error handling and recovery in analysis pipeline"""
+        # Create LLM provider that fails intermittently
+        provider = AsyncMock(spec=LLMProvider)
+        fail_count = 0
+        
+        async def mock_query(prompt):
+            nonlocal fail_count
+            fail_count += 1
+            
+            if fail_count % 3 == 0:
+                # Fail every third call
+                raise Exception("LLM service unavailable")
+            
+            return LLMResponse(
+                content=json.dumps({
+                    "relevance_score": 7.0,
+                    "key_points": ["Recovered from error"],
+                    "summary": "Successfully analyzed after error",
+                    "content_type": "article"
+                }),
+                tokens_used=50
+            )
+        
+        provider.query = mock_query
+        
+        analyzer = ContentAnalyzer(provider, analysis_config)
+        
+        # Analyze content
+        analyzed = await analyzer.analyze_content(sample_scraped_content[:3], "test query")
+        
+        # Should handle errors gracefully
+        assert len(analyzed) == 3
+        
+        # Check that some succeeded and some have fallback analysis
+        success_count = sum(1 for a in analyzed if a.relevance_score > 5.0)
+        fallback_count = sum(1 for a in analyzed if a.relevance_score == 5.0)
+        
+        assert success_count > 0  # Some should succeed
+        assert fallback_count > 0  # Some should use fallback
+    
+    def test_content_filtering_stats(self, analysis_config, sample_scraped_content):
+        """Test filtering statistics and reporting"""
+        filter = ContentFilter(analysis_config)
+        
+        # Process content multiple times to accumulate stats
+        for _ in range(3):
+            filter.filter_scraped_content(sample_scraped_content)
+        
+        stats = filter.get_filter_stats()
+        
+        # Verify stats tracking
+        assert stats['total_seen'] > 0
+        assert stats['duplicate_checks'] > 0
+        
+        # Process with analyzed content
+        analyzed_content = [
+            AnalyzedContent(
+                url=c.url,
+                title=c.title,
+                content=c.markdown,
+                relevance_score=7.0 if i % 2 == 0 else 3.0,
+                key_points=["Point 1", "Point 2"],
+                summary="Test summary",
+                content_type="article",
+                analysis_metadata={}
+            ) for i, c in enumerate(sample_scraped_content)
+        ]
+        
+        # Filter analyzed content
+        filtered_analyzed = filter.filter_analyzed_content(analyzed_content)
+        
+        # Should filter based on relevance threshold (5.0)
+        assert len(filtered_analyzed) < len(analyzed_content)
+        assert all(a.relevance_score >= 5.0 for a in filtered_analyzed)
 
 ======= research/test_llm_providers.py ======
 """
@@ -12869,6 +13716,498 @@ research:
         assert config.analysis.relevance_threshold == 6.5
         assert "technical" in config.templates
         assert config.templates["technical"].url_count == 30
+
+======= research/test_scraping_integration.py ======
+"""
+Integration tests for m1f-research scraping pipeline
+"""
+import pytest
+import asyncio
+import aiohttp
+from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
+import json
+
+from tools.research.scraper import SmartScraper
+from tools.research.config import ScrapingConfig
+from tools.research.models import ScrapedContent
+
+
+class TestScrapingIntegration:
+    """Test full scraping workflow from URLs to content"""
+    
+    @pytest.fixture
+    def scraping_config(self):
+        """Create test scraping configuration"""
+        return ScrapingConfig(
+            max_concurrent=3,
+            timeout_range="0.1-0.2",  # Fast for testing
+            retry_attempts=2,
+            user_agents=["TestAgent/1.0"],
+            headers={"Accept": "text/html"},
+            respect_robots_txt=False  # Disable for testing
+        )
+    
+    @pytest.fixture
+    def sample_urls(self):
+        """Sample URLs for testing"""
+        return [
+            {"url": "https://example.com/article1", "title": "Article 1", "description": "Test article 1"},
+            {"url": "https://example.com/article2", "title": "Article 2", "description": "Test article 2"},
+            {"url": "https://example.com/article3", "title": "Article 3", "description": "Test article 3"},
+            {"url": "https://example.com/fail", "title": "Failed Article", "description": "This will fail"},
+        ]
+    
+    @pytest.fixture
+    def mock_html_responses(self):
+        """Mock HTML responses for different URLs"""
+        return {
+            "https://example.com/article1": """
+                <html>
+                    <head><title>Article 1 - Testing</title></head>
+                    <body>
+                        <h1>Understanding Unit Testing</h1>
+                        <p>This article explains the basics of unit testing in Python.</p>
+                        <p>Unit tests are essential for maintaining code quality.</p>
+                        <code>def test_example(): assert True</code>
+                    </body>
+                </html>
+            """,
+            "https://example.com/article2": """
+                <html>
+                    <head><title>Article 2 - Integration</title></head>
+                    <body>
+                        <h1>Integration Testing Best Practices</h1>
+                        <p>Learn how to write effective integration tests.</p>
+                        <ul>
+                            <li>Test component interactions</li>
+                            <li>Use mock services</li>
+                            <li>Verify data flow</li>
+                        </ul>
+                    </body>
+                </html>
+            """,
+            "https://example.com/article3": """
+                <html>
+                    <head><title>Article 3 - Performance</title></head>
+                    <body>
+                        <h1>Performance Testing Guide</h1>
+                        <p>Optimize your application with performance tests.</p>
+                        <pre><code>
+                        import time
+                        def measure_performance():
+                            start = time.time()
+                            # Your code here
+                            return time.time() - start
+                        </code></pre>
+                    </body>
+                </html>
+            """,
+        }
+    
+    @pytest.mark.asyncio
+    async def test_full_scraping_workflow(self, scraping_config, sample_urls, mock_html_responses):
+        """Test complete scraping workflow with multiple URLs"""
+        # Mock aiohttp responses
+        async def mock_get(url, **kwargs):
+            response = AsyncMock()
+            response.status = 200 if url in mock_html_responses else 404
+            response.url = url
+            response.headers = {"Content-Type": "text/html"}
+            
+            async def _text():
+                if url in mock_html_responses:
+                    return mock_html_responses[url]
+                raise aiohttp.ClientError("Not found")
+            
+            response.text = _text
+            return response
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                # Track progress
+                progress_updates = []
+                scraper.set_progress_callback(lambda completed, total: progress_updates.append((completed, total)))
+                
+                # Scrape URLs
+                results = await scraper.scrape_urls(sample_urls)
+                
+                # Verify results
+                assert len(results) == 3  # 3 successful, 1 failed
+                assert all(isinstance(r, ScrapedContent) for r in results)
+                
+                # Check content
+                for result in results:
+                    assert result.url in mock_html_responses
+                    assert result.title is not None
+                    assert result.html is not None
+                    assert result.markdown is not None
+                    assert isinstance(result.scraped_at, datetime)
+                    assert result.metadata['status_code'] == 200
+                
+                # Verify progress tracking
+                assert len(progress_updates) > 0
+                assert progress_updates[-1][0] == 4  # All URLs attempted
+                
+                # Check stats
+                stats = scraper.get_stats()
+                assert stats['total_urls'] == 4
+                assert stats['completed_urls'] == 4
+                assert stats['failed_urls'] == 1
+                assert stats['success_rate'] == 0.75
+    
+    @pytest.mark.asyncio
+    async def test_concurrent_scraping_behavior(self, scraping_config):
+        """Test that concurrent scraping respects limits"""
+        scraping_config.max_concurrent = 2  # Limit to 2 concurrent requests
+        
+        # Track concurrent requests
+        concurrent_count = 0
+        max_concurrent_observed = 0
+        request_times = []
+        
+        async def mock_get(url, **kwargs):
+            nonlocal concurrent_count, max_concurrent_observed
+            
+            # Track request start
+            concurrent_count += 1
+            request_times.append(('start', url, asyncio.get_event_loop().time()))
+            max_concurrent_observed = max(max_concurrent_observed, concurrent_count)
+            
+            # Simulate request time
+            await asyncio.sleep(0.1)
+            
+            # Track request end
+            concurrent_count -= 1
+            request_times.append(('end', url, asyncio.get_event_loop().time()))
+            
+            response = AsyncMock()
+            response.status = 200
+            response.url = url
+            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
+            return response
+        
+        # Create many URLs to test concurrency
+        urls = [{"url": f"https://example.com/page{i}", "title": f"Page {i}"} for i in range(10)]
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                await scraper.scrape_urls(urls)
+                
+                # Verify concurrency limit was respected
+                assert max_concurrent_observed <= 2
+                
+                # Verify all requests completed
+                assert len([t for t in request_times if t[0] == 'end']) == 10
+    
+    @pytest.mark.asyncio
+    async def test_retry_mechanism(self, scraping_config):
+        """Test retry logic for failed requests"""
+        scraping_config.retry_attempts = 3
+        
+        # Track retry attempts
+        attempt_counts = {}
+        
+        async def mock_get(url, **kwargs):
+            # Count attempts
+            attempt_counts[url] = attempt_counts.get(url, 0) + 1
+            
+            response = AsyncMock()
+            
+            # Fail first 2 attempts, succeed on 3rd
+            if attempt_counts[url] < 3:
+                raise aiohttp.ClientError(f"Attempt {attempt_counts[url]} failed")
+            
+            response.status = 200
+            response.url = url
+            response.text = AsyncMock(return_value="<html><body>Success after retries</body></html>")
+            return response
+        
+        urls = [{"url": "https://example.com/retry-test", "title": "Retry Test"}]
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                results = await scraper.scrape_urls(urls)
+                
+                # Should succeed after retries
+                assert len(results) == 1
+                assert results[0].url == "https://example.com/retry-test"
+                
+                # Verify retry attempts
+                assert attempt_counts["https://example.com/retry-test"] == 3
+    
+    @pytest.mark.asyncio
+    async def test_rate_limiting(self, scraping_config):
+        """Test rate limiting with random delays"""
+        scraping_config.timeout_range = "0.5-1.0"  # 0.5-1.0 second delays
+        
+        request_times = []
+        
+        async def mock_get(url, **kwargs):
+            request_times.append(asyncio.get_event_loop().time())
+            response = AsyncMock()
+            response.status = 200
+            response.url = url
+            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
+            return response
+        
+        urls = [{"url": f"https://example.com/rate{i}", "title": f"Rate {i}"} for i in range(3)]
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                start_time = asyncio.get_event_loop().time()
+                await scraper.scrape_urls(urls)
+                
+                # Verify delays between requests
+                for i in range(1, len(request_times)):
+                    delay = request_times[i] - request_times[i-1]
+                    # Account for concurrent requests - at least some should show delays
+                    if i % scraping_config.max_concurrent == 0:
+                        assert delay >= 0.4  # Close to minimum delay
+    
+    @pytest.mark.asyncio
+    async def test_robots_txt_compliance(self, scraping_config):
+        """Test robots.txt compliance when enabled"""
+        scraping_config.respect_robots_txt = True
+        
+        # Mock robots.txt response
+        async def mock_get(url, **kwargs):
+            response = AsyncMock()
+            
+            if url.endswith("/robots.txt"):
+                response.status = 200
+                response.text = AsyncMock(return_value="""
+                    User-agent: *
+                    Disallow: /private/
+                    Disallow: /admin/
+                    Allow: /public/
+                """)
+            elif "/private/" in url or "/admin/" in url:
+                # Should not reach here if robots.txt is respected
+                response.status = 403
+                response.text = AsyncMock(return_value="Forbidden")
+            else:
+                response.status = 200
+                response.text = AsyncMock(return_value="<html><body>Allowed content</body></html>")
+            
+            response.url = url
+            return response
+        
+        urls = [
+            {"url": "https://example.com/public/article", "title": "Public Article"},
+            {"url": "https://example.com/private/data", "title": "Private Data"},
+            {"url": "https://example.com/admin/panel", "title": "Admin Panel"},
+        ]
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                results = await scraper.scrape_urls(urls)
+                
+                # Only public URL should be scraped
+                assert len(results) == 1
+                assert "public" in results[0].url
+                assert all("private" not in r.url and "admin" not in r.url for r in results)
+    
+    @pytest.mark.asyncio
+    async def test_html_to_markdown_conversion(self, scraping_config, mock_html_responses):
+        """Test HTML to Markdown conversion quality"""
+        # Use a specific HTML with various elements
+        test_html = """
+        <html>
+            <head><title>Conversion Test</title></head>
+            <body>
+                <h1>Main Title</h1>
+                <h2>Subtitle</h2>
+                <p>This is a <strong>bold</strong> and <em>italic</em> paragraph.</p>
+                <ul>
+                    <li>List item 1</li>
+                    <li>List item 2</li>
+                </ul>
+                <a href="https://example.com">External Link</a>
+                <a href="/relative/path">Relative Link</a>
+                <code>inline_code()</code>
+                <pre><code>
+                def block_code():
+                    return "example"
+                </code></pre>
+                <script>alert('This should be removed');</script>
+                <style>body { color: red; }</style>
+            </body>
+        </html>
+        """
+        
+        async def mock_get(url, **kwargs):
+            response = AsyncMock()
+            response.status = 200
+            response.url = url
+            response.text = AsyncMock(return_value=test_html)
+            return response
+        
+        urls = [{"url": "https://example.com/test", "title": "Test"}]
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                results = await scraper.scrape_urls(urls)
+                
+                assert len(results) == 1
+                markdown = results[0].markdown
+                
+                # Verify markdown conversion
+                assert "# Main Title" in markdown
+                assert "## Subtitle" in markdown
+                assert "**bold**" in markdown
+                assert "*italic*" in markdown or "_italic_" in markdown
+                assert "- List item 1" in markdown
+                assert "- List item 2" in markdown
+                assert "[External Link](https://example.com)" in markdown
+                assert "`inline_code()`" in markdown
+                assert "def block_code():" in markdown
+                
+                # Verify script and style removal
+                assert "<script>" not in markdown
+                assert "alert(" not in markdown
+                assert "<style>" not in markdown
+                assert "color: red" not in markdown
+                
+                # Verify relative URL conversion
+                assert "[Relative Link](https://example.com/relative/path)" in markdown
+    
+    @pytest.mark.asyncio
+    async def test_error_handling_and_fallback(self, scraping_config):
+        """Test error handling for various failure scenarios"""
+        # Define different error scenarios
+        async def mock_get(url, **kwargs):
+            if "timeout" in url:
+                await asyncio.sleep(10)  # Trigger timeout
+            elif "error500" in url:
+                response = AsyncMock()
+                response.status = 500
+                response.url = url
+                return response
+            elif "network" in url:
+                raise aiohttp.ClientConnectorError(None, OSError("Network error"))
+            elif "invalid" in url:
+                response = AsyncMock()
+                response.status = 200
+                response.url = url
+                response.text = AsyncMock(side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "invalid"))
+                return response
+            else:
+                response = AsyncMock()
+                response.status = 200
+                response.url = url
+                response.text = AsyncMock(return_value="<html><body>Success</body></html>")
+                return response
+        
+        urls = [
+            {"url": "https://example.com/success", "title": "Success"},
+            {"url": "https://example.com/timeout", "title": "Timeout"},
+            {"url": "https://example.com/error500", "title": "Server Error"},
+            {"url": "https://example.com/network", "title": "Network Error"},
+            {"url": "https://example.com/invalid", "title": "Invalid Encoding"},
+        ]
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                results = await scraper.scrape_urls(urls)
+                
+                # Only successful request should return content
+                assert len(results) == 1
+                assert results[0].url == "https://example.com/success"
+                
+                # Check failed URLs
+                stats = scraper.get_stats()
+                assert stats['failed_urls'] == 4
+                assert "timeout" in str(stats['failed_url_list'])
+    
+    @pytest.mark.asyncio
+    async def test_progress_callback_integration(self, scraping_config):
+        """Test progress callback functionality"""
+        progress_history = []
+        
+        async def mock_get(url, **kwargs):
+            # Simulate some delay to see progress updates
+            await asyncio.sleep(0.05)
+            response = AsyncMock()
+            response.status = 200
+            response.url = url
+            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
+            return response
+        
+        def progress_callback(completed, total):
+            progress_history.append({
+                'completed': completed,
+                'total': total,
+                'percentage': (completed / total * 100) if total > 0 else 0
+            })
+        
+        urls = [{"url": f"https://example.com/page{i}", "title": f"Page {i}"} for i in range(5)]
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                scraper.set_progress_callback(progress_callback)
+                await scraper.scrape_urls(urls)
+                
+                # Verify progress updates
+                assert len(progress_history) == 5
+                assert progress_history[0]['completed'] == 1
+                assert progress_history[-1]['completed'] == 5
+                assert all(p['total'] == 5 for p in progress_history)
+                
+                # Check progress percentages
+                expected_percentages = [20, 40, 60, 80, 100]
+                actual_percentages = [p['percentage'] for p in progress_history]
+                assert actual_percentages == expected_percentages
+    
+    @pytest.mark.asyncio
+    async def test_metadata_extraction(self, scraping_config):
+        """Test metadata extraction from responses"""
+        async def mock_get(url, **kwargs):
+            response = AsyncMock()
+            response.status = 200
+            response.url = url if "redirect" not in url else "https://example.com/final-destination"
+            response.headers = {
+                "Content-Type": "text/html; charset=utf-8",
+                "Content-Length": "1234",
+                "Last-Modified": "Wed, 21 Oct 2015 07:28:00 GMT"
+            }
+            response.text = AsyncMock(return_value="""
+                <html>
+                    <head>
+                        <title>Test Page with Metadata</title>
+                        <meta name="description" content="Test description">
+                        <meta name="keywords" content="test, metadata, scraping">
+                    </head>
+                    <body>
+                        <h1>Test Content</h1>
+                        <p>Some content here.</p>
+                    </body>
+                </html>
+            """)
+            return response
+        
+        urls = [
+            {"url": "https://example.com/normal", "title": "Normal Page"},
+            {"url": "https://example.com/redirect", "title": "Redirect Page"},
+        ]
+        
+        with patch('aiohttp.ClientSession.get', side_effect=mock_get):
+            async with SmartScraper(scraping_config) as scraper:
+                results = await scraper.scrape_urls(urls)
+                
+                assert len(results) == 2
+                
+                # Check normal page metadata
+                normal_meta = results[0].metadata
+                assert normal_meta['status_code'] == 200
+                assert normal_meta['content_type'] == "text/html; charset=utf-8"
+                assert normal_meta['content_length'] > 0
+                assert normal_meta['final_url'] == "https://example.com/normal"
+                
+                # Check redirect handling
+                redirect_meta = results[1].metadata
+                assert redirect_meta['final_url'] == "https://example.com/final-destination"
+                assert results[1].url == "https://example.com/final-destination"
 
 ======= s1f/README.md ======
 # s1f (Split One File) Test Suite

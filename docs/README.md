@@ -51,6 +51,19 @@ Professional web scraping and conversion tools.
 - [**Scraper Backends**](04_scrape/41_html2md_scraper_backends.md) - Backend
   options for web scraping
 
+#### Research Tool
+
+AI-powered research tool for automatic information gathering and bundling.
+
+- [**Research Tool Overview**](06_research/) - Comprehensive research tool
+  documentation
+- [**Research README**](06_research/README.md) - Quick start and feature
+  overview
+- [**Architecture**](06_research/architecture.md) - Technical architecture
+  details
+- [**API Reference**](06_research/api-reference.md) - Complete API documentation
+- [**Examples**](06_research/examples.md) - Usage examples and recipes
+
 #### Utility Tools
 
 - [**Token Counter**](99_misc/98_token_counter.md) - Estimate token usage for

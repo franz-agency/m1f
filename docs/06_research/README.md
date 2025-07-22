@@ -1,8 +1,5 @@
 # m1f-research
 
-> **Note**: This documentation has been moved to
-> [docs/06_research/](../../docs/06_research/)
-
 AI-powered research tool that automatically finds, scrapes, and bundles
 information on any topic.
 
