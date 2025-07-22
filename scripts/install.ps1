@@ -247,6 +247,7 @@ $commands = @{
     "m1f-s1f.bat" = "m1f-s1f"
     "m1f-html2md.bat" = "m1f-html2md"
     "m1f-scrape.bat" = "m1f-scrape"
+    "m1f-research.bat" = "m1f-research"
     "m1f-token-counter.bat" = "m1f-token-counter"
     "m1f-update.bat" = "m1f auto-bundle"
     "m1f-init.bat" = "python `"%~dp0..\tools\m1f_init.py`" %*"
@@ -257,6 +258,7 @@ echo   m1f               - Main m1f tool for combining files
 echo   m1f-s1f           - Split combined files back to original structure
 echo   m1f-html2md       - Convert HTML to Markdown
 echo   m1f-scrape        - Download websites for offline viewing
+echo   m1f-research      - AI-powered research and content analysis
 echo   m1f-token-counter - Count tokens in files
 echo   m1f-update        - Update m1f bundle files
 echo   m1f-init          - Initialize m1f for your project
@@ -310,6 +312,7 @@ Write-Host "  • m1f               - Main m1f tool for combining files"
 Write-Host "  • m1f-s1f           - Split combined files back to original structure"
 Write-Host "  • m1f-html2md       - Convert HTML to Markdown"
 Write-Host "  • m1f-scrape        - Download websites for offline viewing"
+Write-Host "  • m1f-research      - AI-powered research and content analysis"
 Write-Host "  • m1f-token-counter - Count tokens in files"
 Write-Host "  • m1f-update        - Regenerate m1f bundles"
 Write-Host "  • m1f-init          - Initialize m1f for your project"

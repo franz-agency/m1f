@@ -187,6 +187,19 @@ Turn that scraped HTML into beautiful Markdown.
 m1f-html2md convert ./scraped-docs -o ./markdown/
 ```
 
+### m1f-research
+
+AI-powered research assistant that finds, scrapes, analyzes, and bundles the
+best resources into comprehensive research bundles.
+
+```bash
+# Research any topic with AI guidance
+m1f-research "the best MCPs for Claude Code AI 2025 and how they function"
+
+# Custom configuration with specific analysis
+m1f-research --config research.yml --template academic "machine learning transformers"
+```
+
 ### m1f-token-counter
 
 Know before you paste. Because context limits are real.
@@ -307,7 +320,7 @@ m1f-s1f -i myproject.txt -d ./project/
 2. **Use presets** - We've included configs for WordPress, Django, React, and
    more
 3. **Chain tools** - `m1f-scrape` → `m1f-html2md` → `m1f` = Documentation power
-   combo
+   combo. Or use `m1f-research` for AI-guided research and analysis
 4. **Set up watches** - `./scripts/watch_and_bundle.sh` for auto-updates
 5. **Check token counts** - Always know what you're pasting
 
@@ -6045,6 +6058,7 @@ $commands = @{
     "m1f-s1f.bat" = "m1f-s1f"
     "m1f-html2md.bat" = "m1f-html2md"
     "m1f-scrape.bat" = "m1f-scrape"
+    "m1f-research.bat" = "m1f-research"
     "m1f-token-counter.bat" = "m1f-token-counter"
     "m1f-update.bat" = "m1f auto-bundle"
     "m1f-init.bat" = "python `"%~dp0..\tools\m1f_init.py`" %*"
@@ -6055,6 +6069,7 @@ echo   m1f               - Main m1f tool for combining files
 echo   m1f-s1f           - Split combined files back to original structure
 echo   m1f-html2md       - Convert HTML to Markdown
 echo   m1f-scrape        - Download websites for offline viewing
+echo   m1f-research      - AI-powered research and content analysis
 echo   m1f-token-counter - Count tokens in files
 echo   m1f-update        - Update m1f bundle files
 echo   m1f-init          - Initialize m1f for your project
@@ -6108,6 +6123,7 @@ Write-Host "  • m1f               - Main m1f tool for combining files"
 Write-Host "  • m1f-s1f           - Split combined files back to original structure"
 Write-Host "  • m1f-html2md       - Convert HTML to Markdown"
 Write-Host "  • m1f-scrape        - Download websites for offline viewing"
+Write-Host "  • m1f-research      - AI-powered research and content analysis"
 Write-Host "  • m1f-token-counter - Count tokens in files"
 Write-Host "  • m1f-update        - Regenerate m1f bundles"
 Write-Host "  • m1f-init          - Initialize m1f for your project"
@@ -6359,6 +6375,7 @@ echo "  • m1f               - Main m1f tool for combining files"
 echo "  • m1f-s1f           - Split combined files back to original structure"
 echo "  • m1f-html2md       - Convert HTML to Markdown"
 echo "  • m1f-scrape        - Download websites for offline viewing"
+echo "  • m1f-research      - AI-powered research and content analysis"
 echo "  • m1f-token-counter - Count tokens in files"
 echo "  • m1f-update        - Regenerate m1f bundles"
 echo "  • m1f-init          - Initialize m1f for your project"
@@ -6439,6 +6456,13 @@ function m1f-scrape {
 
 # Alias for backwards compatibility
 Set-Alias -Name webscraper -Value m1f-scrape
+
+# AI Research tool
+function m1f-research {
+    Activate-M1FEnvironment
+    $env:PYTHONPATH = "$M1F_ROOT;$env:PYTHONPATH"
+    & python -m tools.research @args
+}
 
 # Token counter
 function m1f-token-counter {
@@ -6525,6 +6549,7 @@ function m1f-help {
     Write-Host "  m1f-s1f           - Split combined files back to original structure" -ForegroundColor Green
     Write-Host "  m1f-html2md       - Convert HTML to Markdown" -ForegroundColor Green
     Write-Host "  m1f-scrape        - Download websites for offline viewing" -ForegroundColor Green
+    Write-Host "  m1f-research      - AI-powered research and content analysis" -ForegroundColor Green
     Write-Host "  m1f-token-counter - Count tokens in files" -ForegroundColor Green
     Write-Host "  m1f-update        - Update m1f bundle files" -ForegroundColor Green
     Write-Host "  m1f-init          - Initialize m1f for your project" -ForegroundColor Green
@@ -39923,7 +39948,7 @@ def get_provider(provider_name: str, **kwargs) -> LLMProvider:
     providers = {
         "claude": ClaudeProvider,
         "gemini": GeminiProvider,
-        "gemini-cli": lambda **kw: CLIProvider(command="gemini", **kw),
+        "gemini-cli": lambda **kw: CLIProvider(command="gemini", model=kw.get("model")),
     }
     
     provider_class = providers.get(provider_name.lower())

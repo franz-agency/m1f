@@ -465,7 +465,7 @@ def get_provider(provider_name: str, **kwargs) -> LLMProvider:
     providers = {
         "claude": ClaudeProvider,
         "gemini": GeminiProvider,
-        "gemini-cli": lambda **kw: CLIProvider(command="gemini", **kw),
+        "gemini-cli": lambda **kw: CLIProvider(command="gemini", model=kw.get("model")),
     }
     
     provider_class = providers.get(provider_name.lower())

@@ -186,6 +186,19 @@ Turn that scraped HTML into beautiful Markdown.
 m1f-html2md convert ./scraped-docs -o ./markdown/
 ```
 
+### m1f-research
+
+AI-powered research assistant that finds, scrapes, analyzes, and bundles the
+best resources into comprehensive research bundles.
+
+```bash
+# Research any topic with AI guidance
+m1f-research "the best MCPs for Claude Code AI 2025 and how they function"
+
+# Custom configuration with specific analysis
+m1f-research --config research.yml --template academic "machine learning transformers"
+```
+
 ### m1f-token-counter
 
 Know before you paste. Because context limits are real.
@@ -306,7 +319,7 @@ m1f-s1f -i myproject.txt -d ./project/
 2. **Use presets** - We've included configs for WordPress, Django, React, and
    more
 3. **Chain tools** - `m1f-scrape` → `m1f-html2md` → `m1f` = Documentation power
-   combo
+   combo. Or use `m1f-research` for AI-guided research and analysis
 4. **Set up watches** - `./scripts/watch_and_bundle.sh` for auto-updates
 5. **Check token counts** - Always know what you're pasting
 
