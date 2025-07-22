@@ -1,0 +1,27 @@
+#!/bin/bash
+# m1f-research - AI-powered research extension for m1f
+
+# Save the current directory
+ORIGINAL_DIR=$(pwd)
+
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Go up one level to get the project root
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# Change to the project root
+cd "$PROJECT_ROOT"
+
+# Activate virtual environment if it exists
+if [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+fi
+
+# Add the project root to PYTHONPATH
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
+# Change back to the original directory
+cd "$ORIGINAL_DIR"
+
+# Run the research module
+exec python -m tools.research "$@"

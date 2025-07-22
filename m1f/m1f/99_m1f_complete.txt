@@ -900,6 +900,35 @@ cd /d "%ORIGINAL_DIR%"
 
 endlocal
 
+======= bin/m1f-research ======
+#!/bin/bash
+# m1f-research - AI-powered research extension for m1f
+
+# Save the current directory
+ORIGINAL_DIR=$(pwd)
+
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Go up one level to get the project root
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# Change to the project root
+cd "$PROJECT_ROOT"
+
+# Activate virtual environment if it exists
+if [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+fi
+
+# Add the project root to PYTHONPATH
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
+# Change back to the original directory
+cd "$ORIGINAL_DIR"
+
+# Run the research module
+exec python -m tools.research "$@"
+
 ======= bin/m1f-s1f ======
 #!/usr/bin/env bash
 # s1f - Split One File
@@ -2916,6 +2945,135 @@ You can then:
 - Python 3.10+
 - m1f toolkit installed (`pip install m1f`)
 - Internet connection
+
+======= examples/research-config.yml ======
+# Example configuration for m1f-research
+# Copy to .m1f.config.yml and customize
+
+research:
+  # LLM Configuration
+  llm:
+    provider: claude  # claude, gemini, gemini-cli
+    model: claude-3-opus-20240229
+    api_key_env: ANTHROPIC_API_KEY
+    temperature: 0.7
+    max_tokens: 4096
+  
+  # For CLI tools like gemini-cli
+  cli_tools:
+    gemini_cli:
+      command: gemini
+      args: ["--model", "gemini-pro"]
+  
+  # Default research parameters
+  defaults:
+    url_count: 30
+    scrape_count: 15
+    timeout_range: "1-3"
+    output_format: markdown
+  
+  # Output configuration
+  output:
+    directory: "./m1f/research"
+    create_summary: true
+    create_index: true
+    bundle_prefix: "research"
+    include_metadata: true
+  
+  # Web scraping settings
+  scraping:
+    timeout_range: "1-3"  # Random delay between requests (seconds)
+    max_concurrent: 5
+    retry_attempts: 2
+    user_agents:
+      - "Mozilla/5.0 (m1f-research/0.1.0) AppleWebKit/537.36"
+      - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    respect_robots_txt: true
+    headers:
+      Accept: "text/html,application/xhtml+xml"
+      Accept-Language: "en-US,en;q=0.9"
+  
+  # Content analysis settings
+  analysis:
+    relevance_threshold: 7.0    # Minimum relevance score (0-10)
+    duplicate_threshold: 0.8    # Similarity threshold for duplicates
+    min_content_length: 100     # Minimum content length in characters
+    max_content_length: 50000   # Maximum content length
+    prefer_code_examples: false # Prioritize content with code
+    prioritize_recent: true     # Prefer newer content
+    language: "en"              # Content language preference
+  
+  # Research templates for different use cases
+  templates:
+    # Technical documentation and implementation
+    technical:
+      description: "Focused on implementation details and code examples"
+      sources: ["web", "github"]
+      analysis_focus: "implementation"
+      url_count: 40
+      scrape_count: 20
+      analysis:
+        prefer_code_examples: true
+        relevance_threshold: 6.5
+        min_content_length: 200
+    
+    # Academic and theoretical content
+    academic:
+      description: "Academic papers, theory, and research"
+      sources: ["web", "arxiv"]
+      analysis_focus: "theory"
+      url_count: 25
+      scrape_count: 12
+      analysis:
+        prefer_code_examples: false
+        prioritize_recent: false
+        relevance_threshold: 8.0
+    
+    # Step-by-step tutorials
+    tutorial:
+      description: "Tutorials, guides, and how-tos"
+      sources: ["web", "youtube"]
+      analysis_focus: "practical"
+      url_count: 30
+      scrape_count: 15
+      analysis:
+        prefer_code_examples: true
+        min_content_length: 500
+        relevance_threshold: 7.0
+    
+    # Quick overview
+    quick:
+      description: "Fast research with fewer sources"
+      sources: ["web"]
+      url_count: 10
+      scrape_count: 5
+      analysis:
+        relevance_threshold: 8.0
+
+# Example source configurations (for future multi-source support)
+sources:
+  web:
+    enabled: true
+    weight: 0.4
+    search_engines: ["google", "bing", "duckduckgo"]
+  
+  github:
+    enabled: false
+    weight: 0.3
+    token_env: GITHUB_TOKEN
+    include_issues: true
+    include_discussions: true
+  
+  arxiv:
+    enabled: false
+    weight: 0.2
+    categories: ["cs.AI", "cs.LG", "cs.SE"]
+  
+  youtube:
+    enabled: false
+    weight: 0.1
+    min_duration: 300  # 5 minutes
+    include_transcripts: true
 
 ======= examples/scrape_claude_code_docs.py ======
 #!/usr/bin/env python3
@@ -35618,6 +35776,3166 @@ def validate_path_traversal(
             f"Path traversal detected: '{path}' resolves to '{resolved_path}' "
             f"which is outside the allowed directory '{resolved_base}'"
         )
+
+======= tools/research/README.md ======
+# m1f-research
+
+AI-powered research tool that automatically finds, scrapes, and bundles
+information on any topic.
+
+## Overview
+
+m1f-research extends the m1f toolkit with intelligent research capabilities. It
+uses LLMs to:
+
+- Find relevant URLs for any research topic
+- Scrape and convert web content to clean Markdown
+- Analyze content for relevance and extract key insights
+- Create organized research bundles
+
+## Quick Start
+
+```bash
+# Basic research
+m1f-research "microservices best practices"
+
+# Research with more sources
+m1f-research "react state management" --urls 30 --scrape 15
+
+# Use different LLM provider
+m1f-research "machine learning" --provider gemini
+
+# Interactive mode
+m1f-research --interactive
+```
+
+## Installation
+
+m1f-research is included with the m1f toolkit. Ensure you have:
+
+1. m1f installed with the research extension
+2. An API key for your chosen LLM provider:
+   - Claude: Set `ANTHROPIC_API_KEY`
+   - Gemini: Set `GOOGLE_API_KEY`
+
+## Features
+
+### 🔍 Intelligent Search
+
+- Uses LLMs to find high-quality, relevant URLs
+- Focuses on authoritative sources
+- Mixes different content types (tutorials, docs, discussions)
+
+### 📥 Smart Scraping
+
+- Concurrent scraping with rate limiting
+- Random delays to respect servers
+- Automatic HTML to Markdown conversion
+- Handles failures gracefully
+
+### 🧠 Content Analysis
+
+- Relevance scoring (0-10 scale)
+- Key points extraction
+- Content summarization
+- Duplicate detection
+
+### 📦 Organized Bundles
+
+- Clean Markdown output
+- Table of contents
+- Source metadata
+- Relevance-based ordering
+
+## Usage Examples
+
+### Basic Research
+
+```bash
+# Research a programming topic
+m1f-research "golang error handling"
+
+# Output saved to: ./m1f/research/golang-error-handling-20240120-143022/
+```
+
+### Advanced Options
+
+```bash
+# Specify output location and name
+m1f-research "kubernetes security" \
+  --output ./research \
+  --name k8s-security
+
+# Use a specific template
+m1f-research "react hooks" --template technical
+
+# Skip analysis for faster results
+m1f-research "python asyncio" --no-analysis
+
+# Dry run to see what would happen
+m1f-research "rust ownership" --dry-run
+```
+
+### Configuration File
+
+```bash
+# Use a custom configuration
+m1f-research "database optimization" --config research.yml
+```
+
+## Configuration
+
+### Command Line Options
+
+| Option          | Description              | Default          |
+| --------------- | ------------------------ | ---------------- |
+| `--urls`        | Number of URLs to find   | 20               |
+| `--scrape`      | Number of URLs to scrape | 10               |
+| `--output`      | Output directory         | ./m1f/research   |
+| `--name`        | Bundle name              | auto-generated   |
+| `--provider`    | LLM provider             | claude           |
+| `--model`       | Specific model           | provider default |
+| `--template`    | Research template        | general          |
+| `--concurrent`  | Max concurrent scrapes   | 5                |
+| `--no-filter`   | Disable filtering        | false            |
+| `--no-analysis` | Skip analysis            | false            |
+| `--interactive` | Interactive mode         | false            |
+| `--dry-run`     | Preview only             | false            |
+
+### Configuration File (.m1f.config.yml)
+
+```yaml
+research:
+  # LLM settings
+  llm:
+    provider: claude
+    model: claude-3-opus-20240229
+    temperature: 0.7
+
+  # Default counts
+  defaults:
+    url_count: 30
+    scrape_count: 15
+
+  # Scraping behavior
+  scraping:
+    timeout_range: "1-3"
+    max_concurrent: 5
+    retry_attempts: 2
+
+  # Content analysis
+  analysis:
+    relevance_threshold: 7.0
+    min_content_length: 100
+    prefer_code_examples: true
+
+  # Output settings
+  output:
+    directory: ./m1f/research
+    create_summary: true
+    create_index: true
+
+  # Research templates
+  templates:
+    technical:
+      description: "Technical documentation and code"
+      url_count: 30
+      analysis_focus: implementation
+
+    academic:
+      description: "Academic papers and theory"
+      url_count: 20
+      analysis_focus: theory
+```
+
+## Templates
+
+Pre-configured templates optimize research for different needs:
+
+### technical
+
+- Focuses on implementation details
+- Prioritizes code examples
+- Higher URL count for comprehensive coverage
+
+### academic
+
+- Emphasizes theoretical content
+- Looks for citations and references
+- Filters for authoritative sources
+
+### tutorial
+
+- Searches for step-by-step guides
+- Prioritizes beginner-friendly content
+- Includes examples and exercises
+
+### general (default)
+
+- Balanced approach
+- Mixes different content types
+- Suitable for most topics
+
+## Output Structure
+
+Research bundles are organized as:
+
+```
+./m1f/research/
+└── topic-name-20240120-143022/
+    ├── research-bundle.md    # Main bundle
+    ├── metadata.json         # Research metadata
+    └── search_results.json   # Found URLs
+```
+
+### Bundle Format
+
+```markdown
+# Research: [Your Topic]
+
+Generated on: 2024-01-20 14:30:22 Total sources: 10
+
+---
+
+## Table of Contents
+
+1. [Source Title 1](#1-source-title-1)
+2. [Source Title 2](#2-source-title-2) ...
+
+---
+
+## Summary
+
+[Research summary and top sources]
+
+---
+
+## 1. Source Title
+
+**Source:** https://example.com/article **Relevance:** 8.5/10
+
+### Key Points:
+
+- Important point 1
+- Important point 2
+
+### Content:
+
+[Full content in Markdown]
+
+---
+```
+
+## Providers
+
+### Claude (Anthropic)
+
+- Default provider
+- Best for: Comprehensive research, nuanced analysis
+- Set: `ANTHROPIC_API_KEY`
+
+### Gemini (Google)
+
+- Fast and efficient
+- Best for: Quick research, technical topics
+- Set: `GOOGLE_API_KEY`
+
+### CLI Tools
+
+- Use local tools like `gemini-cli`
+- Best for: Privacy, offline capability
+- Example: `--provider gemini-cli`
+
+## Tips
+
+1. **Start broad, then narrow**: Use more URLs initially, let analysis filter
+2. **Use templates**: Match template to your research goal
+3. **Interactive mode**: Great for exploratory research
+4. **Combine with m1f**: Feed research bundles into m1f for AI analysis
+
+## Troubleshooting
+
+### No API Key
+
+```
+Error: API key not set for ClaudeProvider
+```
+
+Solution: Set environment variable or pass in config
+
+### Rate Limiting
+
+```
+Error: 429 Too Many Requests
+```
+
+Solution: Reduce `--concurrent` or increase timeout range
+
+### Low Quality Results
+
+- Increase `--urls` for more options
+- Adjust `relevance_threshold` in config
+- Try different `--template`
+
+## Future Features
+
+- Multi-source research (GitHub, arXiv, YouTube)
+- Knowledge graph building
+- Research collaboration
+- Custom source plugins
+- Web UI
+
+## Contributing
+
+m1f-research is part of the m1f project. Contributions welcome!
+
+- Report issues: [GitHub Issues](https://github.com/m1f/m1f/issues)
+- Submit PRs: Follow m1f contribution guidelines
+- Request features: Open a discussion
+
+======= tools/research/__init__.py ======
+"""
+m1f-research: AI-powered research extension for m1f
+
+This module provides functionality to research any topic by:
+- Using LLMs to find relevant URLs
+- Scraping web content
+- Converting HTML to Markdown
+- Creating organized bundles from research findings
+"""
+
+from .cli import ResearchCommand, main
+from .llm_interface import LLMProvider, ClaudeProvider, GeminiProvider, CLIProvider, get_provider
+from .config import ResearchConfig, LLMConfig, ScrapingConfig, OutputConfig, AnalysisConfig
+from .orchestrator import ResearchOrchestrator
+from .models import ResearchResult, ScrapedContent, AnalyzedContent, ResearchSource
+
+__version__ = "0.1.0"
+__all__ = [
+    # CLI
+    "ResearchCommand",
+    "main",
+    
+    # LLM
+    "LLMProvider",
+    "ClaudeProvider", 
+    "GeminiProvider",
+    "CLIProvider",
+    "get_provider",
+    
+    # Config
+    "ResearchConfig",
+    "LLMConfig",
+    "ScrapingConfig", 
+    "OutputConfig",
+    "AnalysisConfig",
+    
+    # Core
+    "ResearchOrchestrator",
+    
+    # Models
+    "ResearchResult",
+    "ScrapedContent",
+    "AnalyzedContent",
+    "ResearchSource",
+]
+
+======= tools/research/__main__.py ======
+"""
+Entry point for running m1f-research as a module
+"""
+from .cli import main
+
+if __name__ == '__main__':
+    main()
+
+======= tools/research/analyzer.py ======
+"""
+Content analysis using LLMs for m1f-research
+"""
+import asyncio
+import logging
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+import re
+import json
+
+from .models import ScrapedContent, AnalyzedContent
+from .llm_interface import LLMProvider
+from .config import AnalysisConfig
+
+logger = logging.getLogger(__name__)
+
+
+class ContentAnalyzer:
+    """
+    LLM-powered content analysis with:
+    - Relevance scoring (0-10)
+    - Key points extraction  
+    - Content summarization
+    - Content type detection
+    - Topic extraction
+    """
+    
+    def __init__(self, llm_provider: LLMProvider, config: AnalysisConfig):
+        self.llm = llm_provider
+        self.config = config
+    
+    async def analyze_content(
+        self, 
+        content_list: List[ScrapedContent], 
+        research_query: str,
+        batch_size: int = 5
+    ) -> List[AnalyzedContent]:
+        """
+        Analyze scraped content for relevance and insights
+        
+        Args:
+            content_list: List of scraped content to analyze
+            research_query: Original research query for context
+            batch_size: Number of items to analyze concurrently
+            
+        Returns:
+            List of analyzed content with scores and insights
+        """
+        analyzed = []
+        
+        # Process in batches to avoid overwhelming the LLM
+        for i in range(0, len(content_list), batch_size):
+            batch = content_list[i:i + batch_size]
+            
+            # Analyze batch concurrently
+            tasks = [
+                self._analyze_single_content(item, research_query) 
+                for item in batch
+            ]
+            
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Process results
+            for item, result in zip(batch, batch_results):
+                if isinstance(result, Exception):
+                    logger.error(f"Analysis failed for {item.url}: {result}")
+                    # Create fallback analyzed content
+                    analyzed.append(self._create_fallback_analysis(item))
+                else:
+                    analyzed.append(result)
+        
+        return analyzed
+    
+    async def _analyze_single_content(
+        self, 
+        content: ScrapedContent, 
+        research_query: str
+    ) -> AnalyzedContent:
+        """Analyze a single piece of content"""
+        try:
+            # Prepare content for analysis (truncate if needed)
+            content_for_analysis = self._prepare_content(content.markdown)
+            
+            # Get comprehensive analysis from LLM
+            analysis = await self._get_llm_analysis(
+                content_for_analysis, 
+                research_query,
+                content.url
+            )
+            
+            # Create analyzed content
+            return AnalyzedContent(
+                url=content.url,
+                title=content.title,
+                content=content.markdown,
+                relevance_score=analysis.get('relevance_score', 5.0),
+                key_points=analysis.get('key_points', []),
+                summary=analysis.get('summary', ''),
+                content_type=analysis.get('content_type'),
+                analysis_metadata=analysis
+            )
+            
+        except Exception as e:
+            logger.error(f"Error analyzing {content.url}: {e}")
+            return self._create_fallback_analysis(content)
+    
+    async def _get_llm_analysis(
+        self, 
+        content: str, 
+        research_query: str,
+        url: str
+    ) -> Dict[str, Any]:
+        """Get comprehensive analysis from LLM"""
+        # Create analysis prompt
+        prompt = f"""Analyze the following content in the context of this research query: "{research_query}"
+
+URL: {url}
+
+Content:
+{content}
+
+Provide a comprehensive analysis in JSON format with the following fields:
+1. relevance_score: Rate relevance to the research query from 0-10 (float)
+2. summary: A concise 2-3 sentence summary of the content
+3. key_points: Array of 3-5 key points or takeaways
+4. content_type: Type of content (tutorial, documentation, blog, discussion, code, reference, news)
+5. topics: Array of main topics covered
+6. technical_level: beginner, intermediate, or advanced
+7. strengths: What makes this content valuable
+8. limitations: Any limitations or caveats
+
+Return ONLY valid JSON, no other text."""
+
+        # Get analysis from LLM
+        response = await self.llm.query(prompt)
+        
+        if response.error:
+            raise Exception(f"LLM error: {response.error}")
+        
+        # Parse JSON response
+        try:
+            # Extract JSON from response
+            json_str = self._extract_json(response.content)
+            analysis = json.loads(json_str)
+            
+            # Validate and normalize the analysis
+            analysis = self._validate_analysis(analysis)
+            
+            return analysis
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            # Try to extract what we can
+            return self._extract_partial_analysis(response.content)
+    
+    def _prepare_content(self, content: str, max_length: int = 3000) -> str:
+        """Prepare content for LLM analysis"""
+        # Clean up content
+        content = content.strip()
+        
+        # Remove excessive whitespace
+        content = re.sub(r'\n{3,}', '\n\n', content)
+        content = re.sub(r' {2,}', ' ', content)
+        
+        # Truncate if too long
+        if len(content) > max_length:
+            # Try to truncate at a reasonable boundary
+            truncated = content[:max_length]
+            
+            # Find last complete sentence
+            last_period = truncated.rfind('.')
+            if last_period > max_length * 0.8:
+                content = truncated[:last_period + 1]
+            else:
+                content = truncated + "..."
+        
+        return content
+    
+    def _extract_json(self, text: str) -> str:
+        """Extract JSON from LLM response"""
+        # Remove markdown code blocks if present
+        if "```json" in text:
+            match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
+            if match:
+                return match.group(1)
+        
+        # Try to find JSON object
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            return match.group(0)
+        
+        return text
+    
+    def _validate_analysis(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate and normalize analysis results"""
+        # Ensure required fields
+        validated = {
+            'relevance_score': float(analysis.get('relevance_score', 5.0)),
+            'summary': str(analysis.get('summary', '')),
+            'key_points': list(analysis.get('key_points', [])),
+            'content_type': analysis.get('content_type', 'unknown'),
+            'topics': list(analysis.get('topics', [])),
+            'technical_level': analysis.get('technical_level', 'intermediate'),
+            'strengths': analysis.get('strengths', ''),
+            'limitations': analysis.get('limitations', '')
+        }
+        
+        # Clamp relevance score
+        validated['relevance_score'] = max(0.0, min(10.0, validated['relevance_score']))
+        
+        # Ensure key_points is a list of strings
+        validated['key_points'] = [
+            str(point) for point in validated['key_points'][:5]
+        ]
+        
+        # Validate content type
+        valid_types = [
+            'tutorial', 'documentation', 'blog', 'discussion', 
+            'code', 'reference', 'news', 'unknown'
+        ]
+        if validated['content_type'] not in valid_types:
+            validated['content_type'] = 'unknown'
+        
+        return validated
+    
+    def _extract_partial_analysis(self, text: str) -> Dict[str, Any]:
+        """Try to extract partial analysis from non-JSON response"""
+        analysis = {
+            'relevance_score': 5.0,
+            'summary': '',
+            'key_points': [],
+            'content_type': 'unknown'
+        }
+        
+        # Try to extract relevance score
+        score_match = re.search(r'relevance.*?(\d+(?:\.\d+)?)', text, re.IGNORECASE)
+        if score_match:
+            try:
+                analysis['relevance_score'] = float(score_match.group(1))
+            except:
+                pass
+        
+        # Try to extract summary
+        summary_match = re.search(r'summary[:\s]+(.*?)(?:\n|$)', text, re.IGNORECASE)
+        if summary_match:
+            analysis['summary'] = summary_match.group(1).strip()
+        
+        # Try to extract bullet points as key points
+        bullets = re.findall(r'[-•*]\s+(.+?)(?:\n|$)', text)
+        if bullets:
+            analysis['key_points'] = bullets[:5]
+        
+        return analysis
+    
+    def _create_fallback_analysis(self, content: ScrapedContent) -> AnalyzedContent:
+        """Create fallback analysis when LLM analysis fails"""
+        # Basic heuristic analysis
+        word_count = len(content.markdown.split())
+        has_code = bool(re.search(r'```|`[^`]+`', content.markdown))
+        
+        # Estimate relevance based on title
+        relevance = 5.0
+        
+        # Extract first paragraph as summary
+        paragraphs = content.markdown.split('\n\n')
+        summary = paragraphs[0][:200] + '...' if paragraphs else 'No summary available'
+        
+        return AnalyzedContent(
+            url=content.url,
+            title=content.title,
+            content=content.markdown,
+            relevance_score=relevance,
+            key_points=[],
+            summary=summary,
+            content_type='code' if has_code else 'unknown',
+            analysis_metadata={
+                'fallback': True,
+                'word_count': word_count
+            }
+        )
+    
+    async def extract_topics(self, analyzed_content: List[AnalyzedContent]) -> Dict[str, List[str]]:
+        """Extract and group topics from analyzed content"""
+        all_topics = []
+        
+        for item in analyzed_content:
+            topics = item.analysis_metadata.get('topics', [])
+            all_topics.extend(topics)
+        
+        # Count topic frequency
+        from collections import Counter
+        topic_counts = Counter(all_topics)
+        
+        # Group by frequency
+        grouped = {
+            'primary': [t for t, c in topic_counts.items() if c >= 3],
+            'secondary': [t for t, c in topic_counts.items() if c == 2],
+            'mentioned': [t for t, c in topic_counts.items() if c == 1]
+        }
+        
+        return grouped
+    
+    async def generate_synthesis(
+        self, 
+        analyzed_content: List[AnalyzedContent],
+        research_query: str
+    ) -> str:
+        """Generate a synthesis of all analyzed content"""
+        if not analyzed_content:
+            return "No content available for synthesis."
+        
+        # Prepare content summaries
+        summaries = []
+        for item in analyzed_content[:10]:  # Limit to top 10
+            summaries.append(f"- {item.title} (Relevance: {item.relevance_score}): {item.summary}")
+        
+        prompt = f"""Based on the following research results for "{research_query}", provide a brief synthesis:
+
+{chr(10).join(summaries)}
+
+Write a 2-3 paragraph synthesis that:
+1. Identifies common themes and patterns
+2. Highlights the most important findings
+3. Notes any conflicting information
+4. Suggests areas that might need more research"""
+
+        response = await self.llm.query(prompt)
+        
+        if response.error:
+            return "Unable to generate synthesis."
+        
+        return response.content
+
+======= tools/research/bundle_creator.py ======
+"""
+Smart bundle creation with intelligent content organization for m1f-research
+"""
+import logging
+from pathlib import Path
+from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime
+import json
+from collections import defaultdict, Counter
+
+from .models import AnalyzedContent
+from .config import OutputConfig
+from .llm_interface import LLMProvider
+
+logger = logging.getLogger(__name__)
+
+
+class SmartBundleCreator:
+    """
+    Intelligent bundle creation with:
+    - Subtopic grouping and organization
+    - Hierarchical content structuring
+    - Smart navigation generation
+    - Cross-reference linking
+    - Summary synthesis per topic
+    """
+    
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[OutputConfig] = None):
+        self.llm = llm_provider
+        self.config = config or OutputConfig()
+        
+    async def create_bundle(
+        self,
+        content_list: List[AnalyzedContent],
+        research_query: str,
+        output_dir: Path,
+        synthesis: Optional[str] = None
+    ) -> Path:
+        """
+        Create an intelligently organized research bundle
+        
+        Args:
+            content_list: List of analyzed content to include
+            research_query: Original research query
+            output_dir: Directory to save bundle
+            synthesis: Optional pre-generated synthesis
+            
+        Returns:
+            Path to the created bundle file
+        """
+        # Group content by subtopics
+        topic_groups = await self._group_by_subtopics(content_list, research_query)
+        
+        # Generate bundle structure
+        bundle_content = await self._generate_bundle_content(
+            topic_groups,
+            research_query,
+            synthesis
+        )
+        
+        # Write bundle file
+        bundle_path = output_dir / f"{self.config.bundle_prefix}-bundle.md"
+        with open(bundle_path, 'w', encoding='utf-8') as f:
+            f.write(bundle_content)
+        
+        # Create supplementary files if enabled
+        if self.config.create_index:
+            await self._create_index_file(topic_groups, output_dir)
+        
+        if self.config.include_metadata:
+            self._create_metadata_file(content_list, research_query, output_dir)
+        
+        logger.info(f"Created smart bundle at: {bundle_path}")
+        return bundle_path
+    
+    async def _group_by_subtopics(
+        self, 
+        content_list: List[AnalyzedContent],
+        research_query: str
+    ) -> Dict[str, List[AnalyzedContent]]:
+        """Group content by subtopics using content analysis"""
+        if not self.llm:
+            # Fallback to simple grouping by content type
+            return self._simple_grouping(content_list)
+        
+        # Extract topics from all content
+        all_topics = []
+        for item in content_list:
+            topics = item.analysis_metadata.get('topics', [])
+            all_topics.extend([(topic, item) for topic in topics])
+        
+        # If we have topics from analysis, use them
+        if all_topics:
+            return self._group_by_extracted_topics(all_topics, content_list)
+        
+        # Otherwise, use LLM to identify subtopics
+        return await self._llm_group_by_subtopics(content_list, research_query)
+    
+    def _simple_grouping(self, content_list: List[AnalyzedContent]) -> Dict[str, List[AnalyzedContent]]:
+        """Simple grouping by content type"""
+        groups = defaultdict(list)
+        
+        for item in content_list:
+            content_type = item.content_type or 'general'
+            groups[content_type].append(item)
+        
+        # Sort items within each group by relevance
+        for group in groups.values():
+            group.sort(key=lambda x: x.relevance_score, reverse=True)
+        
+        return dict(groups)
+    
+    def _group_by_extracted_topics(
+        self,
+        topic_items: List[Tuple[str, AnalyzedContent]],
+        all_content: List[AnalyzedContent]
+    ) -> Dict[str, List[AnalyzedContent]]:
+        """Group content by extracted topics"""
+        # Count topic frequencies
+        topic_counts = Counter(topic for topic, _ in topic_items)
+        
+        # Get top topics (those appearing in multiple documents)
+        top_topics = [topic for topic, count in topic_counts.most_common(10) if count >= 2]
+        
+        # Create groups
+        groups = defaultdict(list)
+        assigned = set()
+        
+        # Assign content to most relevant topic
+        for item in all_content:
+            item_topics = item.analysis_metadata.get('topics', [])
+            
+            # Find best matching top topic
+            best_topic = None
+            for topic in top_topics:
+                if topic in item_topics:
+                    best_topic = topic
+                    break
+            
+            if best_topic:
+                groups[best_topic].append(item)
+                assigned.add(item.url)
+            
+        # Add ungrouped items to "Other" category
+        other_items = [item for item in all_content if item.url not in assigned]
+        if other_items:
+            groups["Other Resources"].extend(other_items)
+        
+        # Sort items within each group by relevance
+        for group in groups.values():
+            group.sort(key=lambda x: x.relevance_score, reverse=True)
+        
+        return dict(groups)
+    
+    async def _llm_group_by_subtopics(
+        self,
+        content_list: List[AnalyzedContent],
+        research_query: str
+    ) -> Dict[str, List[AnalyzedContent]]:
+        """Use LLM to identify and group by subtopics"""
+        # Prepare content summaries for LLM
+        summaries = []
+        for i, item in enumerate(content_list):
+            summaries.append(f"{i}. {item.title}: {item.summary[:100]}...")
+        
+        prompt = f"""Analyze these research results for "{research_query}" and group them into logical subtopics.
+
+Content items:
+{chr(10).join(summaries)}
+
+Provide a JSON response with this structure:
+{{
+    "subtopics": [
+        {{
+            "name": "Subtopic Name",
+            "description": "Brief description",
+            "item_indices": [0, 2, 5]  // indices of items belonging to this subtopic
+        }}
+    ]
+}}
+
+Create 3-7 subtopics that logically organize the content. Each item should belong to exactly one subtopic.
+Return ONLY valid JSON, no other text."""
+
+        try:
+            response = await self.llm.query(prompt)
+            
+            if response.error:
+                logger.error(f"LLM error during grouping: {response.error}")
+                return self._simple_grouping(content_list)
+            
+            # Parse JSON response
+            import re
+            json_match = re.search(r'\{.*\}', response.content, re.DOTALL)
+            if json_match:
+                grouping_data = json.loads(json_match.group(0))
+                
+                # Create groups based on LLM response
+                groups = {}
+                used_indices = set()
+                
+                for subtopic in grouping_data.get('subtopics', []):
+                    name = subtopic['name']
+                    indices = subtopic.get('item_indices', [])
+                    
+                    groups[name] = []
+                    for idx in indices:
+                        if 0 <= idx < len(content_list) and idx not in used_indices:
+                            groups[name].append(content_list[idx])
+                            used_indices.add(idx)
+                
+                # Add any ungrouped items
+                ungrouped = [item for i, item in enumerate(content_list) if i not in used_indices]
+                if ungrouped:
+                    groups["Other Resources"] = ungrouped
+                
+                # Sort items within each group
+                for group in groups.values():
+                    group.sort(key=lambda x: x.relevance_score, reverse=True)
+                
+                return groups
+            
+        except Exception as e:
+            logger.error(f"Error in LLM grouping: {e}")
+        
+        # Fallback to simple grouping
+        return self._simple_grouping(content_list)
+    
+    async def _generate_bundle_content(
+        self,
+        topic_groups: Dict[str, List[AnalyzedContent]],
+        research_query: str,
+        synthesis: Optional[str] = None
+    ) -> str:
+        """Generate the bundle content with smart organization"""
+        lines = []
+        
+        # Header
+        lines.append(f"# Research: {research_query}")
+        lines.append(f"\nGenerated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # Statistics
+        total_sources = sum(len(items) for items in topic_groups.values())
+        lines.append(f"Total sources: {total_sources}")
+        lines.append(f"Topics covered: {len(topic_groups)}")
+        lines.append("\n---\n")
+        
+        # Executive Summary
+        if self.config.create_summary:
+            lines.append("## Executive Summary\n")
+            
+            if synthesis:
+                lines.append(synthesis)
+                lines.append("\n")
+            
+            # Topic overview
+            lines.append("### Topics Covered:\n")
+            for topic, items in topic_groups.items():
+                avg_relevance = sum(item.relevance_score for item in items) / len(items)
+                lines.append(f"- **{topic}** ({len(items)} sources, avg relevance: {avg_relevance:.1f}/10)")
+            lines.append("\n---\n")
+        
+        # Table of Contents
+        if self.config.create_index:
+            lines.append("## Table of Contents\n")
+            
+            # Topic-based navigation
+            for i, (topic, items) in enumerate(topic_groups.items(), 1):
+                topic_anchor = self._create_anchor(topic)
+                lines.append(f"{i}. [{topic}](#{topic_anchor}) ({len(items)} sources)")
+                
+                # Show top items under each topic
+                if len(items) > 0:
+                    for j, item in enumerate(items[:3], 1):  # Show top 3
+                        item_anchor = self._create_anchor(f"{topic}-{j}-{item.title}")
+                        lines.append(f"   - [{item.title[:60]}...](#{item_anchor})")
+                    if len(items) > 3:
+                        lines.append(f"   - ...and {len(items) - 3} more")
+            
+            lines.append("\n---\n")
+        
+        # Content sections by topic
+        for topic_idx, (topic, items) in enumerate(topic_groups.items(), 1):
+            topic_anchor = self._create_anchor(topic)
+            lines.append(f"## {topic_idx}. {topic}\n")
+            
+            # Topic summary if we have LLM
+            if self.llm and len(items) > 2:
+                topic_summary = await self._generate_topic_summary(topic, items)
+                if topic_summary:
+                    lines.append(f"*{topic_summary}*\n")
+            
+            # Items in this topic
+            for item_idx, item in enumerate(items, 1):
+                item_anchor = self._create_anchor(f"{topic}-{item_idx}-{item.title}")
+                lines.append(f"### {topic_idx}.{item_idx}. {item.title}\n")
+                
+                # Metadata
+                lines.append(f"**Source:** {item.url}")
+                lines.append(f"**Relevance:** {item.relevance_score}/10")
+                if item.content_type:
+                    lines.append(f"**Type:** {item.content_type}")
+                lines.append("")
+                
+                # Key points
+                if item.key_points:
+                    lines.append("**Key Points:**")
+                    for point in item.key_points:
+                        lines.append(f"- {point}")
+                    lines.append("")
+                
+                # Summary
+                if item.summary:
+                    lines.append("**Summary:**")
+                    lines.append(item.summary)
+                    lines.append("")
+                
+                # Content
+                lines.append("**Content:**")
+                lines.append(item.content)
+                lines.append("\n---\n")
+        
+        # Cross-references section
+        if self.config.create_index:
+            cross_refs = self._identify_cross_references(topic_groups)
+            if cross_refs:
+                lines.append("## Cross-References\n")
+                lines.append("Topics that appear across multiple sources:\n")
+                for term, locations in cross_refs.items():
+                    if len(locations) > 1:
+                        lines.append(f"- **{term}**: appears in {len(locations)} sources")
+                lines.append("\n")
+        
+        return "\n".join(lines)
+    
+    async def _generate_topic_summary(self, topic: str, items: List[AnalyzedContent]) -> Optional[str]:
+        """Generate a summary for a specific topic"""
+        if not self.llm or not items:
+            return None
+        
+        # Prepare item summaries
+        summaries = [f"- {item.title}: {item.summary[:100]}..." for item in items[:5]]
+        
+        prompt = f"""Generate a 1-2 sentence overview of the following resources about "{topic}":
+
+{chr(10).join(summaries)}
+
+Write a concise summary that captures what these resources collectively offer about this topic."""
+
+        try:
+            response = await self.llm.query(prompt)
+            if not response.error:
+                return response.content.strip()
+        except Exception as e:
+            logger.error(f"Error generating topic summary: {e}")
+        
+        return None
+    
+    def _create_anchor(self, text: str) -> str:
+        """Create a valid markdown anchor from text"""
+        # Remove special characters and convert to lowercase
+        anchor = re.sub(r'[^\w\s-]', '', text.lower())
+        # Replace spaces with hyphens
+        anchor = re.sub(r'\s+', '-', anchor)
+        # Remove duplicate hyphens
+        anchor = re.sub(r'-+', '-', anchor)
+        # Trim hyphens from ends
+        return anchor.strip('-')
+    
+    def _identify_cross_references(self, topic_groups: Dict[str, List[AnalyzedContent]]) -> Dict[str, List[str]]:
+        """Identify terms that appear across multiple topics"""
+        term_locations = defaultdict(set)
+        
+        # Extract key terms from each topic group
+        for topic, items in topic_groups.items():
+            for item in items:
+                # Extract from key points
+                for point in item.key_points:
+                    # Simple term extraction (in production, use NLP)
+                    terms = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', point)
+                    for term in terms:
+                        if len(term) > 3:  # Skip short terms
+                            term_locations[term].add(topic)
+        
+        # Filter to terms appearing in multiple topics
+        cross_refs = {
+            term: list(locations)
+            for term, locations in term_locations.items()
+            if len(locations) > 1
+        }
+        
+        return cross_refs
+    
+    async def _create_index_file(self, topic_groups: Dict[str, List[AnalyzedContent]], output_dir: Path):
+        """Create a separate index file for navigation"""
+        index_path = output_dir / "index.md"
+        
+        lines = []
+        lines.append("# Research Index\n")
+        lines.append("## By Topic\n")
+        
+        for topic, items in topic_groups.items():
+            lines.append(f"### {topic}")
+            for item in items:
+                lines.append(f"- [{item.title}]({item.url}) (Relevance: {item.relevance_score}/10)")
+            lines.append("")
+        
+        lines.append("## By Relevance\n")
+        all_items = []
+        for items in topic_groups.values():
+            all_items.extend(items)
+        all_items.sort(key=lambda x: x.relevance_score, reverse=True)
+        
+        for item in all_items[:20]:  # Top 20
+            lines.append(f"- {item.relevance_score}/10: [{item.title}]({item.url})")
+        
+        with open(index_path, 'w', encoding='utf-8') as f:
+            f.write("\n".join(lines))
+    
+    def _create_metadata_file(self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path):
+        """Create metadata JSON file"""
+        metadata = {
+            "query": research_query,
+            "generated_at": datetime.now().isoformat(),
+            "statistics": {
+                "total_sources": len(content_list),
+                "average_relevance": sum(item.relevance_score for item in content_list) / len(content_list) if content_list else 0,
+                "content_types": dict(Counter(item.content_type or "unknown" for item in content_list))
+            },
+            "sources": [
+                {
+                    "url": item.url,
+                    "title": item.title,
+                    "relevance_score": item.relevance_score,
+                    "content_type": item.content_type,
+                    "key_points": item.key_points,
+                    "topics": item.analysis_metadata.get('topics', [])
+                }
+                for item in content_list
+            ]
+        }
+        
+        metadata_path = output_dir / "metadata.json"
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, indent=2)
+
+======= tools/research/cli.py ======
+"""
+CLI interface for m1f-research
+"""
+import argparse
+import sys
+from pathlib import Path
+from typing import Optional, List
+import asyncio
+
+from .config import ResearchConfig
+from .orchestrator import ResearchOrchestrator
+
+
+class ResearchCommand:
+    """Main command class for m1f-research"""
+    
+    def __init__(self):
+        self.parser = self._create_parser()
+        
+    def _create_parser(self) -> argparse.ArgumentParser:
+        """Create the argument parser for m1f-research"""
+        parser = argparse.ArgumentParser(
+            prog='m1f-research',
+            description='AI-powered research tool that finds, scrapes, and bundles information on any topic',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Examples:
+  m1f-research "microservices best practices"
+  m1f-research "react state management" --urls 30 --scrape 15
+  m1f-research "machine learning" --output ./research --provider gemini
+  m1f-research "python async programming" --config research.yml
+  m1f-research --interactive
+            """
+        )
+        
+        # Main research query (optional for interactive mode)
+        parser.add_argument(
+            'query',
+            nargs='?',
+            help='Research topic or query'
+        )
+        
+        # URL and scraping options
+        parser.add_argument(
+            '--urls', '-u',
+            type=int,
+            default=20,
+            help='Number of URLs to find (default: 20)'
+        )
+        
+        parser.add_argument(
+            '--scrape', '-s',
+            type=int,
+            default=10,
+            help='Number of URLs to scrape (default: 10)'
+        )
+        
+        # Output options
+        parser.add_argument(
+            '--output', '-o',
+            type=Path,
+            default=Path('./m1f/research'),
+            help='Output directory for research bundles (default: ./m1f/research)'
+        )
+        
+        parser.add_argument(
+            '--name', '-n',
+            type=str,
+            help='Custom name for the research bundle (default: derived from query)'
+        )
+        
+        # LLM provider options
+        parser.add_argument(
+            '--provider', '-p',
+            choices=['claude', 'gemini', 'gemini-cli', 'openai'],
+            default='claude',
+            help='LLM provider to use (default: claude)'
+        )
+        
+        parser.add_argument(
+            '--model', '-m',
+            type=str,
+            help='Specific model to use (provider-dependent)'
+        )
+        
+        # Configuration options
+        parser.add_argument(
+            '--config', '-c',
+            type=Path,
+            help='Path to configuration file'
+        )
+        
+        parser.add_argument(
+            '--template', '-t',
+            choices=['technical', 'academic', 'tutorial', 'general'],
+            default='general',
+            help='Research template to use (default: general)'
+        )
+        
+        # Behavior options
+        parser.add_argument(
+            '--interactive', '-i',
+            action='store_true',
+            help='Start in interactive mode'
+        )
+        
+        parser.add_argument(
+            '--no-filter',
+            action='store_true',
+            help='Disable content filtering'
+        )
+        
+        parser.add_argument(
+            '--no-analysis',
+            action='store_true',
+            help='Skip AI analysis (just scrape and bundle)'
+        )
+        
+        parser.add_argument(
+            '--concurrent', 
+            type=int,
+            default=5,
+            help='Max concurrent scraping operations (default: 5)'
+        )
+        
+        # Debug options
+        parser.add_argument(
+            '--verbose', '-v',
+            action='count',
+            default=0,
+            help='Increase verbosity (use -vv for debug)'
+        )
+        
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help='Show what would be done without doing it'
+        )
+        
+        # Version
+        parser.add_argument(
+            '--version',
+            action='version',
+            version='%(prog)s 0.1.0'
+        )
+        
+        return parser
+    
+    def parse_args(self, args: Optional[List[str]] = None) -> argparse.Namespace:
+        """Parse command line arguments"""
+        return self.parser.parse_args(args)
+    
+    async def execute(self, args: argparse.Namespace) -> int:
+        """Execute the research command"""
+        # Validate arguments
+        if not args.query and not args.interactive:
+            self.parser.error("Query is required unless using --interactive mode")
+        
+        # Create configuration from arguments
+        config = ResearchConfig.from_args(args)
+        
+        # Create and run orchestrator
+        orchestrator = ResearchOrchestrator(config)
+        
+        try:
+            if args.interactive:
+                # Run in interactive mode
+                await orchestrator.run_interactive()
+            else:
+                # Run in batch mode
+                await orchestrator.run(args.query)
+            
+            return 0
+            
+        except KeyboardInterrupt:
+            print("\n\nResearch interrupted by user")
+            return 130
+        except Exception as e:
+            if args.verbose > 0:
+                import traceback
+                traceback.print_exc()
+            else:
+                print(f"Error: {e}")
+            return 1
+    
+    def run(self, args: Optional[List[str]] = None) -> int:
+        """Main entry point for the CLI"""
+        parsed_args = self.parse_args(args)
+        
+        # Set up logging based on verbosity
+        import logging
+        if parsed_args.verbose == 0:
+            level = logging.WARNING
+        elif parsed_args.verbose == 1:
+            level = logging.INFO
+        else:
+            level = logging.DEBUG
+            
+        logging.basicConfig(
+            level=level,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        
+        # Run the async execute method
+        return asyncio.run(self.execute(parsed_args))
+
+
+def main():
+    """Console script entry point"""
+    command = ResearchCommand()
+    sys.exit(command.run())
+
+
+if __name__ == '__main__':
+    main()
+
+======= tools/research/config.py ======
+"""
+Configuration management for m1f-research
+"""
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any
+from pathlib import Path
+import yaml
+import os
+from argparse import Namespace
+
+
+@dataclass
+class LLMConfig:
+    """LLM provider configuration"""
+    provider: str = "claude"
+    model: Optional[str] = None
+    api_key_env: Optional[str] = None
+    temperature: float = 0.7
+    max_tokens: int = 4096
+    cli_command: Optional[str] = None  # For CLI providers
+    cli_args: List[str] = field(default_factory=list)
+
+
+@dataclass
+class ScrapingConfig:
+    """Web scraping configuration"""
+    timeout_range: str = "1-3"  # seconds
+    max_concurrent: int = 5
+    retry_attempts: int = 2
+    user_agents: List[str] = field(default_factory=lambda: [
+        "Mozilla/5.0 (m1f-research/0.1.0) AppleWebKit/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    ])
+    respect_robots_txt: bool = True
+    headers: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class OutputConfig:
+    """Output configuration"""
+    directory: Path = Path("./m1f/research")
+    create_summary: bool = True
+    create_index: bool = True
+    bundle_prefix: str = "research"
+    format: str = "markdown"
+    include_metadata: bool = True
+    
+    
+@dataclass
+class AnalysisConfig:
+    """Content analysis configuration"""
+    relevance_threshold: float = 7.0
+    duplicate_threshold: float = 0.8
+    min_content_length: int = 100
+    max_content_length: Optional[int] = None
+    prefer_code_examples: bool = False
+    prioritize_recent: bool = True
+    language: str = "en"
+
+
+@dataclass
+class ResearchTemplate:
+    """Research template configuration"""
+    name: str
+    description: str
+    sources: List[str] = field(default_factory=list)
+    analysis_focus: str = "general"
+    url_count: int = 20
+    scrape_count: int = 10
+    analysis_config: Optional[AnalysisConfig] = None
+
+
+@dataclass
+class ResearchConfig:
+    """Main research configuration"""
+    # Core settings
+    query: Optional[str] = None
+    url_count: int = 20
+    scrape_count: int = 10
+    
+    # Component configs
+    llm: LLMConfig = field(default_factory=LLMConfig)
+    scraping: ScrapingConfig = field(default_factory=ScrapingConfig)
+    output: OutputConfig = field(default_factory=OutputConfig)
+    analysis: AnalysisConfig = field(default_factory=AnalysisConfig)
+    
+    # Behavior settings
+    interactive: bool = False
+    no_filter: bool = False
+    no_analysis: bool = False
+    dry_run: bool = False
+    verbose: int = 0
+    
+    # Templates
+    template: Optional[str] = None
+    templates: Dict[str, ResearchTemplate] = field(default_factory=dict)
+    
+    @classmethod
+    def from_yaml(cls, path: Path) -> "ResearchConfig":
+        """Load configuration from YAML file"""
+        with open(path, 'r') as f:
+            data = yaml.safe_load(f)
+        
+        # Extract research section
+        research_data = data.get('research', {})
+        
+        # Parse LLM config
+        llm_data = research_data.get('llm', {})
+        llm_config = LLMConfig(
+            provider=llm_data.get('provider', 'claude'),
+            model=llm_data.get('model'),
+            api_key_env=llm_data.get('api_key_env'),
+            temperature=llm_data.get('temperature', 0.7),
+            max_tokens=llm_data.get('max_tokens', 4096),
+            cli_command=llm_data.get('cli_command'),
+            cli_args=llm_data.get('cli_args', [])
+        )
+        
+        # Parse CLI tools config
+        if 'cli_tools' in research_data:
+            cli_tools = research_data['cli_tools']
+            if llm_config.provider in cli_tools:
+                tool_config = cli_tools[llm_config.provider]
+                llm_config.cli_command = tool_config.get('command', llm_config.provider)
+                llm_config.cli_args = tool_config.get('args', [])
+        
+        # Parse scraping config
+        scraping_data = research_data.get('scraping', {})
+        scraping_config = ScrapingConfig(
+            timeout_range=scraping_data.get('timeout_range', '1-3'),
+            max_concurrent=scraping_data.get('max_concurrent', 5),
+            retry_attempts=scraping_data.get('retry_attempts', 2),
+            user_agents=scraping_data.get('user_agents', ScrapingConfig().user_agents),
+            respect_robots_txt=scraping_data.get('respect_robots_txt', True),
+            headers=scraping_data.get('headers', {})
+        )
+        
+        # Parse output config
+        output_data = research_data.get('output', {})
+        output_config = OutputConfig(
+            directory=Path(output_data.get('directory', './m1f/research')),
+            create_summary=output_data.get('create_summary', True),
+            create_index=output_data.get('create_index', True),
+            bundle_prefix=output_data.get('bundle_prefix', 'research'),
+            format=output_data.get('format', 'markdown'),
+            include_metadata=output_data.get('include_metadata', True)
+        )
+        
+        # Parse analysis config
+        analysis_data = research_data.get('analysis', {})
+        analysis_config = AnalysisConfig(
+            relevance_threshold=analysis_data.get('relevance_threshold', 7.0),
+            duplicate_threshold=analysis_data.get('duplicate_threshold', 0.8),
+            min_content_length=analysis_data.get('min_content_length', 100),
+            max_content_length=analysis_data.get('max_content_length'),
+            prefer_code_examples=analysis_data.get('prefer_code_examples', False),
+            prioritize_recent=analysis_data.get('prioritize_recent', True),
+            language=analysis_data.get('language', 'en')
+        )
+        
+        # Parse templates
+        templates = {}
+        templates_data = research_data.get('templates', {})
+        for name, template_data in templates_data.items():
+            # Create template-specific analysis config if provided
+            template_analysis = None
+            if 'analysis' in template_data:
+                ta = template_data['analysis']
+                template_analysis = AnalysisConfig(
+                    relevance_threshold=ta.get('relevance_threshold', analysis_config.relevance_threshold),
+                    duplicate_threshold=ta.get('duplicate_threshold', analysis_config.duplicate_threshold),
+                    min_content_length=ta.get('min_content_length', analysis_config.min_content_length),
+                    max_content_length=ta.get('max_content_length', analysis_config.max_content_length),
+                    prefer_code_examples=ta.get('prefer_code_examples', analysis_config.prefer_code_examples),
+                    prioritize_recent=ta.get('prioritize_recent', analysis_config.prioritize_recent),
+                    language=ta.get('language', analysis_config.language)
+                )
+            
+            templates[name] = ResearchTemplate(
+                name=name,
+                description=template_data.get('description', ''),
+                sources=template_data.get('sources', ['web']),
+                analysis_focus=template_data.get('analysis_focus', 'general'),
+                url_count=template_data.get('url_count', 20),
+                scrape_count=template_data.get('scrape_count', 10),
+                analysis_config=template_analysis
+            )
+        
+        # Get defaults
+        defaults = research_data.get('defaults', {})
+        
+        return cls(
+            url_count=defaults.get('url_count', 20),
+            scrape_count=defaults.get('scrape_count', 10),
+            llm=llm_config,
+            scraping=scraping_config,
+            output=output_config,
+            analysis=analysis_config,
+            templates=templates
+        )
+    
+    @classmethod
+    def from_args(cls, args: Namespace) -> "ResearchConfig":
+        """Create configuration from command line arguments"""
+        config = cls()
+        
+        # Basic settings
+        config.query = args.query
+        config.url_count = args.urls
+        config.scrape_count = args.scrape
+        config.interactive = args.interactive
+        config.no_filter = args.no_filter
+        config.no_analysis = args.no_analysis
+        config.dry_run = args.dry_run
+        config.verbose = args.verbose
+        config.template = args.template
+        
+        # Load from config file if provided
+        if args.config:
+            base_config = cls.from_yaml(args.config)
+            # Merge with base config
+            config.llm = base_config.llm
+            config.scraping = base_config.scraping
+            config.output = base_config.output
+            config.analysis = base_config.analysis
+            config.templates = base_config.templates
+        
+        # Override with command line args
+        config.llm.provider = args.provider
+        if args.model:
+            config.llm.model = args.model
+        
+        # Output settings
+        config.output.directory = args.output
+        if args.name:
+            config.output.bundle_prefix = args.name
+        
+        # Scraping settings
+        config.scraping.max_concurrent = args.concurrent
+        
+        # Apply template if specified
+        if config.template and config.template in config.templates:
+            template = config.templates[config.template]
+            config.url_count = template.url_count
+            config.scrape_count = template.scrape_count
+            if template.analysis_config:
+                config.analysis = template.analysis_config
+        
+        # Set API key from environment if not set
+        if not config.llm.api_key_env:
+            if config.llm.provider == "claude":
+                config.llm.api_key_env = "ANTHROPIC_API_KEY"
+            elif config.llm.provider == "gemini":
+                config.llm.api_key_env = "GOOGLE_API_KEY"
+        
+        return config
+    
+    def to_yaml(self) -> str:
+        """Convert configuration to YAML string"""
+        data = {
+            'research': {
+                'defaults': {
+                    'url_count': self.url_count,
+                    'scrape_count': self.scrape_count,
+                },
+                'llm': {
+                    'provider': self.llm.provider,
+                    'model': self.llm.model,
+                    'api_key_env': self.llm.api_key_env,
+                    'temperature': self.llm.temperature,
+                    'max_tokens': self.llm.max_tokens,
+                },
+                'scraping': {
+                    'timeout_range': self.scraping.timeout_range,
+                    'max_concurrent': self.scraping.max_concurrent,
+                    'retry_attempts': self.scraping.retry_attempts,
+                    'user_agents': self.scraping.user_agents,
+                    'respect_robots_txt': self.scraping.respect_robots_txt,
+                },
+                'output': {
+                    'directory': str(self.output.directory),
+                    'create_summary': self.output.create_summary,
+                    'create_index': self.output.create_index,
+                    'bundle_prefix': self.output.bundle_prefix,
+                    'format': self.output.format,
+                },
+                'analysis': {
+                    'relevance_threshold': self.analysis.relevance_threshold,
+                    'duplicate_threshold': self.analysis.duplicate_threshold,
+                    'min_content_length': self.analysis.min_content_length,
+                    'max_content_length': self.analysis.max_content_length,
+                    'prefer_code_examples': self.analysis.prefer_code_examples,
+                    'prioritize_recent': self.analysis.prioritize_recent,
+                    'language': self.analysis.language,
+                },
+                'templates': {
+                    name: {
+                        'description': template.description,
+                        'sources': template.sources,
+                        'analysis_focus': template.analysis_focus,
+                        'url_count': template.url_count,
+                        'scrape_count': template.scrape_count,
+                    }
+                    for name, template in self.templates.items()
+                }
+            }
+        }
+        
+        return yaml.dump(data, default_flow_style=False, sort_keys=False)
+    
+    def get_timeout_range(self) -> tuple[float, float]:
+        """Parse timeout range string to min/max values"""
+        parts = self.scraping.timeout_range.split('-')
+        if len(parts) == 2:
+            return float(parts[0]), float(parts[1])
+        else:
+            val = float(parts[0])
+            return val, val
+
+======= tools/research/content_filter.py ======
+"""
+Content filtering and quality assessment for m1f-research
+"""
+import re
+import hashlib
+from typing import List, Dict, Optional, Tuple
+from collections import Counter
+import logging
+
+from .models import ScrapedContent, AnalyzedContent
+from .config import AnalysisConfig
+
+logger = logging.getLogger(__name__)
+
+
+class ContentFilter:
+    """
+    Advanced content filtering with:
+    - Content length validation
+    - Language detection
+    - Spam/ad detection
+    - Code-to-text ratio analysis
+    - Duplicate detection
+    - Quality scoring
+    """
+    
+    def __init__(self, config: AnalysisConfig):
+        self.config = config
+        self.seen_hashes = set()
+        self.spam_patterns = self._load_spam_patterns()
+        self.quality_indicators = self._load_quality_indicators()
+    
+    def filter_scraped_content(self, content_list: List[ScrapedContent]) -> List[ScrapedContent]:
+        """Filter scraped content based on quality criteria"""
+        filtered = []
+        
+        for content in content_list:
+            # Check if content passes all filters
+            if self._passes_filters(content):
+                filtered.append(content)
+            else:
+                logger.debug(f"Filtered out: {content.url}")
+        
+        logger.info(f"Filtered {len(content_list)} to {len(filtered)} items")
+        return filtered
+    
+    def filter_analyzed_content(self, content_list: List[AnalyzedContent]) -> List[AnalyzedContent]:
+        """Filter analyzed content based on relevance and quality"""
+        filtered = []
+        
+        for content in content_list:
+            # Check relevance threshold
+            if content.relevance_score < self.config.relevance_threshold:
+                logger.debug(f"Below relevance threshold: {content.url} ({content.relevance_score})")
+                continue
+            
+            # Check content length
+            if not self._check_content_length(content.content):
+                continue
+            
+            # Check for duplicates
+            if self._is_duplicate(content.content):
+                logger.debug(f"Duplicate content: {content.url}")
+                continue
+            
+            filtered.append(content)
+        
+        return filtered
+    
+    def _passes_filters(self, content: ScrapedContent) -> bool:
+        """Check if content passes all quality filters"""
+        # Check content length
+        if not self._check_content_length(content.markdown):
+            return False
+        
+        # Check language (if configured)
+        if self.config.language != "any":
+            detected_lang = self._detect_language(content.markdown)
+            if detected_lang != self.config.language:
+                logger.debug(f"Wrong language: {content.url} (detected: {detected_lang})")
+                return False
+        
+        # Check for spam/ads
+        if self._is_spam(content.markdown):
+            logger.debug(f"Spam detected: {content.url}")
+            return False
+        
+        # Check quality score
+        quality_score = self._calculate_quality_score(content.markdown)
+        if quality_score < 0.3:  # Minimum quality threshold
+            logger.debug(f"Low quality: {content.url} (score: {quality_score:.2f})")
+            return False
+        
+        # Check for duplicates
+        if self._is_duplicate(content.markdown):
+            logger.debug(f"Duplicate: {content.url}")
+            return False
+        
+        return True
+    
+    def _check_content_length(self, content: str) -> bool:
+        """Check if content length is within acceptable range"""
+        length = len(content)
+        
+        if length < self.config.min_content_length:
+            return False
+        
+        if self.config.max_content_length and length > self.config.max_content_length:
+            return False
+        
+        return True
+    
+    def _detect_language(self, content: str) -> str:
+        """Simple language detection based on common words"""
+        # This is a simplified implementation
+        # In production, use langdetect or similar library
+        
+        english_words = {'the', 'and', 'is', 'in', 'to', 'of', 'a', 'for', 'with', 'on'}
+        spanish_words = {'el', 'la', 'de', 'en', 'y', 'a', 'los', 'las', 'un', 'una'}
+        french_words = {'le', 'de', 'la', 'et', 'à', 'les', 'un', 'une', 'dans', 'pour'}
+        german_words = {'der', 'die', 'das', 'und', 'in', 'von', 'zu', 'mit', 'den', 'ein'}
+        
+        # Extract words
+        words = re.findall(r'\b\w+\b', content.lower())[:200]  # Check first 200 words
+        word_set = set(words)
+        
+        # Count matches
+        scores = {
+            'en': len(word_set.intersection(english_words)),
+            'es': len(word_set.intersection(spanish_words)),
+            'fr': len(word_set.intersection(french_words)),
+            'de': len(word_set.intersection(german_words))
+        }
+        
+        # Return language with highest score
+        if max(scores.values()) > 0:
+            return max(scores, key=scores.get)
+        
+        return 'unknown'
+    
+    def _is_spam(self, content: str) -> bool:
+        """Detect spam/ad content using patterns and heuristics"""
+        content_lower = content.lower()
+        
+        # Check spam patterns
+        spam_score = 0
+        for pattern in self.spam_patterns:
+            if pattern in content_lower:
+                spam_score += 1
+        
+        # Check for excessive links
+        links = re.findall(r'https?://[^\s]+', content)
+        if len(links) > 20:  # Too many links
+            spam_score += 2
+        
+        # Check for excessive capitalization
+        if len(re.findall(r'[A-Z]{5,}', content)) > 10:
+            spam_score += 1
+        
+        # Check for repeated phrases
+        phrases = re.findall(r'\b\w+\s+\w+\s+\w+\b', content_lower)
+        phrase_counts = Counter(phrases)
+        if any(count > 5 for count in phrase_counts.values()):
+            spam_score += 1
+        
+        # Check for common spam indicators
+        spam_indicators = [
+            r'click here now',
+            r'limited time offer',
+            r'act now',
+            r'100% free',
+            r'no credit card',
+            r'make money fast',
+            r'work from home',
+            r'congratulations you',
+            r'you have been selected'
+        ]
+        
+        for indicator in spam_indicators:
+            if re.search(indicator, content_lower):
+                spam_score += 2
+        
+        return spam_score >= 3
+    
+    def _calculate_quality_score(self, content: str) -> float:
+        """Calculate overall quality score (0-1)"""
+        scores = []
+        
+        # Content structure score
+        structure_score = self._score_structure(content)
+        scores.append(structure_score)
+        
+        # Readability score
+        readability_score = self._score_readability(content)
+        scores.append(readability_score)
+        
+        # Information density score
+        density_score = self._score_information_density(content)
+        scores.append(density_score)
+        
+        # Code quality score (for technical content)
+        if self.config.prefer_code_examples:
+            code_score = self._score_code_content(content)
+            scores.append(code_score)
+        
+        return sum(scores) / len(scores)
+    
+    def _score_structure(self, content: str) -> float:
+        """Score content structure (headings, paragraphs, lists)"""
+        score = 0.5  # Base score
+        
+        # Check for headings
+        headings = re.findall(r'^#{1,6}\s+.+', content, re.MULTILINE)
+        if headings:
+            score += min(len(headings) * 0.05, 0.2)
+        
+        # Check for lists
+        lists = re.findall(r'^[\*\-]\s+.+', content, re.MULTILINE)
+        if lists:
+            score += min(len(lists) * 0.02, 0.1)
+        
+        # Check for code blocks
+        code_blocks = re.findall(r'```[\s\S]*?```', content)
+        if code_blocks:
+            score += min(len(code_blocks) * 0.05, 0.2)
+        
+        return min(score, 1.0)
+    
+    def _score_readability(self, content: str) -> float:
+        """Score content readability"""
+        # Simple readability metrics
+        sentences = re.split(r'[.!?]+', content)
+        words = re.findall(r'\b\w+\b', content)
+        
+        if not sentences or not words:
+            return 0.0
+        
+        # Average sentence length
+        avg_sentence_length = len(words) / len(sentences)
+        
+        # Ideal range is 15-25 words per sentence
+        if 15 <= avg_sentence_length <= 25:
+            sentence_score = 1.0
+        elif 10 <= avg_sentence_length <= 30:
+            sentence_score = 0.7
+        else:
+            sentence_score = 0.4
+        
+        # Check for paragraph breaks
+        paragraphs = re.split(r'\n\n+', content)
+        if len(paragraphs) > 3:
+            paragraph_score = 1.0
+        else:
+            paragraph_score = 0.5
+        
+        return (sentence_score + paragraph_score) / 2
+    
+    def _score_information_density(self, content: str) -> float:
+        """Score information density and uniqueness"""
+        words = re.findall(r'\b\w+\b', content.lower())
+        
+        if not words:
+            return 0.0
+        
+        # Vocabulary richness
+        unique_words = set(words)
+        vocabulary_ratio = len(unique_words) / len(words)
+        
+        # Good range is 0.3-0.7
+        if 0.3 <= vocabulary_ratio <= 0.7:
+            vocab_score = 1.0
+        elif 0.2 <= vocabulary_ratio <= 0.8:
+            vocab_score = 0.7
+        else:
+            vocab_score = 0.4
+        
+        # Check for meaningful content (not just filler)
+        meaningful_words = [w for w in words if len(w) > 3]
+        meaningful_ratio = len(meaningful_words) / len(words)
+        
+        content_score = min(meaningful_ratio * 1.5, 1.0)
+        
+        return (vocab_score + content_score) / 2
+    
+    def _score_code_content(self, content: str) -> float:
+        """Score code content quality and ratio"""
+        # Find code blocks
+        code_blocks = re.findall(r'```[\s\S]*?```', content)
+        inline_code = re.findall(r'`[^`]+`', content)
+        
+        total_length = len(content)
+        code_length = sum(len(block) for block in code_blocks) + sum(len(code) for code in inline_code)
+        
+        if total_length == 0:
+            return 0.0
+        
+        code_ratio = code_length / total_length
+        
+        # For technical content, ideal code ratio is 0.2-0.5
+        if 0.2 <= code_ratio <= 0.5:
+            return 1.0
+        elif 0.1 <= code_ratio <= 0.6:
+            return 0.7
+        elif code_ratio > 0:
+            return 0.5
+        else:
+            return 0.2  # No code in technical content
+    
+    def _is_duplicate(self, content: str) -> bool:
+        """Check if content is duplicate using content hashing"""
+        # Normalize content for comparison
+        normalized = self._normalize_content(content)
+        
+        # Create content hash
+        content_hash = hashlib.sha256(normalized.encode()).hexdigest()
+        
+        if content_hash in self.seen_hashes:
+            return True
+        
+        self.seen_hashes.add(content_hash)
+        
+        # Also check for near-duplicates using similarity
+        # This is a simplified check - in production use more sophisticated methods
+        for seen_hash in list(self.seen_hashes)[-10:]:  # Check last 10
+            # Would implement similarity comparison here
+            pass
+        
+        return False
+    
+    def _normalize_content(self, content: str) -> str:
+        """Normalize content for duplicate detection"""
+        # Remove extra whitespace
+        normalized = re.sub(r'\s+', ' ', content)
+        
+        # Remove punctuation for comparison
+        normalized = re.sub(r'[^\w\s]', '', normalized)
+        
+        # Convert to lowercase
+        normalized = normalized.lower().strip()
+        
+        return normalized
+    
+    def _load_spam_patterns(self) -> List[str]:
+        """Load common spam patterns"""
+        return [
+            'viagra', 'cialis', 'casino', 'poker', 'lottery',
+            'weight loss', 'diet pills', 'forex', 'binary options',
+            'get rich quick', 'mlm', 'work from home',
+            'click here now', 'buy now', 'order now',
+            'unsubscribe', 'opt out', 'remove me'
+        ]
+    
+    def _load_quality_indicators(self) -> Dict[str, float]:
+        """Load positive quality indicators"""
+        return {
+            'tutorial': 0.2,
+            'guide': 0.2,
+            'documentation': 0.3,
+            'example': 0.2,
+            'implementation': 0.2,
+            'best practices': 0.3,
+            'how to': 0.2,
+            'reference': 0.2,
+            'api': 0.1,
+            'framework': 0.1
+        }
+    
+    def get_filter_stats(self) -> Dict[str, int]:
+        """Get filtering statistics"""
+        return {
+            'total_seen': len(self.seen_hashes),
+            'duplicate_checks': len(self.seen_hashes)
+        }
+
+======= tools/research/llm_interface.py ======
+"""
+LLM Provider interface and implementations for m1f-research
+"""
+from abc import ABC, abstractmethod
+from typing import Dict, Any, List, Optional, Union
+import os
+import json
+import subprocess
+import aiohttp
+import asyncio
+from dataclasses import dataclass
+
+
+@dataclass
+class LLMResponse:
+    """Standard response format from LLM providers"""
+    content: str
+    raw_response: Optional[Dict[str, Any]] = None
+    usage: Optional[Dict[str, int]] = None
+    error: Optional[str] = None
+
+
+class LLMProvider(ABC):
+    """Base class for LLM providers"""
+    
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.api_key = api_key
+        self.model = model or self.default_model
+    
+    @property
+    @abstractmethod
+    def default_model(self) -> str:
+        """Default model for this provider"""
+        pass
+    
+    @abstractmethod
+    async def query(self, prompt: str, system: Optional[str] = None, **kwargs) -> LLMResponse:
+        """
+        Query the LLM with a prompt
+        
+        Args:
+            prompt: User prompt
+            system: System prompt (optional)
+            **kwargs: Provider-specific options
+            
+        Returns:
+            LLMResponse object
+        """
+        pass
+    
+    @abstractmethod
+    async def search_web(self, query: str, num_results: int = 20) -> List[Dict[str, str]]:
+        """
+        Use LLM to search the web for URLs
+        
+        Args:
+            query: Search query
+            num_results: Number of results to return
+            
+        Returns:
+            List of dicts with 'url', 'title', 'description'
+        """
+        pass
+    
+    @abstractmethod
+    async def analyze_content(self, content: str, analysis_type: str = "relevance") -> Dict[str, Any]:
+        """
+        Analyze content using the LLM
+        
+        Args:
+            content: Content to analyze
+            analysis_type: Type of analysis (relevance, summary, key_points, etc.)
+            
+        Returns:
+            Analysis results as dict
+        """
+        pass
+    
+    def _validate_api_key(self):
+        """Validate that API key is set"""
+        if not self.api_key:
+            raise ValueError(f"API key not set for {self.__class__.__name__}. "
+                           f"Set via environment variable or pass directly.")
+
+
+class ClaudeProvider(LLMProvider):
+    """Claude API provider via Anthropic"""
+    
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        super().__init__(api_key, model)
+        self.base_url = "https://api.anthropic.com/v1"
+    
+    @property
+    def default_model(self) -> str:
+        return "claude-3-opus-20240229"
+    
+    async def query(self, prompt: str, system: Optional[str] = None, **kwargs) -> LLMResponse:
+        """Query Claude API"""
+        self._validate_api_key()
+        
+        headers = {
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        }
+        
+        messages = [{"role": "user", "content": prompt}]
+        
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": kwargs.get("max_tokens", 4096),
+            "temperature": kwargs.get("temperature", 0.7)
+        }
+        
+        if system:
+            data["system"] = system
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.base_url}/messages",
+                    headers=headers,
+                    json=data
+                ) as response:
+                    result = await response.json()
+                    
+                    if response.status != 200:
+                        return LLMResponse(
+                            content="",
+                            error=f"API error: {result.get('error', {}).get('message', 'Unknown error')}"
+                        )
+                    
+                    return LLMResponse(
+                        content=result["content"][0]["text"],
+                        raw_response=result,
+                        usage=result.get("usage")
+                    )
+                    
+        except Exception as e:
+            return LLMResponse(content="", error=str(e))
+    
+    async def search_web(self, query: str, num_results: int = 20) -> List[Dict[str, str]]:
+        """Use Claude to generate search URLs"""
+        prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
+
+Return a JSON array with objects containing:
+- url: The full URL
+- title: Page title
+- description: Brief description
+
+Focus on high-quality, authoritative sources like documentation, tutorials, and reputable blogs.
+Mix different types of content: tutorials, references, discussions, and examples.
+
+Return ONLY valid JSON array, no other text."""
+
+        response = await self.query(prompt)
+        
+        if response.error:
+            raise Exception(f"LLM error: {response.error}")
+        
+        try:
+            # Extract JSON from response
+            content = response.content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            results = json.loads(content)
+            return results[:num_results]
+            
+        except json.JSONDecodeError:
+            raise Exception("Failed to parse LLM response as JSON")
+    
+    async def analyze_content(self, content: str, analysis_type: str = "relevance") -> Dict[str, Any]:
+        """Analyze content with Claude"""
+        
+        prompts = {
+            "relevance": """Analyze this content and rate its relevance (0-10) for the research topic.
+Return JSON with: relevance_score, reason, key_topics""",
+            
+            "summary": """Provide a concise summary of this content.
+Return JSON with: summary, main_points (array), content_type""",
+            
+            "key_points": """Extract the key points from this content.
+Return JSON with: key_points (array), technical_level, recommended_reading_order"""
+        }
+        
+        prompt = prompts.get(analysis_type, prompts["relevance"])
+        prompt = f"{prompt}\n\nContent:\n{content[:4000]}..."  # Limit content length
+        
+        response = await self.query(prompt)
+        
+        if response.error:
+            raise Exception(f"Analysis error: {response.error}")
+        
+        try:
+            content = response.content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            return json.loads(content)
+            
+        except json.JSONDecodeError:
+            # Return basic analysis if JSON parsing fails
+            return {
+                "relevance_score": 5,
+                "reason": "Could not parse analysis",
+                "raw_response": response.content
+            }
+
+
+class GeminiProvider(LLMProvider):
+    """Google Gemini API provider"""
+    
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        api_key = api_key or os.getenv("GOOGLE_API_KEY")
+        super().__init__(api_key, model)
+        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
+    
+    @property 
+    def default_model(self) -> str:
+        return "gemini-pro"
+    
+    async def query(self, prompt: str, system: Optional[str] = None, **kwargs) -> LLMResponse:
+        """Query Gemini API"""
+        self._validate_api_key()
+        
+        # Combine system and user prompts for Gemini
+        full_prompt = prompt
+        if system:
+            full_prompt = f"{system}\n\n{prompt}"
+        
+        data = {
+            "contents": [{
+                "parts": [{
+                    "text": full_prompt
+                }]
+            }],
+            "generationConfig": {
+                "temperature": kwargs.get("temperature", 0.7),
+                "topK": kwargs.get("top_k", 40),
+                "topP": kwargs.get("top_p", 0.95),
+                "maxOutputTokens": kwargs.get("max_tokens", 2048),
+            }
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}",
+                    json=data
+                ) as response:
+                    result = await response.json()
+                    
+                    if response.status != 200:
+                        return LLMResponse(
+                            content="",
+                            error=f"API error: {result.get('error', {}).get('message', 'Unknown error')}"
+                        )
+                    
+                    content = result["candidates"][0]["content"]["parts"][0]["text"]
+                    
+                    return LLMResponse(
+                        content=content,
+                        raw_response=result,
+                        usage=result.get("usageMetadata")
+                    )
+                    
+        except Exception as e:
+            return LLMResponse(content="", error=str(e))
+    
+    async def search_web(self, query: str, num_results: int = 20) -> List[Dict[str, str]]:
+        """Use Gemini to generate search URLs"""
+        # Similar implementation to Claude
+        prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
+
+Return a JSON array with objects containing:
+- url: The full URL
+- title: Page title  
+- description: Brief description
+
+Focus on high-quality, authoritative sources.
+Return ONLY valid JSON array."""
+
+        response = await self.query(prompt)
+        
+        if response.error:
+            raise Exception(f"LLM error: {response.error}")
+        
+        try:
+            content = response.content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            results = json.loads(content)
+            return results[:num_results]
+            
+        except json.JSONDecodeError:
+            raise Exception("Failed to parse LLM response as JSON")
+    
+    async def analyze_content(self, content: str, analysis_type: str = "relevance") -> Dict[str, Any]:
+        """Analyze content with Gemini"""
+        # Similar implementation to Claude
+        prompts = {
+            "relevance": """Analyze this content and rate its relevance (0-10).
+Return JSON with: relevance_score, reason, key_topics""",
+            
+            "summary": """Summarize this content.
+Return JSON with: summary, main_points (array), content_type""",
+            
+            "key_points": """Extract key points.
+Return JSON with: key_points (array), technical_level"""
+        }
+        
+        prompt = prompts.get(analysis_type, prompts["relevance"])
+        prompt = f"{prompt}\n\nContent:\n{content[:4000]}..."
+        
+        response = await self.query(prompt)
+        
+        if response.error:
+            raise Exception(f"Analysis error: {response.error}")
+        
+        try:
+            content = response.content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            return json.loads(content)
+            
+        except json.JSONDecodeError:
+            return {
+                "relevance_score": 5,
+                "reason": "Could not parse analysis",
+                "raw_response": response.content
+            }
+
+
+class CLIProvider(LLMProvider):
+    """Provider for CLI-based LLM tools like gemini-cli"""
+    
+    def __init__(self, command: str = "gemini", model: Optional[str] = None):
+        super().__init__(api_key="cli", model=model)
+        self.command = command
+    
+    @property
+    def default_model(self) -> str:
+        return "default"
+    
+    async def query(self, prompt: str, system: Optional[str] = None, **kwargs) -> LLMResponse:
+        """Query via CLI command"""
+        # Combine system and user prompts
+        full_prompt = prompt
+        if system:
+            full_prompt = f"{system}\n\n{prompt}"
+        
+        cmd = [self.command]
+        
+        # Add model if specified
+        if self.model != "default":
+            cmd.extend(["--model", self.model])
+        
+        # Add any additional CLI args
+        if "cli_args" in kwargs:
+            cmd.extend(kwargs["cli_args"])
+        
+        try:
+            # Run command asynchronously
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await proc.communicate(full_prompt.encode())
+            
+            if proc.returncode != 0:
+                return LLMResponse(
+                    content="",
+                    error=f"CLI error: {stderr.decode()}"
+                )
+            
+            return LLMResponse(
+                content=stdout.decode().strip(),
+                raw_response={"command": cmd, "returncode": proc.returncode}
+            )
+            
+        except Exception as e:
+            return LLMResponse(content="", error=str(e))
+    
+    async def search_web(self, query: str, num_results: int = 20) -> List[Dict[str, str]]:
+        """Use CLI tool to generate search URLs"""
+        prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
+
+Return a JSON array with objects containing:
+- url: The full URL
+- title: Page title
+- description: Brief description
+
+Return ONLY valid JSON array."""
+
+        response = await self.query(prompt)
+        
+        if response.error:
+            raise Exception(f"CLI error: {response.error}")
+        
+        try:
+            content = response.content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            results = json.loads(content)
+            return results[:num_results]
+            
+        except json.JSONDecodeError:
+            raise Exception("Failed to parse CLI response as JSON")
+    
+    async def analyze_content(self, content: str, analysis_type: str = "relevance") -> Dict[str, Any]:
+        """Analyze content via CLI"""
+        prompts = {
+            "relevance": "Rate relevance 0-10. Return JSON: relevance_score, reason",
+            "summary": "Summarize. Return JSON: summary, main_points",
+            "key_points": "Extract key points. Return JSON: key_points"
+        }
+        
+        prompt = prompts.get(analysis_type, prompts["relevance"])
+        prompt = f"{prompt}\n\nContent:\n{content[:2000]}..."
+        
+        response = await self.query(prompt)
+        
+        if response.error:
+            raise Exception(f"Analysis error: {response.error}")
+        
+        try:
+            content = response.content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            return json.loads(content)
+            
+        except json.JSONDecodeError:
+            return {
+                "relevance_score": 5,
+                "reason": "Could not parse analysis",
+                "raw_response": response.content
+            }
+
+
+def get_provider(provider_name: str, **kwargs) -> LLMProvider:
+    """Factory function to get LLM provider instance"""
+    providers = {
+        "claude": ClaudeProvider,
+        "gemini": GeminiProvider,
+        "gemini-cli": lambda **kw: CLIProvider(command="gemini", **kw),
+    }
+    
+    provider_class = providers.get(provider_name.lower())
+    if not provider_class:
+        raise ValueError(f"Unknown provider: {provider_name}")
+    
+    return provider_class(**kwargs)
+
+======= tools/research/models.py ======
+"""
+Data models for m1f-research
+"""
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import List, Dict, Any, Optional
+
+
+@dataclass
+class ResearchResult:
+    """Complete research result"""
+    query: str
+    bundle_path: str
+    sources_found: int
+    sources_scraped: int
+    sources_analyzed: int
+    sources_included: int
+    generated_at: datetime
+    config: Dict[str, Any]
+
+
+@dataclass 
+class ScrapedContent:
+    """Scraped web content"""
+    url: str
+    title: str
+    html: str
+    markdown: str
+    scraped_at: datetime
+    error: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class AnalyzedContent:
+    """Analyzed content with relevance and insights"""
+    url: str
+    title: str
+    content: str  # markdown content
+    relevance_score: float  # 0-10
+    key_points: List[str]
+    summary: str
+    content_type: Optional[str] = None  # tutorial, reference, blog, etc.
+    analysis_metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ResearchSource:
+    """A source for research (web, github, arxiv, etc.)"""
+    name: str
+    type: str
+    weight: float = 1.0
+    config: Dict[str, Any] = field(default_factory=dict)
+
+======= tools/research/orchestrator.py ======
+"""
+Research orchestrator - coordinates the research workflow
+"""
+import asyncio
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+import json
+import logging
+
+from .config import ResearchConfig
+from .llm_interface import get_provider, LLMProvider
+from .models import ResearchResult, ScrapedContent, AnalyzedContent
+
+
+logger = logging.getLogger(__name__)
+
+
+class ResearchOrchestrator:
+    """Orchestrates the entire research workflow"""
+    
+    def __init__(self, config: ResearchConfig):
+        self.config = config
+        self.llm = self._init_llm()
+        self.results: List[ResearchResult] = []
+        
+    def _init_llm(self) -> LLMProvider:
+        """Initialize LLM provider from config"""
+        return get_provider(
+            self.config.llm.provider,
+            api_key=None,  # Will use env var
+            model=self.config.llm.model
+        )
+    
+    async def run(self, query: str) -> Path:
+        """
+        Run the complete research workflow
+        
+        Returns:
+            Path to the generated bundle
+        """
+        logger.info(f"Starting research for: {query}")
+        
+        # Create output directory
+        output_dir = self._create_output_dir(query)
+        
+        # Step 1: Search for URLs
+        if not self.config.dry_run:
+            urls = await self._search_urls(query)
+            logger.info(f"Found {len(urls)} URLs")
+        else:
+            logger.info("DRY RUN: Would search for URLs")
+            urls = []
+        
+        # Step 2: Scrape content
+        if not self.config.dry_run and urls:
+            scraped_content = await self._scrape_urls(urls[:self.config.scrape_count])
+            logger.info(f"Scraped {len(scraped_content)} pages")
+            
+            # Pre-filter scraped content if filtering is enabled
+            if not self.config.no_filter and scraped_content:
+                from .content_filter import ContentFilter
+                pre_filter = ContentFilter(self.config.analysis)
+                scraped_content = pre_filter.filter_scraped_content(scraped_content)
+                logger.info(f"Pre-filtered to {len(scraped_content)} pages")
+        else:
+            logger.info("DRY RUN: Would scrape URLs")
+            scraped_content = []
+        
+        # Step 3: Analyze content (if enabled)
+        if not self.config.no_analysis and scraped_content and not self.config.dry_run:
+            analyzed_content = await self._analyze_content(scraped_content, query)
+            logger.info(f"Analyzed {len(analyzed_content)} pages")
+        else:
+            analyzed_content = [
+                AnalyzedContent(
+                    url=sc.url,
+                    title=sc.title,
+                    content=sc.markdown,
+                    relevance_score=5.0,
+                    key_points=[],
+                    summary=""
+                ) for sc in scraped_content
+            ]
+        
+        # Step 4: Filter content (if enabled)
+        if not self.config.no_filter and analyzed_content:
+            filtered_content = self._filter_content(analyzed_content)
+            logger.info(f"Filtered to {len(filtered_content)} relevant pages")
+        else:
+            filtered_content = analyzed_content
+        
+        # Step 5: Create bundle
+        if filtered_content and not self.config.dry_run:
+            bundle_path = await self._create_bundle(filtered_content, query, output_dir)
+            logger.info(f"Created bundle at: {bundle_path}")
+            return bundle_path
+        else:
+            logger.info("DRY RUN: Would create bundle")
+            return output_dir / "research-bundle.md"
+    
+    async def run_interactive(self):
+        """Run in interactive mode"""
+        print("🔍 Welcome to m1f-research interactive mode!")
+        print("Type 'exit' or 'quit' to stop.\n")
+        
+        while True:
+            try:
+                query = input("What would you like to research? > ").strip()
+                
+                if query.lower() in ['exit', 'quit']:
+                    print("👋 Goodbye!")
+                    break
+                
+                if not query:
+                    continue
+                
+                # Run research
+                bundle_path = await self.run(query)
+                print(f"\n✅ Research complete! Bundle saved to: {bundle_path}\n")
+                
+            except KeyboardInterrupt:
+                print("\n👋 Goodbye!")
+                break
+            except Exception as e:
+                print(f"\n❌ Error: {e}\n")
+                if self.config.verbose > 0:
+                    import traceback
+                    traceback.print_exc()
+    
+    def _create_output_dir(self, query: str) -> Path:
+        """Create output directory for research results"""
+        # Sanitize query for directory name
+        safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
+        safe_name = safe_name.replace(" ", "-").lower()[:50]
+        
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        dir_name = f"{safe_name}-{timestamp}"
+        
+        output_dir = self.config.output.directory / dir_name
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        return output_dir
+    
+    async def _search_urls(self, query: str) -> List[Dict[str, str]]:
+        """Search for URLs using LLM"""
+        try:
+            urls = await self.llm.search_web(query, self.config.url_count)
+            
+            # Save URLs to file for reference
+            if self.config.output.include_metadata:
+                urls_file = self.config.output.directory / "search_results.json"
+                urls_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(urls_file, 'w') as f:
+                    json.dump(urls, f, indent=2)
+            
+            return urls
+            
+        except Exception as e:
+            logger.error(f"Error searching for URLs: {e}")
+            return []
+    
+    async def _scrape_urls(self, urls: List[Dict[str, str]]) -> List[ScrapedContent]:
+        """Scrape content from URLs"""
+        from .scraper import SmartScraper
+        
+        # Create progress callback if verbose
+        def progress_callback(completed, total):
+            if self.config.verbose > 0:
+                logger.info(f"Scraping progress: {completed}/{total} ({completed/total*100:.1f}%)")
+        
+        # Use SmartScraper for advanced scraping
+        async with SmartScraper(self.config.scraping) as scraper:
+            if self.config.verbose > 0:
+                scraper.set_progress_callback(progress_callback)
+            
+            scraped = await scraper.scrape_urls(urls)
+            
+            # Log statistics
+            stats = scraper.get_stats()
+            logger.info(f"Scraping complete: {stats['success_rate']*100:.1f}% success rate")
+            
+            if stats['failed_urls'] > 0:
+                logger.warning(f"Failed to scrape {stats['failed_urls']} URLs")
+                if self.config.verbose > 1:
+                    for url in stats['failed_url_list']:
+                        logger.debug(f"  Failed: {url}")
+        
+        return scraped
+    
+    async def _analyze_content(self, content: List[ScrapedContent], query: str) -> List[AnalyzedContent]:
+        """Analyze scraped content for relevance and key points"""
+        from .analyzer import ContentAnalyzer
+        
+        # Use ContentAnalyzer for comprehensive analysis
+        analyzer = ContentAnalyzer(self.llm, self.config.analysis)
+        analyzed = await analyzer.analyze_content(content, query)
+        
+        # Log analysis results
+        avg_relevance = sum(item.relevance_score for item in analyzed) / len(analyzed) if analyzed else 0
+        logger.info(f"Average relevance score: {avg_relevance:.1f}/10")
+        
+        # Extract and log topics
+        topics = await analyzer.extract_topics(analyzed)
+        if topics['primary']:
+            logger.info(f"Primary topics: {', '.join(topics['primary'][:5])}")
+        
+        return analyzed
+    
+    def _filter_content(self, content: List[AnalyzedContent]) -> List[AnalyzedContent]:
+        """Filter content based on configuration"""
+        from .content_filter import ContentFilter
+        
+        # Use ContentFilter for advanced filtering
+        filter = ContentFilter(self.config.analysis)
+        filtered = filter.filter_analyzed_content(content)
+        
+        # Sort by relevance
+        filtered.sort(key=lambda x: x.relevance_score, reverse=True)
+        
+        # Log filter statistics
+        stats = filter.get_filter_stats()
+        logger.info(f"Filter stats: {stats['duplicate_checks']} duplicate checks performed")
+        
+        return filtered
+    
+    async def _create_bundle(self, content: List[AnalyzedContent], query: str, output_dir: Path) -> Path:
+        """Create the final research bundle using SmartBundleCreator"""
+        from .bundle_creator import SmartBundleCreator
+        
+        # Generate synthesis if we have an analyzer and it's enabled
+        synthesis = None
+        if not self.config.no_analysis and self.config.output.create_summary:
+            from .analyzer import ContentAnalyzer
+            analyzer = ContentAnalyzer(self.llm, self.config.analysis)
+            synthesis = await analyzer.generate_synthesis(content, query)
+        
+        # Use SmartBundleCreator for intelligent organization
+        bundle_creator = SmartBundleCreator(
+            llm_provider=self.llm if not self.config.no_analysis else None,
+            config=self.config.output
+        )
+        
+        bundle_path = await bundle_creator.create_bundle(
+            content_list=content,
+            research_query=query,
+            output_dir=output_dir,
+            synthesis=synthesis
+        )
+        
+        return bundle_path
+
+======= tools/research/scraper.py ======
+"""
+Smart scraper with advanced features for m1f-research
+"""
+import asyncio
+import random
+import aiohttp
+from typing import List, Dict, Optional, Any
+from datetime import datetime
+import logging
+from urllib.parse import urlparse, urljoin
+import re
+
+from .models import ScrapedContent
+from .config import ScrapingConfig
+
+logger = logging.getLogger(__name__)
+
+
+class SmartScraper:
+    """
+    Advanced web scraper with:
+    - Random timeouts for politeness
+    - Concurrent scraping with rate limiting
+    - Auto-retry on failures
+    - Progress tracking
+    - Robots.txt respect
+    """
+    
+    def __init__(self, config: ScrapingConfig):
+        self.config = config
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.semaphore = asyncio.Semaphore(config.max_concurrent)
+        self.progress_callback = None
+        self.total_urls = 0
+        self.completed_urls = 0
+        self.failed_urls = []
+        
+    async def __aenter__(self):
+        """Async context manager entry"""
+        self.session = aiohttp.ClientSession()
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit"""
+        if self.session:
+            await self.session.close()
+    
+    def set_progress_callback(self, callback):
+        """Set callback for progress updates"""
+        self.progress_callback = callback
+    
+    async def scrape_urls(self, urls: List[Dict[str, str]]) -> List[ScrapedContent]:
+        """
+        Scrape multiple URLs concurrently
+        
+        Args:
+            urls: List of dicts with 'url', 'title', 'description'
+            
+        Returns:
+            List of successfully scraped content
+        """
+        self.total_urls = len(urls)
+        self.completed_urls = 0
+        self.failed_urls = []
+        
+        # Create scraping tasks
+        tasks = [self._scrape_with_retry(url_info) for url_info in urls]
+        
+        # Execute concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Filter out failures and exceptions
+        scraped_content = []
+        for result in results:
+            if isinstance(result, ScrapedContent):
+                scraped_content.append(result)
+            elif isinstance(result, Exception):
+                logger.error(f"Scraping exception: {result}")
+        
+        logger.info(f"Scraped {len(scraped_content)}/{len(urls)} URLs successfully")
+        return scraped_content
+    
+    async def _scrape_with_retry(self, url_info: Dict[str, str]) -> Optional[ScrapedContent]:
+        """Scrape a single URL with retry logic"""
+        url = url_info['url']
+        
+        for attempt in range(self.config.retry_attempts):
+            try:
+                result = await self._scrape_single_url(url_info)
+                if result:
+                    return result
+                    
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} failed for {url}: {e}")
+                if attempt < self.config.retry_attempts - 1:
+                    # Exponential backoff
+                    await asyncio.sleep(2 ** attempt)
+        
+        # All attempts failed
+        self.failed_urls.append(url)
+        return None
+    
+    async def _scrape_single_url(self, url_info: Dict[str, str]) -> Optional[ScrapedContent]:
+        """Scrape a single URL with rate limiting"""
+        async with self.semaphore:
+            url = url_info['url']
+            
+            # Random delay for politeness
+            min_delay, max_delay = self._parse_timeout_range()
+            delay = random.uniform(min_delay, max_delay)
+            await asyncio.sleep(delay)
+            
+            # Check robots.txt if enabled
+            if self.config.respect_robots_txt and not await self._check_robots_txt(url):
+                logger.info(f"Skipping {url} due to robots.txt")
+                return None
+            
+            # Prepare headers
+            headers = {
+                'User-Agent': random.choice(self.config.user_agents),
+                **self.config.headers
+            }
+            
+            try:
+                async with self.session.get(
+                    url, 
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                    allow_redirects=True
+                ) as response:
+                    # Update progress
+                    self.completed_urls += 1
+                    if self.progress_callback:
+                        self.progress_callback(self.completed_urls, self.total_urls)
+                    
+                    if response.status == 200:
+                        html = await response.text()
+                        
+                        # Convert to markdown
+                        markdown = await self._html_to_markdown(html, url)
+                        
+                        return ScrapedContent(
+                            url=str(response.url),  # Use final URL after redirects
+                            title=url_info.get('title', self._extract_title(html)),
+                            html=html,
+                            markdown=markdown,
+                            scraped_at=datetime.now(),
+                            metadata={
+                                'status_code': response.status,
+                                'content_type': response.headers.get('Content-Type', ''),
+                                'content_length': len(html),
+                                'final_url': str(response.url)
+                            }
+                        )
+                    else:
+                        logger.warning(f"HTTP {response.status} for {url}")
+                        return None
+                        
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout scraping {url}")
+                return None
+            except Exception as e:
+                logger.error(f"Error scraping {url}: {e}")
+                return None
+    
+    async def _html_to_markdown(self, html: str, base_url: str) -> str:
+        """Convert HTML to Markdown"""
+        try:
+            # Try to import and use existing converters
+            from markdownify import markdownify
+            
+            # Configure markdownify for better output
+            markdown = markdownify(
+                html,
+                heading_style="ATX",
+                bullets="-",
+                code_language="python",
+                wrap=True,
+                wrap_width=80
+            )
+            
+            # Fix relative URLs
+            markdown = self._fix_relative_urls(markdown, base_url)
+            
+            return markdown
+            
+        except ImportError:
+            # Fallback to basic conversion
+            return self._basic_html_to_markdown(html)
+    
+    def _basic_html_to_markdown(self, html: str) -> str:
+        """Basic HTML to Markdown conversion"""
+        # Remove script and style tags
+        html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Convert common tags
+        conversions = [
+            (r'<h1[^>]*>(.*?)</h1>', r'# \1\n'),
+            (r'<h2[^>]*>(.*?)</h2>', r'## \1\n'),
+            (r'<h3[^>]*>(.*?)</h3>', r'### \1\n'),
+            (r'<h4[^>]*>(.*?)</h4>', r'#### \1\n'),
+            (r'<h5[^>]*>(.*?)</h5>', r'##### \1\n'),
+            (r'<h6[^>]*>(.*?)</h6>', r'###### \1\n'),
+            (r'<p[^>]*>(.*?)</p>', r'\1\n\n'),
+            (r'<br[^>]*>', '\n'),
+            (r'<strong[^>]*>(.*?)</strong>', r'**\1**'),
+            (r'<b[^>]*>(.*?)</b>', r'**\1**'),
+            (r'<em[^>]*>(.*?)</em>', r'*\1*'),
+            (r'<i[^>]*>(.*?)</i>', r'*\1*'),
+            (r'<code[^>]*>(.*?)</code>', r'`\1`'),
+            (r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', r'[\2](\1)'),
+            (r'<li[^>]*>(.*?)</li>', r'- \1\n'),
+            (r'<ul[^>]*>', '\n'),
+            (r'</ul>', '\n'),
+            (r'<ol[^>]*>', '\n'),
+            (r'</ol>', '\n'),
+        ]
+        
+        for pattern, replacement in conversions:
+            html = re.sub(pattern, replacement, html, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Remove remaining tags
+        html = re.sub(r'<[^>]+>', '', html)
+        
+        # Clean up whitespace
+        html = re.sub(r'\n\s*\n\s*\n', '\n\n', html)
+        html = html.strip()
+        
+        return html
+    
+    def _fix_relative_urls(self, markdown: str, base_url: str) -> str:
+        """Convert relative URLs to absolute URLs"""
+        # Parse base URL
+        parsed_base = urlparse(base_url)
+        base_domain = f"{parsed_base.scheme}://{parsed_base.netloc}"
+        
+        # Fix markdown links
+        def fix_link(match):
+            text = match.group(1)
+            url = match.group(2)
+            
+            # Skip if already absolute
+            if url.startswith(('http://', 'https://', 'mailto:', '#')):
+                return match.group(0)
+            
+            # Convert to absolute
+            if url.startswith('/'):
+                url = base_domain + url
+            else:
+                url = urljoin(base_url, url)
+            
+            return f'[{text}]({url})'
+        
+        markdown = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', fix_link, markdown)
+        
+        return markdown
+    
+    def _extract_title(self, html: str) -> str:
+        """Extract title from HTML"""
+        title_match = re.search(r'<title[^>]*>(.*?)</title>', html, re.IGNORECASE | re.DOTALL)
+        if title_match:
+            title = title_match.group(1).strip()
+            # Clean up title
+            title = re.sub(r'\s+', ' ', title)
+            return title[:200]  # Limit length
+        return "Untitled"
+    
+    async def _check_robots_txt(self, url: str) -> bool:
+        """Check if URL is allowed by robots.txt"""
+        # Simple implementation - in production would use robotparser
+        parsed = urlparse(url)
+        robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+        
+        try:
+            async with self.session.get(
+                robots_url,
+                timeout=aiohttp.ClientTimeout(total=5)
+            ) as response:
+                if response.status == 200:
+                    robots_txt = await response.text()
+                    # Very basic check - just look for explicit disallow
+                    path = parsed.path or '/'
+                    if f"Disallow: {path}" in robots_txt:
+                        return False
+        except:
+            # If we can't check robots.txt, assume it's OK
+            pass
+        
+        return True
+    
+    def _parse_timeout_range(self) -> tuple[float, float]:
+        """Parse timeout range string"""
+        parts = self.config.timeout_range.split('-')
+        if len(parts) == 2:
+            return float(parts[0]), float(parts[1])
+        else:
+            val = float(parts[0])
+            return val, val
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get scraping statistics"""
+        return {
+            'total_urls': self.total_urls,
+            'completed_urls': self.completed_urls,
+            'failed_urls': len(self.failed_urls),
+            'success_rate': self.completed_urls / self.total_urls if self.total_urls > 0 else 0,
+            'failed_url_list': self.failed_urls
+        }
 
 ======= tools/s1f/__init__.py ======
 """
