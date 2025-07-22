@@ -36149,6 +36149,340 @@ from .cli import main
 if __name__ == '__main__':
     main()
 
+======= tools/research/analysis_templates.py ======
+"""
+Analysis templates for different research types
+"""
+from typing import Dict, Any, List
+from dataclasses import dataclass
+
+
+@dataclass
+class AnalysisTemplate:
+    """Template for content analysis"""
+    name: str
+    description: str
+    focus_areas: List[str]
+    evaluation_criteria: Dict[str, float]  # criterion -> weight
+    prompts: Dict[str, str]  # analysis type -> custom prompt
+    content_preferences: Dict[str, Any]
+
+
+# Technical analysis template
+TECHNICAL_TEMPLATE = AnalysisTemplate(
+    name="technical",
+    description="For implementation details and code examples",
+    focus_areas=[
+        "implementation_details",
+        "code_examples",
+        "performance_considerations",
+        "best_practices",
+        "common_pitfalls"
+    ],
+    evaluation_criteria={
+        "code_quality": 0.3,
+        "practical_examples": 0.3,
+        "depth_of_explanation": 0.2,
+        "accuracy": 0.2
+    },
+    prompts={
+        "relevance": """Analyze this content for technical relevance to "{query}".
+Focus on:
+1. Quality and relevance of code examples
+2. Depth of implementation details
+3. Practical applicability
+4. Technical accuracy
+5. Coverage of edge cases and error handling""",
+        
+        "key_points": """Extract key technical insights from this content.
+Focus on:
+- Implementation patterns and techniques
+- Performance optimizations
+- Security considerations
+- Testing strategies
+- Common mistakes to avoid"""
+    },
+    content_preferences={
+        "prefer_code_examples": True,
+        "min_code_ratio": 0.2,
+        "preferred_content_types": ["tutorial", "documentation", "code"],
+        "relevance_boost_keywords": [
+            "implementation", "example", "code", "performance",
+            "optimization", "pattern", "practice", "tutorial"
+        ]
+    }
+)
+
+
+# Academic analysis template
+ACADEMIC_TEMPLATE = AnalysisTemplate(
+    name="academic",
+    description="For theoretical understanding and research papers",
+    focus_areas=[
+        "theoretical_foundations",
+        "research_methodology",
+        "citations_references",
+        "empirical_evidence",
+        "future_directions"
+    ],
+    evaluation_criteria={
+        "theoretical_depth": 0.3,
+        "citations_quality": 0.2,
+        "methodology_rigor": 0.2,
+        "novelty": 0.15,
+        "clarity": 0.15
+    },
+    prompts={
+        "relevance": """Analyze this content for academic relevance to "{query}".
+Focus on:
+1. Theoretical contributions and frameworks
+2. Quality of citations and references
+3. Research methodology and rigor
+4. Empirical evidence and validation
+5. Novelty and significance of findings""",
+        
+        "key_points": """Extract key academic insights from this content.
+Focus on:
+- Theoretical concepts and frameworks
+- Research findings and conclusions
+- Methodological approaches
+- Limitations and future work
+- Connections to existing literature"""
+    },
+    content_preferences={
+        "prefer_code_examples": False,
+        "min_citation_count": 5,
+        "preferred_content_types": ["research", "paper", "study", "analysis"],
+        "relevance_boost_keywords": [
+            "research", "study", "theory", "framework", "methodology",
+            "findings", "conclusion", "hypothesis", "evidence"
+        ]
+    }
+)
+
+
+# Tutorial analysis template
+TUTORIAL_TEMPLATE = AnalysisTemplate(
+    name="tutorial",
+    description="For step-by-step guides and learning resources",
+    focus_areas=[
+        "learning_progression",
+        "clear_instructions",
+        "practical_exercises",
+        "prerequisite_coverage",
+        "common_mistakes"
+    ],
+    evaluation_criteria={
+        "clarity": 0.3,
+        "completeness": 0.25,
+        "practical_examples": 0.25,
+        "learning_curve": 0.2
+    },
+    prompts={
+        "relevance": """Analyze this content for tutorial relevance to "{query}".
+Focus on:
+1. Clarity of step-by-step instructions
+2. Completeness of the tutorial
+3. Quality of examples and exercises
+4. Appropriate difficulty progression
+5. Coverage of prerequisites and setup""",
+        
+        "key_points": """Extract key learning points from this tutorial.
+Focus on:
+- Main concepts being taught
+- Step-by-step procedures
+- Important prerequisites
+- Common mistakes and how to avoid them
+- Practice exercises and challenges"""
+    },
+    content_preferences={
+        "prefer_code_examples": True,
+        "prefer_numbered_steps": True,
+        "preferred_content_types": ["tutorial", "guide", "howto", "walkthrough"],
+        "relevance_boost_keywords": [
+            "step-by-step", "tutorial", "guide", "learn", "example",
+            "exercise", "practice", "beginner", "getting started"
+        ]
+    }
+)
+
+
+# Reference analysis template
+REFERENCE_TEMPLATE = AnalysisTemplate(
+    name="reference",
+    description="For API documentation and reference materials",
+    focus_areas=[
+        "api_completeness",
+        "parameter_documentation", 
+        "return_value_specs",
+        "usage_examples",
+        "error_handling"
+    ],
+    evaluation_criteria={
+        "completeness": 0.3,
+        "accuracy": 0.3,
+        "examples": 0.2,
+        "organization": 0.2
+    },
+    prompts={
+        "relevance": """Analyze this content for reference relevance to "{query}".
+Focus on:
+1. Completeness of API/interface documentation
+2. Accuracy of parameter and return value descriptions
+3. Quality of usage examples
+4. Coverage of error cases and edge conditions
+5. Organization and searchability""",
+        
+        "key_points": """Extract key reference information from this content.
+Focus on:
+- API endpoints or function signatures
+- Required and optional parameters
+- Return values and data structures
+- Error codes and handling
+- Usage examples and patterns"""
+    },
+    content_preferences={
+        "prefer_code_examples": True,
+        "prefer_structured_data": True,
+        "preferred_content_types": ["documentation", "reference", "api", "spec"],
+        "relevance_boost_keywords": [
+            "api", "reference", "documentation", "parameters", "returns",
+            "method", "function", "class", "interface", "specification"
+        ]
+    }
+)
+
+
+# General analysis template (default)
+GENERAL_TEMPLATE = AnalysisTemplate(
+    name="general",
+    description="Balanced analysis for any topic",
+    focus_areas=[
+        "main_concepts",
+        "practical_applications",
+        "examples_illustrations",
+        "pros_and_cons",
+        "related_topics"
+    ],
+    evaluation_criteria={
+        "relevance": 0.3,
+        "clarity": 0.25,
+        "depth": 0.25,
+        "practicality": 0.2
+    },
+    prompts={
+        "relevance": """Analyze this content for relevance to "{query}".
+Provide a balanced assessment considering:
+1. How well it addresses the research query
+2. Quality and depth of information
+3. Practical value and applications
+4. Clarity and accessibility
+5. Unique insights or perspectives""",
+        
+        "key_points": """Extract key insights from this content.
+Focus on:
+- Main concepts and ideas
+- Practical applications
+- Important examples
+- Advantages and limitations
+- Connections to related topics"""
+    },
+    content_preferences={
+        "prefer_code_examples": False,
+        "balanced_content": True,
+        "preferred_content_types": None,  # No preference
+        "relevance_boost_keywords": []
+    }
+)
+
+
+# Template registry
+TEMPLATES = {
+    "technical": TECHNICAL_TEMPLATE,
+    "academic": ACADEMIC_TEMPLATE,
+    "tutorial": TUTORIAL_TEMPLATE,
+    "reference": REFERENCE_TEMPLATE,
+    "general": GENERAL_TEMPLATE
+}
+
+
+def get_template(name: str) -> AnalysisTemplate:
+    """Get analysis template by name"""
+    return TEMPLATES.get(name, GENERAL_TEMPLATE)
+
+
+def customize_analysis_prompt(template: AnalysisTemplate, prompt_type: str, query: str) -> str:
+    """Customize analysis prompt based on template"""
+    base_prompt = template.prompts.get(prompt_type, "")
+    return base_prompt.format(query=query) if base_prompt else ""
+
+
+def apply_template_scoring(template: AnalysisTemplate, analysis_results: Dict[str, Any]) -> float:
+    """Apply template-specific scoring weights to analysis results"""
+    weighted_score = 0.0
+    total_weight = 0.0
+    
+    # Map analysis results to template criteria
+    criteria_scores = {
+        "relevance": analysis_results.get("relevance_score", 5.0),
+        "clarity": estimate_clarity_score(analysis_results),
+        "completeness": estimate_completeness_score(analysis_results),
+        "accuracy": analysis_results.get("technical_accuracy", 7.0),
+        "practical_examples": estimate_example_score(analysis_results),
+        "depth": estimate_depth_score(analysis_results)
+    }
+    
+    # Apply template weights
+    for criterion, weight in template.evaluation_criteria.items():
+        if criterion in criteria_scores:
+            weighted_score += criteria_scores[criterion] * weight
+            total_weight += weight
+    
+    # Normalize to 0-10 scale
+    return (weighted_score / total_weight) if total_weight > 0 else 5.0
+
+
+def estimate_clarity_score(analysis: Dict[str, Any]) -> float:
+    """Estimate clarity based on analysis metadata"""
+    # Simple heuristic based on summary quality
+    summary = analysis.get("summary", "")
+    if len(summary) > 50 and len(summary) < 500:
+        return 8.0
+    return 6.0
+
+
+def estimate_completeness_score(analysis: Dict[str, Any]) -> float:
+    """Estimate completeness based on key points"""
+    key_points = analysis.get("key_points", [])
+    if len(key_points) >= 5:
+        return 9.0
+    elif len(key_points) >= 3:
+        return 7.0
+    return 5.0
+
+
+def estimate_example_score(analysis: Dict[str, Any]) -> float:
+    """Estimate quality of examples"""
+    content_type = analysis.get("content_type", "")
+    if content_type in ["tutorial", "code"]:
+        return 8.0
+    elif "example" in str(analysis.get("topics", [])).lower():
+        return 7.0
+    return 5.0
+
+
+def estimate_depth_score(analysis: Dict[str, Any]) -> float:
+    """Estimate depth of coverage"""
+    # Based on technical level and key points
+    level = analysis.get("technical_level", "intermediate")
+    key_points = len(analysis.get("key_points", []))
+    
+    if level == "advanced" and key_points >= 4:
+        return 9.0
+    elif level == "intermediate" and key_points >= 3:
+        return 7.0
+    return 5.0
+
 ======= tools/research/analyzer.py ======
 """
 Content analysis using LLMs for m1f-research
@@ -36163,6 +36497,7 @@ import json
 from .models import ScrapedContent, AnalyzedContent
 from .llm_interface import LLMProvider
 from .config import AnalysisConfig
+from .analysis_templates import get_template, customize_analysis_prompt, apply_template_scoring
 
 logger = logging.getLogger(__name__)
 
@@ -36177,9 +36512,10 @@ class ContentAnalyzer:
     - Topic extraction
     """
     
-    def __init__(self, llm_provider: LLMProvider, config: AnalysisConfig):
+    def __init__(self, llm_provider: LLMProvider, config: AnalysisConfig, template_name: str = "general"):
         self.llm = llm_provider
         self.config = config
+        self.template = get_template(template_name)
     
     async def analyze_content(
         self, 
@@ -36263,8 +36599,33 @@ class ContentAnalyzer:
         url: str
     ) -> Dict[str, Any]:
         """Get comprehensive analysis from LLM"""
-        # Create analysis prompt
-        prompt = f"""Analyze the following content in the context of this research query: "{research_query}"
+        # Use template-specific prompt if available
+        template_prompt = customize_analysis_prompt(self.template, "relevance", research_query)
+        
+        if template_prompt:
+            # Template-specific analysis
+            prompt = f"""{template_prompt}
+
+URL: {url}
+
+Content:
+{content}
+
+Provide analysis in JSON format with:
+1. relevance_score: 0-10 (float)
+2. summary: 2-3 sentence summary
+3. key_points: Array of key points
+4. content_type: Type of content
+5. topics: Main topics covered
+6. technical_level: beginner/intermediate/advanced
+7. strengths: Value of this content
+8. limitations: Any limitations
+
+Also include template-specific fields based on the focus areas.
+Return ONLY valid JSON."""
+        else:
+            # Default analysis prompt
+            prompt = f"""Analyze the following content in the context of this research query: "{research_query}"
 
 URL: {url}
 
@@ -36297,6 +36658,14 @@ Return ONLY valid JSON, no other text."""
             
             # Validate and normalize the analysis
             analysis = self._validate_analysis(analysis)
+            
+            # Apply template-based scoring adjustments
+            if self.template.name != "general":
+                original_score = analysis['relevance_score']
+                template_adjusted_score = apply_template_scoring(self.template, analysis)
+                # Blend original and template scores
+                analysis['relevance_score'] = (original_score * 0.6 + template_adjusted_score * 0.4)
+                analysis['template_score'] = template_adjusted_score
             
             return analysis
             
@@ -36495,8 +36864,9 @@ import json
 from collections import defaultdict, Counter
 
 from .models import AnalyzedContent
-from .config import OutputConfig
+from .config import OutputConfig, ResearchConfig
 from .llm_interface import LLMProvider
+from .readme_generator import ReadmeGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -36511,9 +36881,10 @@ class SmartBundleCreator:
     - Summary synthesis per topic
     """
     
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[OutputConfig] = None):
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[OutputConfig] = None, research_config: Optional[ResearchConfig] = None):
         self.llm = llm_provider
         self.config = config or OutputConfig()
+        self.research_config = research_config
         
     async def create_bundle(
         self,
@@ -36555,6 +36926,20 @@ class SmartBundleCreator:
         
         if self.config.include_metadata:
             self._create_metadata_file(content_list, research_query, output_dir)
+        
+        # Generate README if we have research config
+        if self.research_config:
+            readme_gen = ReadmeGenerator(self.research_config)
+            readme_gen.generate_readme(
+                content_list=content_list,
+                research_query=research_query,
+                output_dir=output_dir,
+                topic_groups=topic_groups,
+                synthesis=synthesis
+            )
+            
+            # Also generate citations file
+            readme_gen.generate_citation_file(content_list, research_query, output_dir)
         
         logger.info(f"Created smart bundle at: {bundle_path}")
         return bundle_path
@@ -38568,8 +38953,11 @@ class ResearchOrchestrator:
         """Analyze scraped content for relevance and key points"""
         from .analyzer import ContentAnalyzer
         
+        # Get template name from config if available
+        template_name = getattr(self.config, 'template', 'general')
+        
         # Use ContentAnalyzer for comprehensive analysis
-        analyzer = ContentAnalyzer(self.llm, self.config.analysis)
+        analyzer = ContentAnalyzer(self.llm, self.config.analysis, template_name=template_name)
         analyzed = await analyzer.analyze_content(content, query)
         
         # Log analysis results
@@ -38614,7 +39002,8 @@ class ResearchOrchestrator:
         # Use SmartBundleCreator for intelligent organization
         bundle_creator = SmartBundleCreator(
             llm_provider=self.llm if not self.config.no_analysis else None,
-            config=self.config.output
+            config=self.config.output,
+            research_config=self.config
         )
         
         bundle_path = await bundle_creator.create_bundle(
@@ -38625,6 +39014,257 @@ class ResearchOrchestrator:
         )
         
         return bundle_path
+
+======= tools/research/readme_generator.py ======
+"""
+README generator for research bundles
+"""
+import logging
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+import json
+
+from .models import AnalyzedContent
+from .config import ResearchConfig
+
+logger = logging.getLogger(__name__)
+
+
+class ReadmeGenerator:
+    """
+    Generate comprehensive README files for research bundles with:
+    - Executive summary
+    - Key findings
+    - Source overview
+    - Usage instructions
+    - Citation information
+    """
+    
+    def __init__(self, config: ResearchConfig):
+        self.config = config
+    
+    def generate_readme(
+        self,
+        content_list: List[AnalyzedContent],
+        research_query: str,
+        output_dir: Path,
+        topic_groups: Optional[Dict[str, List[AnalyzedContent]]] = None,
+        synthesis: Optional[str] = None
+    ) -> Path:
+        """
+        Generate a README.md file for the research bundle
+        
+        Args:
+            content_list: List of analyzed content
+            research_query: Original research query
+            output_dir: Directory containing the bundle
+            topic_groups: Optional topic groupings
+            synthesis: Optional research synthesis
+            
+        Returns:
+            Path to the generated README file
+        """
+        readme_path = output_dir / "README.md"
+        
+        lines = []
+        
+        # Title and description
+        lines.append(f"# Research Bundle: {research_query}")
+        lines.append("")
+        lines.append(f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} using m1f-research")
+        lines.append("")
+        
+        # Quick stats
+        lines.append("## Quick Stats")
+        lines.append("")
+        lines.append(f"- **Total Sources**: {len(content_list)}")
+        if topic_groups:
+            lines.append(f"- **Topics Covered**: {len(topic_groups)}")
+        
+        avg_relevance = sum(item.relevance_score for item in content_list) / len(content_list) if content_list else 0
+        lines.append(f"- **Average Relevance**: {avg_relevance:.1f}/10")
+        
+        # Content type distribution
+        content_types = {}
+        for item in content_list:
+            ct = item.content_type or "unknown"
+            content_types[ct] = content_types.get(ct, 0) + 1
+        
+        lines.append(f"- **Content Types**: {', '.join(f'{k} ({v})' for k, v in content_types.items())}")
+        lines.append("")
+        
+        # Executive summary
+        lines.append("## Executive Summary")
+        lines.append("")
+        
+        if synthesis:
+            lines.append(synthesis)
+        else:
+            lines.append(f"This research bundle contains {len(content_list)} curated sources about '{research_query}'. ")
+            lines.append("The sources have been analyzed for relevance and organized for easy navigation.")
+        lines.append("")
+        
+        # Key findings
+        if content_list:
+            lines.append("## Key Findings")
+            lines.append("")
+            
+            # Top 3 most relevant sources
+            top_sources = sorted(content_list, key=lambda x: x.relevance_score, reverse=True)[:3]
+            lines.append("### Most Relevant Sources")
+            lines.append("")
+            for i, source in enumerate(top_sources, 1):
+                lines.append(f"{i}. **[{source.title}]({source.url})** (Relevance: {source.relevance_score}/10)")
+                if source.summary:
+                    lines.append(f"   - {source.summary[:150]}...")
+                lines.append("")
+            
+            # Common themes
+            if topic_groups and len(topic_groups) > 1:
+                lines.append("### Main Topics")
+                lines.append("")
+                for topic, items in list(topic_groups.items())[:5]:
+                    lines.append(f"- **{topic}**: {len(items)} sources")
+                lines.append("")
+        
+        # How to use this bundle
+        lines.append("## How to Use This Bundle")
+        lines.append("")
+        lines.append("1. **Quick Overview**: Start with the executive summary above")
+        lines.append("2. **Deep Dive**: Open `research-bundle.md` for the full content")
+        lines.append("3. **Navigation**: Use the table of contents to jump to specific sources")
+        lines.append("4. **By Topic**: Sources are organized by subtopic for logical flow")
+        lines.append("5. **Metadata**: Check `metadata.json` for additional details")
+        lines.append("")
+        
+        # Source overview
+        lines.append("## Source Overview")
+        lines.append("")
+        
+        if topic_groups:
+            for topic, items in topic_groups.items():
+                lines.append(f"### {topic}")
+                lines.append("")
+                for item in items[:3]:  # Show top 3 per topic
+                    lines.append(f"- [{item.title}]({item.url}) - {item.relevance_score}/10")
+                if len(items) > 3:
+                    lines.append(f"- ...and {len(items) - 3} more")
+                lines.append("")
+        else:
+            # Simple list if no topic groups
+            for item in content_list[:10]:
+                lines.append(f"- [{item.title}]({item.url}) - {item.relevance_score}/10")
+            if len(content_list) > 10:
+                lines.append(f"- ...and {len(content_list) - 10} more sources")
+            lines.append("")
+        
+        # Research methodology
+        lines.append("## Research Methodology")
+        lines.append("")
+        lines.append("This research was conducted using the following approach:")
+        lines.append("")
+        lines.append(f"1. **Search**: Found {self.config.url_count} potential sources using {self.config.llm.provider}")
+        lines.append(f"2. **Scrape**: Downloaded content from top {self.config.scrape_count} URLs")
+        lines.append(f"3. **Filter**: Applied quality and relevance filters")
+        if not self.config.no_analysis:
+            lines.append(f"4. **Analyze**: Used LLM to score relevance and extract key points")
+            lines.append(f"5. **Organize**: Grouped content by topics for logical flow")
+        lines.append("")
+        
+        # Configuration used
+        lines.append("### Configuration")
+        lines.append("")
+        lines.append("```yaml")
+        lines.append(f"provider: {self.config.llm.provider}")
+        lines.append(f"relevance_threshold: {self.config.analysis.relevance_threshold}")
+        lines.append(f"min_content_length: {self.config.analysis.min_content_length}")
+        if hasattr(self.config, 'template') and self.config.template:
+            lines.append(f"template: {self.config.template}")
+        lines.append("```")
+        lines.append("")
+        
+        # Files in this bundle
+        lines.append("## Files in This Bundle")
+        lines.append("")
+        lines.append("- `README.md` - This file")
+        lines.append("- `research-bundle.md` - Complete research content")
+        if self.config.output.create_index:
+            lines.append("- `index.md` - Alternative navigation by topic and relevance")
+        if self.config.output.include_metadata:
+            lines.append("- `metadata.json` - Detailed source metadata")
+            lines.append("- `search_results.json` - Original search results")
+        lines.append("")
+        
+        # Citation information
+        lines.append("## Citation")
+        lines.append("")
+        lines.append("If you use this research bundle, please cite:")
+        lines.append("")
+        lines.append("```")
+        lines.append(f"Research Bundle: {research_query}")
+        lines.append(f"Generated by m1f-research on {datetime.now().strftime('%Y-%m-%d')}")
+        lines.append(f"Sources: {len(content_list)} web resources")
+        lines.append("```")
+        lines.append("")
+        
+        # License and attribution
+        lines.append("## License & Attribution")
+        lines.append("")
+        lines.append("This research bundle aggregates content from various sources. ")
+        lines.append("Each source retains its original copyright and license. ")
+        lines.append("Please refer to individual sources for their specific terms.")
+        lines.append("")
+        
+        # Footer
+        lines.append("---")
+        lines.append("")
+        lines.append("*Generated by [m1f-research](https://github.com/m1f/m1f) - AI-powered research tool*")
+        
+        # Write README
+        readme_content = "\n".join(lines)
+        with open(readme_path, 'w', encoding='utf-8') as f:
+            f.write(readme_content)
+        
+        logger.info(f"Generated README at: {readme_path}")
+        return readme_path
+    
+    def generate_citation_file(self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path):
+        """Generate a CITATIONS.md file with proper citations for all sources"""
+        citations_path = output_dir / "CITATIONS.md"
+        
+        lines = []
+        lines.append("# Citations")
+        lines.append("")
+        lines.append(f"Sources used in research for: {research_query}")
+        lines.append("")
+        
+        # Group by domain for organization
+        by_domain = {}
+        for item in content_list:
+            from urllib.parse import urlparse
+            domain = urlparse(item.url).netloc
+            if domain not in by_domain:
+                by_domain[domain] = []
+            by_domain[domain].append(item)
+        
+        # Generate citations by domain
+        for domain, items in sorted(by_domain.items()):
+            lines.append(f"## {domain}")
+            lines.append("")
+            
+            for item in sorted(items, key=lambda x: x.title):
+                lines.append(f"- **{item.title}**")
+                lines.append(f"  - URL: {item.url}")
+                lines.append(f"  - Accessed: {datetime.now().strftime('%Y-%m-%d')}")
+                lines.append(f"  - Relevance Score: {item.relevance_score}/10")
+                lines.append("")
+        
+        # Write citations file
+        with open(citations_path, 'w', encoding='utf-8') as f:
+            f.write("\n".join(lines))
+        
+        logger.info(f"Generated citations at: {citations_path}")
 
 ======= tools/research/scraper.py ======
 """

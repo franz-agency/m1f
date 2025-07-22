@@ -192,8 +192,11 @@ class ResearchOrchestrator:
         """Analyze scraped content for relevance and key points"""
         from .analyzer import ContentAnalyzer
         
+        # Get template name from config if available
+        template_name = getattr(self.config, 'template', 'general')
+        
         # Use ContentAnalyzer for comprehensive analysis
-        analyzer = ContentAnalyzer(self.llm, self.config.analysis)
+        analyzer = ContentAnalyzer(self.llm, self.config.analysis, template_name=template_name)
         analyzed = await analyzer.analyze_content(content, query)
         
         # Log analysis results
@@ -238,7 +241,8 @@ class ResearchOrchestrator:
         # Use SmartBundleCreator for intelligent organization
         bundle_creator = SmartBundleCreator(
             llm_provider=self.llm if not self.config.no_analysis else None,
-            config=self.config.output
+            config=self.config.output,
+            research_config=self.config
         )
         
         bundle_path = await bundle_creator.create_bundle(

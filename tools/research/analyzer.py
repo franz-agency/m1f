@@ -11,6 +11,7 @@ import json
 from .models import ScrapedContent, AnalyzedContent
 from .llm_interface import LLMProvider
 from .config import AnalysisConfig
+from .analysis_templates import get_template, customize_analysis_prompt, apply_template_scoring
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +26,10 @@ class ContentAnalyzer:
     - Topic extraction
     """
     
-    def __init__(self, llm_provider: LLMProvider, config: AnalysisConfig):
+    def __init__(self, llm_provider: LLMProvider, config: AnalysisConfig, template_name: str = "general"):
         self.llm = llm_provider
         self.config = config
+        self.template = get_template(template_name)
     
     async def analyze_content(
         self, 
@@ -111,8 +113,33 @@ class ContentAnalyzer:
         url: str
     ) -> Dict[str, Any]:
         """Get comprehensive analysis from LLM"""
-        # Create analysis prompt
-        prompt = f"""Analyze the following content in the context of this research query: "{research_query}"
+        # Use template-specific prompt if available
+        template_prompt = customize_analysis_prompt(self.template, "relevance", research_query)
+        
+        if template_prompt:
+            # Template-specific analysis
+            prompt = f"""{template_prompt}
+
+URL: {url}
+
+Content:
+{content}
+
+Provide analysis in JSON format with:
+1. relevance_score: 0-10 (float)
+2. summary: 2-3 sentence summary
+3. key_points: Array of key points
+4. content_type: Type of content
+5. topics: Main topics covered
+6. technical_level: beginner/intermediate/advanced
+7. strengths: Value of this content
+8. limitations: Any limitations
+
+Also include template-specific fields based on the focus areas.
+Return ONLY valid JSON."""
+        else:
+            # Default analysis prompt
+            prompt = f"""Analyze the following content in the context of this research query: "{research_query}"
 
 URL: {url}
 
@@ -145,6 +172,14 @@ Return ONLY valid JSON, no other text."""
             
             # Validate and normalize the analysis
             analysis = self._validate_analysis(analysis)
+            
+            # Apply template-based scoring adjustments
+            if self.template.name != "general":
+                original_score = analysis['relevance_score']
+                template_adjusted_score = apply_template_scoring(self.template, analysis)
+                # Blend original and template scores
+                analysis['relevance_score'] = (original_score * 0.6 + template_adjusted_score * 0.4)
+                analysis['template_score'] = template_adjusted_score
             
             return analysis
             

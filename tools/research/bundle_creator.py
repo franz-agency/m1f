@@ -9,8 +9,9 @@ import json
 from collections import defaultdict, Counter
 
 from .models import AnalyzedContent
-from .config import OutputConfig
+from .config import OutputConfig, ResearchConfig
 from .llm_interface import LLMProvider
+from .readme_generator import ReadmeGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +26,10 @@ class SmartBundleCreator:
     - Summary synthesis per topic
     """
     
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[OutputConfig] = None):
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[OutputConfig] = None, research_config: Optional[ResearchConfig] = None):
         self.llm = llm_provider
         self.config = config or OutputConfig()
+        self.research_config = research_config
         
     async def create_bundle(
         self,
@@ -69,6 +71,20 @@ class SmartBundleCreator:
         
         if self.config.include_metadata:
             self._create_metadata_file(content_list, research_query, output_dir)
+        
+        # Generate README if we have research config
+        if self.research_config:
+            readme_gen = ReadmeGenerator(self.research_config)
+            readme_gen.generate_readme(
+                content_list=content_list,
+                research_query=research_query,
+                output_dir=output_dir,
+                topic_groups=topic_groups,
+                synthesis=synthesis
+            )
+            
+            # Also generate citations file
+            readme_gen.generate_citation_file(content_list, research_query, output_dir)
         
         logger.info(f"Created smart bundle at: {bundle_path}")
         return bundle_path
