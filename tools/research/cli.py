@@ -59,8 +59,8 @@ Examples:
         parser.add_argument(
             '--output', '-o',
             type=Path,
-            default=Path('./m1f/research'),
-            help='Output directory for research bundles (default: ./m1f/research)'
+            default=Path('./research-data'),
+            help='Output directory for research bundles (default: ./research-data)'
         )
         
         parser.add_argument(

@@ -1,6 +1,7 @@
 """
 Smart bundle creation with intelligent content organization for m1f-research
 """
+import re
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple

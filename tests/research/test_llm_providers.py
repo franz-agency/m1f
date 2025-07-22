@@ -85,20 +85,49 @@ class TestClaudeProvider:
             "usage": {"input_tokens": 10, "output_tokens": 20}
         }
         
-        # Create a mock that properly handles the async context manager pattern
-        with patch("tools.research.llm_interface.aiohttp.ClientSession") as mock_session_class:
-            # Create response mock
-            mock_resp = AsyncMock()
-            mock_resp.status = 200
-            mock_resp.json = AsyncMock(return_value=mock_response)
+        # Create proper async context managers
+        class MockResponse:
+            def __init__(self, status, json_data):
+                self.status = status
+                self._json_data = json_data
+                
+            async def json(self):
+                return self._json_data
+        
+        class MockPostContext:
+            def __init__(self, response):
+                self.response = response
+                
+            async def __aenter__(self):
+                return self.response
+                
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        class MockSession:
+            def __init__(self, response):
+                self.response = response
+                
+            def post(self, url, **kwargs):
+                return MockPostContext(self.response)
+        
+        class MockSessionContext:
+            def __init__(self, session):
+                self.session = session
+                
+            async def __aenter__(self):
+                return self.session
+                
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        # Mock aiohttp.ClientSession
+        with patch.object(claude_provider, '_validate_api_key'), patch('aiohttp.ClientSession') as mock_session_class:
+            mock_resp = MockResponse(200, mock_response)
+            mock_session = MockSession(mock_resp)
+            mock_session_context = MockSessionContext(mock_session)
             
-            # Create session mock
-            mock_session = AsyncMock()
-            mock_session.post = AsyncMock(return_value=mock_resp)
-            
-            # Make ClientSession() return an async context manager
-            mock_session_class.return_value.__aenter__.return_value = mock_session
-            mock_session_class.return_value.__aexit__.return_value = None
+            mock_session_class.return_value = mock_session_context
             
             response = await claude_provider.query("Test prompt", system="Test system")
             
@@ -109,21 +138,48 @@ class TestClaudeProvider:
     @pytest.mark.asyncio
     async def test_claude_query_error(self, claude_provider):
         """Test Claude API error handling"""
-        with patch("tools.research.llm_interface.aiohttp.ClientSession") as mock_session_class:
-            # Create response mock
-            mock_resp = AsyncMock()
-            mock_resp.status = 400
-            mock_resp.json = AsyncMock(
-                return_value={"error": {"message": "Bad request"}}
-            )
+        # Create proper async context managers
+        class MockResponse:
+            def __init__(self, status, json_data):
+                self.status = status
+                self._json_data = json_data
+                
+            async def json(self):
+                return self._json_data
+        
+        class MockPostContext:
+            def __init__(self, response):
+                self.response = response
+                
+            async def __aenter__(self):
+                return self.response
+                
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        class MockSession:
+            def __init__(self, response):
+                self.response = response
+                
+            def post(self, url, **kwargs):
+                return MockPostContext(self.response)
+        
+        class MockSessionContext:
+            def __init__(self, session):
+                self.session = session
+                
+            async def __aenter__(self):
+                return self.session
+                
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        with patch.object(claude_provider, '_validate_api_key'), patch('aiohttp.ClientSession') as mock_session_class:
+            mock_resp = MockResponse(400, {"error": {"message": "Bad request"}})
+            mock_session = MockSession(mock_resp)
+            mock_session_context = MockSessionContext(mock_session)
             
-            # Create session mock
-            mock_session = AsyncMock()
-            mock_session.post = AsyncMock(return_value=mock_resp)
-            
-            # Make ClientSession() return an async context manager
-            mock_session_class.return_value.__aenter__.return_value = mock_session
-            mock_session_class.return_value.__aexit__.return_value = None
+            mock_session_class.return_value = mock_session_context
             
             response = await claude_provider.query("Test prompt")
             
@@ -205,19 +261,48 @@ class TestGeminiProvider:
             "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 20}
         }
         
-        with patch("tools.research.llm_interface.aiohttp.ClientSession") as mock_session_class:
-            # Create response mock
-            mock_resp = AsyncMock()
-            mock_resp.status = 200
-            mock_resp.json = AsyncMock(return_value=mock_response)
+        # Create proper async context managers
+        class MockResponse:
+            def __init__(self, status, json_data):
+                self.status = status
+                self._json_data = json_data
+                
+            async def json(self):
+                return self._json_data
+        
+        class MockPostContext:
+            def __init__(self, response):
+                self.response = response
+                
+            async def __aenter__(self):
+                return self.response
+                
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        class MockSession:
+            def __init__(self, response):
+                self.response = response
+                
+            def post(self, url, **kwargs):
+                return MockPostContext(self.response)
+        
+        class MockSessionContext:
+            def __init__(self, session):
+                self.session = session
+                
+            async def __aenter__(self):
+                return self.session
+                
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        with patch.object(gemini_provider, '_validate_api_key'), patch('aiohttp.ClientSession') as mock_session_class:
+            mock_resp = MockResponse(200, mock_response)
+            mock_session = MockSession(mock_resp)
+            mock_session_context = MockSessionContext(mock_session)
             
-            # Create session mock
-            mock_session = AsyncMock()
-            mock_session.post = AsyncMock(return_value=mock_resp)
-            
-            # Make ClientSession() return an async context manager
-            mock_session_class.return_value.__aenter__.return_value = mock_session
-            mock_session_class.return_value.__aexit__.return_value = None
+            mock_session_class.return_value = mock_session_context
             
             response = await gemini_provider.query("Test prompt", temperature=0.5)
             

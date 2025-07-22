@@ -38096,6 +38096,7 @@ class ContentAnalyzer:
 """
 Smart bundle creation with intelligent content organization for m1f-research
 """
+import re
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
@@ -38603,8 +38604,8 @@ Examples:
         parser.add_argument(
             '--output', '-o',
             type=Path,
-            default=Path('./m1f/research'),
-            help='Output directory for research bundles (default: ./m1f/research)'
+            default=Path('./research-data'),
+            help='Output directory for research bundles (default: ./research-data)'
         )
         
         parser.add_argument(
