@@ -216,3 +216,5 @@ analysis/
 # Exclude everything in research-data except README.md
 /research-data/*
 !/research-data/README.md
+
+/src

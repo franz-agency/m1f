@@ -79,7 +79,7 @@ Examples:
         # LLM provider options
         parser.add_argument(
             '--provider', '-p',
-            choices=['claude', 'gemini', 'gemini-cli', 'openai'],
+            choices=['claude', 'claude-cli', 'gemini', 'gemini-cli', 'openai'],
             default='claude',
             help='LLM provider to use (default: claude)'
         )

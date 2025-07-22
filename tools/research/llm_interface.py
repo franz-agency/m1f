@@ -363,26 +363,50 @@ class CLIProvider(LLMProvider):
         if system:
             full_prompt = f"{system}\n\n{prompt}"
         
-        cmd = [self.command]
-        
-        # Add model if specified
-        if self.model != "default":
-            cmd.extend(["--model", self.model])
-        
-        # Add any additional CLI args
-        if "cli_args" in kwargs:
-            cmd.extend(kwargs["cli_args"])
-        
         try:
-            # Run command asynchronously
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            
-            stdout, stderr = await proc.communicate(full_prompt.encode())
+            # Build command based on CLI tool
+            if self.command == "claude":
+                # Claude Code uses -p flag for headless mode
+                cmd = [self.command, "-p", full_prompt]
+                
+                # Add model if specified  
+                if self.model != "default":
+                    cmd.extend(["--model", self.model])
+                    
+                # Add any additional CLI args
+                if "cli_args" in kwargs:
+                    cmd.extend(kwargs["cli_args"])
+                    
+                # Run command asynchronously (no stdin needed for claude -p)
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                
+                stdout, stderr = await proc.communicate()
+                
+            else:
+                # Other CLI tools (like gemini-cli) use stdin
+                cmd = [self.command]
+                
+                # Add model if specified
+                if self.model != "default":
+                    cmd.extend(["--model", self.model])
+                
+                # Add any additional CLI args
+                if "cli_args" in kwargs:
+                    cmd.extend(kwargs["cli_args"])
+                
+                # Run command asynchronously
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                
+                stdout, stderr = await proc.communicate(full_prompt.encode())
             
             if proc.returncode != 0:
                 return LLMResponse(
@@ -464,6 +488,7 @@ def get_provider(provider_name: str, **kwargs) -> LLMProvider:
     """Factory function to get LLM provider instance"""
     providers = {
         "claude": ClaudeProvider,
+        "claude-cli": lambda **kw: CLIProvider(command="claude", model=kw.get("model")),
         "gemini": GeminiProvider,
         "gemini-cli": lambda **kw: CLIProvider(command="gemini", model=kw.get("model")),
     }
