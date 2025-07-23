@@ -47030,6 +47030,36 @@ bundle-check:
 - [Quick Reference](../01_m1f/99_quick_reference.md) - Common m1f commands
 
 ======= docs/06_research/README.md ======
+# m1f-research Documentation
+
+AI-powered research tool that extends m1f with intelligent web research
+capabilities.
+
+## Documentation Files
+
+- [60_research_overview.md](60_research_overview.md) - Overview and quick start
+- [62_job_management.md](62_job_management.md) - Job persistence and filtering
+- [63_cli_reference.md](63_cli_reference.md) - Complete command reference
+- [64_api_reference.md](64_api_reference.md) - Developer documentation
+- [65_architecture.md](65_architecture.md) - Technical architecture
+- [66_examples.md](66_examples.md) - Real-world usage examples
+
+## Quick Start
+
+```bash
+# Basic research
+m1f-research "python async programming"
+
+# List all jobs
+m1f-research --list-jobs
+
+# Resume a job
+m1f-research --resume abc123
+```
+
+For detailed documentation, see the numbered files above.
+
+======= docs/06_research/60_research_overview.md ======
 # m1f-research
 
 AI-powered research tool that automatically finds, scrapes, and bundles
@@ -47054,11 +47084,17 @@ m1f-research "microservices best practices"
 # Research with more sources
 m1f-research "react state management" --urls 30 --scrape 15
 
-# Use different LLM provider
-m1f-research "machine learning" --provider gemini
+# List all research jobs
+m1f-research --list-jobs
 
-# Interactive mode
-m1f-research --interactive
+# Resume a job
+m1f-research --resume abc123
+
+# Filter jobs by date
+m1f-research --list-jobs --date 2025-07
+
+# Search for specific topics
+m1f-research --list-jobs --search "python"
 ```
 
 ## Installation
@@ -47072,18 +47108,26 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 
 ## Features
 
+### 🗄️ Job Management
+
+- **Persistent Jobs**: All research tracked in SQLite database
+- **Resume Support**: Continue interrupted research
+- **Advanced Filtering**: Search by date, query term
+- **Pagination**: Handle large job lists efficiently
+
 ### 🔍 Intelligent Search
 
 - Uses LLMs to find high-quality, relevant URLs
+- Manual URL support via `--urls-file`
 - Focuses on authoritative sources
-- Mixes different content types (tutorials, docs, discussions)
+- Mixes different content types
 
 ### 📥 Smart Scraping
 
-- Concurrent scraping with rate limiting
-- Random delays to respect servers
+- **Per-host delays**: Only after 3+ requests to same host
+- Concurrent scraping across different hosts
 - Automatic HTML to Markdown conversion
-- Handles failures gracefully
+- Content deduplication via checksums
 
 ### 🧠 Content Analysis
 
@@ -47092,12 +47136,12 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 - Content summarization
 - Duplicate detection
 
-### 📦 Organized Bundles
+### 📦 Organized Output
 
+- **Hierarchical structure**: YYYY/MM/DD/job_id/
+- Prominent bundle files (📚_RESEARCH_BUNDLE.md)
 - Clean Markdown output
-- Table of contents
-- Source metadata
-- Relevance-based ordering
+- Symlink to latest research
 
 ## Usage Examples
 
@@ -47137,22 +47181,28 @@ m1f-research "database optimization" --config research.yml
 
 ## Configuration
 
-### Command Line Options
+### Key Command Line Options
 
-| Option          | Description              | Default          |
-| --------------- | ------------------------ | ---------------- |
-| `--urls`        | Number of URLs to find   | 20               |
-| `--scrape`      | Number of URLs to scrape | 10               |
-| `--output`      | Output directory         | ./research-data  |
-| `--name`        | Bundle name              | auto-generated   |
-| `--provider`    | LLM provider             | claude           |
-| `--model`       | Specific model           | provider default |
-| `--template`    | Research template        | general          |
-| `--concurrent`  | Max concurrent scrapes   | 5                |
-| `--no-filter`   | Disable filtering        | false            |
-| `--no-analysis` | Skip analysis            | false            |
-| `--interactive` | Interactive mode         | false            |
-| `--dry-run`     | Preview only             | false            |
+| Option             | Description              | Default |
+| ------------------ | ------------------------ | ------- |
+| **Research**       |                          |         |
+| `--urls`           | Number of URLs to find   | 20      |
+| `--scrape`         | Number of URLs to scrape | 10      |
+| `--urls-file`      | File with manual URLs    | None    |
+| **Job Management** |                          |         |
+| `--resume`         | Resume job by ID         | None    |
+| `--list-jobs`      | List all jobs            | False   |
+| `--status`         | Show job details         | None    |
+| **Filtering**      |                          |         |
+| `--search`         | Search jobs by query     | None    |
+| `--date`           | Filter by date           | None    |
+| `--limit`          | Pagination limit         | None    |
+| `--offset`         | Pagination offset        | 0       |
+| **Cleanup**        |                          |         |
+| `--clean-raw`      | Clean job raw data       | None    |
+| `--clean-all-raw`  | Clean all raw data       | False   |
+
+See [63_cli_reference.md](63_cli_reference.md) for complete option list.
 
 ### Configuration File (.m1f.config.yml)
 
@@ -47230,14 +47280,21 @@ Pre-configured templates optimize research for different needs:
 
 ## Output Structure
 
-Research bundles are organized as:
+Research data uses hierarchical date-based organization:
 
 ```
 ./research-data/
-└── topic-name-20240120-143022/
-    ├── research-bundle.md    # Main bundle
-    ├── metadata.json         # Research metadata
-    └── search_results.json   # Found URLs
+├── research_jobs.db              # Main job database
+├── latest_research.md           # Symlink to latest bundle
+└── 2025/
+    └── 07/
+        └── 23/
+            └── abc123_topic-name/
+                ├── research.db           # Job-specific database
+                ├── 📚_RESEARCH_BUNDLE.md # Main bundle
+                ├── 📊_EXECUTIVE_SUMMARY.md # Summary
+                ├── metadata.json         # Job metadata
+                └── search_results.json   # Found URLs
 ```
 
 ### Bundle Format
@@ -47329,13 +47386,22 @@ Solution: Reduce `--concurrent` or increase timeout range
 - Adjust `relevance_threshold` in config
 - Try different `--template`
 
+## Documentation
+
+- [62_job_management.md](62_job_management.md) - Job persistence and filtering
+  guide
+- [63_cli_reference.md](63_cli_reference.md) - Complete CLI reference
+- [64_api_reference.md](64_api_reference.md) - Developer API documentation
+- [65_architecture.md](65_architecture.md) - Technical architecture details
+- [66_examples.md](66_examples.md) - Real-world usage examples
+
 ## Future Features
 
 - Multi-source research (GitHub, arXiv, YouTube)
 - Knowledge graph building
 - Research collaboration
-- Custom source plugins
-- Web UI
+- Export to various formats
+- Job tagging system
 
 ## Contributing
 
@@ -47345,7 +47411,516 @@ m1f-research is part of the m1f project. Contributions welcome!
 - Submit PRs: Follow m1f contribution guidelines
 - Request features: Open a discussion
 
-======= docs/06_research/api-reference.md ======
+======= docs/06_research/62_job_management.md ======
+# Job Management in m1f-research
+
+m1f-research uses a SQLite-based job management system that tracks all research
+tasks, enabling persistence, resume functionality, and advanced filtering.
+
+## Overview
+
+Every research task creates a **job** with:
+
+- Unique job ID
+- SQLite databases for tracking
+- Hierarchical directory structure
+- Full resume capability
+- Advanced search and filtering
+
+## Job Structure
+
+### Directory Layout
+
+```
+research-data/
+├── research_jobs.db          # Main job tracking database
+├── latest_research.md        # Symlink to most recent bundle
+└── 2025/
+    └── 07/
+        └── 23/
+            └── abc123_query-name/
+                ├── research.db           # Job-specific database
+                ├── 📚_RESEARCH_BUNDLE.md # Main research bundle
+                ├── 📊_EXECUTIVE_SUMMARY.md # Executive summary
+                └── metadata.json         # Job metadata
+```
+
+### Database Architecture
+
+**Main Database (`research_jobs.db`)**
+
+- Tracks all jobs across the system
+- Stores job metadata and statistics
+- Enables cross-job queries and filtering
+
+**Per-Job Database (`research.db`)**
+
+- URL tracking and status
+- Content storage (markdown)
+- Analysis results
+- Filtering decisions
+
+## Job Management Commands
+
+### Listing Jobs
+
+```bash
+# List all jobs
+m1f-research --list-jobs
+
+# List with pagination
+m1f-research --list-jobs --limit 10 --offset 20
+
+# Filter by date
+m1f-research --list-jobs --date 2025-07-23  # Specific day
+m1f-research --list-jobs --date 2025-07     # Specific month
+m1f-research --list-jobs --date 2025        # Specific year
+
+# Search by query term
+m1f-research --list-jobs --search "react"
+m1f-research --list-jobs --search "tailwind"
+
+# Combine filters
+m1f-research --list-jobs --date 2025-07 --search "python" --limit 5
+```
+
+### Viewing Job Details
+
+```bash
+# Show detailed job status
+m1f-research --status abc123
+```
+
+Output includes:
+
+- Job ID and query
+- Creation/update timestamps
+- URL statistics
+- Bundle availability
+- Output directory
+
+### Resuming Jobs
+
+```bash
+# Resume an interrupted job
+m1f-research --resume abc123
+
+# Add more URLs to existing job
+m1f-research --resume abc123 --urls-file additional-urls.txt
+```
+
+## Advanced Filtering
+
+### Pagination
+
+Use `--limit` and `--offset` for large job lists:
+
+```bash
+# First page (10 items)
+m1f-research --list-jobs --limit 10
+
+# Second page
+m1f-research --list-jobs --limit 10 --offset 10
+
+# Third page
+m1f-research --list-jobs --limit 10 --offset 20
+```
+
+### Date Filtering
+
+Filter jobs by creation date:
+
+```bash
+# Jobs from today
+m1f-research --list-jobs --date 2025-07-23
+
+# Jobs from this month
+m1f-research --list-jobs --date 2025-07
+
+# Jobs from this year
+m1f-research --list-jobs --date 2025
+```
+
+### Search Filtering
+
+Find jobs by query content:
+
+```bash
+# Find all React-related research
+m1f-research --list-jobs --search "react"
+
+# Case-insensitive search
+m1f-research --list-jobs --search "PYTHON"
+```
+
+Search terms are highlighted in the output for easy identification.
+
+## Data Cleanup
+
+### Cleaning Individual Jobs
+
+Remove raw HTML data while preserving analysis:
+
+```bash
+# Clean specific job
+m1f-research --clean-raw abc123
+```
+
+This removes:
+
+- Raw HTML files
+- Temporary download data
+
+This preserves:
+
+- Markdown content
+- Analysis results
+- Research bundles
+- Job metadata
+
+### Bulk Cleanup
+
+Clean all jobs at once:
+
+```bash
+# Clean all raw data (with confirmation)
+m1f-research --clean-all-raw
+```
+
+**Warning**: This action cannot be undone. You'll be prompted to confirm.
+
+## Job Status
+
+Jobs can have the following statuses:
+
+| Status      | Description               |
+| ----------- | ------------------------- |
+| `active`    | Job is currently running  |
+| `completed` | Job finished successfully |
+| `failed`    | Job encountered errors    |
+
+## Manual URL Management
+
+Add URLs from a file:
+
+```bash
+# Create URL file
+cat > my-urls.txt << EOF
+https://example.com/article1
+https://example.com/article2
+EOF
+
+# Start new job with URLs
+m1f-research "my topic" --urls-file my-urls.txt
+
+# Add to existing job
+m1f-research --resume abc123 --urls-file more-urls.txt
+```
+
+## Smart Delay Management
+
+The scraper implements intelligent per-host delays:
+
+- **No delay** for first 3 requests to any host
+- **1-3 second random delay** after 3 requests
+- **Parallel scraping** across different hosts
+
+This ensures:
+
+- Fast scraping for diverse sources
+- Respectful behavior for repeated requests
+- Optimal performance
+
+## Examples
+
+### Research Workflow
+
+```bash
+# 1. Start research
+m1f-research "python async best practices"
+# Output: Job ID: abc123
+
+# 2. Check progress
+m1f-research --status abc123
+
+# 3. Add more URLs if needed
+m1f-research --resume abc123 --urls-file extra-urls.txt
+
+# 4. View all Python research
+m1f-research --list-jobs --search "python"
+
+# 5. Clean up old data
+m1f-research --clean-raw abc123
+```
+
+### Monthly Research Review
+
+```bash
+# List all research from July 2025
+m1f-research --list-jobs --date 2025-07
+
+# Page through results
+m1f-research --list-jobs --date 2025-07 --limit 20
+m1f-research --list-jobs --date 2025-07 --limit 20 --offset 20
+
+# Find specific topic
+m1f-research --list-jobs --date 2025-07 --search "react hooks"
+```
+
+### Disk Space Management
+
+```bash
+# Check job sizes (future feature)
+# m1f-research --list-jobs --show-size
+
+# Clean specific old job
+m1f-research --clean-raw old-job-id
+
+# Bulk cleanup
+m1f-research --clean-all-raw
+```
+
+## Tips
+
+1. **Use job IDs**: Save job IDs for easy resume/reference
+2. **Regular cleanup**: Clean raw data after analysis is complete
+3. **Combine filters**: Use multiple filters for precise searches
+4. **Manual URLs**: Supplement LLM search with your own URLs
+5. **Check status**: Monitor long-running jobs with --status
+
+## Future Enhancements
+
+- Export job lists to CSV/JSON
+- Job size statistics
+- Automatic cleanup policies
+- Job tagging system
+- Cross-job deduplication
+- Job templates
+
+======= docs/06_research/63_cli_reference.md ======
+# m1f-research CLI Reference
+
+Complete command-line interface reference for m1f-research.
+
+## Synopsis
+
+```bash
+m1f-research [QUERY] [OPTIONS]
+```
+
+## Positional Arguments
+
+### `query`
+
+Research topic or query (required for new jobs, optional when using job
+management commands)
+
+## Options
+
+### General Options
+
+| Option            | Short | Description                            | Default |
+| ----------------- | ----- | -------------------------------------- | ------- |
+| `--help`          | `-h`  | Show help message and exit             | -       |
+| `--version`       |       | Show program version                   | -       |
+| `--verbose`       | `-v`  | Increase verbosity (use -vv for debug) | Warning |
+| `--dry-run`       |       | Preview without executing              | False   |
+| `--config CONFIG` | `-c`  | Path to configuration file             | None    |
+
+### LLM Provider Options
+
+| Option                | Short | Description                                                          | Default          |
+| --------------------- | ----- | -------------------------------------------------------------------- | ---------------- |
+| `--provider PROVIDER` | `-p`  | LLM provider: claude, claude-cli, gemini, gemini-cli, openai         | claude           |
+| `--model MODEL`       | `-m`  | Specific model to use                                                | Provider default |
+| `--template TEMPLATE` | `-t`  | Analysis template: general, technical, academic, tutorial, reference | general          |
+
+### Research Options
+
+| Option           | Short | Description                        | Default |
+| ---------------- | ----- | ---------------------------------- | ------- |
+| `--urls N`       |       | Number of URLs to search for       | 20      |
+| `--scrape N`     |       | Maximum URLs to scrape             | 10      |
+| `--concurrent N` |       | Max concurrent scraping operations | 5       |
+| `--no-filter`    |       | Disable content filtering          | False   |
+| `--no-analysis`  |       | Skip AI analysis (just scrape)     | False   |
+| `--interactive`  | `-i`  | Start in interactive mode          | False   |
+
+### Output Options
+
+| Option         | Short | Description                     | Default         |
+| -------------- | ----- | ------------------------------- | --------------- |
+| `--output DIR` | `-o`  | Output directory                | ./research-data |
+| `--name NAME`  | `-n`  | Custom name for research bundle | Auto-generated  |
+
+### Job Management
+
+| Option             | Description                                |
+| ------------------ | ------------------------------------------ |
+| `--resume JOB_ID`  | Resume an existing research job            |
+| `--list-jobs`      | List all research jobs                     |
+| `--status JOB_ID`  | Show detailed status of a specific job     |
+| `--urls-file FILE` | File containing URLs to add (one per line) |
+
+### List Filtering Options
+
+| Option          | Description                 | Example             |
+| --------------- | --------------------------- | ------------------- |
+| `--limit N`     | Limit number of results     | `--limit 10`        |
+| `--offset N`    | Skip N results (pagination) | `--offset 20`       |
+| `--date DATE`   | Filter by date              | `--date 2025-07-23` |
+| `--search TERM` | Search jobs by query term   | `--search "react"`  |
+
+### Cleanup Options
+
+| Option               | Description                          |
+| -------------------- | ------------------------------------ |
+| `--clean-raw JOB_ID` | Clean raw HTML data for specific job |
+| `--clean-all-raw`    | Clean raw HTML data for all jobs     |
+
+## Command Examples
+
+### Basic Research
+
+```bash
+# Simple research
+m1f-research "python async programming"
+
+# With custom settings
+m1f-research "react hooks" --urls 30 --scrape 15
+
+# Using different provider
+m1f-research "machine learning" --provider gemini --model gemini-1.5-pro
+
+# Skip analysis for faster results
+m1f-research "tailwind css" --no-analysis
+
+# Custom output location
+m1f-research "rust ownership" --output ~/research --name rust-guide
+```
+
+### Job Management
+
+```bash
+# List all jobs
+m1f-research --list-jobs
+
+# List with pagination
+m1f-research --list-jobs --limit 10 --offset 0
+
+# Filter by date
+m1f-research --list-jobs --date 2025-07-23  # Specific day
+m1f-research --list-jobs --date 2025-07     # Month
+m1f-research --list-jobs --date 2025        # Year
+
+# Search for jobs
+m1f-research --list-jobs --search "python"
+
+# Combined filters
+m1f-research --list-jobs --date 2025-07 --search "async" --limit 5
+
+# Check job status
+m1f-research --status abc123
+
+# Resume a job
+m1f-research --resume abc123
+
+# Add URLs to existing job
+m1f-research --resume abc123 --urls-file additional-urls.txt
+```
+
+### Manual URL Management
+
+```bash
+# Start with manual URLs only
+m1f-research "my topic" --urls 0 --urls-file my-urls.txt
+
+# Combine LLM search with manual URLs
+m1f-research "my topic" --urls 20 --urls-file my-urls.txt
+
+# Add URLs to existing job
+m1f-research --resume abc123 --urls-file more-urls.txt
+```
+
+### Data Cleanup
+
+```bash
+# Clean specific job
+m1f-research --clean-raw abc123
+
+# Clean all jobs (with confirmation)
+m1f-research --clean-all-raw
+```
+
+### Advanced Workflows
+
+```bash
+# Dry run to preview
+m1f-research "test query" --dry-run
+
+# Very verbose output for debugging
+m1f-research "test query" -vv
+
+# Interactive mode
+m1f-research --interactive
+
+# Technical analysis with high URL count
+m1f-research "kubernetes networking" --template technical --urls 50 --scrape 25
+```
+
+## Date Format Examples
+
+The `--date` filter supports multiple formats:
+
+| Format | Example      | Matches               |
+| ------ | ------------ | --------------------- |
+| Y-M-D  | `2025-07-23` | Specific day          |
+| Y-M    | `2025-07`    | All jobs in July 2025 |
+| Y      | `2025`       | All jobs in 2025      |
+
+## Exit Codes
+
+| Code | Meaning                      |
+| ---- | ---------------------------- |
+| 0    | Success                      |
+| 1    | General error                |
+| 130  | Interrupted by user (Ctrl+C) |
+
+## Environment Variables
+
+| Variable            | Description        |
+| ------------------- | ------------------ |
+| `ANTHROPIC_API_KEY` | API key for Claude |
+| `GOOGLE_API_KEY`    | API key for Gemini |
+| `OPENAI_API_KEY`    | API key for OpenAI |
+
+## Configuration File
+
+Create `.m1f.config.yml` for persistent settings:
+
+```yaml
+research:
+  llm:
+    provider: claude
+    model: claude-3-opus-20240229
+
+  defaults:
+    url_count: 30
+    scrape_count: 15
+
+  output:
+    directory: ~/research-data
+```
+
+## Tips
+
+1. **Save Job IDs**: Copy job IDs for easy resume/reference
+2. **Use Filters**: Combine date and search for precise results
+3. **Pagination**: Use limit/offset for large job lists
+4. **Cleanup**: Regularly clean raw data to save space
+5. **Manual URLs**: Supplement with your own curated links
+
+======= docs/06_research/64_api_reference.md ======
 # m1f-research API Reference
 
 ## Command Line Interface
@@ -47641,7 +48216,7 @@ def transform_results(results: ResearchResult) -> Dict:
 transformed = transform_results(results)
 ```
 
-======= docs/06_research/architecture.md ======
+======= docs/06_research/65_architecture.md ======
 # m1f-research Architecture
 
 ## Overview
@@ -47779,7 +48354,7 @@ The architecture supports several extension mechanisms:
 - **Knowledge Graph**: Build connections between research
 - **Real-time Updates**: Monitor sources for changes
 
-======= docs/06_research/examples.md ======
+======= docs/06_research/66_examples.md ======
 # m1f-research Examples
 
 ## Command Line Examples
