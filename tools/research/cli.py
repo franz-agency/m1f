@@ -47,6 +47,15 @@ Examples:
   
   # Check job status
   m1f-research --status abc123
+  
+  # List with filters
+  m1f-research --list-jobs --limit 10 --search "react"
+  m1f-research --list-jobs --date 2025-07-23
+  m1f-research --list-jobs --date 2025-07 --limit 20
+  
+  # Clean up raw data  
+  m1f-research --clean-raw abc123
+  m1f-research --clean-all-raw
 """
         )
         
@@ -81,6 +90,45 @@ Examples:
             '--urls-file',
             type=Path,
             help='File containing URLs to add (one per line)'
+        )
+        
+        # Enhanced list options
+        list_group = parser.add_argument_group('list options')
+        list_group.add_argument(
+            '--limit',
+            type=int,
+            help='Limit number of results (for --list-jobs)'
+        )
+        
+        list_group.add_argument(
+            '--offset', 
+            type=int,
+            default=0,
+            help='Offset for pagination (for --list-jobs)'
+        )
+        
+        list_group.add_argument(
+            '--date',
+            help='Filter by date (Y-M-D or Y-M format)'
+        )
+        
+        list_group.add_argument(
+            '--search',
+            help='Search jobs by query term'
+        )
+        
+        # Cleanup options
+        cleanup_group = parser.add_argument_group('cleanup options')
+        cleanup_group.add_argument(
+            '--clean-raw',
+            metavar='JOB_ID',
+            help='Clean raw HTML data for a job (preserves aggregated data)'
+        )
+        
+        cleanup_group.add_argument(
+            '--clean-all-raw',
+            action='store_true',
+            help='Clean raw HTML data for all jobs'
         )
         
         # URL options
@@ -213,6 +261,13 @@ Examples:
         if args.status:
             return await self._show_status(args)
         
+        # Handle cleanup commands
+        if args.clean_raw:
+            return await self._clean_raw_data(args)
+        
+        if args.clean_all_raw:
+            return await self._clean_all_raw_data(args)
+        
         # Validate arguments for research
         if not args.query and not args.resume:
             self.parser.error("Either query or --resume is required")
@@ -277,17 +332,50 @@ Examples:
             return 1
     
     async def _list_jobs(self, args):
-        """List all research jobs"""
+        """List research jobs with filtering and pagination"""
         from .job_manager import JobManager
         job_manager = JobManager(args.output)
         
-        jobs = job_manager.list_jobs()
+        # Get total count for pagination info
+        total_count = job_manager.count_jobs(
+            date_filter=args.date,
+            search_term=args.search
+        )
+        
+        # Get filtered jobs
+        jobs = job_manager.list_jobs(
+            limit=args.limit,
+            offset=args.offset,
+            date_filter=args.date,
+            search_term=args.search
+        )
         
         if not jobs:
-            print("No research jobs found")
+            if args.search or args.date:
+                print("No research jobs found matching filters")
+            else:
+                print("No research jobs found")
             return 0
         
-        print(f"\n📋 Research Jobs ({len(jobs)} total)\n")
+        # Show filter info
+        filter_info = []
+        if args.search:
+            filter_info.append(f"search: '{args.search}'")
+        if args.date:
+            filter_info.append(f"date: {args.date}")
+        
+        filter_str = f" (filtered by {', '.join(filter_info)})" if filter_info else ""
+        
+        # Pagination info
+        showing = len(jobs)
+        if args.limit:
+            page = (args.offset // args.limit) + 1
+            total_pages = (total_count + args.limit - 1) // args.limit
+            print(f"\n📋 Research Jobs - Page {page}/{total_pages} "
+                  f"(showing {showing} of {total_count}{filter_str})\n")
+        else:
+            print(f"\n📋 Research Jobs ({total_count} total{filter_str})\n")
+        
         print(f"{'ID':<10} {'Status':<10} {'Query':<40} {'Created':<20} {'Stats'}")
         print("-" * 100)
         
@@ -297,8 +385,23 @@ Examples:
             if stats['analyzed_urls']:
                 stats_str += f", {stats['analyzed_urls']} analyzed"
             
+            # Highlight search term if present
+            query_display = job['query'][:40]
+            if args.search and args.search.lower() in job['query'].lower():
+                query_display = query_display.replace(
+                    args.search, 
+                    f"\033[1;33m{args.search}\033[0m"
+                )
+            
             print(f"{job['job_id']:<10} {job['status']:<10} "
-                  f"{job['query'][:40]:<40} {job['created_at'][:19]:<20} {stats_str}")
+                  f"{query_display:<40} {job['created_at'][:19]:<20} {stats_str}")
+        
+        # Show pagination hints
+        if args.limit and total_count > args.limit:
+            print("\nTip: Use --offset to see more results")
+            if args.offset + args.limit < total_count:
+                next_offset = args.offset + args.limit
+                print(f"Next page: --offset {next_offset}")
         
         return 0
     
@@ -327,6 +430,54 @@ Examples:
         
         if info['bundle_exists']:
             print(f"\n✅ Research bundle available")
+        
+        return 0
+    
+    async def _clean_raw_data(self, args):
+        """Clean raw HTML data for a specific job"""
+        from .job_manager import JobManager
+        job_manager = JobManager(args.output)
+        
+        print(f"🧹 Cleaning raw data for job {args.clean_raw}...")
+        
+        stats = job_manager.cleanup_job_raw_data(args.clean_raw)
+        
+        if 'error' in stats:
+            print(f"❌ Error: {stats['error']}")
+            return 1
+        
+        print(f"✅ Cleanup complete:")
+        print(f"  HTML files deleted: {stats.get('html_files_deleted', 0)}")
+        print(f"  Space freed: {stats.get('space_freed_mb', 0)} MB")
+        
+        return 0
+    
+    async def _clean_all_raw_data(self, args):
+        """Clean raw HTML data for all jobs"""
+        from .job_manager import JobManager
+        job_manager = JobManager(args.output)
+        
+        # Confirm action
+        response = input("⚠️  This will delete all raw HTML data. Continue? (y/N): ")
+        if response.lower() != 'y':
+            print("Cancelled")
+            return 0
+        
+        print("🧹 Cleaning raw data for all jobs...")
+        
+        stats = job_manager.cleanup_all_raw_data()
+        
+        print(f"\n✅ Cleanup complete:")
+        print(f"  Jobs cleaned: {stats['jobs_cleaned']}")
+        print(f"  Files deleted: {stats['files_deleted']}")
+        print(f"  Space freed: {stats['space_freed_mb']} MB")
+        
+        if stats['errors']:
+            print(f"\n⚠️  Errors encountered:")
+            for error in stats['errors'][:5]:  # Show first 5 errors
+                print(f"  - {error}")
+            if len(stats['errors']) > 5:
+                print(f"  ... and {len(stats['errors']) - 5} more errors")
         
         return 0
     

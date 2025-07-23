@@ -78,9 +78,19 @@ class JobManager:
         stats.update(additional_stats)
         self.main_db.update_job_stats(job.job_id, **stats)
     
-    def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
-        """List all jobs with optional status filter"""
-        return self.main_db.list_jobs(status)
+    def list_jobs(self, status: Optional[str] = None,
+                  limit: Optional[int] = None,
+                  offset: int = 0,
+                  date_filter: Optional[str] = None,
+                  search_term: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List jobs with advanced filtering"""
+        return self.main_db.list_jobs(status, limit, offset, date_filter, search_term)
+    
+    def count_jobs(self, status: Optional[str] = None,
+                   date_filter: Optional[str] = None,
+                   search_term: Optional[str] = None) -> int:
+        """Count jobs matching filters"""
+        return self.main_db.count_jobs(status, date_filter, search_term)
     
     def find_recent_job(self, query: str) -> Optional[ResearchJob]:
         """Find the most recent job for a similar query"""
@@ -145,6 +155,66 @@ class JobManager:
         """Clean up jobs older than specified days"""
         # TODO: Implement cleanup logic
         pass
+    
+    def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
+        """
+        Clean up raw data for a specific job while preserving aggregated data
+        
+        Returns:
+            Dict with cleanup statistics
+        """
+        job = self.get_job(job_id)
+        if not job:
+            return {'error': f'Job {job_id} not found'}
+        
+        job_db = self.get_job_database(job)
+        cleanup_stats = job_db.cleanup_raw_content()
+        
+        # Also clean up any HTML files in the job directory
+        job_dir = Path(job.output_dir)
+        html_files_deleted = 0
+        space_freed = 0
+        
+        if job_dir.exists():
+            # Look for HTML files (if any were saved)
+            for html_file in job_dir.glob('**/*.html'):
+                try:
+                    file_size = html_file.stat().st_size
+                    html_file.unlink()
+                    html_files_deleted += 1
+                    space_freed += file_size
+                except Exception as e:
+                    logger.error(f"Error deleting {html_file}: {e}")
+        
+        cleanup_stats['html_files_deleted'] = html_files_deleted
+        cleanup_stats['space_freed_mb'] = round(space_freed / (1024 * 1024), 2)
+        
+        logger.info(f"Cleaned up job {job_id}: {cleanup_stats}")
+        return cleanup_stats
+    
+    def cleanup_all_raw_data(self) -> Dict[str, Any]:
+        """Clean up raw data for all jobs"""
+        all_jobs = self.list_jobs()
+        total_stats = {
+            'jobs_cleaned': 0,
+            'files_deleted': 0,
+            'space_freed_mb': 0,
+            'errors': []
+        }
+        
+        for job_info in all_jobs:
+            try:
+                stats = self.cleanup_job_raw_data(job_info['job_id'])
+                if 'error' not in stats:
+                    total_stats['jobs_cleaned'] += 1
+                    total_stats['files_deleted'] += stats.get('html_files_deleted', 0)
+                    total_stats['space_freed_mb'] += stats.get('space_freed_mb', 0)
+                else:
+                    total_stats['errors'].append(stats['error'])
+            except Exception as e:
+                total_stats['errors'].append(f"Error cleaning job {job_info['job_id']}: {e}")
+        
+        return total_stats
     
     def _serialize_config(self, config: ResearchConfig) -> Dict[str, Any]:
         """Convert ResearchConfig to serializable dict"""

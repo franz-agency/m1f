@@ -152,8 +152,21 @@ class ResearchDatabase:
                 conn.execute(query, values)
                 conn.commit()
     
-    def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
-        """List all jobs with optional status filter"""
+    def list_jobs(self, status: Optional[str] = None, 
+                  limit: Optional[int] = None,
+                  offset: int = 0,
+                  date_filter: Optional[str] = None,
+                  search_term: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        List jobs with advanced filtering options
+        
+        Args:
+            status: Filter by job status
+            limit: Maximum number of results
+            offset: Number of results to skip (for pagination)
+            date_filter: Date filter in Y-M-D or Y-M format
+            search_term: Search term to filter queries
+        """
         with sqlite3.connect(str(self.db_path)) as conn:
             conn.row_factory = sqlite3.Row
             
@@ -161,14 +174,38 @@ class ResearchDatabase:
                 SELECT j.*, s.total_urls, s.scraped_urls, s.filtered_urls, s.analyzed_urls
                 FROM jobs j
                 LEFT JOIN job_stats s ON j.job_id = s.job_id
+                WHERE 1=1
             """
             params = []
             
+            # Status filter
             if status:
-                query += " WHERE j.status = ?"
+                query += " AND j.status = ?"
                 params.append(status)
             
+            # Search term filter
+            if search_term:
+                query += " AND j.query LIKE ?"
+                params.append(f"%{search_term}%")
+            
+            # Date filter
+            if date_filter:
+                if len(date_filter) == 10:  # Y-M-D format
+                    query += " AND DATE(j.created_at) = ?"
+                    params.append(date_filter)
+                elif len(date_filter) == 7:  # Y-M format
+                    query += " AND strftime('%Y-%m', j.created_at) = ?"
+                    params.append(date_filter)
+                elif len(date_filter) == 4:  # Y format
+                    query += " AND strftime('%Y', j.created_at) = ?"
+                    params.append(date_filter)
+            
+            # Order by created_at
             query += " ORDER BY j.created_at DESC"
+            
+            # Pagination
+            if limit:
+                query += f" LIMIT {limit} OFFSET {offset}"
             
             cursor = conn.execute(query, params)
             
@@ -190,6 +227,36 @@ class ResearchDatabase:
                 })
             
             return jobs
+    
+    def count_jobs(self, status: Optional[str] = None,
+                   date_filter: Optional[str] = None,
+                   search_term: Optional[str] = None) -> int:
+        """Count jobs matching filters (for pagination)"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            query = "SELECT COUNT(*) FROM jobs WHERE 1=1"
+            params = []
+            
+            if status:
+                query += " AND status = ?"
+                params.append(status)
+            
+            if search_term:
+                query += " AND query LIKE ?"
+                params.append(f"%{search_term}%")
+            
+            if date_filter:
+                if len(date_filter) == 10:  # Y-M-D format
+                    query += " AND DATE(created_at) = ?"
+                    params.append(date_filter)
+                elif len(date_filter) == 7:  # Y-M format
+                    query += " AND strftime('%Y-%m', created_at) = ?"
+                    params.append(date_filter)
+                elif len(date_filter) == 4:  # Y format
+                    query += " AND strftime('%Y', created_at) = ?"
+                    params.append(date_filter)
+            
+            cursor = conn.execute(query, params)
+            return cursor.fetchone()[0]
 
 
 class JobDatabase:
@@ -434,3 +501,18 @@ class JobDatabase:
             stats['analyzed_urls'] = cursor.fetchone()[0]
             
             return stats
+    
+    def get_raw_content_files(self) -> List[Dict[str, Any]]:
+        """Get information about raw HTML content that can be cleaned"""
+        # Since we don't store raw HTML files anymore (we convert to markdown immediately),
+        # this returns an empty list. In future, we could track original HTML if needed.
+        return []
+    
+    def cleanup_raw_content(self) -> Dict[str, int]:
+        """
+        Clean up raw HTML data while preserving aggregated data
+        Returns counts of cleaned items
+        """
+        # Currently, we don't store raw HTML separately
+        # This is a placeholder for future implementation
+        return {'files_deleted': 0, 'space_freed': 0}

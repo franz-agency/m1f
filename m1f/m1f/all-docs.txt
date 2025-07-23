@@ -498,6 +498,10 @@ m1f-update
 
 - The `m1f-update` command regenerates the project's own documentation bundles
 
+## Project Design Considerations
+
+- Backward compatibility is not needed in this stage
+
 ======= requirements.txt ======
 # Core dependencies
 aiofiles==24.1.0
