@@ -4,19 +4,22 @@ Data models for m1f-research
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 
 
 @dataclass
 class ResearchResult:
     """Complete research result"""
     query: str
-    bundle_path: str
-    sources_found: int
-    sources_scraped: int
-    sources_analyzed: int
-    sources_included: int
-    generated_at: datetime
-    config: Dict[str, Any]
+    job_id: str
+    urls_found: int
+    scraped_content: List['ScrapedContent']
+    analyzed_content: List['AnalyzedContent']
+    bundle_path: Optional['Path'] = None
+    bundle_created: bool = False
+    output_dir: Optional['Path'] = None
+    generated_at: datetime = field(default_factory=datetime.now)
+    config: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass 
@@ -24,9 +27,9 @@ class ScrapedContent:
     """Scraped web content"""
     url: str
     title: str
-    html: str
-    markdown: str
-    scraped_at: datetime
+    content: str  # HTML or markdown content
+    content_type: str = ''
+    scraped_at: datetime = field(default_factory=datetime.now)
     error: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -42,6 +45,11 @@ class AnalyzedContent:
     summary: str
     content_type: Optional[str] = None  # tutorial, reference, blog, etc.
     analysis_metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    # Compatibility with old API
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        return self.analysis_metadata
 
 
 @dataclass

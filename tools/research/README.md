@@ -25,6 +25,21 @@ m1f-research "microservices best practices"
 # Research with more sources
 m1f-research "react state management" --urls 30 --scrape 15
 
+# Research with manual URL list
+m1f-research "python async" --urls-file my-links.txt
+
+# Resume an existing job
+m1f-research --resume abc123
+
+# Add more URLs to existing job
+m1f-research --resume abc123 --urls-file more-links.txt
+
+# List all research jobs
+m1f-research --list-jobs
+
+# Check job status
+m1f-research --status abc123
+
 # Use different LLM provider
 m1f-research "machine learning" --provider gemini
 
@@ -43,18 +58,27 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 
 ## Features
 
+### 🗄️ Job Management
+
+- **Persistent Jobs**: All research jobs are tracked in a SQLite database
+- **Resume Support**: Continue interrupted research or add more URLs
+- **Job History**: View all past research with statistics
+- **Per-Job Database**: Each job has its own database for URL/content tracking
+
 ### 🔍 Intelligent Search
 
 - Uses LLMs to find high-quality, relevant URLs
 - Focuses on authoritative sources
 - Mixes different content types (tutorials, docs, discussions)
+- **Manual URL Support**: Add your own URLs via --urls-file
 
 ### 📥 Smart Scraping
 
-- Concurrent scraping with rate limiting
-- Random delays to respect servers
+- **Per-Host Delay Management**: Only delays after 3+ requests to same host
+- Concurrent scraping with intelligent scheduling
 - Automatic HTML to Markdown conversion
 - Handles failures gracefully
+- **Content Deduplication**: Tracks content by checksum
 
 ### 🧠 Content Analysis
 
@@ -65,6 +89,8 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 
 ### 📦 Organized Bundles
 
+- **Hierarchical Output**: YYYY/MM/DD directory structure
+- **Prominent Bundle Files**: 📚_RESEARCH_BUNDLE.md and 📊_EXECUTIVE_SUMMARY.md
 - Clean Markdown output
 - Table of contents
 - Source metadata
@@ -110,20 +136,25 @@ m1f-research "database optimization" --config research.yml
 
 ### Command Line Options
 
-| Option          | Description              | Default          |
-| --------------- | ------------------------ | ---------------- |
-| `--urls`        | Number of URLs to find   | 20               |
-| `--scrape`      | Number of URLs to scrape | 10               |
-| `--output`      | Output directory         | ./research-data  |
-| `--name`        | Bundle name              | auto-generated   |
-| `--provider`    | LLM provider             | claude           |
-| `--model`       | Specific model           | provider default |
-| `--template`    | Research template        | general          |
-| `--concurrent`  | Max concurrent scrapes   | 5                |
-| `--no-filter`   | Disable filtering        | false            |
-| `--no-analysis` | Skip analysis            | false            |
-| `--interactive` | Interactive mode         | false            |
-| `--dry-run`     | Preview only             | false            |
+| Option             | Description                   | Default          |
+| ------------------ | ----------------------------- | ---------------- |
+| `--urls`           | Number of URLs to find        | 20               |
+| `--scrape`         | Number of URLs to scrape      | 10               |
+| `--output`         | Output directory              | ./research-data  |
+| `--name`           | Bundle name                   | auto-generated   |
+| `--provider`       | LLM provider                  | claude           |
+| `--model`          | Specific model                | provider default |
+| `--template`       | Research template             | general          |
+| `--concurrent`     | Max concurrent scrapes        | 5                |
+| `--no-filter`      | Disable filtering             | false            |
+| `--no-analysis`    | Skip analysis                 | false            |
+| `--interactive`    | Interactive mode              | false            |
+| `--dry-run`        | Preview only                  | false            |
+| **Job Management** |                               |                  |
+| `--resume`         | Resume existing job by ID     | None             |
+| `--list-jobs`      | List all research jobs        | false            |
+| `--status`         | Show job status by ID         | None             |
+| `--urls-file`      | File with URLs (one per line) | None             |
 
 ### Configuration File (.m1f.config.yml)
 
@@ -201,14 +232,22 @@ Pre-configured templates optimize research for different needs:
 
 ## Output Structure
 
-Research bundles are organized as:
+Research bundles are organized with hierarchical date structure:
 
 ```
 ./research-data/
-└── topic-name-20240120-143022/
-    ├── research-bundle.md    # Main bundle
-    ├── metadata.json         # Research metadata
-    └── search_results.json   # Found URLs
+├── research_jobs.db              # Main job tracking database
+├── latest_research.md           # Symlink to most recent bundle
+└── 2025/
+    └── 07/
+        └── 22/
+            └── abc123_topic-name/
+                ├── research.db           # Job-specific database
+                ├── 📚_RESEARCH_BUNDLE.md # Main research bundle
+                ├── 📊_EXECUTIVE_SUMMARY.md # Executive summary
+                ├── research-bundle.md    # Standard bundle
+                ├── metadata.json         # Research metadata
+                └── search_results.json   # Found URLs
 ```
 
 ### Bundle Format
@@ -300,6 +339,32 @@ Solution: Reduce `--concurrent` or increase timeout range
 - Adjust `relevance_threshold` in config
 - Try different `--template`
 
+## Database Architecture
+
+### Main Database (research_jobs.db)
+
+Tracks all research jobs:
+
+- Job ID, query, status, timestamps
+- Configuration used
+- Statistics (URLs found, scraped, analyzed)
+
+### Per-Job Database (research.db)
+
+Tracks job-specific data:
+
+- URLs (source, status, checksums)
+- Content (markdown, metadata)
+- Analysis results (scores, key points)
+
+### Smart Delay Management
+
+The scraper implements intelligent per-host delays:
+
+- No delay for first 3 requests to a host
+- Random 1-3 second delay after threshold
+- Allows fast parallel scraping of different hosts
+
 ## Future Features
 
 - Multi-source research (GitHub, arXiv, YouTube)
@@ -307,6 +372,8 @@ Solution: Reduce `--concurrent` or increase timeout range
 - Research collaboration
 - Custom source plugins
 - Web UI
+- Export to various formats (PDF, DOCX)
+- Integration with note-taking tools
 
 ## Contributing
 

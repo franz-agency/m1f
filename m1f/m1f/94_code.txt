@@ -20766,6 +20766,21 @@ m1f-research "microservices best practices"
 # Research with more sources
 m1f-research "react state management" --urls 30 --scrape 15
 
+# Research with manual URL list
+m1f-research "python async" --urls-file my-links.txt
+
+# Resume an existing job
+m1f-research --resume abc123
+
+# Add more URLs to existing job
+m1f-research --resume abc123 --urls-file more-links.txt
+
+# List all research jobs
+m1f-research --list-jobs
+
+# Check job status
+m1f-research --status abc123
+
 # Use different LLM provider
 m1f-research "machine learning" --provider gemini
 
@@ -20784,18 +20799,27 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 
 ## Features
 
+### 🗄️ Job Management
+
+- **Persistent Jobs**: All research jobs are tracked in a SQLite database
+- **Resume Support**: Continue interrupted research or add more URLs
+- **Job History**: View all past research with statistics
+- **Per-Job Database**: Each job has its own database for URL/content tracking
+
 ### 🔍 Intelligent Search
 
 - Uses LLMs to find high-quality, relevant URLs
 - Focuses on authoritative sources
 - Mixes different content types (tutorials, docs, discussions)
+- **Manual URL Support**: Add your own URLs via --urls-file
 
 ### 📥 Smart Scraping
 
-- Concurrent scraping with rate limiting
-- Random delays to respect servers
+- **Per-Host Delay Management**: Only delays after 3+ requests to same host
+- Concurrent scraping with intelligent scheduling
 - Automatic HTML to Markdown conversion
 - Handles failures gracefully
+- **Content Deduplication**: Tracks content by checksum
 
 ### 🧠 Content Analysis
 
@@ -20806,6 +20830,8 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 
 ### 📦 Organized Bundles
 
+- **Hierarchical Output**: YYYY/MM/DD directory structure
+- **Prominent Bundle Files**: 📚_RESEARCH_BUNDLE.md and 📊_EXECUTIVE_SUMMARY.md
 - Clean Markdown output
 - Table of contents
 - Source metadata
@@ -20851,20 +20877,25 @@ m1f-research "database optimization" --config research.yml
 
 ### Command Line Options
 
-| Option          | Description              | Default          |
-| --------------- | ------------------------ | ---------------- |
-| `--urls`        | Number of URLs to find   | 20               |
-| `--scrape`      | Number of URLs to scrape | 10               |
-| `--output`      | Output directory         | ./research-data  |
-| `--name`        | Bundle name              | auto-generated   |
-| `--provider`    | LLM provider             | claude           |
-| `--model`       | Specific model           | provider default |
-| `--template`    | Research template        | general          |
-| `--concurrent`  | Max concurrent scrapes   | 5                |
-| `--no-filter`   | Disable filtering        | false            |
-| `--no-analysis` | Skip analysis            | false            |
-| `--interactive` | Interactive mode         | false            |
-| `--dry-run`     | Preview only             | false            |
+| Option             | Description                   | Default          |
+| ------------------ | ----------------------------- | ---------------- |
+| `--urls`           | Number of URLs to find        | 20               |
+| `--scrape`         | Number of URLs to scrape      | 10               |
+| `--output`         | Output directory              | ./research-data  |
+| `--name`           | Bundle name                   | auto-generated   |
+| `--provider`       | LLM provider                  | claude           |
+| `--model`          | Specific model                | provider default |
+| `--template`       | Research template             | general          |
+| `--concurrent`     | Max concurrent scrapes        | 5                |
+| `--no-filter`      | Disable filtering             | false            |
+| `--no-analysis`    | Skip analysis                 | false            |
+| `--interactive`    | Interactive mode              | false            |
+| `--dry-run`        | Preview only                  | false            |
+| **Job Management** |                               |                  |
+| `--resume`         | Resume existing job by ID     | None             |
+| `--list-jobs`      | List all research jobs        | false            |
+| `--status`         | Show job status by ID         | None             |
+| `--urls-file`      | File with URLs (one per line) | None             |
 
 ### Configuration File (.m1f.config.yml)
 
@@ -20942,14 +20973,22 @@ Pre-configured templates optimize research for different needs:
 
 ## Output Structure
 
-Research bundles are organized as:
+Research bundles are organized with hierarchical date structure:
 
 ```
 ./research-data/
-└── topic-name-20240120-143022/
-    ├── research-bundle.md    # Main bundle
-    ├── metadata.json         # Research metadata
-    └── search_results.json   # Found URLs
+├── research_jobs.db              # Main job tracking database
+├── latest_research.md           # Symlink to most recent bundle
+└── 2025/
+    └── 07/
+        └── 22/
+            └── abc123_topic-name/
+                ├── research.db           # Job-specific database
+                ├── 📚_RESEARCH_BUNDLE.md # Main research bundle
+                ├── 📊_EXECUTIVE_SUMMARY.md # Executive summary
+                ├── research-bundle.md    # Standard bundle
+                ├── metadata.json         # Research metadata
+                └── search_results.json   # Found URLs
 ```
 
 ### Bundle Format
@@ -21041,6 +21080,32 @@ Solution: Reduce `--concurrent` or increase timeout range
 - Adjust `relevance_threshold` in config
 - Try different `--template`
 
+## Database Architecture
+
+### Main Database (research_jobs.db)
+
+Tracks all research jobs:
+
+- Job ID, query, status, timestamps
+- Configuration used
+- Statistics (URLs found, scraped, analyzed)
+
+### Per-Job Database (research.db)
+
+Tracks job-specific data:
+
+- URLs (source, status, checksums)
+- Content (markdown, metadata)
+- Analysis results (scores, key points)
+
+### Smart Delay Management
+
+The scraper implements intelligent per-host delays:
+
+- No delay for first 3 requests to a host
+- Random 1-3 second delay after threshold
+- Allows fast parallel scraping of different hosts
+
 ## Future Features
 
 - Multi-source research (GitHub, arXiv, YouTube)
@@ -21048,6 +21113,8 @@ Solution: Reduce `--concurrent` or increase timeout range
 - Research collaboration
 - Custom source plugins
 - Web UI
+- Export to various formats (PDF, DOCX)
+- Integration with note-taking tools
 
 ## Contributing
 
@@ -21068,10 +21135,10 @@ This module provides functionality to research any topic by:
 - Creating organized bundles from research findings
 """
 
-from .cli import ResearchCommand, main
+from .cli import EnhancedResearchCommand, main
 from .llm_interface import LLMProvider, ClaudeProvider, GeminiProvider, CLIProvider, get_provider
 from .config import ResearchConfig, LLMConfig, ScrapingConfig, OutputConfig, AnalysisConfig
-from .orchestrator import ResearchOrchestrator
+from .orchestrator import EnhancedResearchOrchestrator
 from .models import ResearchResult, ScrapedContent, AnalyzedContent, ResearchSource
 from .scraper import SmartScraper
 from .content_filter import ContentFilter
@@ -21079,6 +21146,10 @@ from .analyzer import ContentAnalyzer
 from .bundle_creator import SmartBundleCreator
 from .readme_generator import ReadmeGenerator
 from .analysis_templates import TEMPLATES, get_template
+from .job_manager import JobManager
+from .research_db import ResearchDatabase, JobDatabase, ResearchJob
+from .url_manager import URLManager
+from .smart_scraper import EnhancedSmartScraper
 
 try:
     from .._version import __version__, __version_info__
@@ -21092,7 +21163,7 @@ __all__ = [
     "__version_info__",
     
     # CLI
-    "ResearchCommand",
+    "EnhancedResearchCommand",
     "main",
     
     # LLM
@@ -21110,12 +21181,20 @@ __all__ = [
     "AnalysisConfig",
     
     # Core
-    "ResearchOrchestrator",
+    "EnhancedResearchOrchestrator",
     "SmartScraper",
+    "EnhancedSmartScraper",
     "ContentFilter",
     "ContentAnalyzer",
     "SmartBundleCreator",
     "ReadmeGenerator",
+    
+    # Job Management
+    "JobManager",
+    "ResearchDatabase",
+    "JobDatabase",
+    "ResearchJob",
+    "URLManager",
     
     # Models
     "ResearchResult",
@@ -22188,6 +22267,380 @@ class SmartBundleCreator:
 
 ======= tools/research/cli.py ======
 """
+Enhanced CLI interface for m1f-research with job management
+"""
+import argparse
+import sys
+from pathlib import Path
+from typing import Optional, List
+import asyncio
+import logging
+
+from .config import ResearchConfig
+from .orchestrator import EnhancedResearchOrchestrator
+
+# Import version directly to avoid circular imports
+try:
+    from .._version import __version__
+except ImportError:
+    # Fallback for when running as a script
+    __version__ = "3.8.0"
+
+
+class EnhancedResearchCommand:
+    """Enhanced command class for m1f-research with job support"""
+    
+    def __init__(self):
+        self.parser = self._create_parser()
+        
+    def _create_parser(self) -> argparse.ArgumentParser:
+        """Create the argument parser for m1f-research"""
+        parser = argparse.ArgumentParser(
+            prog='m1f-research',
+            description='AI-powered research tool with job management and persistence',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Examples:
+  # Start new research
+  m1f-research "microservices best practices"
+  
+  # Research with manual URL list
+  m1f-research "react hooks" --urls-file my-links.txt
+  
+  # Resume existing job with more URLs
+  m1f-research --resume abc123 --urls-file more-links.txt
+  
+  # List all jobs
+  m1f-research --list-jobs
+  
+  # Check job status
+  m1f-research --status abc123
+"""
+        )
+        
+        # Main arguments
+        parser.add_argument(
+            'query',
+            nargs='?',
+            help='Research query (required for new jobs)'
+        )
+        
+        # Job management
+        job_group = parser.add_argument_group('job management')
+        job_group.add_argument(
+            '--resume',
+            metavar='JOB_ID',
+            help='Resume an existing research job'
+        )
+        
+        job_group.add_argument(
+            '--list-jobs',
+            action='store_true',
+            help='List all research jobs'
+        )
+        
+        job_group.add_argument(
+            '--status',
+            metavar='JOB_ID',
+            help='Show status of a specific job'
+        )
+        
+        job_group.add_argument(
+            '--urls-file',
+            type=Path,
+            help='File containing URLs to add (one per line)'
+        )
+        
+        # URL options
+        url_group = parser.add_argument_group('url options')
+        url_group.add_argument(
+            '--urls',
+            type=int,
+            default=20,
+            help='Number of URLs to search for (default: 20)'
+        )
+        
+        url_group.add_argument(
+            '--scrape',
+            type=int,
+            default=10,
+            help='Maximum URLs to scrape (default: 10)'
+        )
+        
+        # Output options
+        output_group = parser.add_argument_group('output options')
+        output_group.add_argument(
+            '--output', '-o',
+            type=Path,
+            default=Path('./research-data'),
+            help='Output directory (default: ./research-data)'
+        )
+        
+        output_group.add_argument(
+            '--name', '-n',
+            help='Custom name for the research bundle'
+        )
+        
+        # LLM provider options
+        parser.add_argument(
+            '--provider', '-p',
+            choices=['claude', 'claude-cli', 'gemini', 'gemini-cli', 'openai'],
+            default='claude',
+            help='LLM provider to use (default: claude)'
+        )
+        
+        parser.add_argument(
+            '--model', '-m',
+            help='Specific model to use (provider-dependent)'
+        )
+        
+        parser.add_argument(
+            '--template', '-t',
+            choices=['general', 'technical', 'academic', 'tutorial', 'reference'],
+            default='general',
+            help='Analysis template to use (default: general)'
+        )
+        
+        # Configuration options
+        parser.add_argument(
+            '--config', '-c',
+            type=Path,
+            help='Path to configuration file'
+        )
+        
+        # Behavior options
+        parser.add_argument(
+            '--interactive', '-i',
+            action='store_true',
+            help='Start in interactive mode'
+        )
+        
+        parser.add_argument(
+            '--no-filter',
+            action='store_true',
+            help='Disable content filtering'
+        )
+        
+        parser.add_argument(
+            '--no-analysis',
+            action='store_true',
+            help='Skip AI analysis (just scrape and bundle)'
+        )
+        
+        parser.add_argument(
+            '--concurrent', 
+            type=int,
+            default=5,
+            help='Max concurrent scraping operations (default: 5)'
+        )
+        
+        # Debug options
+        parser.add_argument(
+            '--verbose', '-v',
+            action='count',
+            default=0,
+            help='Increase verbosity (use -vv for debug)'
+        )
+        
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help='Show what would be done without doing it'
+        )
+        
+        # Version
+        parser.add_argument(
+            '--version',
+            action='version',
+            version=f'%(prog)s {__version__}'
+        )
+        
+        return parser
+    
+    async def run(self, args=None):
+        """Run the research command"""
+        args = self.parser.parse_args(args)
+        
+        # Setup logging
+        log_level = logging.WARNING
+        if args.verbose == 1:
+            log_level = logging.INFO
+        elif args.verbose >= 2:
+            log_level = logging.DEBUG
+            
+        logging.basicConfig(
+            level=log_level,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        
+        # Handle job listing
+        if args.list_jobs:
+            return await self._list_jobs(args)
+        
+        # Handle job status
+        if args.status:
+            return await self._show_status(args)
+        
+        # Validate arguments for research
+        if not args.query and not args.resume:
+            self.parser.error("Either query or --resume is required")
+        
+        if args.resume and args.query:
+            self.parser.error("Cannot specify both query and --resume")
+        
+        # Create config
+        config = self._create_config(args)
+        
+        # Run research
+        orchestrator = EnhancedResearchOrchestrator(config)
+        
+        try:
+            # Determine query and job_id
+            query = args.query
+            job_id = args.resume
+            
+            # If resuming, get query from job
+            if job_id:
+                from .job_manager import JobManager
+                job_manager = JobManager(config.output.directory)
+                job = job_manager.get_job(job_id)
+                if not job:
+                    print(f"Error: Job {job_id} not found")
+                    return 1
+                query = job.query
+            
+            result = await orchestrator.research(
+                query=query,
+                job_id=job_id,
+                urls_file=args.urls_file
+            )
+            
+            # Print results
+            print(f"\n✅ Research completed!")
+            print(f"📋 Job ID: {result.job_id}")
+            print(f"📁 Output: {result.output_dir}")
+            print(f"🔗 URLs found: {result.urls_found}")
+            print(f"📄 Pages scraped: {len(result.scraped_content)}")
+            print(f"📊 Pages analyzed: {len(result.analyzed_content)}")
+            
+            if result.bundle_created:
+                bundle_path = result.output_dir / "📚_RESEARCH_BUNDLE.md"
+                print(f"\n📚 Research bundle: {bundle_path}")
+                
+                # Check for symlink
+                latest_link = config.output.directory / "latest_research.md"
+                if latest_link.exists():
+                    print(f"🔗 Quick access: {latest_link}")
+            
+            return 0
+            
+        except KeyboardInterrupt:
+            print("\n⚠️  Research cancelled by user")
+            return 130
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
+            if args.verbose:
+                import traceback
+                traceback.print_exc()
+            return 1
+    
+    async def _list_jobs(self, args):
+        """List all research jobs"""
+        from .job_manager import JobManager
+        job_manager = JobManager(args.output)
+        
+        jobs = job_manager.list_jobs()
+        
+        if not jobs:
+            print("No research jobs found")
+            return 0
+        
+        print(f"\n📋 Research Jobs ({len(jobs)} total)\n")
+        print(f"{'ID':<10} {'Status':<10} {'Query':<40} {'Created':<20} {'Stats'}")
+        print("-" * 100)
+        
+        for job in jobs:
+            stats = job['stats']
+            stats_str = f"{stats['scraped_urls']}/{stats['total_urls']} scraped"
+            if stats['analyzed_urls']:
+                stats_str += f", {stats['analyzed_urls']} analyzed"
+            
+            print(f"{job['job_id']:<10} {job['status']:<10} "
+                  f"{job['query'][:40]:<40} {job['created_at'][:19]:<20} {stats_str}")
+        
+        return 0
+    
+    async def _show_status(self, args):
+        """Show status of a specific job"""
+        from .job_manager import JobManager
+        job_manager = JobManager(args.output)
+        
+        info = job_manager.get_job_info(job_manager.get_job(args.status))
+        
+        if 'error' in info:
+            print(f"Error: {info['error']}")
+            return 1
+        
+        print(f"\n📋 Job Status: {info['job_id']}\n")
+        print(f"Query: {info['query']}")
+        print(f"Status: {info['status']}")
+        print(f"Created: {info['created_at']}")
+        print(f"Updated: {info['updated_at']}")
+        print(f"Output: {info['output_dir']}")
+        print(f"\nStatistics:")
+        print(f"  Total URLs: {info['stats']['total_urls']}")
+        print(f"  Scraped: {info['stats']['scraped_urls']}")
+        print(f"  Filtered: {info['stats']['filtered_urls']}")
+        print(f"  Analyzed: {info['stats']['analyzed_urls']}")
+        
+        if info['bundle_exists']:
+            print(f"\n✅ Research bundle available")
+        
+        return 0
+    
+    def _create_config(self, args) -> ResearchConfig:
+        """Create configuration from arguments"""
+        # Load base config from file if provided
+        if args.config and args.config.exists():
+            config = ResearchConfig.from_yaml(args.config)
+        else:
+            config = ResearchConfig()
+        
+        # Override with command line arguments
+        config.llm.provider = args.provider
+        if args.model:
+            config.llm.model = args.model
+            
+        config.scraping.search_limit = args.urls
+        config.scraping.scrape_limit = args.scrape
+        config.scraping.max_concurrent = args.concurrent
+        
+        config.output.directory = args.output
+        if args.name:
+            config.output.name = args.name
+            
+        config.analysis.template = args.template
+        
+        config.interactive = args.interactive
+        config.no_filter = args.no_filter
+        config.no_analysis = args.no_analysis
+        config.dry_run = args.dry_run
+        config.verbose = args.verbose
+        
+        return config
+
+
+def main():
+    """Main entry point"""
+    command = EnhancedResearchCommand()
+    sys.exit(asyncio.run(command.run()))
+
+
+if __name__ == '__main__':
+    main()
+
+======= tools/research/cli_old.py ======
+"""
 CLI interface for m1f-research
 """
 import argparse
@@ -23106,6 +23559,171 @@ class ContentFilter:
             'duplicate_checks': len(self.seen_hashes)
         }
 
+======= tools/research/job_manager.py ======
+"""
+Job management for m1f-research with persistence and resume support
+"""
+import logging
+from pathlib import Path
+from typing import Optional, Dict, Any, List
+from datetime import datetime
+
+from .research_db import ResearchDatabase, JobDatabase, ResearchJob
+from .config import ResearchConfig
+
+logger = logging.getLogger(__name__)
+
+
+class JobManager:
+    """Manages research jobs with persistence"""
+    
+    def __init__(self, base_dir: Path):
+        self.base_dir = base_dir
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Main research database
+        self.main_db = ResearchDatabase(self.base_dir / "research_jobs.db")
+    
+    def create_job(self, query: str, config: ResearchConfig) -> ResearchJob:
+        """Create a new research job"""
+        # Create output directory with hierarchical structure
+        now = datetime.now()
+        output_dir = self.base_dir / now.strftime("%Y/%m/%d")
+        
+        # Create job with serializable config
+        config_dict = self._serialize_config(config)
+        job = ResearchJob.create_new(
+            query=query,
+            config=config_dict,
+            output_dir=str(output_dir)
+        )
+        
+        # Update output directory to include job ID
+        job.output_dir = str(output_dir / f"{job.job_id}_{self._sanitize_query(query)[:30]}")
+        
+        # Save to database
+        self.main_db.create_job(job)
+        
+        # Create job directory
+        job_path = Path(job.output_dir)
+        job_path.mkdir(parents=True, exist_ok=True)
+        
+        # Create job-specific database
+        job_db = JobDatabase(job_path / "research.db")
+        
+        logger.info(f"Created job {job.job_id}: {query}")
+        logger.info(f"Output directory: {job.output_dir}")
+        
+        return job
+    
+    def get_job(self, job_id: str) -> Optional[ResearchJob]:
+        """Get an existing job by ID"""
+        job = self.main_db.get_job(job_id)
+        if not job:
+            logger.error(f"Job {job_id} not found")
+        return job
+    
+    def get_job_database(self, job: ResearchJob) -> JobDatabase:
+        """Get the database for a specific job"""
+        job_path = Path(job.output_dir)
+        return JobDatabase(job_path / "research.db")
+    
+    def update_job_status(self, job_id: str, status: str):
+        """Update job status"""
+        self.main_db.update_job_status(job_id, status)
+        logger.info(f"Updated job {job_id} status to: {status}")
+    
+    def update_job_stats(self, job: ResearchJob, **additional_stats):
+        """Update job statistics from job database"""
+        job_db = self.get_job_database(job)
+        stats = job_db.get_stats()
+        stats.update(additional_stats)
+        self.main_db.update_job_stats(job.job_id, **stats)
+    
+    def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all jobs with optional status filter"""
+        return self.main_db.list_jobs(status)
+    
+    def find_recent_job(self, query: str) -> Optional[ResearchJob]:
+        """Find the most recent job for a similar query"""
+        jobs = self.list_jobs(status='active')
+        
+        # Simple similarity check (can be improved)
+        query_lower = query.lower()
+        for job_data in jobs:
+            if query_lower in job_data['query'].lower():
+                return self.get_job(job_data['job_id'])
+        
+        return None
+    
+    def create_symlink_to_latest(self, job: ResearchJob):
+        """Create a symlink to the latest research bundle"""
+        job_path = Path(job.output_dir)
+        bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
+        
+        if bundle_path.exists():
+            # Create symlink in base directory
+            latest_link = self.base_dir / "latest_research.md"
+            
+            # Remove old symlink if exists
+            if latest_link.exists() or latest_link.is_symlink():
+                latest_link.unlink()
+            
+            # Create relative symlink
+            try:
+                relative_path = Path("..") / bundle_path.relative_to(self.base_dir.parent)
+                latest_link.symlink_to(relative_path)
+                logger.info(f"Created symlink: {latest_link} -> {relative_path}")
+            except Exception as e:
+                logger.warning(f"Could not create symlink: {e}")
+                # Fallback: create absolute symlink
+                try:
+                    latest_link.symlink_to(bundle_path.absolute())
+                except Exception as e2:
+                    logger.error(f"Failed to create symlink: {e2}")
+    
+    def _sanitize_query(self, query: str) -> str:
+        """Sanitize query for directory name"""
+        safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
+        return safe_name.replace(" ", "-").lower()
+    
+    def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
+        """Get comprehensive job information"""
+        job_db = self.get_job_database(job)
+        stats = job_db.get_stats()
+        
+        return {
+            'job_id': job.job_id,
+            'query': job.query,
+            'status': job.status,
+            'created_at': job.created_at.isoformat(),
+            'updated_at': job.updated_at.isoformat(),
+            'output_dir': job.output_dir,
+            'stats': stats,
+            'bundle_exists': (Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md").exists()
+        }
+    
+    def cleanup_old_jobs(self, days: int = 30):
+        """Clean up jobs older than specified days"""
+        # TODO: Implement cleanup logic
+        pass
+    
+    def _serialize_config(self, config: ResearchConfig) -> Dict[str, Any]:
+        """Convert ResearchConfig to serializable dict"""
+        def serialize_value(val):
+            if hasattr(val, '__dict__'):
+                return {k: serialize_value(v) for k, v in val.__dict__.items()}
+            elif isinstance(val, Path):
+                return str(val)
+            elif isinstance(val, (list, tuple)):
+                return [serialize_value(v) for v in val]
+            elif isinstance(val, dict):
+                return {k: serialize_value(v) for k, v in val.items()}
+            else:
+                return val
+        
+        return serialize_value(config)
+
 ======= tools/research/llm_interface.py ======
 """
 LLM Provider interface and implementations for m1f-research
@@ -23615,19 +24233,22 @@ Data models for m1f-research
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 
 
 @dataclass
 class ResearchResult:
     """Complete research result"""
     query: str
-    bundle_path: str
-    sources_found: int
-    sources_scraped: int
-    sources_analyzed: int
-    sources_included: int
-    generated_at: datetime
-    config: Dict[str, Any]
+    job_id: str
+    urls_found: int
+    scraped_content: List['ScrapedContent']
+    analyzed_content: List['AnalyzedContent']
+    bundle_path: Optional['Path'] = None
+    bundle_created: bool = False
+    output_dir: Optional['Path'] = None
+    generated_at: datetime = field(default_factory=datetime.now)
+    config: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass 
@@ -23635,9 +24256,9 @@ class ScrapedContent:
     """Scraped web content"""
     url: str
     title: str
-    html: str
-    markdown: str
-    scraped_at: datetime
+    content: str  # HTML or markdown content
+    content_type: str = ''
+    scraped_at: datetime = field(default_factory=datetime.now)
     error: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -23653,6 +24274,11 @@ class AnalyzedContent:
     summary: str
     content_type: Optional[str] = None  # tutorial, reference, blog, etc.
     analysis_metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    # Compatibility with old API
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        return self.analysis_metadata
 
 
 @dataclass
@@ -23664,6 +24290,509 @@ class ResearchSource:
     config: Dict[str, Any] = field(default_factory=dict)
 
 ======= tools/research/orchestrator.py ======
+"""
+Enhanced research orchestrator with job management and persistence
+"""
+import asyncio
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+import json
+import logging
+
+from .config import ResearchConfig
+from .llm_interface import get_provider, LLMProvider
+from .models import ResearchResult, ScrapedContent, AnalyzedContent
+from .job_manager import JobManager
+from .research_db import ResearchJob, JobDatabase
+from .url_manager import URLManager
+from .smart_scraper import EnhancedSmartScraper
+from .content_filter import ContentFilter
+from .analyzer import ContentAnalyzer
+from .bundle_creator import SmartBundleCreator
+from .readme_generator import ReadmeGenerator
+
+logger = logging.getLogger(__name__)
+
+try:
+    from ..scrape_tool.scrapers.base import WebScraper
+except ImportError:
+    logger.warning("Could not import WebScraper from scrape_tool")
+    WebScraper = None
+
+try:
+    from ..html2md_tool import HTML2MDConverter as HTMLToMarkdownConverter
+except ImportError:
+    logger.warning("Could not import HTML2MDConverter from html2md_tool")
+    HTMLToMarkdownConverter = None
+
+
+class EnhancedResearchOrchestrator:
+    """Enhanced orchestrator with job persistence and resume support"""
+    
+    def __init__(self, config: ResearchConfig):
+        self.config = config
+        self.llm = self._init_llm()
+        self.job_manager = JobManager(config.output.directory)
+        self.current_job: Optional[ResearchJob] = None
+        self.job_db: Optional[JobDatabase] = None
+        self.url_manager: Optional[URLManager] = None
+        
+    def _init_llm(self) -> Optional[LLMProvider]:
+        """Initialize LLM provider from config"""
+        if self.config.dry_run:
+            return None
+            
+        try:
+            return get_provider(
+                self.config.llm.provider,
+                api_key=None,  # Will use env var
+                model=self.config.llm.model
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize LLM provider: {e}")
+            if not self.config.no_analysis:
+                raise
+            return None
+    
+    async def research(self, query: str, job_id: Optional[str] = None,
+                      urls_file: Optional[Path] = None) -> ResearchResult:
+        """
+        Run research workflow with job management
+        
+        Args:
+            query: Research query
+            job_id: Existing job ID to resume
+            urls_file: Optional file with additional URLs
+            
+        Returns:
+            ResearchResult with all findings
+        """
+        logger.info(f"Starting research for: {query}")
+        
+        try:
+            # Initialize or resume job
+            if job_id:
+                self.current_job = self.job_manager.get_job(job_id)
+                if not self.current_job:
+                    raise ValueError(f"Job {job_id} not found")
+                logger.info(f"Resuming job {job_id}")
+            else:
+                self.current_job = self.job_manager.create_job(query, self.config)
+                logger.info(f"Created new job {self.current_job.job_id}")
+            
+            # Setup job database and URL manager
+            self.job_db = self.job_manager.get_job_database(self.current_job)
+            self.url_manager = URLManager(self.job_db)
+            
+            # Phase 1: URL Collection
+            urls = await self._collect_urls(query, urls_file, resume=bool(job_id))
+            
+            if not urls:
+                logger.warning("No URLs to scrape")
+                self.job_manager.update_job_status(self.current_job.job_id, 'completed')
+                return self._create_empty_result()
+            
+            # Phase 2: Smart Scraping
+            scraped_content = await self._scrape_urls(urls)
+            
+            # Phase 3: Content Filtering
+            filtered_content = await self._filter_content(scraped_content)
+            
+            # Phase 4: Content Analysis (optional)
+            analyzed_content = filtered_content
+            if not self.config.no_analysis and self.llm:
+                analyzed_content = await self._analyze_content(filtered_content)
+            
+            # Phase 5: Bundle Creation
+            bundle_path = await self._create_bundle(analyzed_content, query)
+            
+            # Update job status
+            self.job_manager.update_job_stats(self.current_job)
+            self.job_manager.update_job_status(self.current_job.job_id, 'completed')
+            
+            # Create symlink to latest research
+            self.job_manager.create_symlink_to_latest(self.current_job)
+            
+            return ResearchResult(
+                query=query,
+                job_id=self.current_job.job_id,
+                urls_found=len(urls),
+                scraped_content=scraped_content,
+                analyzed_content=analyzed_content,
+                bundle_path=bundle_path,
+                bundle_created=True,
+                output_dir=Path(self.current_job.output_dir)
+            )
+            
+        except Exception as e:
+            logger.error(f"Research failed: {e}")
+            if self.current_job:
+                self.job_manager.update_job_status(self.current_job.job_id, 'failed')
+            raise
+    
+    async def _collect_urls(self, query: str, urls_file: Optional[Path],
+                           resume: bool) -> List[str]:
+        """Collect URLs from LLM and/or file"""
+        all_urls = []
+        
+        # Add URLs from file if provided
+        if urls_file:
+            added = self.url_manager.add_urls_from_file(urls_file)
+            logger.info(f"Added {added} URLs from file")
+        
+        # Get URLs from LLM if not resuming
+        if not resume and not self.config.dry_run:
+            logger.info("Searching for URLs using LLM...")
+            try:
+                llm_urls = await self.llm.search_web(query, self.config.scraping.search_limit)
+                added = self.url_manager.add_urls_from_list(llm_urls, source='llm')
+                logger.info(f"Added {added} URLs from LLM search")
+            except Exception as e:
+                logger.error(f"Error searching for URLs: {e}")
+                if not urls_file:  # If no manual URLs, this is fatal
+                    raise
+        
+        # Get unscraped URLs
+        all_urls = self.url_manager.get_unscraped_urls()
+        logger.info(f"Total URLs to scrape: {len(all_urls)}")
+        
+        # Update stats
+        self.job_manager.update_job_stats(
+            self.current_job,
+            total_urls=self.job_db.get_stats()['total_urls']
+        )
+        
+        # Limit URLs if configured
+        if self.config.scraping.scrape_limit and len(all_urls) > self.config.scraping.scrape_limit:
+            all_urls = all_urls[:self.config.scraping.scrape_limit]
+            logger.info(f"Limited to {len(all_urls)} URLs")
+        
+        return all_urls
+    
+    async def _scrape_urls(self, urls: List[str]) -> List[ScrapedContent]:
+        """Scrape URLs with smart delay management"""
+        if self.config.dry_run:
+            logger.info("DRY RUN: Would scrape URLs")
+            return []
+        
+        scraped_content = []
+        
+        async with EnhancedSmartScraper(
+            self.config.scraping,
+            self.job_db,
+            self.url_manager
+        ) as scraper:
+            # Set progress callback
+            def progress_callback(completed, total, percentage):
+                logger.info(f"Scraping progress: {completed}/{total} ({percentage:.1f}%)")
+                if completed % 5 == 0:  # Update stats every 5 URLs
+                    self.job_manager.update_job_stats(
+                        self.current_job,
+                        scraped_urls=self.job_db.get_stats()['scraped_urls']
+                    )
+            
+            scraper.set_progress_callback(progress_callback)
+            
+            # Scrape URLs
+            raw_content = await scraper.scrape_urls(urls)
+            
+            # Convert HTML to Markdown
+            for scraped in raw_content:
+                try:
+                    # Use html2md tool if available
+                    if HTMLToMarkdownConverter:
+                        converter = HTMLToMarkdownConverter()
+                        markdown = converter.convert(scraped.content)
+                    else:
+                        # Fallback to basic conversion
+                        markdown = self._basic_html_to_markdown(scraped.content)
+                    
+                    # Save to database
+                    self.job_db.save_content(
+                        url=scraped.url,
+                        title=scraped.title,
+                        markdown=markdown,
+                        metadata={
+                            'scraped_at': scraped.scraped_at.isoformat(),
+                            'content_type': scraped.content_type
+                        }
+                    )
+                    
+                    # Update scraped content
+                    scraped.content = markdown
+                    scraped_content.append(scraped)
+                    
+                except Exception as e:
+                    logger.error(f"Error converting {scraped.url}: {e}")
+        
+        # Final stats update
+        stats = scraper.get_statistics()
+        logger.info(f"Scraping complete: {stats['successful_urls']} successful, "
+                   f"{stats['failed_urls']} failed")
+        
+        self.job_manager.update_job_stats(self.current_job)
+        
+        return scraped_content
+    
+    async def _filter_content(self, content: List[ScrapedContent]) -> List[AnalyzedContent]:
+        """Filter content for quality"""
+        if self.config.no_filter:
+            logger.info("Content filtering disabled")
+            return [self._scraped_to_analyzed(s) for s in content]
+        
+        filter = ContentFilter(self.config.filtering)
+        filtered = []
+        
+        for item in content:
+            passed, reason = filter.filter_content(item.content)
+            
+            # Update database
+            self.job_db.save_content(
+                url=item.url,
+                title=item.title,
+                markdown=item.content,
+                metadata={'scraped_at': item.scraped_at.isoformat()},
+                filtered=not passed,
+                filter_reason=reason
+            )
+            
+            if passed:
+                filtered.append(self._scraped_to_analyzed(item))
+            else:
+                logger.debug(f"Filtered out {item.url}: {reason}")
+        
+        logger.info(f"Filtered {len(content)} to {len(filtered)} items")
+        
+        # Update stats
+        self.job_manager.update_job_stats(
+            self.current_job,
+            filtered_urls=len(content) - len(filtered)
+        )
+        
+        return filtered
+    
+    async def _analyze_content(self, content: List[AnalyzedContent]) -> List[AnalyzedContent]:
+        """Analyze content with LLM"""
+        if not content:
+            return []
+        
+        analyzer = ContentAnalyzer(self.llm, self.config.analysis)
+        analyzed = []
+        
+        for item in content:
+            try:
+                result = await analyzer.analyze(item)
+                
+                # Save analysis to database
+                self.job_db.save_analysis(
+                    url=result.url,
+                    relevance_score=result.relevance_score,
+                    key_points=result.key_points,
+                    content_type=result.content_type,
+                    analysis_data={
+                        'summary': result.summary,
+                        'metadata': result.metadata
+                    }
+                )
+                
+                analyzed.append(result)
+                
+            except Exception as e:
+                logger.error(f"Error analyzing {item.url}: {e}")
+                analyzed.append(item)
+        
+        # Sort by relevance
+        analyzed.sort(key=lambda x: x.relevance_score, reverse=True)
+        
+        # Update stats
+        self.job_manager.update_job_stats(
+            self.current_job,
+            analyzed_urls=len([a for a in analyzed if hasattr(a, 'relevance_score')])
+        )
+        
+        return analyzed
+    
+    async def _create_bundle(self, content: List[AnalyzedContent], query: str) -> Path:
+        """Create the final research bundle"""
+        if self.config.dry_run:
+            logger.info("DRY RUN: Would create bundle")
+            return Path(self.current_job.output_dir)
+        
+        output_dir = Path(self.current_job.output_dir)
+        
+        # Create bundle
+        bundle_creator = SmartBundleCreator(
+            llm_provider=self.llm if not self.config.no_analysis else None,
+            config=self.config.output,
+            research_config=self.config
+        )
+        
+        bundle_path = await bundle_creator.create_bundle(
+            content,
+            query,
+            output_dir,
+            synthesis=None  # TODO: Add synthesis generation
+        )
+        
+        # Create prominent bundle file
+        await self._create_prominent_bundle(output_dir, content, query)
+        
+        logger.info(f"Bundle created at: {bundle_path}")
+        return bundle_path
+    
+    async def _create_prominent_bundle(self, output_dir: Path, 
+                                     content: List[AnalyzedContent],
+                                     query: str):
+        """Create the prominent RESEARCH_BUNDLE.md file"""
+        bundle_path = output_dir / "📚_RESEARCH_BUNDLE.md"
+        
+        # Create header
+        bundle_content = f"""# 📚 Research Bundle: {query}
+
+**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
+**Job ID**: {self.current_job.job_id}  
+**Total Sources**: {len(content)}
+
+---
+
+## 📊 Executive Summary
+
+This research bundle contains {len(content)} carefully selected sources about "{query}".
+
+"""
+        
+        # Add table of contents
+        bundle_content += "## 📑 Table of Contents\n\n"
+        for i, item in enumerate(content, 1):
+            title = item.title or f"Source {i}"
+            bundle_content += f"{i}. [{title}](#{i}-{self._slugify(title)})\n"
+        
+        bundle_content += "\n---\n\n"
+        
+        # Add all content
+        for i, item in enumerate(content, 1):
+            title = item.title or f"Source {i}"
+            bundle_content += f"## {i}. {title}\n\n"
+            bundle_content += f"**Source**: {item.url}\n"
+            
+            if hasattr(item, 'relevance_score'):
+                bundle_content += f"**Relevance**: {item.relevance_score}/10\n"
+            
+            if hasattr(item, 'key_points') and item.key_points:
+                bundle_content += "\n### Key Points:\n"
+                for point in item.key_points:
+                    bundle_content += f"- {point}\n"
+            
+            bundle_content += f"\n### Content:\n\n{item.content}\n\n"
+            bundle_content += "---\n\n"
+        
+        # Write bundle
+        with open(bundle_path, 'w', encoding='utf-8') as f:
+            f.write(bundle_content)
+        
+        logger.info(f"Created prominent bundle: {bundle_path}")
+        
+        # Also create executive summary
+        summary_path = output_dir / "📊_EXECUTIVE_SUMMARY.md"
+        summary_content = f"""# 📊 Executive Summary: {query}
+
+**Job ID**: {self.current_job.job_id}  
+**Date**: {datetime.now().strftime('%Y-%m-%d')}
+
+## Overview
+
+Research on "{query}" yielded {len(content)} high-quality sources.
+
+## Top Sources
+
+"""
+        
+        for i, item in enumerate(content[:5], 1):  # Top 5
+            summary_content += f"{i}. **{item.title}**\n"
+            if hasattr(item, 'summary'):
+                summary_content += f"   - {item.summary[:200]}...\n"
+            summary_content += f"   - [Link]({item.url})\n\n"
+        
+        with open(summary_path, 'w', encoding='utf-8') as f:
+            f.write(summary_content)
+    
+    def _scraped_to_analyzed(self, scraped: ScrapedContent) -> AnalyzedContent:
+        """Convert ScrapedContent to AnalyzedContent"""
+        return AnalyzedContent(
+            url=scraped.url,
+            title=scraped.title,
+            content=scraped.content,
+            relevance_score=5.0,  # Default
+            key_points=[],
+            summary="",
+            content_type="unknown",
+            metadata={}
+        )
+    
+    def _basic_html_to_markdown(self, html: str) -> str:
+        """Basic HTML to Markdown conversion"""
+        import re
+        
+        # Remove script and style tags
+        html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Basic conversions
+        conversions = [
+            (r'<h1[^>]*>(.*?)</h1>', r'# \1\n'),
+            (r'<h2[^>]*>(.*?)</h2>', r'## \1\n'),
+            (r'<h3[^>]*>(.*?)</h3>', r'### \1\n'),
+            (r'<p[^>]*>(.*?)</p>', r'\1\n\n'),
+            (r'<strong[^>]*>(.*?)</strong>', r'**\1**'),
+            (r'<b[^>]*>(.*?)</b>', r'**\1**'),
+            (r'<em[^>]*>(.*?)</em>', r'*\1*'),
+            (r'<i[^>]*>(.*?)</i>', r'*\1*'),
+            (r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', r'[\2](\1)'),
+            (r'<br[^>]*>', '\n'),
+            (r'<[^>]+>', ''),  # Remove remaining tags
+        ]
+        
+        for pattern, replacement in conversions:
+            html = re.sub(pattern, replacement, html, flags=re.IGNORECASE | re.DOTALL)
+        
+        # Clean up
+        html = re.sub(r'\n{3,}', '\n\n', html)
+        return html.strip()
+    
+    def _slugify(self, text: str) -> str:
+        """Create URL-safe slug from text"""
+        import re
+        text = re.sub(r'[^\w\s-]', '', text.lower())
+        text = re.sub(r'[-\s]+', '-', text)
+        return text[:50]
+    
+    def _create_empty_result(self) -> ResearchResult:
+        """Create empty result when no URLs found"""
+        return ResearchResult(
+            query=self.current_job.query if self.current_job else "",
+            job_id=self.current_job.job_id if self.current_job else "",
+            urls_found=0,
+            scraped_content=[],
+            analyzed_content=[],
+            bundle_path=Path(self.current_job.output_dir) if self.current_job else Path(),
+            bundle_created=False,
+            output_dir=Path(self.current_job.output_dir) if self.current_job else Path()
+        )
+    
+    async def get_job_status(self, job_id: str) -> Dict[str, Any]:
+        """Get status of a research job"""
+        job = self.job_manager.get_job(job_id)
+        if not job:
+            return {"error": f"Job {job_id} not found"}
+        
+        return self.job_manager.get_job_info(job)
+    
+    async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all research jobs"""
+        return self.job_manager.list_jobs(status)
+
+======= tools/research/orchestrator_old.py ======
 """
 Research orchestrator - coordinates the research workflow
 """
@@ -24238,6 +25367,444 @@ class ReadmeGenerator:
         
         logger.info(f"Generated citations at: {citations_path}")
 
+======= tools/research/research_db.py ======
+"""
+Database management for m1f-research with dual DB system
+"""
+import sqlite3
+import json
+import uuid
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Optional, Any, Tuple
+from dataclasses import dataclass, asdict
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ResearchJob:
+    """Research job data model"""
+    job_id: str
+    query: str
+    created_at: datetime
+    updated_at: datetime
+    status: str  # active, completed, failed
+    config: Dict[str, Any]
+    output_dir: str
+    
+    @classmethod
+    def create_new(cls, query: str, config: Dict[str, Any], output_dir: str) -> 'ResearchJob':
+        """Create a new research job"""
+        now = datetime.now()
+        return cls(
+            job_id=str(uuid.uuid4())[:8],  # Short ID for convenience
+            query=query,
+            created_at=now,
+            updated_at=now,
+            status='active',
+            config=config,
+            output_dir=output_dir
+        )
+
+
+class ResearchDatabase:
+    """Main research jobs database manager"""
+    
+    def __init__(self, db_path: Path):
+        self.db_path = db_path
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._init_database()
+    
+    def _init_database(self):
+        """Initialize the main research database"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS jobs (
+                    job_id TEXT PRIMARY KEY,
+                    query TEXT NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP NOT NULL,
+                    status TEXT NOT NULL,
+                    config TEXT NOT NULL,
+                    output_dir TEXT NOT NULL
+                )
+            """)
+            
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS job_stats (
+                    job_id TEXT PRIMARY KEY,
+                    total_urls INTEGER DEFAULT 0,
+                    scraped_urls INTEGER DEFAULT 0,
+                    filtered_urls INTEGER DEFAULT 0,
+                    analyzed_urls INTEGER DEFAULT 0,
+                    FOREIGN KEY (job_id) REFERENCES jobs(job_id)
+                )
+            """)
+            
+            conn.commit()
+    
+    def create_job(self, job: ResearchJob) -> str:
+        """Create a new research job"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """INSERT INTO jobs (job_id, query, created_at, updated_at, status, config, output_dir)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    job.job_id,
+                    job.query,
+                    job.created_at.isoformat(),
+                    job.updated_at.isoformat(),
+                    job.status,
+                    json.dumps(job.config),
+                    job.output_dir
+                )
+            )
+            
+            # Initialize stats
+            conn.execute(
+                "INSERT INTO job_stats (job_id) VALUES (?)",
+                (job.job_id,)
+            )
+            
+            conn.commit()
+        
+        logger.info(f"Created new job: {job.job_id} for query: {job.query}")
+        return job.job_id
+    
+    def get_job(self, job_id: str) -> Optional[ResearchJob]:
+        """Get a research job by ID"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT * FROM jobs WHERE job_id = ?",
+                (job_id,)
+            )
+            row = cursor.fetchone()
+            
+            if row:
+                return ResearchJob(
+                    job_id=row['job_id'],
+                    query=row['query'],
+                    created_at=datetime.fromisoformat(row['created_at']),
+                    updated_at=datetime.fromisoformat(row['updated_at']),
+                    status=row['status'],
+                    config=json.loads(row['config']),
+                    output_dir=row['output_dir']
+                )
+        
+        return None
+    
+    def update_job_status(self, job_id: str, status: str):
+        """Update job status"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                "UPDATE jobs SET status = ?, updated_at = ? WHERE job_id = ?",
+                (status, datetime.now().isoformat(), job_id)
+            )
+            conn.commit()
+    
+    def update_job_stats(self, job_id: str, **stats):
+        """Update job statistics"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            # Build dynamic update query
+            updates = []
+            values = []
+            for key, value in stats.items():
+                if key in ['total_urls', 'scraped_urls', 'filtered_urls', 'analyzed_urls']:
+                    updates.append(f"{key} = ?")
+                    values.append(value)
+            
+            if updates:
+                values.append(job_id)
+                query = f"UPDATE job_stats SET {', '.join(updates)} WHERE job_id = ?"
+                conn.execute(query, values)
+                conn.commit()
+    
+    def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all jobs with optional status filter"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            
+            query = """
+                SELECT j.*, s.total_urls, s.scraped_urls, s.filtered_urls, s.analyzed_urls
+                FROM jobs j
+                LEFT JOIN job_stats s ON j.job_id = s.job_id
+            """
+            params = []
+            
+            if status:
+                query += " WHERE j.status = ?"
+                params.append(status)
+            
+            query += " ORDER BY j.created_at DESC"
+            
+            cursor = conn.execute(query, params)
+            
+            jobs = []
+            for row in cursor:
+                jobs.append({
+                    'job_id': row['job_id'],
+                    'query': row['query'],
+                    'created_at': row['created_at'],
+                    'updated_at': row['updated_at'],
+                    'status': row['status'],
+                    'output_dir': row['output_dir'],
+                    'stats': {
+                        'total_urls': row['total_urls'] or 0,
+                        'scraped_urls': row['scraped_urls'] or 0,
+                        'filtered_urls': row['filtered_urls'] or 0,
+                        'analyzed_urls': row['analyzed_urls'] or 0
+                    }
+                })
+            
+            return jobs
+
+
+class JobDatabase:
+    """Per-job database for URL and content tracking"""
+    
+    def __init__(self, db_path: Path):
+        self.db_path = db_path
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._init_database()
+    
+    def _init_database(self):
+        """Initialize the job-specific database"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            # URL tracking table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS urls (
+                    url TEXT PRIMARY KEY,
+                    normalized_url TEXT,
+                    host TEXT,
+                    added_by TEXT NOT NULL,
+                    added_at TIMESTAMP NOT NULL,
+                    scraped_at TIMESTAMP,
+                    status_code INTEGER,
+                    content_checksum TEXT,
+                    error_message TEXT
+                )
+            """)
+            
+            # Content storage
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS content (
+                    url TEXT PRIMARY KEY,
+                    title TEXT,
+                    markdown TEXT NOT NULL,
+                    metadata TEXT,
+                    word_count INTEGER,
+                    filtered BOOLEAN DEFAULT 0,
+                    filter_reason TEXT,
+                    FOREIGN KEY (url) REFERENCES urls(url)
+                )
+            """)
+            
+            # Analysis results
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS analysis (
+                    url TEXT PRIMARY KEY,
+                    relevance_score REAL,
+                    key_points TEXT,
+                    content_type TEXT,
+                    analysis_data TEXT,
+                    analyzed_at TIMESTAMP,
+                    FOREIGN KEY (url) REFERENCES urls(url)
+                )
+            """)
+            
+            # Create indexes
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_urls_host ON urls(host)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_urls_scraped ON urls(scraped_at)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_content_filtered ON content(filtered)")
+            
+            conn.commit()
+    
+    def add_urls(self, urls: List[Dict[str, str]], added_by: str = 'llm') -> int:
+        """Add URLs to the database"""
+        added_count = 0
+        
+        with sqlite3.connect(str(self.db_path)) as conn:
+            for url_data in urls:
+                url = url_data.get('url', '')
+                if not url:
+                    continue
+                
+                try:
+                    # Normalize URL
+                    from urllib.parse import urlparse, urlunparse
+                    parsed = urlparse(url)
+                    normalized = urlunparse((
+                        parsed.scheme.lower(),
+                        parsed.netloc.lower(),
+                        parsed.path.rstrip('/'),
+                        parsed.params,
+                        parsed.query,
+                        ''
+                    ))
+                    
+                    conn.execute(
+                        """INSERT OR IGNORE INTO urls 
+                           (url, normalized_url, host, added_by, added_at)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (
+                            url,
+                            normalized,
+                            parsed.netloc,
+                            added_by,
+                            datetime.now().isoformat()
+                        )
+                    )
+                    
+                    if conn.total_changes > added_count:
+                        added_count = conn.total_changes
+                        
+                except Exception as e:
+                    logger.error(f"Error adding URL {url}: {e}")
+            
+            conn.commit()
+        
+        return added_count
+    
+    def get_unscraped_urls(self) -> List[str]:
+        """Get all URLs that haven't been scraped yet"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            cursor = conn.execute(
+                "SELECT url FROM urls WHERE scraped_at IS NULL"
+            )
+            return [row[0] for row in cursor]
+    
+    def get_urls_by_host(self) -> Dict[str, List[str]]:
+        """Get URLs grouped by host"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            cursor = conn.execute(
+                "SELECT host, url FROM urls WHERE scraped_at IS NULL ORDER BY host"
+            )
+            
+            urls_by_host = {}
+            for host, url in cursor:
+                if host not in urls_by_host:
+                    urls_by_host[host] = []
+                urls_by_host[host].append(url)
+            
+            return urls_by_host
+    
+    def mark_url_scraped(self, url: str, status_code: int, 
+                         content_checksum: Optional[str] = None,
+                         error_message: Optional[str] = None):
+        """Mark a URL as scraped"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """UPDATE urls 
+                   SET scraped_at = ?, status_code = ?, 
+                       content_checksum = ?, error_message = ?
+                   WHERE url = ?""",
+                (
+                    datetime.now().isoformat(),
+                    status_code,
+                    content_checksum,
+                    error_message,
+                    url
+                )
+            )
+            conn.commit()
+    
+    def save_content(self, url: str, title: str, markdown: str, 
+                     metadata: Dict[str, Any], filtered: bool = False,
+                     filter_reason: Optional[str] = None):
+        """Save scraped content"""
+        word_count = len(markdown.split())
+        
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO content 
+                   (url, title, markdown, metadata, word_count, filtered, filter_reason)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    url,
+                    title,
+                    markdown,
+                    json.dumps(metadata),
+                    word_count,
+                    filtered,
+                    filter_reason
+                )
+            )
+            conn.commit()
+    
+    def save_analysis(self, url: str, relevance_score: float,
+                      key_points: List[str], content_type: str,
+                      analysis_data: Dict[str, Any]):
+        """Save content analysis results"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO analysis 
+                   (url, relevance_score, key_points, content_type, 
+                    analysis_data, analyzed_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    url,
+                    relevance_score,
+                    json.dumps(key_points),
+                    content_type,
+                    json.dumps(analysis_data),
+                    datetime.now().isoformat()
+                )
+            )
+            conn.commit()
+    
+    def get_content_for_bundle(self) -> List[Dict[str, Any]]:
+        """Get all non-filtered content for bundle creation"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("""
+                SELECT c.*, a.relevance_score, a.key_points, a.content_type
+                FROM content c
+                LEFT JOIN analysis a ON c.url = a.url
+                WHERE c.filtered = 0
+                ORDER BY a.relevance_score DESC NULLS LAST
+            """)
+            
+            content = []
+            for row in cursor:
+                content.append({
+                    'url': row['url'],
+                    'title': row['title'],
+                    'markdown': row['markdown'],
+                    'metadata': json.loads(row['metadata']),
+                    'word_count': row['word_count'],
+                    'relevance_score': row['relevance_score'],
+                    'key_points': json.loads(row['key_points']) if row['key_points'] else [],
+                    'content_type': row['content_type']
+                })
+            
+            return content
+    
+    def get_stats(self) -> Dict[str, int]:
+        """Get job statistics"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            stats = {}
+            
+            # Total URLs
+            cursor = conn.execute("SELECT COUNT(*) FROM urls")
+            stats['total_urls'] = cursor.fetchone()[0]
+            
+            # Scraped URLs
+            cursor = conn.execute("SELECT COUNT(*) FROM urls WHERE scraped_at IS NOT NULL")
+            stats['scraped_urls'] = cursor.fetchone()[0]
+            
+            # Filtered URLs
+            cursor = conn.execute("SELECT COUNT(*) FROM content WHERE filtered = 1")
+            stats['filtered_urls'] = cursor.fetchone()[0]
+            
+            # Analyzed URLs
+            cursor = conn.execute("SELECT COUNT(*) FROM analysis")
+            stats['analyzed_urls'] = cursor.fetchone()[0]
+            
+            return stats
+
 ======= tools/research/scraper.py ======
 """
 Smart scraper with advanced features for m1f-research
@@ -24548,6 +26115,469 @@ class SmartScraper:
             'success_rate': self.completed_urls / self.total_urls if self.total_urls > 0 else 0,
             'failed_url_list': self.failed_urls
         }
+
+======= tools/research/smart_scraper.py ======
+"""
+Enhanced smart scraper with per-host delay management for m1f-research
+"""
+import asyncio
+import random
+import aiohttp
+import hashlib
+from typing import List, Dict, Optional, Any, Tuple
+from datetime import datetime
+from collections import defaultdict
+import logging
+from urllib.parse import urlparse, urljoin
+import re
+
+from .models import ScrapedContent
+from .config import ScrapingConfig
+from .url_manager import URLManager
+from .research_db import JobDatabase
+
+logger = logging.getLogger(__name__)
+
+
+class HostDelayManager:
+    """Manages delays per host to be polite to servers"""
+    
+    def __init__(self, delay_range: Tuple[float, float] = (1.0, 3.0), 
+                 threshold: int = 3):
+        self.delay_range = delay_range
+        self.threshold = threshold
+        self.host_request_count = defaultdict(int)
+        self.last_request_time = {}
+    
+    async def wait_if_needed(self, url: str):
+        """Wait if we're making too many requests to the same host"""
+        host = urlparse(url).netloc
+        self.host_request_count[host] += 1
+        
+        # Only delay if we've made more than threshold requests to this host
+        if self.host_request_count[host] > self.threshold:
+            delay = random.uniform(*self.delay_range)
+            logger.debug(f"Delaying {delay:.1f}s for host {host} (request #{self.host_request_count[host]})")
+            await asyncio.sleep(delay)
+        else:
+            logger.debug(f"No delay for host {host} (request #{self.host_request_count[host]})")
+    
+    def get_host_stats(self) -> Dict[str, int]:
+        """Get request counts per host"""
+        return dict(self.host_request_count)
+
+
+class EnhancedSmartScraper:
+    """
+    Enhanced web scraper with:
+    - Per-host delay management
+    - Database integration
+    - Content checksum tracking
+    - Better error handling
+    """
+    
+    def __init__(self, config: ScrapingConfig, job_db: JobDatabase, 
+                 url_manager: URLManager):
+        self.config = config
+        self.job_db = job_db
+        self.url_manager = url_manager
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.semaphore = asyncio.Semaphore(config.max_concurrent)
+        self.delay_manager = HostDelayManager(
+            delay_range=(config.delay[0], config.delay[1]),
+            threshold=3
+        )
+        
+        # Progress tracking
+        self.progress_callback = None
+        self.total_urls = 0
+        self.completed_urls = 0
+        self.successful_urls = 0
+        self.failed_urls = []
+        
+    async def __aenter__(self):
+        """Async context manager entry"""
+        headers = {
+            'User-Agent': random.choice(self.config.user_agents)
+        }
+        timeout = aiohttp.ClientTimeout(total=self.config.timeout)
+        self.session = aiohttp.ClientSession(headers=headers, timeout=timeout)
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit"""
+        if self.session:
+            await self.session.close()
+    
+    def set_progress_callback(self, callback):
+        """Set callback for progress updates"""
+        self.progress_callback = callback
+    
+    async def scrape_urls(self, urls: List[str]) -> List[ScrapedContent]:
+        """
+        Scrape multiple URLs with smart host-based delays
+        """
+        self.total_urls = len(urls)
+        self.completed_urls = 0
+        self.successful_urls = 0
+        self.failed_urls = []
+        
+        # Group URLs by host for smart scheduling
+        urls_by_host = defaultdict(list)
+        for url in urls:
+            host = urlparse(url).netloc
+            urls_by_host[host].append(url)
+        
+        logger.info(f"Scraping {len(urls)} URLs from {len(urls_by_host)} different hosts")
+        
+        # Create tasks with mixed hosts for better parallelism
+        tasks = []
+        url_queue = []
+        
+        # Interleave URLs from different hosts
+        max_urls = max(len(urls) for urls in urls_by_host.values())
+        for i in range(max_urls):
+            for host, host_urls in urls_by_host.items():
+                if i < len(host_urls):
+                    url_queue.append(host_urls[i])
+        
+        # Create scraping tasks
+        for url in url_queue:
+            task = self._scrape_with_semaphore(url)
+            tasks.append(task)
+        
+        # Run all tasks
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Process results
+        scraped_content = []
+        for url, result in zip(url_queue, results):
+            if isinstance(result, Exception):
+                logger.error(f"Failed to scrape {url}: {result}")
+                self.failed_urls.append(url)
+            elif result:
+                scraped_content.append(result)
+                self.successful_urls += 1
+        
+        # Log statistics
+        logger.info(f"Scraping complete: {self.successful_urls}/{self.total_urls} successful")
+        if self.failed_urls:
+            logger.warning(f"Failed to scrape {len(self.failed_urls)} URLs")
+        
+        host_stats = self.delay_manager.get_host_stats()
+        logger.info(f"Requests per host: {dict(list(host_stats.items())[:5])}...")  # Show first 5
+        
+        return scraped_content
+    
+    async def _scrape_with_semaphore(self, url: str) -> Optional[ScrapedContent]:
+        """Scrape a single URL with semaphore control"""
+        async with self.semaphore:
+            return await self._scrape_url(url)
+    
+    async def _scrape_url(self, url: str) -> Optional[ScrapedContent]:
+        """Scrape a single URL with retries and smart delays"""
+        # Apply per-host delay if needed
+        await self.delay_manager.wait_if_needed(url)
+        
+        # Check robots.txt if configured
+        if not await self._check_robots_txt(url):
+            logger.info(f"Skipping {url} due to robots.txt")
+            self.url_manager.mark_url_scraped(url, -1, error_message="Blocked by robots.txt")
+            self._update_progress()
+            return None
+        
+        # Try scraping with retries
+        for attempt in range(self.config.retries):
+            try:
+                async with self.session.get(url) as response:
+                    if response.status == 200:
+                        content = await response.text()
+                        
+                        # Calculate content checksum
+                        content_checksum = hashlib.sha256(content.encode()).hexdigest()
+                        
+                        # Create scraped content object
+                        scraped = ScrapedContent(
+                            url=url,
+                            title=self._extract_title(content),
+                            content=content,
+                            content_type=response.headers.get('Content-Type', ''),
+                            scraped_at=datetime.now()
+                        )
+                        
+                        # Mark as scraped in database
+                        self.url_manager.mark_url_scraped(
+                            url, 
+                            response.status,
+                            content_checksum=content_checksum
+                        )
+                        
+                        self._update_progress()
+                        return scraped
+                    
+                    else:
+                        error_msg = f"HTTP {response.status}"
+                        if attempt < self.config.retries - 1:
+                            logger.warning(f"{error_msg} for {url}, retrying...")
+                            await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                        else:
+                            logger.warning(f"{error_msg} for {url}")
+                            self.url_manager.mark_url_scraped(
+                                url, 
+                                response.status,
+                                error_message=error_msg
+                            )
+                            self._update_progress()
+                            return None
+                            
+            except asyncio.TimeoutError:
+                error_msg = "Timeout"
+                if attempt < self.config.retries - 1:
+                    logger.warning(f"Timeout for {url}, retrying...")
+                    await asyncio.sleep(2 ** attempt)
+                else:
+                    logger.error(f"Timeout for {url} after {self.config.retries} attempts")
+                    self.url_manager.mark_url_scraped(url, -1, error_message=error_msg)
+                    self._update_progress()
+                    return None
+                    
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Error scraping {url}: {e}")
+                if attempt < self.config.retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+                else:
+                    self.url_manager.mark_url_scraped(url, -1, error_message=error_msg)
+                    self._update_progress()
+                    return None
+        
+        return None
+    
+    async def _check_robots_txt(self, url: str) -> bool:
+        """Check if URL is allowed by robots.txt"""
+        if not self.config.respect_robots_txt:
+            return True
+            
+        try:
+            parsed = urlparse(url)
+            robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+            
+            # Simple check - just see if robots.txt mentions the path
+            async with self.session.get(robots_url) as response:
+                if response.status == 200:
+                    content = await response.text()
+                    path = parsed.path or '/'
+                    
+                    # Very basic robots.txt parsing
+                    lines = content.lower().split('\n')
+                    user_agent_applies = False
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('user-agent:'):
+                            user_agent_applies = '*' in line or 'bot' in line
+                        elif user_agent_applies and line.startswith('disallow:'):
+                            disallowed = line.split(':', 1)[1].strip()
+                            if disallowed and path.lower().startswith(disallowed):
+                                return False
+            
+            return True
+            
+        except Exception as e:
+            logger.debug(f"Could not check robots.txt for {url}: {e}")
+            return True  # Allow if we can't check
+    
+    def _extract_title(self, html: str) -> str:
+        """Extract title from HTML"""
+        match = re.search(r'<title[^>]*>([^<]+)</title>', html, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+        
+        # Try h1 as fallback
+        match = re.search(r'<h1[^>]*>([^<]+)</h1>', html, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+            
+        return "Untitled"
+    
+    def _update_progress(self):
+        """Update progress and call callback if set"""
+        self.completed_urls += 1
+        if self.progress_callback:
+            progress = (self.completed_urls / self.total_urls) * 100
+            self.progress_callback(self.completed_urls, self.total_urls, progress)
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get scraping statistics"""
+        return {
+            'total_urls': self.total_urls,
+            'completed_urls': self.completed_urls,
+            'successful_urls': self.successful_urls,
+            'failed_urls': len(self.failed_urls),
+            'host_stats': self.delay_manager.get_host_stats()
+        }
+
+======= tools/research/url_manager.py ======
+"""
+URL management for m1f-research with file support and deduplication
+"""
+import logging
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+from urllib.parse import urlparse, urlunparse
+
+from .research_db import JobDatabase
+
+logger = logging.getLogger(__name__)
+
+
+class URLManager:
+    """Manages URL collection, deduplication, and tracking"""
+    
+    def __init__(self, job_db: JobDatabase):
+        self.job_db = job_db
+    
+    def add_urls_from_list(self, urls: List[Dict[str, str]], source: str = 'llm') -> int:
+        """Add URLs from a list (LLM-generated or manual)"""
+        return self.job_db.add_urls(urls, added_by=source)
+    
+    def add_urls_from_file(self, file_path: Path) -> int:
+        """Add URLs from a text file (one URL per line)"""
+        if not file_path.exists():
+            logger.error(f"URL file not found: {file_path}")
+            return 0
+        
+        urls = []
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):  # Skip comments
+                        # Support optional title after URL
+                        parts = line.split('\t', 1)
+                        url = parts[0].strip()
+                        title = parts[1].strip() if len(parts) > 1 else ''
+                        
+                        if url.startswith(('http://', 'https://')):
+                            urls.append({
+                                'url': url,
+                                'title': title,
+                                'description': f'From file: {file_path.name}'
+                            })
+        
+        except Exception as e:
+            logger.error(f"Error reading URL file {file_path}: {e}")
+            return 0
+        
+        logger.info(f"Found {len(urls)} URLs in {file_path}")
+        return self.add_urls_from_list(urls, source='manual')
+    
+    def get_unscraped_urls(self) -> List[str]:
+        """Get all URLs that haven't been scraped yet"""
+        return self.job_db.get_unscraped_urls()
+    
+    def get_urls_grouped_by_host(self) -> Dict[str, List[str]]:
+        """Get unscraped URLs grouped by host for smart delay management"""
+        return self.job_db.get_urls_by_host()
+    
+    def normalize_url(self, url: str) -> str:
+        """Normalize a URL for deduplication"""
+        try:
+            parsed = urlparse(url)
+            
+            # Normalize components
+            scheme = parsed.scheme.lower()
+            netloc = parsed.netloc.lower()
+            path = parsed.path.rstrip('/')
+            
+            # Remove default ports
+            if netloc.endswith(':80') and scheme == 'http':
+                netloc = netloc[:-3]
+            elif netloc.endswith(':443') and scheme == 'https':
+                netloc = netloc[:-4]
+            
+            # Reconstruct URL
+            normalized = urlunparse((
+                scheme,
+                netloc,
+                path,
+                parsed.params,
+                parsed.query,
+                ''  # Remove fragment
+            ))
+            
+            return normalized
+            
+        except Exception as e:
+            logger.warning(f"Could not normalize URL {url}: {e}")
+            return url
+    
+    def deduplicate_urls(self, urls: List[str]) -> List[str]:
+        """Remove duplicate URLs based on normalization"""
+        seen = set()
+        unique = []
+        
+        for url in urls:
+            normalized = self.normalize_url(url)
+            if normalized not in seen:
+                seen.add(normalized)
+                unique.append(url)
+        
+        if len(urls) != len(unique):
+            logger.info(f"Deduplicated {len(urls)} URLs to {len(unique)} unique URLs")
+        
+        return unique
+    
+    def get_host_from_url(self, url: str) -> str:
+        """Extract host from URL"""
+        try:
+            return urlparse(url).netloc
+        except:
+            return 'unknown'
+    
+    def create_url_batches(self, max_per_host: int = 5) -> List[List[str]]:
+        """Create URL batches for parallel scraping with host limits"""
+        urls_by_host = self.get_urls_grouped_by_host()
+        batches = []
+        
+        # First pass: Add up to max_per_host from each host
+        current_batch = []
+        host_counts = {}
+        
+        for host, urls in urls_by_host.items():
+            for url in urls[:max_per_host]:
+                current_batch.append(url)
+                host_counts[host] = host_counts.get(host, 0) + 1
+                
+                # Create new batch when we have enough diversity
+                if len(current_batch) >= 10:  # Batch size
+                    batches.append(current_batch)
+                    current_batch = []
+        
+        # Add remaining URLs
+        if current_batch:
+            batches.append(current_batch)
+        
+        # Second pass: Add remaining URLs from hosts with many URLs
+        for host, urls in urls_by_host.items():
+            if len(urls) > max_per_host:
+                remaining = urls[max_per_host:]
+                for i in range(0, len(remaining), max_per_host):
+                    batch = remaining[i:i + max_per_host]
+                    batches.append(batch)
+        
+        logger.info(f"Created {len(batches)} URL batches for scraping")
+        return batches
+    
+    def mark_url_scraped(self, url: str, status_code: int,
+                        content_checksum: Optional[str] = None,
+                        error_message: Optional[str] = None):
+        """Mark a URL as scraped"""
+        self.job_db.mark_url_scraped(url, status_code, content_checksum, error_message)
+    
+    def get_stats(self) -> Dict[str, int]:
+        """Get URL statistics"""
+        return self.job_db.get_stats()
 
 ======= tools/s1f/__init__.py ======
 """

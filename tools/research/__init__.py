@@ -8,10 +8,10 @@ This module provides functionality to research any topic by:
 - Creating organized bundles from research findings
 """
 
-from .cli import ResearchCommand, main
+from .cli import EnhancedResearchCommand, main
 from .llm_interface import LLMProvider, ClaudeProvider, GeminiProvider, CLIProvider, get_provider
 from .config import ResearchConfig, LLMConfig, ScrapingConfig, OutputConfig, AnalysisConfig
-from .orchestrator import ResearchOrchestrator
+from .orchestrator import EnhancedResearchOrchestrator
 from .models import ResearchResult, ScrapedContent, AnalyzedContent, ResearchSource
 from .scraper import SmartScraper
 from .content_filter import ContentFilter
@@ -19,6 +19,10 @@ from .analyzer import ContentAnalyzer
 from .bundle_creator import SmartBundleCreator
 from .readme_generator import ReadmeGenerator
 from .analysis_templates import TEMPLATES, get_template
+from .job_manager import JobManager
+from .research_db import ResearchDatabase, JobDatabase, ResearchJob
+from .url_manager import URLManager
+from .smart_scraper import EnhancedSmartScraper
 
 try:
     from .._version import __version__, __version_info__
@@ -32,7 +36,7 @@ __all__ = [
     "__version_info__",
     
     # CLI
-    "ResearchCommand",
+    "EnhancedResearchCommand",
     "main",
     
     # LLM
@@ -50,12 +54,20 @@ __all__ = [
     "AnalysisConfig",
     
     # Core
-    "ResearchOrchestrator",
+    "EnhancedResearchOrchestrator",
     "SmartScraper",
+    "EnhancedSmartScraper",
     "ContentFilter",
     "ContentAnalyzer",
     "SmartBundleCreator",
     "ReadmeGenerator",
+    
+    # Job Management
+    "JobManager",
+    "ResearchDatabase",
+    "JobDatabase",
+    "ResearchJob",
+    "URLManager",
     
     # Models
     "ResearchResult",

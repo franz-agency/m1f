@@ -1,25 +1,26 @@
 """
-CLI interface for m1f-research
+Enhanced CLI interface for m1f-research with job management
 """
 import argparse
 import sys
 from pathlib import Path
 from typing import Optional, List
 import asyncio
+import logging
 
 from .config import ResearchConfig
-from .orchestrator import ResearchOrchestrator
+from .orchestrator import EnhancedResearchOrchestrator
 
 # Import version directly to avoid circular imports
 try:
     from .._version import __version__
 except ImportError:
     # Fallback for when running as a script
-    __version__ = "3.7.2"
+    __version__ = "3.8.0"
 
 
-class ResearchCommand:
-    """Main command class for m1f-research"""
+class EnhancedResearchCommand:
+    """Enhanced command class for m1f-research with job support"""
     
     def __init__(self):
         self.parser = self._create_parser()
@@ -28,52 +29,88 @@ class ResearchCommand:
         """Create the argument parser for m1f-research"""
         parser = argparse.ArgumentParser(
             prog='m1f-research',
-            description='AI-powered research tool that finds, scrapes, and bundles information on any topic',
+            description='AI-powered research tool with job management and persistence',
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="""
 Examples:
+  # Start new research
   m1f-research "microservices best practices"
-  m1f-research "react state management" --urls 30 --scrape 15
-  m1f-research "machine learning" --output ./research --provider gemini
-  m1f-research "python async programming" --config research.yml
-  m1f-research --interactive
-            """
+  
+  # Research with manual URL list
+  m1f-research "react hooks" --urls-file my-links.txt
+  
+  # Resume existing job with more URLs
+  m1f-research --resume abc123 --urls-file more-links.txt
+  
+  # List all jobs
+  m1f-research --list-jobs
+  
+  # Check job status
+  m1f-research --status abc123
+"""
         )
         
-        # Main research query (optional for interactive mode)
+        # Main arguments
         parser.add_argument(
             'query',
             nargs='?',
-            help='Research topic or query'
+            help='Research query (required for new jobs)'
         )
         
-        # URL and scraping options
-        parser.add_argument(
-            '--urls', '-u',
+        # Job management
+        job_group = parser.add_argument_group('job management')
+        job_group.add_argument(
+            '--resume',
+            metavar='JOB_ID',
+            help='Resume an existing research job'
+        )
+        
+        job_group.add_argument(
+            '--list-jobs',
+            action='store_true',
+            help='List all research jobs'
+        )
+        
+        job_group.add_argument(
+            '--status',
+            metavar='JOB_ID',
+            help='Show status of a specific job'
+        )
+        
+        job_group.add_argument(
+            '--urls-file',
+            type=Path,
+            help='File containing URLs to add (one per line)'
+        )
+        
+        # URL options
+        url_group = parser.add_argument_group('url options')
+        url_group.add_argument(
+            '--urls',
             type=int,
             default=20,
-            help='Number of URLs to find (default: 20)'
+            help='Number of URLs to search for (default: 20)'
         )
         
-        parser.add_argument(
-            '--scrape', '-s',
+        url_group.add_argument(
+            '--scrape',
             type=int,
             default=10,
-            help='Number of URLs to scrape (default: 10)'
+            help='Maximum URLs to scrape (default: 10)'
         )
         
         # Output options
-        parser.add_argument(
+        output_group = parser.add_argument_group('output options')
+        output_group.add_argument(
             '--output', '-o',
             type=Path,
             default=Path('./research-data'),
-            help='Output directory for research bundles (default: ./research-data)'
+            help='Output directory (default: ./research-data)'
         )
         
-        parser.add_argument(
+        output_group.add_argument(
             '--name', '-n',
-            type=str,
-            help='Custom name for the research bundle (default: derived from query)'
+            help='Custom name for the research bundle'
         )
         
         # LLM provider options
@@ -86,7 +123,6 @@ Examples:
         
         parser.add_argument(
             '--model', '-m',
-            type=str,
             help='Specific model to use (provider-dependent)'
         )
         
@@ -153,69 +189,183 @@ Examples:
         
         return parser
     
-    def parse_args(self, args: Optional[List[str]] = None) -> argparse.Namespace:
-        """Parse command line arguments"""
-        return self.parser.parse_args(args)
-    
-    async def execute(self, args: argparse.Namespace) -> int:
-        """Execute the research command"""
-        # Validate arguments
-        if not args.query and not args.interactive:
-            self.parser.error("Query is required unless using --interactive mode")
+    async def run(self, args=None):
+        """Run the research command"""
+        args = self.parser.parse_args(args)
         
-        # Create configuration from arguments
-        config = ResearchConfig.from_args(args)
+        # Setup logging
+        log_level = logging.WARNING
+        if args.verbose == 1:
+            log_level = logging.INFO
+        elif args.verbose >= 2:
+            log_level = logging.DEBUG
+            
+        logging.basicConfig(
+            level=log_level,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
         
-        # Create and run orchestrator
-        orchestrator = ResearchOrchestrator(config)
+        # Handle job listing
+        if args.list_jobs:
+            return await self._list_jobs(args)
+        
+        # Handle job status
+        if args.status:
+            return await self._show_status(args)
+        
+        # Validate arguments for research
+        if not args.query and not args.resume:
+            self.parser.error("Either query or --resume is required")
+        
+        if args.resume and args.query:
+            self.parser.error("Cannot specify both query and --resume")
+        
+        # Create config
+        config = self._create_config(args)
+        
+        # Run research
+        orchestrator = EnhancedResearchOrchestrator(config)
         
         try:
-            if args.interactive:
-                # Run in interactive mode
-                await orchestrator.run_interactive()
-            else:
-                # Run in batch mode
-                await orchestrator.run(args.query)
+            # Determine query and job_id
+            query = args.query
+            job_id = args.resume
+            
+            # If resuming, get query from job
+            if job_id:
+                from .job_manager import JobManager
+                job_manager = JobManager(config.output.directory)
+                job = job_manager.get_job(job_id)
+                if not job:
+                    print(f"Error: Job {job_id} not found")
+                    return 1
+                query = job.query
+            
+            result = await orchestrator.research(
+                query=query,
+                job_id=job_id,
+                urls_file=args.urls_file
+            )
+            
+            # Print results
+            print(f"\n✅ Research completed!")
+            print(f"📋 Job ID: {result.job_id}")
+            print(f"📁 Output: {result.output_dir}")
+            print(f"🔗 URLs found: {result.urls_found}")
+            print(f"📄 Pages scraped: {len(result.scraped_content)}")
+            print(f"📊 Pages analyzed: {len(result.analyzed_content)}")
+            
+            if result.bundle_created:
+                bundle_path = result.output_dir / "📚_RESEARCH_BUNDLE.md"
+                print(f"\n📚 Research bundle: {bundle_path}")
+                
+                # Check for symlink
+                latest_link = config.output.directory / "latest_research.md"
+                if latest_link.exists():
+                    print(f"🔗 Quick access: {latest_link}")
             
             return 0
             
         except KeyboardInterrupt:
-            print("\n\nResearch interrupted by user")
+            print("\n⚠️  Research cancelled by user")
             return 130
         except Exception as e:
-            if args.verbose > 0:
+            print(f"\n❌ Error: {e}")
+            if args.verbose:
                 import traceback
                 traceback.print_exc()
-            else:
-                print(f"Error: {e}")
             return 1
     
-    def run(self, args: Optional[List[str]] = None) -> int:
-        """Main entry point for the CLI"""
-        parsed_args = self.parse_args(args)
+    async def _list_jobs(self, args):
+        """List all research jobs"""
+        from .job_manager import JobManager
+        job_manager = JobManager(args.output)
         
-        # Set up logging based on verbosity
-        import logging
-        if parsed_args.verbose == 0:
-            level = logging.WARNING
-        elif parsed_args.verbose == 1:
-            level = logging.INFO
-        else:
-            level = logging.DEBUG
+        jobs = job_manager.list_jobs()
+        
+        if not jobs:
+            print("No research jobs found")
+            return 0
+        
+        print(f"\n📋 Research Jobs ({len(jobs)} total)\n")
+        print(f"{'ID':<10} {'Status':<10} {'Query':<40} {'Created':<20} {'Stats'}")
+        print("-" * 100)
+        
+        for job in jobs:
+            stats = job['stats']
+            stats_str = f"{stats['scraped_urls']}/{stats['total_urls']} scraped"
+            if stats['analyzed_urls']:
+                stats_str += f", {stats['analyzed_urls']} analyzed"
             
-        logging.basicConfig(
-            level=level,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+            print(f"{job['job_id']:<10} {job['status']:<10} "
+                  f"{job['query'][:40]:<40} {job['created_at'][:19]:<20} {stats_str}")
         
-        # Run the async execute method
-        return asyncio.run(self.execute(parsed_args))
+        return 0
+    
+    async def _show_status(self, args):
+        """Show status of a specific job"""
+        from .job_manager import JobManager
+        job_manager = JobManager(args.output)
+        
+        info = job_manager.get_job_info(job_manager.get_job(args.status))
+        
+        if 'error' in info:
+            print(f"Error: {info['error']}")
+            return 1
+        
+        print(f"\n📋 Job Status: {info['job_id']}\n")
+        print(f"Query: {info['query']}")
+        print(f"Status: {info['status']}")
+        print(f"Created: {info['created_at']}")
+        print(f"Updated: {info['updated_at']}")
+        print(f"Output: {info['output_dir']}")
+        print(f"\nStatistics:")
+        print(f"  Total URLs: {info['stats']['total_urls']}")
+        print(f"  Scraped: {info['stats']['scraped_urls']}")
+        print(f"  Filtered: {info['stats']['filtered_urls']}")
+        print(f"  Analyzed: {info['stats']['analyzed_urls']}")
+        
+        if info['bundle_exists']:
+            print(f"\n✅ Research bundle available")
+        
+        return 0
+    
+    def _create_config(self, args) -> ResearchConfig:
+        """Create configuration from arguments"""
+        # Load base config from file if provided
+        if args.config and args.config.exists():
+            config = ResearchConfig.from_yaml(args.config)
+        else:
+            config = ResearchConfig()
+        
+        # Override with command line arguments
+        config.llm.provider = args.provider
+        if args.model:
+            config.llm.model = args.model
+            
+        config.scraping.search_limit = args.urls
+        config.scraping.scrape_limit = args.scrape
+        config.scraping.max_concurrent = args.concurrent
+        
+        config.output.directory = args.output
+        if args.name:
+            config.output.name = args.name
+            
+        config.analysis.template = args.template
+        
+        config.interactive = args.interactive
+        config.no_filter = args.no_filter
+        config.no_analysis = args.no_analysis
+        config.dry_run = args.dry_run
+        config.verbose = args.verbose
+        
+        return config
 
 
 def main():
-    """Console script entry point"""
-    command = ResearchCommand()
-    sys.exit(command.run())
+    """Main entry point"""
+    command = EnhancedResearchCommand()
+    sys.exit(asyncio.run(command.run()))
 
 
 if __name__ == '__main__':
