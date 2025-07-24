@@ -1023,41 +1023,14 @@ from typing import Optional, NoReturn
 
 from . import __version__
 
-# Try to import colorama for colored help
+# Use unified colorama module
 try:
-    from colorama import Fore, Style, init
-
-    init(autoreset=True)
-    COLORAMA_AVAILABLE = True
+    from ..shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
 except ImportError:
     COLORAMA_AVAILABLE = False
-
-
-class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
-    """Custom help formatter with colors if available."""
-
-    def _format_action_invocation(self, action: argparse.Action) -> str:
-        """Format action with colors."""
-        parts = super()._format_action_invocation(action)
-
-        if COLORAMA_AVAILABLE:
-            # Color the option names
-            parts = parts.replace("-", f"{Fore.CYAN}-")
-            parts = f"{parts}{Style.RESET_ALL}"
-
-        return parts
-
-    def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
-        """Format usage line with colors."""
-        result = super()._format_usage(usage, actions, groups, prefix)
-
-        if COLORAMA_AVAILABLE and result:
-            # Highlight the program name
-            prog_name = self._prog
-            colored_prog = f"{Fore.GREEN}{prog_name}{Style.RESET_ALL}"
-            result = result.replace(prog_name, colored_prog, 1)
-
-        return result
+    # Fallback formatter
+    class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        pass
 
 
 class CustomArgumentParser(argparse.ArgumentParser):
@@ -4198,34 +4171,9 @@ class LoggerManager:
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(level)
 
-        # Try to use colorama for colored output
+        # Use unified colorama module
         try:
-            from colorama import Fore, Style, init
-
-            init(autoreset=True)
-
-            class ColoredFormatter(logging.Formatter):
-                """Custom formatter with colors."""
-
-                COLORS = {
-                    "DEBUG": Fore.CYAN,
-                    "INFO": Fore.GREEN,
-                    "WARNING": Fore.YELLOW,
-                    "ERROR": Fore.RED,
-                    "CRITICAL": Fore.RED + Style.BRIGHT,
-                }
-
-                def format(self, record: logging.LogRecord) -> str:
-                    # Save original levelname to avoid affecting other handlers
-                    original_levelname = record.levelname
-                    color = self.COLORS.get(record.levelname, "")
-                    reset = Style.RESET_ALL if color else ""
-                    record.levelname = f"{color}{record.levelname}{reset}"
-                    result = super().format(record)
-                    # Restore original levelname for other handlers
-                    record.levelname = original_levelname
-                    return result
-
+            from ..shared.colors import ColoredFormatter
             formatter = ColoredFormatter("%(levelname)-8s: %(message)s")
         except ImportError:
             # Fallback to simple formatter

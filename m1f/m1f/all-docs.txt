@@ -502,6 +502,129 @@ m1f-update
 
 - Backward compatibility is not needed in this stage
 
+======= colorama_audit.md ======
+# Colorama Usage Audit for m1f Codebase
+
+## Executive Summary
+
+The m1f codebase shows inconsistent console output approaches across tools:
+- **m1f** and **s1f** use colorama correctly with proper initialization and fallback handling
+- **research** tool uses colorama but with a different pattern
+- **html2md_tool** and **scrape_tool** use Rich library instead of colorama
+- **m1f_claude** doesn't use any colored output
+
+## Detailed Findings by Tool
+
+### 1. m1f (Main Tool) ✅
+**Status:** Uses colorama correctly
+**Files:**
+- `tools/m1f/cli.py`: Imports colorama with try/except, initializes with `autoreset=True`
+- `tools/m1f/logging.py`: Similar pattern with proper fallback handling
+**Pattern:**
+```python
+try:
+    from colorama import Fore, Style, init
+    init(autoreset=True)
+    COLORAMA_AVAILABLE = True
+except ImportError:
+    COLORAMA_AVAILABLE = False
+```
+
+### 2. s1f (Split Tool) ✅
+**Status:** Uses colorama correctly
+**Files:**
+- `tools/s1f/logging.py`: Proper import with fallback, uses LogLevel dataclass
+**Pattern:**
+```python
+try:
+    from colorama import init, Fore, Style
+    COLORAMA_AVAILABLE = True
+    init(autoreset=True)
+except ImportError:
+    COLORAMA_AVAILABLE = False
+```
+
+### 3. html2md_tool ❌
+**Status:** Uses Rich library, no colorama
+**Files:**
+- `tools/html2md_tool/cli.py`: Uses `from rich.console import Console`
+- Multiple other files use Rich console
+**Issue:** Inconsistent with other tools, introduces additional dependency
+
+### 4. scrape_tool ❌
+**Status:** Uses Rich library, no colorama
+**Files:**
+- `tools/scrape_tool/cli.py`: Uses Rich console
+**Issue:** Same as html2md_tool
+
+### 5. research Tool ⚠️
+**Status:** Uses colorama but with different pattern
+**Files:**
+- `tools/research/output.py`: Has custom Color and Fmt classes
+**Pattern:**
+```python
+try:
+    from colorama import Fore, Back, Style, init
+    init(autoreset=True)
+    COLORAMA_AVAILABLE = True
+except ImportError:
+    COLORAMA_AVAILABLE = False
+```
+**Issue:** Creates wrapper classes instead of using colorama directly
+
+### 6. m1f_claude ❌
+**Status:** No colored output
+**Files:**
+- `tools/m1f_claude.py`: No colorama or Rich usage
+- `tools/m1f_claude_runner.py`: No colorama or Rich usage
+**Issue:** No colored output support
+
+### 7. m1f_help ❓
+**Status:** Tool not found in expected location
+**Note:** May be integrated into main m1f tool
+
+## Inconsistencies Identified
+
+1. **Multiple Libraries:** Some tools use colorama, others use Rich
+2. **Different Patterns:** Even among colorama users, implementation differs
+3. **No Standard Approach:** Each tool implements its own color handling
+4. **Missing Color Support:** Some tools have no colored output
+
+## Best Pattern to Standardize On
+
+Based on the analysis, the **m1f/logging.py** pattern is the most robust:
+
+```python
+# Standard colorama initialization pattern
+try:
+    from colorama import Fore, Style, init
+    init(autoreset=True)
+    COLORAMA_AVAILABLE = True
+except ImportError:
+    COLORAMA_AVAILABLE = False
+
+# Usage with fallback
+if COLORAMA_AVAILABLE:
+    message = f"{Fore.GREEN}Success{Style.RESET_ALL}"
+else:
+    message = "Success"
+```
+
+## Recommendations
+
+1. **Standardize on colorama** - It's lightweight and already used by core tools
+2. **Create shared utility** - Move color handling to `tools/shared/utils/colors.py`
+3. **Remove Rich dependency** - Convert html2md_tool and scrape_tool to use colorama
+4. **Add color support** - Add colorama to m1f_claude for consistency
+5. **Use consistent patterns** - All tools should use the same initialization and fallback approach
+
+## Next Steps
+
+1. Create a shared color utility module
+2. Update each tool to use the shared module
+3. Remove Rich dependency from html2md_tool and scrape_tool
+4. Add tests for color output with and without colorama
+
 ======= requirements.txt ======
 # Core dependencies
 aiofiles==24.1.0
@@ -37303,6 +37426,8 @@ capabilities.
 - [64_api_reference.md](64_api_reference.md) - Developer documentation
 - [65_architecture.md](65_architecture.md) - Technical architecture
 - [66_examples.md](66_examples.md) - Real-world usage examples
+- [67_cli_improvements.md](67_cli_improvements.md) - Enhanced CLI features and
+  UX
 
 ## Quick Start
 
@@ -39092,6 +39217,258 @@ cat analysis.txt | llm "Summarize the key findings"
 # Organize research by date
 m1f-research "topic" --output "./research/$(date +%Y)/$(date +%m)/$(date +%d)/"
 ```
+
+======= docs/06_research/67_cli_improvements.md ======
+# 67. CLI Improvements for m1f-research
+
+## Overview
+
+The m1f-research CLI has been enhanced with improved user experience features
+including colored output, JSON format support, extended help system, and better
+progress tracking.
+
+## Key Improvements
+
+### 1. Colored Output
+
+- **Colorama integration** for cross-platform color support
+- **Graceful fallback** when colorama is not available
+- **Status indicators** with color coding:
+  - ✅ Green for success/completed
+  - ⚠️ Yellow for warnings/active
+  - ❌ Red for errors/failed
+  - ℹ️ Cyan for information
+- **Formatted headers** with bold blue text
+- **Progress bars** with real-time updates
+- **Consistent with other m1f tools** using the same colorama pattern
+
+### 2. Output Formats
+
+```bash
+# Default text output with colors
+m1f-research --list-jobs
+
+# JSON output for automation
+m1f-research --list-jobs --format json
+
+# Quiet mode (suppress non-error output)
+m1f-research "query" --quiet
+
+# Verbose mode for debugging
+m1f-research "query" --verbose  # -v for info, -vv for debug
+```
+
+### 3. Extended Help System
+
+```bash
+# Standard help
+m1f-research --help
+
+# Extended examples
+m1f-research --help-examples
+
+# Filtering guide
+m1f-research --help-filters
+
+# Provider setup guide
+m1f-research --help-providers
+```
+
+### 4. Enhanced Job Listing
+
+```bash
+# Pagination
+m1f-research --list-jobs --limit 10 --offset 0
+
+# Date filtering
+m1f-research --list-jobs --date 2025-07-24  # Specific day
+m1f-research --list-jobs --date 2025-07     # Specific month
+m1f-research --list-jobs --date 2025        # Specific year
+
+# Search filtering
+m1f-research --list-jobs --search "python"
+
+# Status filtering
+m1f-research --list-jobs --status-filter completed
+
+# Combined filters
+m1f-research --list-jobs \
+  --search "react" \
+  --date 2025-07 \
+  --status-filter completed \
+  --limit 20
+```
+
+### 5. Progress Tracking
+
+- **Real-time progress bars** for long operations
+- **ETA calculation** for time estimates
+- **Phase indicators**:
+  - Searching for URLs
+  - Scraping URLs
+  - Analyzing content
+- **Callbacks** integrated throughout the pipeline
+
+### 6. Interactive Mode
+
+```bash
+# Start interactive mode
+m1f-research --interactive
+
+# Available commands:
+research <query>     # Start new research
+list                # List all jobs
+status <job_id>     # Show job status
+resume <job_id>     # Resume a job
+help               # Show help
+exit/quit          # Exit
+```
+
+### 7. Better Error Handling
+
+- **Helpful error messages** with suggestions
+- **Input validation** with clear feedback
+- **Graceful handling** of interrupts (Ctrl+C)
+
+## Implementation Details
+
+### Output Formatter (`output.py`)
+
+```python
+class OutputFormatter:
+    """Handles formatted output for m1f-research"""
+
+    def __init__(self, format: str = 'text', verbose: int = 0, quiet: bool = False):
+        self.format = format
+        self.verbose = verbose
+        self.quiet = quiet
+```
+
+Key methods:
+
+- `success()`, `error()`, `warning()`, `info()` - Colored messages
+- `table()` - Formatted tables with column alignment
+- `progress()` - Progress bars with ETA
+- `job_status()` - Formatted job information
+- `confirm()` - User confirmation prompts
+
+### Enhanced CLI (`cli.py`)
+
+```python
+class EnhancedResearchCommand:
+    """Enhanced CLI with better user experience"""
+```
+
+Features:
+
+- Argument validation
+- Extended help generation
+- Progress callback integration
+- JSON/text output switching
+- Interactive mode support
+
+### Progress Tracking
+
+Progress callbacks integrated at multiple levels:
+
+- URL searching phase
+- Web scraping phase
+- Content analysis phase
+- Bundle creation phase
+
+## Usage Examples
+
+### 1. Research with Progress
+
+```bash
+m1f-research "python async programming" --verbose
+# Shows progress bars for each phase
+```
+
+### 2. Job Management
+
+```bash
+# List recent jobs with colors
+m1f-research --list-jobs --limit 10
+
+# Watch job progress
+m1f-research --watch abc123
+
+# Export job data
+m1f-research --export abc123 > job-data.json
+```
+
+### 3. Automation
+
+```bash
+# Get completed jobs as JSON
+jobs=$(m1f-research --list-jobs --status-filter completed --format json)
+
+# Process each job
+echo "$jobs" | jq -r '.[].job_id' | while read id; do
+    m1f-research --export "$id" > "exports/$id.json"
+done
+```
+
+### 4. Batch Operations
+
+```bash
+# Clean all raw data with confirmation
+m1f-research --clean-all-raw
+
+# Skip confirmation
+m1f-research --clean-all-raw --yes
+```
+
+## Benefits
+
+1. **Better User Experience**
+
+   - Clear visual feedback
+   - Progress tracking
+   - Helpful error messages
+
+2. **Automation Support**
+
+   - JSON output format
+   - Machine-readable responses
+   - Scriptable interface
+
+3. **Debugging Support**
+
+   - Verbose logging levels
+   - Detailed error traces
+   - Dry-run mode
+
+4. **Accessibility**
+   - `--no-color` option for terminals without color support
+   - Clear text alternatives for all visual elements
+   - Consistent formatting
+
+## Future Enhancements
+
+1. **Terminal UI (TUI)**
+
+   - Full-screen interface with panels
+   - Real-time job monitoring dashboard
+   - Interactive job management
+
+2. **Additional Output Formats**
+
+   - CSV export for job lists
+   - YAML configuration export
+   - HTML reports
+
+3. **Advanced Filtering**
+
+   - Regex support in search
+   - Multiple status filters
+   - Custom query builders
+
+4. **Performance Metrics**
+   - Timing information per phase
+   - Resource usage tracking
+   - Success rate statistics
 
 ======= docs/06_research/index.md ======
 # Research Tool Documentation

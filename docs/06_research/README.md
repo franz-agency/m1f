@@ -11,6 +11,8 @@ capabilities.
 - [64_api_reference.md](64_api_reference.md) - Developer documentation
 - [65_architecture.md](65_architecture.md) - Technical architecture
 - [66_examples.md](66_examples.md) - Real-world usage examples
+- [67_cli_improvements.md](67_cli_improvements.md) - Enhanced CLI features and
+  UX
 
 ## Quick Start
 
