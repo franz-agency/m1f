@@ -4271,7 +4271,7 @@ class OutputFormatter:
         # Track if we're in JSON mode
         self._json_buffer = [] if format == "json" else None
 
-    def print(self, message: str = "", level: str = "info", **kwargs):
+    def print(self, message: str = "", level: str = "info", end: str = "\n", **kwargs):
         """Print a message with appropriate formatting"""
         if self.quiet and level != "error":
             return
@@ -4287,7 +4287,7 @@ class OutputFormatter:
                 }
             )
         else:
-            print(message)
+            print(message, end=end)
 
     def success(self, message: str, **kwargs):
         """Print success message"""
@@ -4436,16 +4436,17 @@ class OutputFormatter:
 
         # Basic info
         self.print(f"{Colors.BOLD}Query:{Colors.RESET} {job['query']}")
-        self.print(f"{Colors.BOLD}Status:{Colors.RESET} ", end="")
 
         # Color-code status
         status = job["status"]
         if status == "completed":
-            self.print(f"{Colors.GREEN}{status}{Colors.RESET}")
+            status_colored = f"{Colors.GREEN}{status}{Colors.RESET}"
         elif status == "active":
-            self.print(f"{Colors.YELLOW}{status}{Colors.RESET}")
+            status_colored = f"{Colors.YELLOW}{status}{Colors.RESET}"
         else:
-            self.print(f"{Colors.RED}{status}{Colors.RESET}")
+            status_colored = f"{Colors.RED}{status}{Colors.RESET}"
+        
+        self.print(f"{Colors.BOLD}Status:{Colors.RESET} {status_colored}")
 
         self.print(f"{Colors.BOLD}Created:{Colors.RESET} {job['created_at']}")
         self.print(f"{Colors.BOLD}Updated:{Colors.RESET} {job['updated_at']}")
