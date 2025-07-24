@@ -27,6 +27,14 @@ from contextlib import asynccontextmanager
 
 from .config import Config, LoggingConfig
 
+# Use unified colorama module
+try:
+    from ..shared.colors import warning
+except ImportError:
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    from tools.shared.colors import warning
+
 
 @dataclass
 class LoggerManager:
@@ -117,7 +125,7 @@ class LoggerManager:
 
         except Exception as e:
             # Log to console if file handler creation fails
-            print(f"Warning: Could not create log file at {log_file_path}: {e}")
+            warning(f"Could not create log file at {log_file_path}: {e}")
             return None
 
     def get_logger(self, name: str) -> logging.Logger:

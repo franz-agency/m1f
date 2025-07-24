@@ -17,10 +17,11 @@ from .output import OutputFormatter, ProgressTracker
 
 # Use unified colorama module
 try:
-    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE
+    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE, info
 except ImportError:
     # Fallback to local implementation
     from .output import Colors, COLORAMA_AVAILABLE
+    def info(msg): print(msg)
     
     class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         """Fallback help formatter with colors if available."""
@@ -482,7 +483,7 @@ done
 ## Interactive Research
 m1f-research --interactive
 """
-        print(examples)
+        info(examples)
 
     def _show_filters_guide(self):
         """Show filtering guide"""
@@ -557,7 +558,7 @@ Combine multiple filters:
     --status-filter completed \\
     --limit 10
 """
-        print(guide)
+        info(guide)
 
     def _show_providers_guide(self):
         """Show providers setup guide"""
@@ -609,7 +610,7 @@ research:
     model: claude-3-opus-20240229
 ```
 """
-        print(guide)
+        info(guide)
 
     async def _run_research(self, args):
         """Run research with progress tracking"""
@@ -964,7 +965,7 @@ research:
                     self.formatter.info("Type 'help' for available commands")
 
             except KeyboardInterrupt:
-                print()  # New line after ^C
+                info("")  # New line after ^C
                 continue
             except EOFError:
                 break
@@ -989,7 +990,7 @@ Examples:
   status abc123
   resume abc123
 """
-        print(help_text)
+        info(help_text)
 
     def _create_config(self, args) -> ResearchConfig:
         """Create configuration from arguments"""

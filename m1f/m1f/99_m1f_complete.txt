@@ -34929,7 +34929,7 @@ class M1FClaudeRunner:
         # Signal handler for graceful interruption
         def handle_interrupt(signum, frame):
             if self.process:
-                print("\n🛑 Interrupting Claude... Press Ctrl-C again to force quit.")
+                warning("\n🛑 Interrupting Claude... Press Ctrl-C again to force quit.")
                 self.process.terminate()
                 try:
                     self.process.wait(timeout=5)
@@ -34977,11 +34977,8 @@ class M1FClaudeRunner:
                     elapsed = current_time - start_time
 
                     if show_output:
-                        # Show progress with elapsed time
-                        if len(line) > 150:
-                            print(f"[{elapsed:5.1f}s] {line[:147]}...")
-                        else:
-                            print(f"[{elapsed:5.1f}s] {line}")
+                        # Show progress with elapsed time (no truncation, terminal will soft wrap)
+                        info(f"[{elapsed:5.1f}s] {line}")
 
                     if output_handler:
                         output_handler(line, elapsed)
@@ -34995,7 +34992,7 @@ class M1FClaudeRunner:
                     # Check absolute timeout
                     if elapsed > actual_timeout:
                         if show_output:
-                            print(f"\n⏰ Claude timed out after {actual_timeout}s")
+                            warning(f"\n⏰ Claude timed out after {actual_timeout}s")
                         self.process.kill()
                         return (
                             -1,
@@ -35046,17 +35043,17 @@ class M1FClaudeRunner:
 
             if show_output:
                 total_time = time.time() - start_time
-                print(f"\n✅ Claude completed in {total_time:.1f}s")
+                success(f"\n✅ Claude completed in {total_time:.1f}s")
 
             return self.process.returncode, stdout, stderr
 
         except KeyboardInterrupt:
             if show_output:
-                print("\n❌ Operation cancelled by user")
+                warning("\n❌ Operation cancelled by user")
             return -1, "\n".join(stdout_lines), "Cancelled by user"
         except Exception as e:
             if show_output:
-                print(f"\n❌ Error running Claude: {e}")
+                error(f"\n❌ Error running Claude: {e}")
             return -1, "\n".join(stdout_lines), str(e)
         finally:
             # Restore signal handler
@@ -50386,14 +50383,14 @@ def main():
             json.dump(config, f, indent=2)
         print(f"\nConfiguration saved to: {args.output}")
 
-    print(
+    info(
         "\nTo use this configuration, create a preprocessing config in your conversion script."
     )
-    print("Example usage in Python:")
-    print("```python")
-    print("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
-    print("config = PreprocessingConfig(**<loaded_json>)")
-    print("```")
+    info("Example usage in Python:")
+    info("```python")
+    info("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
+    info("config = PreprocessingConfig(**<loaded_json>)")
+    info("```")
 
 
 if __name__ == "__main__":
@@ -51463,11 +51460,8 @@ class ClaudeRunner:
                     if show_output:
                         current_time = time.time()
                         elapsed = current_time - start_time
-                        # Show Claude's actual output (truncate very long lines)
-                        if len(line) > 200:
-                            print(f"[{elapsed:.1f}s] {line[:197]}...")
-                        else:
-                            print(f"[{elapsed:.1f}s] {line}")
+                        # Show Claude's actual output (no truncation, terminal will soft wrap)
+                        info(f"[{elapsed:.1f}s] {line}")
                         last_output_time = current_time
 
                 # Check timeout
@@ -54938,7 +54932,8 @@ def main():
         return 0
 
     except Exception as e:
-        print(f"Error running m1f: {e}")
+        import sys
+        sys.stderr.write(f"Error running m1f: {e}\n")
         return 1
 
 
@@ -58717,6 +58712,14 @@ from contextlib import asynccontextmanager
 
 from .config import Config, LoggingConfig
 
+# Use unified colorama module
+try:
+    from ..shared.colors import warning
+except ImportError:
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    from tools.shared.colors import warning
+
 
 @dataclass
 class LoggerManager:
@@ -58807,7 +58810,7 @@ class LoggerManager:
 
         except Exception as e:
             # Log to console if file handler creation fails
-            print(f"Warning: Could not create log file at {log_file_path}: {e}")
+            warning(f"Could not create log file at {log_file_path}: {e}")
             return None
 
     def get_logger(self, name: str) -> logging.Logger:
@@ -63124,10 +63127,11 @@ from .output import OutputFormatter, ProgressTracker
 
 # Use unified colorama module
 try:
-    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE
+    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE, info
 except ImportError:
     # Fallback to local implementation
     from .output import Colors, COLORAMA_AVAILABLE
+    def info(msg): print(msg)
     
     class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         """Fallback help formatter with colors if available."""
@@ -63589,7 +63593,7 @@ done
 ## Interactive Research
 m1f-research --interactive
 """
-        print(examples)
+        info(examples)
 
     def _show_filters_guide(self):
         """Show filtering guide"""
@@ -63664,7 +63668,7 @@ Combine multiple filters:
     --status-filter completed \\
     --limit 10
 """
-        print(guide)
+        info(guide)
 
     def _show_providers_guide(self):
         """Show providers setup guide"""
@@ -63716,7 +63720,7 @@ research:
     model: claude-3-opus-20240229
 ```
 """
-        print(guide)
+        info(guide)
 
     async def _run_research(self, args):
         """Run research with progress tracking"""
@@ -64071,7 +64075,7 @@ research:
                     self.formatter.info("Type 'help' for available commands")
 
             except KeyboardInterrupt:
-                print()  # New line after ^C
+                info("")  # New line after ^C
                 continue
             except EOFError:
                 break
@@ -64096,7 +64100,7 @@ Examples:
   status abc123
   resume abc123
 """
-        print(help_text)
+        info(help_text)
 
     def _create_config(self, args) -> ResearchConfig:
         """Create configuration from arguments"""

@@ -198,11 +198,8 @@ class ClaudeRunner:
                     if show_output:
                         current_time = time.time()
                         elapsed = current_time - start_time
-                        # Show Claude's actual output (truncate very long lines)
-                        if len(line) > 200:
-                            print(f"[{elapsed:.1f}s] {line[:197]}...")
-                        else:
-                            print(f"[{elapsed:.1f}s] {line}")
+                        # Show Claude's actual output (no truncation, terminal will soft wrap)
+                        info(f"[{elapsed:.1f}s] {line}")
                         last_output_time = current_time
 
                 # Check timeout

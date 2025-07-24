@@ -121,7 +121,7 @@ class M1FClaudeRunner:
         # Signal handler for graceful interruption
         def handle_interrupt(signum, frame):
             if self.process:
-                print("\n🛑 Interrupting Claude... Press Ctrl-C again to force quit.")
+                warning("\n🛑 Interrupting Claude... Press Ctrl-C again to force quit.")
                 self.process.terminate()
                 try:
                     self.process.wait(timeout=5)
@@ -169,11 +169,8 @@ class M1FClaudeRunner:
                     elapsed = current_time - start_time
 
                     if show_output:
-                        # Show progress with elapsed time
-                        if len(line) > 150:
-                            print(f"[{elapsed:5.1f}s] {line[:147]}...")
-                        else:
-                            print(f"[{elapsed:5.1f}s] {line}")
+                        # Show progress with elapsed time (no truncation, terminal will soft wrap)
+                        info(f"[{elapsed:5.1f}s] {line}")
 
                     if output_handler:
                         output_handler(line, elapsed)
@@ -187,7 +184,7 @@ class M1FClaudeRunner:
                     # Check absolute timeout
                     if elapsed > actual_timeout:
                         if show_output:
-                            print(f"\n⏰ Claude timed out after {actual_timeout}s")
+                            warning(f"\n⏰ Claude timed out after {actual_timeout}s")
                         self.process.kill()
                         return (
                             -1,
@@ -238,17 +235,17 @@ class M1FClaudeRunner:
 
             if show_output:
                 total_time = time.time() - start_time
-                print(f"\n✅ Claude completed in {total_time:.1f}s")
+                success(f"\n✅ Claude completed in {total_time:.1f}s")
 
             return self.process.returncode, stdout, stderr
 
         except KeyboardInterrupt:
             if show_output:
-                print("\n❌ Operation cancelled by user")
+                warning("\n❌ Operation cancelled by user")
             return -1, "\n".join(stdout_lines), "Cancelled by user"
         except Exception as e:
             if show_output:
-                print(f"\n❌ Error running Claude: {e}")
+                error(f"\n❌ Error running Claude: {e}")
             return -1, "\n".join(stdout_lines), str(e)
         finally:
             # Restore signal handler

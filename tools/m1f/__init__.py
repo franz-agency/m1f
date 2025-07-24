@@ -158,7 +158,8 @@ def main():
         return 0
 
     except Exception as e:
-        print(f"Error running m1f: {e}")
+        import sys
+        sys.stderr.write(f"Error running m1f: {e}\n")
         return 1
 
 

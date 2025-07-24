@@ -254,14 +254,14 @@ def main():
             json.dump(config, f, indent=2)
         print(f"\nConfiguration saved to: {args.output}")
 
-    print(
+    info(
         "\nTo use this configuration, create a preprocessing config in your conversion script."
     )
-    print("Example usage in Python:")
-    print("```python")
-    print("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
-    print("config = PreprocessingConfig(**<loaded_json>)")
-    print("```")
+    info("Example usage in Python:")
+    info("```python")
+    info("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
+    info("config = PreprocessingConfig(**<loaded_json>)")
+    info("```")
 
 
 if __name__ == "__main__":
