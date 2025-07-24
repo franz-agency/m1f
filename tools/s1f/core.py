@@ -31,10 +31,13 @@ from .models import ExtractedFile, ExtractionResult
 
 # Use unified colorama module for direct prints
 try:
-    from ..shared.colors import info
+    from tools.shared.colors import info
 except ImportError:
-    # Fallback
-    def info(msg): print(msg)
+    try:
+        from ..shared.colors import info
+    except ImportError:
+        # Fallback
+        def info(msg): print(msg)
 from .parsers import CombinedFileParser
 from .writers import FileWriter
 from .utils import format_size, is_binary_content
