@@ -34,6 +34,14 @@ import asyncio
 import sys
 from pathlib import Path
 from typing import NoReturn
+import os
+
+# Use unified colorama module
+try:
+    from tools.shared.colors import warning
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from tools.shared.colors import warning
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
@@ -134,7 +142,7 @@ async def async_main() -> int:
             await logger_manager.cleanup()
 
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user.", file=sys.stderr)
+        warning("\nOperation cancelled by user.")
         return 130  # Standard exit code for Ctrl+C
 
     except M1FError as e:

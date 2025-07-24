@@ -28,6 +28,15 @@ Usage:
 
 import argparse
 import logging
+
+# Use unified colorama module
+try:
+    from .shared.colors import warning
+except ImportError:
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from tools.shared.colors import warning
 import os
 import subprocess
 import sys
@@ -311,7 +320,7 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user.")
+        warning("\nOperation cancelled by user.")
         sys.exit(130)  # Standard exit code for Ctrl+C
     except Exception as e:
         logger.critical(f"An unexpected error occurred: {e}", exc_info=True)

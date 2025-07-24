@@ -15,6 +15,15 @@
 import argparse
 import tiktoken
 import os
+import sys
+
+# Use unified colorama module
+try:
+    from .shared.colors import Colors, success, error, info
+except ImportError:
+    # Try direct import if running as script
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from tools.shared.colors import Colors, success, error, info
 
 
 def count_tokens_in_file(file_path: str, encoding_name: str = "cl100k_base") -> int:
@@ -83,13 +92,13 @@ def main():
 
     try:
         token_count = count_tokens_in_file(args.file_path, args.encoding)
-        print(
+        success(
             f"The file '{args.file_path}' contains approximately {token_count} tokens (using '{args.encoding}' encoding)."
         )
     except FileNotFoundError as e:
-        print(e)
+        error(str(e))
     except Exception as e:
-        print(f"An error occurred: {e}")
+        error(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":
