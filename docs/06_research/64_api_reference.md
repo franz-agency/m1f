@@ -50,6 +50,7 @@ m1f-research [OPTIONS] <query>
 
 ```python
 from tools.research import ResearchOrchestrator
+from tools.shared.colors import info, success
 
 # Create orchestrator
 orchestrator = ResearchOrchestrator()
@@ -62,9 +63,9 @@ results = await orchestrator.research(
 )
 
 # Access results
-print(f"Found {len(results.urls)} URLs")
-print(f"Scraped {len(results.content)} pages")
-print(f"Bundle saved to: {results.bundle_path}")
+info(f"Found {len(results.urls)} URLs")
+info(f"Scraped {len(results.content)} pages")
+success(f"Bundle saved to: {results.bundle_path}")
 ```
 
 ### Configuration
@@ -152,6 +153,7 @@ results = await scraper.scrape_urls(urls)
 
 ```python
 from tools.research import Analyzer
+from tools.shared.colors import info
 
 analyzer = Analyzer(llm_provider=claude)
 
@@ -162,8 +164,8 @@ analysis = await analyzer.analyze_content(
     template="technical"
 )
 
-print(f"Relevance: {analysis.relevance}/10")
-print(f"Key points: {analysis.key_points}")
+info(f"Relevance: {analysis.relevance}/10")
+info(f"Key points: {analysis.key_points}")
 ```
 
 ### Bundle Creation
@@ -226,27 +228,30 @@ class ContentAnalysis:
 
 ```python
 from tools.research import ResearchError, ScrapingError, AnalysisError
+from tools.shared.colors import error
 
 try:
     results = await orchestrator.research("query")
 except ResearchError as e:
-    print(f"Research failed: {e}")
+    error(f"Research failed: {e}")
 except ScrapingError as e:
-    print(f"Scraping failed: {e}")
+    error(f"Scraping failed: {e}")
 except AnalysisError as e:
-    print(f"Analysis failed: {e}")
+    error(f"Analysis failed: {e}")
 ```
 
 ## Events and Callbacks
 
 ```python
+from tools.shared.colors import info, error
+
 # Progress callback
 def on_progress(stage: str, current: int, total: int):
-    print(f"{stage}: {current}/{total}")
+    info(f"{stage}: {current}/{total}")
 
 # Error callback
 def on_error(error: Exception, context: Dict):
-    print(f"Error in {context['stage']}: {error}")
+    error(f"Error in {context['stage']}: {error}")
 
 # Use callbacks
 results = await orchestrator.research(

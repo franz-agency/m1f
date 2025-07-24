@@ -296,6 +296,7 @@ m1f -s md -o docs-bundle.txt
 ```python
 from bs4 import BeautifulSoup
 from pathlib import Path
+from tools.shared.colors import info
 
 # Load your extractor
 import sys
@@ -306,7 +307,7 @@ import custom_extractor
 html = Path('.scrapes/my-docs/html/sample.html').read_text()
 soup = BeautifulSoup(html, 'html.parser')
 result = custom_extractor.extract(soup)
-print(result.prettify())
+info(result.prettify())
 ```
 
 2. **Use verbose mode**:

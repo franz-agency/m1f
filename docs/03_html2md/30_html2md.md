@@ -562,6 +562,7 @@ Use html2md in your Python projects:
 from tools.html2md.api import Html2mdConverter
 from tools.html2md.config import Config
 from tools.html2md.extractors import BaseExtractor
+from tools.shared.colors import info, success
 from pathlib import Path
 
 # Create converter with configuration
@@ -587,11 +588,11 @@ converter = Html2mdConverter(config, extractor=MyExtractor())
 
 # Convert a single file
 output_path = converter.convert_file(Path("page.html"))
-print(f"Converted to: {output_path}")
+success(f"Converted to: {output_path}")
 
 # Convert entire directory
 results = converter.convert_directory()
-print(f"Converted {len(results)} files")
+info(f"Converted {len(results)} files")
 ```
 
 ## Requirements and Dependencies

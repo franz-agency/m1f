@@ -180,6 +180,7 @@ research:
 #!/usr/bin/env python3
 import asyncio
 from tools.research import ResearchOrchestrator
+from tools.shared.colors import info, success
 
 async def main():
     orchestrator = ResearchOrchestrator()
@@ -190,10 +191,10 @@ async def main():
         scrape_count=15
     )
 
-    print(f"Research complete!")
-    print(f"Bundle saved to: {results.bundle_path}")
-    print(f"Total sources: {len(results.content)}")
-    print(f"Average relevance: {sum(a.relevance for a in results.analyses) / len(results.analyses):.1f}")
+    success(f"Research complete!")
+    info(f"Bundle saved to: {results.bundle_path}")
+    info(f"Total sources: {len(results.content)}")
+    info(f"Average relevance: {sum(a.relevance for a in results.analyses) / len(results.analyses):.1f}")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -205,6 +206,7 @@ if __name__ == "__main__":
 #!/usr/bin/env python3
 import asyncio
 from tools.research import ResearchOrchestrator, ResearchTemplate
+from tools.shared.colors import info
 
 # Define custom template
 security_template = ResearchTemplate(
@@ -232,13 +234,13 @@ async def main():
     )
 
     # Print security-specific summary
-    print("\n=== Security Research Summary ===")
+    info("\n=== Security Research Summary ===")
     for analysis in sorted(results.analyses, key=lambda a: a.relevance, reverse=True)[:5]:
-        print(f"\n{analysis.url}")
-        print(f"Relevance: {analysis.relevance}/10")
-        print("Key Security Points:")
+        info(f"\n{analysis.url}")
+        info(f"Relevance: {analysis.relevance}/10")
+        info("Key Security Points:")
         for point in analysis.key_points[:3]:
-            print(f"  - {point}")
+            info(f"  - {point}")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -251,10 +253,11 @@ if __name__ == "__main__":
 import asyncio
 from pathlib import Path
 from tools.research import ResearchOrchestrator
+from tools.shared.colors import info
 
 async def research_topic(orchestrator, topic, output_dir):
     """Research a single topic"""
-    print(f"\nResearching: {topic}")
+    info(f"\nResearching: {topic}")
 
     results = await orchestrator.research(
         query=topic,
@@ -303,12 +306,13 @@ import json
 from datetime import datetime
 from tools.research import ResearchOrchestrator
 from tools.m1f import bundle_files
+from tools.shared.colors import info, success
 
 async def research_and_bundle(query):
     """Research a topic and create an m1f bundle"""
 
     # Phase 1: Research
-    print(f"Phase 1: Researching {query}")
+    info(f"Phase 1: Researching {query}")
     orchestrator = ResearchOrchestrator()
 
     research_results = await orchestrator.research(
@@ -319,7 +323,7 @@ async def research_and_bundle(query):
     )
 
     # Phase 2: Bundle with m1f
-    print(f"Phase 2: Creating m1f bundle")
+    info(f"Phase 2: Creating m1f bundle")
     bundle_path = bundle_files(
         paths=[str(research_results.bundle_path.parent)],
         output=f"./pipeline/{query.replace(' ', '_')}_complete.txt",
@@ -327,7 +331,7 @@ async def research_and_bundle(query):
     )
 
     # Phase 3: Create report
-    print(f"Phase 3: Generating report")
+    info(f"Phase 3: Generating report")
     report = {
         "query": query,
         "timestamp": datetime.now().isoformat(),
@@ -360,15 +364,15 @@ async def main():
     for query in queries:
         result = await research_and_bundle(query)
         results.append(result)
-        print(f"Completed: {query}\n")
+        success(f"Completed: {query}\n")
 
     # Summary
-    print("\n=== Pipeline Summary ===")
+    info("\n=== Pipeline Summary ===")
     for result in results:
-        print(f"\n{result['query']}:")
-        print(f"  - URLs scraped: {result['research']['urls_scraped']}")
-        print(f"  - Avg relevance: {result['research']['avg_relevance']:.1f}")
-        print(f"  - Bundle size: {result['bundle']['size'] / 1024:.1f} KB")
+        info(f"\n{result['query']}:")
+        info(f"  - URLs scraped: {result['research']['urls_scraped']}")
+        info(f"  - Avg relevance: {result['research']['avg_relevance']:.1f}")
+        info(f"  - Bundle size: {result['bundle']['size'] / 1024:.1f} KB")
 
 if __name__ == "__main__":
     asyncio.run(main())
