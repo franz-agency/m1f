@@ -908,6 +908,71 @@ https://realpython.com/async-io-python/
 https://docs.python.org/3/library/asyncio-task.html
 
 ======= test_output.log ======
+2025-07-24 21:08:40,762 - tools.research.scraper - ERROR   : Error scraping https://example.com/article1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:40,767 - tools.research.scraper - ERROR   : Error scraping https://example.com/article2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:40,779 - tools.research.scraper - ERROR   : Error scraping https://example.com/article3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:40,921 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
+2025-07-24 21:08:40,934 - tools.research.scraper - ERROR   : Error scraping https://example.com/article2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:40,935 - tools.research.scraper - ERROR   : Error scraping https://example.com/article1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:41,029 - tools.research.scraper - ERROR   : Error scraping https://example.com/article3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:41,045 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
+2025-07-24 21:08:41,045 - tools.research.scraper - INFO    : Scraped 0/4 URLs successfully
+2025-07-24 21:08:41,283 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:41,296 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:41,514 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:41,515 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:41,787 - tools.research.scraper - ERROR   : Error scraping https://example.com/page5: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:41,812 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:42,004 - tools.research.scraper - ERROR   : Error scraping https://example.com/page6: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:42,078 - tools.research.scraper - ERROR   : Error scraping https://example.com/page7: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:42,249 - tools.research.scraper - ERROR   : Error scraping https://example.com/page8: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:42,325 - tools.research.scraper - ERROR   : Error scraping https://example.com/page9: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:42,460 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:42,582 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:42,732 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:42,830 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:43,004 - tools.research.scraper - ERROR   : Error scraping https://example.com/page5: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:43,126 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:43,302 - tools.research.scraper - ERROR   : Error scraping https://example.com/page6: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:43,391 - tools.research.scraper - ERROR   : Error scraping https://example.com/page7: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:43,574 - tools.research.scraper - ERROR   : Error scraping https://example.com/page8: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:43,665 - tools.research.scraper - ERROR   : Error scraping https://example.com/page9: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:43,665 - tools.research.scraper - INFO    : Scraped 0/10 URLs successfully
+2025-07-24 21:08:43,840 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 1 failed
+2025-07-24 21:08:44,027 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 2 failed
+2025-07-24 21:08:44,157 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:44,157 - tools.research.scraper - INFO    : Scraped 0/1 URLs successfully
+2025-07-24 21:08:44,869 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:44,875 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:44,965 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:45,449 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:45,573 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:45,691 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:45,691 - tools.research.scraper - INFO    : Scraped 0/3 URLs successfully
+2025-07-24 21:08:45,832 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
+2025-07-24 21:08:45,843 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
+2025-07-24 21:08:45,844 - tools.research.scraper - ERROR   : Error scraping https://example.com/public/article: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:45,974 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
+2025-07-24 21:08:45,988 - tools.research.scraper - ERROR   : Error scraping https://example.com/public/article: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:46,009 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
+2025-07-24 21:08:46,009 - tools.research.scraper - INFO    : Scraped 0/3 URLs successfully
+2025-07-24 21:08:46,215 - tools.research.scraper - ERROR   : Error scraping https://example.com/test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:46,322 - tools.research.scraper - ERROR   : Error scraping https://example.com/test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:46,322 - tools.research.scraper - INFO    : Scraped 0/1 URLs successfully
+2025-07-24 21:08:46,506 - tools.research.scraper - ERROR   : Error scraping https://example.com/success: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:46,509 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
+2025-07-24 21:08:46,681 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
+2025-07-24 21:08:46,696 - tools.research.scraper - WARNING : Attempt 1 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
+2025-07-24 21:08:46,812 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
+2025-07-24 21:08:46,849 - tools.research.scraper - ERROR   : Error scraping https://example.com/success: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:08:46,975 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
+2025-07-24 21:08:47,834 - tools.research.scraper - WARNING : Attempt 2 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
+2025-07-24 21:08:56,461 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
+2025-07-24 21:09:06,598 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
+2025-07-24 21:09:06,598 - tools.research.scraper - INFO    : Scraped 0/5 URLs successfully
+2025-07-24 21:09:06,784 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:09:06,815 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:09:06,855 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
 
 ======= bin/m1f ======
 #!/usr/bin/env bash
@@ -32522,11 +32587,27 @@ from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 
 # Use unified colorama module
 try:
-    from .shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+    from .shared.colors import (
+        Colors,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+    )
 except ImportError:
     # Try direct import if running as script
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from tools.shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+    from tools.shared.colors import (
+        Colors,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+    )
 
 # Handle both module and direct script execution
 try:
@@ -33761,8 +33842,12 @@ I'll analyze your project and create an optimal m1f configuration that:
         """Run in interactive mode with proper session management."""
         header("🤖 m1f-claude Interactive Mode")
         info(f"{Colors.CYAN}{'=' * 50}{Colors.RESET}")
-        info(f"{Colors.BOLD}I'll enhance your prompts with m1f knowledge!{Colors.RESET}")
-        info(f"Commands: {Colors.GREEN}'help'{Colors.RESET}, {Colors.GREEN}'context'{Colors.RESET}, {Colors.GREEN}'examples'{Colors.RESET}, {Colors.GREEN}'quit'{Colors.RESET}, {Colors.GREEN}'/e'{Colors.RESET}\n")
+        info(
+            f"{Colors.BOLD}I'll enhance your prompts with m1f knowledge!{Colors.RESET}"
+        )
+        info(
+            f"Commands: {Colors.GREEN}'help'{Colors.RESET}, {Colors.GREEN}'context'{Colors.RESET}, {Colors.GREEN}'examples'{Colors.RESET}, {Colors.GREEN}'quit'{Colors.RESET}, {Colors.GREEN}'/e'{Colors.RESET}\n"
+        )
 
         if not self.has_m1f_docs:
             warning("Tip: Run 'm1f-link' first for better assistance!\n")
@@ -33830,9 +33915,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                             success("Session ended by user. Happy bundling!")
                             break
                 else:
-                    error(
-                        "Failed to send to Claude Code. Check your connection."
-                    )
+                    error("Failed to send to Claude Code. Check your connection.")
 
             except KeyboardInterrupt:
                 warning("Use 'quit' or '/e' to exit properly")
@@ -33863,9 +33946,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             # Interactive project description input
             if not self.project_description:
                 info("📋 Project Description")
-                info(
-                    "Describe your project briefly (what it does, main technologies):"
-                )
+                info("Describe your project briefly (what it does, main technologies):")
                 self.project_description = input("> ").strip()
                 if not self.project_description:
                     self.project_description = "Not provided"
@@ -34067,9 +34148,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             if result.returncode == 0:
                 success("Phase 1 complete: Topic-specific bundles added!")
-                info(
-                    "📝 Claude has analyzed your project and updated .m1f.config.yml"
-                )
+                info("📝 Claude has analyzed your project and updated .m1f.config.yml")
             else:
                 warning(f"Claude exited with code {result.returncode}")
                 info("Please check your .m1f.config.yml manually.")
@@ -34105,9 +34184,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             info(
                 "\n🤖 Phase 2: Claude will now verify and improve the configuration..."
             )
-            info(
-                "⏳ This includes checking bundle quality and fixing any issues...\n"
-            )
+            info("⏳ This includes checking bundle quality and fixing any issues...\n")
 
             # Run Claude again to verify and improve
             returncode_verify, stdout_verify, stderr_verify = (
@@ -34364,9 +34441,7 @@ bundles:
                             # Initial system message with session info
                             new_session_id = data.get("session_id", session_id)
                             if self.debug:
-                                info(
-                                    f"[DEBUG] Session initialized: {new_session_id}"
-                                )
+                                info(f"[DEBUG] Session initialized: {new_session_id}")
                         elif self.debug:
                             info(f"[DEBUG] System message: {data}")
 
@@ -34652,7 +34727,7 @@ def main():
         info("   - m1f-update                # Auto-bundle your project")
         print("")
         info("2. Create .m1f.config.yml manually:")
-        info("   - See docs: https://github.com/franzundfranz/m1f")
+        info("   - See docs: https://github.com/franz-agency/m1f/tree/main/docs")
         info("   - Run: m1f-init            # Get documentation and basic setup")
         print("")
         info("3. Use WSL (Windows Subsystem for Linux) for full Claude Code support")
@@ -71803,7 +71878,7 @@ def warning(message: str, file=None) -> None:
 
 def info(message: str, file=None) -> None:
     """Print an info message in cyan"""
-    print(f"{Colors.CYAN}ℹ️  {message}{Colors.RESET}", file=file or sys.stdout)
+    print(f"{Colors.CYAN}{message}{Colors.RESET}", file=file or sys.stdout)
 
 
 def header(title: str, subtitle: Optional[str] = None, file=None) -> None:

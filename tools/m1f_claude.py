@@ -37,11 +37,27 @@ from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 
 # Use unified colorama module
 try:
-    from .shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+    from .shared.colors import (
+        Colors,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+    )
 except ImportError:
     # Try direct import if running as script
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from tools.shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+    from tools.shared.colors import (
+        Colors,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+    )
 
 # Handle both module and direct script execution
 try:
@@ -1276,8 +1292,12 @@ I'll analyze your project and create an optimal m1f configuration that:
         """Run in interactive mode with proper session management."""
         header("🤖 m1f-claude Interactive Mode")
         info(f"{Colors.CYAN}{'=' * 50}{Colors.RESET}")
-        info(f"{Colors.BOLD}I'll enhance your prompts with m1f knowledge!{Colors.RESET}")
-        info(f"Commands: {Colors.GREEN}'help'{Colors.RESET}, {Colors.GREEN}'context'{Colors.RESET}, {Colors.GREEN}'examples'{Colors.RESET}, {Colors.GREEN}'quit'{Colors.RESET}, {Colors.GREEN}'/e'{Colors.RESET}\n")
+        info(
+            f"{Colors.BOLD}I'll enhance your prompts with m1f knowledge!{Colors.RESET}"
+        )
+        info(
+            f"Commands: {Colors.GREEN}'help'{Colors.RESET}, {Colors.GREEN}'context'{Colors.RESET}, {Colors.GREEN}'examples'{Colors.RESET}, {Colors.GREEN}'quit'{Colors.RESET}, {Colors.GREEN}'/e'{Colors.RESET}\n"
+        )
 
         if not self.has_m1f_docs:
             warning("Tip: Run 'm1f-link' first for better assistance!\n")
@@ -1345,9 +1365,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                             success("Session ended by user. Happy bundling!")
                             break
                 else:
-                    error(
-                        "Failed to send to Claude Code. Check your connection."
-                    )
+                    error("Failed to send to Claude Code. Check your connection.")
 
             except KeyboardInterrupt:
                 warning("Use 'quit' or '/e' to exit properly")
@@ -1378,9 +1396,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             # Interactive project description input
             if not self.project_description:
                 info("📋 Project Description")
-                info(
-                    "Describe your project briefly (what it does, main technologies):"
-                )
+                info("Describe your project briefly (what it does, main technologies):")
                 self.project_description = input("> ").strip()
                 if not self.project_description:
                     self.project_description = "Not provided"
@@ -1582,9 +1598,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             if result.returncode == 0:
                 success("Phase 1 complete: Topic-specific bundles added!")
-                info(
-                    "📝 Claude has analyzed your project and updated .m1f.config.yml"
-                )
+                info("📝 Claude has analyzed your project and updated .m1f.config.yml")
             else:
                 warning(f"Claude exited with code {result.returncode}")
                 info("Please check your .m1f.config.yml manually.")
@@ -1620,9 +1634,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             info(
                 "\n🤖 Phase 2: Claude will now verify and improve the configuration..."
             )
-            info(
-                "⏳ This includes checking bundle quality and fixing any issues...\n"
-            )
+            info("⏳ This includes checking bundle quality and fixing any issues...\n")
 
             # Run Claude again to verify and improve
             returncode_verify, stdout_verify, stderr_verify = (
@@ -1879,9 +1891,7 @@ bundles:
                             # Initial system message with session info
                             new_session_id = data.get("session_id", session_id)
                             if self.debug:
-                                info(
-                                    f"[DEBUG] Session initialized: {new_session_id}"
-                                )
+                                info(f"[DEBUG] Session initialized: {new_session_id}")
                         elif self.debug:
                             info(f"[DEBUG] System message: {data}")
 
@@ -2167,7 +2177,7 @@ def main():
         info("   - m1f-update                # Auto-bundle your project")
         print("")
         info("2. Create .m1f.config.yml manually:")
-        info("   - See docs: https://github.com/franzundfranz/m1f")
+        info("   - See docs: https://github.com/franz-agency/m1f/tree/main/docs")
         info("   - Run: m1f-init            # Get documentation and basic setup")
         print("")
         info("3. Use WSL (Windows Subsystem for Linux) for full Claude Code support")
