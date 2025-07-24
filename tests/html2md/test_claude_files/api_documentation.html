@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Documentation - Test Framework</title>
+    <meta name="description" content="Complete API reference for Test Framework">
+</head>
+<body>
+    <!-- Site Header - Should be excluded -->
+    <header class="site-header">
+        <div class="logo">Test Framework</div>
+        <nav class="main-nav">
+            <a href="/">Home</a>
+            <a href="/docs">Documentation</a>
+            <a href="/api">API</a>
+            <a href="/blog">Blog</a>
+        </nav>
+    </header>
+    
+    <!-- Breadcrumb - Should be excluded -->
+    <nav class="breadcrumb">
+        <a href="/">Home</a> &gt; 
+        <a href="/docs">Docs</a> &gt; 
+        <span>API Reference</span>
+    </nav>
+    
+    <!-- Main Content - Should be included -->
+    <main>
+        <article class="documentation">
+            <h1>API Reference</h1>
+            <p>This is the main documentation content for our Test Framework API.</p>
+            
+            <h2>Getting Started</h2>
+            <p>To use the API, first install the package:</p>
+            <pre><code class="language-bash">npm install test-api</code></pre>
+            
+            <h3>Authentication</h3>
+            <p>All API requests require authentication using an API key.</p>
+            <p>Set your API key: <code>export API_KEY="your-key"</code></p>
+            
+            <blockquote class="note">
+                <p><strong>Note:</strong> Keep your API key secure and never commit it to version control!</p>
+            </blockquote>
+            
+            <h2>Endpoints</h2>
+            <p>The following endpoints are available:</p>
+            <ul>
+                <li><code>GET /api/v1/users</code> - List all users</li>
+                <li><code>POST /api/v1/users</code> - Create a new user</li>
+                <li><code>GET /api/v1/users/{id}</code> - Get user by ID</li>
+                <li><code>PUT /api/v1/users/{id}</code> - Update user</li>
+                <li><code>DELETE /api/v1/users/{id}</code> - Delete user</li>
+            </ul>
+            
+            <h3>Response Format</h3>
+            <p>All responses are returned in JSON format:</p>
+            <pre><code class="language-json">{
+  "status": "success",
+  "data": {
+    "id": 123,
+    "name": "John Doe"
+  }
+}</code></pre>
+            
+            <h2>Status Endpoints</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>GET</td>
+                        <td>/api/status</td>
+                        <td>Check API status</td>
+                    </tr>
+                    <tr>
+                        <td>GET</td>
+                        <td>/api/health</td>
+                        <td>Health check endpoint</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h2>Error Handling</h2>
+            <p>The API uses standard HTTP status codes. Common errors include:</p>
+            <ul>
+                <li><strong>400 Bad Request</strong> - Invalid request parameters</li>
+                <li><strong>401 Unauthorized</strong> - Missing or invalid API key</li>
+                <li><strong>404 Not Found</strong> - Resource not found</li>
+                <li><strong>500 Internal Server Error</strong> - Server error</li>
+            </ul>
+        </article>
+        
+        <!-- Sidebar - Should be excluded -->
+        <aside class="sidebar">
+            <h3>On this page</h3>
+            <ul>
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#endpoints">Endpoints</a></li>
+                <li><a href="#error-handling">Error Handling</a></li>
+            </ul>
+            
+            <div class="edit-link">
+                <a href="/edit/api-docs">Edit this page</a>
+            </div>
+        </aside>
+    </main>
+    
+    <!-- Footer - Should be excluded -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <p>&copy; 2025 Test Framework. All rights reserved.</p>
+            <div class="social-links">
+                <a href="https://twitter.com/test">Twitter</a>
+                <a href="https://github.com/test">GitHub</a>
+            </div>
+        </div>
+        <div class="newsletter">
+            <h4>Subscribe to our newsletter</h4>
+            <form>
+                <input type="email" placeholder="Enter your email">
+                <button>Subscribe</button>
+            </form>
+        </div>
+    </footer>
+    
+    <!-- Cookie notice - Should be excluded -->
+    <div class="cookie-notice">
+        This site uses cookies. <a href="/privacy">Learn more</a>
+    </div>
+</body>
+</html>

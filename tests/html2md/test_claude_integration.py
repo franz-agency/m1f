@@ -15,17 +15,23 @@
 
 """Test Claude integration improvements in m1f-html2md."""
 
+import os
 import sys
 import pytest
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 # Add the tools directory to the path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 
 from html2md_tool.claude_runner import ClaudeRunner
+
+# Skip all tests if Claude is not available
+pytestmark = pytest.mark.skipif(
+    not shutil.which("claude") and not os.getenv("ANTHROPIC_API_KEY"),
+    reason="Claude CLI not installed or API key not set"
+)
 
 
 class TestClaudeRunner:
@@ -122,83 +128,64 @@ class TestClaudeRunner:
         assert returncode != 0, "Expected timeout but command succeeded"
 
 
-class TestCLIIntegration:
-    """Test the CLI integration with improved Claude handling."""
+class TestRealClaudeIntegration:
+    """Test real Claude integration without mocking."""
 
-    def test_analyze_with_claude(self, tmp_path):
-        """Test the analyze command with Claude improvements."""
-        # Create test HTML files
-        html_dir = tmp_path / "html"
-        html_dir.mkdir()
+    @pytest.mark.slow
+    def test_html_to_markdown_conversion(self, tmp_path):
+        """Test HTML to Markdown conversion using the actual prompt template."""
+        try:
+            runner = ClaudeRunner(working_dir=str(tmp_path))
+        except FileNotFoundError:
+            pytest.skip("Claude CLI not installed")
 
-        for i in range(3):
-            html_file = html_dir / f"test{i}.html"
-            html_file.write_text(
-                f"""
-            <html>
-            <head><title>Test {i}</title></head>
-            <body>
-                <main>
-                    <h1>Test Document {i}</h1>
-                    <p>This is test content {i}.</p>
-                </main>
-            </body>
-            </html>
-            """
-            )
-
-        # Mock the ClaudeRunner to avoid actual API calls
-        with patch("html2md_tool.cli_claude.ClaudeRunner") as mock_runner_class:
-            mock_runner = MagicMock()
-            mock_runner_class.return_value = mock_runner
-
-            # Mock file selection
-            mock_runner.run_claude_streaming.return_value = (
-                0,
-                "test0.html\ntest1.html\ntest2.html",
-                "",
-            )
-
-            # Mock parallel analysis
-            mock_runner.run_claude_parallel.return_value = [
-                {
-                    "name": "Analysis 1: test0.html",
-                    "success": True,
-                    "stdout": "Analysis 1",
-                    "stderr": "",
-                },
-                {
-                    "name": "Analysis 2: test1.html",
-                    "success": True,
-                    "stdout": "Analysis 2",
-                    "stderr": "",
-                },
-                {
-                    "name": "Analysis 3: test2.html",
-                    "success": True,
-                    "stdout": "Analysis 3",
-                    "stderr": "",
-                },
-            ]
-
-            # Import after patching
-            from html2md_tool.cli_claude import handle_claude_analysis_improved
-
-            # Run analysis with mocked input
-            with patch("builtins.input", return_value="Test project"):
-                html_files = list(html_dir.glob("*.html"))
-                handle_claude_analysis_improved(
-                    html_files, num_files_to_analyze=3, parallel_workers=3
-                )
-
-            # Verify Claude was called correctly
-            assert mock_runner.run_claude_streaming.call_count >= 1
-            assert mock_runner.run_claude_parallel.call_count == 1
-
-            # Verify parallel tasks were created
-            parallel_call = mock_runner.run_claude_parallel.call_args[0][0]
-            assert len(parallel_call) == 3
-            assert all("prompt" in task for task in parallel_call)
+        # Use the test HTML file from test fixtures
+        test_html_file = Path(__file__).parent / "test_claude_files" / "api_documentation.html"
+        if not test_html_file.exists():
+            pytest.skip(f"Test HTML file not found at {test_html_file}")
+        
+        # Load the actual prompt template
+        prompt_path = Path(__file__).parent.parent.parent / "tools" / "html2md_tool" / "prompts" / "convert_html_to_md.md"
+        if not prompt_path.exists():
+            pytest.skip(f"Prompt template not found at {prompt_path}")
+            
+        prompt_template = prompt_path.read_text()
+        
+        # Replace the placeholder with the test HTML file path
+        prompt = prompt_template.replace("{html_content}", f"@{test_html_file}")
+        
+        # Run Claude with the actual prompt
+        returncode, stdout, stderr = runner.run_claude_streaming(
+            prompt=prompt,
+            allowed_tools="Read,Write",  # Only allow file operations
+            timeout=90,
+            show_output=False
+        )
+        
+        assert returncode == 0, f"Claude command failed: {stderr}"
+        assert stdout.strip() != "", "No output received"
+        
+        # Verify the output quality
+        output = stdout.strip()
+        
+        # Should include main content
+        assert "API Reference" in output
+        assert "Getting Started" in output
+        assert "npm install test-api" in output
+        assert "Authentication" in output
+        assert "`GET /api/v1/users`" in output or "GET /api/v1/users" in output
+        
+        # Should NOT include navigation/footer elements
+        assert "Test Framework" not in output or "API Reference" in output  # Title OK, nav not
+        assert "Home > Docs" not in output  # Breadcrumb
+        assert "Edit this page" not in output
+        assert "Subscribe to our newsletter" not in output
+        assert "This site uses cookies" not in output
+        
+        # Should have proper markdown formatting
+        assert "#" in output  # Headers
+        assert "```" in output or "    " in output  # Code blocks
+        assert "|" in output  # Table formatting
 
 
 if __name__ == "__main__":
