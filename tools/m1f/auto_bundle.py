@@ -113,7 +113,7 @@ class AutoBundler:
             if self.verbose:
                 info(msg)
             else:
-                print(msg)
+                info(msg)
 
     def print_success(self, msg: str):
         """Print success message."""
@@ -340,7 +340,7 @@ class AutoBundler:
                 self.print_error(f"Command failed: {result.stderr}")
                 return False
             if self.verbose and result.stdout:
-                print(result.stdout)
+                info(result.stdout)
             self.print_success(f"Created: {bundle_name}")
             return True
         except Exception as e:
@@ -366,32 +366,32 @@ class AutoBundler:
             else:
                 ungrouped_bundles[bundle_name] = bundle_config
 
-        print("\nAvailable bundles:")
-        print("-" * 60)
+        info("\nAvailable bundles:")
+        info("-" * 60)
 
         # Show grouped bundles first
         for group_name in sorted(grouped_bundles.keys()):
-            print(f"\nGroup: {group_name}")
-            print("=" * 40)
+            info(f"\nGroup: {group_name}")
+            info("=" * 40)
             for bundle_name, bundle_config in grouped_bundles[group_name].items():
                 self._print_bundle_info(bundle_name, bundle_config)
 
         # Show ungrouped bundles
         if ungrouped_bundles:
             if grouped_bundles:
-                print("\nUngrouped bundles:")
-                print("=" * 40)
+                info("\nUngrouped bundles:")
+                info("=" * 40)
             for bundle_name, bundle_config in ungrouped_bundles.items():
                 self._print_bundle_info(bundle_name, bundle_config)
 
-        print("-" * 60)
+        info("-" * 60)
 
         # Show available groups
         if grouped_bundles:
-            print("\nAvailable groups:")
+            info("\nAvailable groups:")
             for group in sorted(grouped_bundles.keys()):
                 count = len(grouped_bundles[group])
-                print(f"  - {group} ({count} bundles)")
+                info(f"  - {group} ({count} bundles)")
 
     def _print_bundle_info(self, bundle_name: str, bundle_config: Dict[str, Any]):
         """Print information about a single bundle."""
@@ -400,13 +400,13 @@ class AutoBundler:
         output = bundle_config.get("output", "No output specified")
 
         status = "enabled" if enabled else "disabled"
-        print(f"\n  {bundle_name} ({status})")
-        print(f"    Description: {description}")
-        print(f"    Output: {output}")
+        info(f"\n  {bundle_name} ({status})")
+        info(f"    Description: {description}")
+        info(f"    Output: {output}")
 
         # Show conditional enabling
         if "enabled_if_exists" in bundle_config:
-            print(f"    Enabled if exists: {bundle_config['enabled_if_exists']}")
+            info(f"    Enabled if exists: {bundle_config['enabled_if_exists']}")
 
     def run(
         self,

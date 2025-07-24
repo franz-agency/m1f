@@ -198,7 +198,7 @@ class M1FClaudeRunner:
                     # Check inactivity timeout (60 seconds)
                     if current_time - last_output_time > 60:
                         if show_output:
-                            print(
+                            warning(
                                 f"\n⏰ Claude inactive for 60s (total time: {elapsed:.1f}s)"
                             )
                         self.process.kill()
