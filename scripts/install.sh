@@ -73,8 +73,15 @@ for arg in "$@"; do
 done
 
 # Get the script directory and project root
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+if [[ -n "${BASH_SOURCE[0]}" && "${BASH_SOURCE[0]}" != "bash" ]]; then
+    # Script path is available (being executed)
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+else
+    # Being sourced - assume we're in the project root and the script is in scripts/
+    PROJECT_ROOT="$(pwd)"
+    SCRIPT_DIR="$PROJECT_ROOT/scripts"
+fi
 BIN_DIR="$PROJECT_ROOT/bin"
 
 echo -e "${BLUE}m1f Installation${NC}"
@@ -135,13 +142,15 @@ source .venv/bin/activate
 pip install --upgrade pip --quiet
 
 # Install requirements
-if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt --quiet
+if [ -f "$PROJECT_ROOT/requirements.txt" ]; then
+    pip install -r "$PROJECT_ROOT/requirements.txt" --quiet
     echo -e "${GREEN}✓ Dependencies installed${NC}"
 else
-    echo -e "${RED}Error: requirements.txt not found${NC}"
+    echo -e "${RED}Error: requirements.txt not found at $PROJECT_ROOT/requirements.txt${NC}"
+    echo -e "${YELLOW}PROJECT_ROOT is set to: $PROJECT_ROOT${NC}"
+    echo -e "${YELLOW}Current directory is: $(pwd)${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
 
 # Step 3: Test m1f installation

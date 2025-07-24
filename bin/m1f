@@ -15,5 +15,8 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 # Add project root to PYTHONPATH so tools module can be found
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
-# Go back to original directory and run m1f
-cd "$ORIGINAL_DIR" && exec python -m tools.m1f "$@"
+# Change to project directory for proper module resolution
+cd "$PROJECT_ROOT"
+
+# Run m1f
+exec python -m tools.m1f "$@"
