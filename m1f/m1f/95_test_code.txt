@@ -2419,26 +2419,47 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "tools"))
 
 from html2md_tool.claude_runner import ClaudeRunner
-from rich.console import Console
 
-console = Console()
+# Use unified colorama module
+try:
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
+    from shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to no colors
+    COLORAMA_AVAILABLE = False
+    class Colors:
+        GREEN = ""
+        RED = ""
+        YELLOW = ""
+        BLUE = ""
+        CYAN = ""
+        BOLD = ""
+        DIM = ""
+        RESET = ""
+    
+    def success(msg): print(f"✅ {msg}")
+    def error(msg): print(f"❌ {msg}", file=sys.stderr)
+    def warning(msg): print(f"⚠️  {msg}")
+    def info(msg): print(msg)
+    def header(title, subtitle=None):
+        print(f"\n{title}")
+        if subtitle:
+            print(subtitle)
 
 
 def test_streaming_output():
     """Test streaming output with timeout handling."""
-    console.print(
-        "\n[bold]Testing streaming output with improved timeout handling...[/bold]"
-    )
+    header(f"{Colors.BOLD}Testing streaming output with improved timeout handling...{Colors.RESET}")
 
     try:
         runner = ClaudeRunner()
-        console.print("✅ Claude runner initialized successfully")
+        success("Claude runner initialized successfully")
     except FileNotFoundError as e:
-        console.print(f"❌ {e}", style="red")
+        error(str(e))
         return False
 
     # Test 1: Simple prompt with streaming
-    console.print("\n[blue]Test 1: Simple prompt with streaming[/blue]")
+    info(f"\n{Colors.BLUE}Test 1: Simple prompt with streaming{Colors.RESET}")
     prompt = "What is 2+2? Just give me the number, nothing else."
 
     returncode, stdout, stderr = runner.run_claude_streaming(
@@ -2446,20 +2467,20 @@ def test_streaming_output():
     )
 
     if returncode == 0:
-        console.print(f"✅ Test 1 passed. Output: {stdout.strip()}")
+        success(f"Test 1 passed. Output: {stdout.strip()}")
     else:
-        console.print(f"❌ Test 1 failed. Error: {stderr}", style="red")
+        error(f"Test 1 failed. Error: {stderr}")
         assert False, f"Test failed: {stderr}"
 
 
 def test_parallel_execution():
     """Test parallel execution of multiple tasks."""
-    console.print("\n[bold]Testing parallel execution...[/bold]")
+    header(f"{Colors.BOLD}Testing parallel execution...{Colors.RESET}")
 
     try:
         runner = ClaudeRunner(max_workers=3)
     except FileNotFoundError as e:
-        console.print(f"❌ {e}", style="red")
+        error(str(e))
         return False
 
     # Create test tasks
@@ -2481,35 +2502,32 @@ def test_parallel_execution():
         },
     ]
 
-    console.print(f"\n[blue]Running {len(tasks)} tasks in parallel...[/blue]")
+    info(f"\n{Colors.BLUE}Running {len(tasks)} tasks in parallel...{Colors.RESET}")
     results = runner.run_claude_parallel(tasks, show_progress=True)
 
     # Check results
     all_success = all(r["success"] for r in results)
 
     if all_success:
-        console.print("\n✅ All parallel tasks completed successfully!")
+        success("All parallel tasks completed successfully!")
         for result in results:
-            console.print(f"  - {result['name']}: {result['stdout'].strip()}")
+            info(f"  - {result['name']}: {result['stdout'].strip()}")
     else:
-        console.print("\n❌ Some tasks failed:", style="red")
+        error("Some tasks failed:")
         for result in results:
             if not result["success"]:
-                console.print(
-                    f"  - {result['name']}: {result.get('error') or result.get('stderr')}",
-                    style="red",
-                )
+                error(f"  - {result['name']}: {result.get('error') or result.get('stderr')}")
         assert False, "Some parallel tasks failed"
 
 
 def test_timeout_handling():
     """Test timeout handling with a long-running task."""
-    console.print("\n[bold]Testing timeout handling...[/bold]")
+    header(f"{Colors.BOLD}Testing timeout handling...{Colors.RESET}")
 
     try:
         runner = ClaudeRunner()
     except FileNotFoundError as e:
-        console.print(f"❌ {e}", style="red")
+        error(str(e))
         return False
 
     # This prompt should timeout if Claude takes too long
@@ -2517,22 +2535,22 @@ def test_timeout_handling():
     pausing for a second between each number. 
     Show each number on a new line."""
 
-    console.print("\n[blue]Testing with 10-second timeout (should timeout)...[/blue]")
+    info(f"\n{Colors.BLUE}Testing with 10-second timeout (should timeout)...{Colors.RESET}")
 
     returncode, stdout, stderr = runner.run_claude_streaming(
         prompt=prompt, timeout=10, show_output=True  # Very short timeout
     )
 
     if returncode != 0:
-        console.print("✅ Timeout handling worked correctly")
+        success("Timeout handling worked correctly")
     else:
-        console.print("⚠️  Task completed before timeout", style="yellow")
+        warning("Task completed before timeout")
 
 
 def main():
     """Run all tests."""
-    console.print("[bold]Claude Runner Improvement Tests[/bold]")
-    console.print("=" * 50)
+    header(f"{Colors.BOLD}Claude Runner Improvement Tests{Colors.RESET}")
+    info("=" * 50)
 
     tests = [
         ("Streaming Output", test_streaming_output),
@@ -2544,24 +2562,24 @@ def main():
     failed = 0
 
     for test_name, test_func in tests:
-        console.print(f"\n[yellow]Running: {test_name}[/yellow]")
+        info(f"\n{Colors.YELLOW}Running: {test_name}{Colors.RESET}")
         try:
             if test_func():
                 passed += 1
-                console.print(f"✅ {test_name} passed", style="green")
+                success(f"{test_name} passed")
             else:
                 failed += 1
-                console.print(f"❌ {test_name} failed", style="red")
+                error(f"{test_name} failed")
         except Exception as e:
             failed += 1
-            console.print(f"❌ {test_name} failed with exception: {e}", style="red")
+            error(f"{test_name} failed with exception: {e}")
 
-    console.print("\n" + "=" * 50)
-    console.print(f"[bold]Test Summary:[/bold]")
-    console.print(f"  Passed: {passed}", style="green")
+    info("\n" + "=" * 50)
+    header(f"{Colors.BOLD}Test Summary:{Colors.RESET}")
+    info(f"{Colors.GREEN}  Passed: {passed}{Colors.RESET}")
     if failed > 0:
-        console.print(f"  Failed: {failed}", style="red")
-    console.print(f"  Total: {len(tests)}")
+        info(f"{Colors.RED}  Failed: {failed}{Colors.RESET}")
+    info(f"  Total: {len(tests)}")
 
     return failed == 0
 
@@ -2600,9 +2618,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 
 from html2md_tool.claude_runner import ClaudeRunner
 from html2md_tool.cli import _handle_claude_analysis
-from rich.console import Console
-
-console = Console()
 
 
 class TestClaudeRunner:
