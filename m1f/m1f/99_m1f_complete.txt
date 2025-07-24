@@ -3716,16 +3716,6 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
 
-======= m1f/project_analysis.log ======
-2025-07-05 16:31:05,072 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f
-2025-07-05 16:31:05,072 - tools.m1f.core - INFO    : Separator style: Detailed
-2025-07-05 16:31:05,168 - tools.m1f.core - INFO    : Found 188 files to process
-2025-07-05 16:31:05,170 - tools.m1f.core - INFO    : Wrote 188 files to /home/fuf-user/git/m1f/m1f/project_analysis_filelist.txt
-2025-07-05 16:31:05,172 - tools.m1f.core - INFO    : Wrote 34 directories to /home/fuf-user/git/m1f/m1f/project_analysis_dirlist.txt
-2025-07-05 16:31:05,172 - tools.m1f.core - INFO    : Found 188 files (output file skipped)
-2025-07-05 16:31:05,173 - m1f_main - INFO    : Total execution time: 0.10 seconds
-2025-07-05 16:31:05,173 - m1f_main - INFO    : Processed 188 files
-
 ======= presets/ai-context.m1f-presets.yml ======
 # AI Context Generation Preset
 # Optimized for creating context bundles for Claude, ChatGPT, and other LLMs
@@ -51519,14 +51509,33 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from rich.console import Console
+# Use unified colorama module
+try:
+    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to no colors
+    COLORAMA_AVAILABLE = False
+    class Colors:
+        GREEN = ""
+        RED = ""
+        YELLOW = ""
+        BLUE = ""
+        BOLD = ""
+        RESET = ""
+    
+    def success(msg): print(f"✅ {msg}")
+    def error(msg): print(f"❌ {msg}", file=sys.stderr)
+    def warning(msg): print(f"⚠️  {msg}")
+    def info(msg): print(msg)
+    def header(title, subtitle=None):
+        print(f"\n{title}")
+        if subtitle:
+            print(subtitle)
 
 from . import __version__
 from .api import Html2mdConverter
 from .config import Config, OutputFormat
 from .claude_runner import ClaudeRunner
-
-console = Console()
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -51798,17 +51807,17 @@ def handle_convert(args: argparse.Namespace) -> None:
 
     # Convert based on source type
     if args.source.is_file():
-        console.print(f"Converting file: {args.source}")
+        info(f"Converting file: {args.source}")
         output = converter.convert_file(args.source)
-        console.print(f"✅ Converted to: {output}", style="green")
+        success(f"Converted to: {output}")
 
     elif args.source.is_dir():
-        console.print(f"Converting directory: {args.source}")
+        info(f"Converting directory: {args.source}")
         outputs = converter.convert_directory()
-        console.print(f"✅ Converted {len(outputs)} files", style="green")
+        success(f"Converted {len(outputs)} files")
 
     else:
-        console.print(f"❌ Source not found: {args.source}", style="red")
+        error(f"Source not found: {args.source}")
         sys.exit(1)
 
 
@@ -51822,7 +51831,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     html_files = []
     for path in args.paths:
         if not path.exists():
-            console.print(f"❌ Path not found: {path}", style="red")
+            error(f"Path not found: {path}")
             continue
 
         if path.is_file():
@@ -62986,40 +62995,46 @@ from datetime import datetime
 
 from .config import ResearchConfig
 from .orchestrator import EnhancedResearchOrchestrator
-from .output import OutputFormatter, ProgressTracker, Colors, COLORAMA_AVAILABLE
+from .output import OutputFormatter, ProgressTracker
+
+# Use unified colorama module
+try:
+    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to local implementation
+    from .output import Colors, COLORAMA_AVAILABLE
+    
+    class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        """Fallback help formatter with colors if available."""
+
+        def _format_action_invocation(self, action: argparse.Action) -> str:
+            """Format action with colors."""
+            parts = super()._format_action_invocation(action)
+
+            if COLORAMA_AVAILABLE:
+                # Color the option names
+                parts = parts.replace("-", f"{Colors.CYAN}-")
+                parts = f"{parts}{Colors.RESET}"
+
+            return parts
+
+        def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
+            """Format usage line with colors."""
+            result = super()._format_usage(usage, actions, groups, prefix)
+
+            if COLORAMA_AVAILABLE and result:
+                # Highlight the program name
+                prog_name = self._prog
+                colored_prog = f"{Colors.GREEN}{prog_name}{Colors.RESET}"
+                result = result.replace(prog_name, colored_prog, 1)
+
+            return result
 
 # Import version
 try:
     from .._version import __version__
 except ImportError:
     __version__ = "3.8.0"
-
-
-class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
-    """Custom help formatter with colors if available."""
-
-    def _format_action_invocation(self, action: argparse.Action) -> str:
-        """Format action with colors."""
-        parts = super()._format_action_invocation(action)
-
-        if COLORAMA_AVAILABLE:
-            # Color the option names
-            parts = parts.replace("-", f"{Colors.CYAN}-")
-            parts = f"{parts}{Colors.RESET}"
-
-        return parts
-
-    def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
-        """Format usage line with colors."""
-        result = super()._format_usage(usage, actions, groups, prefix)
-
-        if COLORAMA_AVAILABLE and result:
-            # Highlight the program name
-            prog_name = self._prog
-            colored_prog = f"{Colors.GREEN}{prog_name}{Colors.RESET}"
-            result = result.replace(prog_name, colored_prog, 1)
-
-        return result
 
 
 class EnhancedResearchCommand:
@@ -63998,738 +64013,6 @@ def main():
     """Main entry point"""
     cli = EnhancedResearchCommand()
     sys.exit(asyncio.run(cli.run()))
-
-
-if __name__ == "__main__":
-    main()
-
-======= tools/research/cli_old.py ======
-"""
-CLI interface for m1f-research
-"""
-import argparse
-import sys
-from pathlib import Path
-from typing import Optional, List
-import asyncio
-
-from .config import ResearchConfig
-from .orchestrator import ResearchOrchestrator
-
-# Import version directly to avoid circular imports
-try:
-    from .._version import __version__
-except ImportError:
-    # Fallback for when running as a script
-    __version__ = "3.7.2"
-
-
-class ResearchCommand:
-    """Main command class for m1f-research"""
-    
-    def __init__(self):
-        self.parser = self._create_parser()
-        
-    def _create_parser(self) -> argparse.ArgumentParser:
-        """Create the argument parser for m1f-research"""
-        parser = argparse.ArgumentParser(
-            prog='m1f-research',
-            description='AI-powered research tool that finds, scrapes, and bundles information on any topic',
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-            epilog="""
-Examples:
-  m1f-research "microservices best practices"
-  m1f-research "react state management" --urls 30 --scrape 15
-  m1f-research "machine learning" --output ./research --provider gemini
-  m1f-research "python async programming" --config research.yml
-  m1f-research --interactive
-            """
-        )
-        
-        # Main research query (optional for interactive mode)
-        parser.add_argument(
-            'query',
-            nargs='?',
-            help='Research topic or query'
-        )
-        
-        # URL and scraping options
-        parser.add_argument(
-            '--urls', '-u',
-            type=int,
-            default=20,
-            help='Number of URLs to find (default: 20)'
-        )
-        
-        parser.add_argument(
-            '--scrape', '-s',
-            type=int,
-            default=10,
-            help='Number of URLs to scrape (default: 10)'
-        )
-        
-        # Output options
-        parser.add_argument(
-            '--output', '-o',
-            type=Path,
-            default=Path('./research-data'),
-            help='Output directory for research bundles (default: ./research-data)'
-        )
-        
-        parser.add_argument(
-            '--name', '-n',
-            type=str,
-            help='Custom name for the research bundle (default: derived from query)'
-        )
-        
-        # LLM provider options
-        parser.add_argument(
-            '--provider', '-p',
-            choices=['claude', 'claude-cli', 'gemini', 'gemini-cli', 'openai'],
-            default='claude',
-            help='LLM provider to use (default: claude)'
-        )
-        
-        parser.add_argument(
-            '--model', '-m',
-            type=str,
-            help='Specific model to use (provider-dependent)'
-        )
-        
-        parser.add_argument(
-            '--template', '-t',
-            choices=['general', 'technical', 'academic', 'tutorial', 'reference'],
-            default='general',
-            help='Analysis template to use (default: general)'
-        )
-        
-        # Configuration options
-        parser.add_argument(
-            '--config', '-c',
-            type=Path,
-            help='Path to configuration file'
-        )
-        
-        # Behavior options
-        parser.add_argument(
-            '--interactive', '-i',
-            action='store_true',
-            help='Start in interactive mode'
-        )
-        
-        parser.add_argument(
-            '--no-filter',
-            action='store_true',
-            help='Disable content filtering'
-        )
-        
-        parser.add_argument(
-            '--no-analysis',
-            action='store_true',
-            help='Skip AI analysis (just scrape and bundle)'
-        )
-        
-        parser.add_argument(
-            '--concurrent', 
-            type=int,
-            default=5,
-            help='Max concurrent scraping operations (default: 5)'
-        )
-        
-        # Debug options
-        parser.add_argument(
-            '--verbose', '-v',
-            action='count',
-            default=0,
-            help='Increase verbosity (use -vv for debug)'
-        )
-        
-        parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='Show what would be done without doing it'
-        )
-        
-        # Version
-        parser.add_argument(
-            '--version',
-            action='version',
-            version=f'%(prog)s {__version__}'
-        )
-        
-        return parser
-    
-    def parse_args(self, args: Optional[List[str]] = None) -> argparse.Namespace:
-        """Parse command line arguments"""
-        return self.parser.parse_args(args)
-    
-    async def execute(self, args: argparse.Namespace) -> int:
-        """Execute the research command"""
-        # Validate arguments
-        if not args.query and not args.interactive:
-            self.parser.error("Query is required unless using --interactive mode")
-        
-        # Create configuration from arguments
-        config = ResearchConfig.from_args(args)
-        
-        # Create and run orchestrator
-        orchestrator = ResearchOrchestrator(config)
-        
-        try:
-            if args.interactive:
-                # Run in interactive mode
-                await orchestrator.run_interactive()
-            else:
-                # Run in batch mode
-                await orchestrator.run(args.query)
-            
-            return 0
-            
-        except KeyboardInterrupt:
-            print("\n\nResearch interrupted by user")
-            return 130
-        except Exception as e:
-            if args.verbose > 0:
-                import traceback
-                traceback.print_exc()
-            else:
-                print(f"Error: {e}")
-            return 1
-    
-    def run(self, args: Optional[List[str]] = None) -> int:
-        """Main entry point for the CLI"""
-        parsed_args = self.parse_args(args)
-        
-        # Set up logging based on verbosity
-        import logging
-        if parsed_args.verbose == 0:
-            level = logging.WARNING
-        elif parsed_args.verbose == 1:
-            level = logging.INFO
-        else:
-            level = logging.DEBUG
-            
-        logging.basicConfig(
-            level=level,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        
-        # Run the async execute method
-        return asyncio.run(self.execute(parsed_args))
-
-
-def main():
-    """Console script entry point"""
-    command = ResearchCommand()
-    sys.exit(command.run())
-
-
-if __name__ == '__main__':
-    main()
-
-======= tools/research/cli_old2.py ======
-"""
-Enhanced CLI interface for m1f-research with job management
-"""
-
-import argparse
-import sys
-from pathlib import Path
-from typing import Optional, List
-import asyncio
-import logging
-
-from .config import ResearchConfig
-from .orchestrator import EnhancedResearchOrchestrator
-
-# Import version directly to avoid circular imports
-try:
-    from .._version import __version__
-except ImportError:
-    # Fallback for when running as a script
-    __version__ = "3.8.0"
-
-
-class EnhancedResearchCommand:
-    """Enhanced command class for m1f-research with job support"""
-
-    def __init__(self):
-        self.parser = self._create_parser()
-
-    def _create_parser(self) -> argparse.ArgumentParser:
-        """Create the argument parser for m1f-research"""
-        parser = argparse.ArgumentParser(
-            prog="m1f-research",
-            description="AI-powered research tool with job management and persistence",
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-            epilog="""
-Examples:
-  # Start new research
-  m1f-research "microservices best practices"
-  
-  # Research with manual URL list
-  m1f-research "react hooks" --urls-file my-links.txt
-  
-  # Resume existing job with more URLs
-  m1f-research --resume abc123 --urls-file more-links.txt
-  
-  # List all jobs
-  m1f-research --list-jobs
-  
-  # Check job status
-  m1f-research --status abc123
-  
-  # List with filters
-  m1f-research --list-jobs --limit 10 --search "react"
-  m1f-research --list-jobs --date 2025-07-23
-  m1f-research --list-jobs --date 2025-07 --limit 20
-  
-  # Clean up raw data  
-  m1f-research --clean-raw abc123
-  m1f-research --clean-all-raw
-""",
-        )
-
-        # Main arguments
-        parser.add_argument(
-            "query", nargs="?", help="Research query (required for new jobs)"
-        )
-
-        # Job management
-        job_group = parser.add_argument_group("job management")
-        job_group.add_argument(
-            "--resume", metavar="JOB_ID", help="Resume an existing research job"
-        )
-
-        job_group.add_argument(
-            "--list-jobs", action="store_true", help="List all research jobs"
-        )
-
-        job_group.add_argument(
-            "--status", metavar="JOB_ID", help="Show status of a specific job"
-        )
-
-        job_group.add_argument(
-            "--urls-file", type=Path, help="File containing URLs to add (one per line)"
-        )
-
-        # Enhanced list options
-        list_group = parser.add_argument_group("list options")
-        list_group.add_argument(
-            "--limit", type=int, help="Limit number of results (for --list-jobs)"
-        )
-
-        list_group.add_argument(
-            "--offset",
-            type=int,
-            default=0,
-            help="Offset for pagination (for --list-jobs)",
-        )
-
-        list_group.add_argument("--date", help="Filter by date (Y-M-D or Y-M format)")
-
-        list_group.add_argument("--search", help="Search jobs by query term")
-
-        # Cleanup options
-        cleanup_group = parser.add_argument_group("cleanup options")
-        cleanup_group.add_argument(
-            "--clean-raw",
-            metavar="JOB_ID",
-            help="Clean raw HTML data for a job (preserves aggregated data)",
-        )
-
-        cleanup_group.add_argument(
-            "--clean-all-raw",
-            action="store_true",
-            help="Clean raw HTML data for all jobs",
-        )
-
-        # URL options
-        url_group = parser.add_argument_group("url options")
-        url_group.add_argument(
-            "--urls",
-            type=int,
-            default=20,
-            help="Number of URLs to search for (default: 20)",
-        )
-
-        url_group.add_argument(
-            "--scrape",
-            type=int,
-            default=10,
-            help="Maximum URLs to scrape (default: 10)",
-        )
-
-        # Output options
-        output_group = parser.add_argument_group("output options")
-        output_group.add_argument(
-            "--output",
-            "-o",
-            type=Path,
-            default=Path("./research-data"),
-            help="Output directory (default: ./research-data)",
-        )
-
-        output_group.add_argument(
-            "--name", "-n", help="Custom name for the research bundle"
-        )
-
-        # LLM provider options
-        parser.add_argument(
-            "--provider",
-            "-p",
-            choices=["claude", "claude-cli", "gemini", "gemini-cli", "openai"],
-            default="claude",
-            help="LLM provider to use (default: claude)",
-        )
-
-        parser.add_argument(
-            "--model", "-m", help="Specific model to use (provider-dependent)"
-        )
-
-        parser.add_argument(
-            "--template",
-            "-t",
-            choices=["general", "technical", "academic", "tutorial", "reference"],
-            default="general",
-            help="Analysis template to use (default: general)",
-        )
-
-        # Configuration options
-        parser.add_argument(
-            "--config", "-c", type=Path, help="Path to configuration file"
-        )
-
-        # Behavior options
-        parser.add_argument(
-            "--interactive", "-i", action="store_true", help="Start in interactive mode"
-        )
-
-        parser.add_argument(
-            "--no-filter", action="store_true", help="Disable content filtering"
-        )
-
-        parser.add_argument(
-            "--no-analysis",
-            action="store_true",
-            help="Skip AI analysis (just scrape and bundle)",
-        )
-
-        parser.add_argument(
-            "--concurrent",
-            type=int,
-            default=5,
-            help="Max concurrent scraping operations (default: 5)",
-        )
-
-        # Debug options
-        parser.add_argument(
-            "--verbose",
-            "-v",
-            action="count",
-            default=0,
-            help="Increase verbosity (use -vv for debug)",
-        )
-
-        parser.add_argument(
-            "--dry-run",
-            action="store_true",
-            help="Show what would be done without doing it",
-        )
-
-        # Version
-        parser.add_argument(
-            "--version", action="version", version=f"%(prog)s {__version__}"
-        )
-
-        return parser
-
-    async def run(self, args=None):
-        """Run the research command"""
-        args = self.parser.parse_args(args)
-
-        # Setup logging
-        log_level = logging.WARNING
-        if args.verbose == 1:
-            log_level = logging.INFO
-        elif args.verbose >= 2:
-            log_level = logging.DEBUG
-
-        logging.basicConfig(
-            level=log_level,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
-
-        # Handle job listing
-        if args.list_jobs:
-            return await self._list_jobs(args)
-
-        # Handle job status
-        if args.status:
-            return await self._show_status(args)
-
-        # Handle cleanup commands
-        if args.clean_raw:
-            return await self._clean_raw_data(args)
-
-        if args.clean_all_raw:
-            return await self._clean_all_raw_data(args)
-
-        # Validate arguments for research
-        if not args.query and not args.resume:
-            self.parser.error("Either query or --resume is required")
-
-        if args.resume and args.query:
-            self.parser.error("Cannot specify both query and --resume")
-
-        # Create config
-        config = self._create_config(args)
-
-        # Run research
-        orchestrator = EnhancedResearchOrchestrator(config)
-
-        try:
-            # Determine query and job_id
-            query = args.query
-            job_id = args.resume
-
-            # If resuming, get query from job
-            if job_id:
-                from .job_manager import JobManager
-
-                job_manager = JobManager(config.output.directory)
-                job = job_manager.get_job(job_id)
-                if not job:
-                    print(f"Error: Job {job_id} not found")
-                    return 1
-                query = job.query
-
-            result = await orchestrator.research(
-                query=query, job_id=job_id, urls_file=args.urls_file
-            )
-
-            # Print results
-            print(f"\n✅ Research completed!")
-            print(f"📋 Job ID: {result.job_id}")
-            print(f"📁 Output: {result.output_dir}")
-            print(f"🔗 URLs found: {result.urls_found}")
-            print(f"📄 Pages scraped: {len(result.scraped_content)}")
-            print(f"📊 Pages analyzed: {len(result.analyzed_content)}")
-
-            if result.bundle_created:
-                bundle_path = result.output_dir / "📚_RESEARCH_BUNDLE.md"
-                print(f"\n📚 Research bundle: {bundle_path}")
-
-                # Check for symlink
-                latest_link = config.output.directory / "latest_research.md"
-                if latest_link.exists():
-                    print(f"🔗 Quick access: {latest_link}")
-
-            return 0
-
-        except KeyboardInterrupt:
-            print("\n⚠️  Research cancelled by user")
-            return 130
-        except Exception as e:
-            print(f"\n❌ Error: {e}")
-            if args.verbose:
-                import traceback
-
-                traceback.print_exc()
-            return 1
-
-    async def _list_jobs(self, args):
-        """List research jobs with filtering and pagination"""
-        from .job_manager import JobManager
-
-        job_manager = JobManager(args.output)
-
-        # Get total count for pagination info
-        total_count = job_manager.count_jobs(
-            date_filter=args.date, search_term=args.search
-        )
-
-        # Get filtered jobs
-        jobs = job_manager.list_jobs(
-            limit=args.limit,
-            offset=args.offset,
-            date_filter=args.date,
-            search_term=args.search,
-        )
-
-        if not jobs:
-            if args.search or args.date:
-                print("No research jobs found matching filters")
-            else:
-                print("No research jobs found")
-            return 0
-
-        # Show filter info
-        filter_info = []
-        if args.search:
-            filter_info.append(f"search: '{args.search}'")
-        if args.date:
-            filter_info.append(f"date: {args.date}")
-
-        filter_str = f" (filtered by {', '.join(filter_info)})" if filter_info else ""
-
-        # Pagination info
-        showing = len(jobs)
-        if args.limit:
-            page = (args.offset // args.limit) + 1
-            total_pages = (total_count + args.limit - 1) // args.limit
-            print(
-                f"\n📋 Research Jobs - Page {page}/{total_pages} "
-                f"(showing {showing} of {total_count}{filter_str})\n"
-            )
-        else:
-            print(f"\n📋 Research Jobs ({total_count} total{filter_str})\n")
-
-        print(f"{'ID':<10} {'Status':<10} {'Query':<40} {'Created':<20} {'Stats'}")
-        print("-" * 100)
-
-        for job in jobs:
-            stats = job["stats"]
-            stats_str = f"{stats['scraped_urls']}/{stats['total_urls']} scraped"
-            if stats["analyzed_urls"]:
-                stats_str += f", {stats['analyzed_urls']} analyzed"
-
-            # Highlight search term if present
-            query_display = job["query"][:40]
-            if args.search and args.search.lower() in job["query"].lower():
-                query_display = query_display.replace(
-                    args.search, f"\033[1;33m{args.search}\033[0m"
-                )
-
-            print(
-                f"{job['job_id']:<10} {job['status']:<10} "
-                f"{query_display:<40} {job['created_at'][:19]:<20} {stats_str}"
-            )
-
-        # Show pagination hints
-        if args.limit and total_count > args.limit:
-            print("\nTip: Use --offset to see more results")
-            if args.offset + args.limit < total_count:
-                next_offset = args.offset + args.limit
-                print(f"Next page: --offset {next_offset}")
-
-        return 0
-
-    async def _show_status(self, args):
-        """Show status of a specific job"""
-        from .job_manager import JobManager
-
-        job_manager = JobManager(args.output)
-
-        info = job_manager.get_job_info(job_manager.get_job(args.status))
-
-        if "error" in info:
-            print(f"Error: {info['error']}")
-            return 1
-
-        print(f"\n📋 Job Status: {info['job_id']}\n")
-        print(f"Query: {info['query']}")
-        print(f"Status: {info['status']}")
-        print(f"Created: {info['created_at']}")
-        print(f"Updated: {info['updated_at']}")
-        print(f"Output: {info['output_dir']}")
-        print(f"\nStatistics:")
-        print(f"  Total URLs: {info['stats']['total_urls']}")
-        print(f"  Scraped: {info['stats']['scraped_urls']}")
-        print(f"  Filtered: {info['stats']['filtered_urls']}")
-        print(f"  Analyzed: {info['stats']['analyzed_urls']}")
-
-        if info["bundle_exists"]:
-            print(f"\n✅ Research bundle available")
-
-        return 0
-
-    async def _clean_raw_data(self, args):
-        """Clean raw HTML data for a specific job"""
-        from .job_manager import JobManager
-
-        job_manager = JobManager(args.output)
-
-        print(f"🧹 Cleaning raw data for job {args.clean_raw}...")
-
-        stats = job_manager.cleanup_job_raw_data(args.clean_raw)
-
-        if "error" in stats:
-            print(f"❌ Error: {stats['error']}")
-            return 1
-
-        print(f"✅ Cleanup complete:")
-        print(f"  HTML files deleted: {stats.get('html_files_deleted', 0)}")
-        print(f"  Space freed: {stats.get('space_freed_mb', 0)} MB")
-
-        return 0
-
-    async def _clean_all_raw_data(self, args):
-        """Clean raw HTML data for all jobs"""
-        from .job_manager import JobManager
-
-        job_manager = JobManager(args.output)
-
-        # Confirm action
-        response = input("⚠️  This will delete all raw HTML data. Continue? (y/N): ")
-        if response.lower() != "y":
-            print("Cancelled")
-            return 0
-
-        print("🧹 Cleaning raw data for all jobs...")
-
-        stats = job_manager.cleanup_all_raw_data()
-
-        print(f"\n✅ Cleanup complete:")
-        print(f"  Jobs cleaned: {stats['jobs_cleaned']}")
-        print(f"  Files deleted: {stats['files_deleted']}")
-        print(f"  Space freed: {stats['space_freed_mb']} MB")
-
-        if stats["errors"]:
-            print(f"\n⚠️  Errors encountered:")
-            for error in stats["errors"][:5]:  # Show first 5 errors
-                print(f"  - {error}")
-            if len(stats["errors"]) > 5:
-                print(f"  ... and {len(stats['errors']) - 5} more errors")
-
-        return 0
-
-    def _create_config(self, args) -> ResearchConfig:
-        """Create configuration from arguments"""
-        # Load base config from file if provided
-        if args.config and args.config.exists():
-            config = ResearchConfig.from_yaml(args.config)
-        else:
-            config = ResearchConfig()
-
-        # Override with command line arguments
-        config.llm.provider = args.provider
-        if args.model:
-            config.llm.model = args.model
-
-        config.scraping.search_limit = args.urls
-        config.scraping.scrape_limit = args.scrape
-        config.scraping.max_concurrent = args.concurrent
-
-        config.output.directory = args.output
-        if args.name:
-            config.output.name = args.name
-
-        config.analysis.template = args.template
-
-        config.interactive = args.interactive
-        config.no_filter = args.no_filter
-        config.no_analysis = args.no_analysis
-        config.dry_run = args.dry_run
-        config.verbose = args.verbose
-
-        return config
-
-
-def main():
-    """Main entry point"""
-    command = EnhancedResearchCommand()
-    sys.exit(asyncio.run(command.run()))
 
 
 if __name__ == "__main__":
@@ -66796,272 +66079,6 @@ Research on "{query}" yielded {len(content)} high-quality sources.
         """List all research jobs"""
         return self.job_manager.list_jobs(status)
 
-======= tools/research/orchestrator_old.py ======
-"""
-Research orchestrator - coordinates the research workflow
-"""
-import asyncio
-from pathlib import Path
-from typing import List, Dict, Any, Optional
-from datetime import datetime
-import json
-import logging
-
-from .config import ResearchConfig
-from .llm_interface import get_provider, LLMProvider
-from .models import ResearchResult, ScrapedContent, AnalyzedContent
-
-
-logger = logging.getLogger(__name__)
-
-
-class ResearchOrchestrator:
-    """Orchestrates the entire research workflow"""
-    
-    def __init__(self, config: ResearchConfig):
-        self.config = config
-        self.llm = self._init_llm()
-        self.results: List[ResearchResult] = []
-        
-    def _init_llm(self) -> LLMProvider:
-        """Initialize LLM provider from config"""
-        return get_provider(
-            self.config.llm.provider,
-            api_key=None,  # Will use env var
-            model=self.config.llm.model
-        )
-    
-    async def run(self, query: str) -> Path:
-        """
-        Run the complete research workflow
-        
-        Returns:
-            Path to the generated bundle
-        """
-        logger.info(f"Starting research for: {query}")
-        
-        # Create output directory
-        output_dir = self._create_output_dir(query)
-        
-        # Step 1: Search for URLs
-        if not self.config.dry_run:
-            urls = await self._search_urls(query)
-            logger.info(f"Found {len(urls)} URLs")
-        else:
-            logger.info("DRY RUN: Would search for URLs")
-            urls = []
-        
-        # Step 2: Scrape content
-        if not self.config.dry_run and urls:
-            scraped_content = await self._scrape_urls(urls[:self.config.scrape_count])
-            logger.info(f"Scraped {len(scraped_content)} pages")
-            
-            # Pre-filter scraped content if filtering is enabled
-            if not self.config.no_filter and scraped_content:
-                from .content_filter import ContentFilter
-                pre_filter = ContentFilter(self.config.analysis)
-                scraped_content = pre_filter.filter_scraped_content(scraped_content)
-                logger.info(f"Pre-filtered to {len(scraped_content)} pages")
-        else:
-            logger.info("DRY RUN: Would scrape URLs")
-            scraped_content = []
-        
-        # Step 3: Analyze content (if enabled)
-        if not self.config.no_analysis and scraped_content and not self.config.dry_run:
-            analyzed_content = await self._analyze_content(scraped_content, query)
-            logger.info(f"Analyzed {len(analyzed_content)} pages")
-        else:
-            analyzed_content = [
-                AnalyzedContent(
-                    url=sc.url,
-                    title=sc.title,
-                    content=sc.markdown,
-                    relevance_score=5.0,
-                    key_points=[],
-                    summary=""
-                ) for sc in scraped_content
-            ]
-        
-        # Step 4: Filter content (if enabled)
-        if not self.config.no_filter and analyzed_content:
-            filtered_content = self._filter_content(analyzed_content)
-            logger.info(f"Filtered to {len(filtered_content)} relevant pages")
-        else:
-            filtered_content = analyzed_content
-        
-        # Step 5: Create bundle
-        if filtered_content and not self.config.dry_run:
-            bundle_path = await self._create_bundle(filtered_content, query, output_dir)
-            logger.info(f"Created bundle at: {bundle_path}")
-            return bundle_path
-        else:
-            logger.info("DRY RUN: Would create bundle")
-            return output_dir / "research-bundle.md"
-    
-    async def run_interactive(self):
-        """Run in interactive mode"""
-        print("🔍 Welcome to m1f-research interactive mode!")
-        print("Type 'exit' or 'quit' to stop.\n")
-        
-        while True:
-            try:
-                query = input("What would you like to research? > ").strip()
-                
-                if query.lower() in ['exit', 'quit']:
-                    print("👋 Goodbye!")
-                    break
-                
-                if not query:
-                    continue
-                
-                # Run research
-                bundle_path = await self.run(query)
-                print(f"\n✅ Research complete! Bundle saved to: {bundle_path}\n")
-                
-            except KeyboardInterrupt:
-                print("\n👋 Goodbye!")
-                break
-            except Exception as e:
-                print(f"\n❌ Error: {e}\n")
-                if self.config.verbose > 0:
-                    import traceback
-                    traceback.print_exc()
-    
-    def _create_output_dir(self, query: str) -> Path:
-        """Create output directory with hierarchical structure: YYYY/MM/DD/query_HHMMSS"""
-        now = datetime.now()
-        
-        # Create hierarchical date structure
-        year = now.strftime("%Y")
-        month = now.strftime("%m")
-        day = now.strftime("%d")
-        
-        # Sanitize query for directory name
-        safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
-        safe_name = safe_name.replace(" ", "-").lower()[:40]  # Shorter to allow for timestamp
-        
-        # Add time for uniqueness
-        time_suffix = now.strftime("%H%M%S")
-        dir_name = f"{safe_name}_{time_suffix}"
-        
-        # Build hierarchical path: research-data/2025/07/22/query_171851/
-        output_dir = self.config.output.directory / year / month / day / dir_name
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        return output_dir
-    
-    async def _search_urls(self, query: str) -> List[Dict[str, str]]:
-        """Search for URLs using LLM"""
-        try:
-            urls = await self.llm.search_web(query, self.config.url_count)
-            
-            # Save URLs to file for reference
-            if self.config.output.include_metadata:
-                urls_file = self.config.output.directory / "search_results.json"
-                urls_file.parent.mkdir(parents=True, exist_ok=True)
-                with open(urls_file, 'w') as f:
-                    json.dump(urls, f, indent=2)
-            
-            return urls
-            
-        except Exception as e:
-            logger.error(f"Error searching for URLs: {e}")
-            return []
-    
-    async def _scrape_urls(self, urls: List[Dict[str, str]]) -> List[ScrapedContent]:
-        """Scrape content from URLs"""
-        from .scraper import SmartScraper
-        
-        # Create progress callback if verbose
-        def progress_callback(completed, total):
-            if self.config.verbose > 0:
-                logger.info(f"Scraping progress: {completed}/{total} ({completed/total*100:.1f}%)")
-        
-        # Use SmartScraper for advanced scraping
-        async with SmartScraper(self.config.scraping) as scraper:
-            if self.config.verbose > 0:
-                scraper.set_progress_callback(progress_callback)
-            
-            scraped = await scraper.scrape_urls(urls)
-            
-            # Log statistics
-            stats = scraper.get_stats()
-            logger.info(f"Scraping complete: {stats['success_rate']*100:.1f}% success rate")
-            
-            if stats['failed_urls'] > 0:
-                logger.warning(f"Failed to scrape {stats['failed_urls']} URLs")
-                if self.config.verbose > 1:
-                    for url in stats['failed_url_list']:
-                        logger.debug(f"  Failed: {url}")
-        
-        return scraped
-    
-    async def _analyze_content(self, content: List[ScrapedContent], query: str) -> List[AnalyzedContent]:
-        """Analyze scraped content for relevance and key points"""
-        from .analyzer import ContentAnalyzer
-        
-        # Get template name from config if available
-        template_name = getattr(self.config, 'template', 'general')
-        
-        # Use ContentAnalyzer for comprehensive analysis
-        analyzer = ContentAnalyzer(self.llm, self.config.analysis, template_name=template_name)
-        analyzed = await analyzer.analyze_content(content, query)
-        
-        # Log analysis results
-        avg_relevance = sum(item.relevance_score for item in analyzed) / len(analyzed) if analyzed else 0
-        logger.info(f"Average relevance score: {avg_relevance:.1f}/10")
-        
-        # Extract and log topics
-        topics = await analyzer.extract_topics(analyzed)
-        if topics['primary']:
-            logger.info(f"Primary topics: {', '.join(topics['primary'][:5])}")
-        
-        return analyzed
-    
-    def _filter_content(self, content: List[AnalyzedContent]) -> List[AnalyzedContent]:
-        """Filter content based on configuration"""
-        from .content_filter import ContentFilter
-        
-        # Use ContentFilter for advanced filtering
-        filter = ContentFilter(self.config.analysis)
-        filtered = filter.filter_analyzed_content(content)
-        
-        # Sort by relevance
-        filtered.sort(key=lambda x: x.relevance_score, reverse=True)
-        
-        # Log filter statistics
-        stats = filter.get_filter_stats()
-        logger.info(f"Filter stats: {stats['duplicate_checks']} duplicate checks performed")
-        
-        return filtered
-    
-    async def _create_bundle(self, content: List[AnalyzedContent], query: str, output_dir: Path) -> Path:
-        """Create the final research bundle using SmartBundleCreator"""
-        from .bundle_creator import SmartBundleCreator
-        
-        # Generate synthesis if we have an analyzer and it's enabled
-        synthesis = None
-        if not self.config.no_analysis and self.config.output.create_summary:
-            from .analyzer import ContentAnalyzer
-            analyzer = ContentAnalyzer(self.llm, self.config.analysis)
-            synthesis = await analyzer.generate_synthesis(content, query)
-        
-        # Use SmartBundleCreator for intelligent organization
-        bundle_creator = SmartBundleCreator(
-            llm_provider=self.llm if not self.config.no_analysis else None,
-            config=self.config.output,
-            research_config=self.config
-        )
-        
-        bundle_path = await bundle_creator.create_bundle(
-            content_list=content,
-            research_query=query,
-            output_dir=output_dir,
-            synthesis=synthesis
-        )
-        
-        return bundle_path
-
 ======= tools/research/output.py ======
 """
 Enhanced output formatting for m1f-research CLI
@@ -67074,80 +66091,81 @@ from datetime import datetime
 import shutil
 from pathlib import Path
 
-# Try to import colorama for colored output
+# Use unified colorama module
 try:
-    from colorama import Fore, Back, Style, init
-
-    init(autoreset=True)
-    COLORAMA_AVAILABLE = True
+    from ..shared.colors import Colors, COLORAMA_AVAILABLE
 except ImportError:
-    COLORAMA_AVAILABLE = False
+    # Fallback to local implementation
+    try:
+        from colorama import Fore, Back, Style, init
+        init(autoreset=True)
+        COLORAMA_AVAILABLE = True
+    except ImportError:
+        COLORAMA_AVAILABLE = False
 
-
-class Colors:
-    """Color codes for terminal output using colorama when available"""
-
-    if COLORAMA_AVAILABLE:
-        # Basic colors
-        BLACK = Fore.BLACK
-        RED = Fore.RED
-        GREEN = Fore.GREEN
-        YELLOW = Fore.YELLOW
-        BLUE = Fore.BLUE
-        MAGENTA = Fore.MAGENTA
-        CYAN = Fore.CYAN
-        WHITE = Fore.WHITE
-
-        # Bright colors
-        BRIGHT_BLACK = Fore.LIGHTBLACK_EX
-        BRIGHT_RED = Fore.LIGHTRED_EX
-        BRIGHT_GREEN = Fore.LIGHTGREEN_EX
-        BRIGHT_YELLOW = Fore.LIGHTYELLOW_EX
-        BRIGHT_BLUE = Fore.LIGHTBLUE_EX
-        BRIGHT_MAGENTA = Fore.LIGHTMAGENTA_EX
-        BRIGHT_CYAN = Fore.LIGHTCYAN_EX
-        BRIGHT_WHITE = Fore.LIGHTWHITE_EX
-
-        # Styles
-        BOLD = Style.BRIGHT
-        DIM = Style.DIM
-        NORMAL = Style.NORMAL
-        RESET = Style.RESET_ALL
-    else:
-        # Fallback to empty strings when colorama not available
-        BLACK = ""
-        RED = ""
-        GREEN = ""
-        YELLOW = ""
-        BLUE = ""
-        MAGENTA = ""
-        CYAN = ""
-        WHITE = ""
-        BRIGHT_BLACK = ""
-        BRIGHT_RED = ""
-        BRIGHT_GREEN = ""
-        BRIGHT_YELLOW = ""
-        BRIGHT_BLUE = ""
-        BRIGHT_MAGENTA = ""
-        BRIGHT_CYAN = ""
-        BRIGHT_WHITE = ""
-        BOLD = ""
-        DIM = ""
-        NORMAL = ""
-        RESET = ""
-
-    @classmethod
-    def disable(cls):
-        """Disable colors (for non-TTY output or when requested)"""
-        for attr in dir(cls):
-            if not attr.startswith("_") and attr not in ("disable", "enable"):
-                setattr(cls, attr, "")
-
-    @classmethod
-    def enable(cls):
-        """Re-enable colors if colorama is available"""
+    class Colors:
+        """Fallback color codes"""
         if COLORAMA_AVAILABLE:
-            cls.__init__()
+            # Basic colors
+            BLACK = Fore.BLACK
+            RED = Fore.RED
+            GREEN = Fore.GREEN
+            YELLOW = Fore.YELLOW
+            BLUE = Fore.BLUE
+            MAGENTA = Fore.MAGENTA
+            CYAN = Fore.CYAN
+            WHITE = Fore.WHITE
+            
+            # Bright colors
+            BRIGHT_BLACK = Fore.LIGHTBLACK_EX
+            BRIGHT_RED = Fore.LIGHTRED_EX
+            BRIGHT_GREEN = Fore.LIGHTGREEN_EX
+            BRIGHT_YELLOW = Fore.LIGHTYELLOW_EX
+            BRIGHT_BLUE = Fore.LIGHTBLUE_EX
+            BRIGHT_MAGENTA = Fore.LIGHTMAGENTA_EX
+            BRIGHT_CYAN = Fore.LIGHTCYAN_EX
+            BRIGHT_WHITE = Fore.LIGHTWHITE_EX
+            
+            # Styles
+            BOLD = Style.BRIGHT
+            DIM = Style.DIM
+            NORMAL = Style.NORMAL
+            RESET = Style.RESET_ALL
+        else:
+            # Empty strings when colorama not available
+            BLACK = ""
+            RED = ""
+            GREEN = ""
+            YELLOW = ""
+            BLUE = ""
+            MAGENTA = ""
+            CYAN = ""
+            WHITE = ""
+            BRIGHT_BLACK = ""
+            BRIGHT_RED = ""
+            BRIGHT_GREEN = ""
+            BRIGHT_YELLOW = ""
+            BRIGHT_BLUE = ""
+            BRIGHT_MAGENTA = ""
+            BRIGHT_CYAN = ""
+            BRIGHT_WHITE = ""
+            BOLD = ""
+            DIM = ""
+            NORMAL = ""
+            RESET = ""
+        
+        @classmethod
+        def disable(cls):
+            """Disable colors (for non-TTY output or when requested)"""
+            for attr in dir(cls):
+                if not attr.startswith("_") and attr not in ("disable", "enable"):
+                    setattr(cls, attr, "")
+        
+        @classmethod
+        def enable(cls):
+            """Re-enable colors if colorama is available"""
+            if COLORAMA_AVAILABLE:
+                cls.__init__()
 
 
 class OutputFormatter:
@@ -69411,6 +68429,13 @@ except ImportError:
 
 from .config import Config
 from .models import ExtractedFile, ExtractionResult
+
+# Use unified colorama module for direct prints
+try:
+    from ..shared.colors import info
+except ImportError:
+    # Fallback
+    def info(msg): print(msg)
 from .parsers import CombinedFileParser
 from .writers import FileWriter
 from .utils import format_size, is_binary_content
@@ -69449,7 +68474,7 @@ class FileSplitter:
                 return ExtractionResult(), 2
 
             # Display file list
-            print(
+            info(
                 f"\nFound {len(extracted_files)} file(s) in {self.config.input_file}:\n"
             )
 
@@ -69470,12 +68495,12 @@ class FileSplitter:
                 if meta.type:
                     info_parts.append(f"Type: {meta.type}")
 
-                print("  ".join(info_parts))
+                info("  ".join(info_parts))
 
                 if meta.size_bytes:
                     total_size += meta.size_bytes
 
-            print(f"\nTotal size: {format_size(total_size)}")
+            info(f"\nTotal size: {format_size(total_size)}")
 
             result = ExtractionResult(
                 files_created=0,

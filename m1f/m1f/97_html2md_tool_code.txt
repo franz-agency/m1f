@@ -1705,14 +1705,33 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from rich.console import Console
+# Use unified colorama module
+try:
+    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to no colors
+    COLORAMA_AVAILABLE = False
+    class Colors:
+        GREEN = ""
+        RED = ""
+        YELLOW = ""
+        BLUE = ""
+        BOLD = ""
+        RESET = ""
+    
+    def success(msg): print(f"✅ {msg}")
+    def error(msg): print(f"❌ {msg}", file=sys.stderr)
+    def warning(msg): print(f"⚠️  {msg}")
+    def info(msg): print(msg)
+    def header(title, subtitle=None):
+        print(f"\n{title}")
+        if subtitle:
+            print(subtitle)
 
 from . import __version__
 from .api import Html2mdConverter
 from .config import Config, OutputFormat
 from .claude_runner import ClaudeRunner
-
-console = Console()
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -1984,17 +2003,17 @@ def handle_convert(args: argparse.Namespace) -> None:
 
     # Convert based on source type
     if args.source.is_file():
-        console.print(f"Converting file: {args.source}")
+        info(f"Converting file: {args.source}")
         output = converter.convert_file(args.source)
-        console.print(f"✅ Converted to: {output}", style="green")
+        success(f"Converted to: {output}")
 
     elif args.source.is_dir():
-        console.print(f"Converting directory: {args.source}")
+        info(f"Converting directory: {args.source}")
         outputs = converter.convert_directory()
-        console.print(f"✅ Converted {len(outputs)} files", style="green")
+        success(f"Converted {len(outputs)} files")
 
     else:
-        console.print(f"❌ Source not found: {args.source}", style="red")
+        error(f"Source not found: {args.source}")
         sys.exit(1)
 
 
@@ -2008,7 +2027,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     html_files = []
     for path in args.paths:
         if not path.exists():
-            console.print(f"❌ Path not found: {path}", style="red")
+            error(f"Path not found: {path}")
             continue
 
         if path.is_file():
