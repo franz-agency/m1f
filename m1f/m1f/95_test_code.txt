@@ -719,6 +719,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from tools.shared.colors import warning
+
 if TYPE_CHECKING:
     from collections.abc import Iterator, Callable
 
@@ -984,7 +988,7 @@ def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
         except (OSError, PermissionError) as e:
             if attempt == max_retries - 1:
                 # Final attempt failed, log warning but don't raise
-                print(f"Warning: Could not clean up test directory {directory}: {e}")
+                warning(f"Could not clean up test directory {directory}: {e}")
                 return
 
             # Wait with exponential backoff
@@ -1112,6 +1116,10 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from tools.html2md_tool import HTML2MDConverter, ConversionOptions
+
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from tools.shared.colors import error
 
 
 class TestServer:
@@ -1447,7 +1455,7 @@ class TestServer:
                     pass
 
         except Exception as e:
-            print(f"Error during process cleanup: {e}")
+            error(f"Error during process cleanup: {e}")
 
         finally:
             self.process = None
@@ -3034,6 +3042,10 @@ from urllib.parse import urljoin
 import time
 import pytest
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info, error, warning, success, header
+
 # Add logging for debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -3183,19 +3195,19 @@ def check_server_connectivity():
     try:
         response = requests.get(TEST_SERVER_URL, timeout=5)
         if response.status_code == 200:
-            print(f"✅ Test server is running at {TEST_SERVER_URL}")
+            success(f"Test server is running at {TEST_SERVER_URL}")
             return True
         else:
-            print(f"❌ Test server returned status {response.status_code}")
+            error(f"Test server returned status {response.status_code}")
             return False
     except requests.exceptions.ConnectionError:
-        print(f"❌ Cannot connect to test server at {TEST_SERVER_URL}")
-        print(
+        error(f"Cannot connect to test server at {TEST_SERVER_URL}")
+        error(
             "   Make sure the server is running with: cd tests/html2md_server && python server.py"
         )
         return False
     except Exception as e:
-        print(f"❌ Error connecting to test server: {e}")
+        error(f"Error connecting to test server: {e}")
         return False
 
 
@@ -3209,7 +3221,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
     """Scrape a page from the test server and convert it to Markdown."""
     url = f"{TEST_SERVER_URL}/page/{page_name}"
 
-    print(f"\n🔍 Scraping: {url}")
+    info(f"\n🔍 Scraping: {url}")
 
     try:
         # Fetch HTML
@@ -3219,7 +3231,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
 
-        print(f"   📄 Fetched {len(response.text)} characters")
+        info(f"   📄 Fetched {len(response.text)} characters")
 
         # Parse HTML
         soup = BeautifulSoup(response.text, "html.parser")
@@ -3228,11 +3240,11 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         if outermost_selector:
             content = soup.select_one(outermost_selector)
             if content:
-                print(f"   🎯 Applied selector: {outermost_selector}")
+                info(f"   🎯 Applied selector: {outermost_selector}")
                 soup = BeautifulSoup(str(content), "html.parser")
             else:
-                print(
-                    f"   ⚠️  Selector '{outermost_selector}' not found, using full page"
+                warning(
+                    f"   Selector '{outermost_selector}' not found, using full page"
                 )
 
         # Remove ignored elements
@@ -3240,7 +3252,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             for selector in ignore_selectors:
                 elements = soup.select(selector)
                 if elements:
-                    print(
+                    info(
                         f"   🗑️  Removed {len(elements)} elements matching '{selector}'"
                     )
                     for element in elements:
@@ -3252,7 +3264,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             html_content, heading_style="atx", bullets="-"
         )
 
-        print(f"   ✅ Converted to {len(markdown)} characters of Markdown")
+        success(f"   Converted to {len(markdown)} characters of Markdown")
 
         # Save to file
         output_dir = Path("tests/mf1-html2md/scraped_examples")
@@ -3266,7 +3278,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             f.write(f"*Scraped at: {time.strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
             f.write(f"*Source URL: {url}*")
 
-        print(f"   💾 Saved to: {output_path}")
+        info(f"   💾 Saved to: {output_path}")
 
         return {
             "success": True,
@@ -3277,14 +3289,14 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         }
 
     except Exception as e:
-        print(f"   ❌ Error: {e}")
+        error(f"   Error: {e}")
         return {"success": False, "url": url, "error": str(e)}
 
 
 def main():
     """Run local scraping tests."""
-    print("🚀 HTML2MD Local Scraping Test")
-    print("=" * 50)
+    header("🚀 HTML2MD Local Scraping Test")
+    info("=" * 50)
 
     # Check server connectivity
     if not check_server_connectivity():
@@ -3320,10 +3332,10 @@ def main():
 
     results = []
 
-    print(f"\n📋 Running {len(test_cases)} test cases...")
+    info(f"\n📋 Running {len(test_cases)} test cases...")
 
     for i, test_case in enumerate(test_cases, 1):
-        print(f"\n[{i}/{len(test_cases)}] {test_case['description']}")
+        info(f"\n[{i}/{len(test_cases)}] {test_case['description']}")
 
         result = scrape_and_convert(
             test_case["name"],
@@ -3334,28 +3346,31 @@ def main():
         results.append({**result, **test_case})
 
     # Summary
-    print("\n" + "=" * 50)
-    print("📊 SCRAPING TEST SUMMARY")
-    print("=" * 50)
+    info("\n" + "=" * 50)
+    header("📊 SCRAPING TEST SUMMARY")
+    info("=" * 50)
 
     successful = [r for r in results if r["success"]]
     failed = [r for r in results if not r["success"]]
 
-    print(f"✅ Successful: {len(successful)}/{len(results)}")
-    print(f"❌ Failed: {len(failed)}/{len(results)}")
+    success(f"Successful: {len(successful)}/{len(results)}")
+    if len(failed) > 0:
+        error(f"Failed: {len(failed)}/{len(results)}")
+    else:
+        info(f"Failed: {len(failed)}/{len(results)}")
 
     if successful:
-        print(f"\n📄 Generated Markdown files:")
+        info(f"\n📄 Generated Markdown files:")
         for result in successful:
-            print(f"   • {result['output_file']} ({result['markdown_length']} chars)")
+            info(f"   • {result['output_file']} ({result['markdown_length']} chars)")
 
     if failed:
-        print(f"\n❌ Failed conversions:")
+        error(f"\nFailed conversions:")
         for result in failed:
-            print(f"   • {result['name']}: {result['error']}")
+            error(f"   • {result['name']}: {result['error']}")
 
-    print(f"\n🔗 Test server: {TEST_SERVER_URL}")
-    print("💡 You can now examine the generated .md files to see conversion quality")
+    info(f"\n🔗 Test server: {TEST_SERVER_URL}")
+    info("💡 You can now examine the generated .md files to see conversion quality")
 
 
 if __name__ == "__main__":
@@ -4100,6 +4115,10 @@ import time
 import platform
 from pathlib import Path
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info, error, warning, success
+
 # Platform-specific PID file location
 if platform.system() == "Windows":
     import tempfile
@@ -4121,8 +4140,8 @@ except ImportError:
 def start_server():
     """Start the test server."""
     if PID_FILE.exists():
-        print("Server already running or PID file exists.")
-        print(f"Check PID file: {PID_FILE}")
+        warning("Server already running or PID file exists.")
+        warning(f"Check PID file: {PID_FILE}")
         return
 
     server_path = Path(__file__).parent / "server.py"
@@ -4145,14 +4164,14 @@ def start_server():
 
     # Save PID
     PID_FILE.write_text(str(process.pid))
-    print(f"Server started with PID: {process.pid}")
-    print("Server running at: http://localhost:8080")
+    success(f"Server started with PID: {process.pid}")
+    info("Server running at: http://localhost:8080")
 
 
 def stop_server():
     """Stop the test server gracefully."""
     if not PID_FILE.exists():
-        print("No server PID file found.")
+        warning("No server PID file found.")
         return
 
     try:
@@ -4176,20 +4195,20 @@ def stop_server():
 
                 # Terminate the main process
                 process.terminate()
-                print(f"Sent terminate signal to PID {pid}")
+                info(f"Sent terminate signal to PID {pid}")
 
                 # Wait for graceful shutdown
                 try:
                     process.wait(timeout=5)
-                    print("Server stopped gracefully.")
+                    success("Server stopped gracefully.")
                 except psutil.TimeoutExpired:
-                    print("Server still running, forcing termination...")
+                    warning("Server still running, forcing termination...")
                     process.kill()
                     process.wait(timeout=2)
-                    print("Server forcefully terminated.")
+                    warning("Server forcefully terminated.")
 
             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                print("Process not found or access denied.")
+                error("Process not found or access denied.")
         else:
             # Fallback to OS signals
             if platform.system() == "Windows":
@@ -4202,15 +4221,15 @@ def stop_server():
                         check=True,
                         capture_output=True,
                     )
-                    print(f"Terminated process {pid}")
+                    success(f"Terminated process {pid}")
                 except subprocess.CalledProcessError as e:
-                    print(f"Failed to terminate process: {e}")
+                    error(f"Failed to terminate process: {e}")
             else:
                 # Unix-like systems
                 try:
                     # Send SIGTERM for graceful shutdown
                     os.kill(pid, signal.SIGTERM)
-                    print(f"Sent SIGTERM to PID {pid}")
+                    info(f"Sent SIGTERM to PID {pid}")
 
                     # Wait a bit
                     time.sleep(1)
@@ -4218,18 +4237,18 @@ def stop_server():
                     # Check if still running
                     try:
                         os.kill(pid, 0)  # Check if process exists
-                        print("Server still running, sending SIGKILL...")
+                        warning("Server still running, sending SIGKILL...")
                         os.kill(pid, signal.SIGKILL)
                     except ProcessLookupError:
-                        print("Server stopped gracefully.")
+                        success("Server stopped gracefully.")
                 except ProcessLookupError:
-                    print("Process not found.")
+                    error("Process not found.")
 
         # Clean up PID file
         PID_FILE.unlink()
 
     except (ValueError, ProcessLookupError) as e:
-        print(f"Error stopping server: {e}")
+        error(f"Error stopping server: {e}")
         if PID_FILE.exists():
             PID_FILE.unlink()
 
@@ -4237,7 +4256,7 @@ def stop_server():
 def status_server():
     """Check server status."""
     if not PID_FILE.exists():
-        print("Server not running (no PID file)")
+        info("Server not running (no PID file)")
         return
 
     try:
@@ -4248,17 +4267,17 @@ def status_server():
             try:
                 process = psutil.Process(pid)
                 if process.is_running() and process.name() in ["python", "python.exe"]:
-                    print(f"Server running with PID: {pid}")
-                    print(f"Process name: {process.name()}")
-                    print(
+                    success(f"Server running with PID: {pid}")
+                    info(f"Process name: {process.name()}")
+                    info(
                         f"Memory usage: {process.memory_info().rss / 1024 / 1024:.1f} MB"
                     )
-                    print(f"CPU percent: {process.cpu_percent():.1f}%")
+                    info(f"CPU percent: {process.cpu_percent():.1f}%")
                 else:
-                    print("Server not running (stale PID file)")
+                    warning("Server not running (stale PID file)")
                     PID_FILE.unlink()
             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                print("Server not running (stale PID file)")
+                warning("Server not running (stale PID file)")
                 PID_FILE.unlink()
         else:
             # Fallback to basic process check
@@ -4272,29 +4291,29 @@ def status_server():
                         text=True,
                     )
                     if str(pid) in result.stdout:
-                        print(f"Server running with PID: {pid}")
+                        success(f"Server running with PID: {pid}")
                     else:
-                        print("Server not running (stale PID file)")
+                        warning("Server not running (stale PID file)")
                         PID_FILE.unlink()
                 except subprocess.CalledProcessError:
-                    print("Server not running (stale PID file)")
+                    warning("Server not running (stale PID file)")
                     PID_FILE.unlink()
             else:
                 try:
                     os.kill(pid, 0)  # Check if process exists
-                    print(f"Server running with PID: {pid}")
+                    success(f"Server running with PID: {pid}")
                 except ProcessLookupError:
-                    print("Server not running (stale PID file)")
+                    warning("Server not running (stale PID file)")
                     PID_FILE.unlink()
 
     except ValueError:
-        print("Invalid PID file")
+        error("Invalid PID file")
         PID_FILE.unlink()
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in ["start", "stop", "status"]:
-        print("Usage: python manage_server.py [start|stop|status]")
+        error("Usage: python manage_server.py [start|stop|status]")
         sys.exit(1)
 
     command = sys.argv[1]
@@ -7709,6 +7728,10 @@ from pathlib import Path, PureWindowsPath
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 from tools import s1f
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info, error, warning, success
+
 # Test constants
 TEST_DIR = Path(__file__).parent
 OUTPUT_DIR = TEST_DIR / "output"
@@ -7735,7 +7758,7 @@ def run_s1f(arg_list):
     # Define a custom exit function that just records the exit code
     def mock_exit(code=0):
         if code != 0:
-            print(f"WARNING: Script exited with non-zero exit code: {code}")
+            warning(f"Script exited with non-zero exit code: {code}")
         return code
 
     try:
@@ -7778,7 +7801,7 @@ def verify_extracted_files(original_paths, extracted_dir):
         extracted_path = extracted_dir / rel_path
 
         if not extracted_path.exists():
-            print(f"Missing extracted file: {extracted_path}")
+            error(f"Missing extracted file: {extracted_path}")
             missing_count += 1
             continue
 
@@ -7788,7 +7811,7 @@ def verify_extracted_files(original_paths, extracted_dir):
         if orig_hash == extracted_hash:
             matching_count += 1
         else:
-            print(f"Content differs: {orig_path} vs {extracted_path}")
+            error(f"Content differs: {orig_path} vs {extracted_path}")
             different_count += 1
 
     return matching_count, missing_count, different_count
@@ -7801,11 +7824,11 @@ class TestS1F:
     def setup_class(cls):
         """Setup test environment once before all tests."""
         # Print test environment information
-        print(f"\nRunning tests for s1f.py")
-        print(f"Python version: {sys.version}")
-        print(f"Test directory: {TEST_DIR}")
-        print(f"Output directory: {OUTPUT_DIR}")
-        print(f"Extracted directory: {EXTRACTED_DIR}")
+        info(f"\nRunning tests for s1f.py")
+        info(f"Python version: {sys.version}")
+        info(f"Test directory: {TEST_DIR}")
+        info(f"Output directory: {OUTPUT_DIR}")
+        info(f"Extracted directory: {EXTRACTED_DIR}")
 
     def setup_method(self):
         """Setup test environment before each test."""
@@ -7825,8 +7848,8 @@ class TestS1F:
         """Test extracting files from a combined file with Standard separator style."""
         input_file = OUTPUT_DIR / "standard.txt"
 
-        print(f"Standard test: Input file exists: {input_file.exists()}")
-        print(
+        info(f"Standard test: Input file exists: {input_file.exists()}")
+        info(
             f"Standard test: Input file size: {input_file.stat().st_size if input_file.exists() else 'N/A'}"
         )
 
@@ -7844,13 +7867,13 @@ class TestS1F:
 
         # Get list of files in the extracted directory - look for any files, not just those with the original paths
         extracted_files = list(Path(EXTRACTED_DIR).glob("*"))
-        print(f"Standard test: Files extracted: {len(extracted_files)}")
-        print(f"Standard test: Extracted files: {[f.name for f in extracted_files]}")
+        info(f"Standard test: Files extracted: {len(extracted_files)}")
+        info(f"Standard test: Extracted files: {[f.name for f in extracted_files]}")
 
         # Print the input file content to debug
         if input_file.exists():
             content = input_file.read_text(encoding="utf-8")[:500]
-            print(
+            info(
                 f"Standard test: First 500 chars of input file: {content.replace('\\r', '\\\\r').replace('\\n', '\\\\n')}"
             )
 
@@ -9127,6 +9150,9 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 # Import the tools modules
 from tools import m1f, s1f
 
+# Add colorama imports
+from tools.shared.colors import success
+
 
 def test_target_encoding():
     """Test the --target-encoding parameter of s1f.py."""
@@ -9287,7 +9313,7 @@ def test_target_encoding():
     except Exception as e:
         assert False, f"Target-encoding extraction failed: {e}"
 
-    print("\nAll tests passed! The --target-encoding parameter works correctly.")
+    success("\nAll tests passed! The --target-encoding parameter works correctly.")
 
 
 if __name__ == "__main__":

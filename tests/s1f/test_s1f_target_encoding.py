@@ -18,6 +18,9 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 # Import the tools modules
 from tools import m1f, s1f
 
+# Add colorama imports
+from tools.shared.colors import success
+
 
 def test_target_encoding():
     """Test the --target-encoding parameter of s1f.py."""
@@ -178,7 +181,7 @@ def test_target_encoding():
     except Exception as e:
         assert False, f"Target-encoding extraction failed: {e}"
 
-    print("\nAll tests passed! The --target-encoding parameter works correctly.")
+    success("\nAll tests passed! The --target-encoding parameter works correctly.")
 
 
 if __name__ == "__main__":

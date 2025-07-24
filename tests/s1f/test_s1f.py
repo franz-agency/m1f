@@ -36,6 +36,10 @@ from pathlib import Path, PureWindowsPath
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 from tools import s1f
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info, error, warning, success
+
 # Test constants
 TEST_DIR = Path(__file__).parent
 OUTPUT_DIR = TEST_DIR / "output"
@@ -62,7 +66,7 @@ def run_s1f(arg_list):
     # Define a custom exit function that just records the exit code
     def mock_exit(code=0):
         if code != 0:
-            print(f"WARNING: Script exited with non-zero exit code: {code}")
+            warning(f"Script exited with non-zero exit code: {code}")
         return code
 
     try:
@@ -105,7 +109,7 @@ def verify_extracted_files(original_paths, extracted_dir):
         extracted_path = extracted_dir / rel_path
 
         if not extracted_path.exists():
-            print(f"Missing extracted file: {extracted_path}")
+            error(f"Missing extracted file: {extracted_path}")
             missing_count += 1
             continue
 
@@ -115,7 +119,7 @@ def verify_extracted_files(original_paths, extracted_dir):
         if orig_hash == extracted_hash:
             matching_count += 1
         else:
-            print(f"Content differs: {orig_path} vs {extracted_path}")
+            error(f"Content differs: {orig_path} vs {extracted_path}")
             different_count += 1
 
     return matching_count, missing_count, different_count
@@ -128,11 +132,11 @@ class TestS1F:
     def setup_class(cls):
         """Setup test environment once before all tests."""
         # Print test environment information
-        print(f"\nRunning tests for s1f.py")
-        print(f"Python version: {sys.version}")
-        print(f"Test directory: {TEST_DIR}")
-        print(f"Output directory: {OUTPUT_DIR}")
-        print(f"Extracted directory: {EXTRACTED_DIR}")
+        info(f"\nRunning tests for s1f.py")
+        info(f"Python version: {sys.version}")
+        info(f"Test directory: {TEST_DIR}")
+        info(f"Output directory: {OUTPUT_DIR}")
+        info(f"Extracted directory: {EXTRACTED_DIR}")
 
     def setup_method(self):
         """Setup test environment before each test."""
@@ -152,8 +156,8 @@ class TestS1F:
         """Test extracting files from a combined file with Standard separator style."""
         input_file = OUTPUT_DIR / "standard.txt"
 
-        print(f"Standard test: Input file exists: {input_file.exists()}")
-        print(
+        info(f"Standard test: Input file exists: {input_file.exists()}")
+        info(
             f"Standard test: Input file size: {input_file.stat().st_size if input_file.exists() else 'N/A'}"
         )
 
@@ -171,13 +175,13 @@ class TestS1F:
 
         # Get list of files in the extracted directory - look for any files, not just those with the original paths
         extracted_files = list(Path(EXTRACTED_DIR).glob("*"))
-        print(f"Standard test: Files extracted: {len(extracted_files)}")
-        print(f"Standard test: Extracted files: {[f.name for f in extracted_files]}")
+        info(f"Standard test: Files extracted: {len(extracted_files)}")
+        info(f"Standard test: Extracted files: {[f.name for f in extracted_files]}")
 
         # Print the input file content to debug
         if input_file.exists():
             content = input_file.read_text(encoding="utf-8")[:500]
-            print(
+            info(
                 f"Standard test: First 500 chars of input file: {content.replace('\\r', '\\\\r').replace('\\n', '\\\\n')}"
             )
 

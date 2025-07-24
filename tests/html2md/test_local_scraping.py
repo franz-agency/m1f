@@ -51,6 +51,10 @@ from urllib.parse import urljoin
 import time
 import pytest
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info, error, warning, success, header
+
 # Add logging for debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -200,19 +204,19 @@ def check_server_connectivity():
     try:
         response = requests.get(TEST_SERVER_URL, timeout=5)
         if response.status_code == 200:
-            print(f"✅ Test server is running at {TEST_SERVER_URL}")
+            success(f"Test server is running at {TEST_SERVER_URL}")
             return True
         else:
-            print(f"❌ Test server returned status {response.status_code}")
+            error(f"Test server returned status {response.status_code}")
             return False
     except requests.exceptions.ConnectionError:
-        print(f"❌ Cannot connect to test server at {TEST_SERVER_URL}")
-        print(
+        error(f"Cannot connect to test server at {TEST_SERVER_URL}")
+        error(
             "   Make sure the server is running with: cd tests/html2md_server && python server.py"
         )
         return False
     except Exception as e:
-        print(f"❌ Error connecting to test server: {e}")
+        error(f"Error connecting to test server: {e}")
         return False
 
 
@@ -226,7 +230,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
     """Scrape a page from the test server and convert it to Markdown."""
     url = f"{TEST_SERVER_URL}/page/{page_name}"
 
-    print(f"\n🔍 Scraping: {url}")
+    info(f"\n🔍 Scraping: {url}")
 
     try:
         # Fetch HTML
@@ -236,7 +240,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
 
-        print(f"   📄 Fetched {len(response.text)} characters")
+        info(f"   📄 Fetched {len(response.text)} characters")
 
         # Parse HTML
         soup = BeautifulSoup(response.text, "html.parser")
@@ -245,11 +249,11 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         if outermost_selector:
             content = soup.select_one(outermost_selector)
             if content:
-                print(f"   🎯 Applied selector: {outermost_selector}")
+                info(f"   🎯 Applied selector: {outermost_selector}")
                 soup = BeautifulSoup(str(content), "html.parser")
             else:
-                print(
-                    f"   ⚠️  Selector '{outermost_selector}' not found, using full page"
+                warning(
+                    f"   Selector '{outermost_selector}' not found, using full page"
                 )
 
         # Remove ignored elements
@@ -257,7 +261,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             for selector in ignore_selectors:
                 elements = soup.select(selector)
                 if elements:
-                    print(
+                    info(
                         f"   🗑️  Removed {len(elements)} elements matching '{selector}'"
                     )
                     for element in elements:
@@ -269,7 +273,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             html_content, heading_style="atx", bullets="-"
         )
 
-        print(f"   ✅ Converted to {len(markdown)} characters of Markdown")
+        success(f"   Converted to {len(markdown)} characters of Markdown")
 
         # Save to file
         output_dir = Path("tests/mf1-html2md/scraped_examples")
@@ -283,7 +287,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             f.write(f"*Scraped at: {time.strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
             f.write(f"*Source URL: {url}*")
 
-        print(f"   💾 Saved to: {output_path}")
+        info(f"   💾 Saved to: {output_path}")
 
         return {
             "success": True,
@@ -294,14 +298,14 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         }
 
     except Exception as e:
-        print(f"   ❌ Error: {e}")
+        error(f"   Error: {e}")
         return {"success": False, "url": url, "error": str(e)}
 
 
 def main():
     """Run local scraping tests."""
-    print("🚀 HTML2MD Local Scraping Test")
-    print("=" * 50)
+    header("🚀 HTML2MD Local Scraping Test")
+    info("=" * 50)
 
     # Check server connectivity
     if not check_server_connectivity():
@@ -337,10 +341,10 @@ def main():
 
     results = []
 
-    print(f"\n📋 Running {len(test_cases)} test cases...")
+    info(f"\n📋 Running {len(test_cases)} test cases...")
 
     for i, test_case in enumerate(test_cases, 1):
-        print(f"\n[{i}/{len(test_cases)}] {test_case['description']}")
+        info(f"\n[{i}/{len(test_cases)}] {test_case['description']}")
 
         result = scrape_and_convert(
             test_case["name"],
@@ -351,28 +355,31 @@ def main():
         results.append({**result, **test_case})
 
     # Summary
-    print("\n" + "=" * 50)
-    print("📊 SCRAPING TEST SUMMARY")
-    print("=" * 50)
+    info("\n" + "=" * 50)
+    header("📊 SCRAPING TEST SUMMARY")
+    info("=" * 50)
 
     successful = [r for r in results if r["success"]]
     failed = [r for r in results if not r["success"]]
 
-    print(f"✅ Successful: {len(successful)}/{len(results)}")
-    print(f"❌ Failed: {len(failed)}/{len(results)}")
+    success(f"Successful: {len(successful)}/{len(results)}")
+    if len(failed) > 0:
+        error(f"Failed: {len(failed)}/{len(results)}")
+    else:
+        info(f"Failed: {len(failed)}/{len(results)}")
 
     if successful:
-        print(f"\n📄 Generated Markdown files:")
+        info(f"\n📄 Generated Markdown files:")
         for result in successful:
-            print(f"   • {result['output_file']} ({result['markdown_length']} chars)")
+            info(f"   • {result['output_file']} ({result['markdown_length']} chars)")
 
     if failed:
-        print(f"\n❌ Failed conversions:")
+        error(f"\nFailed conversions:")
         for result in failed:
-            print(f"   • {result['name']}: {result['error']}")
+            error(f"   • {result['name']}: {result['error']}")
 
-    print(f"\n🔗 Test server: {TEST_SERVER_URL}")
-    print("💡 You can now examine the generated .md files to see conversion quality")
+    info(f"\n🔗 Test server: {TEST_SERVER_URL}")
+    info("💡 You can now examine the generated .md files to see conversion quality")
 
 
 if __name__ == "__main__":

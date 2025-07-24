@@ -18,8 +18,13 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
+import sys
 
 import pytest
+
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info, error, warning, success
 
 from ..base_test import BaseM1FTest
 
@@ -41,24 +46,24 @@ class TestM1FEncoding(BaseM1FTest):
         source_dir = temp_dir / "encoding_test"
         source_dir.mkdir()
 
-        print(f"\n=== DEBUG: Creating test files in {source_dir} ===")
+        info(f"\n=== DEBUG: Creating test files in {source_dir} ===")
         created_files = []
         for filename, content, encoding in test_files:
             file_path = source_dir / filename
             file_path.write_text(content, encoding=encoding)
             file_size = file_path.stat().st_size
-            print(f"Created {filename}: {file_size} bytes, encoding={encoding}")
+            info(f"Created {filename}: {file_size} bytes, encoding={encoding}")
             created_files.append(file_path)
 
         # List all files in directory
-        print(f"\n=== DEBUG: Files in source directory ===")
+        info(f"\n=== DEBUG: Files in source directory ===")
         for f in source_dir.iterdir():
-            print(f"  {f.name}: {f.stat().st_size} bytes")
+            info(f"  {f.name}: {f.stat().st_size} bytes")
 
         output_file = temp_dir / "encoding_output.txt"
 
         # Run with UTF-8 target encoding (default) with verbose output
-        print(f"\n=== DEBUG: Running m1f with verbose output ===")
+        info(f"\n=== DEBUG: Running m1f with verbose output ===")
         exit_code, log_output = run_m1f(
             [
                 "--source-directory",
@@ -71,23 +76,23 @@ class TestM1FEncoding(BaseM1FTest):
             ]
         )
 
-        print(f"\n=== DEBUG: m1f output ===")
-        print(log_output)
+        info(f"\n=== DEBUG: m1f output ===")
+        info(log_output)
 
         assert exit_code == 0
 
         # Verify all content is properly encoded in UTF-8
         content = output_file.read_text(encoding="utf-8")
 
-        print(f"\n=== DEBUG: Output file size: {output_file.stat().st_size} bytes ===")
-        print(f"\n=== DEBUG: Checking for content in output ===")
+        info(f"\n=== DEBUG: Output file size: {output_file.stat().st_size} bytes ===")
+        info(f"\n=== DEBUG: Checking for content in output ===")
 
         # Check what files are mentioned in the output
         for filename in ["utf8.txt", "latin1.txt", "utf16.txt"]:
             if filename in content:
-                print(f"  [OK] Found {filename} in output")
+                success(f"  Found {filename} in output")
             else:
-                print(f"  [FAIL] {filename} NOT found in output")
+                error(f"  {filename} NOT found in output")
 
         assert "UTF-8 content: Hello 世界" in content
         assert "Latin-1 content: café" in content

@@ -26,6 +26,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from tools.shared.colors import warning
+
 if TYPE_CHECKING:
     from collections.abc import Iterator, Callable
 
@@ -291,7 +295,7 @@ def _safe_cleanup_directory(directory: Path, max_retries: int = 5) -> None:
         except (OSError, PermissionError) as e:
             if attempt == max_retries - 1:
                 # Final attempt failed, log warning but don't raise
-                print(f"Warning: Could not clean up test directory {directory}: {e}")
+                warning(f"Could not clean up test directory {directory}: {e}")
                 return
 
             # Wait with exponential backoff

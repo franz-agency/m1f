@@ -58,6 +58,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from tools.html2md_tool import HTML2MDConverter, ConversionOptions
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from tools.shared.colors import error
+
 
 class TestServer:
     """Manages the test server lifecycle with robust startup and cleanup."""
@@ -392,7 +396,7 @@ class TestServer:
                     pass
 
         except Exception as e:
-            print(f"Error during process cleanup: {e}")
+            error(f"Error during process cleanup: {e}")
 
         finally:
             self.process = None
