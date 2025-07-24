@@ -908,84 +908,84 @@ https://realpython.com/async-io-python/
 https://docs.python.org/3/library/asyncio-task.html
 
 ======= test_output.log ======
-2025-07-24 21:08:40,762 - tools.research.scraper - ERROR   : Error scraping https://example.com/article1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:40,767 - tools.research.scraper - ERROR   : Error scraping https://example.com/article2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:40,779 - tools.research.scraper - ERROR   : Error scraping https://example.com/article3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:40,921 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
-2025-07-24 21:08:40,934 - tools.research.scraper - ERROR   : Error scraping https://example.com/article2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:40,935 - tools.research.scraper - ERROR   : Error scraping https://example.com/article1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:41,029 - tools.research.scraper - ERROR   : Error scraping https://example.com/article3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:41,045 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
-2025-07-24 21:08:41,045 - tools.research.scraper - INFO    : Scraped 0/4 URLs successfully
-2025-07-24 21:08:41,283 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:41,296 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:41,514 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:41,515 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:41,787 - tools.research.scraper - ERROR   : Error scraping https://example.com/page5: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:41,812 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:42,004 - tools.research.scraper - ERROR   : Error scraping https://example.com/page6: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:42,078 - tools.research.scraper - ERROR   : Error scraping https://example.com/page7: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:42,249 - tools.research.scraper - ERROR   : Error scraping https://example.com/page8: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:42,325 - tools.research.scraper - ERROR   : Error scraping https://example.com/page9: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:42,460 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:42,582 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:42,732 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:42,830 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:43,004 - tools.research.scraper - ERROR   : Error scraping https://example.com/page5: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:43,126 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:43,302 - tools.research.scraper - ERROR   : Error scraping https://example.com/page6: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:43,391 - tools.research.scraper - ERROR   : Error scraping https://example.com/page7: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:43,574 - tools.research.scraper - ERROR   : Error scraping https://example.com/page8: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:43,665 - tools.research.scraper - ERROR   : Error scraping https://example.com/page9: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:43,665 - tools.research.scraper - INFO    : Scraped 0/10 URLs successfully
-2025-07-24 21:08:43,840 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 1 failed
-2025-07-24 21:08:44,027 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 2 failed
-2025-07-24 21:08:44,157 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:44,157 - tools.research.scraper - INFO    : Scraped 0/1 URLs successfully
-2025-07-24 21:08:44,869 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:44,875 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:44,965 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:45,449 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:45,573 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:45,691 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:45,691 - tools.research.scraper - INFO    : Scraped 0/3 URLs successfully
-2025-07-24 21:08:45,832 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
-2025-07-24 21:08:45,843 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
-2025-07-24 21:08:45,844 - tools.research.scraper - ERROR   : Error scraping https://example.com/public/article: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:45,974 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
-2025-07-24 21:08:45,988 - tools.research.scraper - ERROR   : Error scraping https://example.com/public/article: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:46,009 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
-2025-07-24 21:08:46,009 - tools.research.scraper - INFO    : Scraped 0/3 URLs successfully
-2025-07-24 21:08:46,215 - tools.research.scraper - ERROR   : Error scraping https://example.com/test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:46,322 - tools.research.scraper - ERROR   : Error scraping https://example.com/test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:46,322 - tools.research.scraper - INFO    : Scraped 0/1 URLs successfully
-2025-07-24 21:08:46,506 - tools.research.scraper - ERROR   : Error scraping https://example.com/success: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:46,509 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
-2025-07-24 21:08:46,681 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
-2025-07-24 21:08:46,696 - tools.research.scraper - WARNING : Attempt 1 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
-2025-07-24 21:08:46,812 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
-2025-07-24 21:08:46,849 - tools.research.scraper - ERROR   : Error scraping https://example.com/success: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:08:46,975 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
-2025-07-24 21:08:47,834 - tools.research.scraper - WARNING : Attempt 2 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
-2025-07-24 21:08:56,461 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
-2025-07-24 21:09:06,598 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
-2025-07-24 21:09:06,598 - tools.research.scraper - INFO    : Scraped 0/5 URLs successfully
-2025-07-24 21:09:06,784 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:06,815 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:06,855 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:06,969 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,021 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,066 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,175 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,206 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,300 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,329 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,330 - tools.research.scraper - INFO    : Scraped 0/5 URLs successfully
-2025-07-24 21:09:07,479 - tools.research.scraper - ERROR   : Error scraping https://example.com/normal: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,521 - tools.research.scraper - ERROR   : Error scraping https://example.com/redirect: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,603 - tools.research.scraper - ERROR   : Error scraping https://example.com/normal: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,689 - tools.research.scraper - ERROR   : Error scraping https://example.com/redirect: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:09:07,689 - tools.research.scraper - INFO    : Scraped 0/2 URLs successfully
+2025-07-24 21:12:26,131 - tools.research.scraper - ERROR   : Error scraping https://example.com/article1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,151 - tools.research.scraper - ERROR   : Error scraping https://example.com/article2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,155 - tools.research.scraper - ERROR   : Error scraping https://example.com/article3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,267 - tools.research.scraper - ERROR   : Error scraping https://example.com/article1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,330 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
+2025-07-24 21:12:26,335 - tools.research.scraper - ERROR   : Error scraping https://example.com/article2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,456 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
+2025-07-24 21:12:26,458 - tools.research.scraper - ERROR   : Error scraping https://example.com/article3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,458 - tools.research.scraper - INFO    : Scraped 0/4 URLs successfully
+2025-07-24 21:12:26,677 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,731 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,925 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:26,948 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:27,176 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:27,184 - tools.research.scraper - ERROR   : Error scraping https://example.com/page5: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:27,432 - tools.research.scraper - ERROR   : Error scraping https://example.com/page7: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:27,460 - tools.research.scraper - ERROR   : Error scraping https://example.com/page6: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:27,662 - tools.research.scraper - ERROR   : Error scraping https://example.com/page8: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:27,690 - tools.research.scraper - ERROR   : Error scraping https://example.com/page9: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:27,898 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:27,945 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:28,143 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:28,160 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:28,398 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:28,456 - tools.research.scraper - ERROR   : Error scraping https://example.com/page5: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:28,686 - tools.research.scraper - ERROR   : Error scraping https://example.com/page7: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:28,718 - tools.research.scraper - ERROR   : Error scraping https://example.com/page6: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:28,906 - tools.research.scraper - ERROR   : Error scraping https://example.com/page8: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:29,006 - tools.research.scraper - ERROR   : Error scraping https://example.com/page9: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:29,007 - tools.research.scraper - INFO    : Scraped 0/10 URLs successfully
+2025-07-24 21:12:29,197 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 1 failed
+2025-07-24 21:12:29,374 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 2 failed
+2025-07-24 21:12:29,544 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:29,545 - tools.research.scraper - INFO    : Scraped 0/1 URLs successfully
+2025-07-24 21:12:30,194 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:30,273 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:30,388 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:30,740 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:30,829 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:30,903 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:30,903 - tools.research.scraper - INFO    : Scraped 0/3 URLs successfully
+2025-07-24 21:12:31,028 - tools.research.scraper - ERROR   : Error scraping https://example.com/public/article: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:31,062 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
+2025-07-24 21:12:31,072 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
+2025-07-24 21:12:31,130 - tools.research.scraper - ERROR   : Error scraping https://example.com/public/article: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:31,166 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
+2025-07-24 21:12:31,224 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
+2025-07-24 21:12:31,224 - tools.research.scraper - INFO    : Scraped 0/3 URLs successfully
+2025-07-24 21:12:31,378 - tools.research.scraper - ERROR   : Error scraping https://example.com/test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:31,566 - tools.research.scraper - ERROR   : Error scraping https://example.com/test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:31,566 - tools.research.scraper - INFO    : Scraped 0/1 URLs successfully
+2025-07-24 21:12:31,681 - tools.research.scraper - ERROR   : Error scraping https://example.com/success: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:31,772 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
+2025-07-24 21:12:31,795 - tools.research.scraper - WARNING : Attempt 1 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
+2025-07-24 21:12:31,928 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
+2025-07-24 21:12:31,984 - tools.research.scraper - ERROR   : Error scraping https://example.com/success: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:32,096 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
+2025-07-24 21:12:32,146 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
+2025-07-24 21:12:32,929 - tools.research.scraper - WARNING : Attempt 2 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
+2025-07-24 21:12:41,700 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
+2025-07-24 21:12:51,841 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
+2025-07-24 21:12:51,841 - tools.research.scraper - INFO    : Scraped 0/5 URLs successfully
+2025-07-24 21:12:52,031 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,048 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,077 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,187 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,301 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,324 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,377 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,506 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,522 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,550 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,550 - tools.research.scraper - INFO    : Scraped 0/5 URLs successfully
+2025-07-24 21:12:52,680 - tools.research.scraper - ERROR   : Error scraping https://example.com/redirect: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,731 - tools.research.scraper - ERROR   : Error scraping https://example.com/normal: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,806 - tools.research.scraper - ERROR   : Error scraping https://example.com/redirect: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,839 - tools.research.scraper - ERROR   : Error scraping https://example.com/normal: ScrapedContent.__init__() got an unexpected keyword argument 'html'
+2025-07-24 21:12:52,840 - tools.research.scraper - INFO    : Scraped 0/2 URLs successfully
 
 ======= bin/m1f ======
 #!/usr/bin/env bash
@@ -68245,11 +68245,14 @@ A modern Python tool to split a combined file (created by m1f) back into individ
 """
 
 try:
-    from .._version import __version__, __version_info__
+    from tools._version import __version__, __version_info__
 except ImportError:
-    # Fallback when running as standalone script
-    __version__ = "3.3.0"
-    __version_info__ = (3, 3, 0)
+    try:
+        from .._version import __version__, __version_info__
+    except ImportError:
+        # Fallback when running as standalone script
+        __version__ = "3.7.2"
+        __version_info__ = (3, 7, 2)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
@@ -68309,10 +68312,13 @@ from .exceptions import ConfigurationError
 
 # Use unified colorama module
 try:
-    from ..shared.colors import error
+    from tools.shared.colors import error
 except ImportError:
-    # Fallback
-    def error(msg): print(f"Error: {msg}", file=sys.stderr)
+    try:
+        from ..shared.colors import error
+    except ImportError:
+        # Fallback
+        def error(msg): print(f"Error: {msg}", file=sys.stderr)
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -68621,10 +68627,13 @@ from .models import ExtractedFile, ExtractionResult
 
 # Use unified colorama module for direct prints
 try:
-    from ..shared.colors import info
+    from tools.shared.colors import info
 except ImportError:
-    # Fallback
-    def info(msg): print(msg)
+    try:
+        from ..shared.colors import info
+    except ImportError:
+        # Fallback
+        def info(msg): print(msg)
 from .parsers import CombinedFileParser
 from .writers import FileWriter
 from .utils import format_size, is_binary_content
@@ -68971,7 +68980,27 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 # Use unified colorama module
-from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+try:
+    # Try absolute import first (when running as installed package)
+    from tools.shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+except ImportError:
+    # Try relative import (when running from within package)
+    try:
+        from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+    except ImportError:
+        # Fallback: define minimal stubs if colors module is not available
+        COLORAMA_AVAILABLE = False
+        
+        class Colors:
+            BLUE = ""
+            GREEN = ""
+            YELLOW = ""
+            RED = ""
+            BOLD = ""
+            RESET = ""
+        
+        class BaseColoredFormatter(logging.Formatter):
+            pass
 
 
 @dataclass
@@ -71902,7 +71931,7 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
 # Utility functions for consistent output across tools
 def success(message: str, file=None) -> None:
     """Print a success message in green"""
-    print(f"{Colors.GREEN}✅ {message}{Colors.RESET}", file=file or sys.stdout)
+    print(f"{Colors.GREEN}{message}{Colors.RESET}", file=file or sys.stdout)
 
 
 def error(message: str, file=None) -> None:
@@ -71918,8 +71947,8 @@ def warning(message: str, file=None) -> None:
 
 
 def info(message: str, file=None) -> None:
-    """Print an info message in cyan"""
-    print(f"{Colors.CYAN}{message}{Colors.RESET}", file=file or sys.stdout)
+    """Print an info message in white"""
+    print(f"{message}", file=file or sys.stdout)
 
 
 def header(title: str, subtitle: Optional[str] = None, file=None) -> None:

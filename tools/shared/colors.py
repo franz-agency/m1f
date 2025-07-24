@@ -197,7 +197,7 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
 # Utility functions for consistent output across tools
 def success(message: str, file=None) -> None:
     """Print a success message in green"""
-    print(f"{Colors.GREEN}✅ {message}{Colors.RESET}", file=file or sys.stdout)
+    print(f"{Colors.GREEN}{message}{Colors.RESET}", file=file or sys.stdout)
 
 
 def error(message: str, file=None) -> None:
@@ -213,8 +213,8 @@ def warning(message: str, file=None) -> None:
 
 
 def info(message: str, file=None) -> None:
-    """Print an info message in cyan"""
-    print(f"{Colors.CYAN}{message}{Colors.RESET}", file=file or sys.stdout)
+    """Print an info message in white"""
+    print(f"{message}", file=file or sys.stdout)
 
 
 def header(title: str, subtitle: Optional[str] = None, file=None) -> None:

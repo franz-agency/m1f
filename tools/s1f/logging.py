@@ -21,7 +21,27 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 # Use unified colorama module
-from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+try:
+    # Try absolute import first (when running as installed package)
+    from tools.shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+except ImportError:
+    # Try relative import (when running from within package)
+    try:
+        from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+    except ImportError:
+        # Fallback: define minimal stubs if colors module is not available
+        COLORAMA_AVAILABLE = False
+        
+        class Colors:
+            BLUE = ""
+            GREEN = ""
+            YELLOW = ""
+            RED = ""
+            BOLD = ""
+            RESET = ""
+        
+        class BaseColoredFormatter(logging.Formatter):
+            pass
 
 
 @dataclass

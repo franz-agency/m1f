@@ -28,10 +28,13 @@ from .exceptions import ConfigurationError
 
 # Use unified colorama module
 try:
-    from ..shared.colors import error
+    from tools.shared.colors import error
 except ImportError:
-    # Fallback
-    def error(msg): print(f"Error: {msg}", file=sys.stderr)
+    try:
+        from ..shared.colors import error
+    except ImportError:
+        # Fallback
+        def error(msg): print(f"Error: {msg}", file=sys.stderr)
 
 
 def create_argument_parser() -> argparse.ArgumentParser:

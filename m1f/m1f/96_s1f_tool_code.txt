@@ -42,11 +42,14 @@ A modern Python tool to split a combined file (created by m1f) back into individ
 """
 
 try:
-    from .._version import __version__, __version_info__
+    from tools._version import __version__, __version_info__
 except ImportError:
-    # Fallback when running as standalone script
-    __version__ = "3.3.0"
-    __version_info__ = (3, 3, 0)
+    try:
+        from .._version import __version__, __version_info__
+    except ImportError:
+        # Fallback when running as standalone script
+        __version__ = "3.7.2"
+        __version_info__ = (3, 7, 2)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
@@ -106,10 +109,13 @@ from .exceptions import ConfigurationError
 
 # Use unified colorama module
 try:
-    from ..shared.colors import error
+    from tools.shared.colors import error
 except ImportError:
-    # Fallback
-    def error(msg): print(f"Error: {msg}", file=sys.stderr)
+    try:
+        from ..shared.colors import error
+    except ImportError:
+        # Fallback
+        def error(msg): print(f"Error: {msg}", file=sys.stderr)
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -418,10 +424,13 @@ from .models import ExtractedFile, ExtractionResult
 
 # Use unified colorama module for direct prints
 try:
-    from ..shared.colors import info
+    from tools.shared.colors import info
 except ImportError:
-    # Fallback
-    def info(msg): print(msg)
+    try:
+        from ..shared.colors import info
+    except ImportError:
+        # Fallback
+        def info(msg): print(msg)
 from .parsers import CombinedFileParser
 from .writers import FileWriter
 from .utils import format_size, is_binary_content
@@ -768,7 +777,27 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 # Use unified colorama module
-from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+try:
+    # Try absolute import first (when running as installed package)
+    from tools.shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+except ImportError:
+    # Try relative import (when running from within package)
+    try:
+        from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
+    except ImportError:
+        # Fallback: define minimal stubs if colors module is not available
+        COLORAMA_AVAILABLE = False
+        
+        class Colors:
+            BLUE = ""
+            GREEN = ""
+            YELLOW = ""
+            RED = ""
+            BOLD = ""
+            RESET = ""
+        
+        class BaseColoredFormatter(logging.Formatter):
+            pass
 
 
 @dataclass
