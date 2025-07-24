@@ -20,21 +20,46 @@ import time
 import tempfile
 from pathlib import Path
 from typing import List
-from rich.console import Console
 from .claude_runner import ClaudeRunner
 
-console = Console()
+# Use unified colorama module
+try:
+    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to no colors
+    COLORAMA_AVAILABLE = False
+    class Colors:
+        GREEN = ""
+        RED = ""
+        YELLOW = ""
+        BLUE = ""
+        CYAN = ""
+        BOLD = ""
+        DIM = ""
+        RESET = ""
+    
+    def success(msg): print(f"✅ {msg}")
+    def error(msg): print(f"❌ {msg}", file=sys.stderr)
+    def warning(msg): print(f"⚠️  {msg}")
+    def info(msg): print(msg)
+    def header(title, subtitle=None):
+        print(f"\n{title}")
+        if subtitle:
+            print(subtitle)
 
 
 def handle_claude_convert_improved(args):
     """Handle conversion using Claude AI with improved timeout handling."""
 
-    console.print(
-        f"\n[bold]Using Claude AI to convert HTML to Markdown (with improved streaming)...[/bold]"
+    header(
+        f"{Colors.BOLD}Using Claude AI to convert HTML to Markdown (with improved streaming)...{Colors.RESET}"
     )
-    console.print(f"Model: {args.model}")
-    console.print(f"Sleep between calls: {args.sleep} seconds")
+    info(f"Model: {args.model}")
+    info(f"Sleep between calls: {args.sleep} seconds")
 
+    # Get source path first
+    source_path = args.source
+    
     # Initialize Claude runner
     try:
         runner = ClaudeRunner(
@@ -43,13 +68,12 @@ def handle_claude_convert_improved(args):
             )
         )
     except Exception as e:
-        console.print(f"❌ {e}", style="red")
+        error(str(e))
         sys.exit(1)
 
     # Find all HTML files in source directory
-    source_path = args.source
     if not source_path.exists():
-        console.print(f"❌ Source path not found: {source_path}", style="red")
+        error(f"Source path not found: {source_path}")
         sys.exit(1)
 
     html_files = []
@@ -57,35 +81,33 @@ def handle_claude_convert_improved(args):
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
-            console.print(f"❌ Source file is not HTML: {source_path}", style="red")
+            error(f"Source file is not HTML: {source_path}")
             sys.exit(1)
     elif source_path.is_dir():
         # Find all HTML files recursively
         html_files = list(source_path.rglob("*.html")) + list(
             source_path.rglob("*.htm")
         )
-        console.print(f"Found {len(html_files)} HTML files in {source_path}")
+        info(f"Found {len(html_files)} HTML files in {source_path}")
 
     if not html_files:
-        console.print("❌ No HTML files found to convert", style="red")
+        error("No HTML files found to convert")
         sys.exit(1)
 
     # Prepare output directory
     output_path = args.output
     if output_path.exists() and output_path.is_file():
-        console.print(
-            f"❌ Output path is a file, expected directory: {output_path}", style="red"
-        )
+        error(f"Output path is a file, expected directory: {output_path}")
         sys.exit(1)
 
     if not output_path.exists():
         output_path.mkdir(parents=True, exist_ok=True)
-        console.print(f"Created output directory: {output_path}")
+        info(f"Created output directory: {output_path}")
 
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
     if not prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {prompt_path}", style="red")
+        error(f"Prompt file not found: {prompt_path}")
         sys.exit(1)
 
     prompt_template = prompt_path.read_text()
@@ -97,9 +119,8 @@ def handle_claude_convert_improved(args):
     for i, html_file in enumerate(html_files):
         tmp_html_path = None
         try:
-            # Import validate_path_traversal
-            sys.path.insert(0, str(Path(__file__).parent.parent))
-            from m1f.utils import validate_path_traversal
+            # Import validate_path_traversal from m1f tool
+            from ..m1f.utils import validate_path_traversal
 
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
@@ -123,7 +144,7 @@ def handle_claude_convert_improved(args):
             # Create output directory if needed
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
-            console.print(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
+            info(f"\n[{i+1}/{len(html_files)}] Converting: {html_file.name}")
 
             # Create a temporary file with the HTML content
             with tempfile.NamedTemporaryFile(
@@ -139,7 +160,7 @@ def handle_claude_convert_improved(args):
             prompt = f"{prompt}\n\nNote: Using model {args.model}"
 
             # Use improved Claude runner with streaming
-            console.print("🔄 Converting with Claude...", style="dim")
+            info(f"{Colors.DIM}🔄 Converting with Claude...{Colors.RESET}")
             returncode, stdout, stderr = runner.run_claude_streaming(
                 prompt=prompt,
                 allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
@@ -148,7 +169,7 @@ def handle_claude_convert_improved(args):
             )
 
             if returncode != 0:
-                console.print(f"❌ Claude conversion failed: {stderr}", style="red")
+                error(f"Claude conversion failed: {stderr}")
                 failed_count += 1
                 continue
 
@@ -165,16 +186,16 @@ def handle_claude_convert_improved(args):
                 markdown_content = "\n".join(cleaned_lines)
 
             output_file.write_text(markdown_content, encoding="utf-8")
-            console.print(f"✅ Converted to: {output_file}", style="green")
+            success(f"Converted to: {output_file}")
             converted_count += 1
 
             # Sleep between API calls (except for the last one)
             if i < len(html_files) - 1 and args.sleep > 0:
-                console.print(f"Sleeping for {args.sleep} seconds...", style="dim")
+                info(f"{Colors.DIM}Sleeping for {args.sleep} seconds...{Colors.RESET}")
                 time.sleep(args.sleep)
 
         except Exception as e:
-            console.print(f"❌ Error processing {html_file}: {e}", style="red")
+            error(f"Error processing {html_file}: {e}")
             failed_count += 1
 
         finally:
@@ -186,9 +207,9 @@ def handle_claude_convert_improved(args):
                     pass
 
     # Summary
-    console.print(f"\n✅ Conversion complete!", style="green bold")
-    console.print(f"Successfully converted: {converted_count} files")
+    success(f"{Colors.BOLD}Conversion complete!{Colors.RESET}")
+    info(f"Successfully converted: {converted_count} files")
     if failed_count > 0:
-        console.print(f"Failed: {failed_count} files", style="yellow")
+        warning(f"Failed: {failed_count} files")
 
-    console.print(f"\nOutput directory: {output_path}")
+    info(f"\nOutput directory: {output_path}")
