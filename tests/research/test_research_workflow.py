@@ -37,6 +37,8 @@ class TestResearchWorkflow:
             no_filter=True,  # Disable filtering for easier testing
             no_analysis=False
         )
+        # Set the search limit explicitly
+        config.scraping.search_limit = 5
         config.output.directory = temp_dir
         # Adjust minimum content length for test content
         config.analysis.min_content_length = 20
@@ -96,11 +98,10 @@ class TestResearchWorkflow:
         async def mock_scrape_urls(urls):
             return [
                 ScrapedContent(
-                    url=url["url"],
-                    title=url["title"],
-                    html=f"<html><body><p>Content from {url['url']}</p></body></html>",
-                    markdown=f"Content from {url['url']}",
-                    scraped_at=None
+                    url=url,
+                    title=f"Title for {url}",
+                    content=f"Content from {url}",
+                    content_type="text/html"
                 )
                 for url in urls[:3]
             ]
@@ -108,7 +109,11 @@ class TestResearchWorkflow:
         orchestrator._scrape_urls = mock_scrape_urls
         
         # Mock the bundle creation to ensure it creates a file
-        async def mock_create_bundle(content, query, output_dir):
+        async def mock_create_bundle(content, query):
+            # Use the orchestrator's output directory
+            output_dir = orchestrator.current_job.output_dir if orchestrator.current_job else mock_config.output.directory
+            # Convert to Path if it's a string
+            output_dir = Path(output_dir) if isinstance(output_dir, str) else output_dir
             # Ensure the output directory exists
             output_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = output_dir / "research-bundle.md"
@@ -128,17 +133,18 @@ Total sources: {len(content)}
         orchestrator._create_bundle = mock_create_bundle
         
         # Run research
-        bundle_path = await orchestrator.run("test query")
+        result = await orchestrator.research("test query")
         
         # Verify results
-        assert bundle_path.exists()
-        assert bundle_path.suffix == ".md"
+        assert result.bundle_path is not None
+        assert result.bundle_path.exists()
+        assert result.bundle_path.suffix == ".md"
         
         # Check bundle content
-        content = bundle_path.read_text()
+        content = result.bundle_path.read_text()
         assert "Research: test query" in content
         assert "Total sources: 3" in content
-        assert "Example 0" in content
+        assert "https://example0.com" in content
         
         # Verify LLM was called for search
         mock_llm_provider.search_web.assert_called_once_with("test query", 5)
@@ -154,14 +160,16 @@ Total sources: {len(content)}
         orchestrator.llm = mock_llm_provider
         
         # Run in dry mode
-        bundle_path = await orchestrator.run("test query")
+        result = await orchestrator.research("test query")
         
         # Verify no actual operations were performed
         mock_llm_provider.search_web.assert_not_called()
         mock_llm_provider.analyze_content.assert_not_called()
         
-        # Bundle path should be returned but not created
-        assert not bundle_path.exists()
+        # In dry run mode, bundle path is set to output dir but no bundle file is created
+        assert result.bundle_path is not None
+        assert result.bundle_path.is_dir()  # It's the output directory, not a file
+        assert not result.bundle_created  # Bundle was not actually created
     
     @pytest.mark.asyncio
     async def test_no_analysis_mode(self, mock_config, mock_llm_provider, temp_dir):
@@ -177,9 +185,8 @@ Total sources: {len(content)}
                 ScrapedContent(
                     url=f"https://example{i}.com",
                     title=f"Example {i}",
-                    html=f"<p>Content {i}</p>",
-                    markdown=f"Content {i}",
-                    scraped_at=None
+                    content=f"Content {i}",
+                    content_type="text/markdown"
                 )
                 for i in range(2)
             ]
@@ -187,7 +194,7 @@ Total sources: {len(content)}
         orchestrator._scrape_urls = mock_scrape_urls
         
         # Run research
-        bundle_path = await orchestrator.run("test query")
+        result = await orchestrator.research("test query")
         
         # Verify analysis was skipped
         mock_llm_provider.analyze_content.assert_not_called()
@@ -235,7 +242,9 @@ Total sources: {len(content)}
         ]
         
         # Filter content
-        filtered = orchestrator._filter_content(content)
+        from tools.research.content_filter import ContentFilter
+        filter = ContentFilter(mock_config.analysis)
+        filtered = filter.filter_analyzed_content(content)
         
         # Verify filtering
         assert len(filtered) == 2
@@ -247,17 +256,17 @@ Total sources: {len(content)}
         command = EnhancedResearchCommand()
         
         # Test basic args
-        args = command.parse_args(["machine learning", "--urls", "30", "--scrape", "15"])
+        args = command.parser.parse_args(["machine learning", "--urls", "30", "--scrape", "15"])
         assert args.query == "machine learning"
         assert args.urls == 30
         assert args.scrape == 15
         
         # Test provider selection
-        args = command.parse_args(["test", "--provider", "gemini"])
+        args = command.parser.parse_args(["test", "--provider", "gemini"])
         assert args.provider == "gemini"
         
         # Test interactive mode
-        args = command.parse_args(["--interactive"])
+        args = command.parser.parse_args(["--interactive"])
         assert args.interactive is True
         assert args.query is None  # Query not required in interactive mode
     

@@ -115,9 +115,11 @@ class EnhancedResearchOrchestrator:
             filtered_content = await self._filter_content(scraped_content)
 
             # Phase 4: Content Analysis (optional)
-            analyzed_content = filtered_content
             if not self.config.no_analysis and self.llm:
                 analyzed_content = await self._analyze_content(filtered_content)
+            else:
+                # Convert to AnalyzedContent with defaults
+                analyzed_content = [self._scraped_to_analyzed(s) for s in filtered_content]
 
             # Phase 5: Bundle Creation
             bundle_path = await self._create_bundle(analyzed_content, query)
@@ -269,11 +271,11 @@ class EnhancedResearchOrchestrator:
 
     async def _filter_content(
         self, content: List[ScrapedContent]
-    ) -> List[AnalyzedContent]:
+    ) -> List[ScrapedContent]:
         """Filter content for quality"""
         if self.config.no_filter:
             logger.info("Content filtering disabled")
-            return [self._scraped_to_analyzed(s) for s in content]
+            return content
 
         filter = ContentFilter(self.config.filtering)
         filtered = []
@@ -292,7 +294,7 @@ class EnhancedResearchOrchestrator:
             )
 
             if passed:
-                filtered.append(self._scraped_to_analyzed(item))
+                filtered.append(item)
             else:
                 logger.debug(f"Filtered out {item.url}: {reason}")
 
@@ -306,23 +308,24 @@ class EnhancedResearchOrchestrator:
         return filtered
 
     async def _analyze_content(
-        self, content: List[AnalyzedContent]
+        self, content: List[ScrapedContent]
     ) -> List[AnalyzedContent]:
         """Analyze content with LLM"""
         if not content:
             return []
 
+        if self.config.no_analysis:
+            # Convert to AnalyzedContent with defaults
+            return [self._scraped_to_analyzed(s) for s in content]
+
         analyzer = ContentAnalyzer(self.llm, self.config.analysis)
-        analyzed = []
-
-        total_items = len(content)
-        for i, item in enumerate(content):
-            if self.progress_callback:
-                self.progress_callback("analyzing", i, total_items)
-            try:
-                result = await analyzer.analyze(item)
-
-                # Save analysis to database
+        
+        # Call the proper analyze_content method with the research query
+        try:
+            analyzed = await analyzer.analyze_content(content, self.current_job.query)
+            
+            # Save analysis to database
+            for result in analyzed:
                 self.job_db.save_analysis(
                     url=result.url,
                     relevance_score=result.relevance_score,
@@ -330,26 +333,25 @@ class EnhancedResearchOrchestrator:
                     content_type=result.content_type,
                     analysis_data={
                         "summary": result.summary,
-                        "metadata": result.metadata,
+                        "metadata": result.analysis_metadata,
                     },
                 )
-
-                analyzed.append(result)
-
-            except Exception as e:
-                logger.error(f"Error analyzing {item.url}: {e}")
-                analyzed.append(item)
-
-        # Sort by relevance
-        analyzed.sort(key=lambda x: x.relevance_score, reverse=True)
-
-        # Update stats
-        self.job_manager.update_job_stats(
-            self.current_job,
-            analyzed_urls=len([a for a in analyzed if hasattr(a, "relevance_score")]),
-        )
-
-        return analyzed
+            
+            # Sort by relevance
+            analyzed.sort(key=lambda x: x.relevance_score, reverse=True)
+            
+            # Update stats
+            self.job_manager.update_job_stats(
+                self.current_job,
+                analyzed_urls=len(analyzed),
+            )
+            
+            return analyzed
+            
+        except Exception as e:
+            logger.error(f"Error analyzing content: {e}")
+            # Fallback to basic conversion
+            return [self._scraped_to_analyzed(s) for s in content]
 
     async def _create_bundle(self, content: List[AnalyzedContent], query: str) -> Path:
         """Create the final research bundle"""
@@ -462,7 +464,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
             key_points=[],
             summary="",
             content_type="unknown",
-            metadata={},
+            analysis_metadata={},
         )
 
     def _basic_html_to_markdown(self, html: str) -> str:

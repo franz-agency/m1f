@@ -82,7 +82,7 @@ class ContentAnalyzer:
         """Analyze a single piece of content"""
         try:
             # Prepare content for analysis (truncate if needed)
-            content_for_analysis = self._prepare_content(content.markdown)
+            content_for_analysis = self._prepare_content(content.content)
             
             # Get comprehensive analysis from LLM
             analysis = await self._get_llm_analysis(
@@ -95,7 +95,7 @@ class ContentAnalyzer:
             return AnalyzedContent(
                 url=content.url,
                 title=content.title,
-                content=content.markdown,
+                content=content.content,
                 relevance_score=analysis.get('relevance_score', 5.0),
                 key_points=analysis.get('key_points', []),
                 summary=analysis.get('summary', ''),
@@ -260,20 +260,20 @@ class ContentAnalyzer:
     def _create_fallback_analysis(self, content: ScrapedContent) -> AnalyzedContent:
         """Create fallback analysis when LLM analysis fails"""
         # Basic heuristic analysis
-        word_count = len(content.markdown.split())
-        has_code = bool(re.search(r'```|`[^`]+`', content.markdown))
+        word_count = len(content.content.split())
+        has_code = bool(re.search(r'```|`[^`]+`', content.content))
         
         # Estimate relevance based on title
         relevance = 5.0
         
         # Extract first paragraph as summary
-        paragraphs = content.markdown.split('\n\n')
+        paragraphs = content.content.split('\n\n')
         summary = paragraphs[0][:200] + '...' if paragraphs else 'No summary available'
         
         return AnalyzedContent(
             url=content.url,
             title=content.title,
-            content=content.markdown,
+            content=content.content,
             relevance_score=relevance,
             key_points=[],
             summary=summary,

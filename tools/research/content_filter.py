@@ -70,30 +70,30 @@ class ContentFilter:
     def _passes_filters(self, content: ScrapedContent) -> bool:
         """Check if content passes all quality filters"""
         # Check content length
-        if not self._check_content_length(content.markdown):
+        if not self._check_content_length(content.content):
             return False
         
         # Check language (if configured)
         if self.config.language != "any":
-            detected_lang = self._detect_language(content.markdown)
+            detected_lang = self._detect_language(content.content)
             if detected_lang != self.config.language:
                 logger.debug(f"Wrong language: {content.url} (detected: {detected_lang})")
                 return False
         
         # Check for spam/ads
-        if self._is_spam(content.markdown):
+        if self._is_spam(content.content):
             logger.debug(f"Spam detected: {content.url}")
             return False
         
         # Check quality score
-        quality_score = self._calculate_quality_score(content.markdown)
+        quality_score = self._calculate_quality_score(content.content)
         logger.debug(f"Quality score for {content.url}: {quality_score:.2f}")
         if quality_score < 0.3:  # Minimum quality threshold
             logger.debug(f"Low quality: {content.url} (score: {quality_score:.2f})")
             return False
         
         # Check for duplicates
-        if self._is_duplicate(content.markdown):
+        if self._is_duplicate(content.content):
             logger.debug(f"Duplicate: {content.url}")
             return False
         

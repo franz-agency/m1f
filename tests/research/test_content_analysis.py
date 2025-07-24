@@ -37,8 +37,7 @@ class TestContentAnalysisIntegration:
             ScrapedContent(
                 url="https://example.com/python-tutorial",
                 title="Python Testing Tutorial",
-                html="<html>...</html>",
-                markdown="""# Python Testing Tutorial
+                content="""# Python Testing Tutorial
                 
                 This is a comprehensive guide to testing in Python.
                 
@@ -67,8 +66,7 @@ class TestContentAnalysisIntegration:
             ScrapedContent(
                 url="https://example.com/spam-article",
                 title="Buy Now!!!",
-                html="<html>...</html>",
-                markdown="""CLICK HERE NOW!!! LIMITED TIME OFFER!!!
+                content="""CLICK HERE NOW!!! LIMITED TIME OFFER!!!
                 
                 Buy our amazing product NOW! 100% FREE! No credit card required!
                 CLICK HERE NOW! CLICK HERE NOW! CLICK HERE NOW!
@@ -85,16 +83,14 @@ class TestContentAnalysisIntegration:
             ScrapedContent(
                 url="https://example.com/short-content",
                 title="Too Short",
-                html="<html>...</html>",
-                markdown="This content is too short to be useful.",
+                content="This content is too short to be useful.",
                 scraped_at=datetime.now(),
                 metadata={"status_code": 200}
             ),
             ScrapedContent(
                 url="https://example.com/non-english",
                 title="Article en Français",
-                html="<html>...</html>",
-                markdown="""# Guide de Programmation Python
+                content="""# Guide de Programmation Python
                 
                 Ceci est un guide complet pour la programmation en Python.
                 
@@ -115,8 +111,7 @@ class TestContentAnalysisIntegration:
             ScrapedContent(
                 url="https://example.com/quality-content",
                 title="Advanced Python Patterns",
-                html="<html>...</html>",
-                markdown="""# Advanced Python Design Patterns
+                content="""# Advanced Python Design Patterns
                 
                 ## Introduction
                 Design patterns are reusable solutions to common programming problems.
@@ -264,8 +259,7 @@ class TestContentAnalysisIntegration:
             scraped = ScrapedContent(
                 url="https://spam.com/test",
                 title="Spam",
-                html="",
-                markdown=content * 5,  # Repeat to meet length requirement
+                content=content * 5,  # Repeat to meet length requirement
                 scraped_at=datetime.now(),
                 metadata={}
             )
@@ -281,8 +275,7 @@ class TestContentAnalysisIntegration:
         high_quality = ScrapedContent(
             url="https://example.com/high-quality",
             title="High Quality Article",
-            html="",
-            markdown="""# Well-Structured Technical Article
+            content="""# Well-Structured Technical Article
             
             ## Introduction
             This article provides a comprehensive overview of the topic.
@@ -315,8 +308,7 @@ class TestContentAnalysisIntegration:
         very_low_quality = ScrapedContent(
             url="https://example.com/low-quality",
             title="Low Quality Article",
-            html="",
-            markdown="buy buy buy " * 100 + " click here " * 50,  # Spam-like repetitive content
+            content="buy buy buy " * 100 + " click here " * 50,  # Spam-like repetitive content
             scraped_at=datetime.now(),
             metadata={}
         )
@@ -366,8 +358,7 @@ class TestContentAnalysisIntegration:
         content = ScrapedContent(
             url="https://example.com/test",
             title="Test Content",
-            html="",
-            markdown="""# Technical Documentation
+            content="""# Technical Documentation
             
             ## API Reference
             
@@ -460,8 +451,7 @@ class TestContentAnalysisIntegration:
             contents.append(ScrapedContent(
                 url=f"https://example.com/article{i}",
                 title=f"Article {i}",
-                html="",
-                markdown=markdown,
+                content=markdown,
                 scraped_at=datetime.now(),
                 metadata={}
             ))
@@ -512,8 +502,7 @@ class TestContentAnalysisIntegration:
             content = ScrapedContent(
                 url=f"https://example.com/{test['lang']}",
                 title=f"Article in {test['lang']}",
-                html="",
-                markdown=test["content"] * 10,  # Repeat to meet length requirement
+                content=test["content"] * 10,  # Repeat to meet length requirement
                 scraped_at=datetime.now(),
                 metadata={}
             )
@@ -536,8 +525,7 @@ class TestContentAnalysisIntegration:
             contents.append(ScrapedContent(
                 url=f"https://example.com/article{i}",
                 title=f"Article {i}",
-                html="",
-                markdown=f"# Article {i}\n\nThis is content for article {i}." * 20,
+                content=f"# Article {i}\n\nThis is content for article {i}." * 20,
                 scraped_at=datetime.now(),
                 metadata={}
             ))
@@ -639,7 +627,7 @@ class TestContentAnalysisIntegration:
             AnalyzedContent(
                 url=c.url,
                 title=c.title,
-                content=c.markdown,
+                content=c.content,
                 relevance_score=7.0 if i % 2 == 0 else 3.0,
                 key_points=["Point 1", "Point 2"],
                 summary="Test summary",
