@@ -205,6 +205,16 @@ output.
 
 Follow symbolic links. Be careful of infinite loops!
 
+**Deduplication behavior**:
+
+- By default (without `--allow-duplicate-files`), m1f intelligently handles
+  symlinks:
+  - Internal symlinks (pointing to files within source directories) are excluded
+    to avoid duplicates
+  - External symlinks (pointing outside source directories) are included
+- With `--allow-duplicate-files`, all symlinks are included regardless of their
+  target
+
 ### `--max-file-size SIZE`
 
 Skip files larger than specified size. Supports KB, MB, GB suffixes.
@@ -284,6 +294,16 @@ Skip creating the main output file. Useful when only creating an archive.
 Allow files with identical content to be included in the output. By default, m1f
 deduplicates files based on their content checksum to save space and tokens.
 With this flag, all files are included even if they have identical content.
+
+**Special behavior with symlinks** (when used with `--include-symlinks`):
+
+- **Without** `--allow-duplicate-files`:
+  - Symlinks pointing to files **inside** the source directories are excluded
+    (the original file is already included)
+  - Symlinks pointing to files **outside** the source directories are included
+- **With** `--allow-duplicate-files`:
+  - All symlinks are included, regardless of where they point
+  - Both the original file and symlinks pointing to it can appear in the output
 
 ### `--verbose`, `-v`
 

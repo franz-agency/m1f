@@ -448,16 +448,39 @@ class FileProcessor:
                 file_path = root_path / filename
 
                 if await self._should_include_file(file_path, explicitly_included):
-                    rel_path = get_relative_path(
-                        file_path, self._get_base_dir_for_path(file_path)
-                    )
-
-                    # Check for duplicates
-                    # When include_symlinks is True, use the actual path (not resolved) for deduplication
-                    # This allows both the original file and symlinks pointing to it to be included
+                    # For symlinks when include_symlinks is True, preserve the symlink path
+                    # instead of resolving it to the target path
                     if self.config.filter.include_symlinks and file_path.is_symlink():
-                        dedup_key = str(file_path)
+                        try:
+                            base_dir = self._get_base_dir_for_path(file_path)
+                            rel_path = file_path.relative_to(base_dir).as_posix()
+                        except ValueError:
+                            # If file is not under base path, use absolute path
+                            rel_path = str(file_path)
                     else:
+                        rel_path = get_relative_path(
+                            file_path, self._get_base_dir_for_path(file_path)
+                        )
+
+                    # Check for duplicates with improved symlink handling
+                    if self.config.filter.include_symlinks and file_path.is_symlink():
+                        # If allow_duplicate_files is set (content deduplication disabled),
+                        # always use the symlink path to allow duplicates
+                        if not self.config.output.enable_content_deduplication:
+                            dedup_key = str(file_path)
+                        else:
+                            # Content deduplication is enabled, check if target is internal
+                            target = file_path.resolve()
+                            if self._is_target_within_sources(target):
+                                # Target is internal - use resolved path for deduplication
+                                # This will cause the symlink to be skipped if the target
+                                # is already included
+                                dedup_key = str(target)
+                            else:
+                                # Target is external - use symlink path to ensure it's included
+                                dedup_key = str(file_path)
+                    else:
+                        # Not a symlink or symlinks not included - use resolved path
                         dedup_key = str(file_path.resolve())
 
                     if dedup_key not in self._processed_files:
@@ -777,6 +800,47 @@ class FileProcessor:
 
         except (OSError, RuntimeError):
             return True
+
+    def _is_target_within_sources(self, target_path: Path) -> bool:
+        """Check if a path is within any of the source directories.
+        
+        Args:
+            target_path: The path to check (should be resolved)
+            
+        Returns:
+            True if the path is within any source directory, False otherwise
+        """
+        try:
+            target_resolved = target_path.resolve()
+            
+            # Check against all source directories
+            for source_dir in self.config.source_directories:
+                try:
+                    source_resolved = source_dir.resolve()
+                    # Check if target is relative to this source directory
+                    target_resolved.relative_to(source_resolved)
+                    return True
+                except ValueError:
+                    # Not relative to this source directory
+                    continue
+                    
+            # Also check against any explicitly included paths
+            for include_path in self.config.filter.include_paths:
+                try:
+                    include_resolved = Path(include_path).resolve()
+                    if include_resolved.is_dir():
+                        target_resolved.relative_to(include_resolved)
+                        return True
+                    elif target_resolved == include_resolved:
+                        return True
+                except ValueError:
+                    continue
+                    
+            return False
+            
+        except Exception as e:
+            self.logger.debug(f"Error checking if {target_path} is within sources: {e}")
+            return False
 
     def _apply_global_filter_settings(self) -> None:
         """Apply global filter settings from presets."""

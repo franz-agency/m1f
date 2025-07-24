@@ -908,136 +908,6 @@ https://realpython.com/async-io-python/
 https://docs.python.org/3/library/asyncio-task.html
 
 ======= test_output.log ======
-2025-07-24 21:56:14,185 - tools.research.content_filter - INFO    : Filtered 5 to 2 items
-2025-07-24 21:56:14,186 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
-2025-07-24 21:56:14,186 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
-2025-07-24 21:56:14,186 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
-2025-07-24 21:56:14,186 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
-2025-07-24 21:56:14,186 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
-2025-07-24 21:56:14,187 - tools.research.content_filter - INFO    : Filtered 2 to 1 items
-2025-07-24 21:56:14,189 - tools.research.content_filter - INFO    : Filtered 5 to 2 items
-2025-07-24 21:56:14,192 - tools.research.content_filter - INFO    : Filtered 5 to 2 items
-2025-07-24 21:56:14,193 - tools.research.content_filter - INFO    : Filtered 1 to 1 items
-2025-07-24 21:56:14,193 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
-2025-07-24 21:56:14,193 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
-2025-07-24 21:56:14,193 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
-2025-07-24 21:56:14,194 - tools.research.content_filter - INFO    : Filtered 1 to 1 items
-2025-07-24 21:56:14,399 - tools.research.analyzer - ERROR   : Error analyzing https://example.com/short-content: LLM service unavailable
-2025-07-24 21:56:14,401 - tools.research.content_filter - INFO    : Filtered 5 to 2 items
-2025-07-24 21:56:14,402 - tools.research.content_filter - INFO    : Filtered 5 to 0 items
-2025-07-24 21:56:14,402 - tools.research.content_filter - INFO    : Filtered 5 to 0 items
-2025-07-24 21:56:14,442 - tools.research.orchestrator - INFO    : Starting research for: test query
-2025-07-24 21:56:14,447 - tools.research.research_db - INFO    : Created new job: 6d1852b4 for query: test query
-2025-07-24 21:56:14,484 - tools.research.job_manager - INFO    : Created job 6d1852b4: test query
-2025-07-24 21:56:14,484 - tools.research.job_manager - INFO    : Output directory: /tmp/tmpgz_toxd7/2025/07/24/6d1852b4_test-query
-2025-07-24 21:56:14,484 - tools.research.orchestrator - INFO    : Created new job 6d1852b4
-2025-07-24 21:56:14,485 - tools.research.orchestrator - INFO    : Searching for URLs using LLM...
-2025-07-24 21:56:14,490 - tools.research.orchestrator - INFO    : Added 5 URLs from LLM search
-2025-07-24 21:56:14,490 - tools.research.orchestrator - INFO    : Total URLs to scrape: 5
-2025-07-24 21:56:14,495 - tools.research.orchestrator - INFO    : Content filtering disabled
-2025-07-24 21:56:14,519 - tools.research.job_manager - INFO    : Updated job 6d1852b4 status to: completed
-2025-07-24 21:56:14,538 - tools.research.orchestrator - INFO    : Starting research for: test query
-2025-07-24 21:56:14,543 - tools.research.research_db - INFO    : Created new job: bd6dde9d for query: test query
-2025-07-24 21:56:14,583 - tools.research.job_manager - INFO    : Created job bd6dde9d: test query
-2025-07-24 21:56:14,583 - tools.research.job_manager - INFO    : Output directory: /tmp/tmp_tyb10qz/2025/07/24/bd6dde9d_test-query
-2025-07-24 21:56:14,584 - tools.research.orchestrator - INFO    : Created new job bd6dde9d
-2025-07-24 21:56:14,584 - tools.research.orchestrator - INFO    : Total URLs to scrape: 0
-2025-07-24 21:56:14,585 - tools.research.orchestrator - WARNING : No URLs to scrape
-2025-07-24 21:56:14,590 - tools.research.job_manager - INFO    : Updated job bd6dde9d status to: completed
-2025-07-24 21:56:14,608 - tools.research.orchestrator - INFO    : Starting research for: test query
-2025-07-24 21:56:14,613 - tools.research.research_db - INFO    : Created new job: ff6af4e9 for query: test query
-2025-07-24 21:56:14,650 - tools.research.job_manager - INFO    : Created job ff6af4e9: test query
-2025-07-24 21:56:14,650 - tools.research.job_manager - INFO    : Output directory: /tmp/tmp9e7e91a1/2025/07/24/ff6af4e9_test-query
-2025-07-24 21:56:14,650 - tools.research.orchestrator - INFO    : Created new job ff6af4e9
-2025-07-24 21:56:14,651 - tools.research.orchestrator - INFO    : Searching for URLs using LLM...
-2025-07-24 21:56:14,656 - tools.research.orchestrator - INFO    : Added 5 URLs from LLM search
-2025-07-24 21:56:14,656 - tools.research.orchestrator - INFO    : Total URLs to scrape: 5
-2025-07-24 21:56:14,661 - tools.research.orchestrator - INFO    : Content filtering disabled
-2025-07-24 21:56:14,663 - tools.research.readme_generator - INFO    : Generated README at: /tmp/tmp9e7e91a1/2025/07/24/ff6af4e9_test-query/README.md
-2025-07-24 21:56:14,663 - tools.research.readme_generator - INFO    : Generated citations at: /tmp/tmp9e7e91a1/2025/07/24/ff6af4e9_test-query/CITATIONS.md
-2025-07-24 21:56:14,663 - tools.research.bundle_creator - INFO    : Created smart bundle at: /tmp/tmp9e7e91a1/2025/07/24/ff6af4e9_test-query/research-bundle.md
-2025-07-24 21:56:14,663 - tools.research.orchestrator - INFO    : Created prominent bundle: /tmp/tmp9e7e91a1/2025/07/24/ff6af4e9_test-query/📚_RESEARCH_BUNDLE.md
-2025-07-24 21:56:14,664 - tools.research.orchestrator - INFO    : Bundle created at: /tmp/tmp9e7e91a1/2025/07/24/ff6af4e9_test-query/research-bundle.md
-2025-07-24 21:56:14,669 - tools.research.job_manager - INFO    : Updated job ff6af4e9 status to: completed
-2025-07-24 21:56:14,669 - tools.research.job_manager - INFO    : Created symlink: /tmp/tmp9e7e91a1/latest_research.md -> ../tmp9e7e91a1/2025/07/24/ff6af4e9_test-query/📚_RESEARCH_BUNDLE.md
-2025-07-24 21:56:14,805 - tools.research.scraper - ERROR   : Error scraping https://example.com/article3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:14,817 - tools.research.scraper - ERROR   : Error scraping https://example.com/article2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:14,882 - tools.research.scraper - ERROR   : Error scraping https://example.com/article1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:14,923 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
-2025-07-24 21:56:14,968 - tools.research.scraper - ERROR   : Error scraping https://example.com/article3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:15,027 - tools.research.scraper - ERROR   : Error scraping https://example.com/article1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:15,062 - tools.research.scraper - ERROR   : Error scraping https://example.com/article2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:15,077 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
-2025-07-24 21:56:15,077 - tools.research.scraper - INFO    : Scraped 0/4 URLs successfully
-2025-07-24 21:56:15,318 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:15,358 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:15,592 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:15,657 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:15,868 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:15,930 - tools.research.scraper - ERROR   : Error scraping https://example.com/page5: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:16,119 - tools.research.scraper - ERROR   : Error scraping https://example.com/page6: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:16,205 - tools.research.scraper - ERROR   : Error scraping https://example.com/page7: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:16,364 - tools.research.scraper - ERROR   : Error scraping https://example.com/page8: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:16,445 - tools.research.scraper - ERROR   : Error scraping https://example.com/page9: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:16,644 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:16,740 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:16,849 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:16,988 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:17,058 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:17,260 - tools.research.scraper - ERROR   : Error scraping https://example.com/page5: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:17,343 - tools.research.scraper - ERROR   : Error scraping https://example.com/page6: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:17,562 - tools.research.scraper - ERROR   : Error scraping https://example.com/page7: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:17,625 - tools.research.scraper - ERROR   : Error scraping https://example.com/page8: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:17,822 - tools.research.scraper - ERROR   : Error scraping https://example.com/page9: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:17,822 - tools.research.scraper - INFO    : Scraped 0/10 URLs successfully
-2025-07-24 21:56:18,021 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 1 failed
-2025-07-24 21:56:18,168 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 2 failed
-2025-07-24 21:56:18,274 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:18,274 - tools.research.scraper - INFO    : Scraped 0/1 URLs successfully
-2025-07-24 21:56:18,780 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:18,977 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:19,036 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:19,542 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:19,559 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:19,686 - tools.research.scraper - ERROR   : Error scraping https://example.com/rate0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:19,686 - tools.research.scraper - INFO    : Scraped 0/3 URLs successfully
-2025-07-24 21:56:19,821 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
-2025-07-24 21:56:19,822 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
-2025-07-24 21:56:19,878 - tools.research.scraper - ERROR   : Error scraping https://example.com/public/article: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:19,937 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
-2025-07-24 21:56:19,966 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
-2025-07-24 21:56:20,046 - tools.research.scraper - ERROR   : Error scraping https://example.com/public/article: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:20,047 - tools.research.scraper - INFO    : Scraped 0/3 URLs successfully
-2025-07-24 21:56:20,253 - tools.research.scraper - ERROR   : Error scraping https://example.com/test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:20,391 - tools.research.scraper - ERROR   : Error scraping https://example.com/test: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:20,392 - tools.research.scraper - INFO    : Scraped 0/1 URLs successfully
-2025-07-24 21:56:20,514 - tools.research.scraper - ERROR   : Error scraping https://example.com/success: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:20,523 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
-2025-07-24 21:56:20,701 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
-2025-07-24 21:56:20,711 - tools.research.scraper - WARNING : Attempt 1 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
-2025-07-24 21:56:20,827 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
-2025-07-24 21:56:20,858 - tools.research.scraper - ERROR   : Error scraping https://example.com/success: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:21,007 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
-2025-07-24 21:56:21,898 - tools.research.scraper - WARNING : Attempt 2 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
-2025-07-24 21:56:30,580 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
-2025-07-24 21:56:40,725 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
-2025-07-24 21:56:40,725 - tools.research.scraper - INFO    : Scraped 0/5 URLs successfully
-2025-07-24 21:56:40,893 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:40,919 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:40,950 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,109 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,113 - tools.research.scraper - ERROR   : Error scraping https://example.com/page0: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,134 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,303 - tools.research.scraper - ERROR   : Error scraping https://example.com/page3: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,304 - tools.research.scraper - ERROR   : Error scraping https://example.com/page2: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,309 - tools.research.scraper - ERROR   : Error scraping https://example.com/page1: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,526 - tools.research.scraper - ERROR   : Error scraping https://example.com/page4: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,526 - tools.research.scraper - INFO    : Scraped 0/5 URLs successfully
-2025-07-24 21:56:41,631 - tools.research.scraper - ERROR   : Error scraping https://example.com/redirect: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,718 - tools.research.scraper - ERROR   : Error scraping https://example.com/normal: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,746 - tools.research.scraper - ERROR   : Error scraping https://example.com/redirect: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,864 - tools.research.scraper - ERROR   : Error scraping https://example.com/normal: ScrapedContent.__init__() got an unexpected keyword argument 'html'
-2025-07-24 21:56:41,864 - tools.research.scraper - INFO    : Scraped 0/2 URLs successfully
 
 ======= bin/m1f ======
 #!/usr/bin/env bash
@@ -37900,6 +37770,16 @@ output.
 
 Follow symbolic links. Be careful of infinite loops!
 
+**Deduplication behavior**:
+
+- By default (without `--allow-duplicate-files`), m1f intelligently handles
+  symlinks:
+  - Internal symlinks (pointing to files within source directories) are excluded
+    to avoid duplicates
+  - External symlinks (pointing outside source directories) are included
+- With `--allow-duplicate-files`, all symlinks are included regardless of their
+  target
+
 ### `--max-file-size SIZE`
 
 Skip files larger than specified size. Supports KB, MB, GB suffixes.
@@ -37979,6 +37859,16 @@ Skip creating the main output file. Useful when only creating an archive.
 Allow files with identical content to be included in the output. By default, m1f
 deduplicates files based on their content checksum to save space and tokens.
 With this flag, all files are included even if they have identical content.
+
+**Special behavior with symlinks** (when used with `--include-symlinks`):
+
+- **Without** `--allow-duplicate-files`:
+  - Symlinks pointing to files **inside** the source directories are excluded
+    (the original file is already included)
+  - Symlinks pointing to files **outside** the source directories are included
+- **With** `--allow-duplicate-files`:
+  - All symlinks are included, regardless of where they point
+  - Both the original file and symlinks pointing to it can appear in the output
 
 ### `--verbose`, `-v`
 
@@ -58458,16 +58348,39 @@ class FileProcessor:
                 file_path = root_path / filename
 
                 if await self._should_include_file(file_path, explicitly_included):
-                    rel_path = get_relative_path(
-                        file_path, self._get_base_dir_for_path(file_path)
-                    )
-
-                    # Check for duplicates
-                    # When include_symlinks is True, use the actual path (not resolved) for deduplication
-                    # This allows both the original file and symlinks pointing to it to be included
+                    # For symlinks when include_symlinks is True, preserve the symlink path
+                    # instead of resolving it to the target path
                     if self.config.filter.include_symlinks and file_path.is_symlink():
-                        dedup_key = str(file_path)
+                        try:
+                            base_dir = self._get_base_dir_for_path(file_path)
+                            rel_path = file_path.relative_to(base_dir).as_posix()
+                        except ValueError:
+                            # If file is not under base path, use absolute path
+                            rel_path = str(file_path)
                     else:
+                        rel_path = get_relative_path(
+                            file_path, self._get_base_dir_for_path(file_path)
+                        )
+
+                    # Check for duplicates with improved symlink handling
+                    if self.config.filter.include_symlinks and file_path.is_symlink():
+                        # If allow_duplicate_files is set (content deduplication disabled),
+                        # always use the symlink path to allow duplicates
+                        if not self.config.output.enable_content_deduplication:
+                            dedup_key = str(file_path)
+                        else:
+                            # Content deduplication is enabled, check if target is internal
+                            target = file_path.resolve()
+                            if self._is_target_within_sources(target):
+                                # Target is internal - use resolved path for deduplication
+                                # This will cause the symlink to be skipped if the target
+                                # is already included
+                                dedup_key = str(target)
+                            else:
+                                # Target is external - use symlink path to ensure it's included
+                                dedup_key = str(file_path)
+                    else:
+                        # Not a symlink or symlinks not included - use resolved path
                         dedup_key = str(file_path.resolve())
 
                     if dedup_key not in self._processed_files:
@@ -58787,6 +58700,47 @@ class FileProcessor:
 
         except (OSError, RuntimeError):
             return True
+
+    def _is_target_within_sources(self, target_path: Path) -> bool:
+        """Check if a path is within any of the source directories.
+        
+        Args:
+            target_path: The path to check (should be resolved)
+            
+        Returns:
+            True if the path is within any source directory, False otherwise
+        """
+        try:
+            target_resolved = target_path.resolve()
+            
+            # Check against all source directories
+            for source_dir in self.config.source_directories:
+                try:
+                    source_resolved = source_dir.resolve()
+                    # Check if target is relative to this source directory
+                    target_resolved.relative_to(source_resolved)
+                    return True
+                except ValueError:
+                    # Not relative to this source directory
+                    continue
+                    
+            # Also check against any explicitly included paths
+            for include_path in self.config.filter.include_paths:
+                try:
+                    include_resolved = Path(include_path).resolve()
+                    if include_resolved.is_dir():
+                        target_resolved.relative_to(include_resolved)
+                        return True
+                    elif target_resolved == include_resolved:
+                        return True
+                except ValueError:
+                    continue
+                    
+            return False
+            
+        except Exception as e:
+            self.logger.debug(f"Error checking if {target_path} is within sources: {e}")
+            return False
 
     def _apply_global_filter_settings(self) -> None:
         """Apply global filter settings from presets."""

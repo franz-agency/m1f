@@ -162,7 +162,8 @@ class TestSymlinkHandling(unittest.TestCase):
             "symlink_to_file1.txt", content
         )  # Symlink file should be excluded
 
-        # 2. Now with --include-symlinks (should include non-circular symlinks)
+        # 2. Now with --include-symlinks and --allow-duplicate-files 
+        # (should include all non-circular symlinks, including internal ones)
         output_file2 = Path(self.temp_dir) / "output_with_symlinks.txt"
         result = subprocess.run(
             [
@@ -174,6 +175,7 @@ class TestSymlinkHandling(unittest.TestCase):
                 str(output_file2),
                 "--force",
                 "--include-symlinks",
+                "--allow-duplicate-files",  # Allow internal symlinks to be included
                 "--verbose",  # Added for debugging
             ],
             check=True,
