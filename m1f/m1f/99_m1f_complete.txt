@@ -50356,13 +50356,13 @@ def main():
     analyzer = HTMLAnalyzer()
 
     # Analyze all files
-    print(f"Analyzing {len(args.files)} files...")
+    info(f"Analyzing {len(args.files)} files...")
     for file_path in args.files:
         path = Path(file_path)
         if path.exists() and path.suffix.lower() in [".html", ".htm"]:
             result = analyzer.analyze_file(path)
             if "error" in result:
-                print(f"Error analyzing {path}: {result['error']}")
+                error(f"Error analyzing {path}: {result['error']}")
 
     # Get suggestions
     config = analyzer.suggest_config()
@@ -50370,18 +50370,18 @@ def main():
     # Show report if requested
     if args.report:
         report = analyzer.get_report()
-        print("\n=== Analysis Report ===")
+        info("\n=== Analysis Report ===")
         print(json.dumps(report, indent=2))
 
     # Show suggested configuration
-    print("\n=== Suggested Preprocessing Configuration ===")
+    info("\n=== Suggested Preprocessing Configuration ===")
     print(json.dumps(config, indent=2))
 
     # Save to file if requested
     if args.output:
         with open(args.output, "w") as f:
             json.dump(config, f, indent=2)
-        print(f"\nConfiguration saved to: {args.output}")
+        success(f"\nConfiguration saved to: {args.output}")
 
     info(
         "\nTo use this configuration, create a preprocessing config in your conversion script."
