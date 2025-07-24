@@ -1364,7 +1364,7 @@ I'll analyze your project and create an optimal m1f configuration that:
         info("  • Run 'm1f-init' first to create basic bundles")
         info("  • Claude Code must be installed")
         info("  • .m1f.config.yml should exist")
-        print()
+        info("")
 
         # Collect project description and priorities if not provided via CLI
         if not self.project_description and not self.project_priorities:
@@ -1373,7 +1373,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             info(
                 "Please provide some information about your project to help create better bundles."
             )
-            print()
+            info("")
 
             # Interactive project description input
             if not self.project_description:
@@ -1395,7 +1395,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                 if not self.project_priorities:
                     self.project_priorities = "Not provided"
 
-            print()
+            info("")
 
         # Check if we're in a git repository
         git_root = self.project_path
@@ -1551,7 +1551,7 @@ I'll analyze your project and create an optimal m1f configuration that:
             info("=" * 80)
             info(segmentation_prompt)
             info("=" * 80)
-            print()
+            info("")
 
         # Execute Claude directly with the prompt
         info("\n🤖 Sending to Claude Code...")
@@ -1615,7 +1615,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                 info("=" * 80)
                 info(verification_prompt)
                 info("=" * 80)
-                print()
+                info("")
 
             info(
                 "\n🤖 Phase 2: Claude will now verify and improve the configuration..."

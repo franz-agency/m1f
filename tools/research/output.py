@@ -131,7 +131,7 @@ class OutputFormatter:
 
         # Add newline when complete
         if current >= total:
-            print()
+            self.print()
 
     def table(
         self,
