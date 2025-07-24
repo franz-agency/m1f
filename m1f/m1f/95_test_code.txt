@@ -2417,6 +2417,7 @@ import pytest
 import tempfile
 import shutil
 from pathlib import Path
+from typing import Generator
 
 # Add the tools directory to the path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
@@ -2550,19 +2551,29 @@ class TestRealClaudeIntegration:
         # Replace the placeholder with the test HTML file path
         prompt = prompt_template.replace("{html_content}", f"@{test_html_file}")
         
+        # Create output file path
+        output_file = tmp_path / "converted.md"
+        
+        # Modify prompt to save output to a specific file
+        prompt_with_output = prompt + f"\n\nPlease save the converted markdown to: {output_file}"
+        
         # Run Claude with the actual prompt
         returncode, stdout, stderr = runner.run_claude_streaming(
-            prompt=prompt,
+            prompt=prompt_with_output,
             allowed_tools="Read,Write",  # Only allow file operations
             timeout=90,
             show_output=False
         )
         
         assert returncode == 0, f"Claude command failed: {stderr}"
-        assert stdout.strip() != "", "No output received"
         
-        # Verify the output quality
-        output = stdout.strip()
+        # Check if output file was created
+        if output_file.exists():
+            output = output_file.read_text()
+        else:
+            # Fallback to stdout if no file was created
+            output = stdout.strip()
+            assert output != "", "No output received"
         
         # Should include main content
         assert "API Reference" in output
@@ -2582,6 +2593,10 @@ class TestRealClaudeIntegration:
         assert "#" in output  # Headers
         assert "```" in output or "    " in output  # Code blocks
         assert "|" in output  # Table formatting
+        
+        # Cleanup: Remove the output file if it was created
+        if output_file.exists():
+            output_file.unlink()
 
 
 if __name__ == "__main__":
