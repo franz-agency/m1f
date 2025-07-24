@@ -142,8 +142,7 @@ class SmartScraper:
                         return ScrapedContent(
                             url=str(response.url),  # Use final URL after redirects
                             title=url_info.get('title', self._extract_title(html)),
-                            html=html,
-                            markdown=markdown,
+                            content=markdown,
                             scraped_at=datetime.now(),
                             metadata={
                                 'status_code': response.status,

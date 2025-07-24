@@ -148,8 +148,7 @@ class TestScrapingIntegration:
                 for result in results:
                     assert result.url in mock_html_responses
                     assert result.title is not None
-                    assert result.html is not None
-                    assert result.markdown is not None
+                    assert result.content is not None
                     assert isinstance(result.scraped_at, datetime)
                     assert result.metadata['status_code'] == 200
                 
@@ -374,27 +373,27 @@ class TestScrapingIntegration:
                 results = await scraper.scrape_urls(urls)
                 
                 assert len(results) == 1
-                markdown = results[0].markdown
+                content = results[0].content
                 
-                # Verify markdown conversion
-                assert "# Main Title" in markdown
-                assert "## Subtitle" in markdown
-                assert "**bold**" in markdown
-                assert "*italic*" in markdown or "_italic_" in markdown
-                assert "- List item 1" in markdown
-                assert "- List item 2" in markdown
-                assert "[External Link](https://example.com)" in markdown
-                assert "`inline_code()`" in markdown
-                assert "def block_code():" in markdown
+                # Verify markdown conversion (SmartScraper converts HTML to markdown)
+                assert "# Main Title" in content
+                assert "## Subtitle" in content
+                assert "**bold**" in content
+                assert "*italic*" in content or "_italic_" in content
+                assert "- List item 1" in content
+                assert "- List item 2" in content
+                assert "[External Link](https://example.com)" in content
+                assert "`inline_code()`" in content
+                assert "def block_code():" in content
                 
                 # Verify script and style removal
-                assert "<script>" not in markdown
-                assert "alert(" not in markdown
-                assert "<style>" not in markdown
-                assert "color: red" not in markdown
+                assert "<script>" not in content
+                assert "alert(" not in content
+                assert "<style>" not in content
+                assert "color: red" not in content
                 
                 # Verify relative URL conversion
-                assert "[Relative Link](https://example.com/relative/path)" in markdown
+                assert "[Relative Link](https://example.com/relative/path)" in content
     
     @pytest.mark.asyncio
     async def test_error_handling_and_fallback(self, scraping_config):

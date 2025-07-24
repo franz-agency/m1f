@@ -20,6 +20,8 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+from rich.progress import Progress
+
 # Use unified colorama module
 from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
