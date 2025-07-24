@@ -6763,17 +6763,17 @@ class M1FClaudeRunner:
                             f"Process timed out after {actual_timeout}s",
                         )
 
-                    # Check inactivity timeout (60 seconds)
-                    if current_time - last_output_time > 60:
+                    # Check inactivity timeout (120 seconds)
+                    if current_time - last_output_time > 120:
                         if show_output:
                             warning(
-                                f"\n⏰ Claude inactive for 60s (total time: {elapsed:.1f}s)"
+                                f"\n⏰ Claude inactive for 120s (total time: {elapsed:.1f}s)"
                             )
                         self.process.kill()
                         return (
                             -1,
                             "\n".join(stdout_lines),
-                            "Process inactive for 60 seconds",
+                            "Process inactive for 120 seconds",
                         )
 
                     # Show spinner to indicate we're still waiting
