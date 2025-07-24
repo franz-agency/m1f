@@ -908,6 +908,83 @@ https://realpython.com/async-io-python/
 https://docs.python.org/3/library/asyncio-task.html
 
 ======= test_output.log ======
+2025-07-25 00:54:34,607 - tools.research.content_filter - INFO    : Filtered 5 to 2 items
+2025-07-25 00:54:34,608 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
+2025-07-25 00:54:34,608 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
+2025-07-25 00:54:34,608 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
+2025-07-25 00:54:34,609 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
+2025-07-25 00:54:34,609 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
+2025-07-25 00:54:34,610 - tools.research.content_filter - INFO    : Filtered 2 to 1 items
+2025-07-25 00:54:34,612 - tools.research.content_filter - INFO    : Filtered 5 to 2 items
+2025-07-25 00:54:34,615 - tools.research.content_filter - INFO    : Filtered 5 to 2 items
+2025-07-25 00:54:34,616 - tools.research.content_filter - INFO    : Filtered 1 to 1 items
+2025-07-25 00:54:34,616 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
+2025-07-25 00:54:34,617 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
+2025-07-25 00:54:34,617 - tools.research.content_filter - INFO    : Filtered 1 to 0 items
+2025-07-25 00:54:34,617 - tools.research.content_filter - INFO    : Filtered 1 to 1 items
+2025-07-25 00:54:34,823 - tools.research.analyzer - ERROR   : Error analyzing https://example.com/short-content: LLM service unavailable
+2025-07-25 00:54:34,824 - tools.research.content_filter - INFO    : Filtered 5 to 2 items
+2025-07-25 00:54:34,825 - tools.research.content_filter - INFO    : Filtered 5 to 0 items
+2025-07-25 00:54:34,825 - tools.research.content_filter - INFO    : Filtered 5 to 0 items
+2025-07-25 00:54:34,862 - tools.research.orchestrator - INFO    : Starting research for: test query
+2025-07-25 00:54:34,867 - tools.research.research_db - INFO    : Created new job: db274d87 for query: test query
+2025-07-25 00:54:34,909 - tools.research.job_manager - INFO    : Created job db274d87: test query
+2025-07-25 00:54:34,909 - tools.research.job_manager - INFO    : Output directory: /tmp/tmpm7mv_qdr/2025/07/25/db274d87_test-query
+2025-07-25 00:54:34,909 - tools.research.orchestrator - INFO    : Created new job db274d87
+2025-07-25 00:54:34,909 - tools.research.orchestrator - INFO    : Searching for URLs using LLM...
+2025-07-25 00:54:34,915 - tools.research.orchestrator - INFO    : Added 5 URLs from LLM search
+2025-07-25 00:54:34,915 - tools.research.orchestrator - INFO    : Total URLs to scrape: 5
+2025-07-25 00:54:34,921 - tools.research.orchestrator - INFO    : Content filtering disabled
+2025-07-25 00:54:34,948 - tools.research.job_manager - INFO    : Updated job db274d87 status to: completed
+2025-07-25 00:54:34,964 - tools.research.orchestrator - INFO    : Starting research for: test query
+2025-07-25 00:54:34,970 - tools.research.research_db - INFO    : Created new job: 0ab4c6ed for query: test query
+2025-07-25 00:54:35,009 - tools.research.job_manager - INFO    : Created job 0ab4c6ed: test query
+2025-07-25 00:54:35,009 - tools.research.job_manager - INFO    : Output directory: /tmp/tmps5rr9409/2025/07/25/0ab4c6ed_test-query
+2025-07-25 00:54:35,009 - tools.research.orchestrator - INFO    : Created new job 0ab4c6ed
+2025-07-25 00:54:35,009 - tools.research.orchestrator - INFO    : Total URLs to scrape: 0
+2025-07-25 00:54:35,010 - tools.research.orchestrator - WARNING : No URLs to scrape
+2025-07-25 00:54:35,015 - tools.research.job_manager - INFO    : Updated job 0ab4c6ed status to: completed
+2025-07-25 00:54:35,031 - tools.research.orchestrator - INFO    : Starting research for: test query
+2025-07-25 00:54:35,036 - tools.research.research_db - INFO    : Created new job: 7c6cd00f for query: test query
+2025-07-25 00:54:35,074 - tools.research.job_manager - INFO    : Created job 7c6cd00f: test query
+2025-07-25 00:54:35,074 - tools.research.job_manager - INFO    : Output directory: /tmp/tmpcsv_fikc/2025/07/25/7c6cd00f_test-query
+2025-07-25 00:54:35,074 - tools.research.orchestrator - INFO    : Created new job 7c6cd00f
+2025-07-25 00:54:35,074 - tools.research.orchestrator - INFO    : Searching for URLs using LLM...
+2025-07-25 00:54:35,080 - tools.research.orchestrator - INFO    : Added 5 URLs from LLM search
+2025-07-25 00:54:35,080 - tools.research.orchestrator - INFO    : Total URLs to scrape: 5
+2025-07-25 00:54:35,086 - tools.research.orchestrator - INFO    : Content filtering disabled
+2025-07-25 00:54:35,087 - tools.research.readme_generator - INFO    : Generated README at: /tmp/tmpcsv_fikc/2025/07/25/7c6cd00f_test-query/README.md
+2025-07-25 00:54:35,087 - tools.research.readme_generator - INFO    : Generated citations at: /tmp/tmpcsv_fikc/2025/07/25/7c6cd00f_test-query/CITATIONS.md
+2025-07-25 00:54:35,087 - tools.research.bundle_creator - INFO    : Created smart bundle at: /tmp/tmpcsv_fikc/2025/07/25/7c6cd00f_test-query/research-bundle.md
+2025-07-25 00:54:35,087 - tools.research.orchestrator - INFO    : Created prominent bundle: /tmp/tmpcsv_fikc/2025/07/25/7c6cd00f_test-query/📚_RESEARCH_BUNDLE.md
+2025-07-25 00:54:35,087 - tools.research.orchestrator - INFO    : Bundle created at: /tmp/tmpcsv_fikc/2025/07/25/7c6cd00f_test-query/research-bundle.md
+2025-07-25 00:54:35,093 - tools.research.job_manager - INFO    : Updated job 7c6cd00f status to: completed
+2025-07-25 00:54:35,094 - tools.research.job_manager - INFO    : Created symlink: /tmp/tmpcsv_fikc/latest_research.md -> ../tmpcsv_fikc/2025/07/25/7c6cd00f_test-query/📚_RESEARCH_BUNDLE.md
+2025-07-25 00:54:35,409 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
+2025-07-25 00:54:35,519 - tools.research.scraper - WARNING : HTTP 404 for https://example.com/fail
+2025-07-25 00:54:35,519 - tools.research.scraper - INFO    : Scraped 3/4 URLs successfully
+2025-07-25 00:54:36,819 - tools.research.scraper - INFO    : Scraped 10/10 URLs successfully
+2025-07-25 00:54:36,990 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 1 failed
+2025-07-25 00:54:37,153 - tools.research.scraper - ERROR   : Error scraping https://example.com/retry-test: Attempt 2 failed
+2025-07-25 00:54:37,346 - tools.research.scraper - INFO    : Scraped 1/1 URLs successfully
+2025-07-25 00:54:38,085 - tools.research.scraper - INFO    : Scraped 3/3 URLs successfully
+2025-07-25 00:54:38,216 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
+2025-07-25 00:54:38,261 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
+2025-07-25 00:54:38,345 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/admin/panel
+2025-07-25 00:54:38,416 - tools.research.scraper - WARNING : HTTP 403 for https://example.com/private/data
+2025-07-25 00:54:38,416 - tools.research.scraper - INFO    : Scraped 1/3 URLs successfully
+2025-07-25 00:54:38,574 - tools.research.scraper - INFO    : Scraped 1/1 URLs successfully
+2025-07-25 00:54:38,706 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
+2025-07-25 00:54:38,806 - tools.research.scraper - WARNING : Attempt 1 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
+2025-07-25 00:54:38,884 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
+2025-07-25 00:54:38,941 - tools.research.scraper - WARNING : HTTP 500 for https://example.com/error500
+2025-07-25 00:54:38,991 - tools.research.scraper - ERROR   : Error scraping https://example.com/invalid: 'utf-8' codec can't decode bytes in position 0-0: invalid
+2025-07-25 00:54:40,002 - tools.research.scraper - WARNING : Attempt 2 failed for https://example.com/network: 'NoneType' object has no attribute 'ssl'
+2025-07-25 00:54:48,752 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
+2025-07-25 00:54:58,962 - tools.research.scraper - ERROR   : Error scraping https://example.com/timeout: 'NoneType' object has no attribute 'status'
+2025-07-25 00:54:58,962 - tools.research.scraper - INFO    : Scraped 1/5 URLs successfully
+2025-07-25 00:54:59,438 - tools.research.scraper - INFO    : Scraped 5/5 URLs successfully
+2025-07-25 00:54:59,635 - tools.research.scraper - INFO    : Scraped 2/2 URLs successfully
 
 ======= bin/m1f ======
 #!/usr/bin/env bash
