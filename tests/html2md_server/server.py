@@ -29,6 +29,9 @@ from datetime import datetime
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+# Add colorama imports
+from tools.shared.colors import info, header
+
 app = Flask(
     __name__,
     template_folder="templates",  # Changed back to templates for error pages only
@@ -185,33 +188,22 @@ if __name__ == "__main__":
 
     # Only print banner in non-testing mode
     if os.environ.get("FLASK_ENV") != "testing":
-        print(
-            f"""
-╔══════════════════════════════════════════════════════════════╗
-║                  HTML2MD Test Server                         ║
-║                                                              ║
-║  Server running at: http://localhost:{port:<4}                    ║
-║                                                              ║
-║  Available test pages ({len(TEST_PAGES)} found):            ║
-"""
-        )
+        header("HTML2MD Test Server")
+        info(f"Server running at: http://localhost:{port}")
+        info(f"\nAvailable test pages ({len(TEST_PAGES)} found):")
 
         # Sort pages for consistent display
         for page in sorted(TEST_PAGES.keys()):
             info = TEST_PAGES[page]
             # Truncate title if too long
             title = info["title"][:25]
-            print(f"║  • /page/{page:<20} - {title:<25} ║")
+            info(f"  • /page/{page:<20} - {title}")
 
         if not TEST_PAGES:
-            print("║  No test pages found in test_pages directory!               ║")
+            info("  No test pages found in test_pages directory!")
 
-        print(
-            """║                                                              ║
-║  Press Ctrl+C to stop the server                            ║
-╚══════════════════════════════════════════════════════════════╝
-    """
-        )
+        info("\nPress Ctrl+C to stop the server")
+        info("=" * 60)
 
     # Disable debug mode when running in testing environment
     debug_mode = os.environ.get("FLASK_ENV") != "testing"
