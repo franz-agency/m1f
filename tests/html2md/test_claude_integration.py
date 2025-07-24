@@ -26,7 +26,6 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 
 from html2md_tool.claude_runner import ClaudeRunner
-from html2md_tool.cli import _handle_claude_analysis
 
 
 class TestClaudeRunner:
