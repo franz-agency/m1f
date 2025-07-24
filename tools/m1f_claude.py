@@ -39,30 +39,9 @@ from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 try:
     from .shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 except ImportError:
-    try:
-        # Try direct import if running as script
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from tools.shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-    except ImportError:
-        # Fallback to no colors
-        COLORAMA_AVAILABLE = False
-        class Colors:
-            GREEN = ""
-            RED = ""
-            YELLOW = ""
-            BLUE = ""
-            CYAN = ""
-            BOLD = ""
-            RESET = ""
-        
-        def success(msg): print(f"✅ {msg}")
-        def error(msg): print(f"❌ {msg}", file=sys.stderr)
-        def warning(msg): print(f"⚠️  {msg}")
-        def info(msg): print(msg)
-        def header(title, subtitle=None):
-            print(f"\n{title}")
-            if subtitle:
-                print(subtitle)
+    # Try direct import if running as script
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from tools.shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 # Handle both module and direct script execution
 try:
@@ -1939,7 +1918,7 @@ bundles:
                             elif tool_name == "Task" and "description" in tool_input:
                                 param_info = f" → {tool_input['description']}"
 
-                        print(f"\n[🔧 {tool_name}]{param_info}", flush=True)
+                        info(f"[🔧 {tool_name}]{param_info}")
 
                     elif event_type == "tool_result":
                         # Tool result events
@@ -1954,16 +1933,10 @@ bundles:
                                         if len(lines[0]) > 80
                                         else lines[0]
                                     )
-                                    print(
-                                        f"[📄 {first_line} ... ({len(lines)} lines)]",
-                                        flush=True,
-                                    )
+                                    info(f"[📄 {first_line} ... ({len(lines)} lines)]")
                                 elif len(output) > 100:
                                     # Long single line
-                                    print(
-                                        f"[📄 {output[:80]}... ({len(output)} chars)]",
-                                        flush=True,
-                                    )
+                                    info(f"[📄 {output[:80]}... ({len(output)} chars)]")
                                 else:
                                     # Short output
                                     print(f"[📄 {output}]", flush=True)

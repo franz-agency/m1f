@@ -28,6 +28,13 @@ except ImportError:
 
 from .config import Config
 from .models import ExtractedFile, ExtractionResult
+
+# Use unified colorama module for direct prints
+try:
+    from ..shared.colors import info
+except ImportError:
+    # Fallback
+    def info(msg): print(msg)
 from .parsers import CombinedFileParser
 from .writers import FileWriter
 from .utils import format_size, is_binary_content
@@ -66,7 +73,7 @@ class FileSplitter:
                 return ExtractionResult(), 2
 
             # Display file list
-            print(
+            info(
                 f"\nFound {len(extracted_files)} file(s) in {self.config.input_file}:\n"
             )
 
@@ -87,12 +94,12 @@ class FileSplitter:
                 if meta.type:
                     info_parts.append(f"Type: {meta.type}")
 
-                print("  ".join(info_parts))
+                info("  ".join(info_parts))
 
                 if meta.size_bytes:
                     total_size += meta.size_bytes
 
-            print(f"\nTotal size: {format_size(total_size)}")
+            info(f"\nTotal size: {format_size(total_size)}")
 
             result = ExtractionResult(
                 files_created=0,

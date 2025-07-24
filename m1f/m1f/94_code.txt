@@ -4246,30 +4246,9 @@ from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 try:
     from .shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 except ImportError:
-    try:
-        # Try direct import if running as script
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from tools.shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-    except ImportError:
-        # Fallback to no colors
-        COLORAMA_AVAILABLE = False
-        class Colors:
-            GREEN = ""
-            RED = ""
-            YELLOW = ""
-            BLUE = ""
-            CYAN = ""
-            BOLD = ""
-            RESET = ""
-        
-        def success(msg): print(f"✅ {msg}")
-        def error(msg): print(f"❌ {msg}", file=sys.stderr)
-        def warning(msg): print(f"⚠️  {msg}")
-        def info(msg): print(msg)
-        def header(title, subtitle=None):
-            print(f"\n{title}")
-            if subtitle:
-                print(subtitle)
+    # Try direct import if running as script
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from tools.shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 # Handle both module and direct script execution
 try:
@@ -6146,7 +6125,7 @@ bundles:
                             elif tool_name == "Task" and "description" in tool_input:
                                 param_info = f" → {tool_input['description']}"
 
-                        print(f"\n[🔧 {tool_name}]{param_info}", flush=True)
+                        info(f"[🔧 {tool_name}]{param_info}")
 
                     elif event_type == "tool_result":
                         # Tool result events
@@ -6161,16 +6140,10 @@ bundles:
                                         if len(lines[0]) > 80
                                         else lines[0]
                                     )
-                                    print(
-                                        f"[📄 {first_line} ... ({len(lines)} lines)]",
-                                        flush=True,
-                                    )
+                                    info(f"[📄 {first_line} ... ({len(lines)} lines)]")
                                 elif len(output) > 100:
                                     # Long single line
-                                    print(
-                                        f"[📄 {output[:80]}... ({len(output)} chars)]",
-                                        flush=True,
-                                    )
+                                    info(f"[📄 {output[:80]}... ({len(output)} chars)]")
                                 else:
                                     # Short output
                                     print(f"[📄 {output}]", flush=True)
@@ -6879,86 +6852,62 @@ from pathlib import Path
 try:
     from .shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 except ImportError:
-    try:
-        # Try direct import if running as script
-        sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
-        from shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-    except ImportError:
-        # Fallback to no colors
-        COLORAMA_AVAILABLE = False
-        class Colors:
-            GREEN = ""
-            RED = ""
-            YELLOW = ""
-            BLUE = ""
-            CYAN = ""
-            MAGENTA = ""
-            BOLD = ""
-            DIM = ""
-            RESET = ""
-        
-        def success(msg): print(f"✅ {msg}")
-        def error(msg): print(f"❌ {msg}", file=sys.stderr)
-        def warning(msg): print(f"⚠️  {msg}")
-        def info(msg): print(msg)
-        def header(title, subtitle=None):
-            print(f"\n{title}")
-            if subtitle:
-                print(subtitle)
+    # Try direct import if running as script
+    sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
+    from shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 
 def show_help():
     """Display the main help information."""
     # Header with ASCII art
-    print(f"{Colors.CYAN}{Colors.BOLD}")
-    print("╔══════════════════════════════════════════════════════════════╗")
-    print("║                     m1f Tools Suite                          ║")
-    print("║              Make One File - Bundle Everything               ║")
-    print("╚══════════════════════════════════════════════════════════════╝")
-    print(f"{Colors.RESET}")
+    info(f"{Colors.CYAN}{Colors.BOLD}╔══════════════════════════════════════════════════════════════╗")
+    info("║                     m1f Tools Suite                          ║")
+    info("║              Make One File - Bundle Everything               ║")
+    info(f"╚══════════════════════════════════════════════════════════════╝{Colors.RESET}")
+    info("")
     
     header("🛠️  Available Commands", "Your complete toolkit for bundling codebases")
-    print()
+    info("")
     
     # Core tools
-    print(f"{Colors.YELLOW}{Colors.BOLD}Core Tools:{Colors.RESET}")
-    print(f"  {Colors.GREEN}m1f{Colors.RESET}               - {Colors.DIM}Main tool for combining files into AI-friendly bundles{Colors.RESET}")
-    print(f"  {Colors.GREEN}m1f-s1f{Colors.RESET}           - {Colors.DIM}Split combined files back to original structure{Colors.RESET}")
-    print(f"  {Colors.GREEN}m1f-update{Colors.RESET}        - {Colors.DIM}Update m1f's own bundle files{Colors.RESET}")
-    print()
+    info(f"{Colors.YELLOW}{Colors.BOLD}Core Tools:{Colors.RESET}")
+    info(f"  {Colors.GREEN}m1f{Colors.RESET}               - {Colors.DIM}Main tool for combining files into AI-friendly bundles{Colors.RESET}")
+    info(f"  {Colors.GREEN}m1f-s1f{Colors.RESET}           - {Colors.DIM}Split combined files back to original structure{Colors.RESET}")
+    info(f"  {Colors.GREEN}m1f-update{Colors.RESET}        - {Colors.DIM}Update m1f's own bundle files{Colors.RESET}")
+    info("")
     
     # Conversion tools
-    print(f"{Colors.YELLOW}{Colors.BOLD}Conversion Tools:{Colors.RESET}")
-    print(f"  {Colors.BLUE}m1f-html2md{Colors.RESET}       - {Colors.DIM}Convert HTML to clean Markdown{Colors.RESET}")
-    print(f"  {Colors.BLUE}m1f-scrape{Colors.RESET}        - {Colors.DIM}Download websites for offline viewing/conversion{Colors.RESET}")
-    print(f"  {Colors.BLUE}m1f-research{Colors.RESET}      - {Colors.DIM}AI-powered web research and content aggregation{Colors.RESET}")
-    print()
+    info(f"{Colors.YELLOW}{Colors.BOLD}Conversion Tools:{Colors.RESET}")
+    info(f"  {Colors.BLUE}m1f-html2md{Colors.RESET}       - {Colors.DIM}Convert HTML to clean Markdown{Colors.RESET}")
+    info(f"  {Colors.BLUE}m1f-scrape{Colors.RESET}        - {Colors.DIM}Download websites for offline viewing/conversion{Colors.RESET}")
+    info(f"  {Colors.BLUE}m1f-research{Colors.RESET}      - {Colors.DIM}AI-powered web research and content aggregation{Colors.RESET}")
+    info("")
     
     # Utility tools
-    print(f"{Colors.YELLOW}{Colors.BOLD}Utility Tools:{Colors.RESET}")
-    print(f"  {Colors.MAGENTA}m1f-token-counter{Colors.RESET} - {Colors.DIM}Count tokens in files (for LLM context limits){Colors.RESET}")
-    print(f"  {Colors.MAGENTA}m1f-claude{Colors.RESET}        - {Colors.DIM}Enhance prompts with m1f knowledge for Claude{Colors.RESET}")
-    print(f"  {Colors.MAGENTA}m1f-help{Colors.RESET}          - {Colors.DIM}Show this help message{Colors.RESET}")
-    print()
+    info(f"{Colors.YELLOW}{Colors.BOLD}Utility Tools:{Colors.RESET}")
+    info(f"  {Colors.MAGENTA}m1f-token-counter{Colors.RESET} - {Colors.DIM}Count tokens in files (for LLM context limits){Colors.RESET}")
+    info(f"  {Colors.MAGENTA}m1f-claude{Colors.RESET}        - {Colors.DIM}Enhance prompts with m1f knowledge for Claude{Colors.RESET}")
+    info(f"  {Colors.MAGENTA}m1f-help{Colors.RESET}          - {Colors.DIM}Show this help message{Colors.RESET}")
+    info("")
     
     # Quick start
     header("🚀 Quick Start Examples")
-    print(f"{Colors.CYAN}# Bundle a Python project:{Colors.RESET}")
-    print(f"  m1f -s ./my-project -o project-bundle.md")
-    print()
-    print(f"{Colors.CYAN}# Bundle with specific extensions:{Colors.RESET}")
-    print(f"  m1f -s ./src --include-extensions .py .js .ts")
-    print()
-    print(f"{Colors.CYAN}# Convert a website to markdown:{Colors.RESET}")
-    print(f"  m1f-scrape https://example.com -o ./site")
-    print(f"  m1f-html2md convert ./site -o ./markdown")
-    print()
+    info(f"{Colors.CYAN}# Bundle a Python project:{Colors.RESET}")
+    info(f"  m1f -s ./my-project -o project-bundle.md")
+    info("")
+    info(f"{Colors.CYAN}# Bundle with specific extensions:{Colors.RESET}")
+    info(f"  m1f -s ./src --include-extensions .py .js .ts")
+    info("")
+    info(f"{Colors.CYAN}# Convert a website to markdown:{Colors.RESET}")
+    info(f"  m1f-scrape https://example.com -o ./site")
+    info(f"  m1f-html2md convert ./site -o ./markdown")
+    info("")
     
     # Footer
-    print(f"{Colors.DIM}{'─' * 60}{Colors.RESET}")
-    print(f"{Colors.BOLD}For detailed help on each tool, use:{Colors.RESET} {Colors.CYAN}<tool> --help{Colors.RESET}")
-    print(f"{Colors.BOLD}Documentation:{Colors.RESET} {Colors.BLUE}https://github.com/franzundfranz/m1f{Colors.RESET}")
-    print()
+    info(f"{Colors.DIM}{'─' * 60}{Colors.RESET}")
+    info(f"{Colors.BOLD}For detailed help on each tool, use:{Colors.RESET} {Colors.CYAN}<tool> --help{Colors.RESET}")
+    info(f"{Colors.BOLD}Documentation:{Colors.RESET} {Colors.BLUE}https://github.com/franzundfranz/m1f{Colors.RESET}")
+    info("")
 
 
 def main():
@@ -9358,29 +9307,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        CYAN = ""
-        BOLD = ""
-        DIM = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 from .config import (
     Config,
@@ -10247,29 +10174,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        CYAN = ""
-        BOLD = ""
-        DIM = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 
 class ClaudeRunner:
@@ -10606,29 +10511,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        CYAN = ""
-        BOLD = ""
-        DIM = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 
 class ClaudeRunnerSimple:
@@ -10724,27 +10607,7 @@ from pathlib import Path
 from typing import List, Optional
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        BOLD = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 from . import __version__
 from .api import Html2mdConverter
@@ -12699,29 +12562,7 @@ from typing import List
 from .claude_runner import ClaudeRunner
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        CYAN = ""
-        BOLD = ""
-        DIM = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 
 def handle_claude_convert_improved(args):
@@ -14182,21 +14023,7 @@ import sys
 from .config import Config, OutputConfig, FilterConfig, SeparatorStyle, LineEnding
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, info, success, error, warning
-except ImportError:
-    # Fallback if shared module not available
-    class Colors:
-        BLUE = ''
-        GREEN = ''
-        RED = ''
-        YELLOW = ''
-        RESET = ''
-    
-    def info(msg): print(f"[INFO] {msg}")
-    def success(msg): print(f"[SUCCESS] {msg}")
-    def error(msg): print(f"[ERROR] {msg}", file=sys.stderr)
-    def warning(msg): print(f"[WARNING] {msg}")
+from ..shared.colors import Colors, info, success, error, warning
 
 logger = logging.getLogger(__name__)
 
@@ -25274,80 +25101,7 @@ import shutil
 from pathlib import Path
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to local implementation
-    try:
-        from colorama import Fore, Back, Style, init
-        init(autoreset=True)
-        COLORAMA_AVAILABLE = True
-    except ImportError:
-        COLORAMA_AVAILABLE = False
-
-    class Colors:
-        """Fallback color codes"""
-        if COLORAMA_AVAILABLE:
-            # Basic colors
-            BLACK = Fore.BLACK
-            RED = Fore.RED
-            GREEN = Fore.GREEN
-            YELLOW = Fore.YELLOW
-            BLUE = Fore.BLUE
-            MAGENTA = Fore.MAGENTA
-            CYAN = Fore.CYAN
-            WHITE = Fore.WHITE
-            
-            # Bright colors
-            BRIGHT_BLACK = Fore.LIGHTBLACK_EX
-            BRIGHT_RED = Fore.LIGHTRED_EX
-            BRIGHT_GREEN = Fore.LIGHTGREEN_EX
-            BRIGHT_YELLOW = Fore.LIGHTYELLOW_EX
-            BRIGHT_BLUE = Fore.LIGHTBLUE_EX
-            BRIGHT_MAGENTA = Fore.LIGHTMAGENTA_EX
-            BRIGHT_CYAN = Fore.LIGHTCYAN_EX
-            BRIGHT_WHITE = Fore.LIGHTWHITE_EX
-            
-            # Styles
-            BOLD = Style.BRIGHT
-            DIM = Style.DIM
-            NORMAL = Style.NORMAL
-            RESET = Style.RESET_ALL
-        else:
-            # Empty strings when colorama not available
-            BLACK = ""
-            RED = ""
-            GREEN = ""
-            YELLOW = ""
-            BLUE = ""
-            MAGENTA = ""
-            CYAN = ""
-            WHITE = ""
-            BRIGHT_BLACK = ""
-            BRIGHT_RED = ""
-            BRIGHT_GREEN = ""
-            BRIGHT_YELLOW = ""
-            BRIGHT_BLUE = ""
-            BRIGHT_MAGENTA = ""
-            BRIGHT_CYAN = ""
-            BRIGHT_WHITE = ""
-            BOLD = ""
-            DIM = ""
-            NORMAL = ""
-            RESET = ""
-        
-        @classmethod
-        def disable(cls):
-            """Disable colors (for non-TTY output or when requested)"""
-            for attr in dir(cls):
-                if not attr.startswith("_") and attr not in ("disable", "enable"):
-                    setattr(cls, attr, "")
-        
-        @classmethod
-        def enable(cls):
-            """Re-enable colors if colorama is available"""
-            if COLORAMA_AVAILABLE:
-                cls.__init__()
+from ..shared.colors import Colors, COLORAMA_AVAILABLE
 
 
 class OutputFormatter:
@@ -27964,20 +27718,7 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
-except ImportError:
-    COLORAMA_AVAILABLE = False
-    # Fallback
-    class Colors:
-        BLUE = ''
-        GREEN = ''
-        YELLOW = ''
-        RED = ''
-        RESET = ''
-    
-    class BaseColoredFormatter(logging.Formatter):
-        pass
+from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
 
 
 @dataclass
@@ -29405,28 +29146,7 @@ from pathlib import Path
 from typing import Optional
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        CYAN = ""
-        BOLD = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 from . import __version__
 from .config import Config, ScraperBackend
@@ -31018,29 +30738,7 @@ import yaml
 import sys
 
 # Use unified colorama module
-try:
-    from ...shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        CYAN = ""
-        BOLD = ""
-        DIM = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ...shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 from .models import Config
 

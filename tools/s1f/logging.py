@@ -21,20 +21,7 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
-except ImportError:
-    COLORAMA_AVAILABLE = False
-    # Fallback
-    class Colors:
-        BLUE = ''
-        GREEN = ''
-        YELLOW = ''
-        RED = ''
-        RESET = ''
-    
-    class BaseColoredFormatter(logging.Formatter):
-        pass
+from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
 
 
 @dataclass

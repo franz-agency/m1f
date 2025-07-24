@@ -26,7 +26,9 @@ import subprocess
 import sys
 
 from .config import Config, OutputConfig, FilterConfig, SeparatorStyle, LineEnding
-from .constants import ANSI_COLORS
+
+# Use unified colorama module
+from ..shared.colors import Colors, info, success, error, warning
 
 logger = logging.getLogger(__name__)
 
@@ -109,25 +111,23 @@ class AutoBundler:
         """Print info message."""
         if not self.quiet:
             if self.verbose:
-                print(f"{ANSI_COLORS['BLUE']}[INFO]{ANSI_COLORS['RESET']} {msg}")
+                info(msg)
             else:
                 print(msg)
 
     def print_success(self, msg: str):
         """Print success message."""
         if not self.quiet:
-            print(f"{ANSI_COLORS['GREEN']}[SUCCESS]{ANSI_COLORS['RESET']} {msg}")
+            success(msg)
 
     def print_error(self, msg: str):
         """Print error message."""
-        print(
-            f"{ANSI_COLORS['RED']}[ERROR]{ANSI_COLORS['RESET']} {msg}", file=sys.stderr
-        )
+        error(msg)
 
     def print_warning(self, msg: str):
         """Print warning message."""
         if not self.quiet:
-            print(f"{ANSI_COLORS['YELLOW']}[WARNING]{ANSI_COLORS['RESET']} {msg}")
+            warning(msg)
 
     def setup_directories(self, config: AutoBundleConfig):
         """Create necessary directories based on config."""

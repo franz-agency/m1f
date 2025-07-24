@@ -23,29 +23,7 @@ from typing import List
 from .claude_runner import ClaudeRunner
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        CYAN = ""
-        BOLD = ""
-        DIM = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 
 def handle_claude_convert_improved(args):

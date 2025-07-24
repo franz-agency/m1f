@@ -1,18 +1,13 @@
 #!/usr/bin/env bash
-# m1f-help - Show m1f help
+# m1f-help - Show m1f help with nice formatting
 
-# Save current directory (for consistency with other scripts)
-ORIGINAL_DIR="$(pwd)"
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Get the parent directory (m1f root)
+M1F_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-echo "m1f Tools - Available Commands:"
-echo "  m1f               - Main m1f tool for combining files"
-echo "  m1f-s1f           - Split combined files back to original structure"
-echo "  m1f-html2md       - Convert HTML to Markdown"
-echo "  m1f-scrape        - Download websites for offline viewing"
-echo "  m1f-token-counter - Count tokens in files"
-echo "  m1f-update        - Update m1f bundle files"
-echo "  m1f-link          - Link m1f documentation for AI tools (Claude Code, etc.)"
-echo "  m1f-claude        - Enhance prompts with m1f knowledge for Claude"
-echo "  m1f-help          - Show this help message"
-echo ""
-echo "For detailed help on each tool, use: <tool> --help"
+# Add the tools directory to PYTHONPATH
+export PYTHONPATH="$M1F_ROOT:$PYTHONPATH"
+
+# Run the Python help script
+exec python3 -m tools.m1f_help "$@"

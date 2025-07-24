@@ -4,7 +4,7 @@
 global:
   # Exclusions that apply to all bundles
   global_excludes:
-    - "m1f/m1f/**"  # Exclude the m1f output directory
+    - "m1f/**"  # Exclude the m1f output directory
     - "**/*.pyc"
     - "**/tmp/**"
     - "tmp/**"  # Exclude project root tmp directory
@@ -58,6 +58,15 @@ bundles:
       - path: "docs/04_scrape"
       - path: "tools/scrape_tool"
     docs_only: true
+    
+  research-docs:
+    description: "m1f-research docs"
+    group: "documentation"
+    output: "m1f/m1f/86_research_docs.txt"
+    sources:
+      - path: "docs/06_research"
+      - path: "tools/research"
+    docs_only: true  
 
   all-docs:
     description: "m1f documentation"
@@ -121,6 +130,14 @@ bundles:
       - path: "tools/"
         include_extensions: [".py"]
         includes: ["scrape_tool/**", "scrape.py", "path_utils.py"]
+        
+  research-code:
+    description: "m1f-research code only"
+    group: "source"
+    output: "m1f/m1f/92_research_tool_code.txt"
+    sources:
+      - path: "tools/research"
+        include_extensions: [".py"]
 
   # Complete project bundle
   all:

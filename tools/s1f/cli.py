@@ -26,6 +26,13 @@ from .core import FileSplitter
 from .logging import setup_logging
 from .exceptions import ConfigurationError
 
+# Use unified colorama module
+try:
+    from ..shared.colors import error
+except ImportError:
+    # Fallback
+    def error(msg): print(f"Error: {msg}", file=sys.stderr)
+
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
@@ -207,13 +214,13 @@ async def async_main(argv: Optional[Sequence[str]] = None) -> int:
         return exit_code
 
     except ConfigurationError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        error(str(e))
         return e.exit_code
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user.", file=sys.stderr)
+        error("Operation cancelled by user.")
         return 130
     except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
+        error(f"Unexpected error: {e}")
         if args.verbose:
             import traceback
 

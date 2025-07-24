@@ -21,27 +21,7 @@ from pathlib import Path
 from typing import List, Optional
 
 # Use unified colorama module
-try:
-    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to no colors
-    COLORAMA_AVAILABLE = False
-    class Colors:
-        GREEN = ""
-        RED = ""
-        YELLOW = ""
-        BLUE = ""
-        BOLD = ""
-        RESET = ""
-    
-    def success(msg): print(f"✅ {msg}")
-    def error(msg): print(f"❌ {msg}", file=sys.stderr)
-    def warning(msg): print(f"⚠️  {msg}")
-    def info(msg): print(msg)
-    def header(title, subtitle=None):
-        print(f"\n{title}")
-        if subtitle:
-            print(subtitle)
+from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
 from . import __version__
 from .api import Html2mdConverter
