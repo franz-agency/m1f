@@ -78,34 +78,9 @@ class LoggerManager:
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(level)
 
-        # Try to use colorama for colored output
+        # Use unified colorama module
         try:
-            from colorama import Fore, Style, init
-
-            init(autoreset=True)
-
-            class ColoredFormatter(logging.Formatter):
-                """Custom formatter with colors."""
-
-                COLORS = {
-                    "DEBUG": Fore.CYAN,
-                    "INFO": Fore.GREEN,
-                    "WARNING": Fore.YELLOW,
-                    "ERROR": Fore.RED,
-                    "CRITICAL": Fore.RED + Style.BRIGHT,
-                }
-
-                def format(self, record: logging.LogRecord) -> str:
-                    # Save original levelname to avoid affecting other handlers
-                    original_levelname = record.levelname
-                    color = self.COLORS.get(record.levelname, "")
-                    reset = Style.RESET_ALL if color else ""
-                    record.levelname = f"{color}{record.levelname}{reset}"
-                    result = super().format(record)
-                    # Restore original levelname for other handlers
-                    record.levelname = original_levelname
-                    return result
-
+            from ..shared.colors import ColoredFormatter
             formatter = ColoredFormatter("%(levelname)-8s: %(message)s")
         except ImportError:
             # Fallback to simple formatter

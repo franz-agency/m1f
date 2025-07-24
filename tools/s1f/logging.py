@@ -20,13 +20,21 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 
+# Use unified colorama module
 try:
-    from colorama import init, Fore, Style
-
-    COLORAMA_AVAILABLE = True
-    init(autoreset=True)
+    from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
 except ImportError:
     COLORAMA_AVAILABLE = False
+    # Fallback
+    class Colors:
+        BLUE = ''
+        GREEN = ''
+        YELLOW = ''
+        RED = ''
+        RESET = ''
+    
+    class BaseColoredFormatter(logging.Formatter):
+        pass
 
 
 @dataclass
@@ -40,20 +48,20 @@ class LogLevel:
 
 LOG_LEVELS = {
     "DEBUG": LogLevel(
-        "DEBUG", logging.DEBUG, Fore.BLUE if COLORAMA_AVAILABLE else None
+        "DEBUG", logging.DEBUG, Colors.BLUE if COLORAMA_AVAILABLE else None
     ),
-    "INFO": LogLevel("INFO", logging.INFO, Fore.GREEN if COLORAMA_AVAILABLE else None),
+    "INFO": LogLevel("INFO", logging.INFO, Colors.GREEN if COLORAMA_AVAILABLE else None),
     "WARNING": LogLevel(
-        "WARNING", logging.WARNING, Fore.YELLOW if COLORAMA_AVAILABLE else None
+        "WARNING", logging.WARNING, Colors.YELLOW if COLORAMA_AVAILABLE else None
     ),
-    "ERROR": LogLevel("ERROR", logging.ERROR, Fore.RED if COLORAMA_AVAILABLE else None),
+    "ERROR": LogLevel("ERROR", logging.ERROR, Colors.RED if COLORAMA_AVAILABLE else None),
     "CRITICAL": LogLevel(
-        "CRITICAL", logging.CRITICAL, Fore.RED if COLORAMA_AVAILABLE else None
+        "CRITICAL", logging.CRITICAL, Colors.RED + Colors.BOLD if COLORAMA_AVAILABLE else None
     ),
 }
 
 
-class ColoredFormatter(logging.Formatter):
+class ColoredFormatter(BaseColoredFormatter):
     """Custom formatter that adds color to log messages."""
 
     def format(self, record: logging.LogRecord) -> str:
@@ -63,7 +71,7 @@ class ColoredFormatter(logging.Formatter):
             level_name = record.levelname
             if level_name in LOG_LEVELS and LOG_LEVELS[level_name].color:
                 color = LOG_LEVELS[level_name].color
-                record.levelname = f"{color}{level_name}{Style.RESET_ALL}"
+                record.levelname = f"{color}{level_name}{Colors.RESET}"
 
         return super().format(record)
 

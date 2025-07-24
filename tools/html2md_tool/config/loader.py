@@ -21,11 +21,34 @@ import warnings
 from dataclasses import fields
 
 import yaml
-from rich.console import Console
+import sys
+
+# Use unified colorama module
+try:
+    from ...shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to no colors
+    COLORAMA_AVAILABLE = False
+    class Colors:
+        GREEN = ""
+        RED = ""
+        YELLOW = ""
+        BLUE = ""
+        CYAN = ""
+        BOLD = ""
+        DIM = ""
+        RESET = ""
+    
+    def success(msg): print(f"✅ {msg}")
+    def error(msg): print(f"❌ {msg}", file=sys.stderr)
+    def warning(msg): print(f"⚠️  {msg}")
+    def info(msg): print(msg)
+    def header(title, subtitle=None):
+        print(f"\n{title}")
+        if subtitle:
+            print(subtitle)
 
 from .models import Config
-
-console = Console()
 
 
 def load_config(path: Path) -> Config:
@@ -74,14 +97,8 @@ def load_config(path: Path) -> Config:
 
     # Warn about unknown fields
     if unknown_fields:
-        console.print(
-            f"⚠️  Warning: Ignoring unknown configuration fields: {', '.join(unknown_fields)}",
-            style="yellow",
-        )
-        console.print(
-            "   These fields are not recognized by m1f-html2md and will be ignored.",
-            style="dim",
-        )
+        warning(f"Ignoring unknown configuration fields: {', '.join(unknown_fields)}")
+        info(f"{Colors.DIM}   These fields are not recognized by m1f-html2md and will be ignored.{Colors.RESET}")
 
     return Config(**filtered_data)
 

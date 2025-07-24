@@ -13,40 +13,46 @@ from datetime import datetime
 
 from .config import ResearchConfig
 from .orchestrator import EnhancedResearchOrchestrator
-from .output import OutputFormatter, ProgressTracker, Colors, COLORAMA_AVAILABLE
+from .output import OutputFormatter, ProgressTracker
+
+# Use unified colorama module
+try:
+    from ..shared.colors import Colors, ColoredHelpFormatter, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to local implementation
+    from .output import Colors, COLORAMA_AVAILABLE
+    
+    class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        """Fallback help formatter with colors if available."""
+
+        def _format_action_invocation(self, action: argparse.Action) -> str:
+            """Format action with colors."""
+            parts = super()._format_action_invocation(action)
+
+            if COLORAMA_AVAILABLE:
+                # Color the option names
+                parts = parts.replace("-", f"{Colors.CYAN}-")
+                parts = f"{parts}{Colors.RESET}"
+
+            return parts
+
+        def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
+            """Format usage line with colors."""
+            result = super()._format_usage(usage, actions, groups, prefix)
+
+            if COLORAMA_AVAILABLE and result:
+                # Highlight the program name
+                prog_name = self._prog
+                colored_prog = f"{Colors.GREEN}{prog_name}{Colors.RESET}"
+                result = result.replace(prog_name, colored_prog, 1)
+
+            return result
 
 # Import version
 try:
     from .._version import __version__
 except ImportError:
     __version__ = "3.8.0"
-
-
-class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
-    """Custom help formatter with colors if available."""
-
-    def _format_action_invocation(self, action: argparse.Action) -> str:
-        """Format action with colors."""
-        parts = super()._format_action_invocation(action)
-
-        if COLORAMA_AVAILABLE:
-            # Color the option names
-            parts = parts.replace("-", f"{Colors.CYAN}-")
-            parts = f"{parts}{Colors.RESET}"
-
-        return parts
-
-    def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
-        """Format usage line with colors."""
-        result = super()._format_usage(usage, actions, groups, prefix)
-
-        if COLORAMA_AVAILABLE and result:
-            # Highlight the program name
-            prog_name = self._prog
-            colored_prog = f"{Colors.GREEN}{prog_name}{Colors.RESET}"
-            result = result.replace(prog_name, colored_prog, 1)
-
-        return result
 
 
 class EnhancedResearchCommand:

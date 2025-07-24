@@ -21,13 +21,33 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from rich.console import Console
+# Use unified colorama module
+try:
+    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to no colors
+    COLORAMA_AVAILABLE = False
+    class Colors:
+        GREEN = ""
+        RED = ""
+        YELLOW = ""
+        BLUE = ""
+        CYAN = ""
+        BOLD = ""
+        RESET = ""
+    
+    def success(msg): print(f"✅ {msg}")
+    def error(msg): print(f"❌ {msg}", file=sys.stderr)
+    def warning(msg): print(f"⚠️  {msg}")
+    def info(msg): print(msg)
+    def header(title, subtitle=None):
+        print(f"\n{title}")
+        if subtitle:
+            print(subtitle)
 
 from . import __version__
 from .config import Config, ScraperBackend
 from .crawlers import WebCrawler
-
-console = Console()
 
 
 def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
@@ -38,8 +58,8 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
         args: Command line arguments
     """
     if not db_path.exists():
-        console.print(
-            "[yellow]No database found. Have you scraped anything yet?[/yellow]"
+        warning(
+            "No database found. Have you scraped anything yet?"
         )
         return
 
@@ -58,14 +78,14 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
             cursor.execute("SELECT COUNT(*) FROM scraped_urls WHERE error IS NOT NULL")
             errors = cursor.fetchone()[0]
 
-            console.print("\n[bold]Scraping Statistics:[/bold]")
-            console.print(f"Total URLs processed: {total}")
-            console.print(f"Successfully scraped: {successful}")
-            console.print(f"Errors encountered: {errors}")
+            header("Scraping Statistics:")
+            info(f"Total URLs processed: {total}")
+            info(f"Successfully scraped: {successful}")
+            info(f"Errors encountered: {errors}")
 
             if total > 0:
                 success_rate = (successful / total) * 100
-                console.print(f"Success rate: {success_rate:.1f}%")
+                info(f"Success rate: {success_rate:.1f}%")
 
         if args.show_errors:
             # Show URLs with errors
@@ -75,12 +95,12 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
             errors = cursor.fetchall()
 
             if errors:
-                console.print("\n[bold]URLs with Errors:[/bold]")
+                header("URLs with Errors:")
                 for url, error in errors:
-                    console.print(f"[red]✗[/red] {url}")
-                    console.print(f"    Error: {error}")
+                    info(f"{Colors.RED}✗{Colors.RESET} {url}")
+                    info(f"    Error: {error}")
             else:
-                console.print("\n[green]No errors found![/green]")
+                success("No errors found!")
 
         if args.show_scraped_urls:
             # Show all scraped URLs
@@ -90,23 +110,23 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
             urls = cursor.fetchall()
 
             if urls:
-                console.print("\n[bold]Scraped URLs:[/bold]")
+                header("Scraped URLs:")
                 for url, status_code in urls:
                     status_icon = (
                         "[green]✓[/green]"
                         if status_code == 200
                         else f"[yellow]{status_code}[/yellow]"
                     )
-                    console.print(f"{status_icon} {url}")
+                    info(f"{status_icon} {url}")
             else:
-                console.print("\n[yellow]No URLs found in database[/yellow]")
+                warning("No URLs found in database")
 
         conn.close()
 
     except sqlite3.Error as e:
-        console.print(f"[red]Database error: {e}[/red]")
+        error(f"Database error: {e}")
     except Exception as e:
-        console.print(f"[red]Error reading database: {e}[/red]")
+        error(f"Error reading database: {e}")
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -289,10 +309,10 @@ def main() -> None:
     # Create output directory
     args.output.mkdir(parents=True, exist_ok=True)
 
-    console.print(f"Scraping website: {args.url}")
-    console.print(f"Using scraper backend: {args.scraper}")
-    console.print("This may take a while...")
-    console.print("[dim]Press Ctrl+C to interrupt and resume later[/dim]\n")
+    info(f"Scraping website: {args.url}")
+    info(f"Using scraper backend: {args.scraper}")
+    info("This may take a while...")
+    info("Press Ctrl+C to interrupt and resume later\n")
 
     try:
         # Create crawler and download the website
@@ -302,26 +322,26 @@ def main() -> None:
         # Find all downloaded HTML files
         html_files = crawler.find_downloaded_files(site_dir)
 
-        console.print(
-            f"✅ Successfully downloaded {len(html_files)} HTML files", style="green"
+        success(
+            f"Successfully downloaded {len(html_files)} HTML files"
         )
-        console.print(f"Output directory: {site_dir}")
+        info(f"Output directory: {site_dir}")
 
         # List downloaded files if requested
         if args.list_files or config.verbose:
-            console.print("\nDownloaded files:")
+            info("\nDownloaded files:")
             for html_file in sorted(html_files):
                 rel_path = html_file.relative_to(site_dir)
-                console.print(f"  - {rel_path}")
+                info(f"  - {rel_path}")
 
     except KeyboardInterrupt:
-        console.print("\n[yellow]⚠️  Scraping interrupted by user[/yellow]")
-        console.print(
-            "[dim]Run the same command again to resume where you left off[/dim]"
+        warning("⚠️  Scraping interrupted by user")
+        info(
+            "Run the same command again to resume where you left off"
         )
         sys.exit(0)
     except Exception as e:
-        console.print(f"❌ Error during scraping: {e}", style="red")
+        error(f"Error during scraping: {e}")
         if config.verbose:
             import traceback
 

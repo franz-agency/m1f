@@ -35,6 +35,35 @@ import anyio
 import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
 
+# Use unified colorama module
+try:
+    from .shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+except ImportError:
+    try:
+        # Try direct import if running as script
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from tools.shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+    except ImportError:
+        # Fallback to no colors
+        COLORAMA_AVAILABLE = False
+        class Colors:
+            GREEN = ""
+            RED = ""
+            YELLOW = ""
+            BLUE = ""
+            CYAN = ""
+            BOLD = ""
+            RESET = ""
+        
+        def success(msg): print(f"✅ {msg}")
+        def error(msg): print(f"❌ {msg}", file=sys.stderr)
+        def warning(msg): print(f"⚠️  {msg}")
+        def info(msg): print(msg)
+        def header(title, subtitle=None):
+            print(f"\n{title}")
+            if subtitle:
+                print(subtitle)
+
 # Handle both module and direct script execution
 try:
     from .m1f_claude_runner import M1FClaudeRunner
@@ -1242,15 +1271,15 @@ I'll analyze your project and create an optimal m1f configuration that:
             cmd_display = f"claude --add-dir {self.project_path} --allowedTools Read,Write,Edit,MultiEdit"
 
             # Display the command and prompt for manual execution
-            print(f"\n{'='*60}")
-            print("📋 Copy and run this command:")
-            print(f"{'='*60}")
-            print(f"\n{cmd_display}\n")
-            print(f"{'='*60}")
-            print("📝 Then paste this prompt:")
-            print(f"{'='*60}")
-            print(f"\n{enhanced_prompt}\n")
-            print(f"{'='*60}")
+            info(f"\n{Colors.CYAN}{'='*60}{Colors.RESET}")
+            header("📋 Copy and run this command:")
+            info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
+            info(f"\n{Colors.GREEN}{cmd_display}{Colors.RESET}\n")
+            info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
+            header("📝 Then paste this prompt:")
+            info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
+            info(f"\n{Colors.YELLOW}{enhanced_prompt}{Colors.RESET}\n")
+            info(f"{Colors.CYAN}{'='*60}{Colors.RESET}")
 
             # Return a message indicating manual steps required
             return "Manual execution required - see instructions above"
@@ -1266,13 +1295,13 @@ I'll analyze your project and create an optimal m1f configuration that:
 
     def interactive_mode(self):
         """Run in interactive mode with proper session management."""
-        print("\n🤖 m1f-claude Interactive Mode")
-        print("=" * 50)
-        print("I'll enhance your prompts with m1f knowledge!")
-        print("Commands: 'help', 'context', 'examples', 'quit', '/e'\n")
+        header("🤖 m1f-claude Interactive Mode")
+        info(f"{Colors.CYAN}{'=' * 50}{Colors.RESET}")
+        info(f"{Colors.BOLD}I'll enhance your prompts with m1f knowledge!{Colors.RESET}")
+        info(f"Commands: {Colors.GREEN}'help'{Colors.RESET}, {Colors.GREEN}'context'{Colors.RESET}, {Colors.GREEN}'examples'{Colors.RESET}, {Colors.GREEN}'quit'{Colors.RESET}, {Colors.GREEN}'/e'{Colors.RESET}\n")
 
         if not self.has_m1f_docs:
-            print("💡 Tip: Run 'm1f-link' first for better assistance!\n")
+            warning("Tip: Run 'm1f-link' first for better assistance!\n")
 
         session_id = None
         first_prompt = True
@@ -1290,7 +1319,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     user_input.lower() in ["quit", "exit", "q"]
                     or user_input.strip() == "/e"
                 ):
-                    print("\n👋 Happy bundling!")
+                    success("\n👋 Happy bundling!")
                     break
 
                 if user_input.lower() == "help":
@@ -1298,7 +1327,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     continue
 
                 if user_input.lower() == "context":
-                    print(self._analyze_project_context())
+                    info(self._analyze_project_context())
                     continue
 
                 if user_input.lower() == "examples":
@@ -1312,7 +1341,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     prompt_to_send = user_input
 
                 # Send to Claude using subprocess
-                print("\n🤖 Claude is thinking...", end="", flush=True)
+                print(f"\n{Colors.CYAN}🤖 Claude is thinking...{Colors.RESET}", end="", flush=True)
                 response, new_session_id = self._send_with_session(
                     prompt_to_send, session_id
                 )
@@ -1320,7 +1349,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                 if response is not None:  # Empty response is still valid
                     # Clear the "thinking" message
                     print("\r" + " " * 30 + "\r", end="", flush=True)
-                    print("Claude: ", end="", flush=True)
+                    print(f"{Colors.BLUE}Claude:{Colors.RESET} ", end="", flush=True)
                     if new_session_id:
                         session_id = new_session_id
                     first_prompt = False

@@ -21,10 +21,8 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 
-from rich.console import Console
+from ...unified_output.colorama_output import info, error, warning, success, header, Colors
 from .claude_runner import ClaudeRunner
-
-console = Console()
 
 
 def handle_claude_analysis_improved(
@@ -35,20 +33,17 @@ def handle_claude_analysis_improved(
 ):
     """Handle analysis using Claude AI with improved timeout handling and parallel processing."""
 
-    console.print("\n[bold]Using Claude AI for intelligent analysis...[/bold]")
-    console.print(
-        "⏱️  Note: Processing large HTML files (2MB+) may take several minutes.",
-        style="yellow",
-    )
+    header("\nUsing Claude AI for intelligent analysis...")
+    warning("⏱️  Note: Processing large HTML files (2MB+) may take several minutes.")
 
     # Find the common parent directory of all HTML files
     if not html_files:
-        console.print("❌ No HTML files to analyze", style="red")
+        error("❌ No HTML files to analyze")
         return
 
     common_parent = Path(os.path.commonpath([str(f.absolute()) for f in html_files]))
-    console.print(f"📁 Analysis directory: {common_parent}")
-    console.print(f"📊 Total HTML files found: {len(html_files)}")
+    info(f"📁 Analysis directory: {common_parent}")
+    info(f"📊 Total HTML files found: {len(html_files)}")
 
     # Initialize Claude runner
     try:
@@ -56,12 +51,12 @@ def handle_claude_analysis_improved(
             max_workers=parallel_workers, working_dir=str(common_parent)
         )
     except Exception as e:
-        console.print(f"❌ {e}", style="red")
+        error(f"❌ {e}")
         return
 
     # Check if we have enough files
     if len(html_files) == 0:
-        console.print("❌ No HTML files found in the specified directory", style="red")
+        error("❌ No HTML files found in the specified directory")
         return
 
     # Step 1: Create m1f and analysis directories if they don't exist
@@ -80,8 +75,8 @@ def handle_claude_analysis_improved(
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
     # Create a filelist with all HTML files using m1f
-    console.print("\n🔧 Creating HTML file list using m1f...")
-    console.print(f"Working with HTML directory: {common_parent}")
+    info("\n🔧 Creating HTML file list using m1f...")
+    info(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
     m1f_cmd = [
@@ -98,12 +93,12 @@ def handle_claude_analysis_improved(
 
     try:
         subprocess.run(m1f_cmd, check=True, capture_output=True, text=True, timeout=60)
-        console.print("✅ Created HTML file list")
+        success("✅ Created HTML file list")
     except subprocess.CalledProcessError as e:
-        console.print(f"❌ Failed to create file list: {e}", style="red")
+        error(f"❌ Failed to create file list: {e}")
         return
     except subprocess.TimeoutExpired:
-        console.print("❌ Timeout creating file list", style="red")
+        error("❌ Timeout creating file list")
         return
 
     # Get relative paths for all HTML files
@@ -120,7 +115,7 @@ def handle_claude_analysis_improved(
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
     if not select_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {select_prompt_path}", style="red")
+        error(f"❌ Prompt file not found: {select_prompt_path}")
         return
 
     # Load the prompt from external file
@@ -129,35 +124,35 @@ def handle_claude_analysis_improved(
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
         num_files_to_analyze = 1
-        console.print("[yellow]Minimum is 1 file. Using 1.[/yellow]")
+        warning("Minimum is 1 file. Using 1.")
     elif num_files_to_analyze > 20:
         num_files_to_analyze = 20
-        console.print("[yellow]Maximum is 20 files. Using 20.[/yellow]")
+        warning("Maximum is 20 files. Using 20.")
 
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        console.print(
-            f"[yellow]Only {len(html_files)} files available. Will analyze all of them.[/yellow]"
+        warning(
+            f"Only {len(html_files)} files available. Will analyze all of them."
         )
 
     # Ask user for project description if not provided
     if not project_description:
-        console.print("\n[bold]Project Context:[/bold]")
-        console.print(
+        header("\nProject Context:")
+        info(
             "Please briefly describe what this HTML project contains so Claude can better understand"
         )
-        console.print(
+        info(
             "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
         )
-        console.print(
-            "\n[dim]Tip: If there are particularly important files to analyze, mention them in your description[/dim]"
+        info(
+            f"\n{Colors.DIM}Tip: If there are particularly important files to analyze, mention them in your description{Colors.RESET}"
         )
-        console.print(
-            "[dim]     so Claude will prioritize those files in the analysis.[/dim]"
+        info(
+            f"{Colors.DIM}     so Claude will prioritize those files in the analysis.{Colors.RESET}"
         )
-        project_description = console.input("\nProject description: ").strip()
+        project_description = input("\nProject description: ").strip()
     else:
-        console.print(f"\n📋 [bold]Project Context:[/bold] {project_description}")
+        info(f"\n📋 {Colors.BOLD}Project Context:{Colors.RESET} {project_description}")
 
     # Update the prompt with the number of files
     simple_prompt_template = simple_prompt_template.replace(
@@ -184,10 +179,10 @@ def handle_claude_analysis_improved(
     if project_description:
         simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt}"
 
-    console.print(
+    info(
         f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files..."
     )
-    console.print("   This may take 10-30 seconds...", style="dim")
+    info(f"   {Colors.DIM}This may take 10-30 seconds...{Colors.RESET}")
 
     # Step 3: Use Claude to select representative files
     returncode, stdout, stderr = runner.run_claude_streaming(
@@ -199,7 +194,7 @@ def handle_claude_analysis_improved(
     )
 
     if returncode != 0:
-        console.print(f"❌ Claude command failed: {stderr}", style="red")
+        error(f"❌ Claude command failed: {stderr}")
         return
 
     selected_files = stdout.strip().split("\n")
@@ -226,12 +221,12 @@ def handle_claude_analysis_improved(
 
     selected_files = valid_files
 
-    console.print(f"\nClaude selected {len(selected_files)} files:")
+    info(f"\nClaude selected {len(selected_files)} files:")
     for f in selected_files:
-        console.print(f"  - {f}", style="blue")
+        info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
 
     # Step 4: Verify the selected files exist
-    console.print("\nVerifying selected HTML files...")
+    info("\nVerifying selected HTML files...")
     verified_files = []
 
     for file_path in selected_files[:num_files_to_analyze]:
@@ -251,21 +246,21 @@ def handle_claude_analysis_improved(
                 try:
                     rel_path = test_path.relative_to(common_parent)
                     verified_files.append(str(rel_path))
-                    console.print(f"✅ Found: {rel_path}", style="green")
+                    success(f"✅ Found: {rel_path}")
                     found = True
                     break
                 except ValueError:
                     # If not relative to common_parent, use the filename
                     verified_files.append(test_path.name)
-                    console.print(f"✅ Found: {test_path.name}", style="green")
+                    success(f"✅ Found: {test_path.name}")
                     found = True
                     break
 
         if not found:
-            console.print(f"⚠️  Not found: {file_path}", style="yellow")
+            warning(f"⚠️  Not found: {file_path}")
 
     if not verified_files:
-        console.print("❌ No HTML files could be verified", style="red")
+        error("❌ No HTML files could be verified")
         return
 
     # Write the verified files to a reference list
@@ -273,25 +268,25 @@ def handle_claude_analysis_improved(
     with open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
-    console.print(f"✅ Wrote selected files list to: {selected_files_path}")
+    success(f"✅ Wrote selected files list to: {selected_files_path}")
 
     # Step 5: Analyze each file individually with Claude (in parallel)
-    console.print(
+    info(
         f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
     )
-    console.print(
-        "⏱️  Expected duration: 3-5 minutes for large HTML files", style="yellow"
+    warning(
+        "⏱️  Expected duration: 3-5 minutes for large HTML files"
     )
-    console.print(
-        "   Claude is analyzing each file's structure in detail...", style="dim"
+    info(
+        f"   {Colors.DIM}Claude is analyzing each file's structure in detail...{Colors.RESET}"
     )
 
     # Load the individual analysis prompt template
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
     if not individual_prompt_path.exists():
-        console.print(
-            f"❌ Prompt file not found: {individual_prompt_path}", style="red"
+        error(
+            f"❌ Prompt file not found: {individual_prompt_path}"
         )
         return
 
@@ -333,27 +328,26 @@ def handle_claude_analysis_improved(
 
     # Check results
     successful_analyses = sum(1 for r in results if r["success"])
-    console.print(
+    success(
         f"\n✅ Successfully analyzed {successful_analyses}/{len(verified_files)} files"
     )
 
     # Show any errors
     for result in results:
         if not result["success"]:
-            console.print(
-                f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}",
-                style="red",
+            error(
+                f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}"
             )
 
     # Step 6: Synthesize all analyses into final config
-    console.print("\n🔬 Synthesizing analyses into final configuration...")
-    console.print("⏱️  This final step typically takes 1-2 minutes...", style="yellow")
+    info("\n🔬 Synthesizing analyses into final configuration...")
+    warning("⏱️  This final step typically takes 1-2 minutes...")
 
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
     if not synthesis_prompt_path.exists():
-        console.print(f"❌ Prompt file not found: {synthesis_prompt_path}", style="red")
+        error(f"❌ Prompt file not found: {synthesis_prompt_path}")
         return
 
     synthesis_prompt = synthesis_prompt_path.read_text()
@@ -403,7 +397,7 @@ def handle_claude_analysis_improved(
         )
 
     # Run synthesis with streaming output
-    console.print("\nRunning synthesis with Claude...")
+    info("\nRunning synthesis with Claude...")
     returncode, stdout, stderr = runner.run_claude_streaming(
         prompt=synthesis_prompt,
         add_dir=str(common_parent),
@@ -412,11 +406,11 @@ def handle_claude_analysis_improved(
     )
 
     if returncode != 0:
-        console.print(f"❌ Synthesis failed: {stderr}", style="red")
+        error(f"❌ Synthesis failed: {stderr}")
         return
 
-    console.print("\n✨ [bold]Claude's Final Configuration:[/bold]")
-    console.print(stdout)
+    header("\n✨ Claude's Final Configuration:")
+    info(stdout)
 
     # Try to parse the YAML config from Claude's output
     import yaml
@@ -448,31 +442,27 @@ def handle_claude_analysis_improved(
             with open(config_path, "w") as f:
                 yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-            console.print(f"\n✅ Saved configuration to: {config_path}", style="green")
-            console.print(
+            success(f"\n✅ Saved configuration to: {config_path}")
+            info(
                 "\nYou can now use this configuration file to convert your HTML files:"
             )
-            console.print(
-                f"  m1f-html2md convert {common_parent} -c {config_path} -o ./output/",
-                style="blue",
+            info(
+                f"  {Colors.BLUE}m1f-html2md convert {common_parent} -c {config_path} -o ./output/{Colors.RESET}"
             )
         else:
-            console.print(
-                "\n⚠️  Could not extract YAML config from Claude's response",
-                style="yellow",
+            warning(
+                "\n⚠️  Could not extract YAML config from Claude's response"
             )
-            console.print(
-                "Please review the output above and create the config file manually.",
-                style="yellow",
+            warning(
+                "Please review the output above and create the config file manually."
             )
 
     except yaml.YAMLError as e:
-        console.print(f"\n⚠️  Error parsing YAML config: {e}", style="yellow")
-        console.print(
-            "Please review the output above and create the config file manually.",
-            style="yellow",
+        warning(f"\n⚠️  Error parsing YAML config: {e}")
+        warning(
+            "Please review the output above and create the config file manually."
         )
     except Exception as e:
-        console.print(f"\n⚠️  Error saving config: {e}", style="yellow")
+        warning(f"\n⚠️  Error saving config: {e}")
 
-    console.print("\n✅ Analysis complete!", style="green bold")
+    success(f"\n✅ {Colors.BOLD}Analysis complete!{Colors.RESET}")

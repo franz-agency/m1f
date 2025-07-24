@@ -22,41 +22,14 @@ from typing import Optional, NoReturn
 
 from . import __version__
 
-# Try to import colorama for colored help
+# Use unified colorama module
 try:
-    from colorama import Fore, Style, init
-
-    init(autoreset=True)
-    COLORAMA_AVAILABLE = True
+    from ..shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
 except ImportError:
     COLORAMA_AVAILABLE = False
-
-
-class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
-    """Custom help formatter with colors if available."""
-
-    def _format_action_invocation(self, action: argparse.Action) -> str:
-        """Format action with colors."""
-        parts = super()._format_action_invocation(action)
-
-        if COLORAMA_AVAILABLE:
-            # Color the option names
-            parts = parts.replace("-", f"{Fore.CYAN}-")
-            parts = f"{parts}{Style.RESET_ALL}"
-
-        return parts
-
-    def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
-        """Format usage line with colors."""
-        result = super()._format_usage(usage, actions, groups, prefix)
-
-        if COLORAMA_AVAILABLE and result:
-            # Highlight the program name
-            prog_name = self._prog
-            colored_prog = f"{Fore.GREEN}{prog_name}{Style.RESET_ALL}"
-            result = result.replace(prog_name, colored_prog, 1)
-
-        return result
+    # Fallback formatter
+    class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        pass
 
 
 class CustomArgumentParser(argparse.ArgumentParser):
@@ -67,7 +40,7 @@ class CustomArgumentParser(argparse.ArgumentParser):
         error_msg = f"ERROR: {message}"
 
         if COLORAMA_AVAILABLE:
-            error_msg = f"{Fore.RED}ERROR: {message}{Style.RESET_ALL}"
+            error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
 
         self.print_usage(sys.stderr)
         print(f"\n{error_msg}", file=sys.stderr)

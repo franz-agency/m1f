@@ -23,9 +23,31 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
-from rich.console import Console
 
-console = Console()
+# Use unified colorama module
+try:
+    from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+except ImportError:
+    # Fallback to no colors
+    COLORAMA_AVAILABLE = False
+    class Colors:
+        GREEN = ""
+        RED = ""
+        YELLOW = ""
+        BLUE = ""
+        CYAN = ""
+        BOLD = ""
+        DIM = ""
+        RESET = ""
+    
+    def success(msg): print(f"✅ {msg}")
+    def error(msg): print(f"❌ {msg}", file=sys.stderr)
+    def warning(msg): print(f"⚠️  {msg}")
+    def info(msg): print(msg)
+    def header(title, subtitle=None):
+        print(f"\n{title}")
+        if subtitle:
+            print(subtitle)
 
 
 class ClaudeRunner:
@@ -98,9 +120,9 @@ class ClaudeRunner:
         env["PYTHONUNBUFFERED"] = "1"
 
         if show_output:
-            console.print("🤖 Running Claude...", style="blue")
-            console.print(f"Command: {' '.join(cmd[:3])} ...", style="dim")
-            console.print(f"Working dir: {self.working_dir}", style="dim")
+            info(f"{Colors.BLUE}🤖 Running Claude...{Colors.RESET}")
+            info(f"{Colors.DIM}Command: {' '.join(cmd[:3])} ...{Colors.RESET}")
+            info(f"{Colors.DIM}Working dir: {self.working_dir}{Colors.RESET}")
 
         try:
             # Use a more conservative timeout for complex tasks
@@ -119,28 +141,20 @@ class ClaudeRunner:
 
             if show_output:
                 if result.returncode == 0:
-                    console.print("✅ Claude processing complete", style="green")
+                    success("Claude processing complete")
                 else:
-                    console.print(
-                        f"❌ Claude failed with code {result.returncode}", style="red"
-                    )
+                    error(f"Claude failed with code {result.returncode}")
                     if result.stderr:
-                        console.print(
-                            f"Error: {result.stderr[:200]}...", style="red dim"
-                        )
+                        error(f"{Colors.DIM}Error: {result.stderr[:200]}...{Colors.RESET}")
 
             return result.returncode, result.stdout, result.stderr
 
         except subprocess.TimeoutExpired:
-            console.print(
-                f"⏰ Claude timed out after {actual_timeout}s", style="yellow"
-            )
-            console.print(
-                "💡 Try increasing timeout or simplifying the task", style="blue"
-            )
+            warning(f"⏰ Claude timed out after {actual_timeout}s")
+            info(f"{Colors.BLUE}💡 Try increasing timeout or simplifying the task{Colors.RESET}")
             return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
-            console.print(f"❌ Error running Claude: {e}", style="red")
+            error(f"Error running Claude: {e}")
             return -1, "", str(e)
 
     def run_claude_streaming(
@@ -208,18 +222,16 @@ class ClaudeRunner:
                         elapsed = current_time - start_time
                         # Show Claude's actual output (truncate very long lines)
                         if len(line) > 200:
-                            console.print(f"[{elapsed:.1f}s] {line[:197]}...")
+                            print(f"[{elapsed:.1f}s] {line[:197]}...")
                         else:
-                            console.print(f"[{elapsed:.1f}s] {line}")
+                            print(f"[{elapsed:.1f}s] {line}")
                         last_output_time = current_time
 
                 # Check timeout
                 if time.time() - start_time > timeout:
                     process.kill()
                     if show_output:
-                        console.print(
-                            f"⏰ Claude timed out after {timeout}s", style="yellow"
-                        )
+                        warning(f"⏰ Claude timed out after {timeout}s")
                     return -1, "\n".join(stdout_lines), "Process timed out"
 
             # Get any remaining output
@@ -243,19 +255,17 @@ class ClaudeRunner:
             if show_output:
                 total_time = time.time() - start_time
                 if process.returncode == 0:
-                    console.print(f"✅ Claude processing complete", style="green")
+                    success("Claude processing complete")
                 else:
-                    console.print(
-                        f"❌ Claude failed with code {process.returncode}", style="red"
-                    )
+                    error(f"Claude failed with code {process.returncode}")
                     if stderr:
-                        console.print(f"Error: {stderr[:200]}...", style="red dim")
+                        error(f"{Colors.DIM}Error: {stderr[:200]}...{Colors.RESET}")
 
             return process.returncode, stdout, stderr
 
         except Exception as e:
             if show_output:
-                console.print(f"❌ Error running Claude: {e}", style="red")
+                error(f"Error running Claude: {e}")
             return -1, "\n".join(stdout_lines), str(e)
 
     def run_claude_parallel(
@@ -314,10 +324,7 @@ class ClaudeRunner:
                     elapsed_time = (
                         time.time() - start_time if "start_time" in locals() else 0
                     )
-                    console.print(
-                        f"📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]",
-                        style="blue",
-                    )
+                    info(f"{Colors.BLUE}📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]{Colors.RESET}")
 
                 try:
                     returncode, stdout, stderr = future.result()
@@ -332,12 +339,12 @@ class ClaudeRunner:
                     }
 
                     if returncode == 0:
-                        console.print(f"✅ Completed: {task['name']}", style="green")
+                        success(f"Completed: {task['name']}")
                     else:
-                        console.print(f"❌ Failed: {task['name']}", style="red")
+                        error(f"Failed: {task['name']}")
 
                 except Exception as e:
-                    console.print(f"❌ Exception in {task['name']}: {e}", style="red")
+                    error(f"Exception in {task['name']}: {e}")
                     result = {
                         "name": task["name"],
                         "success": False,
