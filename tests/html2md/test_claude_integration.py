@@ -23,10 +23,7 @@ import shutil
 from pathlib import Path
 from typing import Generator
 
-# Add the tools directory to the path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
-
-from html2md_tool.claude_runner import ClaudeRunner
+from tools.html2md_tool.claude_runner import ClaudeRunner
 
 # Skip all tests if Claude is not available
 pytestmark = pytest.mark.skipif(

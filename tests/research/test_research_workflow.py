@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch, AsyncMock
 
 from tools.research import (
     ResearchConfig, 
-    ResearchOrchestrator,
+    EnhancedResearchOrchestrator,
     ClaudeProvider,
-    ResearchCommand
+    EnhancedResearchCommand
 )
 from tools.research.models import ScrapedContent, AnalyzedContent
 
@@ -89,7 +89,7 @@ class TestResearchWorkflow:
     async def test_basic_research_workflow(self, mock_config, mock_llm_provider, temp_dir):
         """Test basic research workflow end-to-end"""
         # Create orchestrator with mocked LLM
-        orchestrator = ResearchOrchestrator(mock_config)
+        orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
         
         # Mock scraping to avoid actual web requests
@@ -150,7 +150,7 @@ Total sources: {len(content)}
         """Test dry run mode doesn't perform actual operations"""
         mock_config.dry_run = True
         
-        orchestrator = ResearchOrchestrator(mock_config)
+        orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
         
         # Run in dry mode
@@ -168,7 +168,7 @@ Total sources: {len(content)}
         """Test running without analysis"""
         mock_config.no_analysis = True
         
-        orchestrator = ResearchOrchestrator(mock_config)
+        orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
         
         # Mock scraping
@@ -201,7 +201,7 @@ Total sources: {len(content)}
         mock_config.analysis.relevance_threshold = 7.0
         mock_config.analysis.min_content_length = 50  # Lower threshold for test
         
-        orchestrator = ResearchOrchestrator(mock_config)
+        orchestrator = EnhancedResearchOrchestrator(mock_config)
         
         # Create test content with different relevance scores
         content = [
@@ -244,7 +244,7 @@ Total sources: {len(content)}
     
     def test_cli_argument_parsing(self):
         """Test CLI argument parsing"""
-        command = ResearchCommand()
+        command = EnhancedResearchCommand()
         
         # Test basic args
         args = command.parse_args(["machine learning", "--urls", "30", "--scrape", "15"])
