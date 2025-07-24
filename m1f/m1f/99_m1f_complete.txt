@@ -1446,6 +1446,87 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2025-07-24
+
+### Added
+
+- **m1f-research Tool**: New intelligent research content organization tool
+
+  - Smart content analysis with configurable templates (academic, technical,
+    summary)
+  - Hierarchical output directory structure with automatic organization
+  - Database-driven job persistence and management
+  - Parallelized scraping with progress tracking
+  - LLM provider abstraction (Claude, Gemini, CLI tools)
+  - Advanced filtering and search capabilities
+  - Comprehensive documentation and examples
+
+- **Shared Utilities Module**: Centralized common functionality
+
+  - Unified colorama output system across all tools
+  - Externalized all prompts to markdown templates
+  - Shared validation and helper functions
+  - Consistent error handling patterns
+
+- **Symlink Deduplication**: Intelligent handling of symbolic links
+  - Internal symlinks excluded when deduplication enabled (default)
+  - External symlinks always included with their content
+  - All symlinks included when using `--allow-duplicate-files`
+  - Comprehensive test coverage for all scenarios
+
+### Changed
+
+- **Output System Overhaul**: Complete migration to colorama helpers
+
+  - Replaced all `print()` statements with semantic helpers (info, success,
+    warning, error)
+  - Consistent colored output across all tools
+  - Improved user experience with visual feedback
+  - Test files updated to use colorama helpers
+
+- **Version Management**: Centralized version handling
+
+  - All tools now import from `tools._version.py`
+  - Single source of truth for version numbers
+  - Simplified version bumping process
+
+- **Claude Integration**: Enhanced headless operation
+  - Fixed Claude CLI to use `-p` flag for headless mode
+  - Improved timeout handling (increased to 120s)
+  - Better error messages and debugging output
+
+### Fixed
+
+- **Test Warnings**: Resolved all AsyncMock and pytest warnings
+
+  - Fixed AsyncMock usage with proper async functions
+  - Renamed TestServer to HTML2MDTestServer to avoid pytest conflicts
+  - Improved test reliability and performance
+
+- **Import Errors**: Fixed module import issues across tools
+
+  - Resolved circular imports in m1f-research
+  - Fixed s1f module import errors
+  - Corrected test file imports
+
+- **Package Metadata**: Updated package.json
+  - Fixed description to "Make One File - AI-ready codebase bundling toolkit"
+  - Synchronized version numbers across all files
+
+### Documentation
+
+- **m1f-research**: Added comprehensive documentation
+
+  - Job management guide
+  - Template system reference
+  - Integration examples
+  - README for shared utilities
+
+- **Colorama Guide**: Added unified output system documentation
+  - Complete migration guide
+  - Usage examples
+  - Best practices
+
 ## [3.7.0] - 2025-07-21
 
 ### Added
