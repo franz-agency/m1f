@@ -13962,7 +13962,23 @@ import subprocess
 import sys
 
 from .config import Config, OutputConfig, FilterConfig, SeparatorStyle, LineEnding
-from .constants import ANSI_COLORS
+
+# Use unified colorama module
+try:
+    from ..shared.colors import Colors, info, success, error, warning
+except ImportError:
+    # Fallback if shared module not available
+    class Colors:
+        BLUE = ''
+        GREEN = ''
+        RED = ''
+        YELLOW = ''
+        RESET = ''
+    
+    def info(msg): print(f"[INFO] {msg}")
+    def success(msg): print(f"[SUCCESS] {msg}")
+    def error(msg): print(f"[ERROR] {msg}", file=sys.stderr)
+    def warning(msg): print(f"[WARNING] {msg}")
 
 logger = logging.getLogger(__name__)
 
@@ -14045,25 +14061,23 @@ class AutoBundler:
         """Print info message."""
         if not self.quiet:
             if self.verbose:
-                print(f"{ANSI_COLORS['BLUE']}[INFO]{ANSI_COLORS['RESET']} {msg}")
+                info(msg)
             else:
                 print(msg)
 
     def print_success(self, msg: str):
         """Print success message."""
         if not self.quiet:
-            print(f"{ANSI_COLORS['GREEN']}[SUCCESS]{ANSI_COLORS['RESET']} {msg}")
+            success(msg)
 
     def print_error(self, msg: str):
         """Print error message."""
-        print(
-            f"{ANSI_COLORS['RED']}[ERROR]{ANSI_COLORS['RESET']} {msg}", file=sys.stderr
-        )
+        error(msg)
 
     def print_warning(self, msg: str):
         """Print warning message."""
         if not self.quiet:
-            print(f"{ANSI_COLORS['YELLOW']}[WARNING]{ANSI_COLORS['RESET']} {msg}")
+            warning(msg)
 
     def setup_directories(self, config: AutoBundleConfig):
         """Create necessary directories based on config."""
@@ -14463,7 +14477,7 @@ class CustomArgumentParser(argparse.ArgumentParser):
         error_msg = f"ERROR: {message}"
 
         if COLORAMA_AVAILABLE:
-            error_msg = f"{Fore.RED}ERROR: {message}{Style.RESET_ALL}"
+            error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
 
         self.print_usage(sys.stderr)
         print(f"\n{error_msg}", file=sys.stderr)
@@ -28059,6 +28073,13 @@ from .core import FileSplitter
 from .logging import setup_logging
 from .exceptions import ConfigurationError
 
+# Use unified colorama module
+try:
+    from ..shared.colors import error
+except ImportError:
+    # Fallback
+    def error(msg): print(f"Error: {msg}", file=sys.stderr)
+
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
@@ -28240,13 +28261,13 @@ async def async_main(argv: Optional[Sequence[str]] = None) -> int:
         return exit_code
 
     except ConfigurationError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        error(str(e))
         return e.exit_code
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user.", file=sys.stderr)
+        error("Operation cancelled by user.")
         return 130
     except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
+        error(f"Unexpected error: {e}")
         if args.verbose:
             import traceback
 
@@ -28708,13 +28729,21 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 
+# Use unified colorama module
 try:
-    from colorama import init, Fore, Style
-
-    COLORAMA_AVAILABLE = True
-    init(autoreset=True)
+    from ..shared.colors import Colors, ColoredFormatter as BaseColoredFormatter, COLORAMA_AVAILABLE
 except ImportError:
     COLORAMA_AVAILABLE = False
+    # Fallback
+    class Colors:
+        BLUE = ''
+        GREEN = ''
+        YELLOW = ''
+        RED = ''
+        RESET = ''
+    
+    class BaseColoredFormatter(logging.Formatter):
+        pass
 
 
 @dataclass
@@ -28728,20 +28757,20 @@ class LogLevel:
 
 LOG_LEVELS = {
     "DEBUG": LogLevel(
-        "DEBUG", logging.DEBUG, Fore.BLUE if COLORAMA_AVAILABLE else None
+        "DEBUG", logging.DEBUG, Colors.BLUE if COLORAMA_AVAILABLE else None
     ),
-    "INFO": LogLevel("INFO", logging.INFO, Fore.GREEN if COLORAMA_AVAILABLE else None),
+    "INFO": LogLevel("INFO", logging.INFO, Colors.GREEN if COLORAMA_AVAILABLE else None),
     "WARNING": LogLevel(
-        "WARNING", logging.WARNING, Fore.YELLOW if COLORAMA_AVAILABLE else None
+        "WARNING", logging.WARNING, Colors.YELLOW if COLORAMA_AVAILABLE else None
     ),
-    "ERROR": LogLevel("ERROR", logging.ERROR, Fore.RED if COLORAMA_AVAILABLE else None),
+    "ERROR": LogLevel("ERROR", logging.ERROR, Colors.RED if COLORAMA_AVAILABLE else None),
     "CRITICAL": LogLevel(
-        "CRITICAL", logging.CRITICAL, Fore.RED if COLORAMA_AVAILABLE else None
+        "CRITICAL", logging.CRITICAL, Colors.RED + Colors.BOLD if COLORAMA_AVAILABLE else None
     ),
 }
 
 
-class ColoredFormatter(logging.Formatter):
+class ColoredFormatter(BaseColoredFormatter):
     """Custom formatter that adds color to log messages."""
 
     def format(self, record: logging.LogRecord) -> str:
@@ -28751,7 +28780,7 @@ class ColoredFormatter(logging.Formatter):
             level_name = record.levelname
             if level_name in LOG_LEVELS and LOG_LEVELS[level_name].color:
                 color = LOG_LEVELS[level_name].color
-                record.levelname = f"{color}{level_name}{Style.RESET_ALL}"
+                record.levelname = f"{color}{level_name}{Colors.RESET}"
 
         return super().format(record)
 
