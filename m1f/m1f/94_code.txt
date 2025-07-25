@@ -20871,6 +20871,12 @@ Generated on: 2024-01-20 14:30:22 Total sources: 10
 - Best for: Comprehensive research, nuanced analysis
 - Set: `ANTHROPIC_API_KEY`
 
+### Claude Code SDK
+
+- Use `--provider claude-cli` for Claude Code SDK integration
+- Provides proper session management and streaming
+- No API key needed if using Claude Code authentication
+
 ### Gemini (Google)
 
 - Fast and efficient
@@ -22693,12 +22699,12 @@ Combine multiple filters:
 
 ## CLI Providers
 
-For privacy or offline use:
+For enhanced integration:
 
-# Claude CLI (requires claude-cli installed)
+# Claude Code SDK (uses proper Claude Code SDK integration)
 m1f-research "topic" --provider claude-cli
 
-# Gemini CLI (requires gemini-cli installed)
+# Gemini CLI (requires gemini-cli installed) 
 m1f-research "topic" --provider gemini-cli
 
 ## Configuration File
@@ -24109,6 +24115,8 @@ import aiohttp
 import asyncio
 from dataclasses import dataclass
 from .prompt_utils import get_web_search_prompt
+import anyio
+from claude_code_sdk import query as claude_query, ClaudeCodeOptions, Message, ResultMessage
 
 
 @dataclass
@@ -24444,6 +24452,147 @@ Return JSON with: key_points (array), technical_level"""
             }
 
 
+class ClaudeCodeProvider(LLMProvider):
+    """Claude Code SDK provider for proper integration"""
+    
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        # Claude Code doesn't need an API key in the traditional sense
+        super().__init__(api_key="claude-code-sdk", model=model)
+        self.session_id = None
+        self.conversation_started = False
+    
+    @property
+    def default_model(self) -> str:
+        return "claude-3-opus-20240229"
+    
+    async def query(self, prompt: str, system: Optional[str] = None, **kwargs) -> LLMResponse:
+        """Query Claude Code using SDK"""
+        # Combine system and user prompts
+        full_prompt = prompt
+        if system:
+            full_prompt = f"{system}\n\n{prompt}"
+        
+        try:
+            messages: List[Message] = []
+            
+            # Configure options - using the same pattern as m1f-claude
+            options = ClaudeCodeOptions(
+                max_turns=kwargs.get("max_turns", 1),
+                continue_conversation=not self.conversation_started and self.session_id is not None,
+                resume=self.session_id if not self.conversation_started and self.session_id else None
+            )
+            
+            # Collect messages
+            response_parts = []
+            
+            async for message in claude_query(prompt=full_prompt, options=options):
+                messages.append(message)
+                
+                # Extract session ID from ResultMessage
+                if isinstance(message, ResultMessage):
+                    if hasattr(message, "session_id"):
+                        self.session_id = message.session_id
+                        self.conversation_started = True
+                
+                # Extract text content from different message types
+                if hasattr(message, "content"):
+                    if isinstance(message.content, str):
+                        response_parts.append(message.content)
+                    elif isinstance(message.content, list):
+                        # Handle structured content
+                        for content_item in message.content:
+                            if isinstance(content_item, dict) and "text" in content_item:
+                                response_parts.append(content_item["text"])
+                            elif hasattr(content_item, "text"):
+                                response_parts.append(content_item.text)
+                elif hasattr(message, "text"):
+                    # Some messages might have text directly
+                    response_parts.append(message.text)
+            
+            # Combine response parts
+            content = "\n".join(response_parts) if response_parts else ""
+            
+            return LLMResponse(
+                content=content,
+                raw_response={"session_id": self.session_id, "message_count": len(messages)}
+            )
+            
+        except Exception as e:
+            return LLMResponse(content="", error=str(e))
+    
+    async def search_web(self, query: str, num_results: int = 20) -> List[Dict[str, str]]:
+        """Use Claude Code to generate search URLs"""
+        prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
+
+Return a JSON array with objects containing:
+- url: The full URL
+- title: Page title
+- description: Brief description
+
+Focus on high-quality, authoritative sources like documentation, tutorials, and reputable blogs.
+Mix different types of content: tutorials, references, discussions, and examples.
+
+Return ONLY valid JSON array, no other text."""
+
+        response = await self.query(prompt)
+        
+        if response.error:
+            raise Exception(f"Claude Code error: {response.error}")
+        
+        try:
+            # Extract JSON from response
+            content = response.content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            results = json.loads(content)
+            return results[:num_results]
+            
+        except json.JSONDecodeError:
+            raise Exception("Failed to parse Claude Code response as JSON")
+    
+    async def analyze_content(self, content: str, analysis_type: str = "relevance") -> Dict[str, Any]:
+        """Analyze content with Claude Code"""
+        
+        prompts = {
+            "relevance": """Analyze this content and rate its relevance (0-10) for the research topic.
+Return JSON with: relevance_score, reason, key_topics""",
+            
+            "summary": """Provide a concise summary of this content.
+Return JSON with: summary, main_points (array), content_type""",
+            
+            "key_points": """Extract the key points from this content.
+Return JSON with: key_points (array), technical_level, recommended_reading_order"""
+        }
+        
+        prompt = prompts.get(analysis_type, prompts["relevance"])
+        prompt = f"{prompt}\n\nContent:\n{content[:4000]}..."  # Limit content length
+        
+        response = await self.query(prompt)
+        
+        if response.error:
+            raise Exception(f"Analysis error: {response.error}")
+        
+        try:
+            content = response.content.strip()
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            return json.loads(content)
+            
+        except json.JSONDecodeError:
+            # Return basic analysis if JSON parsing fails
+            return {
+                "relevance_score": 5,
+                "reason": "Could not parse analysis",
+                "raw_response": response.content
+            }
+
+
 class CLIProvider(LLMProvider):
     """Provider for CLI-based LLM tools like gemini-cli"""
     
@@ -24463,49 +24612,32 @@ class CLIProvider(LLMProvider):
             full_prompt = f"{system}\n\n{prompt}"
         
         try:
-            # Build command based on CLI tool
+            # Only handle non-Claude CLI tools
             if self.command == "claude":
-                # Claude Code uses -p flag for headless mode
-                cmd = [self.command, "-p", full_prompt]
-                
-                # Add model if specified  
-                if self.model != "default":
-                    cmd.extend(["--model", self.model])
-                    
-                # Add any additional CLI args
-                if "cli_args" in kwargs:
-                    cmd.extend(kwargs["cli_args"])
-                    
-                # Run command asynchronously (no stdin needed for claude -p)
-                proc = await asyncio.create_subprocess_exec(
-                    *cmd,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                
-                stdout, stderr = await proc.communicate()
-                
-            else:
-                # Other CLI tools (like gemini-cli) use stdin
-                cmd = [self.command]
-                
-                # Add model if specified
-                if self.model != "default":
-                    cmd.extend(["--model", self.model])
-                
-                # Add any additional CLI args
-                if "cli_args" in kwargs:
-                    cmd.extend(kwargs["cli_args"])
-                
-                # Run command asynchronously
-                proc = await asyncio.create_subprocess_exec(
-                    *cmd,
-                    stdin=asyncio.subprocess.PIPE,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                
-                stdout, stderr = await proc.communicate(full_prompt.encode())
+                # Redirect to ClaudeCodeProvider instead
+                provider = ClaudeCodeProvider(model=self.model)
+                return await provider.query(prompt, system, **kwargs)
+            
+            # Other CLI tools (like gemini-cli) use stdin
+            cmd = [self.command]
+            
+            # Add model if specified
+            if self.model != "default":
+                cmd.extend(["--model", self.model])
+            
+            # Add any additional CLI args
+            if "cli_args" in kwargs:
+                cmd.extend(kwargs["cli_args"])
+            
+            # Run command asynchronously
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await proc.communicate(full_prompt.encode())
             
             if proc.returncode != 0:
                 return LLMResponse(
@@ -24523,6 +24655,11 @@ class CLIProvider(LLMProvider):
     
     async def search_web(self, query: str, num_results: int = 20) -> List[Dict[str, str]]:
         """Use CLI tool to generate search URLs"""
+        # Redirect claude commands to ClaudeCodeProvider
+        if self.command == "claude":
+            provider = ClaudeCodeProvider(model=self.model)
+            return await provider.search_web(query, num_results)
+            
         prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
 
 Return a JSON array with objects containing:
@@ -24552,6 +24689,11 @@ Return ONLY valid JSON array."""
     
     async def analyze_content(self, content: str, analysis_type: str = "relevance") -> Dict[str, Any]:
         """Analyze content via CLI"""
+        # Redirect claude commands to ClaudeCodeProvider
+        if self.command == "claude":
+            provider = ClaudeCodeProvider(model=self.model)
+            return await provider.analyze_content(content, analysis_type)
+            
         prompts = {
             "relevance": "Rate relevance 0-10. Return JSON: relevance_score, reason",
             "summary": "Summarize. Return JSON: summary, main_points",
@@ -24587,7 +24729,8 @@ def get_provider(provider_name: str, **kwargs) -> LLMProvider:
     """Factory function to get LLM provider instance"""
     providers = {
         "claude": ClaudeProvider,
-        "claude-cli": lambda **kw: CLIProvider(command="claude", model=kw.get("model")),
+        "claude-cli": ClaudeCodeProvider,  # Use proper SDK instead of CLI
+        "claude-code": ClaudeCodeProvider,  # Additional alias
         "gemini": GeminiProvider,
         "gemini-cli": lambda **kw: CLIProvider(command="gemini", model=kw.get("model")),
     }

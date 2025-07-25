@@ -591,12 +591,12 @@ Combine multiple filters:
 
 ## CLI Providers
 
-For privacy or offline use:
+For enhanced integration:
 
-# Claude CLI (requires claude-cli installed)
+# Claude Code SDK (uses proper Claude Code SDK integration)
 m1f-research "topic" --provider claude-cli
 
-# Gemini CLI (requires gemini-cli installed)
+# Gemini CLI (requires gemini-cli installed) 
 m1f-research "topic" --provider gemini-cli
 
 ## Configuration File

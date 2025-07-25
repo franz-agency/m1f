@@ -296,6 +296,12 @@ Generated on: 2024-01-20 14:30:22 Total sources: 10
 - Best for: Comprehensive research, nuanced analysis
 - Set: `ANTHROPIC_API_KEY`
 
+### Claude Code SDK
+
+- Use `--provider claude-cli` for Claude Code SDK integration
+- Provides proper session management and streaming
+- No API key needed if using Claude Code authentication
+
 ### Gemini (Google)
 
 - Fast and efficient
