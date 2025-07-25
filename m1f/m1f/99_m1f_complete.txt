@@ -32490,6 +32490,7 @@ import asyncio
 import anyio
 import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
+import tempfile
 
 # Use unified colorama module
 try:
@@ -32611,10 +32612,17 @@ class M1FClaude:
         self,
         project_path: Path = None,
         allowed_tools: str = "Read,Edit,MultiEdit,Write,Glob,Grep,Bash",
+        disallowed_tools: str = None,
         debug: bool = False,
         verbose: bool = False,
         project_description: str = None,
         project_priorities: str = None,
+        permission_mode: str = "default",
+        append_system_prompt: str = None,
+        output_format: str = "text",
+        input_format: str = "auto",
+        mcp_config: str = None,
+        cwd: Path = None,
     ):
         """Initialize m1f-claude with project context."""
         self.project_path = project_path or Path.cwd()
@@ -32622,12 +32630,19 @@ class M1FClaude:
         self.session_id = None  # Store session ID for conversation continuity
         self.conversation_started = False  # Track if conversation has started
         self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
+        self.disallowed_tools = disallowed_tools  # Tools to disallow
         self.debug = debug  # Enable debug output
         self.verbose = verbose  # Show all prompts and parameters
         self.project_description = (
             project_description  # User-provided project description
         )
         self.project_priorities = project_priorities  # User-provided project priorities
+        self.permission_mode = permission_mode  # Permission handling mode
+        self.append_system_prompt = append_system_prompt  # Additional system prompt
+        self.output_format = output_format  # Output format (text, json, stream-json)
+        self.input_format = input_format  # Input format
+        self.mcp_config = mcp_config  # MCP configuration file
+        self.cwd = cwd or self.project_path  # Working directory
 
         # Check for m1f documentation in various locations
         self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
@@ -33611,11 +33626,19 @@ I'll analyze your project and create an optimal m1f configuration that:
                 resume=(
                     self.session_id if not is_first_prompt and self.session_id else None
                 ),
-                # Enable file permissions for initialization
-                allow_write_files=True,
-                allow_read_files=True,
-                allow_edit_files=True,
+                # Use proper SDK parameters
+                allowed_tools=self.allowed_tools.split(",") if self.allowed_tools else None,
+                permission_mode=self.permission_mode,
+                cwd=str(self.cwd) if self.cwd else None,
             )
+            
+            # Add optional parameters if provided
+            if self.append_system_prompt:
+                options.system_prompt = self.append_system_prompt
+            if self.disallowed_tools:
+                options.disallowed_tools = self.disallowed_tools.split(",")
+            if self.mcp_config:
+                options.mcp_config = self.mcp_config
 
             async with anyio.create_task_group() as tg:
 
@@ -33644,10 +33667,16 @@ I'll analyze your project and create an optimal m1f configuration that:
                                         logger.info(
                                             "🔗 Session established with Claude Code"
                                         )
-                                # Handle cost field gracefully
+                                # Extract metadata from ResultMessage
                                 if hasattr(message, "cost_usd"):
                                     if self.debug:
                                         logger.info(f"Cost: ${message.cost_usd}")
+                                if hasattr(message, "duration"):
+                                    if self.debug:
+                                        logger.info(f"Duration: {message.duration}s")
+                                if hasattr(message, "num_turns"):
+                                    if self.debug:
+                                        logger.info(f"Turns: {message.num_turns}")
                     except Exception as e:
                         if self.debug:
                             logger.error(f"SDK error during message collection: {e}")
@@ -33719,7 +33748,16 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Prepare command with proper tools and directory access
             # Note: For initialization, we'll display the command rather than execute it
-            cmd_display = f"claude --add-dir {self.project_path} --allowedTools Read,Write,Edit,MultiEdit"
+            cmd_parts = ["claude", f"--add-dir {self.project_path}", f"--allowedTools {self.allowed_tools}"]
+            
+            if self.permission_mode != "default":
+                cmd_parts.append(f"--permission-mode {self.permission_mode}")
+            if self.append_system_prompt:
+                cmd_parts.append(f"--append-system-prompt \"{self.append_system_prompt}\"")
+            if self.mcp_config:
+                cmd_parts.append(f"--mcp-config {self.mcp_config}")
+            
+            cmd_display = " ".join(cmd_parts)
 
             # Display the command and prompt for manual execution
             info(f"\n{Colors.CYAN}{'='*60}{Colors.RESET}")
@@ -34040,15 +34078,26 @@ I'll analyze your project and create an optimal m1f configuration that:
             # PHASE 1: Run Claude with streaming output
             runner = M1FClaudeRunner(claude_binary=claude_path)
 
+            # Build kwargs with new parameters
+            run_kwargs = {
+                "prompt": segmentation_prompt,
+                "working_dir": str(self.project_path),
+                "allowed_tools": self.allowed_tools,
+                "add_dir": str(self.project_path),
+                "timeout": 300,  # 5 minutes timeout
+                "show_output": True,
+            }
+            
+            # Add optional parameters
+            if self.permission_mode != "default":
+                run_kwargs["permission_mode"] = self.permission_mode
+            if self.append_system_prompt:
+                run_kwargs["append_system_prompt"] = self.append_system_prompt
+            if self.mcp_config:
+                run_kwargs["mcp_config"] = self.mcp_config
+            
             # Execute with streaming and timeout handling
-            returncode, stdout, stderr = runner.run_claude_streaming(
-                prompt=segmentation_prompt,
-                working_dir=str(self.project_path),
-                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep",
-                add_dir=str(self.project_path),
-                timeout=300,  # 5 minutes timeout
-                show_output=True,
-            )
+            returncode, stdout, stderr = runner.run_claude_streaming(**run_kwargs)
 
             result = type("Result", (), {"returncode": returncode})
 
@@ -34093,15 +34142,11 @@ I'll analyze your project and create an optimal m1f configuration that:
             info("⏳ This includes checking bundle quality and fixing any issues...\n")
 
             # Run Claude again to verify and improve
+            run_kwargs["prompt"] = verification_prompt
+            run_kwargs["allowed_tools"] = self.allowed_tools  # Use configured tools
+            
             returncode_verify, stdout_verify, stderr_verify = (
-                runner.run_claude_streaming(
-                    prompt=verification_prompt,
-                    working_dir=str(self.project_path),
-                    allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
-                    add_dir=str(self.project_path),
-                    timeout=300,  # 5 minutes timeout
-                    show_output=True,
-                )
+                runner.run_claude_streaming(**run_kwargs)
             )
 
             verify_result = type("Result", (), {"returncode": returncode_verify})
@@ -34273,9 +34318,9 @@ bundles:
                     "npx",
                     "claude",
                     "--print",
-                    "--verbose",  # Required for stream-json
+                    "--verbose" if self.output_format == "stream-json" else None,  # Required for stream-json
                     "--output-format",
-                    "stream-json",
+                    self.output_format,
                     "--allowedTools",
                     self.allowed_tools,
                 ]
@@ -34283,12 +34328,27 @@ bundles:
                 cmd = [
                     claude_cmd,
                     "--print",
-                    "--verbose",  # Required for stream-json
+                    "--verbose" if self.output_format == "stream-json" else None,  # Required for stream-json
                     "--output-format",
-                    "stream-json",
+                    self.output_format,
                     "--allowedTools",
                     self.allowed_tools,
                 ]
+            
+            # Filter out None values
+            cmd = [x for x in cmd if x is not None]
+            
+            # Add optional parameters
+            if self.disallowed_tools:
+                cmd.extend(["--disallowedTools", self.disallowed_tools])
+            if self.permission_mode != "default":
+                cmd.extend(["--permission-mode", self.permission_mode])
+            if self.append_system_prompt:
+                cmd.extend(["--append-system-prompt", self.append_system_prompt])
+            if self.mcp_config:
+                cmd.extend(["--mcp-config", self.mcp_config])
+            if self.cwd and self.cwd != self.project_path:
+                cmd.extend(["--cwd", str(self.cwd)])
 
             # Note: --debug flag interferes with JSON parsing, only use in stderr
             if self.debug:
@@ -34348,6 +34408,13 @@ bundles:
                             new_session_id = data.get("session_id", session_id)
                             if self.debug:
                                 info(f"[DEBUG] Session initialized: {new_session_id}")
+                        elif data.get("subtype") == "permission_prompt":
+                            # Handle permission prompt for MCP tools
+                            tool_name = data.get("tool_name", "Unknown")
+                            tool_params = data.get("parameters", {})
+                            warning(f"[⚠️  Permission required for {tool_name}]")
+                            if self.debug:
+                                info(f"[DEBUG] Parameters: {tool_params}")
                         elif self.debug:
                             info(f"[DEBUG] System message: {data}")
 
@@ -34411,9 +34478,15 @@ bundles:
                             elif output == False:
                                 error("[✗ Failed]", flush=True)
 
+                    elif event_type == "user":
+                        # User messages (for conversation tracking)
+                        if self.debug:
+                            user_content = data.get("content", "")
+                            info(f"[DEBUG] User: {user_content[:100]}..." if len(user_content) > 100 else f"[DEBUG] User: {user_content}")
+                    
                     elif event_type == "assistant":
                         # Assistant messages have a nested structure
-                        message_data = data.get("message", {})
+                        message_data = data.get("message", data)  # Handle both nested and flat structures
                         content = message_data.get("content", [])
 
                         if isinstance(content, list):
@@ -34474,17 +34547,29 @@ bundles:
                             print(content, end="", flush=True)
 
                     elif event_type == "result":
-                        # Final result message
-                        new_session_id = data.get("session_id", session_id)
-                        # Show completion indicator
-                        success("[✅ Response complete]", flush=True)
-                        if self.debug:
-                            info(f"[DEBUG] Session ID: {new_session_id}")
-                            info(f"[DEBUG] Cost: ${data.get('total_cost_usd', 0):.4f}")
-                            info(f"[DEBUG] Turns: {data.get('num_turns', 0)}")
+                        # Final result message with various subtypes
+                        subtype = data.get("subtype", "")
+                        if subtype == "error":
+                            error(f"[❌ Error: {data.get('error', 'Unknown error')}]")
+                        elif subtype == "cancelled":
+                            warning("[⚠️  Response cancelled]")
+                        else:
+                            # Normal completion
+                            new_session_id = data.get("session_id", session_id)
+                            # Show completion indicator
+                            success("[✅ Response complete]", flush=True)
+                            if self.debug:
+                                info(f"[DEBUG] Session ID: {new_session_id}")
+                                info(f"[DEBUG] Cost: ${data.get('total_cost_usd', 0):.4f}")
+                                info(f"[DEBUG] Turns: {data.get('num_turns', 0)}")
+                                info(f"[DEBUG] Duration: {data.get('duration', 0):.2f}s")
 
                 except json.JSONDecodeError:
-                    if self.debug:
+                    # Handle non-JSON output (might be plain text in some formats)
+                    if self.output_format == "text":
+                        response_text += line + "\n"
+                        print(line)
+                    elif self.debug:
                         info(f"[DEBUG] Non-JSON line: {line}")
                 except Exception as e:
                     if self.debug:
@@ -34734,6 +34819,46 @@ First time? Run 'm1f-init' to set up your project!
         help="What's important for this project (performance, security, maintainability, etc.)",
     )
 
+    parser.add_argument(
+        "--permission-mode",
+        type=str,
+        default="default",
+        choices=["default", "acceptEdits", "plan", "bypassPermissions"],
+        help="Permission handling mode (default: default)",
+    )
+
+    parser.add_argument(
+        "--output-format",
+        type=str,
+        default="text",
+        choices=["text", "json", "stream-json"],
+        help="Output format (default: text)",
+    )
+
+    parser.add_argument(
+        "--append-system-prompt",
+        type=str,
+        help="Additional system prompt to append",
+    )
+
+    parser.add_argument(
+        "--mcp-config",
+        type=str,
+        help="Path to MCP configuration JSON file",
+    )
+
+    parser.add_argument(
+        "--cwd",
+        type=str,
+        help="Working directory for Claude (defaults to project path)",
+    )
+
+    parser.add_argument(
+        "--disallowed-tools",
+        type=str,
+        help="Comma-separated list of disallowed tools",
+    )
+
     args = parser.parse_args()
 
     # Handle /setup command in prompt
@@ -34744,10 +34869,16 @@ First time? Run 'm1f-init' to set up your project!
     # Initialize m1f-claude
     m1f_claude = M1FClaude(
         allowed_tools=args.allowed_tools,
+        disallowed_tools=args.disallowed_tools,
         debug=args.debug,
         verbose=args.verbose,
         project_description=args.project_description,
         project_priorities=args.project_priorities,
+        permission_mode=args.permission_mode,
+        append_system_prompt=args.append_system_prompt,
+        output_format=args.output_format,
+        mcp_config=args.mcp_config,
+        cwd=Path(args.cwd) if args.cwd else None,
     )
 
     # Check status
@@ -34843,8 +34974,16 @@ import subprocess
 import time
 import sys
 from pathlib import Path
-from typing import Tuple, Optional, IO
+from typing import Tuple, Optional, IO, Callable
 import signal
+
+# Use unified colorama module
+try:
+    from .shared.colors import success, error, warning, info
+except ImportError:
+    # Try direct import if running as script
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from tools.shared.colors import success, error, warning, info
 
 
 class M1FClaudeRunner:
@@ -34906,6 +35045,12 @@ class M1FClaudeRunner:
         timeout: int = 600,  # 10 minutes default
         show_output: bool = True,
         output_handler: Optional[callable] = None,
+        permission_mode: str = "default",
+        append_system_prompt: Optional[str] = None,
+        mcp_config: Optional[str] = None,
+        disallowed_tools: Optional[str] = None,
+        output_format: str = "text",
+        cwd: Optional[str] = None,
     ) -> Tuple[int, str, str]:
         """
         Run Claude with real-time streaming output and improved timeout handling.
@@ -34932,6 +35077,20 @@ class M1FClaudeRunner:
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
+        
+        # Add new optional parameters
+        if permission_mode != "default":
+            cmd.extend(["--permission-mode", permission_mode])
+        if append_system_prompt:
+            cmd.extend(["--append-system-prompt", append_system_prompt])
+        if mcp_config:
+            cmd.extend(["--mcp-config", mcp_config])
+        if disallowed_tools:
+            cmd.extend(["--disallowedTools", disallowed_tools])
+        if output_format != "text":
+            cmd.extend(["--output-format", output_format])
+        if cwd:
+            cmd.extend(["--cwd", cwd])
 
         # Use conservative timeout (at least 60 seconds)
         actual_timeout = max(60, timeout)
@@ -42386,6 +42545,159 @@ When you use `m1f-claude --setup`, it:
 Windows users can manually customize their .m1f.config.yml after running
 m1f-init.
 
+### Permission System
+
+Control how Claude handles file operations with the `--permission-mode` flag:
+
+```bash
+# Auto-accept all file edits
+m1f-claude --permission-mode acceptEdits "Help me refactor this code"
+
+# Plan mode - Claude describes changes without executing
+m1f-claude --permission-mode plan "What changes would you make?"
+
+# Bypass all permission checks (use with caution)
+m1f-claude --permission-mode bypassPermissions "Fix all issues"
+
+# Default mode - prompts for each operation
+m1f-claude --permission-mode default "Update the config"
+```
+
+### Output Formats
+
+Choose how Claude's responses are formatted:
+
+```bash
+# Plain text output (default)
+m1f-claude --output-format text "Explain this code"
+
+# JSON output for programmatic processing
+m1f-claude --output-format json "Analyze project structure"
+
+# Streaming JSON for real-time processing
+m1f-claude --output-format stream-json "Refactor the codebase"
+```
+
+### MCP (Model Context Protocol) Support
+
+Extend Claude's capabilities with MCP servers:
+
+```bash
+# Load MCP configuration from file
+m1f-claude --mcp-config ./mcp-servers.json "Use the database tools"
+
+# Example MCP configuration file:
+cat > mcp-servers.json << 'EOF'
+{
+  "servers": {
+    "postgres-tools": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/postgres-server"],
+      "env": {
+        "DATABASE_URL": "postgresql://user:pass@localhost/mydb"
+      }
+    }
+  }
+}
+EOF
+```
+
+### Tool Control
+
+Fine-grained control over which tools Claude can use:
+
+```bash
+# Allow specific tools only
+m1f-claude --allowed-tools "Read,Write,Edit" "Update the documentation"
+
+# Disallow dangerous tools
+m1f-claude --disallowed-tools "Bash,System" "Review the code"
+
+# Combine both for precise control
+m1f-claude --allowed-tools "Read,Edit,MultiEdit,Write,Glob,Grep" \
+           --disallowed-tools "Bash" \
+           "Refactor without running commands"
+```
+
+### System Prompt Enhancement
+
+Append custom instructions to Claude's system prompt:
+
+```bash
+# Add specific instructions
+m1f-claude --append-system-prompt "Focus on security best practices" \
+           "Review this authentication code"
+
+# Multiple instructions
+m1f-claude --append-system-prompt "Be concise. Explain your reasoning. Focus on performance." \
+           "Optimize this algorithm"
+```
+
+### Working Directory Control
+
+Set a specific working directory for Claude:
+
+```bash
+# Work in a different directory than current
+m1f-claude --cwd /path/to/project "List all Python files"
+
+# Useful for monorepos
+m1f-claude --cwd ./packages/frontend "Set up the React components"
+```
+
+### Enhanced Message Handling
+
+m1f-claude handles all message types from Claude:
+
+- **System Messages**: Session initialization, permission prompts, notifications
+- **User Messages**: Tracked for conversation context
+- **Assistant Messages**: Handles both flat and nested content structures
+- **Tool Messages**: Tool use events with parameters, results with smart
+  truncation
+- **Result Messages**: Success/error/cancellation states, cost tracking,
+  metadata
+
+### Usage Examples
+
+#### Basic Setup with Enhanced Features
+
+```bash
+# Initialize with specific permissions and tools
+m1f-claude --setup \
+  --permission-mode acceptEdits \
+  --allowed-tools "Read,Write,Edit,MultiEdit,Glob,Grep" \
+  --project-description "E-commerce platform using Django" \
+  --project-priorities "Security, scalability, maintainability"
+```
+
+#### Interactive Mode with MCP
+
+```bash
+# Start interactive mode with database tools
+m1f-claude -i \
+  --mcp-config ./database-tools.json \
+  --append-system-prompt "You have access to PostgreSQL tools"
+```
+
+#### Automated Refactoring
+
+```bash
+# Refactor with auto-accept and specific output format
+m1f-claude --permission-mode acceptEdits \
+  --output-format json \
+  --max-turns 5 \
+  "Refactor all Python files to use type hints"
+```
+
+#### Safe Code Review
+
+```bash
+# Review without write permissions
+m1f-claude --allowed-tools "Read,Grep,Glob" \
+  --permission-mode default \
+  "Review the codebase for security issues"
+```
+
 ### 💡 Important: Claude Code Subscription Recommended
 
 **We strongly recommend using Claude Code with a subscription plan** when using
@@ -42698,6 +43010,15 @@ m1f-claude "Setup m1f for a typical Python project with tests and docs"
 
 # Interactive Claude session
 m1f-claude -i
+
+# With specific permissions and tools
+m1f-claude --permission-mode acceptEdits --allowed-tools "Read,Write,Edit" "Update the README"
+
+# JSON output for automation
+m1f-claude --output-format json "List all Python files"
+
+# With MCP database tools
+m1f-claude --mcp-config ./mcp.json "Query the user database"
 
 # Security audit bundle
 m1f -s . -o audit.txt --security-check error --minimal-output
