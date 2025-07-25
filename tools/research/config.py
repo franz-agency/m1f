@@ -30,8 +30,11 @@ class ScrapingConfig:
     search_limit: int = 20  # Number of URLs to search for
     scrape_limit: int = 10  # Maximum URLs to scrape
     timeout_range: str = "1-3"  # seconds
+    timeout: int = 30  # Total timeout for requests in seconds
+    delay: List[float] = field(default_factory=lambda: [1.0, 3.0])  # delay range in seconds
     max_concurrent: int = 5
     retry_attempts: int = 2
+    retries: int = 2  # Number of retries for failed requests
     user_agents: List[str] = field(
         default_factory=lambda: [
             "Mozilla/5.0 (m1f-research/0.1.0) AppleWebKit/537.36",
