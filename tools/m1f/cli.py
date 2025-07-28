@@ -319,6 +319,12 @@ Perfect for:
         help="Check for sensitive information in files",
     )
 
+    security_group.add_argument(
+        "--allow-external",
+        action="store_true",
+        help="Allow accessing files outside the m1f directory (disable path traversal protection)",
+    )
+
     # Archive group
     archive_group = parser.add_argument_group("Archive Options")
 
