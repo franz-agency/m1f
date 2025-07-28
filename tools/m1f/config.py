@@ -194,31 +194,37 @@ class Config:
         if args.source_directory:
             # args.source_directory is now a list due to action="append"
             for source_dir in args.source_directory:
-                resolved_path = Path(source_dir).resolve()
-                validated_path = validate_path_traversal(resolved_path)
+                path_obj = Path(source_dir)
+                validated_path = validate_path_traversal(
+                    path_obj, allow_external=getattr(args, 'allow_external', False)
+                )
                 source_dirs.append(validated_path)
 
         # Process input file with path traversal validation
         input_file = None
         if args.input_file:
-            resolved_path = Path(args.input_file).resolve()
-            input_file = validate_path_traversal(resolved_path)
+            path_obj = Path(args.input_file)
+            input_file = validate_path_traversal(
+                path_obj, allow_external=getattr(args, 'allow_external', False)
+            )
 
         # Process include files with path traversal validation
         include_files = []
         if hasattr(args, "input_include_files") and args.input_include_files:
             for f in args.input_include_files:
-                resolved_path = Path(f).resolve()
-                validated_path = validate_path_traversal(resolved_path)
+                path_obj = Path(f)
+                validated_path = validate_path_traversal(
+                    path_obj, allow_external=getattr(args, 'allow_external', False)
+                )
                 include_files.append(validated_path)
 
         # Create output configuration with path traversal validation
         # Output paths are allowed to be outside the base directory
         output_file_path = None
         if args.output_file:
-            resolved_path = Path(args.output_file).resolve()
+            path_obj = Path(args.output_file)
             output_file_path = validate_path_traversal(
-                resolved_path, allow_outside=True
+                path_obj, allow_outside=True
             )
         output_config = OutputConfig(
             output_file=output_file_path
@@ -296,8 +302,10 @@ class Config:
         preset_files = []
         if hasattr(args, "preset_files") and args.preset_files:
             for f in args.preset_files:
-                resolved_path = Path(f).resolve()
-                validated_path = validate_path_traversal(resolved_path)
+                path_obj = Path(f)
+                validated_path = validate_path_traversal(
+                    path_obj, allow_external=getattr(args, 'allow_external', False)
+                )
                 preset_files.append(validated_path)
 
         preset_config = PresetConfig(

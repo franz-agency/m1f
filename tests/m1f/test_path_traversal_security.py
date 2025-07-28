@@ -59,6 +59,7 @@ class TestPathTraversalSecurity:
             "preset_group": None,
             "disable_security_check": False,
             "quiet": False,
+            "allow_external": False,
         }
         # Handle source_directory as a list
         if "source_directory" in overrides:
@@ -165,3 +166,84 @@ class TestPathTraversalSecurity:
             except OSError:
                 # Skip test if we can't create symlinks
                 pytest.skip("Cannot create symbolic links on this system")
+
+    def test_allow_external_flag_enables_external_access(self):
+        """Test that --allow-external flag allows accessing external directories."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create test file outside the working directory  
+            external_path = Path(tmpdir) / "external_project"
+            external_path.mkdir()
+            (external_path / "test.txt").write_text("test content")
+            
+            # With allow_external=True, this should work
+            args = self._create_test_args(
+                source_directory=str(external_path),
+                allow_external=True
+            )
+            
+            # This should NOT raise an error
+            config = Config.from_args(args)
+            assert config.source_directories[0].resolve() == external_path.resolve()
+
+    def test_allow_external_flag_still_blocks_malicious_patterns(self):
+        """Test that --allow-external still blocks excessive path traversal patterns."""
+        # Even with allow_external=True, excessive traversal should be blocked
+        malicious_path = "../../../../../../../etc/passwd"
+        args = self._create_test_args(
+            source_directory=malicious_path,
+            allow_external=True
+        )
+        
+        with pytest.raises(ValueError) as exc_info:
+            Config.from_args(args)
+        
+        assert "Path traversal detected" in str(exc_info.value)
+        assert "suspicious '..' patterns" in str(exc_info.value)
+
+    def test_allow_external_flag_affects_all_input_paths(self):
+        """Test that --allow-external affects source dirs, input files, and include files."""
+        # Use paths that are not in temp directories to avoid default temp exceptions
+        home_dir = Path.home()
+        external_path = home_dir / "test_external_m1f"  # This should not exist and be outside cwd
+        
+        args = self._create_test_args(
+            source_directory=str(external_path),
+            input_file=str(external_path / "input.txt"),
+            input_include_files=[str(external_path / "include.txt")],
+            allow_external=True
+        )
+        
+        # Should work with allow_external=True (even if paths don't exist, validation should pass)
+        config = Config.from_args(args)
+        assert config.source_directories[0].resolve() == external_path.resolve()
+        assert config.input_file.resolve() == (external_path / "input.txt").resolve()
+        assert config.input_include_files[0].resolve() == (external_path / "include.txt").resolve()
+
+    def test_allow_external_false_by_default(self):
+        """Test that allow_external is False by default (secure by default)."""
+        # Use /opt/external_project which should not exist and be outside cwd,
+        # and is not in the temp directory exceptions
+        external_path = Path("/opt/external_project_m1f")
+        
+        # Without allow_external flag, external access should be blocked
+        args = self._create_test_args(source_directory=str(external_path))
+        
+        # This should raise an error due to path traversal protection
+        with pytest.raises(ValueError) as exc_info:
+            Config.from_args(args)
+        
+        assert "Path traversal detected" in str(exc_info.value)
+
+    def test_validate_path_traversal_allow_external_parameter(self):
+        """Test the allow_external parameter in validate_path_traversal function directly."""
+        # Use /opt/external which should not be in any exception lists
+        base_path = Path.cwd()
+        external_path = Path("/opt/external_validation")
+        
+        # Without allow_external, should fail
+        with pytest.raises(ValueError):
+            validate_path_traversal(external_path, base_path, allow_external=False)
+        
+        # With allow_external, should succeed
+        result = validate_path_traversal(external_path, base_path, allow_external=True)
+        assert result == external_path.resolve()

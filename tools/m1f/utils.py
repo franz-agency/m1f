@@ -339,6 +339,7 @@ def validate_path_traversal(
     base_path: Path = None,
     allow_outside: bool = False,
     from_preset: bool = False,
+    allow_external: bool = False,
 ) -> Path:
     """Validate that a resolved path does not traverse outside allowed directories.
 
@@ -349,6 +350,7 @@ def validate_path_traversal(
         allow_outside: If True, allows paths outside the base directory but
                       still validates against malicious traversal patterns
         from_preset: If True, this path comes from a preset file
+        allow_external: If True, allows external paths (disables base directory restriction)
 
     Returns:
         The validated path
@@ -377,12 +379,13 @@ def validate_path_traversal(
     )
     if parent_traversals >= 3 and not (allow_outside or from_preset):
         # Three or more parent directory traversals are suspicious
+        # Note: allow_external does NOT bypass this malicious pattern check
         raise ValueError(
             f"Path traversal detected: '{path}' contains suspicious '..' patterns"
         )
 
-    if allow_outside or from_preset:
-        # For output paths or preset paths, just return the resolved path
+    if allow_outside or from_preset or allow_external:
+        # For output paths, preset paths, or when external access is allowed, just return the resolved path
         return resolved_path
 
     # For input paths, allow certain exceptions
