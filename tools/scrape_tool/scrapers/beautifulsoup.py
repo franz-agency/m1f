@@ -412,6 +412,12 @@ class BeautifulSoupScraper(WebScraperBase):
 
         finally:
             # Clean up session if we created it
+            # Log why crawling stopped
+            if self.config.max_pages != -1 and pages_scraped >= self.config.max_pages:
+                logger.info(f"Reached max_pages limit of {self.config.max_pages}")
+            elif not to_visit:
+                logger.info("No more URLs to visit")
+            
             if should_close_session:
                 await self.__aexit__(None, None, None)
 

@@ -391,8 +391,8 @@ class WebCrawler:
                         continue
 
                     # Log progress - show current URL being scraped
-                    logger.info(f"Processing: {page.url} (page {len(pages) + 1})")
                     pages.append(page)
+                    logger.info(f"Processing: {page.url} (page {len(pages)})")
 
                     # Save page to disk
                     try:
