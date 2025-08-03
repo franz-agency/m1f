@@ -29128,6 +29128,7 @@ import os
 from pathlib import Path
 import argparse
 import shutil
+from datetime import datetime
 
 
 # Configuration - all hardcoded for Claude Code
@@ -29335,10 +29336,25 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
     if markdown_dir.exists() and not args.force_download:
         existing_md_files = list(markdown_dir.glob("**/*.md"))
         if len(existing_md_files) >= 25:
-            print(f"\n📁 Found existing Markdown files: {len(existing_md_files)} files")
-            print("⏭️  Skipping HTML analysis and conversion")
-            skip_conversion = True
-            md_files = existing_md_files
+            if args.use_config:
+                print(
+                    f"\n📁 Found existing Markdown files: {len(existing_md_files)} files"
+                )
+                print("🔄 Re-converting with provided config file")
+                # Create backup directory with timestamp
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_dir = output_path / f"claude-code-markdown_backup_{timestamp}"
+                shutil.move(str(markdown_dir), str(backup_dir))
+                print(f"📦 Backed up existing markdown to: {backup_dir.name}")
+                # Don't skip conversion when using config
+                skip_conversion = False
+            else:
+                print(
+                    f"\n📁 Found existing Markdown files: {len(existing_md_files)} files"
+                )
+                print("⏭️  Skipping HTML analysis and conversion")
+                skip_conversion = True
+                md_files = existing_md_files
 
     if not skip_conversion:
         # Handle config file
