@@ -109,57 +109,91 @@ from .exceptions import ConfigurationError
 
 # Use unified colorama module
 try:
-    from tools.shared.colors import error
+    from ..shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        error,
+        COLORAMA_AVAILABLE,
+    )
 except ImportError:
     try:
-        from ..shared.colors import error
+        from tools.shared.colors import (
+            Colors,
+            ColoredHelpFormatter,
+            error,
+            COLORAMA_AVAILABLE,
+        )
     except ImportError:
+        COLORAMA_AVAILABLE = False
+
         # Fallback
-        def error(msg): print(f"Error: {msg}", file=sys.stderr)
+        def error(msg):
+            print(f"Error: {msg}", file=sys.stderr)
+
+        class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+            pass
 
 
-def create_argument_parser() -> argparse.ArgumentParser:
+class CustomArgumentParser(argparse.ArgumentParser):
+    """Custom argument parser with better error messages."""
+
+    def error(self, message: str) -> None:
+        """Display error message with colors if available."""
+        error_msg = f"ERROR: {message}"
+
+        if COLORAMA_AVAILABLE:
+            error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
+
+        self.print_usage(sys.stderr)
+        print(f"\n{error_msg}", file=sys.stderr)
+        print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
+        self.exit(2)
+
+
+def create_argument_parser() -> CustomArgumentParser:
     """Create and configure the argument parser."""
-    parser = argparse.ArgumentParser(
-        description="s1f - Split combined files back into original files",
-        epilog=f"""Examples:
-  # Extract files from archive
-  s1f archive.m1f.txt ./output/
+    description = """m1f-s1f - Split One File
+=====================
+
+Extract files from m1f bundles back to their original structure.
+Preserves file metadata, encodings, and directory hierarchy.
+
+Perfect for:
+• Extracting files from m1f archives
+• Recovering original project structure
+• Inspecting bundle contents
+• Converting between encodings"""
+
+    epilog = f"""Examples:
+  %(prog)s archive.m1f.txt ./output/
+  %(prog)s --list archive.m1f.txt
+  %(prog)s archive.m1f.txt ./output/ --respect-encoding
+  %(prog)s bundle.txt ./extracted/ --force
   
-  # List files without extracting
-  s1f --list archive.m1f.txt
-  
-  # Extract with original encoding
-  s1f archive.m1f.txt ./output/ --respect-encoding
-  
-Project home: {__project__}""",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+For more information, see the documentation.
+Project home: {__project__}"""
+
+    parser = CustomArgumentParser(
+        prog="m1f-s1f",
+        description=description,
+        epilog=epilog,
+        formatter_class=ColoredHelpFormatter,
+        add_help=True,
     )
 
-    # Support both positional and option-style arguments for backward compatibility
-    # Option-style (for backward compatibility)
+    # Add version argument first
     parser.add_argument(
-        "-i",
-        "--input-file",
-        type=Path,
-        dest="input_file_opt",
-        help="Path to the combined file (m1f output)",
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show program version and exit",
     )
 
-    parser.add_argument(
-        "-d",
-        "--destination-directory",
-        type=Path,
-        dest="destination_directory_opt",
-        help="Directory where files will be extracted",
-    )
-
-    # Positional arguments (new style)
+    # Positional arguments
     parser.add_argument(
         "input_file",
         type=Path,
-        nargs="?",
-        help="Path to the combined file (m1f output)",
+        help="Path to the m1f bundle file",
     )
 
     parser.add_argument(
@@ -169,63 +203,53 @@ Project home: {__project__}""",
         help="Directory where files will be extracted",
     )
 
-    # Optional arguments
-    parser.add_argument(
+    # Extraction options group
+    extract_group = parser.add_argument_group("Extraction Options")
+    extract_group.add_argument(
         "-f",
         "--force",
         action="store_true",
         help="Overwrite existing files without prompting",
     )
-
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Enable verbose output for debugging",
-    )
-
-    parser.add_argument(
+    extract_group.add_argument(
         "-l",
         "--list",
         action="store_true",
         help="List files in the archive without extracting",
     )
-
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"s1f {__version__}",
-        help="Show version information and exit",
-    )
-
-    # Timestamp handling
-    timestamp_group = parser.add_mutually_exclusive_group()
-    timestamp_group.add_argument(
+    extract_group.add_argument(
         "--timestamp-mode",
         choices=["original", "current"],
         default="original",
-        help="How to set file timestamps (default: %(default)s)",
+        help="How to set file timestamps (default: original)",
     )
-
-    # Checksum handling
-    parser.add_argument(
+    extract_group.add_argument(
         "--ignore-checksum",
         action="store_true",
-        help="Skip checksum verification",
+        help="Skip checksum verification during extraction",
     )
 
-    # Encoding handling
-    encoding_group = parser.add_argument_group("encoding options")
+    # Encoding options group
+    encoding_group = parser.add_argument_group("Encoding Options")
     encoding_group.add_argument(
         "--respect-encoding",
         action="store_true",
-        help="Write files using their original encoding (when available)",
+        help="Write files using their original encoding when available",
     )
-
     encoding_group.add_argument(
         "--target-encoding",
         type=str,
-        help="Force all files to be written with this encoding (e.g., 'utf-8', 'latin-1')",
+        metavar="ENCODING",
+        help="Force all files to be written with this encoding (e.g., utf-8, latin-1)",
+    )
+
+    # Output control group
+    output_group = parser.add_argument_group("Output Control")
+    output_group.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output for debugging",
     )
 
     return parser
@@ -233,12 +257,6 @@ Project home: {__project__}""",
 
 def validate_args(args: argparse.Namespace) -> None:
     """Validate command-line arguments."""
-    # Handle backward compatibility for option-style arguments
-    if args.input_file_opt:
-        args.input_file = args.input_file_opt
-    if args.destination_directory_opt:
-        args.destination_directory = args.destination_directory_opt
-
     # Ensure required arguments are provided
     if not args.input_file:
         raise ConfigurationError("Missing required argument: input_file")
