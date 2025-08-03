@@ -19,11 +19,11 @@ import sys
 
 # Use unified colorama module
 try:
-    from .shared.colors import Colors, success, error, info
+    from .shared.colors import Colors, ColoredHelpFormatter, success, error, info
 except ImportError:
     # Try direct import if running as script
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from tools.shared.colors import Colors, success, error, info
+    from tools.shared.colors import Colors, ColoredHelpFormatter, success, error, info
 
 
 def count_tokens_in_file(file_path: str, encoding_name: str = "cl100k_base") -> int:
@@ -75,7 +75,11 @@ def main():
     """
     parser = argparse.ArgumentParser(
         description="Count tokens in a text file using OpenAI's tiktoken library.",
-        epilog="Example: python token_counter.py myfile.txt -e p50k_base",
+        formatter_class=ColoredHelpFormatter,
+        epilog=f"""
+{Colors.BOLD}Example:{Colors.RESET}
+  {Colors.CYAN}python token_counter.py myfile.txt -e p50k_base{Colors.RESET}
+""",
     )
     parser.add_argument(
         "file_path", type=str, help="Path to the text file (txt, php, md, etc.)."

@@ -37,9 +37,25 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Use unified colorama module
 try:
-    from tools.shared.colors import Colors, success, error, warning, info, header
+    from tools.shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        success,
+        error,
+        warning,
+        info,
+        header,
+    )
 except ImportError:
-    from shared.colors import Colors, success, error, warning, info, header
+    from shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        success,
+        error,
+        warning,
+        info,
+        header,
+    )
 
 
 class M1FInit:
@@ -121,7 +137,9 @@ class M1FInit:
                 # On Windows, try creating a symlink first (requires admin or developer mode)
                 try:
                     link_path.symlink_to(self.m1f_docs_source)
-                    success(f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}")
+                    success(
+                        f"✅ Created symlink: m1f/m1f.txt -> {self.m1f_docs_source}"
+                    )
                     self.created_files.append("m1f/m1f.txt (symlink)")
                 except OSError:
                     # Fall back to copying the file
@@ -227,6 +245,7 @@ class M1FInit:
 
         # Create temporary directory for analysis files
         import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             # Run m1f to generate file and directory lists in temp directory
             project_name = self.project_path.name
@@ -276,7 +295,9 @@ class M1FInit:
 
                 # Note: Temporary files are automatically cleaned up when exiting the context
 
-                success(f"✅ Found {len(files_list)} files in {len(dirs_list)} directories")
+                success(
+                    f"✅ Found {len(files_list)} files in {len(dirs_list)} directories"
+                )
                 info(f"📁 Project Type: {context.get('type', 'Unknown')}")
                 if context.get("languages") != "No programming languages detected":
                     info(
@@ -714,9 +735,7 @@ global:
             info(f"  • Create focused bundles for different aspects")
             info(f"  • Optimize configuration for your project type")
         else:
-            info(
-                f"\n💡 Note: Additional setup with Claude is not available on Windows"
-            )
+            info(f"\n💡 Note: Additional setup with Claude is not available on Windows")
             info(f"You can manually add topic-specific bundles to .m1f.config.yml")
 
 
@@ -724,23 +743,23 @@ def main():
     """Main entry point for m1f-init."""
     parser = argparse.ArgumentParser(
         description="Initialize m1f for your project with quick setup",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-This tool provides cross-platform m1f initialization:
+        formatter_class=ColoredHelpFormatter,
+        epilog=f"""
+{Colors.BOLD}This tool provides cross-platform m1f initialization:{Colors.RESET}
   • Links m1f documentation (like m1f-link)
   • Analyzes your project structure
   • Creates complete and docs bundles
   • Generates .m1f.config.yml
   • Shows platform-specific next steps
 
-Examples:
-  m1f-init                # Initialize in current directory
-  m1f-init --verbose      # Show detailed output
+{Colors.BOLD}Examples:{Colors.RESET}
+  {Colors.CYAN}m1f-init{Colors.RESET}                # Initialize in current directory
+  {Colors.CYAN}m1f-init --verbose{Colors.RESET}      # Show detailed output
   
-After initialization:
-  • Use 'm1f-update' to regenerate bundles
-  • On Linux/Mac: Use 'm1f-claude --setup' for topic bundles
-  • Reference @m1f/m1f.txt in AI tools
+{Colors.BOLD}After initialization:{Colors.RESET}
+  • Use {Colors.CYAN}'m1f-update'{Colors.RESET} to regenerate bundles
+  • On Linux/Mac: Use {Colors.CYAN}'m1f-claude --setup'{Colors.RESET} for topic bundles
+  • Reference {Colors.YELLOW}@m1f/m1f.txt{Colors.RESET} in AI tools
 """,
     )
 
