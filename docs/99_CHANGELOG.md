@@ -8,7 +8,44 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- **m1f-scrape Max-Pages Counting**: Fixed to count only successfully scraped pages
+  - Previously counted all attempted URLs including errors and redirects
+  - Now only increments counter for pages that were actually saved
+  - Ensures --max-pages limit is respected correctly
+  - Fixed issue where scraper would stop prematurely at 1001 URLs when more pages were available
+
+- **m1f-scrape Test Infrastructure**: Fixed all 65 scraping tests to pass
+  - Fixed test server startup issues by changing subprocess.PIPE to subprocess.DEVNULL
+  - Fixed test server canonical parameter injection causing 500 errors
+  - Fixed mock configuration for async context managers in tests
+  - Fixed ScraperConfig/CrawlerConfig parameter mismatch
+  - Fixed Playwright browser_config parameter handling
+  - Fixed Selectolax allowed_path logic for start URL handling
+  - Updated test expectations to match corrected behavior
+
 ### Added
+
+- **m1f-scrape URL Support for allowed_path**: Parameter now accepts full URLs
+  - Can use both paths (`/docs/`) and full URLs (`https://example.com/docs/`)
+  - HTTrack properly extracts domain and path from URL-based allowed_path
+  - BeautifulSoup validates URLs in should_crawl_url method
+  - Useful for restricting crawl to specific subdomains or protocols
+
+- **m1f-scrape Python Mirror Scraper**: New fallback scraper for HTTrack
+  - Pure Python implementation for website mirroring
+  - Automatically used when HTTrack fails or for localhost URLs
+  - Preserves directory structure similar to HTTrack
+  - Supports all standard scraper features (robots.txt, rate limiting, etc.)
+
+### Improved
+
+- **m1f-scrape Canonical URL Logic**: Better handling with allowed_path
+  - Pages within allowed_path are now kept even if canonical points outside
+  - Respects user's intent to scrape content within allowed boundaries
+  - All scrapers (BeautifulSoup, HTTrack, Selectolax, Playwright) updated
+  - Added comprehensive test coverage for canonical/allowed_path interaction
 
 - **m1f-scrape Unlimited Pages Option**: Support for unlimited scraping
   - Changed default `max_pages` from 1000 to 10000 across all configurations
