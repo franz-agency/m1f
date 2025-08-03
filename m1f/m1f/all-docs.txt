@@ -838,6 +838,33 @@ and this project adheres to
   - Fixed test server to support subdirectory routing for comprehensive testing
   - Added integration and unit tests with proper mocking
 
+### Fixed
+
+- **m1f-scrape Canonical URL Logic**: Fixed canonical URL handling with allowed_path
+  - Pages within allowed_path are now kept even if canonical points outside
+  - Properly handles canonical URLs when both current and canonical are within allowed_path
+  - Fixed across all scrapers (BeautifulSoup, HTTrack, Selectolax, Playwright)
+  - Added comprehensive tests to verify the behavior
+
+### Improved
+
+- **m1f-scrape Parameter Help Text**: Clarified confusing CLI parameter descriptions
+  - `--ignore-canonical` now clearly states default behavior (pages with different canonical URLs are skipped)
+  - `--ignore-duplicates` help text clarified to explain default duplicate detection
+  - Better organization of parameters into logical groups
+
+- **m1f-scrape Test Coverage**: Created meaningful integration tests
+  - Real HTTP requests with local test server instead of mocks
+  - Tests that verify actual functionality, not just configuration:
+    - `test_ignore_get_params_actually_works` - Verifies URL normalization
+    - `test_canonical_url_with_allowed_path_real_behavior` - Tests canonical/allowed_path interaction
+    - `test_excluded_paths_actually_excludes` - Verifies paths are actually excluded
+    - `test_duplicate_content_detection_actually_works` - Tests content deduplication
+    - `test_max_depth_unlimited_actually_works` - Verifies unlimited depth crawling
+    - `test_timeout_actually_enforced` - Tests timeout enforcement
+  - Separate integration tests for each scraper backend
+  - Fixed test server to properly handle canonical parameter injection
+
 ### Added
 
 - **m1f-scrape Missing CLI Parameters**: Exposed configuration options in CLI
@@ -850,14 +877,14 @@ and this project adheres to
 - **m1f-scrape Unlimited Depth**: Support for unlimited crawl depth
   - `--max-depth` now accepts -1 for unlimited depth (similar to --max-pages)
   - All scrapers updated to handle unlimited depth correctly
-  - HTTrack and Scrapy use very large number (999999) internally
+  - HTTrack uses very large number (999999) internally
 
-- **m1f-scrape Enhanced Test Server**: Improved test server capabilities
-  - Query parameter support for testing `--ignore-get-params`
-  - Dynamic canonical URL injection via `?canonical=URL` parameter
-  - `/test/slow?delay=X` endpoint for timeout testing
-  - `/test/duplicate/ID` endpoints returning identical content
-  - Better support for comprehensive parameter testing
+### Removed
+
+- **m1f-scrape Scrapy Support**: Completely removed Scrapy scraper implementation
+  - Removed scrapy_scraper.py and all related tests
+  - Removed Scrapy from ScraperBackend enum
+  - Simplified scraper selection logic
 
 - **m1f-scrape Comprehensive Parameter Tests**: New test suite for all parameters
   - Tests for content filtering (ignore-get-params, ignore-canonical, ignore-duplicates)

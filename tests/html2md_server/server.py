@@ -193,14 +193,18 @@ def serve_page(page_name):
         if file_path.exists():
             # For testing canonical URLs, inject a canonical tag if requested
             if query_params.get("canonical"):
-                content = file_path.read_text()
-                canonical_url = query_params.get("canonical")
-                # Inject canonical tag into head
-                content = content.replace(
-                    "</head>",
-                    f'<link rel="canonical" href="{canonical_url}" />\n</head>',
-                )
-                return content
+                try:
+                    content = file_path.read_text()
+                    canonical_url = query_params.get("canonical")
+                    # Inject canonical tag into head
+                    content = content.replace(
+                        "</head>",
+                        f'<link rel="canonical" href="{canonical_url}" />\n</head>',
+                    )
+                    return content
+                except Exception as e:
+                    app.logger.error(f"Error injecting canonical tag: {e}")
+                    return f"Error processing canonical tag: {str(e)}", 500
 
             # For testing duplicate content with query params
             # The same content is returned regardless of ?tab=1, ?tab=2, etc.
@@ -234,6 +238,21 @@ def serve_page(page_name):
     # Check if it's a page that exists but isn't in metadata
     file_path = TEST_PAGES_DIR / f"{page_name}.html"
     if file_path.exists():
+        # Handle canonical parameter even for pages not in TEST_PAGES
+        if query_params.get("canonical"):
+            try:
+                content = file_path.read_text()
+                canonical_url = query_params.get("canonical")
+                # Inject canonical tag into head
+                content = content.replace(
+                    "</head>",
+                    f'<link rel="canonical" href="{canonical_url}" />\n</head>',
+                )
+                return content
+            except Exception as e:
+                app.logger.error(f"Error injecting canonical tag: {e}")
+                return f"Error processing canonical tag: {str(e)}", 500
+
         test_pages_abs = str(TEST_PAGES_DIR.absolute())
         return send_from_directory(test_pages_abs, f"{page_name}.html")
 

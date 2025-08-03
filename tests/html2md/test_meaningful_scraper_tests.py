@@ -115,7 +115,8 @@ class TestMeaningfulScraperFeatures:
     @pytest.mark.asyncio
     async def test_canonical_url_with_allowed_path_real_behavior(self, temp_dir):
         """Test that canonical URL + allowed_path interaction actually works."""
-        # Test the canonical logic directly by checking the _should_skip_canonical method
+        output_dir = Path(temp_dir) / "test_canonical_allowed"
+
         config = ScraperConfig(
             max_depth=0,
             max_pages=10,
@@ -127,22 +128,22 @@ class TestMeaningfulScraperFeatures:
 
         scraper = BeautifulSoupScraper(config)
 
-        # Test 1: Page in allowed_path with canonical outside should NOT be skipped
-        current_url = "http://localhost:8080/page/index"
-        canonical_url = "http://localhost:8080/"
+        async with scraper:
+            # Test 1: Page in allowed_path with canonical outside should NOT be skipped
+            url_in_allowed = "http://localhost:8080/page/m1f-documentation?canonical=http://localhost:8080/"
+            page = await scraper.scrape_url(url_in_allowed)
 
-        # The logic: if current is in allowed_path but canonical is outside, don't skip
-        from urllib.parse import urlparse
+            assert (
+                page is not None
+            ), "Page in allowed_path should be kept even if canonical points outside"
 
-        current_parsed = urlparse(current_url)
-        canonical_parsed = urlparse(canonical_url)
+            # Test 2: Page in allowed_path with canonical also in allowed_path but different
+            url_with_canonical_in_path = "http://localhost:8080/page/m1f-documentation?canonical=http://localhost:8080/page/html2md-documentation"
+            page2 = await scraper.scrape_url(url_with_canonical_in_path)
 
-        # Current is in /page/, canonical is not
-        assert current_parsed.path.startswith("/page/")
-        assert not canonical_parsed.path.startswith("/page/")
-
-        # This means the page should NOT be skipped (the user wants /page/ content)
-        # The actual implementation in beautifulsoup.py checks this correctly
+            assert (
+                page2 is None
+            ), "Page should be skipped if canonical differs and both are in allowed_path"
 
     @pytest.mark.asyncio
     async def test_excluded_paths_actually_excludes(self, temp_dir):
@@ -309,7 +310,9 @@ class TestMeaningfulScraperFeatures:
                 # Good, it timed out
                 elapsed = time.time() - start_time
                 assert elapsed < 5, f"Timeout took too long: {elapsed}s"
-                assert "timeout" in str(e).lower() or "timed out" in str(e).lower()
+                # Check exception type name as well since some timeout exceptions have empty string representation
+                exception_info = f"{type(e).__name__} {str(e)}".lower()
+                assert "timeout" in exception_info or "timed out" in exception_info
 
 
 if __name__ == "__main__":
