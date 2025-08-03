@@ -63,6 +63,8 @@ class CustomArgumentParser(argparse.ArgumentParser):
 def clear_urls_from_database(db_path: Path, pattern: str) -> None:
     """Clear URLs matching a pattern from the database.
     
+    Also clears the associated content checksums to ensure pages can be re-scraped.
+    
     Args:
         db_path: Path to the SQLite database
         pattern: Pattern to match URLs (uses SQL LIKE)
@@ -75,14 +77,21 @@ def clear_urls_from_database(db_path: Path, pattern: str) -> None:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
         
-        # First count how many URLs will be deleted
+        # First get the checksums of URLs to be deleted
+        cursor.execute(
+            "SELECT content_checksum FROM scraped_urls WHERE url LIKE ? AND content_checksum IS NOT NULL",
+            (f"%{pattern}%",)
+        )
+        checksums = [row[0] for row in cursor.fetchall()]
+        
+        # Count how many URLs will be deleted
         cursor.execute(
             "SELECT COUNT(*) FROM scraped_urls WHERE url LIKE ?",
             (f"%{pattern}%",)
         )
-        count = cursor.fetchone()[0]
+        url_count = cursor.fetchone()[0]
         
-        if count == 0:
+        if url_count == 0:
             warning(f"No URLs found matching pattern: {pattern}")
         else:
             # Delete the URLs
@@ -90,8 +99,22 @@ def clear_urls_from_database(db_path: Path, pattern: str) -> None:
                 "DELETE FROM scraped_urls WHERE url LIKE ?",
                 (f"%{pattern}%",)
             )
+            
+            # Delete associated checksums
+            checksum_count = 0
+            if checksums:
+                # Delete checksums one by one (SQLite doesn't support DELETE with IN and many values well)
+                for checksum in checksums:
+                    cursor.execute(
+                        "DELETE FROM content_checksums WHERE checksum = ?",
+                        (checksum,)
+                    )
+                    checksum_count += cursor.rowcount
+            
             conn.commit()
-            success(f"Cleared {count} URLs matching pattern: {pattern}")
+            success(f"Cleared {url_count} URLs matching pattern: {pattern}")
+            if checksum_count > 0:
+                info(f"Also cleared {checksum_count} associated content checksums")
         
         conn.close()
         
