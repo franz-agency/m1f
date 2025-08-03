@@ -317,9 +317,19 @@ class PlaywrightScraper(WebScraperBase):
 
         # Store the base path for subdirectory restriction
         # Use allowed_path if specified, otherwise use the start URL's path
+        allowed_domain = None
         if self.config.allowed_path:
-            base_path = self.config.allowed_path.rstrip("/")
-            logger.info(f"Restricting crawl to allowed path: {base_path}")
+            # Check if allowed_path is a full URL or just a path
+            if self.config.allowed_path.startswith(("http://", "https://")):
+                # It's a full URL - extract domain and path
+                parsed_allowed = urlparse(self.config.allowed_path)
+                allowed_domain = parsed_allowed.netloc
+                base_path = parsed_allowed.path.rstrip("/")
+                logger.info(f"Restricting crawl to URL: {allowed_domain}{base_path}")
+            else:
+                # It's just a path
+                base_path = self.config.allowed_path.rstrip("/")
+                logger.info(f"Restricting crawl to allowed path: {base_path}")
         else:
             base_path = parsed_start.path.rstrip("/")
             if base_path:
@@ -448,6 +458,16 @@ class PlaywrightScraper(WebScraperBase):
 
                             # Check subdirectory restriction (but always allow the start URL)
                             if base_path and link != start_url:
+                                # If allowed_path was a full URL, check domain too
+                                if (
+                                    allowed_domain
+                                    and parsed_url.netloc != allowed_domain
+                                ):
+                                    logger.debug(
+                                        f"Skipping {link} - different domain than allowed {allowed_domain}"
+                                    )
+                                    continue
+
                                 if (
                                     not parsed_url.path.startswith(base_path + "/")
                                     and parsed_url.path != base_path

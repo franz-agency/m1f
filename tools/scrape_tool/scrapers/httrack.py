@@ -271,12 +271,29 @@ class HTTrackScraper(WebScraperBase):
         # Add subdirectory restriction if path is specified
         # Use allowed_path if specified, otherwise use the URL's path
         if self.config.allowed_path:
-            allowed_path = self.config.allowed_path.rstrip("/")
-            logger.info(f"Restricting HTTrack crawl to allowed path: {allowed_path}")
-            # Allow the specified path and everything under it
-            cmd.extend([f"+*{parsed.netloc}{allowed_path}/*"])
-            # Exclude everything else on the same domain
-            cmd.extend([f"-*{parsed.netloc}/*"])
+            # Check if allowed_path is a full URL or just a path
+            if self.config.allowed_path.startswith(("http://", "https://")):
+                # It's a full URL - extract domain and path
+                parsed_allowed = urlparse(self.config.allowed_path)
+                allowed_domain = parsed_allowed.netloc
+                allowed_path = parsed_allowed.path.rstrip("/")
+                logger.info(
+                    f"Restricting HTTrack crawl to URL: {allowed_domain}{allowed_path}"
+                )
+                # Allow the specified URL and everything under it
+                cmd.extend([f"+*{allowed_domain}{allowed_path}/*"])
+                # Exclude everything else on that domain
+                cmd.extend([f"-*{allowed_domain}/*"])
+            else:
+                # It's just a path
+                allowed_path = self.config.allowed_path.rstrip("/")
+                logger.info(
+                    f"Restricting HTTrack crawl to allowed path: {allowed_path}"
+                )
+                # Allow the specified path and everything under it
+                cmd.extend([f"+*{parsed.netloc}{allowed_path}/*"])
+                # Exclude everything else on the same domain
+                cmd.extend([f"-*{parsed.netloc}/*"])
         elif base_path:
             logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
             # Allow the base path and everything under it

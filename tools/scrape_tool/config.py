@@ -54,7 +54,7 @@ class CrawlerConfig(BaseModel):
     )
     allowed_path: Optional[str] = Field(
         default=None,
-        description="Restrict crawling to this path and its subdirectories (e.g., /docs/)",
+        description="Restrict crawling to this path/URL and its subdirectories (e.g., /docs/ or https://example.com/docs/)",
     )
     excluded_paths: list[str] = Field(
         default_factory=list, description="URL paths to exclude from crawling"

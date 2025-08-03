@@ -282,9 +282,19 @@ class BeautifulSoupScraper(WebScraperBase):
 
         # Store the base path for subdirectory restriction
         # Use allowed_path if specified, otherwise use the start URL's path
+        allowed_domain = None
         if self.config.allowed_path:
-            base_path = self.config.allowed_path.rstrip("/")
-            logger.info(f"Restricting crawl to allowed path: {base_path}")
+            # Check if allowed_path is a full URL or just a path
+            if self.config.allowed_path.startswith(("http://", "https://")):
+                # It's a full URL - extract domain and path
+                parsed_allowed = urlparse(self.config.allowed_path)
+                allowed_domain = parsed_allowed.netloc
+                base_path = parsed_allowed.path.rstrip("/")
+                logger.info(f"Restricting crawl to URL: {allowed_domain}{base_path}")
+            else:
+                # It's just a path
+                base_path = self.config.allowed_path.rstrip("/")
+                logger.info(f"Restricting crawl to allowed path: {base_path}")
         else:
             base_path = start_parsed.path.rstrip("/")
             if base_path:
@@ -319,9 +329,10 @@ class BeautifulSoupScraper(WebScraperBase):
                 logger.info(
                     f"Found {len(to_visit)} URLs to visit after analyzing scraped pages"
                 )
+            pages_scraped = 0  # Track actual pages scraped, not just URLs attempted
+
             while to_visit and (
-                self.config.max_pages == -1
-                or len(self._visited_urls) < self.config.max_pages
+                self.config.max_pages == -1 or pages_scraped < self.config.max_pages
             ):
                 # Get next URL
                 url = to_visit.pop()
@@ -338,6 +349,14 @@ class BeautifulSoupScraper(WebScraperBase):
                 # Check subdirectory restriction (but always allow the start URL)
                 if base_path and url != start_url:
                     url_parsed = urlparse(url)
+
+                    # If allowed_path was a full URL, check domain too
+                    if allowed_domain and url_parsed.netloc != allowed_domain:
+                        logger.debug(
+                            f"Skipping {url} - different domain than allowed {allowed_domain}"
+                        )
+                        continue
+
                     if (
                         not url_parsed.path.startswith(base_path + "/")
                         and url_parsed.path != base_path
@@ -375,6 +394,7 @@ class BeautifulSoupScraper(WebScraperBase):
                         continue
 
                     yield page
+                    pages_scraped += 1  # Only increment for successfully scraped pages
 
                     # Extract links if not at max depth
                     await self.populate_queue_from_content(
