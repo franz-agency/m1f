@@ -602,30 +602,41 @@ class WebCrawler:
         Returns:
             Dictionary containing:
             - site_dir: Path to site directory
-            - scraped_urls: List of all scraped URLs
-            - errors: List of errors encountered
-            - total_pages: Total number of pages scraped
+            - scraped_urls: List of URLs scraped in this session
+            - errors: List of errors encountered in this session
+            - total_pages: Total number of pages scraped in this session
+            - session_files: List of files created in this session
         """
         try:
             # Run async crawl using asyncio.run()
             result = asyncio.run(self.crawl(start_url, output_dir))
             
-            # Get scraped URLs from database
-            db_path = output_dir / "scrape_tracker.db"
-            scraped_urls = []
-            if db_path.exists():
-                conn = sqlite3.connect(str(db_path))
-                cursor = conn.cursor()
-                cursor.execute("SELECT url FROM scraped_urls WHERE error IS NULL")
-                scraped_urls = [row[0] for row in cursor.fetchall()]
-                cursor.close()
-                conn.close()
+            # Extract URLs from the pages scraped in this session
+            pages = result.get("pages", [])
+            scraped_urls = [page.url for page in pages]
+            
+            # Get list of files created in this session
+            session_files = []
+            for page in pages:
+                # Reconstruct the file path for each scraped page
+                parsed_url = urlparse(page.url)
+                domain = parsed_url.netloc
+                path = parsed_url.path.strip("/")
+                if not path or path.endswith("/"):
+                    path = path + "index.html"
+                elif not path.endswith(".html"):
+                    path = path + ".html"
+                file_path = result["output_dir"] / domain / path
+                if file_path.exists():
+                    session_files.append(file_path)
             
             return {
                 "site_dir": result["output_dir"],
                 "scraped_urls": scraped_urls,
                 "errors": result.get("errors", []),
-                "total_pages": result.get("total_pages", 0),
+                "total_pages": len(pages),
+                "pages_scraped": result.get("pages_scraped", len(pages)),
+                "session_files": session_files,
             }
         except KeyboardInterrupt:
             # Re-raise to let CLI handle it gracefully

@@ -504,20 +504,18 @@ def main() -> None:
         site_dir = crawl_result["site_dir"]
         scraped_urls = crawl_result.get("scraped_urls", [])
         errors = crawl_result.get("errors", [])
+        session_files = crawl_result.get("session_files", [])
 
-        # Find all downloaded HTML files
-        html_files = crawler.find_downloaded_files(site_dir)
-
-        # Calculate statistics
+        # Calculate statistics for this session only
         duration = time.time() - start_time
-        total_urls = len(scraped_urls)
-        successful_urls = total_urls - len(errors)
+        total_urls = len(scraped_urls) + len(errors)
+        successful_urls = len(scraped_urls)
         success_rate = (successful_urls / total_urls * 100) if total_urls > 0 else 0
         avg_time_per_page = duration / total_urls if total_urls > 0 else 0
 
         # Display summary statistics
         header("\n" + "=" * 60)
-        header("Scraping Summary")
+        header("Scraping Summary (Current Session)")
         header("=" * 60)
         success(f"✓ Successfully scraped {successful_urls} pages")
         if errors:
@@ -527,7 +525,7 @@ def main() -> None:
         info(f"Total duration: {duration:.1f} seconds")
         info(f"Average time per page: {avg_time_per_page:.2f} seconds")
         info(f"Output directory: {site_dir}")
-        info(f"HTML files saved: {len(html_files)}")
+        info(f"HTML files saved in this session: {len(session_files)}")
 
         # Save URLs to file if requested
         if args.save_urls:
@@ -539,36 +537,39 @@ def main() -> None:
             except Exception as e:
                 error(f"Failed to save URLs to file: {e}")
 
-        # Save file list if requested
+        # Save file list if requested (for this session only)
         if args.save_files:
             try:
                 with open(args.save_files, 'w', encoding='utf-8') as f:
-                    for html_file in sorted(html_files):
+                    for html_file in sorted(session_files):
                         f.write(f"{html_file}\n")
-                success(f"Saved {len(html_files)} file paths to {args.save_files}")
+                success(f"Saved {len(session_files)} file paths to {args.save_files}")
             except Exception as e:
                 error(f"Failed to save file list: {e}")
 
         # List downloaded files if requested (with limit for verbose output)
         if args.list_files or config.verbose:
-            info("\nDownloaded files:")
-            files_to_show = sorted(html_files)
-            max_files_to_show = 30
-            
-            if len(files_to_show) > max_files_to_show:
-                # Show first 15 and last 15 files
-                for html_file in files_to_show[:15]:
-                    rel_path = html_file.relative_to(site_dir)
-                    info(f"  - {rel_path}")
-                info(f"  ... ({len(files_to_show) - max_files_to_show} more files) ...")
-                for html_file in files_to_show[-15:]:
-                    rel_path = html_file.relative_to(site_dir)
-                    info(f"  - {rel_path}")
-                info(f"\nTotal: {len(files_to_show)} files (showing first 15 and last 15)")
+            if session_files:
+                info("\nDownloaded files in this session:")
+                files_to_show = sorted(session_files)
+                max_files_to_show = 30
+                
+                if len(files_to_show) > max_files_to_show:
+                    # Show first 15 and last 15 files
+                    for html_file in files_to_show[:15]:
+                        rel_path = html_file.relative_to(site_dir)
+                        info(f"  - {rel_path}")
+                    info(f"  ... ({len(files_to_show) - max_files_to_show} more files) ...")
+                    for html_file in files_to_show[-15:]:
+                        rel_path = html_file.relative_to(site_dir)
+                        info(f"  - {rel_path}")
+                    info(f"\nTotal: {len(files_to_show)} files downloaded in this session")
+                else:
+                    for html_file in files_to_show:
+                        rel_path = html_file.relative_to(site_dir)
+                        info(f"  - {rel_path}")
             else:
-                for html_file in files_to_show:
-                    rel_path = html_file.relative_to(site_dir)
-                    info(f"  - {rel_path}")
+                info("\nNo new files downloaded in this session (all URLs were already scraped)")
 
     except KeyboardInterrupt:
         warning("⚠️  Scraping interrupted by user")
