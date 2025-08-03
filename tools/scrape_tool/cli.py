@@ -22,19 +22,42 @@ from pathlib import Path
 from typing import Optional
 
 # Use unified colorama module
-from ..shared.colors import (
-    Colors,
-    success,
-    error,
-    warning,
-    info,
-    header,
-    COLORAMA_AVAILABLE,
-)
+try:
+    from ..shared.colors import (
+        Colors,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+        ColoredHelpFormatter,
+    )
+except ImportError:
+    COLORAMA_AVAILABLE = False
+
+    # Fallback formatter
+    class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        pass
+
 
 from . import __version__
 from .config import Config, ScraperBackend
 from .crawlers import WebCrawler
+
+
+class CustomArgumentParser(argparse.ArgumentParser):
+    """Custom argument parser with better error messages."""
+
+    def error(self, message: str) -> None:
+        """Display error message with colors if available."""
+        error_msg = f"ERROR: {message}"
+        if COLORAMA_AVAILABLE:
+            error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
+        self.print_usage(sys.stderr)
+        print(f"\n{error_msg}", file=sys.stderr)
+        print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
+        self.exit(2)
 
 
 def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
@@ -114,24 +137,40 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
         error(f"Error reading database: {e}")
 
 
-def create_parser() -> argparse.ArgumentParser:
+def create_parser() -> CustomArgumentParser:
     """Create the argument parser."""
-    parser = argparse.ArgumentParser(
+    description = """m1f-scrape - Web Scraper Tool
+============================
+Download websites for offline viewing with support for multiple scraper backends.
+
+Perfect for:
+• Creating offline documentation mirrors
+• Archiving websites for research
+• Converting HTML sites to Markdown with m1f-html2md
+• Building AI training datasets"""
+
+    epilog = """Examples:
+  %(prog)s https://example.com/docs -o ./html
+  %(prog)s https://example.com/docs -o ./html --max-pages 100
+  %(prog)s https://example.com/blog -o ./html --allowed-path /blog/2024/
+  %(prog)s https://example.com -o ./html --scraper httrack
+  %(prog)s --db-info -o ./html  # Show scraping statistics
+
+For more information, see the documentation."""
+
+    parser = CustomArgumentParser(
         prog="m1f-scrape",
-        description="Download websites for offline viewing",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=description,
+        epilog=epilog,
+        formatter_class=ColoredHelpFormatter,
+        add_help=True,
     )
 
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
-    )
-
-    # Global options
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable verbose output"
-    )
-    parser.add_argument(
-        "-q", "--quiet", action="store_true", help="Suppress all output except errors"
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show program version and exit",
     )
 
     # Main arguments
@@ -139,11 +178,25 @@ def create_parser() -> argparse.ArgumentParser:
         "url", nargs="?", help="URL to scrape (not needed for database queries)"
     )
     parser.add_argument(
-        "-o", "--output", type=Path, required=True, help="Output directory"
+        "-o",
+        "--output",
+        type=Path,
+        required=True,
+        help="Output directory for downloaded files",
     )
 
-    # Scraper options
-    parser.add_argument(
+    # Output control group
+    output_group = parser.add_argument_group("Output Control")
+    output_group.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose output"
+    )
+    output_group.add_argument(
+        "-q", "--quiet", action="store_true", help="Suppress all output except errors"
+    )
+
+    # Scraper options group
+    scraper_group = parser.add_argument_group("Scraper Options")
+    scraper_group.add_argument(
         "--scraper",
         type=str,
         choices=[
@@ -152,87 +205,121 @@ def create_parser() -> argparse.ArgumentParser:
             "bs4",
             "selectolax",
             "httpx",
-            "scrapy",
             "playwright",
         ],
         default="beautifulsoup",
         help="Web scraper backend to use (default: beautifulsoup)",
     )
-
-    parser.add_argument(
+    scraper_group.add_argument(
         "--scraper-config",
         type=Path,
         help="Path to scraper-specific configuration file (YAML/JSON)",
     )
 
-    # Crawl options
-    parser.add_argument("--max-depth", type=int, default=5, help="Maximum crawl depth")
-    parser.add_argument(
+    # Crawl configuration group
+    crawl_group = parser.add_argument_group("Crawl Configuration")
+    crawl_group.add_argument(
+        "--max-depth",
+        type=int,
+        default=5,
+        help="Maximum crawl depth (default: 5, use -1 for unlimited)",
+    )
+    crawl_group.add_argument(
         "--max-pages",
         type=int,
         default=10000,
-        help="Maximum pages to crawl (-1 for unlimited)",
+        help="Maximum pages to crawl (default: 10000, use -1 for unlimited)",
     )
-    parser.add_argument(
+    crawl_group.add_argument(
         "--allowed-path",
         type=str,
         help="Restrict crawling to this path and subdirectories (e.g., /docs/)",
     )
+    crawl_group.add_argument(
+        "--excluded-paths",
+        type=str,
+        nargs="*",
+        metavar="PATH",
+        help="URL paths to exclude from crawling (can specify multiple)",
+    )
 
-    # Request options
-    parser.add_argument(
+    # Request options group
+    request_group = parser.add_argument_group("Request Options")
+    request_group.add_argument(
         "--request-delay",
         type=float,
         default=15.0,
-        help="Delay between requests in seconds (default: 15.0 for Cloudflare protection)",
+        help="Delay between requests in seconds (default: 15.0)",
     )
-
-    parser.add_argument(
+    request_group.add_argument(
         "--concurrent-requests",
         type=int,
         default=2,
-        help="Number of concurrent requests (default: 2 for Cloudflare protection)",
+        help="Number of concurrent requests (default: 2)",
+    )
+    request_group.add_argument(
+        "--user-agent", type=str, help="Custom user agent string"
+    )
+    request_group.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="Request timeout in seconds (default: 30)",
+    )
+    request_group.add_argument(
+        "--retry-count",
+        type=int,
+        default=3,
+        help="Number of retries for failed requests (default: 3)",
     )
 
-    parser.add_argument("--user-agent", type=str, help="Custom user agent string")
-
-    parser.add_argument(
+    # Content filtering group
+    filter_group = parser.add_argument_group("Content Filtering")
+    filter_group.add_argument(
         "--ignore-get-params",
         action="store_true",
-        help="Ignore GET parameters in URLs (e.g., ?tab=linux) to avoid duplicate content",
+        help="Strip query parameters from URLs (treats /page?tab=1 and /page?tab=2 as duplicates)",
     )
-
-    parser.add_argument(
+    filter_group.add_argument(
         "--ignore-canonical",
         action="store_true",
-        help="Ignore canonical URL tags (by default, pages with different canonical URLs are skipped)",
+        help="Disable canonical URL deduplication (keeps pages even if they specify a different canonical URL)",
     )
-
-    parser.add_argument(
+    filter_group.add_argument(
         "--ignore-duplicates",
         action="store_true",
-        help="Ignore duplicate content detection (by default, pages with identical text are skipped)",
+        help="Disable content-based deduplication (keeps pages even if their content is identical)",
     )
 
-    # Output options
-    parser.add_argument(
+    # Display options group
+    display_group = parser.add_argument_group("Display Options")
+    display_group.add_argument(
         "--list-files",
         action="store_true",
         help="List all downloaded files after completion",
     )
 
-    # Database query options
-    parser.add_argument(
+    # Security options group
+    security_group = parser.add_argument_group("Security Options")
+    security_group.add_argument(
+        "--disable-ssrf-check",
+        action="store_true",
+        help="Disable SSRF vulnerability checks (allows crawling private IPs)",
+    )
+
+    # Database options group
+    db_group = parser.add_argument_group("Database Options")
+    db_group.add_argument(
         "--show-db-stats",
         action="store_true",
         help="Show scraping statistics from the database",
     )
-    parser.add_argument(
+    db_group.add_argument(
         "--show-errors",
         action="store_true",
         help="Show URLs that had errors during scraping",
     )
-    parser.add_argument(
+    db_group.add_argument(
         "--show-scraped-urls",
         action="store_true",
         help="List all scraped URLs from the database",
@@ -251,10 +338,15 @@ def main() -> None:
     config.crawler.max_depth = args.max_depth
     config.crawler.max_pages = args.max_pages
     config.crawler.allowed_path = args.allowed_path
+    if args.excluded_paths:
+        config.crawler.excluded_paths = args.excluded_paths
     config.crawler.scraper_backend = ScraperBackend(args.scraper)
     config.crawler.request_delay = args.request_delay
     config.crawler.concurrent_requests = args.concurrent_requests
+    config.crawler.timeout = args.timeout
+    config.crawler.retry_count = args.retry_count
     config.crawler.respect_robots_txt = True  # Always respect robots.txt
+    config.crawler.check_ssrf = not args.disable_ssrf_check
 
     if args.user_agent:
         config.crawler.user_agent = args.user_agent

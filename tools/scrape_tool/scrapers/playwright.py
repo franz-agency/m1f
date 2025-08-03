@@ -376,6 +376,41 @@ class PlaywrightScraper(WebScraperBase):
                     title = await page.title()
                     metadata = await self._extract_metadata(page)
 
+                    # Check canonical URL if enabled
+                    if self.config.check_canonical and metadata.get("canonical"):
+                        canonical_url = metadata["canonical"]
+                        normalized_current = self._normalize_url(page.url)
+                        normalized_canonical = self._normalize_url(canonical_url)
+
+                        if normalized_current != normalized_canonical:
+                            # Check if we should respect the canonical URL
+                            should_skip = True
+
+                            if self.config.allowed_path:
+                                # Parse URLs to check paths
+                                current_parsed = urlparse(normalized_current)
+                                canonical_parsed = urlparse(normalized_canonical)
+
+                                # If current URL is within allowed_path but canonical is outside,
+                                # don't skip - the user explicitly wants content from allowed_path
+                                if current_parsed.path.startswith(
+                                    self.config.allowed_path
+                                ):
+                                    if not canonical_parsed.path.startswith(
+                                        self.config.allowed_path
+                                    ):
+                                        should_skip = False
+                                        logger.info(
+                                            f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
+                                        )
+
+                            if should_skip:
+                                logger.info(
+                                    f"Skipping {url} - canonical URL differs: {canonical_url}"
+                                )
+                                visited.add(url)
+                                return None  # Skip this page
+
                     # Create scraped page
                     scraped_page = ScrapedPage(
                         url=page.url,
@@ -388,7 +423,7 @@ class PlaywrightScraper(WebScraperBase):
                     )
 
                     # Extract links if not at max depth
-                    if depth < self.config.max_depth:
+                    if self.config.max_depth == -1 or depth < self.config.max_depth:
                         # Get all links using JavaScript
                         links = await page.evaluate(
                             """

@@ -146,10 +146,30 @@ class SelectolaxScraper(WebScraperBase):
                     normalized_canonical = self._normalize_url(canonical_url)
 
                     if normalized_url != normalized_canonical:
-                        logger.info(
-                            f"Skipping {url} - canonical URL differs: {canonical_url}"
-                        )
-                        return None  # Return None to indicate skip, not an error
+                        # Check if we should respect the canonical URL
+                        should_skip = True
+
+                        if self.config.allowed_path:
+                            # Parse URLs to check paths
+                            current_parsed = urlparse(normalized_url)
+                            canonical_parsed = urlparse(normalized_canonical)
+
+                            # If current URL is within allowed_path but canonical is outside,
+                            # don't skip - the user explicitly wants content from allowed_path
+                            if current_parsed.path.startswith(self.config.allowed_path):
+                                if not canonical_parsed.path.startswith(
+                                    self.config.allowed_path
+                                ):
+                                    should_skip = False
+                                    logger.info(
+                                        f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
+                                    )
+
+                        if should_skip:
+                            logger.info(
+                                f"Skipping {url} - canonical URL differs: {canonical_url}"
+                            )
+                            return None  # Return None to indicate skip, not an error
 
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
@@ -284,7 +304,7 @@ class SelectolaxScraper(WebScraperBase):
                         return None
 
                     # Extract links if not at max depth
-                    if depth < self.config.max_depth:
+                    if self.config.max_depth == -1 or depth < self.config.max_depth:
                         html_parser = HTMLParser(page.content)
 
                         for link in html_parser.css("a[href]"):

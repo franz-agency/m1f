@@ -20,8 +20,16 @@ A modern Flask server for testing mf1-html2md conversion with challenging HTML p
 
 import os
 import sys
+import time
 from pathlib import Path
-from flask import Flask, render_template, send_from_directory, jsonify, send_file
+from flask import (
+    Flask,
+    render_template,
+    send_from_directory,
+    jsonify,
+    send_file,
+    request,
+)
 from flask_cors import CORS
 import logging
 from datetime import datetime
@@ -174,12 +182,30 @@ def index():
 @app.route("/page/<page_name>")
 def serve_page(page_name):
     """Serve individual test pages as static files."""
+    # Handle query parameters for testing --ignore-get-params
+    query_params = request.args
+
     # Check if page exists in our configuration
     if page_name in TEST_PAGES:
         template_file = f"{page_name}.html"
         file_path = TEST_PAGES_DIR / template_file
 
         if file_path.exists():
+            # For testing canonical URLs, inject a canonical tag if requested
+            if query_params.get("canonical"):
+                content = file_path.read_text()
+                canonical_url = query_params.get("canonical")
+                # Inject canonical tag into head
+                content = content.replace(
+                    "</head>",
+                    f'<link rel="canonical" href="{canonical_url}" />\n</head>',
+                )
+                return content
+
+            # For testing duplicate content with query params
+            # The same content is returned regardless of ?tab=1, ?tab=2, etc.
+            # This helps test --ignore-get-params functionality
+
             # Get absolute path for the test_pages directory
             test_pages_abs = str(TEST_PAGES_DIR.absolute())
             # Serve as static file to avoid Jinja2 template parsing
@@ -264,6 +290,39 @@ def api_all_pages():
             "url": page_info["url_path"],
         }
     return jsonify(result)
+
+
+@app.route("/test/slow")
+def test_slow_response():
+    """Test endpoint that responds slowly (for timeout testing)."""
+    delay = request.args.get("delay", "10")
+    try:
+        delay_seconds = float(delay)
+        time.sleep(delay_seconds)
+        return f"Response after {delay_seconds} seconds"
+    except ValueError:
+        return "Invalid delay parameter", 400
+
+
+@app.route("/test/duplicate/<int:page_id>")
+def test_duplicate_content(page_id):
+    """Test endpoint that returns identical content for different URLs."""
+    # Always return the same content regardless of page_id
+    # This helps test --ignore-duplicates functionality
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Duplicate Content Test</title>
+    </head>
+    <body>
+        <h1>This content is identical across all page IDs</h1>
+        <p>Whether you access /test/duplicate/1 or /test/duplicate/2 or any other ID,
+        you will always get this exact same content. This is useful for testing
+        duplicate content detection.</p>
+    </body>
+    </html>
+    """
 
 
 @app.route("/static/<path:path>")

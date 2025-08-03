@@ -4068,7 +4068,7 @@ pytest -n auto             # Use all CPU cores
 
 #### HTML2MD Tests
 - **Conversion**: HTML to Markdown accuracy
-- **Scrapers**: BeautifulSoup, Scrapy, Playwright
+- **Scrapers**: BeautifulSoup, Playwright
 - **AI Integration**: Claude-powered optimization
 - **Local Processing**: File system operations
 
@@ -31248,19 +31248,42 @@ from pathlib import Path
 from typing import Optional
 
 # Use unified colorama module
-from ..shared.colors import (
-    Colors,
-    success,
-    error,
-    warning,
-    info,
-    header,
-    COLORAMA_AVAILABLE,
-)
+try:
+    from ..shared.colors import (
+        Colors,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+        ColoredHelpFormatter,
+    )
+except ImportError:
+    COLORAMA_AVAILABLE = False
+
+    # Fallback formatter
+    class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        pass
+
 
 from . import __version__
 from .config import Config, ScraperBackend
 from .crawlers import WebCrawler
+
+
+class CustomArgumentParser(argparse.ArgumentParser):
+    """Custom argument parser with better error messages."""
+
+    def error(self, message: str) -> None:
+        """Display error message with colors if available."""
+        error_msg = f"ERROR: {message}"
+        if COLORAMA_AVAILABLE:
+            error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
+        self.print_usage(sys.stderr)
+        print(f"\n{error_msg}", file=sys.stderr)
+        print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
+        self.exit(2)
 
 
 def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
@@ -31340,24 +31363,40 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
         error(f"Error reading database: {e}")
 
 
-def create_parser() -> argparse.ArgumentParser:
+def create_parser() -> CustomArgumentParser:
     """Create the argument parser."""
-    parser = argparse.ArgumentParser(
+    description = """m1f-scrape - Web Scraper Tool
+============================
+Download websites for offline viewing with support for multiple scraper backends.
+
+Perfect for:
+• Creating offline documentation mirrors
+• Archiving websites for research
+• Converting HTML sites to Markdown with m1f-html2md
+• Building AI training datasets"""
+
+    epilog = """Examples:
+  %(prog)s https://example.com/docs -o ./html
+  %(prog)s https://example.com/docs -o ./html --max-pages 100
+  %(prog)s https://example.com/blog -o ./html --allowed-path /blog/2024/
+  %(prog)s https://example.com -o ./html --scraper httrack
+  %(prog)s --db-info -o ./html  # Show scraping statistics
+
+For more information, see the documentation."""
+
+    parser = CustomArgumentParser(
         prog="m1f-scrape",
-        description="Download websites for offline viewing",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=description,
+        epilog=epilog,
+        formatter_class=ColoredHelpFormatter,
+        add_help=True,
     )
 
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
-    )
-
-    # Global options
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable verbose output"
-    )
-    parser.add_argument(
-        "-q", "--quiet", action="store_true", help="Suppress all output except errors"
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show program version and exit",
     )
 
     # Main arguments
@@ -31365,11 +31404,25 @@ def create_parser() -> argparse.ArgumentParser:
         "url", nargs="?", help="URL to scrape (not needed for database queries)"
     )
     parser.add_argument(
-        "-o", "--output", type=Path, required=True, help="Output directory"
+        "-o",
+        "--output",
+        type=Path,
+        required=True,
+        help="Output directory for downloaded files",
     )
 
-    # Scraper options
-    parser.add_argument(
+    # Output control group
+    output_group = parser.add_argument_group("Output Control")
+    output_group.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose output"
+    )
+    output_group.add_argument(
+        "-q", "--quiet", action="store_true", help="Suppress all output except errors"
+    )
+
+    # Scraper options group
+    scraper_group = parser.add_argument_group("Scraper Options")
+    scraper_group.add_argument(
         "--scraper",
         type=str,
         choices=[
@@ -31378,87 +31431,121 @@ def create_parser() -> argparse.ArgumentParser:
             "bs4",
             "selectolax",
             "httpx",
-            "scrapy",
             "playwright",
         ],
         default="beautifulsoup",
         help="Web scraper backend to use (default: beautifulsoup)",
     )
-
-    parser.add_argument(
+    scraper_group.add_argument(
         "--scraper-config",
         type=Path,
         help="Path to scraper-specific configuration file (YAML/JSON)",
     )
 
-    # Crawl options
-    parser.add_argument("--max-depth", type=int, default=5, help="Maximum crawl depth")
-    parser.add_argument(
+    # Crawl configuration group
+    crawl_group = parser.add_argument_group("Crawl Configuration")
+    crawl_group.add_argument(
+        "--max-depth",
+        type=int,
+        default=5,
+        help="Maximum crawl depth (default: 5, use -1 for unlimited)",
+    )
+    crawl_group.add_argument(
         "--max-pages",
         type=int,
         default=10000,
-        help="Maximum pages to crawl (-1 for unlimited)",
+        help="Maximum pages to crawl (default: 10000, use -1 for unlimited)",
     )
-    parser.add_argument(
+    crawl_group.add_argument(
         "--allowed-path",
         type=str,
         help="Restrict crawling to this path and subdirectories (e.g., /docs/)",
     )
+    crawl_group.add_argument(
+        "--excluded-paths",
+        type=str,
+        nargs="*",
+        metavar="PATH",
+        help="URL paths to exclude from crawling (can specify multiple)",
+    )
 
-    # Request options
-    parser.add_argument(
+    # Request options group
+    request_group = parser.add_argument_group("Request Options")
+    request_group.add_argument(
         "--request-delay",
         type=float,
         default=15.0,
-        help="Delay between requests in seconds (default: 15.0 for Cloudflare protection)",
+        help="Delay between requests in seconds (default: 15.0)",
     )
-
-    parser.add_argument(
+    request_group.add_argument(
         "--concurrent-requests",
         type=int,
         default=2,
-        help="Number of concurrent requests (default: 2 for Cloudflare protection)",
+        help="Number of concurrent requests (default: 2)",
+    )
+    request_group.add_argument(
+        "--user-agent", type=str, help="Custom user agent string"
+    )
+    request_group.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="Request timeout in seconds (default: 30)",
+    )
+    request_group.add_argument(
+        "--retry-count",
+        type=int,
+        default=3,
+        help="Number of retries for failed requests (default: 3)",
     )
 
-    parser.add_argument("--user-agent", type=str, help="Custom user agent string")
-
-    parser.add_argument(
+    # Content filtering group
+    filter_group = parser.add_argument_group("Content Filtering")
+    filter_group.add_argument(
         "--ignore-get-params",
         action="store_true",
-        help="Ignore GET parameters in URLs (e.g., ?tab=linux) to avoid duplicate content",
+        help="Strip query parameters from URLs (treats /page?tab=1 and /page?tab=2 as duplicates)",
     )
-
-    parser.add_argument(
+    filter_group.add_argument(
         "--ignore-canonical",
         action="store_true",
-        help="Ignore canonical URL tags (by default, pages with different canonical URLs are skipped)",
+        help="Disable canonical URL deduplication (keeps pages even if they specify a different canonical URL)",
     )
-
-    parser.add_argument(
+    filter_group.add_argument(
         "--ignore-duplicates",
         action="store_true",
-        help="Ignore duplicate content detection (by default, pages with identical text are skipped)",
+        help="Disable content-based deduplication (keeps pages even if their content is identical)",
     )
 
-    # Output options
-    parser.add_argument(
+    # Display options group
+    display_group = parser.add_argument_group("Display Options")
+    display_group.add_argument(
         "--list-files",
         action="store_true",
         help="List all downloaded files after completion",
     )
 
-    # Database query options
-    parser.add_argument(
+    # Security options group
+    security_group = parser.add_argument_group("Security Options")
+    security_group.add_argument(
+        "--disable-ssrf-check",
+        action="store_true",
+        help="Disable SSRF vulnerability checks (allows crawling private IPs)",
+    )
+
+    # Database options group
+    db_group = parser.add_argument_group("Database Options")
+    db_group.add_argument(
         "--show-db-stats",
         action="store_true",
         help="Show scraping statistics from the database",
     )
-    parser.add_argument(
+    db_group.add_argument(
         "--show-errors",
         action="store_true",
         help="Show URLs that had errors during scraping",
     )
-    parser.add_argument(
+    db_group.add_argument(
         "--show-scraped-urls",
         action="store_true",
         help="List all scraped URLs from the database",
@@ -31477,10 +31564,15 @@ def main() -> None:
     config.crawler.max_depth = args.max_depth
     config.crawler.max_pages = args.max_pages
     config.crawler.allowed_path = args.allowed_path
+    if args.excluded_paths:
+        config.crawler.excluded_paths = args.excluded_paths
     config.crawler.scraper_backend = ScraperBackend(args.scraper)
     config.crawler.request_delay = args.request_delay
     config.crawler.concurrent_requests = args.concurrent_requests
+    config.crawler.timeout = args.timeout
+    config.crawler.retry_count = args.retry_count
     config.crawler.respect_robots_txt = True  # Always respect robots.txt
+    config.crawler.check_ssrf = not args.disable_ssrf_check
 
     if args.user_agent:
         config.crawler.user_agent = args.user_agent
@@ -31599,14 +31691,18 @@ class ScraperBackend(str, Enum):
     BS4 = "bs4"  # Alias for beautifulsoup
     SELECTOLAX = "selectolax"
     HTTPX = "httpx"
-    SCRAPY = "scrapy"
     PLAYWRIGHT = "playwright"
 
 
 class CrawlerConfig(BaseModel):
     """Configuration for web crawler."""
 
-    max_depth: int = Field(default=5, ge=1, le=20, description="Maximum crawl depth")
+    max_depth: int = Field(
+        default=5,
+        ge=-1,
+        le=1000,
+        description="Maximum crawl depth (-1 for unlimited)",
+    )
     max_pages: int = Field(
         default=10000,
         ge=-1,
@@ -34509,13 +34605,7 @@ except ImportError:
     SELECTOLAX_AVAILABLE = False
     SelectolaxScraper = None
 
-try:
-    from .scrapy_scraper import ScrapyScraper
-
-    SCRAPY_AVAILABLE = True
-except ImportError:
-    SCRAPY_AVAILABLE = False
-    ScrapyScraper = None
+# Scrapy removed - use other scrapers instead
 
 try:
     from .playwright import PlaywrightScraper
@@ -34534,7 +34624,6 @@ __all__ = [
     "BeautifulSoupScraper",
     "HTTrackScraper",
     "SelectolaxScraper",
-    "ScrapyScraper",
     "PlaywrightScraper",
 ]
 
@@ -34550,8 +34639,6 @@ if SELECTOLAX_AVAILABLE:
     SCRAPER_REGISTRY["selectolax"] = SelectolaxScraper
     SCRAPER_REGISTRY["httpx"] = SelectolaxScraper  # Alias
 
-if SCRAPY_AVAILABLE:
-    SCRAPER_REGISTRY["scrapy"] = ScrapyScraper
 
 if PLAYWRIGHT_AVAILABLE:
     SCRAPER_REGISTRY["playwright"] = PlaywrightScraper
@@ -35062,12 +35149,32 @@ class BeautifulSoupScraper(WebScraperBase):
                             normalized_canonical = self._normalize_url(canonical_url)
 
                             if normalized_url != normalized_canonical:
-                                logger.info(
-                                    f"Skipping {url} - canonical URL differs: {canonical_url}"
-                                )
-                                return (
-                                    None  # Return None to indicate skip, not an error
-                                )
+                                # Check if we should respect the canonical URL
+                                should_skip = True
+
+                                if self.config.allowed_path:
+                                    # Parse URLs to check paths
+                                    current_parsed = urlparse(normalized_url)
+                                    canonical_parsed = urlparse(normalized_canonical)
+
+                                    # If current URL is within allowed_path but canonical is outside,
+                                    # don't skip - the user explicitly wants content from allowed_path
+                                    if current_parsed.path.startswith(
+                                        self.config.allowed_path
+                                    ):
+                                        if not canonical_parsed.path.startswith(
+                                            self.config.allowed_path
+                                        ):
+                                            should_skip = False
+                                            logger.info(
+                                                f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
+                                            )
+
+                                if should_skip:
+                                    logger.info(
+                                        f"Skipping {url} - canonical URL differs: {canonical_url}"
+                                    )
+                                    return None  # Return None to indicate skip, not an error
 
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
@@ -35139,7 +35246,7 @@ class BeautifulSoupScraper(WebScraperBase):
             depth_map: Mapping of URLs to their depth
             current_depth: Current crawl depth
         """
-        if current_depth < self.config.max_depth:
+        if self.config.max_depth == -1 or current_depth < self.config.max_depth:
             new_urls = self._extract_links(content, url)
             for new_url in new_urls:
                 normalized_new_url = self._normalize_url(new_url)
@@ -35240,7 +35347,10 @@ class BeautifulSoupScraper(WebScraperBase):
 
                 # Check depth
                 current_depth = depth_map.get(url, 0)
-                if current_depth > self.config.max_depth:
+                if (
+                    self.config.max_depth != -1
+                    and current_depth > self.config.max_depth
+                ):
                     logger.debug(
                         f"Skipping {url} - exceeds max depth {self.config.max_depth}"
                     )
@@ -35619,7 +35729,7 @@ class HTTrackScraper(WebScraperBase):
             start_url,  # URL is validated by validate_url method
             "-O",
             str(output_dir),
-            f"-r{self.config.max_depth}",  # Max depth
+            f"-r{999999 if self.config.max_depth == -1 else self.config.max_depth}",  # Max depth (-1 = unlimited)
             "-%P",  # No external pages
             "--quiet",  # Quiet mode
             "--disable-security-limits",
@@ -35767,10 +35877,32 @@ class HTTrackScraper(WebScraperBase):
                                 ]
 
                             if normalized_url != normalized_canonical:
-                                logger.info(
-                                    f"Skipping {url} - canonical URL differs: {canonical_url_found}"
-                                )
-                                continue  # Skip this file
+                                # Check if we should respect the canonical URL
+                                should_skip = True
+
+                                if self.config.allowed_path:
+                                    # Parse URLs to check paths
+                                    current_parsed = urlparse(normalized_url)
+                                    canonical_parsed = urlparse(normalized_canonical)
+
+                                    # If current URL is within allowed_path but canonical is outside,
+                                    # don't skip - the user explicitly wants content from allowed_path
+                                    if current_parsed.path.startswith(
+                                        self.config.allowed_path
+                                    ):
+                                        if not canonical_parsed.path.startswith(
+                                            self.config.allowed_path
+                                        ):
+                                            should_skip = False
+                                            logger.info(
+                                                f"Not skipping {url} - canonical URL {canonical_url_found} is outside allowed_path {self.config.allowed_path}"
+                                            )
+
+                                if should_skip:
+                                    logger.info(
+                                        f"Skipping {url} - canonical URL differs: {canonical_url_found}"
+                                    )
+                                    continue  # Skip this file
 
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
@@ -36187,6 +36319,41 @@ class PlaywrightScraper(WebScraperBase):
                     title = await page.title()
                     metadata = await self._extract_metadata(page)
 
+                    # Check canonical URL if enabled
+                    if self.config.check_canonical and metadata.get("canonical"):
+                        canonical_url = metadata["canonical"]
+                        normalized_current = self._normalize_url(page.url)
+                        normalized_canonical = self._normalize_url(canonical_url)
+
+                        if normalized_current != normalized_canonical:
+                            # Check if we should respect the canonical URL
+                            should_skip = True
+
+                            if self.config.allowed_path:
+                                # Parse URLs to check paths
+                                current_parsed = urlparse(normalized_current)
+                                canonical_parsed = urlparse(normalized_canonical)
+
+                                # If current URL is within allowed_path but canonical is outside,
+                                # don't skip - the user explicitly wants content from allowed_path
+                                if current_parsed.path.startswith(
+                                    self.config.allowed_path
+                                ):
+                                    if not canonical_parsed.path.startswith(
+                                        self.config.allowed_path
+                                    ):
+                                        should_skip = False
+                                        logger.info(
+                                            f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
+                                        )
+
+                            if should_skip:
+                                logger.info(
+                                    f"Skipping {url} - canonical URL differs: {canonical_url}"
+                                )
+                                visited.add(url)
+                                return None  # Skip this page
+
                     # Create scraped page
                     scraped_page = ScrapedPage(
                         url=page.url,
@@ -36199,7 +36366,7 @@ class PlaywrightScraper(WebScraperBase):
                     )
 
                     # Extract links if not at max depth
-                    if depth < self.config.max_depth:
+                    if self.config.max_depth == -1 or depth < self.config.max_depth:
                         # Get all links using JavaScript
                         links = await page.evaluate(
                             """
@@ -36303,421 +36470,6 @@ class PlaywrightScraper(WebScraperBase):
                             return
 
         logger.info(f"Playwright scraping complete. Scraped {pages_scraped} pages")
-
-======= tools/scrape_tool/scrapers/scrapy_scraper.py ======
-#!/usr/bin/env python3
-# Copyright 2025 Franz und Franz GmbH
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""Scrapy backend for industrial-strength web scraping."""
-
-import asyncio
-import logging
-import tempfile
-from pathlib import Path
-from typing import AsyncIterator, Optional, Dict, Any, List
-from urllib.parse import urlparse
-import json
-
-try:
-    import scrapy
-    from scrapy.crawler import CrawlerProcess, CrawlerRunner
-    from scrapy.utils.project import get_project_settings
-    from twisted.internet import reactor, defer
-    from scrapy.utils.log import configure_logging
-
-    SCRAPY_AVAILABLE = True
-except ImportError:
-    SCRAPY_AVAILABLE = False
-
-from .base import WebScraperBase, ScrapedPage, ScraperConfig
-
-logger = logging.getLogger(__name__)
-
-
-class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
-    """Custom Scrapy spider for HTML2MD."""
-
-    name = "html2md_spider"
-
-    def __init__(
-        self, start_url: str, config: ScraperConfig, output_file: str, *args, **kwargs
-    ):
-        """Initialize spider with configuration."""
-        # Initialize parent class first if Scrapy is available
-        if SCRAPY_AVAILABLE and scrapy.Spider in self.__class__.__mro__:
-            super().__init__(*args, **kwargs)
-
-        self.start_urls = [start_url]
-        self.config = config
-        self.output_file = output_file
-        self.pages_scraped = 0
-
-        # Parse domain for allowed domains
-        parsed = urlparse(start_url)
-        if config.allowed_domains:
-            self.allowed_domains = list(config.allowed_domains)
-        else:
-            self.allowed_domains = [parsed.netloc]
-
-        # Store the base path for subdirectory restriction
-        # Use allowed_path if specified, otherwise use the start URL's path
-        if config.allowed_path:
-            self.base_path = config.allowed_path.rstrip("/")
-            logger.info(f"Restricting crawl to allowed path: {self.base_path}")
-        else:
-            self.base_path = parsed.path.rstrip("/")
-            if self.base_path:
-                logger.info(f"Restricting crawl to subdirectory: {self.base_path}")
-
-        # Store start URL for comparison
-        self.start_url = start_url
-
-    def parse(self, response):
-        """Parse a response and extract data."""
-        # Check page limit (skip if -1 for unlimited)
-        if self.config.max_pages != -1 and self.pages_scraped >= self.config.max_pages:
-            return
-
-        self.pages_scraped += 1
-
-        # Extract page data
-        # Convert headers to string dict (headers might contain bytes)
-        headers = {}
-        for key, value in response.headers.items():
-            key_str = key.decode("utf-8") if isinstance(key, bytes) else str(key)
-            value_str = (
-                value[0].decode("utf-8")
-                if isinstance(value[0], bytes)
-                else str(value[0])
-            )
-            headers[key_str] = value_str
-
-        page_data = {
-            "url": response.url,
-            "content": response.text,
-            "title": response.css("title::text").get(""),
-            "encoding": response.encoding,
-            "status_code": response.status,
-            "headers": headers,
-            "metadata": self._extract_metadata(response),
-        }
-
-        # Save to output file
-        with open(self.output_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(page_data) + "\n")
-
-        # Follow links if not at max depth
-        depth = response.meta.get("depth", 0)
-        if depth < self.config.max_depth and (
-            self.config.max_pages == -1 or self.pages_scraped < self.config.max_pages
-        ):
-            # Extract all links
-            for href in response.css("a::attr(href)").getall():
-                # Skip non-HTTP links
-                if href.startswith(("mailto:", "tel:", "javascript:", "#")):
-                    continue
-
-                # Get absolute URL to check path restriction
-                absolute_url = response.urljoin(href)
-                parsed_url = urlparse(absolute_url)
-
-                # Check subdirectory restriction (but always allow the start URL)
-                if self.base_path and absolute_url != self.start_url:
-                    if (
-                        not parsed_url.path.startswith(self.base_path + "/")
-                        and parsed_url.path != self.base_path
-                    ):
-                        logger.debug(
-                            f"Skipping {absolute_url} - outside allowed path {self.base_path}"
-                        )
-                        continue
-
-                # Skip if matches exclude pattern
-                if self.config.exclude_patterns:
-                    if any(pattern in href for pattern in self.config.exclude_patterns):
-                        continue
-
-                yield response.follow(href, callback=self.parse)
-
-    def _extract_metadata(self, response) -> Dict[str, Any]:
-        """Extract metadata from the response."""
-        metadata = {}
-
-        # Meta description
-        desc = response.css('meta[name="description"]::attr(content)').get()
-        if desc:
-            metadata["description"] = desc
-
-        # Meta keywords
-        keywords = response.css('meta[name="keywords"]::attr(content)').get()
-        if keywords:
-            metadata["keywords"] = keywords
-
-        # Open Graph tags
-        for og_tag in response.css('meta[property^="og:"]'):
-            prop = og_tag.css("::attr(property)").get()
-            content = og_tag.css("::attr(content)").get()
-            if prop and content:
-                metadata[prop] = content
-
-        return metadata
-
-
-class ScrapyScraper(WebScraperBase):
-    """Industrial-strength scraper using Scrapy framework.
-
-    Scrapy provides:
-    - Built-in request throttling and retry logic
-    - Concurrent request handling with Twisted
-    - Middleware system for customization
-    - robots.txt compliance
-    - Auto-throttle based on server response times
-
-    Best for:
-    - Large-scale web scraping projects
-    - Sites requiring complex crawling logic
-    - Projects needing middleware (proxies, auth, etc.)
-    """
-
-    def __init__(self, config: ScraperConfig):
-        """Initialize the Scrapy scraper.
-
-        Args:
-            config: Scraper configuration
-
-        Raises:
-            ImportError: If scrapy is not installed
-        """
-        if not SCRAPY_AVAILABLE:
-            raise ImportError(
-                "scrapy is required for this scraper. "
-                "Install with: pip install scrapy"
-            )
-
-        super().__init__(config)
-        self._temp_dir: Optional[Path] = None
-        self._output_file: Optional[Path] = None
-
-    async def __aenter__(self):
-        """Enter async context."""
-        # Create temporary directory for output
-        self._temp_dir = Path(tempfile.mkdtemp(prefix="scrapy_html2md_"))
-        self._output_file = self._temp_dir / "output.jsonl"
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Exit async context and cleanup."""
-        # Cleanup temporary files
-        if self._temp_dir and self._temp_dir.exists():
-            import shutil
-
-            shutil.rmtree(self._temp_dir)
-
-    async def scrape_url(self, url: str) -> ScrapedPage:
-        """Scrape a single URL using Scrapy.
-
-        Args:
-            url: URL to scrape
-
-        Returns:
-            ScrapedPage object with scraped content
-        """
-        # Use a simpler approach for single URLs - just use aiohttp
-        # since Scrapy is more suited for site-wide crawling
-        import aiohttp
-        import aiofiles
-
-        # Check robots.txt before scraping
-        if not await self.can_fetch(url):
-            raise ValueError(f"URL {url} is blocked by robots.txt")
-
-        async with aiohttp.ClientSession() as session:
-            headers = {"User-Agent": self.config.user_agent}
-            timeout = aiohttp.ClientTimeout(total=self.config.timeout)
-
-            async with session.get(
-                url,
-                headers=headers,
-                timeout=timeout,
-                allow_redirects=self.config.follow_redirects,
-            ) as response:
-                content = await response.text()
-
-                # Parse with BeautifulSoup to extract title
-                from bs4 import BeautifulSoup
-
-                soup = BeautifulSoup(content, "html.parser")
-                title = soup.title.string if soup.title else ""
-
-                # Extract metadata
-                metadata = {}
-                desc_tag = soup.find("meta", attrs={"name": "description"})
-                if desc_tag and desc_tag.get("content"):
-                    metadata["description"] = desc_tag["content"]
-
-                keywords_tag = soup.find("meta", attrs={"name": "keywords"})
-                if keywords_tag and keywords_tag.get("content"):
-                    metadata["keywords"] = keywords_tag["content"]
-
-                # Extract OG tags
-                for og_tag in soup.find_all(
-                    "meta", attrs={"property": lambda x: x and x.startswith("og:")}
-                ):
-                    prop = og_tag.get("property")
-                    content = og_tag.get("content")
-                    if prop and content:
-                        metadata[prop] = content
-
-                return ScrapedPage(
-                    url=str(response.url),
-                    content=content,
-                    title=title,
-                    encoding=response.charset or "utf-8",
-                    status_code=response.status,
-                    headers=dict(response.headers),
-                    metadata=metadata,
-                )
-
-    async def scrape_site(self, start_url: str) -> AsyncIterator[ScrapedPage]:
-        """Scrape an entire website using Scrapy.
-
-        Args:
-            start_url: Starting URL for crawling
-
-        Yields:
-            ScrapedPage objects for each scraped page
-        """
-        # Clear output file
-        if self._output_file.exists():
-            self._output_file.unlink()
-
-        # Configure Scrapy settings
-        settings = get_project_settings()
-        settings.update(
-            {
-                "USER_AGENT": self.config.user_agent,
-                "ROBOTSTXT_OBEY": self.config.respect_robots_txt,
-                "CONCURRENT_REQUESTS": self.config.concurrent_requests,
-                "DOWNLOAD_DELAY": self.config.request_delay,
-                "RANDOMIZE_DOWNLOAD_DELAY": True,  # Randomize delays
-                "DEPTH_LIMIT": self.config.max_depth,
-                "LOG_ENABLED": logger.isEnabledFor(logging.DEBUG),
-                "TELNETCONSOLE_ENABLED": False,
-                "AUTOTHROTTLE_ENABLED": True,  # Enable auto-throttle
-                "AUTOTHROTTLE_START_DELAY": self.config.request_delay,
-                "AUTOTHROTTLE_MAX_DELAY": self.config.request_delay * 10,
-                "AUTOTHROTTLE_TARGET_CONCURRENCY": self.config.concurrent_requests,
-                "HTTPCACHE_ENABLED": True,  # Enable cache
-                "HTTPCACHE_DIR": str(self._temp_dir / "cache"),
-                "REDIRECT_ENABLED": self.config.follow_redirects,
-                "DOWNLOAD_TIMEOUT": self.config.timeout,
-            }
-        )
-
-        # Use multiprocessing to run Scrapy in a separate process
-        # to avoid reactor threading issues
-        import multiprocessing
-        import time
-
-        def run_spider_process():
-            """Run spider in separate process."""
-            from scrapy.crawler import CrawlerProcess
-            from scrapy.utils.project import get_project_settings
-
-            # Re-create settings in the new process
-            settings = get_project_settings()
-            settings.update(
-                {
-                    "USER_AGENT": self.config.user_agent,
-                    "ROBOTSTXT_OBEY": self.config.respect_robots_txt,
-                    "CONCURRENT_REQUESTS": self.config.concurrent_requests,
-                    "DOWNLOAD_DELAY": self.config.request_delay,
-                    "RANDOMIZE_DOWNLOAD_DELAY": True,
-                    "DEPTH_LIMIT": self.config.max_depth,
-                    "LOG_ENABLED": logger.isEnabledFor(logging.DEBUG),
-                    "TELNETCONSOLE_ENABLED": False,
-                    "AUTOTHROTTLE_ENABLED": True,
-                    "AUTOTHROTTLE_START_DELAY": self.config.request_delay,
-                    "AUTOTHROTTLE_MAX_DELAY": self.config.request_delay * 10,
-                    "AUTOTHROTTLE_TARGET_CONCURRENCY": self.config.concurrent_requests,
-                    "HTTPCACHE_ENABLED": True,
-                    "HTTPCACHE_DIR": str(self._temp_dir / "cache"),
-                    "REDIRECT_ENABLED": self.config.follow_redirects,
-                    "DOWNLOAD_TIMEOUT": self.config.timeout,
-                }
-            )
-
-            process = CrawlerProcess(settings)
-            process.crawl(
-                ScrapySpider,
-                start_url=start_url,
-                config=self.config,
-                output_file=str(self._output_file),
-            )
-            process.start()
-
-        # Start spider in separate process
-        process = multiprocessing.Process(target=run_spider_process)
-        process.start()
-
-        # Monitor output file and yield results as they come in
-        last_position = 0
-        pages_yielded = 0
-
-        while True:
-            # Check if spider process is still running
-            if not process.is_alive():
-                # Read any remaining data
-                if self._output_file.exists():
-                    with open(self._output_file, "r", encoding="utf-8") as f:
-                        f.seek(last_position)
-                        for line in f:
-                            if line.strip():
-                                data = json.loads(line.strip())
-                                yield ScrapedPage(**data)
-                                pages_yielded += 1
-                break
-
-            # Read new data from output file
-            if self._output_file.exists():
-                with open(self._output_file, "r", encoding="utf-8") as f:
-                    f.seek(last_position)
-                    for line in f:
-                        if line.strip():
-                            data = json.loads(line.strip())
-                            yield ScrapedPage(**data)
-                            pages_yielded += 1
-
-                            # Check page limit (skip if -1 for unlimited)
-                            if (
-                                self.config.max_pages != -1
-                                and pages_yielded >= self.config.max_pages
-                            ):
-                                # Terminate the process
-                                process.terminate()
-                                process.join(timeout=5)
-                                if process.is_alive():
-                                    process.kill()
-                                return
-
-                    last_position = f.tell()
-
-            # Small delay to avoid busy waiting
-            await asyncio.sleep(0.1)
-
-        logger.info(f"Scrapy scraping complete. Scraped {pages_yielded} pages")
 
 ======= tools/scrape_tool/scrapers/selectolax.py ======
 #!/usr/bin/env python3
@@ -36868,10 +36620,30 @@ class SelectolaxScraper(WebScraperBase):
                     normalized_canonical = self._normalize_url(canonical_url)
 
                     if normalized_url != normalized_canonical:
-                        logger.info(
-                            f"Skipping {url} - canonical URL differs: {canonical_url}"
-                        )
-                        return None  # Return None to indicate skip, not an error
+                        # Check if we should respect the canonical URL
+                        should_skip = True
+
+                        if self.config.allowed_path:
+                            # Parse URLs to check paths
+                            current_parsed = urlparse(normalized_url)
+                            canonical_parsed = urlparse(normalized_canonical)
+
+                            # If current URL is within allowed_path but canonical is outside,
+                            # don't skip - the user explicitly wants content from allowed_path
+                            if current_parsed.path.startswith(self.config.allowed_path):
+                                if not canonical_parsed.path.startswith(
+                                    self.config.allowed_path
+                                ):
+                                    should_skip = False
+                                    logger.info(
+                                        f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
+                                    )
+
+                        if should_skip:
+                            logger.info(
+                                f"Skipping {url} - canonical URL differs: {canonical_url}"
+                            )
+                            return None  # Return None to indicate skip, not an error
 
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
@@ -37006,7 +36778,7 @@ class SelectolaxScraper(WebScraperBase):
                         return None
 
                     # Extract links if not at max depth
-                    if depth < self.config.max_depth:
+                    if self.config.max_depth == -1 or depth < self.config.max_depth:
                         html_parser = HTMLParser(page.content)
 
                         for link in html_parser.css("a[href]"):

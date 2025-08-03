@@ -32,12 +32,6 @@ try:
 except ImportError:
     SELECTOLAX_AVAILABLE = False
 
-try:
-    from tools.scrape_tool.scrapers.scrapy_scraper import ScrapyScraper
-
-    SCRAPY_AVAILABLE = True
-except ImportError:
-    SCRAPY_AVAILABLE = False
 
 try:
     from tools.scrape_tool.scrapers.playwright import PlaywrightScraper
@@ -85,8 +79,6 @@ class TestScraperFactory:
         if SELECTOLAX_AVAILABLE:
             assert "selectolax" in SCRAPER_REGISTRY
             assert "httpx" in SCRAPER_REGISTRY
-        if SCRAPY_AVAILABLE:
-            assert "scrapy" in SCRAPER_REGISTRY
         if PLAYWRIGHT_AVAILABLE:
             assert "playwright" in SCRAPER_REGISTRY
 
@@ -331,36 +323,6 @@ class TestSelectolaxScraper:
                 SelectolaxScraper(config)
 
 
-@pytest.mark.skipif(not SCRAPY_AVAILABLE, reason="scrapy not installed")
-class TestScrapyScraper:
-    """Test Scrapy scraper implementation."""
-
-    @pytest.fixture
-    def scraper(self):
-        """Create scraper instance."""
-        config = ScraperConfig(max_depth=2, max_pages=10, request_delay=0.5)
-        return ScrapyScraper(config)
-
-    def test_scrapy_not_available(self):
-        """Test error when scrapy not installed."""
-        config = ScraperConfig()
-        with patch("tools.scrape_tool.scrapers.scrapy_scraper.SCRAPY_AVAILABLE", False):
-            with pytest.raises(ImportError, match="scrapy is required"):
-                ScrapyScraper(config)
-
-    @pytest.mark.asyncio
-    async def test_context_manager(self, scraper, tmp_path):
-        """Test async context manager creates temp directory."""
-        with patch("tempfile.mkdtemp", return_value=str(tmp_path)):
-            async with scraper:
-                assert scraper._temp_dir is not None
-                assert scraper._output_file is not None
-                assert scraper._temp_dir.exists()
-
-        # After exiting, temp dir should be cleaned up
-        # (in real usage - mocked here)
-
-
 @pytest.mark.skipif(not PLAYWRIGHT_AVAILABLE, reason="playwright not installed")
 class TestPlaywrightScraper:
     """Test Playwright scraper implementation."""
@@ -467,12 +429,6 @@ class TestNewScraperRegistry:
         assert SCRAPER_REGISTRY["selectolax"] == SelectolaxScraper
         assert SCRAPER_REGISTRY["httpx"] == SelectolaxScraper
 
-    @pytest.mark.skipif(not SCRAPY_AVAILABLE, reason="scrapy not installed")
-    def test_scrapy_in_registry(self):
-        """Test scrapy scraper is in registry."""
-        assert "scrapy" in SCRAPER_REGISTRY
-        assert SCRAPER_REGISTRY["scrapy"] == ScrapyScraper
-
     @pytest.mark.skipif(not PLAYWRIGHT_AVAILABLE, reason="playwright not installed")
     def test_playwright_in_registry(self):
         """Test playwright scraper is in registry."""
@@ -485,13 +441,6 @@ class TestNewScraperRegistry:
         config = ScraperConfig()
         scraper = create_scraper("selectolax", config)
         assert isinstance(scraper, SelectolaxScraper)
-
-    @pytest.mark.skipif(not SCRAPY_AVAILABLE, reason="scrapy not installed")
-    def test_create_scrapy_scraper(self):
-        """Test creating scrapy scraper via factory."""
-        config = ScraperConfig()
-        scraper = create_scraper("scrapy", config)
-        assert isinstance(scraper, ScrapyScraper)
 
     @pytest.mark.skipif(not PLAYWRIGHT_AVAILABLE, reason="playwright not installed")
     def test_create_playwright_scraper(self):

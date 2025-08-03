@@ -28,14 +28,18 @@ class ScraperBackend(str, Enum):
     BS4 = "bs4"  # Alias for beautifulsoup
     SELECTOLAX = "selectolax"
     HTTPX = "httpx"
-    SCRAPY = "scrapy"
     PLAYWRIGHT = "playwright"
 
 
 class CrawlerConfig(BaseModel):
     """Configuration for web crawler."""
 
-    max_depth: int = Field(default=5, ge=1, le=20, description="Maximum crawl depth")
+    max_depth: int = Field(
+        default=5,
+        ge=-1,
+        le=1000,
+        description="Maximum crawl depth (-1 for unlimited)",
+    )
     max_pages: int = Field(
         default=10000,
         ge=-1,

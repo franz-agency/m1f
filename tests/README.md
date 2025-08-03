@@ -165,7 +165,7 @@ pytest -n auto             # Use all CPU cores
 
 #### HTML2MD Tests
 - **Conversion**: HTML to Markdown accuracy
-- **Scrapers**: BeautifulSoup, Scrapy, Playwright
+- **Scrapers**: BeautifulSoup, Playwright
 - **AI Integration**: Claude-powered optimization
 - **Local Processing**: File system operations
 

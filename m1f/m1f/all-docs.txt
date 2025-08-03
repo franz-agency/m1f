@@ -838,6 +838,67 @@ and this project adheres to
   - Fixed test server to support subdirectory routing for comprehensive testing
   - Added integration and unit tests with proper mocking
 
+### Added
+
+- **m1f-scrape Missing CLI Parameters**: Exposed configuration options in CLI
+  - `--excluded-paths`: URL paths to exclude from crawling (can specify multiple)
+  - `--timeout`: Request timeout in seconds (default: 30)
+  - `--retry-count`: Number of retries for failed requests (default: 3)
+  - `--disable-ssrf-check`: Disable SSRF vulnerability checks (allows localhost)
+  - Note: Respecting robots.txt is mandatory and cannot be disabled
+
+- **m1f-scrape Unlimited Depth**: Support for unlimited crawl depth
+  - `--max-depth` now accepts -1 for unlimited depth (similar to --max-pages)
+  - All scrapers updated to handle unlimited depth correctly
+  - HTTrack and Scrapy use very large number (999999) internally
+
+- **m1f-scrape Enhanced Test Server**: Improved test server capabilities
+  - Query parameter support for testing `--ignore-get-params`
+  - Dynamic canonical URL injection via `?canonical=URL` parameter
+  - `/test/slow?delay=X` endpoint for timeout testing
+  - `/test/duplicate/ID` endpoints returning identical content
+  - Better support for comprehensive parameter testing
+
+- **m1f-scrape Comprehensive Parameter Tests**: New test suite for all parameters
+  - Tests for content filtering (ignore-get-params, ignore-canonical, ignore-duplicates)
+  - Tests for excluded paths functionality
+  - Tests for request options (user-agent, timeout, retry-count)
+  - Tests for different scraper backends
+  - Tests for database query options
+  - All tests use local test server (no external dependencies)
+
+### Removed
+
+- **m1f-scrape Scrapy Backend**: Removed Scrapy scraper implementation
+  - Scrapy had different architecture that complicated maintenance
+  - Other scrapers (BeautifulSoup, Selectolax, HTTrack, Playwright) provide sufficient coverage
+  - Removed from CLI choices, configuration enum, and all tests
+  - Simplifies codebase and reduces dependencies
+
+### Changed
+
+- **m1f-scrape Canonical URL Handling**: Improved canonical URL logic to respect allowed_path
+  - Fixed issue where pages within allowed_path were skipped if canonical URL pointed outside
+  - Pages within allowed_path are now kept even if their canonical URL points outside the restricted area
+  - Added canonical URL checking to Playwright scraper (was previously missing)
+  - Improved help text for content filtering options to be clearer:
+    - `--ignore-get-params`: Now explains it strips query parameters
+    - `--ignore-canonical`: Clarifies it disables canonical URL deduplication
+    - `--ignore-duplicates`: Explains it disables content-based deduplication
+
+- **m1f-scrape Help Output**: Improved organization with colorama support
+  - Added colorama formatting to match m1f's help output style
+  - Organized parameters into logical groups (Output Control, Scraper Options, etc.)
+  - Added colored error messages for better visibility
+  - Help text now renders with proper formatting on terminals that support it
+
+- **m1f-scrape Real Integration Tests**: Replaced mocked tests with real server tests
+  - Selectolax now has comprehensive integration tests using local test server
+  - HTTrack tests check for installation and run real tests when available
+  - Playwright tests verify JavaScript rendering and browser functionality
+  - All integration tests use local test server to avoid external dependencies
+  - Fixed test server environment issues for reliable testing
+
 ### Fixed
 
 - **m1f-html2md Config Structure**: Fixed configuration structure mismatch
@@ -3652,7 +3713,7 @@ pytest -n auto             # Use all CPU cores
 
 #### HTML2MD Tests
 - **Conversion**: HTML to Markdown accuracy
-- **Scrapers**: BeautifulSoup, Scrapy, Playwright
+- **Scrapers**: BeautifulSoup, Playwright
 - **AI Integration**: Claude-powered optimization
 - **Local Processing**: File system operations
 
@@ -17219,6 +17280,77 @@ The included `html2md_claude_code_doc.config.yml` file contains optimized select
 - Using the provided config file saves 5-8 minutes by skipping Claude analysis
 - On Windows, use PowerShell for better command support
 - Windows paths use backslashes (`\`) instead of forward slashes (`/`)
+
+======= tests/html2md/parameter_test_coverage.md ======
+# m1f-scrape Parameter Test Coverage Analysis
+
+## All Available Parameters
+
+### Input/Output
+- `url` - ❌ Not tested with local server (only mocked)
+- `-o, --output` - ✅ Tested in integration tests
+
+### Output Control
+- `-v, --verbose` - ❌ Not tested
+- `-q, --quiet` - ❌ Not tested
+
+### Scraper Options
+- `--scraper` - ✅ Partially tested (only beautifulsoup in integration)
+- `--scraper-config` - ❌ Not tested
+
+### Crawl Configuration
+- `--max-depth` - ✅ Tested (value: 2-3)
+- `--max-pages` - ✅ Tested (value: 20)
+- `--allowed-path` - ✅ Tested extensively
+- `--excluded-paths` - ❌ Not tested (NEW)
+
+### Request Options
+- `--request-delay` - ✅ Tested (value: 0.1)
+- `--concurrent-requests` - ✅ Tested (value: 2)
+- `--user-agent` - ❌ Not tested
+- `--timeout` - ❌ Not tested (NEW)
+- `--retry-count` - ❌ Not tested (NEW)
+
+### Content Filtering
+- `--ignore-get-params` - ❌ Not tested
+- `--ignore-canonical` - ❌ Not tested with local server
+- `--ignore-duplicates` - ❌ Not tested
+
+### Display Options
+- `--list-files` - ❌ Not tested
+
+### Security Options
+- `--disable-ssrf-check` - ✅ Implicitly tested (check_ssrf=False used)
+
+### Database Options
+- `--show-db-stats` - ❌ Not tested
+- `--show-errors` - ❌ Not tested
+- `--show-scraped-urls` - ❌ Not tested
+
+## Summary
+
+**Tested with local server (7/24):**
+- output, scraper (partial), max-depth, max-pages, allowed-path, request-delay, concurrent-requests, disable-ssrf-check (implicit)
+
+**Not tested with local server (17/24):**
+- url, verbose, quiet, scraper-config, excluded-paths, user-agent, timeout, retry-count, ignore-get-params, ignore-canonical, ignore-duplicates, list-files, show-db-stats, show-errors, show-scraped-urls
+
+## Missing Test Coverage
+
+### High Priority (Core functionality)
+1. Different scraper backends (httrack, selectolax, playwright)
+2. Content filtering (ignore-get-params, ignore-canonical, ignore-duplicates)
+3. Excluded paths functionality
+4. User agent customization
+
+### Medium Priority (Important options)
+1. Timeout and retry behavior
+2. Database query options
+3. List files option
+4. Verbose/quiet output
+
+### Low Priority (Less critical)
+1. Scraper-specific config files
 
 ======= tests/html2md_server/README.md ======
 # HTML2MD Test Suite

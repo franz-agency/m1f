@@ -31,6 +31,67 @@ and this project adheres to
   - Fixed test server to support subdirectory routing for comprehensive testing
   - Added integration and unit tests with proper mocking
 
+### Added
+
+- **m1f-scrape Missing CLI Parameters**: Exposed configuration options in CLI
+  - `--excluded-paths`: URL paths to exclude from crawling (can specify multiple)
+  - `--timeout`: Request timeout in seconds (default: 30)
+  - `--retry-count`: Number of retries for failed requests (default: 3)
+  - `--disable-ssrf-check`: Disable SSRF vulnerability checks (allows localhost)
+  - Note: Respecting robots.txt is mandatory and cannot be disabled
+
+- **m1f-scrape Unlimited Depth**: Support for unlimited crawl depth
+  - `--max-depth` now accepts -1 for unlimited depth (similar to --max-pages)
+  - All scrapers updated to handle unlimited depth correctly
+  - HTTrack and Scrapy use very large number (999999) internally
+
+- **m1f-scrape Enhanced Test Server**: Improved test server capabilities
+  - Query parameter support for testing `--ignore-get-params`
+  - Dynamic canonical URL injection via `?canonical=URL` parameter
+  - `/test/slow?delay=X` endpoint for timeout testing
+  - `/test/duplicate/ID` endpoints returning identical content
+  - Better support for comprehensive parameter testing
+
+- **m1f-scrape Comprehensive Parameter Tests**: New test suite for all parameters
+  - Tests for content filtering (ignore-get-params, ignore-canonical, ignore-duplicates)
+  - Tests for excluded paths functionality
+  - Tests for request options (user-agent, timeout, retry-count)
+  - Tests for different scraper backends
+  - Tests for database query options
+  - All tests use local test server (no external dependencies)
+
+### Removed
+
+- **m1f-scrape Scrapy Backend**: Removed Scrapy scraper implementation
+  - Scrapy had different architecture that complicated maintenance
+  - Other scrapers (BeautifulSoup, Selectolax, HTTrack, Playwright) provide sufficient coverage
+  - Removed from CLI choices, configuration enum, and all tests
+  - Simplifies codebase and reduces dependencies
+
+### Changed
+
+- **m1f-scrape Canonical URL Handling**: Improved canonical URL logic to respect allowed_path
+  - Fixed issue where pages within allowed_path were skipped if canonical URL pointed outside
+  - Pages within allowed_path are now kept even if their canonical URL points outside the restricted area
+  - Added canonical URL checking to Playwright scraper (was previously missing)
+  - Improved help text for content filtering options to be clearer:
+    - `--ignore-get-params`: Now explains it strips query parameters
+    - `--ignore-canonical`: Clarifies it disables canonical URL deduplication
+    - `--ignore-duplicates`: Explains it disables content-based deduplication
+
+- **m1f-scrape Help Output**: Improved organization with colorama support
+  - Added colorama formatting to match m1f's help output style
+  - Organized parameters into logical groups (Output Control, Scraper Options, etc.)
+  - Added colored error messages for better visibility
+  - Help text now renders with proper formatting on terminals that support it
+
+- **m1f-scrape Real Integration Tests**: Replaced mocked tests with real server tests
+  - Selectolax now has comprehensive integration tests using local test server
+  - HTTrack tests check for installation and run real tests when available
+  - Playwright tests verify JavaScript rendering and browser functionality
+  - All integration tests use local test server to avoid external dependencies
+  - Fixed test server environment issues for reliable testing
+
 ### Fixed
 
 - **m1f-html2md Config Structure**: Fixed configuration structure mismatch

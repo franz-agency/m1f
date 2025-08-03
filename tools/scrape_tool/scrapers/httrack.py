@@ -243,7 +243,7 @@ class HTTrackScraper(WebScraperBase):
             start_url,  # URL is validated by validate_url method
             "-O",
             str(output_dir),
-            f"-r{self.config.max_depth}",  # Max depth
+            f"-r{999999 if self.config.max_depth == -1 else self.config.max_depth}",  # Max depth (-1 = unlimited)
             "-%P",  # No external pages
             "--quiet",  # Quiet mode
             "--disable-security-limits",
@@ -391,10 +391,32 @@ class HTTrackScraper(WebScraperBase):
                                 ]
 
                             if normalized_url != normalized_canonical:
-                                logger.info(
-                                    f"Skipping {url} - canonical URL differs: {canonical_url_found}"
-                                )
-                                continue  # Skip this file
+                                # Check if we should respect the canonical URL
+                                should_skip = True
+
+                                if self.config.allowed_path:
+                                    # Parse URLs to check paths
+                                    current_parsed = urlparse(normalized_url)
+                                    canonical_parsed = urlparse(normalized_canonical)
+
+                                    # If current URL is within allowed_path but canonical is outside,
+                                    # don't skip - the user explicitly wants content from allowed_path
+                                    if current_parsed.path.startswith(
+                                        self.config.allowed_path
+                                    ):
+                                        if not canonical_parsed.path.startswith(
+                                            self.config.allowed_path
+                                        ):
+                                            should_skip = False
+                                            logger.info(
+                                                f"Not skipping {url} - canonical URL {canonical_url_found} is outside allowed_path {self.config.allowed_path}"
+                                            )
+
+                                if should_skip:
+                                    logger.info(
+                                        f"Skipping {url} - canonical URL differs: {canonical_url_found}"
+                                    )
+                                    continue  # Skip this file
 
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
