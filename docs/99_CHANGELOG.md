@@ -27,6 +27,9 @@ and this project adheres to
   - Example: Start from `/Extensions/eZ-Publish-extensions.html` but crawl all `/Extensions/`
   - Useful for documentation sites where index pages link to different directories
   - Implemented across all scraper backends (BeautifulSoup, HTTrack, Selectolax, Playwright, Scrapy)
+  - Added `check_ssrf` configuration parameter to enable/disable SSRF protection (defaults to enabled)
+  - Fixed test server to support subdirectory routing for comprehensive testing
+  - Added integration and unit tests with proper mocking
 
 ### Fixed
 
