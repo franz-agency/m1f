@@ -138,15 +138,16 @@ class TestHTTrackIntegration:
 
         result = await crawler.crawl(start_url, output_dir)
 
-        # HTTrack creates files in a specific structure
+        # Check that crawl was successful
+        assert "pages_scraped" in result
+        assert result["pages_scraped"] > 0, "Should have scraped at least one page"
+
         # Check that some files were downloaded
         html_files = list(output_dir.glob("**/*.html"))
-        # Filter out HTTrack's own files
+        # Filter out HTTrack's own files if any
         html_files = [f for f in html_files if not f.name.startswith("hts-")]
 
-        assert (
-            len(html_files) > 0
-        ), "HTTrack should have downloaded at least one HTML file"
+        assert len(html_files) > 0, "Should have downloaded at least one HTML file"
 
     @pytest.mark.asyncio
     async def test_httrack_depth_limit(self, temp_dir):

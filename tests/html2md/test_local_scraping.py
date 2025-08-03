@@ -60,7 +60,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Test server configuration
-TEST_SERVER_URL = "http://localhost:8080"
+# Use a different port to avoid conflicts with other tests
+TEST_SERVER_PORT = 8090
+TEST_SERVER_URL = f"http://localhost:{TEST_SERVER_PORT}"
 
 
 def is_port_in_use(port):
@@ -76,7 +78,7 @@ def is_port_in_use(port):
 @pytest.fixture(scope="module", autouse=True)
 def test_server():
     """Start the test server before running tests."""
-    server_port = 8080
+    server_port = TEST_SERVER_PORT
     server_path = (
         Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
     )

@@ -441,6 +441,7 @@ class WebCrawler:
         return {
             "pages": pages,
             "total_pages": len(pages),
+            "pages_scraped": len(pages),  # For compatibility
             "errors": errors,
             "output_dir": site_dir,
         }

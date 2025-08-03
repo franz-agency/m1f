@@ -403,4 +403,9 @@ if __name__ == "__main__":
     # Disable debug mode when running in testing environment
     debug_mode = os.environ.get("FLASK_ENV") != "testing"
 
+    # Clear Werkzeug environment variables that might cause issues
+    for key in list(os.environ.keys()):
+        if key.startswith("WERKZEUG_"):
+            del os.environ[key]
+
     app.run(host="0.0.0.0", port=port, debug=debug_mode)

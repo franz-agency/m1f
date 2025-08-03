@@ -336,7 +336,7 @@ class SelectolaxScraper(WebScraperBase):
                                 continue
 
                             # Check subdirectory restriction (but always allow the start URL)
-                            if base_path and url != start_url:
+                            if base_path and absolute_url != start_url:
                                 # If allowed_path was a full URL, check domain too
                                 if (
                                     allowed_domain

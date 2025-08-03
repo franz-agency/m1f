@@ -276,12 +276,13 @@ class TestPlaywrightIntegration:
             max_pages=1,
             request_delay=0.1,
             check_ssrf=False,
-            scraper_config={
-                "browser": "chromium",
-                "wait_for_selector": "h1",  # Wait for h1 to appear
-                "wait_timeout": 5000,
-            },
+            # browser_config is stored in config.__dict__
         )
+        config.__dict__["browser_config"] = {
+            "browser": "chromium",
+            "wait_for_selector": "h1",  # Wait for h1 to appear
+            "wait_timeout": 5000,
+        }
 
         scraper = PlaywrightScraper(config)
 
@@ -302,12 +303,13 @@ class TestPlaywrightIntegration:
             max_pages=1,
             request_delay=0.1,
             check_ssrf=False,
-            scraper_config={
-                "browser": "chromium",
-                "headless": True,
-                "viewport": {"width": 1920, "height": 1080},
-            },
+            # browser_config is stored in config.__dict__
         )
+        config.__dict__["browser_config"] = {
+            "browser": "chromium",
+            "headless": True,
+            "viewport": {"width": 1920, "height": 1080},
+        }
 
         scraper = PlaywrightScraper(config)
 

@@ -3158,13 +3158,7 @@ class TestAllowedPathFeature:
     @pytest.mark.asyncio
     @pytest.mark.skipif(not SELECTOLAX_AVAILABLE, reason="selectolax not installed")
     async def test_selectolax_allowed_path(self, mock_html_responses, temp_dir):
-        """Test Selectolax scraper with allowed_path parameter.
-
-        NOTE: The selectolax scraper currently has a bug where it doesn't properly
-        check path restrictions for links from the start URL. It checks `url != start_url`
-        instead of `absolute_url != start_url`, which means all links from the start page
-        are allowed regardless of path restrictions.
-        """
+        """Test Selectolax scraper with allowed_path parameter."""
         # Create config with allowed_path
         config = ScraperConfig(
             max_pages=20, max_depth=3, allowed_path="/api/", request_delay=0.1
@@ -3215,18 +3209,14 @@ class TestAllowedPathFeature:
         # Check that we scraped the start URL (always allowed)
         assert "http://test.com/docs/index.html" in scraped_urls
 
-        # Due to the bug in selectolax, all links from the start page are scraped
-        # regardless of allowed_path restriction (they should be filtered)
+        # With allowed_path="/api/", only links to /api/ should be followed
         assert "http://test.com/api/overview.html" in scraped_urls
-        assert "http://test.com/guides/start.html" in scraped_urls
-        assert "http://test.com/blog/news.html" in scraped_urls
-
-        # However, pages under /api/ should still be scraped correctly
         assert "http://test.com/api/endpoints.html" in scraped_urls
         assert "http://test.com/api/auth.html" in scraped_urls
 
-        # Links from non-start pages should still be restricted properly
-        # (but this test setup might not verify this due to the bug)
+        # These should NOT be scraped as they're outside /api/
+        assert "http://test.com/guides/start.html" not in scraped_urls
+        assert "http://test.com/blog/news.html" not in scraped_urls
 
     def test_crawler_config_allowed_path(self):
         """Test that CrawlerConfig properly accepts allowed_path."""
@@ -3323,17 +3313,26 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/docs/api/v1/"
-        mock_response.text = AsyncMock(
-            return_value=self.create_html_with_canonical("https://example.com/api/v1/")
-        )
         mock_response.headers = {}
+        mock_response.read = AsyncMock(
+            return_value=self.create_html_with_canonical(
+                "https://example.com/api/v1/"
+            ).encode()
+        )
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page should NOT be skipped - it's in allowed_path even though canonical is outside
-            result = await scraper.scrape_url("https://example.com/docs/api/v1/")
-            assert result is not None
-            assert result.url == "https://example.com/docs/api/v1/"
-            assert "Test Content" in result.content
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page should NOT be skipped - it's in allowed_path even though canonical is outside
+                result = await scraper.scrape_url("https://example.com/docs/api/v1/")
+                assert result is not None
+                assert result.url == "https://example.com/docs/api/v1/"
+                assert "Test Content" in result.content
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_canonical_within_allowed_path(
@@ -3346,17 +3345,24 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/docs/page1/"
-        mock_response.text = AsyncMock(
+        mock_response.headers = {}
+        mock_response.read = AsyncMock(
             return_value=self.create_html_with_canonical(
                 "https://example.com/docs/page2/"
-            )
+            ).encode()
         )
-        mock_response.headers = {}
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page SHOULD be skipped - both URLs are in allowed_path but they differ
-            result = await scraper.scrape_url("https://example.com/docs/page1/")
-            assert result is None
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page SHOULD be skipped - both URLs are in allowed_path but they differ
+                result = await scraper.scrape_url("https://example.com/docs/page1/")
+                assert result is None
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_canonical_same_url(self, config_with_allowed_path):
@@ -3367,18 +3373,25 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/docs/page1/"
-        mock_response.text = AsyncMock(
+        mock_response.headers = {}
+        mock_response.read = AsyncMock(
             return_value=self.create_html_with_canonical(
                 "https://example.com/docs/page1/"
-            )
+            ).encode()
         )
-        mock_response.headers = {}
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page should NOT be skipped - canonical matches current URL
-            result = await scraper.scrape_url("https://example.com/docs/page1/")
-            assert result is not None
-            assert result.url == "https://example.com/docs/page1/"
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page should NOT be skipped - canonical matches current URL
+                result = await scraper.scrape_url("https://example.com/docs/page1/")
+                assert result is not None
+                assert result.url == "https://example.com/docs/page1/"
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_no_allowed_path(self):
@@ -3396,15 +3409,24 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/page1/"
-        mock_response.text = AsyncMock(
-            return_value=self.create_html_with_canonical("https://example.com/page2/")
-        )
         mock_response.headers = {}
+        mock_response.read = AsyncMock(
+            return_value=self.create_html_with_canonical(
+                "https://example.com/page2/"
+            ).encode()
+        )
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page SHOULD be skipped - canonical differs and no allowed_path restriction
-            result = await scraper.scrape_url("https://example.com/page1/")
-            assert result is None
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page SHOULD be skipped - canonical differs and no allowed_path restriction
+                result = await scraper.scrape_url("https://example.com/page1/")
+                assert result is None
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_canonical_check_disabled(
@@ -3417,16 +3439,25 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/docs/page1/"
-        mock_response.text = AsyncMock(
-            return_value=self.create_html_with_canonical("https://example.com/other/")
-        )
         mock_response.headers = {}
+        mock_response.read = AsyncMock(
+            return_value=self.create_html_with_canonical(
+                "https://example.com/other/"
+            ).encode()
+        )
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page should NOT be skipped - canonical checking is disabled
-            result = await scraper.scrape_url("https://example.com/docs/page1/")
-            assert result is not None
-            assert result.url == "https://example.com/docs/page1/"
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page should NOT be skipped - canonical checking is disabled
+                result = await scraper.scrape_url("https://example.com/docs/page1/")
+                assert result is not None
+                assert result.url == "https://example.com/docs/page1/"
 
     def test_httrack_canonical_outside_allowed_path(
         self, config_with_allowed_path, tmp_path
@@ -3475,8 +3506,15 @@ class TestCanonicalWithAllowedPath:
             "https://example.com/api/v1/"
         )
         mock_response.headers = {}
+        mock_response.encoding = "utf-8"
+        mock_response.raise_for_status = Mock()
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
+        # Mock httpx client
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=mock_response)
+
+        async with scraper:
+            scraper._client = mock_client
             # Page should NOT be skipped - it's in allowed_path even though canonical is outside
             result = await scraper.scrape_url("https://example.com/docs/api/v1/")
             assert result is not None
@@ -4003,15 +4041,16 @@ class TestHTTrackIntegration:
 
         result = await crawler.crawl(start_url, output_dir)
 
-        # HTTrack creates files in a specific structure
+        # Check that crawl was successful
+        assert "pages_scraped" in result
+        assert result["pages_scraped"] > 0, "Should have scraped at least one page"
+
         # Check that some files were downloaded
         html_files = list(output_dir.glob("**/*.html"))
-        # Filter out HTTrack's own files
+        # Filter out HTTrack's own files if any
         html_files = [f for f in html_files if not f.name.startswith("hts-")]
 
-        assert (
-            len(html_files) > 0
-        ), "HTTrack should have downloaded at least one HTML file"
+        assert len(html_files) > 0, "Should have downloaded at least one HTML file"
 
     @pytest.mark.asyncio
     async def test_httrack_depth_limit(self, temp_dir):
@@ -4458,7 +4497,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Test server configuration
-TEST_SERVER_URL = "http://localhost:8080"
+# Use a different port to avoid conflicts with other tests
+TEST_SERVER_PORT = 8090
+TEST_SERVER_URL = f"http://localhost:{TEST_SERVER_PORT}"
 
 
 def is_port_in_use(port):
@@ -4474,7 +4515,7 @@ def is_port_in_use(port):
 @pytest.fixture(scope="module", autouse=True)
 def test_server():
     """Start the test server before running tests."""
-    server_port = 8080
+    server_port = TEST_SERVER_PORT
     server_path = (
         Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
     )
@@ -5383,12 +5424,13 @@ class TestPlaywrightIntegration:
             max_pages=1,
             request_delay=0.1,
             check_ssrf=False,
-            scraper_config={
-                "browser": "chromium",
-                "wait_for_selector": "h1",  # Wait for h1 to appear
-                "wait_timeout": 5000,
-            },
+            # browser_config is stored in config.__dict__
         )
+        config.__dict__["browser_config"] = {
+            "browser": "chromium",
+            "wait_for_selector": "h1",  # Wait for h1 to appear
+            "wait_timeout": 5000,
+        }
 
         scraper = PlaywrightScraper(config)
 
@@ -5409,12 +5451,13 @@ class TestPlaywrightIntegration:
             max_pages=1,
             request_delay=0.1,
             check_ssrf=False,
-            scraper_config={
-                "browser": "chromium",
-                "headless": True,
-                "viewport": {"width": 1920, "height": 1080},
-            },
+            # browser_config is stored in config.__dict__
         )
+        config.__dict__["browser_config"] = {
+            "browser": "chromium",
+            "headless": True,
+            "viewport": {"width": 1920, "height": 1080},
+        }
 
         scraper = PlaywrightScraper(config)
 
@@ -5498,6 +5541,9 @@ class TestScraperParameters:
         # Set environment variable to suppress server output
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        # Remove WERKZEUG environment variables that might interfere
+        env.pop("WERKZEUG_RUN_MAIN", None)
+        env.pop("WERKZEUG_SERVER_FD", None)
         env["WERKZEUG_RUN_MAIN"] = "true"  # Suppress Flask reloader
 
         # Start the test server
@@ -5507,6 +5553,7 @@ class TestScraperParameters:
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            text=True,
         )
 
         # Wait for server to start
@@ -5516,12 +5563,31 @@ class TestScraperParameters:
                 response = requests.get("http://localhost:8080/")
                 if response.status_code == 200:
                     break
-            except requests.ConnectionError:
-                pass
+            except requests.ConnectionError as e:
+                if i == max_attempts - 1:
+                    # On last attempt, print debug info
+                    import traceback
+
+                    print(f"Connection error on attempt {i+1}: {e}")
+                    print(traceback.format_exc())
+                    # Check if process is still running
+                    if cls.server_process.poll() is not None:
+                        print(
+                            f"Server process exited with code: {cls.server_process.returncode}"
+                        )
+                        # Try to get output from server
+                        try:
+                            stdout, stderr = cls.server_process.communicate(timeout=1)
+                            if stdout:
+                                print(f"Server stdout: {stdout}")
+                            if stderr:
+                                print(f"Server stderr: {stderr}")
+                        except:
+                            pass
             time.sleep(0.5)
         else:
             cls.teardown_class()
-            pytest.fail("Test server failed to start")
+            pytest.fail("Test server failed to start after 15 seconds")
 
     @classmethod
     def teardown_class(cls):
@@ -5808,7 +5874,7 @@ class TestScraperParameters:
         result = await crawler.crawl(start_url, output_dir)
 
         # Get list of files (this is what --list-files would display)
-        scraped_files = crawler.find_downloaded_files(result)
+        scraped_files = crawler.find_downloaded_files(output_dir)
         assert len(scraped_files) > 0, "Should have found downloaded files"
 
     # Test Database Options
@@ -6126,11 +6192,12 @@ class TestHTTrackScraper:
             return HTTrackScraper(config)
 
     def test_httrack_not_installed(self):
-        """Test error when HTTrack is not installed."""
+        """Test fallback when HTTrack is not installed."""
         config = ScraperConfig()
         with patch("shutil.which", return_value=None):
-            with pytest.raises(RuntimeError, match="HTTrack not found"):
-                HTTrackScraper(config)
+            # Should not raise error, but use Python fallback
+            scraper = HTTrackScraper(config)
+            assert not scraper.use_httrack  # Should use fallback
 
     @pytest.mark.asyncio
     async def test_scrape_url(self, scraper, tmp_path):
@@ -6250,8 +6317,8 @@ class TestPlaywrightScraper:
         config = ScraperConfig(
             max_depth=2, max_pages=10, request_delay=1.0, concurrent_requests=2
         )
-        # Add browser config
-        config.browser_config = {
+        # Add browser config to __dict__
+        config.__dict__["browser_config"] = {
             "browser": "chromium",
             "headless": True,
             "viewport": {"width": 1920, "height": 1080},
@@ -7790,6 +7857,11 @@ if __name__ == "__main__":
 
     # Disable debug mode when running in testing environment
     debug_mode = os.environ.get("FLASK_ENV") != "testing"
+
+    # Clear Werkzeug environment variables that might cause issues
+    for key in list(os.environ.keys()):
+        if key.startswith("WERKZEUG_"):
+            del os.environ[key]
 
     app.run(host="0.0.0.0", port=port, debug=debug_mode)
 

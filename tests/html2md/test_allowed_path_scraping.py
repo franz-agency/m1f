@@ -253,13 +253,7 @@ class TestAllowedPathFeature:
     @pytest.mark.asyncio
     @pytest.mark.skipif(not SELECTOLAX_AVAILABLE, reason="selectolax not installed")
     async def test_selectolax_allowed_path(self, mock_html_responses, temp_dir):
-        """Test Selectolax scraper with allowed_path parameter.
-
-        NOTE: The selectolax scraper currently has a bug where it doesn't properly
-        check path restrictions for links from the start URL. It checks `url != start_url`
-        instead of `absolute_url != start_url`, which means all links from the start page
-        are allowed regardless of path restrictions.
-        """
+        """Test Selectolax scraper with allowed_path parameter."""
         # Create config with allowed_path
         config = ScraperConfig(
             max_pages=20, max_depth=3, allowed_path="/api/", request_delay=0.1
@@ -310,18 +304,14 @@ class TestAllowedPathFeature:
         # Check that we scraped the start URL (always allowed)
         assert "http://test.com/docs/index.html" in scraped_urls
 
-        # Due to the bug in selectolax, all links from the start page are scraped
-        # regardless of allowed_path restriction (they should be filtered)
+        # With allowed_path="/api/", only links to /api/ should be followed
         assert "http://test.com/api/overview.html" in scraped_urls
-        assert "http://test.com/guides/start.html" in scraped_urls
-        assert "http://test.com/blog/news.html" in scraped_urls
-
-        # However, pages under /api/ should still be scraped correctly
         assert "http://test.com/api/endpoints.html" in scraped_urls
         assert "http://test.com/api/auth.html" in scraped_urls
 
-        # Links from non-start pages should still be restricted properly
-        # (but this test setup might not verify this due to the bug)
+        # These should NOT be scraped as they're outside /api/
+        assert "http://test.com/guides/start.html" not in scraped_urls
+        assert "http://test.com/blog/news.html" not in scraped_urls
 
     def test_crawler_config_allowed_path(self):
         """Test that CrawlerConfig properly accepts allowed_path."""

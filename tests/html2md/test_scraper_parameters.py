@@ -42,6 +42,9 @@ class TestScraperParameters:
         # Set environment variable to suppress server output
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        # Remove WERKZEUG environment variables that might interfere
+        env.pop("WERKZEUG_RUN_MAIN", None)
+        env.pop("WERKZEUG_SERVER_FD", None)
         env["WERKZEUG_RUN_MAIN"] = "true"  # Suppress Flask reloader
 
         # Start the test server
@@ -51,6 +54,7 @@ class TestScraperParameters:
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            text=True,
         )
 
         # Wait for server to start
@@ -60,12 +64,31 @@ class TestScraperParameters:
                 response = requests.get("http://localhost:8080/")
                 if response.status_code == 200:
                     break
-            except requests.ConnectionError:
-                pass
+            except requests.ConnectionError as e:
+                if i == max_attempts - 1:
+                    # On last attempt, print debug info
+                    import traceback
+
+                    print(f"Connection error on attempt {i+1}: {e}")
+                    print(traceback.format_exc())
+                    # Check if process is still running
+                    if cls.server_process.poll() is not None:
+                        print(
+                            f"Server process exited with code: {cls.server_process.returncode}"
+                        )
+                        # Try to get output from server
+                        try:
+                            stdout, stderr = cls.server_process.communicate(timeout=1)
+                            if stdout:
+                                print(f"Server stdout: {stdout}")
+                            if stderr:
+                                print(f"Server stderr: {stderr}")
+                        except:
+                            pass
             time.sleep(0.5)
         else:
             cls.teardown_class()
-            pytest.fail("Test server failed to start")
+            pytest.fail("Test server failed to start after 15 seconds")
 
     @classmethod
     def teardown_class(cls):
@@ -352,7 +375,7 @@ class TestScraperParameters:
         result = await crawler.crawl(start_url, output_dir)
 
         # Get list of files (this is what --list-files would display)
-        scraped_files = crawler.find_downloaded_files(result)
+        scraped_files = crawler.find_downloaded_files(output_dir)
         assert len(scraped_files) > 0, "Should have found downloaded files"
 
     # Test Database Options

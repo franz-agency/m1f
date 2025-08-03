@@ -209,11 +209,12 @@ class TestHTTrackScraper:
             return HTTrackScraper(config)
 
     def test_httrack_not_installed(self):
-        """Test error when HTTrack is not installed."""
+        """Test fallback when HTTrack is not installed."""
         config = ScraperConfig()
         with patch("shutil.which", return_value=None):
-            with pytest.raises(RuntimeError, match="HTTrack not found"):
-                HTTrackScraper(config)
+            # Should not raise error, but use Python fallback
+            scraper = HTTrackScraper(config)
+            assert not scraper.use_httrack  # Should use fallback
 
     @pytest.mark.asyncio
     async def test_scrape_url(self, scraper, tmp_path):
@@ -333,8 +334,8 @@ class TestPlaywrightScraper:
         config = ScraperConfig(
             max_depth=2, max_pages=10, request_delay=1.0, concurrent_requests=2
         )
-        # Add browser config
-        config.browser_config = {
+        # Add browser config to __dict__
+        config.__dict__["browser_config"] = {
             "browser": "chromium",
             "headless": True,
             "viewport": {"width": 1920, "height": 1080},

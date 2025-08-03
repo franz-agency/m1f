@@ -78,17 +78,26 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/docs/api/v1/"
-        mock_response.text = AsyncMock(
-            return_value=self.create_html_with_canonical("https://example.com/api/v1/")
-        )
         mock_response.headers = {}
+        mock_response.read = AsyncMock(
+            return_value=self.create_html_with_canonical(
+                "https://example.com/api/v1/"
+            ).encode()
+        )
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page should NOT be skipped - it's in allowed_path even though canonical is outside
-            result = await scraper.scrape_url("https://example.com/docs/api/v1/")
-            assert result is not None
-            assert result.url == "https://example.com/docs/api/v1/"
-            assert "Test Content" in result.content
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page should NOT be skipped - it's in allowed_path even though canonical is outside
+                result = await scraper.scrape_url("https://example.com/docs/api/v1/")
+                assert result is not None
+                assert result.url == "https://example.com/docs/api/v1/"
+                assert "Test Content" in result.content
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_canonical_within_allowed_path(
@@ -101,17 +110,24 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/docs/page1/"
-        mock_response.text = AsyncMock(
+        mock_response.headers = {}
+        mock_response.read = AsyncMock(
             return_value=self.create_html_with_canonical(
                 "https://example.com/docs/page2/"
-            )
+            ).encode()
         )
-        mock_response.headers = {}
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page SHOULD be skipped - both URLs are in allowed_path but they differ
-            result = await scraper.scrape_url("https://example.com/docs/page1/")
-            assert result is None
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page SHOULD be skipped - both URLs are in allowed_path but they differ
+                result = await scraper.scrape_url("https://example.com/docs/page1/")
+                assert result is None
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_canonical_same_url(self, config_with_allowed_path):
@@ -122,18 +138,25 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/docs/page1/"
-        mock_response.text = AsyncMock(
+        mock_response.headers = {}
+        mock_response.read = AsyncMock(
             return_value=self.create_html_with_canonical(
                 "https://example.com/docs/page1/"
-            )
+            ).encode()
         )
-        mock_response.headers = {}
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page should NOT be skipped - canonical matches current URL
-            result = await scraper.scrape_url("https://example.com/docs/page1/")
-            assert result is not None
-            assert result.url == "https://example.com/docs/page1/"
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page should NOT be skipped - canonical matches current URL
+                result = await scraper.scrape_url("https://example.com/docs/page1/")
+                assert result is not None
+                assert result.url == "https://example.com/docs/page1/"
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_no_allowed_path(self):
@@ -151,15 +174,24 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/page1/"
-        mock_response.text = AsyncMock(
-            return_value=self.create_html_with_canonical("https://example.com/page2/")
-        )
         mock_response.headers = {}
+        mock_response.read = AsyncMock(
+            return_value=self.create_html_with_canonical(
+                "https://example.com/page2/"
+            ).encode()
+        )
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page SHOULD be skipped - canonical differs and no allowed_path restriction
-            result = await scraper.scrape_url("https://example.com/page1/")
-            assert result is None
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page SHOULD be skipped - canonical differs and no allowed_path restriction
+                result = await scraper.scrape_url("https://example.com/page1/")
+                assert result is None
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_canonical_check_disabled(
@@ -172,16 +204,25 @@ class TestCanonicalWithAllowedPath:
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.url = "https://example.com/docs/page1/"
-        mock_response.text = AsyncMock(
-            return_value=self.create_html_with_canonical("https://example.com/other/")
-        )
         mock_response.headers = {}
+        mock_response.read = AsyncMock(
+            return_value=self.create_html_with_canonical(
+                "https://example.com/other/"
+            ).encode()
+        )
+        mock_response.charset = "utf-8"
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
-            # Page should NOT be skipped - canonical checking is disabled
-            result = await scraper.scrape_url("https://example.com/docs/page1/")
-            assert result is not None
-            assert result.url == "https://example.com/docs/page1/"
+        # Create a proper async context manager mock
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+
+        async with scraper:
+            with patch.object(scraper.session, "get", return_value=mock_context):
+                # Page should NOT be skipped - canonical checking is disabled
+                result = await scraper.scrape_url("https://example.com/docs/page1/")
+                assert result is not None
+                assert result.url == "https://example.com/docs/page1/"
 
     def test_httrack_canonical_outside_allowed_path(
         self, config_with_allowed_path, tmp_path
@@ -230,8 +271,15 @@ class TestCanonicalWithAllowedPath:
             "https://example.com/api/v1/"
         )
         mock_response.headers = {}
+        mock_response.encoding = "utf-8"
+        mock_response.raise_for_status = Mock()
 
-        with patch.object(scraper.session, "get", return_value=mock_response):
+        # Mock httpx client
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=mock_response)
+
+        async with scraper:
+            scraper._client = mock_client
             # Page should NOT be skipped - it's in allowed_path even though canonical is outside
             result = await scraper.scrape_url("https://example.com/docs/api/v1/")
             assert result is not None

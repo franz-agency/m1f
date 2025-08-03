@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""HTTrack-based web scraper implementation."""
+"""HTTrack-based web scraper implementation with Python fallback."""
 
 import asyncio
 import logging
@@ -25,12 +25,17 @@ from typing import AsyncGenerator, Optional
 from urllib.parse import urlparse, urljoin
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
+from .python_mirror import PythonMirrorScraper
 
 logger = logging.getLogger(__name__)
 
 
-class HTTrackScraper(WebScraperBase):
-    """HTTrack-based web scraper for complete website mirroring."""
+class HTTrackScraper(PythonMirrorScraper):
+    """HTTrack-based web scraper with Python fallback.
+
+    This scraper attempts to use HTTrack for website mirroring, but falls back
+    to a pure Python implementation if HTTrack is not available or fails.
+    """
 
     def __init__(self, config: ScraperConfig):
         """Initialize the HTTrack scraper.
@@ -40,23 +45,32 @@ class HTTrackScraper(WebScraperBase):
         """
         super().__init__(config)
         self.httrack_path = shutil.which("httrack")
-        if not self.httrack_path:
-            raise RuntimeError(
-                "HTTrack not found. Please install HTTrack: "
+        self.use_httrack = bool(self.httrack_path)
+        if not self.use_httrack:
+            logger.warning(
+                "HTTrack not found. Using Python-based mirroring instead. "
+                "For better performance, install HTTrack: "
                 "apt-get install httrack (Linux) or "
-                "brew install httrack (macOS) or "
-                "download from https://www.httrack.com (Windows)"
+                "brew install httrack (macOS)"
             )
         self.temp_dir: Optional[Path] = None
 
     async def __aenter__(self):
-        """Create temporary directory for HTTrack output."""
+        """Create temporary directory for HTTrack output and initialize parent."""
+        # Initialize parent context manager for Python fallback
+        await super().__aenter__()
+
+        # Create temp dir for HTTrack
         self.temp_dir = Path(tempfile.mkdtemp(prefix="html2md_httrack_"))
         logger.debug(f"Created temporary directory: {self.temp_dir}")
         return self
 
     async def __aexit__(self, *args):
-        """Clean up temporary directory."""
+        """Clean up temporary directory and parent resources."""
+        # Clean up parent resources
+        await super().__aexit__(*args)
+
+        # Clean up temp directory
         if self.temp_dir and self.temp_dir.exists():
             try:
                 shutil.rmtree(self.temp_dir)
@@ -65,10 +79,11 @@ class HTTrackScraper(WebScraperBase):
                 logger.warning(f"Failed to clean up temp directory: {e}")
 
     async def scrape_url(self, url: str) -> ScrapedPage:
-        """Scrape a single URL using HTTrack.
+        """Scrape a single URL using HTTrack or Python fallback.
 
         Note: HTTrack is designed for full site mirroring, so this method
         will create a minimal mirror and extract just the requested page.
+        If HTTrack fails or is not available, uses Python implementation.
 
         Args:
             url: URL to scrape
@@ -76,6 +91,16 @@ class HTTrackScraper(WebScraperBase):
         Returns:
             ScrapedPage object containing the scraped content
         """
+        # If HTTrack is not available, use parent Python implementation
+        if not self.use_httrack:
+            return await super().scrape_url(url)
+
+        # HTTrack has issues with localhost, use Python implementation
+        parsed = urlparse(url)
+        if parsed.hostname in ["localhost", "127.0.0.1", "::1"]:
+            logger.info(f"Using Python implementation for localhost URL: {url}")
+            return await super().scrape_url(url)
+
         if not self.temp_dir:
             raise RuntimeError("Scraper must be used as async context manager")
 
@@ -117,7 +142,11 @@ class HTTrackScraper(WebScraperBase):
 
         if process.returncode != 0:
             error_msg = stderr.decode("utf-8", errors="replace")
-            raise RuntimeError(f"HTTrack failed: {error_msg}")
+            logger.warning(
+                f"HTTrack failed: {error_msg}. Falling back to Python implementation."
+            )
+            # Fall back to Python implementation
+            return await super().scrape_url(url)
 
         # Find the downloaded file
         # HTTrack creates files in a domain subdirectory
@@ -171,13 +200,22 @@ class HTTrackScraper(WebScraperBase):
             if html_files:
                 expected_file = html_files[0]
             else:
-                raise RuntimeError(f"HTTrack did not download any HTML files for {url}")
+                logger.warning(
+                    f"HTTrack did not download any HTML files for {url}. Falling back to Python implementation."
+                )
+                # Fall back to Python implementation
+                return await super().scrape_url(url)
 
         # Read the content
         try:
             content = expected_file.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             content = expected_file.read_text(encoding="latin-1")
+        except Exception as e:
+            logger.warning(
+                f"Failed to read HTTrack output file: {e}. Falling back to Python implementation."
+            )
+            return await super().scrape_url(url)
 
         # Extract title from content
         title = None
@@ -217,7 +255,7 @@ class HTTrackScraper(WebScraperBase):
         )
 
     async def scrape_site(self, start_url: str) -> AsyncGenerator[ScrapedPage, None]:
-        """Scrape entire website using HTTrack.
+        """Scrape entire website using HTTrack or Python fallback.
 
         Args:
             start_url: URL to start crawling from
@@ -225,6 +263,20 @@ class HTTrackScraper(WebScraperBase):
         Yields:
             ScrapedPage objects as they are scraped
         """
+        # If HTTrack is not available, use parent Python implementation
+        if not self.use_httrack:
+            async for page in super().scrape_site(start_url):
+                yield page
+            return
+
+        # HTTrack has issues with localhost, use Python implementation
+        parsed = urlparse(start_url)
+        if parsed.hostname in ["localhost", "127.0.0.1", "::1"]:
+            logger.info(f"Using Python implementation for localhost URL: {start_url}")
+            async for page in super().scrape_site(start_url):
+                yield page
+            return
+
         if not self.temp_dir:
             raise RuntimeError("Scraper must be used as async context manager")
 
