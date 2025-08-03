@@ -42,7 +42,7 @@ class TestAllowedPathIntegration:
         env["FLASK_ENV"] = "testing"
 
         # Start the test server
-        server_path = Path(__file__).parent / "html2md_server" / "server.py"
+        server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
             ["python", str(server_path)],
             env=env,
