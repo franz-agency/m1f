@@ -21,7 +21,15 @@ from pathlib import Path
 from typing import List, Optional
 
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 from . import __version__
 from .api import Html2mdConverter
@@ -261,6 +269,12 @@ def handle_convert(args: argparse.Namespace) -> None:
                 for key, value in config_data["extractor"].items():
                     if hasattr(config.extractor, key):
                         setattr(config.extractor, key, value)
+
+            # Apply conversion settings from the config file
+            if "conversion" in config_data:
+                for key, value in config_data["conversion"].items():
+                    if hasattr(config.conversion, key):
+                        setattr(config.conversion, key, value)
         else:
             # Full config file - load it normally
             config = load_config(args.config)
@@ -271,10 +285,10 @@ def handle_convert(args: argparse.Namespace) -> None:
 
     # Update config with CLI arguments
     if args.content_selector:
-        config.extractor.content_selector = args.content_selector
+        config.conversion.outermost_selector = args.content_selector
 
     if args.ignore_selectors:
-        config.extractor.ignore_selectors = args.ignore_selectors
+        config.conversion.ignore_selectors = args.ignore_selectors
 
     if args.heading_offset:
         config.processor.heading_offset = args.heading_offset
@@ -410,7 +424,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
         info("```yaml")
         info("extractor:")
         if suggestions["content"]:
-            info(f"  content_selector: \"{suggestions['content'][0][0]}\"")
+            info(f"  outermost_selector: \"{suggestions['content'][0][0]}\"")
         info("  ignore_selectors:")
         for selector in suggestions["ignore"]:
             info(f'    - "{selector}"')
@@ -607,9 +621,7 @@ def _handle_claude_analysis(
 
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        warning(
-            f"Only {len(html_files)} files available. Will analyze all of them."
-        )
+        warning(f"Only {len(html_files)} files available. Will analyze all of them.")
 
     # Ask user for project description if not provided
     if not project_description:
@@ -623,9 +635,7 @@ def _handle_claude_analysis(
         info(
             "\nTip: If there are particularly important files to analyze, mention them in your description"
         )
-        info(
-            "     so Claude will prioritize those files in the analysis."
-        )
+        info("     so Claude will prioritize those files in the analysis.")
         project_description = input("\nProject description: ").strip()
     else:
         header(f"Project Context: {project_description}")
@@ -777,9 +787,7 @@ def _handle_claude_analysis(
                     continue
 
         if not claude_found:
-            error(
-                "claude command not found. Please install Claude CLI."
-            )
+            error("claude command not found. Please install Claude CLI.")
             warning(
                 "If claude is installed as an alias, try adding it to your PATH or creating a symlink."
             )
@@ -818,9 +826,7 @@ def _handle_claude_analysis(
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
     if not individual_prompt_path.exists():
-        error(
-            f"Prompt file not found: {individual_prompt_path}"
-        )
+        error(f"Prompt file not found: {individual_prompt_path}")
         return
 
     individual_prompt_template = individual_prompt_path.read_text()
@@ -1051,34 +1057,53 @@ def _handle_claude_analysis(
 
                 # Show clear usage instructions
                 info("\n" + "=" * 60)
-                info(f"{Colors.GREEN}{Colors.BOLD}✨ Analysis Complete! Here's how to convert your HTML files:{Colors.RESET}")
+                info(
+                    f"{Colors.GREEN}{Colors.BOLD}✨ Analysis Complete! Here's how to convert your HTML files:{Colors.RESET}"
+                )
                 info("=" * 60 + "\n")
 
-                info(f"{Colors.BOLD}Option 1: Use the generated configuration (RECOMMENDED){Colors.RESET}")
-                info("This uses the CSS selectors Claude identified to extract only the main content:\n")
-                info(f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown -c {config_file}{Colors.RESET}\n")
+                info(
+                    f"{Colors.BOLD}Option 1: Use the generated configuration (RECOMMENDED){Colors.RESET}"
+                )
+                info(
+                    "This uses the CSS selectors Claude identified to extract only the main content:\n"
+                )
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown -c {config_file}{Colors.RESET}\n"
+                )
 
-                info(f"{Colors.BOLD}Option 2: Use Claude AI for each file{Colors.RESET}")
-                info("This uses Claude to intelligently extract content from each file individually:")
+                info(
+                    f"{Colors.BOLD}Option 2: Use Claude AI for each file{Colors.RESET}"
+                )
+                info(
+                    "This uses Claude to intelligently extract content from each file individually:"
+                )
                 info("(Slower but may handle edge cases better)\n")
-                info(f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown --claude{Colors.RESET}\n")
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown --claude{Colors.RESET}\n"
+                )
 
                 info(f"{Colors.BOLD}Option 3: Convert a single file{Colors.RESET}")
                 info("To test the configuration on a single file first:\n")
-                info(f"{Colors.CYAN}m1f-html2md convert path/to/file.html -o test.md -c {config_file}{Colors.RESET}\n")
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert path/to/file.html -o test.md -c {config_file}{Colors.RESET}\n"
+                )
 
                 info("=" * 60)
             else:
-                warning(
-                    "Could not extract YAML configuration from Claude's response"
+                warning("Could not extract YAML configuration from Claude's response")
+                info(
+                    "Please manually create html2md_config.yaml based on the analysis above."
                 )
                 info(
-                    "Please manually create html2md_config.yaml based on the analysis above.")
-                info("\nExpected format: The YAML should be between ```yaml and ``` markers.")
+                    "\nExpected format: The YAML should be between ```yaml and ``` markers."
+                )
 
         except Exception as e:
             warning(f"Could not save configuration: {e}")
-            info(f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above.")
+            info(
+                f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above."
+            )
 
     except subprocess.TimeoutExpired:
         warning("Timeout synthesizing configuration (5 minutes)")
@@ -1088,8 +1113,7 @@ def _handle_claude_analysis(
 
     # Ask if temporary analysis files should be deleted
     header("Cleanup:")
-    cleanup = input(
-        "Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
+    cleanup = input("Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
 
     if cleanup.lower() != "n":
         # Delete analysis files
@@ -1106,7 +1130,9 @@ def _handle_claude_analysis(
         if deleted_count > 0:
             success(f"Deleted {deleted_count} temporary analysis files")
     else:
-        info(f"{Colors.BLUE}ℹ️  Temporary analysis files kept in m1f/ directory{Colors.RESET}")
+        info(
+            f"{Colors.BLUE}ℹ️  Temporary analysis files kept in m1f/ directory{Colors.RESET}"
+        )
 
 
 def _suggest_selectors(parsed_files):

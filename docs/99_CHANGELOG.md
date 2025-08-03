@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **m1f-html2md Config Structure**: Fixed configuration structure mismatch
+  - Config loader now properly handles nested configuration objects
+  - CLI correctly maps arguments to `conversion.outermost_selector` and `conversion.ignore_selectors`
+  - Fixed prompts that were generating incorrect config structure with `extractor.content_selector`
+  - Updated all prompts to generate the correct structure: `conversion.outermost_selector`
+  - Fixed output message to show "outermost_selector" instead of "content_selector"
+  - Config files now work correctly with proper field mapping
+
 ## [3.8.0] - 2025-07-24
 
 ### Added

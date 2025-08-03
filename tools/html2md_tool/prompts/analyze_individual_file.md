@@ -80,10 +80,7 @@ SPECIAL FINDINGS:
 - [Warnings]
 
 SUGGESTED SELECTORS:
-content_selector: "[primary selector]"
-alternative_selectors:
-  - "[fallback 1]"
-  - "[fallback 2]"
+outermost_selector: "[primary selector]"
 ignore_selectors:
   - "[exclude 1]"
   - "[exclude 2]"

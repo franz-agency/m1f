@@ -103,10 +103,7 @@ SPECIAL FINDINGS:
 - [Warnings]
 
 SUGGESTED SELECTORS:
-content_selector: "[primary selector]"
-alternative_selectors:
-  - "[fallback 1]"
-  - "[fallback 2]"
+outermost_selector: "[primary selector]"
 ignore_selectors:
   - "[exclude 1]"
   - "[exclude 2]"
@@ -128,31 +125,30 @@ The file should have the results of you analyses and have this structure:
 source: ./html
 destination: ./markdown
 
-# Extractor configuration - CSS selectors for content extraction
+# Extractor configuration
 extractor:
-  # Primary selector that works across most/all analyzed files
-  content_selector: "main.content, article.documentation"
+  parser: "html.parser"  # BeautifulSoup parser
+  encoding: "utf-8"
+  decode_errors: "ignore"
+  prettify: false
 
-  # Fallback selectors in priority order
-  alternative_selectors:
-    - "[selector that works on most files]"
-    - "[selector that works on some files]"
-    - "[generic but safe fallback]"
-
-  # Exclusions that apply across all files
+# Conversion options - Markdown formatting preferences
+conversion:
+  # Primary content selector (use comma-separated list for multiple)
+  outermost_selector: "main.content, article.documentation"
+  
+  # Elements to remove from the content
   ignore_selectors:
     # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
-
+    
     # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
-
+    
     # [Continue with all common exclusions]
-
-# Conversion options - Markdown formatting preferences
-conversion:
+  
   strip_tags: ["script", "style", "noscript"]
   keep_html_tags: [] # HTML tags to preserve in output
   heading_style: "atx" # atx (###) or setext (underlines)

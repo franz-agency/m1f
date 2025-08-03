@@ -24,7 +24,15 @@ import yaml
 import sys
 
 # Use unified colorama module
-from ...shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ...shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 from .models import Config
 
@@ -56,6 +64,16 @@ def load_config(path: Path) -> Config:
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
 
+    # Import nested config models
+    from .models import (
+        ConversionOptions,
+        ExtractorConfig,
+        ProcessorConfig,
+        AssetConfig,
+        CrawlerConfig,
+        M1fConfig,
+    )
+
     # Get valid field names from Config dataclass
     valid_fields = {f.name for f in fields(Config)}
 
@@ -68,6 +86,19 @@ def load_config(path: Path) -> Config:
             # Convert string paths to Path objects for specific fields
             if key in ["source", "destination", "log_file"] and value is not None:
                 filtered_data[key] = Path(value)
+            # Handle nested configuration objects
+            elif key == "conversion" and isinstance(value, dict):
+                filtered_data[key] = ConversionOptions(**value)
+            elif key == "extractor" and isinstance(value, dict):
+                filtered_data[key] = ExtractorConfig(**value)
+            elif key == "processor" and isinstance(value, dict):
+                filtered_data[key] = ProcessorConfig(**value)
+            elif key == "assets" and isinstance(value, dict):
+                filtered_data[key] = AssetConfig(**value)
+            elif key == "crawler" and isinstance(value, dict):
+                filtered_data[key] = CrawlerConfig(**value)
+            elif key == "m1f" and isinstance(value, dict):
+                filtered_data[key] = M1fConfig(**value)
             else:
                 filtered_data[key] = value
         else:
@@ -76,7 +107,9 @@ def load_config(path: Path) -> Config:
     # Warn about unknown fields
     if unknown_fields:
         warning(f"Ignoring unknown configuration fields: {', '.join(unknown_fields)}")
-        info(f"{Colors.DIM}   These fields are not recognized by m1f-html2md and will be ignored.{Colors.RESET}")
+        info(
+            f"{Colors.DIM}   These fields are not recognized by m1f-html2md and will be ignored.{Colors.RESET}"
+        )
 
     return Config(**filtered_data)
 
