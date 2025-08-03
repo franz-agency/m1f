@@ -828,6 +828,8 @@ and this project adheres to
   - Session statistics calculated correctly at end of each run
   - Graceful handling of Ctrl+C, crashes, and kill signals
   - Long-running sessions (>1hr) not interrupted if still actively scraping
+  - Optional file deletion when clearing sessions with `--delete-files` flag
+  - Interactive confirmation prompt for file deletion (skipped with flag)
 
 ### Fixed
 
@@ -13636,15 +13638,34 @@ ID  | Status    | Started             | Pages | Success | Failed | URL
 ### Clean Up Sessions
 
 ```bash
-# Clear the most recent session
+# Clear the most recent session (database only, asks about files)
 m1f-scrape --clear-last-session -o ./html
 
-# Clear a specific session by ID
+# Clear session and automatically delete files (no prompt)
+m1f-scrape --clear-last-session --delete-files -o ./html
+
+# Clear a specific session by ID (asks about files)
 m1f-scrape --clear-session 2 -o ./html
+
+# Clear session 2 and delete files without confirmation
+m1f-scrape --clear-session 2 --delete-files -o ./html
 
 # Clean up orphaned sessions (from crashes)
 m1f-scrape --cleanup-sessions -o ./html
 ```
+
+#### File Deletion Behavior
+
+When clearing sessions, the scraper will:
+1. **Always delete** database entries (URLs, checksums, session records)
+2. **Optionally delete** downloaded HTML files and metadata files
+3. **Ask for confirmation** by default when files would be deleted
+4. **Skip confirmation** if `--delete-files` flag is provided
+
+This allows you to:
+- Keep downloaded files while cleaning the database
+- Fully clean up both database and files
+- Automate cleanup in scripts with `--delete-files`
 
 ### Automatic Cleanup
 

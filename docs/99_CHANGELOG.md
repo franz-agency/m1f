@@ -21,6 +21,8 @@ and this project adheres to
   - Session statistics calculated correctly at end of each run
   - Graceful handling of Ctrl+C, crashes, and kill signals
   - Long-running sessions (>1hr) not interrupted if still actively scraping
+  - Optional file deletion when clearing sessions with `--delete-files` flag
+  - Interactive confirmation prompt for file deletion (skipped with flag)
 
 ### Fixed
 

@@ -305,12 +305,14 @@ def show_scraping_sessions(db_path: Path, detailed: bool = False) -> None:
         error(f"Error showing sessions: {e}")
 
 
-def clear_session(db_path: Path, session_id: Optional[int] = None) -> None:
+def clear_session(db_path: Path, session_id: Optional[int] = None, delete_files: bool = False, auto_delete: bool = False) -> None:
     """Clear URLs from a specific scraping session or the last session.
     
     Args:
         db_path: Path to the SQLite database
         session_id: Specific session ID to clear, or None for the last session
+        delete_files: Whether to also delete downloaded files
+        auto_delete: If True, skip confirmation prompt for file deletion
     """
     if not db_path.exists():
         warning("No database found.")
@@ -353,6 +355,15 @@ def clear_session(db_path: Path, session_id: Optional[int] = None) -> None:
             
             start_url, start_time = session_info
             
+            # Get file paths from this session
+            cursor.execute(
+                """SELECT target_filename 
+                   FROM scraped_urls 
+                   WHERE session_id = ? AND target_filename IS NOT NULL AND target_filename != ''""",
+                (session_id,)
+            )
+            file_paths = [row[0] for row in cursor.fetchall()]
+            
             # Get checksums of URLs from this session
             cursor.execute(
                 """SELECT content_checksum 
@@ -368,6 +379,47 @@ def clear_session(db_path: Path, session_id: Optional[int] = None) -> None:
                 (session_id,)
             )
             url_count = cursor.fetchone()[0]
+            
+            # Handle file deletion if requested
+            files_deleted = 0
+            if delete_files and file_paths:
+                # Build list of actual files to delete
+                output_dir = db_path.parent
+                files_to_delete = []
+                for file_path in file_paths:
+                    full_path = output_dir / file_path
+                    if full_path.exists():
+                        files_to_delete.append(full_path)
+                    # Also check for metadata files
+                    meta_path = full_path.with_suffix(full_path.suffix + '.meta.json')
+                    if meta_path.exists():
+                        files_to_delete.append(meta_path)
+                
+                if files_to_delete:
+                    # Ask for confirmation if not auto-deleting
+                    should_delete = auto_delete
+                    if not auto_delete:
+                        info(f"\nFound {len(files_to_delete)} files from session #{session_id}:")
+                        # Show first 10 files as examples
+                        for i, file in enumerate(files_to_delete[:10]):
+                            info(f"  - {file.relative_to(output_dir)}")
+                        if len(files_to_delete) > 10:
+                            info(f"  ... and {len(files_to_delete) - 10} more files")
+                        
+                        response = input("\nAlso delete these downloaded files? (y/N): ")
+                        should_delete = response.lower() == 'y'
+                    
+                    if should_delete:
+                        import shutil
+                        for file_path in files_to_delete:
+                            try:
+                                if file_path.is_dir():
+                                    shutil.rmtree(file_path)
+                                else:
+                                    file_path.unlink()
+                                files_deleted += 1
+                            except Exception as e:
+                                warning(f"Failed to delete {file_path}: {e}")
             
             # Delete URLs from session
             cursor.execute("DELETE FROM scraped_urls WHERE session_id = ?", (session_id,))
@@ -389,6 +441,8 @@ def clear_session(db_path: Path, session_id: Optional[int] = None) -> None:
             success(f"Cleared session #{session_id} ({url_count} URLs from {start_url} at {start_time})")
             if checksum_count > 0:
                 info(f"Also cleared {checksum_count} associated content checksums")
+            if files_deleted > 0:
+                info(f"Deleted {files_deleted} downloaded files")
         else:
             # Fall back to date-based deletion for legacy databases
             cursor.execute(
@@ -401,6 +455,15 @@ def clear_session(db_path: Path, session_id: Optional[int] = None) -> None:
                 return
             
             last_date = result[0]
+            
+            # Get file paths from last session
+            cursor.execute(
+                """SELECT target_filename 
+                   FROM scraped_urls 
+                   WHERE DATE(scraped_at) = ? AND target_filename IS NOT NULL AND target_filename != ''""",
+                (last_date,)
+            )
+            file_paths = [row[0] for row in cursor.fetchall()]
             
             # Get checksums of URLs from last session
             cursor.execute(
@@ -417,6 +480,43 @@ def clear_session(db_path: Path, session_id: Optional[int] = None) -> None:
                 (last_date,)
             )
             url_count = cursor.fetchone()[0]
+            
+            # Handle file deletion if requested (same logic as above)
+            files_deleted = 0
+            if delete_files and file_paths:
+                output_dir = db_path.parent
+                files_to_delete = []
+                for file_path in file_paths:
+                    full_path = output_dir / file_path
+                    if full_path.exists():
+                        files_to_delete.append(full_path)
+                    meta_path = full_path.with_suffix(full_path.suffix + '.meta.json')
+                    if meta_path.exists():
+                        files_to_delete.append(meta_path)
+                
+                if files_to_delete:
+                    should_delete = auto_delete
+                    if not auto_delete:
+                        info(f"\nFound {len(files_to_delete)} files from session {last_date}:")
+                        for i, file in enumerate(files_to_delete[:10]):
+                            info(f"  - {file.relative_to(output_dir)}")
+                        if len(files_to_delete) > 10:
+                            info(f"  ... and {len(files_to_delete) - 10} more files")
+                        
+                        response = input("\nAlso delete these downloaded files? (y/N): ")
+                        should_delete = response.lower() == 'y'
+                    
+                    if should_delete:
+                        import shutil
+                        for file_path in files_to_delete:
+                            try:
+                                if file_path.is_dir():
+                                    shutil.rmtree(file_path)
+                                else:
+                                    file_path.unlink()
+                                files_deleted += 1
+                            except Exception as e:
+                                warning(f"Failed to delete {file_path}: {e}")
             
             # Delete URLs from last session
             cursor.execute("DELETE FROM scraped_urls WHERE DATE(scraped_at) = ?", (last_date,))
@@ -435,6 +535,8 @@ def clear_session(db_path: Path, session_id: Optional[int] = None) -> None:
             success(f"Cleared {url_count} URLs from session {last_date}")
             if checksum_count > 0:
                 info(f"Also cleared {checksum_count} associated content checksums")
+            if files_deleted > 0:
+                info(f"Deleted {files_deleted} downloaded files")
         
         conn.close()
         
@@ -806,6 +908,11 @@ For more information, see the documentation."""
         help="Clear a specific session by its ID",
     )
     db_group.add_argument(
+        "--delete-files",
+        action="store_true",
+        help="Also delete downloaded files when clearing sessions (skips confirmation)",
+    )
+    db_group.add_argument(
         "--show-sessions",
         action="store_true",
         help="Show all scraping sessions with timestamps and URL counts",
@@ -887,13 +994,15 @@ def main() -> None:
     # Check if clear-last-session is requested
     if args.clear_last_session:
         db_path = args.output / "scrape_tracker.db"
-        clear_session(db_path)
+        # If no --delete-files flag, ask for confirmation
+        clear_session(db_path, delete_files=True, auto_delete=args.delete_files)
         return
     
     # Check if clear-session is requested
     if args.clear_session:
         db_path = args.output / "scrape_tracker.db"
-        clear_session(db_path, args.clear_session)
+        # If no --delete-files flag, ask for confirmation
+        clear_session(db_path, args.clear_session, delete_files=True, auto_delete=args.delete_files)
         return
     
     # Check if cleanup-sessions is requested
