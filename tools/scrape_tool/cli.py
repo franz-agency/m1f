@@ -120,11 +120,10 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
             if urls:
                 header("Scraped URLs:")
                 for url, status_code in urls:
-                    status_icon = (
-                        "[green]✓[/green]"
-                        if status_code == 200
-                        else f"[yellow]{status_code}[/yellow]"
-                    )
+                    if status_code == 200:
+                        status_icon = f"{Colors.GREEN}✓{Colors.RESET}"
+                    else:
+                        status_icon = f"{Colors.YELLOW}{status_code}{Colors.RESET}"
                     info(f"{status_icon} {url}")
             else:
                 warning("No URLs found in database")
@@ -154,7 +153,7 @@ Perfect for:
   %(prog)s https://example.com/docs -o ./html --max-pages 100
   %(prog)s https://example.com/blog -o ./html --allowed-path /blog/2024/
   %(prog)s https://example.com -o ./html --scraper httrack
-  %(prog)s --db-info -o ./html  # Show scraping statistics
+  %(prog)s --show-db-stats -o ./html  # Show scraping statistics
 
 For more information, see the documentation."""
 
