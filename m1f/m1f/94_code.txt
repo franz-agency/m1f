@@ -933,82 +933,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options
 
-======= examples/README.md ======
-# m1f Examples
-
-## scrape_claude_code_docs.py
-
-Creates a bundled documentation file from the Claude Code documentation website.
-
-### What it does
-
-1. **Scrapes** ~30 HTML pages from docs.anthropic.com/claude-code
-2. **Analyzes** HTML structure using Claude AI
-3. **Converts** HTML to clean Markdown
-4. **Creates** documentation bundle using m1f-init
-
-### Usage
-
-```bash
-python examples/scrape_claude_code_docs.py <target_directory>
-```
-
-Example:
-
-```bash
-python examples/scrape_claude_code_docs.py ~/claude-doc
-```
-
-### Timing
-
-⏱️ **Total duration: ~15-20 minutes**
-
-- Scraping: 7-8 minutes (30 pages with 15s delays)
-- Claude analysis: 5-8 minutes
-- Conversion & bundling: <2 minutes
-
-### Capture output to file
-
-To save the entire process log:
-
-```bash
-cd /path/to/m1f
-script -c "python examples/scrape_claude_code_docs.py ~/claude-doc" ~/claude-code-doc-scrape.txt
-```
-
-### Ideal usage (with virtual environment)
-
-The recommended way to run this script with full output capture:
-
-```bash
-# Create output directory
-mkdir ~/claude-code-doc
-
-# Run with virtual environment and capture output
-script -c "source ./.venv/bin/activate && python examples/scrape_claude_code_docs.py ~/claude-code-doc" \
-    ~/claude-code-doc/claude-code-doc-scrape.txt
-```
-
-### Output
-
-The script creates a documentation bundle at:
-
-```
-<target_directory>/claude-code-markdown/m1f/claude-code-markdown_docs.txt
-```
-
-You can then:
-
-- Create a symlink: `ln -s <bundle_path> ~/claude-code-docs.txt`
-- Copy the file: `cp <bundle_path> <destination>`
-- Use with Claude: `m1f-claude <bundle_path>`
-
-### Requirements
-
-- Python 3.10+
-- m1f toolkit installed (`pip install m1f`)
-- Internet connection
-
 ======= research-data/README.md ======
 # Research Data Directory
 
@@ -3975,6 +3899,313 @@ are modified.
 
 Remember to add `m1f/` (and `.1f/` if used) to your `.gitignore` so these helper
 files stay out of version control.
+
+======= tests/README.md ======
+# M1F Test Suite Documentation
+
+This directory contains the comprehensive test suite for the m1f tool suite, including m1f, s1f, html2md, m1f-scrape, and m1f-research tools. Built with Python 3.10+ features and modern testing practices.
+
+## Overview
+
+- **43 test files** with ~290 test methods
+- **Comprehensive fixture system** with module-specific extensions
+- **Multi-platform support** with Windows-specific handling
+- **Security testing** with path traversal and secret detection
+- **Performance testing** for large files and parallel processing
+- **Real-world test data** including international filenames
+
+## Test Structure
+
+```
+tests/
+├── conftest.py                    # Global fixtures and test configuration
+├── base_test.py                   # Base test classes with common utilities
+├── test_html2md_server.py         # HTML2MD server tests
+├── test_html2md_server_fixed.py   # Fixed server tests
+├── test_m1f_claude_improvements.py # Claude-suggested improvements
+├── test_simple_server.py          # Simple server tests
+│
+├── m1f/                           # m1f tests (23 test files, ~180 methods)
+│   ├── conftest.py               # m1f-specific fixtures
+│   ├── test_m1f_basic.py         # Core functionality
+│   ├── test_m1f_advanced.py      # Advanced features
+│   ├── test_m1f_encoding.py      # Character encoding
+│   ├── test_m1f_integration.py   # End-to-end tests
+│   ├── test_m1f_presets_*.py     # Preset system (basic, integration, v3.2)
+│   ├── test_security_check.py    # Secret detection
+│   ├── test_path_traversal_security.py # Security vulnerabilities
+│   ├── test_content_deduplication.py   # File deduplication
+│   ├── test_parallel_processing.py     # Async operations
+│   ├── test_symlinks*.py         # Symbolic link handling
+│   ├── test_large_file.py        # Performance testing
+│   ├── test_cross_platform_paths.py # Windows/Linux compatibility
+│   └── source/                   # Test data
+│       ├── glob_*/               # Pattern matching tests
+│       ├── exotic_encodings/     # Non-UTF8 encodings
+│       └── advanced_glob_test/   # International filenames
+│
+├── s1f/                          # s1f tests (6 test files, ~40 methods)
+│   ├── conftest.py              # s1f-specific fixtures
+│   ├── test_s1f_basic.py        # Core extraction
+│   ├── test_s1f_async.py        # Async operations
+│   ├── test_s1f_encoding.py     # Encoding preservation
+│   ├── test_s1f_target_encoding.py # Encoding conversion
+│   ├── test_s1f.py              # General functionality
+│   └── test_path_traversal_security.py # Security tests
+│
+├── html2md/                      # html2md tests (5 test files, ~30 methods)
+│   ├── test_html2md.py          # Core conversion
+│   ├── test_integration.py      # End-to-end tests
+│   ├── test_claude_integration.py # AI optimization
+│   ├── test_scrapers.py         # Scraping backends
+│   ├── test_local_scraping.py   # Local file processing
+│   ├── source/html/             # Test HTML files
+│   ├── expected/                # Expected outputs
+│   └── scraped_examples/        # Real-world examples
+│
+├── html2md_server/               # HTML2MD test infrastructure
+│   ├── server.py                # Flask test server
+│   ├── manage_server.py         # Server management
+│   ├── test_pages/              # 8+ complex HTML test pages
+│   ├── static/                  # CSS/JS resources
+│   └── README.md                # Server documentation
+│
+└── research/                     # m1f-research tests (5 test files, ~25 methods)
+    ├── test_research_workflow.py # End-to-end workflows
+    ├── test_llm_providers.py    # LLM integrations
+    ├── test_content_analysis.py # Content analysis
+    ├── test_analysis_templates.py # Template system
+    └── test_scraping_integration.py # Scraping integration
+```
+
+## Key Features
+
+### Global Test Infrastructure (conftest.py)
+
+**Core Fixtures:**
+- `tools_dir` - Path to tools directory
+- `test_data_dir` - Path to test data
+- `temp_dir` - Temporary directory with auto-cleanup
+- `isolated_filesystem` - Isolated filesystem environment
+- `create_test_file` - Factory for creating test files
+- `create_test_directory_structure` - Complex directory creation
+- `capture_logs` - Log output capture and examination
+- `anyio_backend` - Async testing support
+
+**Platform Support:**
+- Windows-specific cleanup handling
+- Cross-platform path separator handling
+- File locking issue mitigation
+
+**Test Markers:**
+```python
+@pytest.mark.unit         # Fast, isolated unit tests
+@pytest.mark.integration  # End-to-end integration tests
+@pytest.mark.slow        # Long-running tests
+@pytest.mark.requires_git # Tests requiring git
+@pytest.mark.encoding    # Encoding-related tests
+```
+
+## Running Tests
+
+### Basic Commands
+
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -vv
+
+# Run specific tool tests
+pytest tests/m1f/
+pytest tests/s1f/
+pytest tests/html2md/
+pytest tests/research/
+
+# Run by marker
+pytest -m unit              # Fast unit tests only
+pytest -m integration       # Integration tests only
+pytest -m "not slow"       # Skip slow tests
+pytest -m encoding         # Encoding tests only
+```
+
+### Advanced Testing
+
+```bash
+# Run with coverage
+pytest --cov=tools --cov-report=html --cov-report=term
+
+# Run specific test patterns
+pytest -k "test_encoding"   # All encoding tests
+pytest -k "test_security"   # Security tests
+
+# Debug options
+pytest -x                   # Stop on first failure
+pytest --pdb               # Drop into debugger on failure
+pytest -s                  # Show print statements
+
+# Parallel execution
+pytest -n auto             # Use all CPU cores
+```
+
+### Test Categories by Tool
+
+#### M1F Tests
+- **Basic**: Core file bundling functionality
+- **Advanced**: Complex scenarios, edge cases
+- **Encoding**: UTF-8, UTF-16, exotic encodings
+- **Security**: Path traversal, secret detection
+- **Presets**: YAML preset system, file-specific rules
+- **Performance**: Large files, parallel processing
+- **Cross-platform**: Windows/Linux compatibility
+
+#### S1F Tests
+- **Extraction**: All M1F format variations
+- **Async**: Asynchronous file operations
+- **Encoding**: Preservation and conversion
+- **Security**: Malicious path protection
+
+#### HTML2MD Tests
+- **Conversion**: HTML to Markdown accuracy
+- **Scrapers**: BeautifulSoup, Scrapy, Playwright
+- **AI Integration**: Claude-powered optimization
+- **Local Processing**: File system operations
+
+#### Research Tests
+- **Workflows**: End-to-end research automation
+- **LLM Providers**: Provider abstraction testing
+- **Content Analysis**: Scoring and analysis
+- **Templates**: Analysis template system
+
+## Writing New Tests
+
+### Test Structure Template
+
+```python
+from __future__ import annotations
+
+import pytest
+from pathlib import Path
+from ..base_test import BaseM1FTest  # or BaseS1FTest, etc.
+
+class TestFeatureName(BaseM1FTest):
+    """Tests for specific feature area."""
+    
+    @pytest.mark.unit
+    async def test_specific_behavior(self, temp_dir: Path, create_test_file):
+        """Test description explaining what and why."""
+        # Arrange
+        test_file = create_test_file("test.txt", "content")
+        
+        # Act
+        result = await some_function(test_file)
+        
+        # Assert
+        assert result.success
+        assert "expected" in result.output
+```
+
+### Best Practices
+
+1. **Use Type Hints**: All functions should have complete type annotations
+2. **Clear Naming**: Test names should describe the behavior being tested
+3. **Docstrings**: Explain what the test validates and why
+4. **AAA Pattern**: Arrange-Act-Assert structure
+5. **Isolation**: Tests should not depend on each other
+6. **Fixtures**: Use fixtures for common setup/teardown
+7. **Markers**: Apply appropriate test markers
+8. **Cleanup**: Ensure proper resource cleanup
+
+## Test Servers
+
+### HTML2MD Test Server
+
+```bash
+# Start the test server
+cd tests/html2md_server
+python server.py
+
+# Or use management script
+python manage_server.py start
+
+# Access test pages
+http://localhost:8080/
+```
+
+Provides:
+- Complex HTML test pages (CSS Grid, Flexbox, nested structures)
+- Modern web features (HTML5, semantic markup)
+- Real documentation examples
+- Edge cases and malformed HTML
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Import Errors**: Ensure tools directory is in PYTHONPATH
+2. **Fixture Not Found**: Check conftest.py placement
+3. **Encoding Failures**: Some tests require specific system encodings
+4. **Permission Errors**: Temporary file cleanup issues
+5. **Port Conflicts**: Test server requires port 8080
+6. **Async Errors**: Ensure anyio is installed
+
+### Platform-Specific Issues
+
+**Windows:**
+- File locking during cleanup
+- Path separator differences
+- Encoding defaults
+
+**Linux/macOS:**
+- Symbolic link tests require permissions
+- Case-sensitive filesystem assumptions
+
+## Test Data Organization
+
+### M1F Test Data (`m1f/source/`)
+- Pattern matching test cases
+- International filenames
+- Various encodings (UTF-8, UTF-16, Latin-1, etc.)
+- Nested directory structures
+- Binary and text files
+
+### S1F Test Data
+- Pre-generated M1F bundles
+- Various separator styles
+- Corrupted/malformed inputs
+
+### HTML2MD Test Data
+- Complex HTML structures
+- Real website snapshots
+- Various content types
+- Edge cases
+
+## Contributing
+
+When adding new tests:
+
+1. **Follow existing patterns** - Consistency is key
+2. **Add to appropriate directory** - Keep tests organized
+3. **Update fixtures** - Add reusable components to conftest.py
+4. **Document special requirements** - Note any dependencies
+5. **Run full test suite** - Ensure no regressions
+6. **Update this README** - Document new test categories
+
+## Performance Considerations
+
+- Tests use async I/O where possible
+- Large file tests are marked as `@pytest.mark.slow`
+- Parallel test execution is supported
+- Resource cleanup is automatic
+
+## Security Testing
+
+The test suite includes comprehensive security testing:
+- Path traversal attempts
+- Secret detection validation
+- Input sanitization
+- Malformed data handling
 
 ======= tools/__init__.py ======
 """
@@ -8674,6 +8905,82 @@ m1f-research --resume abc123
 
 For detailed documentation, see the numbered files above.
 
+======= examples/claude_code_doc/README.md ======
+# m1f Examples
+
+## scrape_claude_code_docs.py
+
+Creates a bundled documentation file from the Claude Code documentation website.
+
+### What it does
+
+1. **Scrapes** ~30 HTML pages from docs.anthropic.com/claude-code
+2. **Analyzes** HTML structure using Claude AI
+3. **Converts** HTML to clean Markdown
+4. **Creates** documentation bundle using m1f-init
+
+### Usage
+
+```bash
+python examples/scrape_claude_code_docs.py <target_directory>
+```
+
+Example:
+
+```bash
+python examples/scrape_claude_code_docs.py ~/claude-doc
+```
+
+### Timing
+
+⏱️ **Total duration: ~15-20 minutes**
+
+- Scraping: 7-8 minutes (30 pages with 15s delays)
+- Claude analysis: 5-8 minutes
+- Conversion & bundling: <2 minutes
+
+### Capture output to file
+
+To save the entire process log:
+
+```bash
+cd /path/to/m1f
+script -c "python examples/scrape_claude_code_docs.py ~/claude-doc" ~/claude-code-doc-scrape.txt
+```
+
+### Ideal usage (with virtual environment)
+
+The recommended way to run this script with full output capture:
+
+```bash
+# Create output directory
+mkdir ~/claude-code-doc
+
+# Run with virtual environment and capture output
+script -c "source ./.venv/bin/activate && python examples/scrape_claude_code_docs.py ~/claude-code-doc" \
+    ~/claude-code-doc/claude-code-doc-scrape.txt
+```
+
+### Output
+
+The script creates a documentation bundle at:
+
+```
+<target_directory>/claude-code-markdown/m1f/claude-code-markdown_docs.txt
+```
+
+You can then:
+
+- Create a symlink: `ln -s <bundle_path> ~/claude-code-docs.txt`
+- Copy the file: `cp <bundle_path> <destination>`
+- Use with Claude: `m1f-claude <bundle_path>`
+
+### Requirements
+
+- Python 3.10+
+- m1f toolkit installed (`pip install m1f`)
+- Internet connection
+
 ======= scripts/hooks/pre-commit-external ======
 #!/bin/bash
 # m1f Git Pre-Commit Hook (External Projects)
@@ -9161,6 +9468,1175 @@ if ($filesModified) {
 
 Write-ColorOutput "✓ Pre-commit hook completed" -Color "Green"
 exit 0
+
+======= tests/html2md_server/README.md ======
+# HTML2MD Test Suite
+
+A comprehensive test suite for the html2md converter featuring a local web
+server with challenging HTML test pages.
+
+## Overview
+
+This test suite provides:
+
+- A Flask-based web server serving complex HTML test pages
+- Modern, responsive HTML pages with various challenging structures
+- Comprehensive pytest-based test cases
+- Real-world documentation examples (M1F and HTML2MD docs)
+
+## Features
+
+### Test Pages
+
+1. **M1F Documentation** - Complete documentation for the Make One File tool
+2. **HTML2MD Documentation** - Full documentation for the HTML to Markdown
+   converter
+3. **Complex Layout Test** - Tests CSS Grid, Flexbox, nested structures, and
+   positioning
+4. **Code Examples Test** - Multiple programming languages with syntax
+   highlighting
+5. **Edge Cases Test** - Malformed HTML, special characters, and unusual
+   structures
+6. **Modern Features Test** - HTML5 elements, web components, and semantic
+   markup
+7. **Tables and Lists Test** - Complex tables and deeply nested lists
+8. **Multimedia Test** - Images, videos, and other media elements
+
+### Test Coverage
+
+- ✅ CSS selector-based content extraction
+- ✅ Complex nested HTML structures
+- ✅ Code blocks with language detection
+- ✅ Tables and lists conversion
+- ✅ Special characters and Unicode
+- ✅ YAML frontmatter generation
+- ✅ Heading level adjustment
+- ✅ Parallel processing
+- ✅ Edge cases and error handling
+
+## Setup
+
+### Requirements
+
+```bash
+pip install flask flask-cors beautifulsoup4 markdownify pytest pytest-asyncio aiohttp
+```
+
+### Running the Test Server
+
+```bash
+# Start the test server
+python tests/html2md_server/server.py
+
+# Server will run at http://localhost:8080
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest tests/test_html2md_server.py -v
+
+# Run specific test
+pytest tests/test_html2md_server.py::TestHTML2MDConversion::test_code_examples -v
+
+# Run with coverage
+pytest tests/test_html2md_server.py --cov=tools.mf1-html2md --cov-report=html
+```
+
+## Test Structure
+
+```
+tests/html2md_server/
+├── server.py              # Flask test server
+├── static/
+│   ├── css/
+│   │   └── modern.css    # Modern CSS with dark mode
+│   └── js/
+│       └── main.js       # Interactive features
+├── test_pages/
+│   ├── index.html        # Test suite homepage
+│   ├── m1f-documentation.html
+│   ├── html2md-documentation.html
+│   ├── complex-layout.html
+│   ├── code-examples.html
+│   └── ...               # More test pages
+└── README.md             # This file
+```
+
+## Usage Examples
+
+### Manual Testing
+
+1. Start the server:
+
+   ```bash
+   python tests/html2md_server/server.py
+   ```
+
+2. Test conversion with various options:
+
+   ```bash
+   # Basic conversion
+   m1f-html2md \
+     --source-dir http://localhost:8080/page \
+     --destination-dir ./output
+
+   # With content selection
+   m1f-html2md \
+     --source-dir http://localhost:8080/page \
+     --destination-dir ./output \
+     --outermost-selector "article" \
+     --ignore-selectors "nav" ".sidebar" "footer"
+
+   # Specific page with options
+   m1f-html2md \
+     --source-dir http://localhost:8080/page/code-examples \
+     --destination-dir ./output \
+     --add-frontmatter \
+     --heading-offset 1
+   ```
+
+### Automated Testing
+
+The test suite includes comprehensive pytest tests:
+
+```python
+# Example test structure
+class TestHTML2MDConversion:
+    async def test_basic_conversion(self, test_server, temp_output_dir):
+        """Test basic HTML to Markdown conversion."""
+
+    async def test_content_selection(self, test_server, temp_output_dir):
+        """Test CSS selector-based content extraction."""
+
+    async def test_code_examples(self, test_server, temp_output_dir):
+        """Test code block conversion with various languages."""
+```
+
+## Adding New Test Pages
+
+1. Create a new HTML file in `test_pages/`
+2. Add an entry to `TEST_PAGES` in `server.py`
+3. Include challenging HTML structures
+4. Add corresponding test cases in `test_html2md_server.py`
+
+Example:
+
+```python
+# In server.py
+TEST_PAGES = {
+    'your-new-test': {
+        'title': 'Your New Test',
+        'description': 'Description of what this tests'
+    }
+}
+```
+
+## Features Tested
+
+### HTML Elements
+
+- Headings (h1-h6)
+- Paragraphs and text formatting
+- Lists (ordered, unordered, nested)
+- Tables (simple and complex)
+- Code blocks and inline code
+- Links and images
+- Blockquotes
+- Details/Summary elements
+
+### CSS Layouts
+
+- Flexbox
+- CSS Grid
+- Multi-column layouts
+- Absolute/relative positioning
+- Floating elements
+- Sticky elements
+- Overflow containers
+
+### Special Cases
+
+- Unicode and emoji
+- HTML entities
+- Special characters in code
+- Very long lines
+- Empty elements
+- Malformed HTML
+- Deeply nested structures
+
+## Contributing
+
+To add new test cases:
+
+1. Identify a challenging HTML pattern
+2. Create a test page demonstrating the pattern
+3. Add test cases to verify correct conversion
+4. Document the test purpose and expected behavior
+
+## License
+
+Part of the M1F project. See main project license.
+
+======= tests/html2md_server/requirements.txt ======
+# HTML2MD Test Server Requirements
+
+# Web Framework
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# HTML Processing
+beautifulsoup4>=4.12.0
+markdownify>=0.11.0
+lxml>=4.9.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-timeout>=2.1.0
+
+# HTTP Client for Tests
+aiohttp>=3.8.0
+requests>=2.31.0
+
+# Utilities
+pyyaml>=6.0
+chardet>=5.2.0
+psutil>=5.9.0
+
+# Development
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0 
+
+======= tests/m1f/README.md ======
+# M1F Test Suite
+
+Comprehensive test suite for the m1f (Make One File) tool with 23 test files and ~180 test methods, covering all aspects of functionality, security, and performance.
+
+## 📁 Test Structure
+
+```
+tests/m1f/
+├── README.md                             # This file
+├── conftest.py                           # m1f-specific test fixtures
+│
+├── Core Functionality Tests
+│   ├── test_m1f_basic.py                # Basic operations and CLI options
+│   ├── test_m1f_advanced.py             # Advanced features (archives, patterns)
+│   ├── test_m1f_integration.py          # End-to-end integration tests
+│   ├── test_m1f_edge_cases.py           # Edge cases and special scenarios
+│   └── test_m1f.py                      # General functionality tests
+│
+├── Security & Safety Tests
+│   ├── test_security_check.py           # Secret detection features
+│   ├── test_path_traversal_security.py  # Path traversal vulnerability tests
+│   └── test_content_deduplication.py    # File deduplication logic
+│
+├── Performance & Optimization Tests
+│   ├── test_parallel_processing.py      # Async/parallel operations
+│   ├── test_large_file.py              # Large file performance tests
+│   └── test_cross_platform_paths.py    # Windows/Linux compatibility
+│
+├── Encoding & Character Tests
+│   ├── test_m1f_encoding.py            # Character encoding handling
+│   └── test_m1f_unicode.py             # Unicode handling tests
+│
+├── File System Tests
+│   ├── test_symlinks.py                # Symbolic link handling
+│   ├── test_symlinks_relative.py       # Relative symlink tests
+│   ├── test_symlinks_deduplication.py  # Symlink deduplication
+│   └── test_m1f_file_hash.py          # Filename mtime hash functionality
+│
+├── Preset System Tests (v3.2+ features)
+│   ├── test_m1f_presets_basic.py       # Basic preset functionality
+│   ├── test_m1f_presets_integration.py # Advanced preset scenarios
+│   └── test_m1f_presets_v3_2.py       # v3.2 preset features
+│
+├── Advanced Filtering Tests
+│   ├── test_multiple_exclude_include_files.py # Complex filtering
+│   └── test_m1f_excludes.py            # Exclusion pattern tests
+│
+├── Test Data & Resources
+│   ├── source/                         # Test data organized by scenario
+│   │   ├── glob_*/                    # Pattern matching test cases
+│   │   ├── exotic_encodings/          # Non-UTF8 encoding samples
+│   │   ├── advanced_glob_test/        # Complex nested structures
+│   │   ├── code/                      # Sample code files
+│   │   ├── docs/                      # Sample documentation
+│   │   └── config/                    # Sample configs
+│   ├── exclude_paths.txt              # Sample exclusion file
+│   └── input_paths.txt                # Sample input paths file
+```
+
+## 🧪 Test Categories
+
+### 1. **Core Functionality** 
+Tests fundamental m1f operations across multiple test files.
+
+**Basic Operations** (`test_m1f_basic.py`):
+- ✅ Basic file combination
+- ✅ Separator styles (Standard, Detailed, Markdown, MachineReadable)
+- ✅ Timestamp in filenames (`-t` flag)
+- ✅ Line ending options (LF/CRLF)
+- ✅ Dot file/directory inclusion
+- ✅ Path exclusion from file
+- ✅ Force overwrite (`-f`)
+- ✅ Verbose/quiet modes
+
+**Advanced Features** (`test_m1f_advanced.py`):
+- 📦 Archive creation (ZIP, TAR.GZ)
+- 🚫 Gitignore pattern support
+- 📝 File extension filtering
+- 🔍 Input paths with glob patterns
+- 🔐 Filename mtime hash
+- 🛠️ Disabling default excludes
+- 🔢 Binary file inclusion
+
+### 2. **Security & Safety**
+Comprehensive security testing to prevent vulnerabilities.
+
+**Secret Detection** (`test_security_check.py`):
+- 🔍 Password and API key detection
+- ⚙️ Security check modes (skip, warn, abort)
+- 📝 Security warning logs
+- ✅ Clean file verification
+
+**Path Traversal** (`test_path_traversal_security.py`):
+- 🛡️ Path traversal attack prevention
+- 📁 Malicious path handling
+- 🔒 Sandbox escape prevention
+- ⚠️ Security boundary enforcement
+
+**Content Deduplication** (`test_content_deduplication.py`):
+- #️⃣ SHA256-based deduplication
+- 🔄 Duplicate file detection
+- 📊 Deduplication statistics
+- 💾 Memory efficiency
+
+### 3. **Performance & Scalability**
+
+**Parallel Processing** (`test_parallel_processing.py`):
+- ⚡ Async file operations
+- 🔀 Concurrent processing
+- 📈 Performance benchmarks
+- 🎯 Resource optimization
+
+**Large Files** (`test_large_file.py`):
+- 📊 Various file sizes (0.5MB - 10MB)
+- 💾 Memory efficiency
+- ⚡ Processing speed
+- ✅ Content integrity
+
+**Cross-Platform** (`test_cross_platform_paths.py`):
+- 🪟 Windows path handling
+- 🐧 Linux/macOS compatibility
+- 🔀 Path separator normalization
+- 📁 Drive letter handling
+
+### 4. **Encoding & Internationalization**
+
+**Encoding Support** (`test_m1f_encoding.py`):
+- 🔤 UTF-8, UTF-16, Latin-1
+- 🌏 Exotic encodings:
+  - Shift-JIS (Japanese)
+  - GB2312 (Chinese)
+  - EUC-KR (Korean)
+  - KOI8-R (Russian)
+  - ISO-8859-8 (Hebrew)
+  - Windows-1256 (Arabic)
+- ⚠️ Encoding error handling
+- 💾 BOM handling
+
+**Unicode** (`test_m1f_unicode.py`):
+- 🌍 Unicode filename support
+- 😀 Emoji in content
+- 🎭 Special characters
+- 📝 Unicode normalization
+
+### 5. **File System Features**
+
+**Symbolic Links** (3 test files):
+- 🔗 Basic symlink handling (`test_symlinks.py`)
+- 📍 Relative symlinks (`test_symlinks_relative.py`)
+- 🔄 Symlink deduplication (`test_symlinks_deduplication.py`)
+- 🚫 Circular reference detection
+- 📝 Target resolution
+
+**File Hash** (`test_m1f_file_hash.py`):
+- #️⃣ Modification time hashing
+- 🔒 Hash consistency
+- 🔄 Change detection
+- 📁 Directory handling
+
+### 6. **Preset System** (v3.2+)
+
+**Basic Presets** (`test_m1f_presets_basic.py`):
+- 🎨 Global preset settings
+- 📝 File-specific processors
+- 🧹 Content cleaning
+
+**Advanced Presets** (`test_m1f_presets_integration.py`):
+- 🔗 Preset inheritance
+- 🌍 Environment-based presets
+- 🎯 Conditional presets
+- 🔧 Complex workflows
+
+**v3.2 Features** (`test_m1f_presets_v3_2.py`):
+- 📁 Source/output configuration
+- 📋 Input include files
+- ⚙️ Runtime behavior settings
+- 🔄 CLI argument overrides
+
+### 7. **Advanced Filtering**
+
+**Multiple Files** (`test_multiple_exclude_include_files.py`):
+- 📋 Multiple exclude files
+- ✅ Multiple include files
+- 🔀 Combined exclude/include
+- ⚠️ Error handling
+
+**Exclusion Patterns** (`test_m1f_excludes.py`):
+- 🎯 Glob pattern exclusions
+- 📝 Regex exclusions
+- 🔍 Gitignore integration
+- 📁 Directory exclusions
+
+## 🧪 Test Fixtures (conftest.py)
+
+**Core Fixtures:**
+- `m1f_source_dir` - Source directory for test files
+- `m1f_output_dir` - Output directory with auto-cleanup
+- `m1f_extracted_dir` - Extraction directory
+- `run_m1f` - Direct function testing with mocked args
+- `m1f_cli_runner` - Subprocess-based CLI testing
+- `create_m1f_test_structure` - Standard test directory creation
+
+**Utilities:**
+- Cross-platform path handling
+- Automatic cleanup on Windows
+- Test file creation helpers
+- Directory structure builders
+
+## 🚀 Running Tests
+
+### Run All M1F Tests
+```bash
+pytest tests/m1f/ -v
+```
+
+### Run Specific Categories
+```bash
+# By marker
+pytest tests/m1f/ -m unit
+pytest tests/m1f/ -m integration
+pytest tests/m1f/ -m encoding
+pytest tests/m1f/ -m "not slow"
+pytest tests/m1f/ -m requires_git
+
+# By test file pattern
+pytest tests/m1f/test_*security*.py -v
+pytest tests/m1f/test_*encoding*.py -v
+pytest tests/m1f/test_*preset*.py -v
+```
+
+### Run Individual Tests
+```bash
+# Specific test file
+pytest tests/m1f/test_m1f_basic.py -v
+
+# Specific test method
+pytest tests/m1f/test_m1f_encoding.py::TestM1FEncoding::test_exotic_encodings -v
+
+# Tests matching pattern
+pytest tests/m1f/ -k "test_encoding" -v
+```
+
+### Debug Options
+```bash
+# Stop on first failure
+pytest tests/m1f/ -x
+
+# Show print statements
+pytest tests/m1f/ -s
+
+# Drop into debugger
+pytest tests/m1f/ --pdb
+
+# Verbose with full diff
+pytest tests/m1f/ -vv
+```
+
+## 📊 Coverage Analysis
+
+```bash
+# Run with coverage
+pytest tests/m1f/ --cov=tools.m1f --cov-report=html --cov-report=term
+
+# View coverage report
+open htmlcov/index.html
+```
+
+**Coverage Goals:**
+- Core functionality: 100%
+- Edge cases: >95%
+- Error handling: >90%
+- Platform-specific: >85%
+
+## 🧪 Test Data Organization
+
+### Pattern Testing (`source/glob_*`)
+- Basic glob patterns
+- Recursive patterns
+- Multiple wildcards
+- Directory-specific patterns
+
+### Encoding Samples (`source/exotic_encodings/`)
+- Text files in various encodings
+- International content
+- BOM variations
+- Mixed encodings
+
+### Complex Structures (`source/advanced_glob_test/`)
+- Deep nesting (5+ levels)
+- International filenames
+- Mixed file types
+- Large directory trees
+
+### Real-World Examples
+- Code files (Python, JavaScript, etc.)
+- Documentation (Markdown, RST)
+- Configuration (YAML, JSON, INI)
+- Binary files (images, archives)
+
+## 📝 Writing New Tests
+
+### Test Template
+```python
+from __future__ import annotations
+
+import pytest
+from pathlib import Path
+from ..conftest import M1FTestContext
+
+class TestNewFeature:
+    """Tests for new m1f feature."""
+    
+    @pytest.mark.unit
+    async def test_feature_basic(self, run_m1f: M1FTestContext):
+        """Test basic feature functionality."""
+        # Arrange
+        test_file = run_m1f.create_file("test.txt", "content")
+        
+        # Act
+        result = await run_m1f.execute([
+            str(test_file),
+            "-o", str(run_m1f.output_dir / "output.txt")
+        ])
+        
+        # Assert
+        assert result.returncode == 0
+        assert "expected output" in result.stdout
+```
+
+### Best Practices
+1. **Use fixtures** - Don't create files manually
+2. **Test isolation** - Each test should be independent
+3. **Clear naming** - Test name should describe behavior
+4. **Appropriate markers** - Use unit/integration/slow markers
+5. **Cleanup** - Fixtures handle cleanup automatically
+6. **Cross-platform** - Consider Windows/Linux differences
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Windows-Specific:**
+- File locking during cleanup
+- Path length limitations
+- Case-insensitive paths
+- Line ending differences
+
+**Encoding Issues:**
+- System locale dependencies
+- Missing codec support
+- BOM handling differences
+
+**Performance:**
+- Slow tests not marked
+- Resource cleanup delays
+- Large test data files
+
+### Solutions
+```bash
+# Skip slow tests
+pytest -m "not slow"
+
+# Run with specific encoding
+PYTHONIOENCODING=utf-8 pytest
+
+# Increase timeout
+pytest --timeout=300
+
+# Clean test artifacts
+rm -rf tests/m1f/output_* tests/m1f/extracted_*
+```
+
+## 🛠️ Maintenance
+
+- **Regular cleanup** - Remove obsolete test data
+- **Performance monitoring** - Track test suite execution time
+- **Coverage tracking** - Maintain high coverage
+- **Dependency updates** - Keep test dependencies current
+- **Documentation** - Update this README with new tests
+
+======= tests/research/README.md ======
+# M1F-Research Test Suite
+
+Comprehensive test suite for the m1f-research tool with 5 test files and ~25 test methods, covering research workflows, LLM integration, and content analysis.
+
+## 📁 Test Structure
+
+```
+tests/research/
+├── README.md                           # This file
+├── conftest.py                         # Research-specific test fixtures (if exists)
+│
+├── Core Workflow Tests
+│   ├── test_research_workflow.py       # End-to-end research workflows
+│   └── test_scraping_integration.py    # Web scraping integration
+│
+├── Analysis Tests
+│   ├── test_content_analysis.py        # Content analysis and scoring
+│   └── test_analysis_templates.py      # Template system tests
+│
+└── Provider Tests
+    └── test_llm_providers.py           # LLM provider integrations
+```
+
+## 🧪 Test Categories
+
+### 1. **Research Workflows**
+
+**End-to-End Workflows** (`test_research_workflow.py`):
+- 🔄 Complete research pipelines
+- 📊 Multi-stage processing
+- 🎯 Goal-oriented workflows
+- 📝 Report generation
+- ⚡ Workflow optimization
+
+**Scraping Integration** (`test_scraping_integration.py`):
+- 🌐 Full scraping workflow
+- 🔀 Concurrent scraping behavior
+- 🔄 Retry mechanisms
+- ⏱️ Rate limiting compliance
+- 🤖 Robots.txt respect
+- 📝 HTML to Markdown conversion
+- ⚠️ Error handling
+- 📊 Progress tracking
+- 📋 Metadata extraction
+
+### 2. **Content Analysis**
+
+**Content Analysis** (`test_content_analysis.py`):
+- 🔍 Content filtering pipeline
+- 🚫 Spam detection
+- 🌍 Language detection
+- 📊 Quality scoring
+- 🔄 Duplicate detection
+- 🤖 LLM-based analysis
+- 📋 Template-based scoring
+- 🔀 Batch processing
+- ⚠️ Error recovery
+
+**Analysis Templates** (`test_analysis_templates.py`):
+- 📋 Template loading and parsing
+- 🎯 Template application
+- 🔧 Custom template creation
+- 📊 Scoring adjustments
+- 🔄 Template inheritance
+- ⚙️ Dynamic templates
+
+### 3. **LLM Provider Integration**
+
+**Provider Tests** (`test_llm_providers.py`):
+- 🤖 Provider abstraction layer
+- 🔌 Multiple provider support
+- 🔄 Fallback mechanisms
+- 📊 Response parsing
+- ⚠️ Error handling
+- 💰 Cost tracking
+- 🚦 Rate limit handling
+- 🔐 Authentication
+
+## 🧪 Test Fixtures
+
+**Core Fixtures:**
+- `default_scraping_config` - Standard scraping configuration
+- `default_analysis_config` - Standard analysis configuration
+- `mock_llm_provider` - Mock LLM provider for testing
+- `mock_aiohttp_session` - Mock HTTP session
+- `sample_scraped_content_list` - Sample scraped content
+- `temp_dir` - Temporary directory for test files
+
+**Mock Objects:**
+- LLM API responses
+- Web scraping results
+- Content analysis outputs
+- Template configurations
+
+## 🚀 Running Tests
+
+### Run All Research Tests
+```bash
+pytest tests/research/ -v
+```
+
+### Run Specific Test Files
+```bash
+# Workflow tests
+pytest tests/research/test_research_workflow.py -v
+
+# Scraping tests
+pytest tests/research/test_scraping_integration.py -v
+
+# Analysis tests
+pytest tests/research/test_content_analysis.py -v
+
+# LLM provider tests
+pytest tests/research/test_llm_providers.py -v
+```
+
+### Run with Options
+```bash
+# Async test support
+pytest tests/research/ -v --asyncio-mode=auto
+
+# Show output
+pytest tests/research/ -s
+
+# Run specific test
+pytest tests/research/test_scraping_integration.py::TestScrapingIntegration::test_full_scraping_workflow -v
+
+# With coverage
+pytest tests/research/ --cov=tools.research --cov-report=html
+```
+
+## 📊 Test Coverage
+
+**Scraping Integration:**
+- URL processing and validation
+- Concurrent request handling
+- Rate limiting and delays
+- Retry logic with backoff
+- Robots.txt compliance
+- HTML to Markdown conversion
+- Error recovery strategies
+
+**Content Analysis:**
+- Quality assessment algorithms
+- Language detection accuracy
+- Spam filtering effectiveness
+- Duplicate detection methods
+- LLM prompt engineering
+- Template matching logic
+- Batch processing efficiency
+
+**LLM Integration:**
+- Provider initialization
+- API request formatting
+- Response parsing
+- Token usage tracking
+- Cost calculation
+- Error handling
+- Fallback strategies
+
+## 🧪 Testing Patterns
+
+### Async Testing
+```python
+@pytest.mark.asyncio
+async def test_async_workflow():
+    """Test async research workflow."""
+    async with aiohttp.ClientSession() as session:
+        result = await research_function(session)
+        assert result.success
+```
+
+### Mock LLM Providers
+```python
+def test_llm_analysis(mock_llm_provider):
+    """Test with mocked LLM."""
+    mock_llm_provider.analyze.return_value = AsyncMock(
+        return_value={"score": 0.9, "summary": "test"}
+    )
+    # Test implementation
+```
+
+### Integration Testing
+```python
+async def test_full_pipeline():
+    """Test complete research pipeline."""
+    # Setup
+    config = ResearchConfig(...)
+    
+    # Execute
+    results = await run_research_pipeline(config)
+    
+    # Verify
+    assert all(r.analyzed for r in results)
+```
+
+## 📝 Writing New Tests
+
+### Test Template
+```python
+from __future__ import annotations
+
+import pytest
+from unittest.mock import AsyncMock
+from tools.research import ResearchWorkflow
+
+class TestNewFeature:
+    """Tests for new research feature."""
+    
+    @pytest.mark.asyncio
+    async def test_feature(self, mock_llm_provider, sample_scraped_content_list):
+        """Test description."""
+        # Arrange
+        workflow = ResearchWorkflow(
+            llm_provider=mock_llm_provider
+        )
+        
+        # Act
+        results = await workflow.process(sample_scraped_content_list)
+        
+        # Assert
+        assert len(results) > 0
+        assert all(r.processed for r in results)
+```
+
+### Best Practices
+1. **Use async fixtures** - For async components
+2. **Mock external APIs** - Don't make real API calls
+3. **Test error paths** - Include failure scenarios
+4. **Verify concurrency** - Test parallel execution
+5. **Check rate limits** - Ensure compliance
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Async Test Failures:**
+- Ensure `pytest-asyncio` is installed
+- Use `@pytest.mark.asyncio` decorator
+- Handle async context managers properly
+
+**Mock Issues:**
+- Use `AsyncMock` for async functions
+- Configure return values correctly
+- Reset mocks between tests
+
+**Integration Problems:**
+- Check fixture dependencies
+- Verify test data consistency
+- Monitor resource cleanup
+
+### Debug Commands
+```bash
+# Run with debug logging
+pytest tests/research/ -v --log-cli-level=DEBUG
+
+# Run with traceback
+pytest tests/research/ --tb=long
+
+# Run specific test with output
+pytest tests/research/test_content_analysis.py::test_spam_detection -vvs
+```
+
+## 🛠️ Maintenance
+
+- **Mock updates** - Keep mocks synchronized with actual APIs
+- **Test data** - Update sample content regularly
+- **Performance** - Monitor test execution time
+- **Coverage** - Maintain comprehensive test coverage
+- **Documentation** - Update when adding new features
+
+======= tests/s1f/README.md ======
+# S1F Test Suite
+
+Comprehensive test suite for the s1f (Split One File) tool with 6 test files and ~40 test methods, covering extraction, encoding, and security features.
+
+## 📁 Test Structure
+
+```
+tests/s1f/
+├── README.md                          # This file
+├── conftest.py                        # s1f-specific test fixtures
+│
+├── Core Tests
+│   ├── test_s1f_basic.py             # Core extraction functionality
+│   ├── test_s1f.py                   # General functionality tests
+│   └── test_s1f_async.py             # Asynchronous operations
+│
+├── Encoding Tests
+│   ├── test_s1f_encoding.py          # Character encoding preservation
+│   └── test_s1f_target_encoding.py   # Encoding conversion tests
+│
+├── Security Tests
+│   └── test_path_traversal_security.py # Path traversal protection
+│
+└── Test Resources
+    ├── output/                        # Pre-generated M1F bundles
+    ├── extracted/                     # Extraction target directory
+    └── source/                        # Source files for testing
+```
+
+## 🧪 Test Categories
+
+### 1. **Core Functionality**
+
+**Basic Extraction** (`test_s1f_basic.py`):
+- ✅ All M1F separator styles (Standard, Detailed, Markdown, MachineReadable)
+- ✅ File path preservation
+- ✅ Directory structure reconstruction
+- ✅ Content integrity verification
+- ✅ Metadata extraction
+- ✅ Force overwrite (`-f`) option
+- ✅ Timestamp handling
+
+**General Operations** (`test_s1f.py`):
+- 📋 Command-line interface testing
+- 🔍 Format auto-detection
+- 📁 Output directory creation
+- ⚠️ Error handling
+- 📊 Statistics reporting
+
+**Async Operations** (`test_s1f_async.py`):
+- ⚡ Asynchronous file extraction
+- 🔀 Concurrent processing
+- 📈 Performance optimization
+- 💾 Memory efficiency
+
+### 2. **Encoding & Character Handling**
+
+**Encoding Preservation** (`test_s1f_encoding.py`):
+- 🔤 UTF-8, UTF-16, Latin-1 preservation
+- 🌏 Exotic encoding support
+- 💾 BOM handling
+- ✅ Binary file extraction
+- 📝 Encoding metadata
+
+**Target Encoding** (`test_s1f_target_encoding.py`):
+- 🔄 Encoding conversion during extraction
+- 🎯 Target encoding specification
+- ⚠️ Conversion error handling
+- 📊 Encoding statistics
+
+### 3. **Security Features**
+
+**Path Traversal Protection** (`test_path_traversal_security.py`):
+- 🛡️ Path traversal attack prevention
+- 📁 Malicious path sanitization
+- 🔒 Sandbox enforcement
+- ⚠️ Security warnings
+- ✅ Safe path validation
+
+## 🧪 Test Fixtures (conftest.py)
+
+**Core Fixtures:**
+- `s1f_output_dir` - Output directory with auto-cleanup
+- `s1f_extracted_dir` - Extraction directory
+- `create_combined_file` - Creates test M1F files
+- `run_s1f` - Direct function testing
+- `s1f_cli_runner` - Subprocess CLI testing
+- `create_m1f_output` - Uses real M1F tool for test input
+
+**Separator Styles:**
+- Standard: `############ filename ############`
+- Detailed: `### START: filename ###`
+- Markdown: `## filename`
+- MachineReadable: JSON metadata format
+
+## 🚀 Running Tests
+
+### Run All S1F Tests
+```bash
+pytest tests/s1f/ -v
+```
+
+### Run Specific Categories
+```bash
+# Core functionality
+pytest tests/s1f/test_s1f_basic.py -v
+
+# Encoding tests
+pytest tests/s1f/test_*encoding*.py -v
+
+# Security tests
+pytest tests/s1f/test_*security*.py -v
+
+# Async tests
+pytest tests/s1f/test_*async*.py -v
+```
+
+### Run with Options
+```bash
+# Show output
+pytest tests/s1f/ -s
+
+# Stop on first failure
+pytest tests/s1f/ -x
+
+# Verbose with full diff
+pytest tests/s1f/ -vv
+
+# Run specific test
+pytest tests/s1f/test_s1f_basic.py::test_extract_standard -v
+```
+
+## 📊 Test Coverage
+
+**Core Features:**
+- All M1F format variations
+- Path preservation accuracy
+- Content integrity (SHA-256)
+- Metadata handling
+
+**Edge Cases:**
+- Empty files
+- Binary files
+- Large files
+- Nested directories
+- Special characters
+- Unicode filenames
+
+**Error Handling:**
+- Corrupted M1F files
+- Missing separators
+- Invalid paths
+- Encoding errors
+
+## 🧪 Test Data
+
+### Pre-generated M1F Files
+The test suite uses pre-generated M1F bundles in various formats:
+```bash
+output/standard.txt       # Standard separator style
+output/detailed.txt       # Detailed separator style
+output/markdown.txt       # Markdown separator style
+output/machinereadable.txt # JSON metadata style
+```
+
+### Creating Test Data
+Test data is automatically generated by fixtures using the real M1F tool:
+```python
+# Example from conftest.py
+def create_m1f_output(source_dir, output_file, separator_style):
+    """Creates M1F bundle for testing."""
+    result = subprocess.run([
+        "m1f",
+        str(source_dir),
+        "-o", str(output_file),
+        "--separator-style", separator_style,
+        "--force"
+    ])
+```
+
+## 📝 Writing New Tests
+
+### Test Template
+```python
+from __future__ import annotations
+
+import pytest
+from pathlib import Path
+
+class TestNewFeature:
+    """Tests for new s1f feature."""
+    
+    @pytest.mark.unit
+    def test_feature(self, run_s1f, create_combined_file):
+        """Test description."""
+        # Arrange
+        m1f_file = create_combined_file(
+            "test.txt", 
+            "content",
+            separator_style="Standard"
+        )
+        
+        # Act
+        result = run_s1f([
+            str(m1f_file),
+            "-o", "output_dir"
+        ])
+        
+        # Assert
+        assert result.returncode == 0
+        assert Path("output_dir/test.txt").exists()
+```
+
+### Best Practices
+1. **Use fixtures** - Don't create M1F files manually
+2. **Test all formats** - Verify with all separator styles
+3. **Verify integrity** - Check content matches original
+4. **Clean paths** - Fixtures handle cleanup
+5. **Cross-platform** - Consider path separators
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Format Detection:**
+- Ensure M1F files have correct separators
+- Check for file corruption
+- Verify encoding compatibility
+
+**Path Issues:**
+- Windows path length limits
+- Case sensitivity differences
+- Path separator normalization
+
+**Encoding Problems:**
+- System locale settings
+- Missing codec support
+- BOM handling
+
+### Debug Commands
+```bash
+# Run with debugging
+pytest tests/s1f/ --pdb
+
+# Check test output
+pytest tests/s1f/ -s --log-cli-level=DEBUG
+
+# Run single test with tracing
+pytest tests/s1f/test_s1f_basic.py::test_extract_standard -vvs
+```
+
+## 🛡️ Security Testing
+
+The test suite includes security tests for:
+- Path traversal attempts (`../../../etc/passwd`)
+- Absolute path injections
+- Symbolic link attacks
+- Directory escape attempts
+
+## 🚀 Performance
+
+- Tests use async I/O where applicable
+- Parallel extraction support
+- Memory-efficient streaming
+- Large file handling
+
+## 🛠️ Maintenance
+
+- **Test data** - Regenerate M1F files after format changes
+- **Fixtures** - Keep fixtures simple and focused
+- **Coverage** - Maintain >90% code coverage
+- **Performance** - Monitor test execution time
 
 ======= tools/html2md_tool/__init__.py ======
 """

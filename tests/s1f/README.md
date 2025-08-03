@@ -1,113 +1,272 @@
-# s1f (Split One File) Test Suite
+# S1F Test Suite
 
-This directory contains tests for the `s1f.py` utility (the s1f tool). The test
-suite verifies that files combined with m1f (`m1f.py`) using different separator
-styles can be correctly extracted back to their original form.
+Comprehensive test suite for the s1f (Split One File) tool with 6 test files and ~40 test methods, covering extraction, encoding, and security features.
 
-## Directory Structure
+## 📁 Test Structure
 
-- `source/`: Contains example files created during test setup (not used
-  directly)
-- `output/`: Contains combined files created with different separator styles
-- `extracted/`: Target directory for extracted files during tests
-
-## Test Setup
-
-Before running tests, combined test files need to be created using the m1f tool
-(`m1f.py`). These files serve as input for the s1f tests. Run the following
-commands from the project root to create the necessary test files:
-
-```bash
-# Create combined files with different separator styles
-m1f --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force
-m1f --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force
-m1f --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force
-m1f --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force
+```
+tests/s1f/
+├── README.md                          # This file
+├── conftest.py                        # s1f-specific test fixtures
+│
+├── Core Tests
+│   ├── test_s1f_basic.py             # Core extraction functionality
+│   ├── test_s1f.py                   # General functionality tests
+│   └── test_s1f_async.py             # Asynchronous operations
+│
+├── Encoding Tests
+│   ├── test_s1f_encoding.py          # Character encoding preservation
+│   └── test_s1f_target_encoding.py   # Encoding conversion tests
+│
+├── Security Tests
+│   └── test_path_traversal_security.py # Path traversal protection
+│
+└── Test Resources
+    ├── output/                        # Pre-generated M1F bundles
+    ├── extracted/                     # Extraction target directory
+    └── source/                        # Source files for testing
 ```
 
-## Running Tests
+## 🧪 Test Categories
 
-To run all tests:
+### 1. **Core Functionality**
 
+**Basic Extraction** (`test_s1f_basic.py`):
+- ✅ All M1F separator styles (Standard, Detailed, Markdown, MachineReadable)
+- ✅ File path preservation
+- ✅ Directory structure reconstruction
+- ✅ Content integrity verification
+- ✅ Metadata extraction
+- ✅ Force overwrite (`-f`) option
+- ✅ Timestamp handling
+
+**General Operations** (`test_s1f.py`):
+- 📋 Command-line interface testing
+- 🔍 Format auto-detection
+- 📁 Output directory creation
+- ⚠️ Error handling
+- 📊 Statistics reporting
+
+**Async Operations** (`test_s1f_async.py`):
+- ⚡ Asynchronous file extraction
+- 🔀 Concurrent processing
+- 📈 Performance optimization
+- 💾 Memory efficiency
+
+### 2. **Encoding & Character Handling**
+
+**Encoding Preservation** (`test_s1f_encoding.py`):
+- 🔤 UTF-8, UTF-16, Latin-1 preservation
+- 🌏 Exotic encoding support
+- 💾 BOM handling
+- ✅ Binary file extraction
+- 📝 Encoding metadata
+
+**Target Encoding** (`test_s1f_target_encoding.py`):
+- 🔄 Encoding conversion during extraction
+- 🎯 Target encoding specification
+- ⚠️ Conversion error handling
+- 📊 Encoding statistics
+
+### 3. **Security Features**
+
+**Path Traversal Protection** (`test_path_traversal_security.py`):
+- 🛡️ Path traversal attack prevention
+- 📁 Malicious path sanitization
+- 🔒 Sandbox enforcement
+- ⚠️ Security warnings
+- ✅ Safe path validation
+
+## 🧪 Test Fixtures (conftest.py)
+
+**Core Fixtures:**
+- `s1f_output_dir` - Output directory with auto-cleanup
+- `s1f_extracted_dir` - Extraction directory
+- `create_combined_file` - Creates test M1F files
+- `run_s1f` - Direct function testing
+- `s1f_cli_runner` - Subprocess CLI testing
+- `create_m1f_output` - Uses real M1F tool for test input
+
+**Separator Styles:**
+- Standard: `############ filename ############`
+- Detailed: `### START: filename ###`
+- Markdown: `## filename`
+- MachineReadable: JSON metadata format
+
+## 🚀 Running Tests
+
+### Run All S1F Tests
 ```bash
-# Activate the virtual environment first
-.venv/Scripts/activate  # Windows
-source .venv/bin/activate  # macOS/Linux
-
-# Run tests from the project root
-python tests/s1f/run_tests.py
+pytest tests/s1f/ -v
 ```
 
-Or, you can use pytest directly:
-
+### Run Specific Categories
 ```bash
-pytest tests/s1f/test_s1f.py -xvs
+# Core functionality
+pytest tests/s1f/test_s1f_basic.py -v
+
+# Encoding tests
+pytest tests/s1f/test_*encoding*.py -v
+
+# Security tests
+pytest tests/s1f/test_*security*.py -v
+
+# Async tests
+pytest tests/s1f/test_*async*.py -v
 ```
 
-## Test Cases
+### Run with Options
+```bash
+# Show output
+pytest tests/s1f/ -s
 
-The test suite includes the following test cases:
+# Stop on first failure
+pytest tests/s1f/ -x
 
-1. **Separator Style Tests**:
-   - Tests extraction with Standard separator style
-   - Tests extraction with Detailed separator style
-   - Tests extraction with Markdown separator style
-   - Tests extraction with MachineReadable separator style (optimized for AI
-     processing)
+# Verbose with full diff
+pytest tests/s1f/ -vv
 
-2. **Feature Tests**:
-   - Tests force overwrite of existing files
-   - Tests setting file timestamps to original or current time
+# Run specific test
+pytest tests/s1f/test_s1f_basic.py::test_extract_standard -v
+```
 
-3. **Integration Tests**:
-   - Tests command-line execution
-   - Tests compatibility with LLM workflow patterns
+## 📊 Test Coverage
 
-## AI and LLM Integration
+**Core Features:**
+- All M1F format variations
+- Path preservation accuracy
+- Content integrity (SHA-256)
+- Metadata handling
 
-The s1f tool is designed to work seamlessly with files generated by m1f for LLM
-context:
+**Edge Cases:**
+- Empty files
+- Binary files
+- Large files
+- Nested directories
+- Special characters
+- Unicode filenames
 
-- **Preserves Structure**: Maintains the exact directory structure for reference
-- **Integrity Verification**: Validates that files have not been altered during
-  AI processing
-- **Metadata Handling**: Correctly processes machine-readable metadata added for
-  AI interpretation
+**Error Handling:**
+- Corrupted M1F files
+- Missing separators
+- Invalid paths
+- Encoding errors
 
-## Recent Improvements
+## 🧪 Test Data
 
-The following improvements have been made to the s1f utility (`s1f.py`):
+### Pre-generated M1F Files
+The test suite uses pre-generated M1F bundles in various formats:
+```bash
+output/standard.txt       # Standard separator style
+output/detailed.txt       # Detailed separator style
+output/markdown.txt       # Markdown separator style
+output/machinereadable.txt # JSON metadata style
+```
 
-- **Improved Path Extraction**: Fixed issues with path extraction in the
-  Standard separator style. All separator styles now correctly extract and
-  preserve the original file paths.
-- **Consistent Behavior**: Ensured consistent behavior across all separator
-  styles (Standard, Detailed, Markdown, and MachineReadable).
-- **LLM Optimizations**: Enhanced support for AI-specific workflows and formats.
-- **Documentation Updates**: Updated documentation to reflect these
-  improvements.
+### Creating Test Data
+Test data is automatically generated by fixtures using the real M1F tool:
+```python
+# Example from conftest.py
+def create_m1f_output(source_dir, output_file, separator_style):
+    """Creates M1F bundle for testing."""
+    result = subprocess.run([
+        "m1f",
+        str(source_dir),
+        "-o", str(output_file),
+        "--separator-style", separator_style,
+        "--force"
+    ])
+```
 
-These changes ensure that the directory structure is properly reconstructed
-regardless of which separator style was used when creating the combined file.
+## 📝 Writing New Tests
 
-## Verification Process
+### Test Template
+```python
+from __future__ import annotations
 
-The tests verify that:
+import pytest
+from pathlib import Path
 
-1. Files are successfully extracted to the destination directory
-2. The directory structure is preserved
-3. File content matches the original files (verified using SHA-256 checksums)
-4. Command-line options work as expected
+class TestNewFeature:
+    """Tests for new s1f feature."""
+    
+    @pytest.mark.unit
+    def test_feature(self, run_s1f, create_combined_file):
+        """Test description."""
+        # Arrange
+        m1f_file = create_combined_file(
+            "test.txt", 
+            "content",
+            separator_style="Standard"
+        )
+        
+        # Act
+        result = run_s1f([
+            str(m1f_file),
+            "-o", "output_dir"
+        ])
+        
+        # Assert
+        assert result.returncode == 0
+        assert Path("output_dir/test.txt").exists()
+```
 
-## Maintainer Information
+### Best Practices
+1. **Use fixtures** - Don't create M1F files manually
+2. **Test all formats** - Verify with all separator styles
+3. **Verify integrity** - Check content matches original
+4. **Clean paths** - Fixtures handle cleanup
+5. **Cross-platform** - Consider path separators
 
-- Author: Franz und Franz
-- Homepage: https://franz.agency
-- Project: https://m1f.dev
-- License: See project LICENSE file
+## 🔧 Troubleshooting
 
-## Dependencies
+### Common Issues
 
-- Python 3.9+
-- pytest
-- Access to the original source files in `tests/m1f/source/`
+**Format Detection:**
+- Ensure M1F files have correct separators
+- Check for file corruption
+- Verify encoding compatibility
+
+**Path Issues:**
+- Windows path length limits
+- Case sensitivity differences
+- Path separator normalization
+
+**Encoding Problems:**
+- System locale settings
+- Missing codec support
+- BOM handling
+
+### Debug Commands
+```bash
+# Run with debugging
+pytest tests/s1f/ --pdb
+
+# Check test output
+pytest tests/s1f/ -s --log-cli-level=DEBUG
+
+# Run single test with tracing
+pytest tests/s1f/test_s1f_basic.py::test_extract_standard -vvs
+```
+
+## 🛡️ Security Testing
+
+The test suite includes security tests for:
+- Path traversal attempts (`../../../etc/passwd`)
+- Absolute path injections
+- Symbolic link attacks
+- Directory escape attempts
+
+## 🚀 Performance
+
+- Tests use async I/O where applicable
+- Parallel extraction support
+- Memory-efficient streaming
+- Large file handling
+
+## 🛠️ Maintenance
+
+- **Test data** - Regenerate M1F files after format changes
+- **Fixtures** - Keep fixtures simple and focused
+- **Coverage** - Maintain >90% code coverage
+- **Performance** - Monitor test execution time

@@ -1,110 +1,131 @@
-# m1f Test Suite
+# M1F Test Suite
 
-Comprehensive test suite for the m1f (Make One File) tool, organized by
-functionality and test scenarios.
+Comprehensive test suite for the m1f (Make One File) tool with 23 test files and ~180 test methods, covering all aspects of functionality, security, and performance.
 
 ## 📁 Test Structure
 
 ```
 tests/m1f/
-├── README.md                          # This file
-├── conftest.py                        # m1f-specific test fixtures
-├── run_tests.py                       # Test runner utility
-├── check_failures.py                  # Test failure analysis utility
+├── README.md                             # This file
+├── conftest.py                           # m1f-specific test fixtures
 │
 ├── Core Functionality Tests
-│   ├── test_m1f_basic.py             # Basic operations and CLI options
-│   ├── test_m1f_advanced.py          # Advanced features (archives, patterns)
-│   ├── test_m1f_integration.py       # End-to-end integration tests
-│   └── test_m1f_edge_cases.py        # Edge cases and special scenarios
+│   ├── test_m1f_basic.py                # Basic operations and CLI options
+│   ├── test_m1f_advanced.py             # Advanced features (archives, patterns)
+│   ├── test_m1f_integration.py          # End-to-end integration tests
+│   ├── test_m1f_edge_cases.py           # Edge cases and special scenarios
+│   └── test_m1f.py                      # General functionality tests
 │
-├── Specialized Feature Tests
-│   ├── test_m1f_encoding.py          # Character encoding handling
-│   ├── test_m1f_file_hash.py         # Filename mtime hash functionality
-│   ├── test_security_check.py        # Security scanning features
-│   ├── test_symlinks.py              # Symbolic link handling
-│   └── test_large_file.py            # Large file performance tests
+├── Security & Safety Tests
+│   ├── test_security_check.py           # Secret detection features
+│   ├── test_path_traversal_security.py  # Path traversal vulnerability tests
+│   └── test_content_deduplication.py    # File deduplication logic
 │
-├── Preset System Tests
-│   ├── test_m1f_presets_basic.py     # Basic preset functionality
+├── Performance & Optimization Tests
+│   ├── test_parallel_processing.py      # Async/parallel operations
+│   ├── test_large_file.py              # Large file performance tests
+│   └── test_cross_platform_paths.py    # Windows/Linux compatibility
+│
+├── Encoding & Character Tests
+│   ├── test_m1f_encoding.py            # Character encoding handling
+│   └── test_m1f_unicode.py             # Unicode handling tests
+│
+├── File System Tests
+│   ├── test_symlinks.py                # Symbolic link handling
+│   ├── test_symlinks_relative.py       # Relative symlink tests
+│   ├── test_symlinks_deduplication.py  # Symlink deduplication
+│   └── test_m1f_file_hash.py          # Filename mtime hash functionality
+│
+├── Preset System Tests (v3.2+ features)
+│   ├── test_m1f_presets_basic.py       # Basic preset functionality
 │   ├── test_m1f_presets_integration.py # Advanced preset scenarios
-│   └── test_m1f_presets_v3_2.py     # v3.2 preset features
+│   └── test_m1f_presets_v3_2.py       # v3.2 preset features
 │
-├── File Filtering Tests
-│   └── test_multiple_exclude_include_files.py # Complex filtering scenarios
+├── Advanced Filtering Tests
+│   ├── test_multiple_exclude_include_files.py # Complex filtering
+│   └── test_m1f_excludes.py            # Exclusion pattern tests
 │
-├── Test Fixtures
-│   ├── source/                        # Test data organized by scenario
-│   ├── exclude_paths.txt             # Sample exclusion file
-│   └── input_paths.txt               # Sample input paths file
-│
-└── Utilities
-    ├── run_tests.py                  # Category-based test runner
-    └── check_failures.py             # Failure analysis tool
+├── Test Data & Resources
+│   ├── source/                         # Test data organized by scenario
+│   │   ├── glob_*/                    # Pattern matching test cases
+│   │   ├── exotic_encodings/          # Non-UTF8 encoding samples
+│   │   ├── advanced_glob_test/        # Complex nested structures
+│   │   ├── code/                      # Sample code files
+│   │   ├── docs/                      # Sample documentation
+│   │   └── config/                    # Sample configs
+│   ├── exclude_paths.txt              # Sample exclusion file
+│   └── input_paths.txt                # Sample input paths file
 ```
 
 ## 🧪 Test Categories
 
-### 1. **Core Functionality** (`test_m1f_basic.py`)
+### 1. **Core Functionality** 
+Tests fundamental m1f operations across multiple test files.
 
-Tests fundamental m1f operations and command-line options.
-
+**Basic Operations** (`test_m1f_basic.py`):
 - ✅ Basic file combination
 - ✅ Separator styles (Standard, Detailed, Markdown, MachineReadable)
 - ✅ Timestamp in filenames (`-t` flag)
 - ✅ Line ending options (LF/CRLF)
-- ✅ Dot file/directory inclusion (`--include-dot-paths`)
-- ✅ Path exclusion from file (`--exclude-paths-file`)
+- ✅ Dot file/directory inclusion
+- ✅ Path exclusion from file
 - ✅ Force overwrite (`-f`)
 - ✅ Verbose/quiet modes
-- ✅ Help and version display
 
-### 2. **Advanced Features** (`test_m1f_advanced.py`)
-
-Tests complex features and workflows.
-
+**Advanced Features** (`test_m1f_advanced.py`):
 - 📦 Archive creation (ZIP, TAR.GZ)
 - 🚫 Gitignore pattern support
-- 📝 File extension filtering (include/exclude)
+- 📝 File extension filtering
 - 🔍 Input paths with glob patterns
-- 🔐 Filename mtime hash for change detection
+- 🔐 Filename mtime hash
 - 🛠️ Disabling default excludes
-- 📏 File size limits (`--max-file-size`)
 - 🔢 Binary file inclusion
 
-### 3. **Integration Tests** (`test_m1f_integration.py`)
+### 2. **Security & Safety**
+Comprehensive security testing to prevent vulnerabilities.
 
-End-to-end testing of complete workflows.
+**Secret Detection** (`test_security_check.py`):
+- 🔍 Password and API key detection
+- ⚙️ Security check modes (skip, warn, abort)
+- 📝 Security warning logs
+- ✅ Clean file verification
 
-- 🔗 Command-line execution via subprocess
-- 📋 Complex input paths file scenarios
-- 🎯 Multiple glob pattern combinations
-- 🔀 Gitignore + explicit excludes
-- ⚡ Performance with many files
-- 🏗️ Archive creation with filters
+**Path Traversal** (`test_path_traversal_security.py`):
+- 🛡️ Path traversal attack prevention
+- 📁 Malicious path handling
+- 🔒 Sandbox escape prevention
+- ⚠️ Security boundary enforcement
 
-### 4. **Edge Cases** (`test_m1f_edge_cases.py`)
+**Content Deduplication** (`test_content_deduplication.py`):
+- #️⃣ SHA256-based deduplication
+- 🔄 Duplicate file detection
+- 📊 Deduplication statistics
+- 💾 Memory efficiency
 
-Tests unusual scenarios and boundary conditions.
+### 3. **Performance & Scalability**
 
-- 🌍 Unicode character handling
-- 🎭 Fake separator patterns in content
-- 📁 Empty files and directories
-- 🔗 Symbolic links (without `--include-symlinks`)
-- 🎨 Special characters in filenames
-- 🏗️ Deeply nested directories
-- 🔄 Complex gitignore with negations
-- ⚡ Concurrent file modifications
+**Parallel Processing** (`test_parallel_processing.py`):
+- ⚡ Async file operations
+- 🔀 Concurrent processing
+- 📈 Performance benchmarks
+- 🎯 Resource optimization
 
-### 5. **Encoding Tests** (`test_m1f_encoding.py`)
+**Large Files** (`test_large_file.py`):
+- 📊 Various file sizes (0.5MB - 10MB)
+- 💾 Memory efficiency
+- ⚡ Processing speed
+- ✅ Content integrity
 
-Comprehensive character encoding support.
+**Cross-Platform** (`test_cross_platform_paths.py`):
+- 🪟 Windows path handling
+- 🐧 Linux/macOS compatibility
+- 🔀 Path separator normalization
+- 📁 Drive letter handling
 
-- 🔤 Encoding conversion to UTF-8
-- 🎯 Target encoding options
-- ⚠️ Encoding error handling
-- 📊 MachineReadable format metadata
-- 💾 BOM (Byte Order Mark) handling
+### 4. **Encoding & Internationalization**
+
+**Encoding Support** (`test_m1f_encoding.py`):
+- 🔤 UTF-8, UTF-16, Latin-1
 - 🌏 Exotic encodings:
   - Shift-JIS (Japanese)
   - GB2312 (Chinese)
@@ -112,192 +133,247 @@ Comprehensive character encoding support.
   - KOI8-R (Russian)
   - ISO-8859-8 (Hebrew)
   - Windows-1256 (Arabic)
+- ⚠️ Encoding error handling
+- 💾 BOM handling
 
-### 6. **File Hash Feature** (`test_m1f_file_hash.py`)
+**Unicode** (`test_m1f_unicode.py`):
+- 🌍 Unicode filename support
+- 😀 Emoji in content
+- 🎭 Special characters
+- 📝 Unicode normalization
 
-Tests the filename mtime hash functionality.
+### 5. **File System Features**
 
-- #️⃣ Hash generation from modification times
-- 🔒 Hash consistency for unchanged files
-- 🔄 Hash updates on file changes
-- ➕ Hash changes with file additions/removals
-- 📝 Hash changes on renames
-- 🕐 Combining hash with timestamp
-- 📁 Empty directory handling
+**Symbolic Links** (3 test files):
+- 🔗 Basic symlink handling (`test_symlinks.py`)
+- 📍 Relative symlinks (`test_symlinks_relative.py`)
+- 🔄 Symlink deduplication (`test_symlinks_deduplication.py`)
+- 🚫 Circular reference detection
+- 📝 Target resolution
 
-### 7. **Preset System** (`test_m1f_presets_*.py`)
+**File Hash** (`test_m1f_file_hash.py`):
+- #️⃣ Modification time hashing
+- 🔒 Hash consistency
+- 🔄 Change detection
+- 📁 Directory handling
 
-Tests the flexible preset configuration system.
+### 6. **Preset System** (v3.2+)
 
-**Basic Presets:**
-
+**Basic Presets** (`test_m1f_presets_basic.py`):
 - 🎨 Global preset settings
 - 📝 File-specific processors
-- 🧹 Content cleaning (strip_tags, remove_empty_lines)
+- 🧹 Content cleaning
 
-**Advanced Presets:**
-
-- 🔗 Preset inheritance and merging
+**Advanced Presets** (`test_m1f_presets_integration.py`):
+- 🔗 Preset inheritance
 - 🌍 Environment-based presets
 - 🎯 Conditional presets
 - 🔧 Complex workflows
-- ⚠️ Error handling
 
-**v3.2 Features:**
-
-- 📁 Source/output configuration via preset
-- 📋 Input include files via preset
+**v3.2 Features** (`test_m1f_presets_v3_2.py`):
+- 📁 Source/output configuration
+- 📋 Input include files
 - ⚙️ Runtime behavior settings
 - 🔄 CLI argument overrides
-- 🔤 Encoding settings via preset
 
-### 8. **Security Scanning** (`test_security_check.py`)
+### 7. **Advanced Filtering**
 
-Tests for sensitive information detection.
-
-- 🔍 Password and API key detection
-- ✅ Clean file verification
-- ⚙️ Security check modes (skip, warn, abort)
-- 📝 Security warning logs
-
-### 9. **Performance Tests** (`test_large_file.py`)
-
-Tests handling of large files.
-
-- 📊 Various file sizes (0.5MB - 10MB)
-- 🔤 Encoding with large files
-- ⚡ Performance baselines
-- 💾 Memory efficiency
-- ✅ Content integrity
-
-### 10. **Symbolic Links** (`test_symlinks.py`)
-
-Tests symbolic link handling.
-
-- 🔄 Symlink cycle detection
-- 🔗 Symlink inclusion flag
-- 🚫 Circular reference handling
-- 📝 File deduplication
-
-### 11. **File Filtering** (`test_multiple_exclude_include_files.py`)
-
-Tests complex filtering scenarios.
-
+**Multiple Files** (`test_multiple_exclude_include_files.py`):
 - 📋 Multiple exclude files
 - ✅ Multiple include files
 - 🔀 Combined exclude/include
-- 🎯 Input file bypass
-- ⚠️ Non-existent file handling
+- ⚠️ Error handling
 
-## 🧪 Test Data Structure
+**Exclusion Patterns** (`test_m1f_excludes.py`):
+- 🎯 Glob pattern exclusions
+- 📝 Regex exclusions
+- 🔍 Gitignore integration
+- 📁 Directory exclusions
 
-The `source/` directory contains carefully organized test fixtures:
+## 🧪 Test Fixtures (conftest.py)
 
-### Pattern Testing
+**Core Fixtures:**
+- `m1f_source_dir` - Source directory for test files
+- `m1f_output_dir` - Output directory with auto-cleanup
+- `m1f_extracted_dir` - Extraction directory
+- `run_m1f` - Direct function testing with mocked args
+- `m1f_cli_runner` - Subprocess-based CLI testing
+- `create_m1f_test_structure` - Standard test directory creation
 
-- `glob_*` directories: Various glob pattern scenarios
-- `file_extensions_test/`: Extension filtering tests
-- `special_chars/`: Filename edge cases
-
-### Encoding Testing
-
-- `exotic_encodings/`: Files in various character encodings
-- International filenames (German, Spanish, Russian, Chinese)
-
-### Structure Testing
-
-- `advanced_glob_test/`: Complex directory hierarchies
-- Deep nesting scenarios
-- Mixed file types
-
-### Content Testing
-
-- `code/`: Programming language files
-- `docs/`: Documentation files
-- `config/`: Configuration files
+**Utilities:**
+- Cross-platform path handling
+- Automatic cleanup on Windows
+- Test file creation helpers
+- Directory structure builders
 
 ## 🚀 Running Tests
 
-### Run All Tests
-
+### Run All M1F Tests
 ```bash
 pytest tests/m1f/ -v
 ```
 
-### Run Specific Test Categories
-
+### Run Specific Categories
 ```bash
-# Using pytest markers
+# By marker
 pytest tests/m1f/ -m unit
 pytest tests/m1f/ -m integration
 pytest tests/m1f/ -m encoding
 pytest tests/m1f/ -m "not slow"
+pytest tests/m1f/ -m requires_git
 
-# Using the test runner utility
-python tests/m1f/run_tests.py --all
-python tests/m1f/run_tests.py --basic --advanced
-python tests/m1f/run_tests.py --encoding --presets
+# By test file pattern
+pytest tests/m1f/test_*security*.py -v
+pytest tests/m1f/test_*encoding*.py -v
+pytest tests/m1f/test_*preset*.py -v
 ```
 
-### Run Individual Test Files
-
+### Run Individual Tests
 ```bash
+# Specific test file
 pytest tests/m1f/test_m1f_basic.py -v
-pytest tests/m1f/test_m1f_encoding.py::TestM1FEncoding::test_encoding_conversion -v
+
+# Specific test method
+pytest tests/m1f/test_m1f_encoding.py::TestM1FEncoding::test_exotic_encodings -v
+
+# Tests matching pattern
+pytest tests/m1f/ -k "test_encoding" -v
 ```
 
-### Analyze Test Failures
+### Debug Options
+```bash
+# Stop on first failure
+pytest tests/m1f/ -x
+
+# Show print statements
+pytest tests/m1f/ -s
+
+# Drop into debugger
+pytest tests/m1f/ --pdb
+
+# Verbose with full diff
+pytest tests/m1f/ -vv
+```
+
+## 📊 Coverage Analysis
 
 ```bash
-python tests/m1f/check_failures.py
+# Run with coverage
+pytest tests/m1f/ --cov=tools.m1f --cov-report=html --cov-report=term
+
+# View coverage report
+open htmlcov/index.html
 ```
 
-## 📊 Coverage Goals
+**Coverage Goals:**
+- Core functionality: 100%
+- Edge cases: >95%
+- Error handling: >90%
+- Platform-specific: >85%
 
-- **Core Functionality**: 100% coverage of basic m1f operations
-- **Edge Cases**: Comprehensive handling of unusual scenarios
-- **Encoding**: Support for all major character encodings
-- **Performance**: Baseline tests for large file handling
-- **Security**: Detection of common sensitive patterns
-- **Presets**: Full preset system functionality
-- **Integration**: Real-world workflow scenarios
+## 🧪 Test Data Organization
 
-## 🛠️ Test Utilities
+### Pattern Testing (`source/glob_*`)
+- Basic glob patterns
+- Recursive patterns
+- Multiple wildcards
+- Directory-specific patterns
 
-### `run_tests.py`
+### Encoding Samples (`source/exotic_encodings/`)
+- Text files in various encodings
+- International content
+- BOM variations
+- Mixed encodings
 
-Convenient test runner with category selection:
+### Complex Structures (`source/advanced_glob_test/`)
+- Deep nesting (5+ levels)
+- International filenames
+- Mixed file types
+- Large directory trees
 
-- `--all`: Run all tests
-- `--basic`: Basic functionality tests
-- `--advanced`: Advanced feature tests
-- `--encoding`: Encoding-related tests
-- `--presets`: Preset system tests
-- `--verbose`: Verbose output
-
-### `check_failures.py`
-
-Analyzes test failures and provides summaries:
-
-- Groups failures by type
-- Suggests potential fixes
-- Identifies flaky tests
+### Real-World Examples
+- Code files (Python, JavaScript, etc.)
+- Documentation (Markdown, RST)
+- Configuration (YAML, JSON, INI)
+- Binary files (images, archives)
 
 ## 📝 Writing New Tests
 
-When adding new tests:
+### Test Template
+```python
+from __future__ import annotations
 
-1. **Choose the right file**: Add to existing test files when possible
-2. **Use appropriate markers**: `@pytest.mark.unit`, `@pytest.mark.integration`,
-   etc.
-3. **Follow naming conventions**: `test_<feature>_<scenario>`
-4. **Add test data**: Place fixtures in appropriate `source/` subdirectories
-5. **Document complex tests**: Add docstrings explaining the test purpose
-6. **Consider performance**: Mark slow tests with `@pytest.mark.slow`
+import pytest
+from pathlib import Path
+from ..conftest import M1FTestContext
 
-## 🔧 Maintenance
+class TestNewFeature:
+    """Tests for new m1f feature."""
+    
+    @pytest.mark.unit
+    async def test_feature_basic(self, run_m1f: M1FTestContext):
+        """Test basic feature functionality."""
+        # Arrange
+        test_file = run_m1f.create_file("test.txt", "content")
+        
+        # Act
+        result = await run_m1f.execute([
+            str(test_file),
+            "-o", str(run_m1f.output_dir / "output.txt")
+        ])
+        
+        # Assert
+        assert result.returncode == 0
+        assert "expected output" in result.stdout
+```
 
-- **Test data**: Keep test fixtures minimal but representative
-- **Performance**: Monitor test suite execution time
-- **Dependencies**: Update test dependencies regularly
-- **Coverage**: Maintain high test coverage (aim for >90%)
+### Best Practices
+1. **Use fixtures** - Don't create files manually
+2. **Test isolation** - Each test should be independent
+3. **Clear naming** - Test name should describe behavior
+4. **Appropriate markers** - Use unit/integration/slow markers
+5. **Cleanup** - Fixtures handle cleanup automatically
+6. **Cross-platform** - Consider Windows/Linux differences
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Windows-Specific:**
+- File locking during cleanup
+- Path length limitations
+- Case-insensitive paths
+- Line ending differences
+
+**Encoding Issues:**
+- System locale dependencies
+- Missing codec support
+- BOM handling differences
+
+**Performance:**
+- Slow tests not marked
+- Resource cleanup delays
+- Large test data files
+
+### Solutions
+```bash
+# Skip slow tests
+pytest -m "not slow"
+
+# Run with specific encoding
+PYTHONIOENCODING=utf-8 pytest
+
+# Increase timeout
+pytest --timeout=300
+
+# Clean test artifacts
+rm -rf tests/m1f/output_* tests/m1f/extracted_*
+```
+
+## 🛠️ Maintenance
+
+- **Regular cleanup** - Remove obsolete test data
+- **Performance monitoring** - Track test suite execution time
+- **Coverage tracking** - Maintain high coverage
+- **Dependency updates** - Keep test dependencies current
+- **Documentation** - Update this README with new tests

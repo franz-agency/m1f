@@ -1,353 +1,309 @@
 ======= README.md ======
-# Test Suite Documentation
+# M1F Test Suite Documentation
 
-This directory contains the modernized test suite for the m1f tool suite,
-including m1f, s1f, html2md, and m1f-scrape tools, using Python 3.10+ features
-and modern testing practices.
+This directory contains the comprehensive test suite for the m1f tool suite, including m1f, s1f, html2md, m1f-scrape, and m1f-research tools. Built with Python 3.10+ features and modern testing practices.
+
+## Overview
+
+- **43 test files** with ~290 test methods
+- **Comprehensive fixture system** with module-specific extensions
+- **Multi-platform support** with Windows-specific handling
+- **Security testing** with path traversal and secret detection
+- **Performance testing** for large files and parallel processing
+- **Real-world test data** including international filenames
 
 ## Test Structure
 
 ```
 tests/
-├── conftest.py              # Global fixtures and test configuration
-├── base_test.py             # Base test classes with common utilities
-├── pytest.ini               # Test-specific pytest configuration
-├── test_html2md_server.py   # HTML2MD server tests
-├── test_simple_server.py    # Simple server tests
-├── m1f/                     # m1f-specific tests
-│   ├── conftest.py          # m1f-specific fixtures
-│   ├── test_m1f_basic.py    # Basic functionality tests
-│   ├── test_m1f_advanced.py # Advanced features tests
-│   ├── test_m1f_encoding.py # Encoding-related tests
-│   ├── test_m1f_edge_cases.py # Edge cases and special scenarios
-│   ├── test_m1f_file_hash.py # Filename mtime hash functionality
-│   ├── test_m1f_integration.py # Integration and CLI tests
-│   ├── test_m1f_presets_basic.py # Basic preset tests
-│   ├── test_m1f_presets_integration.py # Advanced preset tests
-│   ├── test_m1f_presets_v3_2.py # V3.2 preset features
-│   └── source/              # Test data and resources
-├── s1f/                     # s1f-specific tests
-│   ├── conftest.py          # s1f-specific fixtures
-│   ├── test_s1f_basic.py    # Basic functionality tests
-│   ├── test_s1f_encoding.py # Encoding-related tests
-│   ├── test_s1f_async.py    # Async functionality tests
-│   └── ...                  # Other test files and resources
-├── html2md/                 # html2md-specific tests
-│   ├── __init__.py          # Package marker
-│   ├── test_html2md.py      # Core HTML2MD functionality tests
-│   ├── test_integration.py  # Integration tests
-│   ├── test_local_scraping.py # Local scraping tests
-│   ├── test_scrapers.py     # Scraper backend tests
-│   ├── source/              # Test HTML files
-│   ├── expected/            # Expected output files
-│   └── scraped_examples/    # Real-world scraping test cases
-└── html2md_server/          # Test server for HTML2MD
-    ├── server.py            # Test server implementation
-    ├── manage_server.py     # Server management utilities
-    └── test_pages/          # Test HTML pages
+├── conftest.py                    # Global fixtures and test configuration
+├── base_test.py                   # Base test classes with common utilities
+├── test_html2md_server.py         # HTML2MD server tests
+├── test_html2md_server_fixed.py   # Fixed server tests
+├── test_m1f_claude_improvements.py # Claude-suggested improvements
+├── test_simple_server.py          # Simple server tests
+│
+├── m1f/                           # m1f tests (23 test files, ~180 methods)
+│   ├── conftest.py               # m1f-specific fixtures
+│   ├── test_m1f_basic.py         # Core functionality
+│   ├── test_m1f_advanced.py      # Advanced features
+│   ├── test_m1f_encoding.py      # Character encoding
+│   ├── test_m1f_integration.py   # End-to-end tests
+│   ├── test_m1f_presets_*.py     # Preset system (basic, integration, v3.2)
+│   ├── test_security_check.py    # Secret detection
+│   ├── test_path_traversal_security.py # Security vulnerabilities
+│   ├── test_content_deduplication.py   # File deduplication
+│   ├── test_parallel_processing.py     # Async operations
+│   ├── test_symlinks*.py         # Symbolic link handling
+│   ├── test_large_file.py        # Performance testing
+│   ├── test_cross_platform_paths.py # Windows/Linux compatibility
+│   └── source/                   # Test data
+│       ├── glob_*/               # Pattern matching tests
+│       ├── exotic_encodings/     # Non-UTF8 encodings
+│       └── advanced_glob_test/   # International filenames
+│
+├── s1f/                          # s1f tests (6 test files, ~40 methods)
+│   ├── conftest.py              # s1f-specific fixtures
+│   ├── test_s1f_basic.py        # Core extraction
+│   ├── test_s1f_async.py        # Async operations
+│   ├── test_s1f_encoding.py     # Encoding preservation
+│   ├── test_s1f_target_encoding.py # Encoding conversion
+│   ├── test_s1f.py              # General functionality
+│   └── test_path_traversal_security.py # Security tests
+│
+├── html2md/                      # html2md tests (5 test files, ~30 methods)
+│   ├── test_html2md.py          # Core conversion
+│   ├── test_integration.py      # End-to-end tests
+│   ├── test_claude_integration.py # AI optimization
+│   ├── test_scrapers.py         # Scraping backends
+│   ├── test_local_scraping.py   # Local file processing
+│   ├── source/html/             # Test HTML files
+│   ├── expected/                # Expected outputs
+│   └── scraped_examples/        # Real-world examples
+│
+├── html2md_server/               # HTML2MD test infrastructure
+│   ├── server.py                # Flask test server
+│   ├── manage_server.py         # Server management
+│   ├── test_pages/              # 8+ complex HTML test pages
+│   ├── static/                  # CSS/JS resources
+│   └── README.md                # Server documentation
+│
+└── research/                     # m1f-research tests (5 test files, ~25 methods)
+    ├── test_research_workflow.py # End-to-end workflows
+    ├── test_llm_providers.py    # LLM integrations
+    ├── test_content_analysis.py # Content analysis
+    ├── test_analysis_templates.py # Template system
+    └── test_scraping_integration.py # Scraping integration
 ```
 
 ## Key Features
 
-### Modern Python 3.10+ Features
+### Global Test Infrastructure (conftest.py)
 
-- **Type Hints**: All functions and fixtures use modern type hints with the
-  union operator (`|`)
-- **Structural Pattern Matching**: Where applicable (Python 3.10+)
-- **Better Type Annotations**: Using `from __future__ import annotations`
-- **Modern pathlib Usage**: Consistent use of `Path` objects
+**Core Fixtures:**
+- `tools_dir` - Path to tools directory
+- `test_data_dir` - Path to test data
+- `temp_dir` - Temporary directory with auto-cleanup
+- `isolated_filesystem` - Isolated filesystem environment
+- `create_test_file` - Factory for creating test files
+- `create_test_directory_structure` - Complex directory creation
+- `capture_logs` - Log output capture and examination
+- `anyio_backend` - Async testing support
 
-### Test Organization
+**Platform Support:**
+- Windows-specific cleanup handling
+- Cross-platform path separator handling
+- File locking issue mitigation
 
-- **Modular Test Files**: Tests are split into focused modules by functionality
-- **Base Test Classes**: Common functionality is abstracted into base classes
-- **Fixture Hierarchy**: Global, tool-specific, and test-specific fixtures
-- **Clear Test Markers**: Tests are marked with categories (unit, integration,
-  slow, encoding)
-
-### Key Fixtures
-
-#### Global Fixtures (conftest.py)
-
-- `temp_dir`: Creates a temporary directory for test files
-- `isolated_filesystem`: Provides an isolated filesystem environment
-- `create_test_file`: Factory for creating test files
-- `create_test_directory_structure`: Creates complex directory structures
-- `capture_logs`: Captures and examines log output
-- `cleanup_logging`: Automatically cleans up logging handlers
-
-#### M1F-Specific Fixtures (m1f/conftest.py)
-
-- `run_m1f`: Runs m1f with specified arguments
-- `m1f_cli_runner`: Runs m1f as a subprocess
-- `create_m1f_test_structure`: Creates m1f-specific test structures
-
-#### S1F-Specific Fixtures (s1f/conftest.py)
-
-- `run_s1f`: Runs s1f with specified arguments
-- `s1f_cli_runner`: Runs s1f as a subprocess
-- `create_combined_file`: Creates combined files in different formats
-- `create_m1f_output`: Uses m1f to create realistic test files
-
-#### HTML2MD-Specific Fixtures (html2md/conftest.py)
-
-- `html2md_runner`: Runs html2md with specified arguments
-- `create_test_html`: Creates test HTML files with various structures
-- `test_server`: Manages test HTTP server for scraping tests
-- `mock_url_fetcher`: Mocks URL fetching for unit tests
-
-#### Scraper Test Utilities
-
-- Test server in `html2md_server/` for realistic scraping scenarios
-- Pre-scraped examples for regression testing
-- Multiple scraper backend configurations
+**Test Markers:**
+```python
+@pytest.mark.unit         # Fast, isolated unit tests
+@pytest.mark.integration  # End-to-end integration tests
+@pytest.mark.slow        # Long-running tests
+@pytest.mark.requires_git # Tests requiring git
+@pytest.mark.encoding    # Encoding-related tests
+```
 
 ## Running Tests
 
-### Run All Tests
+### Basic Commands
 
 ```bash
+# Run all tests
 pytest
-```
 
-### Run Specific Test Categories
+# Run with verbose output
+pytest -vv
 
-```bash
-# Run only unit tests
-pytest -m unit
-
-# Run only integration tests
-pytest -m integration
-
-# Run encoding-related tests
-pytest -m encoding
-
-# Skip slow tests
-pytest -m "not slow"
-```
-
-### Run Tests for Specific Tools
-
-```bash
-# Run only m1f tests
+# Run specific tool tests
 pytest tests/m1f/
-
-# Run only s1f tests
 pytest tests/s1f/
-
-# Run only html2md tests
 pytest tests/html2md/
+pytest tests/research/
 
-# Run scraper tests
-pytest tests/html2md/test_scrapers.py
-
-# Run preset tests
-pytest tests/m1f/test_m1f_presets*.py
+# Run by marker
+pytest -m unit              # Fast unit tests only
+pytest -m integration       # Integration tests only
+pytest -m "not slow"       # Skip slow tests
+pytest -m encoding         # Encoding tests only
 ```
 
-### Run Specific Test Files
+### Advanced Testing
 
 ```bash
-# Run basic m1f tests
-pytest tests/m1f/test_m1f_basic.py
+# Run with coverage
+pytest --cov=tools --cov-report=html --cov-report=term
 
-# Run encoding tests for both tools
-pytest tests/m1f/test_m1f_encoding.py tests/s1f/test_s1f_encoding.py
+# Run specific test patterns
+pytest -k "test_encoding"   # All encoding tests
+pytest -k "test_security"   # Security tests
+
+# Debug options
+pytest -x                   # Stop on first failure
+pytest --pdb               # Drop into debugger on failure
+pytest -s                  # Show print statements
+
+# Parallel execution
+pytest -n auto             # Use all CPU cores
 ```
 
-### Run with Coverage
+### Test Categories by Tool
 
-```bash
-# Install pytest-cov if not already installed
-pip install pytest-cov
+#### M1F Tests
+- **Basic**: Core file bundling functionality
+- **Advanced**: Complex scenarios, edge cases
+- **Encoding**: UTF-8, UTF-16, exotic encodings
+- **Security**: Path traversal, secret detection
+- **Presets**: YAML preset system, file-specific rules
+- **Performance**: Large files, parallel processing
+- **Cross-platform**: Windows/Linux compatibility
 
-# Run with coverage report
-pytest --cov=tools --cov-report=html
+#### S1F Tests
+- **Extraction**: All M1F format variations
+- **Async**: Asynchronous file operations
+- **Encoding**: Preservation and conversion
+- **Security**: Malicious path protection
 
-# View coverage report
-open htmlcov/index.html
-```
+#### HTML2MD Tests
+- **Conversion**: HTML to Markdown accuracy
+- **Scrapers**: BeautifulSoup, Scrapy, Playwright
+- **AI Integration**: Claude-powered optimization
+- **Local Processing**: File system operations
 
-## Test Categories
-
-### Unit Tests (`@pytest.mark.unit`)
-
-- Fast, isolated tests of individual components
-- No external dependencies
-- Mock external interactions
-
-### Integration Tests (`@pytest.mark.integration`)
-
-- Test interaction between multiple components
-- May create real files and directories
-- Test end-to-end workflows
-
-### Slow Tests (`@pytest.mark.slow`)
-
-- Tests that take significant time (e.g., large file handling)
-- Skipped in quick test runs
-
-### Encoding Tests (`@pytest.mark.encoding`)
-
-- Tests related to character encoding
-- May require specific system encodings
+#### Research Tests
+- **Workflows**: End-to-end research automation
+- **LLM Providers**: Provider abstraction testing
+- **Content Analysis**: Scoring and analysis
+- **Templates**: Analysis template system
 
 ## Writing New Tests
 
-### Test Class Structure
+### Test Structure Template
 
 ```python
 from __future__ import annotations
 
 import pytest
-from ..base_test import BaseM1FTest  # or BaseS1FTest
+from pathlib import Path
+from ..base_test import BaseM1FTest  # or BaseS1FTest, etc.
 
 class TestFeatureName(BaseM1FTest):
-    """Description of what these tests cover."""
-
+    """Tests for specific feature area."""
+    
     @pytest.mark.unit
-    def test_specific_behavior(self, fixture1, fixture2):
-        """Test description."""
+    async def test_specific_behavior(self, temp_dir: Path, create_test_file):
+        """Test description explaining what and why."""
         # Arrange
-        ...
-
+        test_file = create_test_file("test.txt", "content")
+        
         # Act
-        ...
-
+        result = await some_function(test_file)
+        
         # Assert
-        ...
+        assert result.success
+        assert "expected" in result.output
 ```
 
-### Using Fixtures
+### Best Practices
 
-```python
-def test_with_temp_files(self, create_test_file, temp_dir):
-    """Example using fixture to create test files."""
-    # Create a test file
-    test_file = create_test_file("test.txt", "content")
+1. **Use Type Hints**: All functions should have complete type annotations
+2. **Clear Naming**: Test names should describe the behavior being tested
+3. **Docstrings**: Explain what the test validates and why
+4. **AAA Pattern**: Arrange-Act-Assert structure
+5. **Isolation**: Tests should not depend on each other
+6. **Fixtures**: Use fixtures for common setup/teardown
+7. **Markers**: Apply appropriate test markers
+8. **Cleanup**: Ensure proper resource cleanup
 
-    # Use temp_dir for output
-    output_file = temp_dir / "output.txt"
-```
+## Test Servers
 
-### Parametrized Tests
-
-```python
-@pytest.mark.parametrize("input,expected", [
-    ("value1", "result1"),
-    ("value2", "result2"),
-])
-def test_multiple_cases(self, input, expected):
-    """Test with multiple input/output pairs."""
-    assert process(input) == expected
-```
-
-## Best Practices
-
-1. **Use Type Hints**: All test functions and fixtures should have type hints
-2. **Clear Test Names**: Test names should describe what is being tested
-3. **Docstrings**: Each test should have a docstring explaining its purpose
-4. **Arrange-Act-Assert**: Follow the AAA pattern for test structure
-5. **Use Fixtures**: Leverage fixtures for common setup and teardown
-6. **Mark Tests**: Use appropriate markers for test categorization
-7. **Isolated Tests**: Each test should be independent and not rely on others
-
-## Test Server for HTML2MD
-
-The test suite includes a test server for HTML2MD scraping tests:
+### HTML2MD Test Server
 
 ```bash
 # Start the test server
 cd tests/html2md_server
 python server.py
 
-# Or use the management script
+# Or use management script
 python manage_server.py start
 
-# Run scraping tests with the server
-pytest tests/html2md/test_local_scraping.py
+# Access test pages
+http://localhost:8080/
 ```
 
-The test server provides:
-
-- Static HTML pages for testing various HTML structures
-- Realistic website scenarios
-- Controlled environment for scraper testing
+Provides:
+- Complex HTML test pages (CSS Grid, Flexbox, nested structures)
+- Modern web features (HTML5, semantic markup)
+- Real documentation examples
+- Edge cases and malformed HTML
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Import Errors**: Ensure the tools directory is in the Python path
-2. **Fixture Not Found**: Check that conftest.py files are properly placed
-3. **Encoding Errors**: Some encoding tests may fail on systems without specific
-   encodings
-4. **Permission Errors**: Ensure proper cleanup of temporary files
-5. **Test Server Issues**: Ensure port 8080 is available for the test server
-6. **Scraper Timeouts**: Some scraper tests may timeout on slow connections
+1. **Import Errors**: Ensure tools directory is in PYTHONPATH
+2. **Fixture Not Found**: Check conftest.py placement
+3. **Encoding Failures**: Some tests require specific system encodings
+4. **Permission Errors**: Temporary file cleanup issues
+5. **Port Conflicts**: Test server requires port 8080
+6. **Async Errors**: Ensure anyio is installed
 
-### Debug Options
+### Platform-Specific Issues
 
-```bash
-# Run with verbose output
-pytest -vv
+**Windows:**
+- File locking during cleanup
+- Path separator differences
+- Encoding defaults
 
-# Show print statements
-pytest -s
+**Linux/macOS:**
+- Symbolic link tests require permissions
+- Case-sensitive filesystem assumptions
 
-# Stop on first failure
-pytest -x
+## Test Data Organization
 
-# Drop into debugger on failure
-pytest --pdb
-```
+### M1F Test Data (`m1f/source/`)
+- Pattern matching test cases
+- International filenames
+- Various encodings (UTF-8, UTF-16, Latin-1, etc.)
+- Nested directory structures
+- Binary and text files
 
-## Test Coverage
+### S1F Test Data
+- Pre-generated M1F bundles
+- Various separator styles
+- Corrupted/malformed inputs
 
-The test suite provides comprehensive coverage for:
-
-### m1f Tool
-
-- File combination with various separators
-- Encoding detection and conversion
-- Preset system and file-specific processing
-- Security scanning
-- Archive creation
-- Edge cases and error handling
-
-### s1f Tool
-
-- File extraction from combined files
-- Format detection (Standard, Detailed, Markdown, etc.)
-- Encoding preservation
-- Async file processing
-- Checksum validation
-
-### html2md Tool
-
-- HTML to Markdown conversion
-- URL scraping and fetching
-- Multiple scraper backends (BeautifulSoup, Playwright, etc.)
-- Content extraction and cleaning
-- Metadata preservation
-
-### m1f-scrape Tool
-
-- Website scraping with multiple backends
-- Crawling and link following
-- Rate limiting and politeness
-- Content downloading and organization
+### HTML2MD Test Data
+- Complex HTML structures
+- Real website snapshots
+- Various content types
+- Edge cases
 
 ## Contributing
 
 When adding new tests:
 
-1. Follow the existing test structure
-2. Add appropriate markers (@pytest.mark.unit, etc.)
-3. Update this README if adding new test categories
-4. Ensure tests are independent and reproducible
-5. Add fixtures to appropriate conftest.py files
-6. Document any special test requirements
+1. **Follow existing patterns** - Consistency is key
+2. **Add to appropriate directory** - Keep tests organized
+3. **Update fixtures** - Add reusable components to conftest.py
+4. **Document special requirements** - Note any dependencies
+5. **Run full test suite** - Ensure no regressions
+6. **Update this README** - Document new test categories
+
+## Performance Considerations
+
+- Tests use async I/O where possible
+- Large file tests are marked as `@pytest.mark.slow`
+- Parallel test execution is supported
+- Resource cleanup is automatic
+
+## Security Testing
+
+The test suite includes comprehensive security testing:
+- Path traversal attempts
+- Secret detection validation
+- Input sanitization
+- Malformed data handling
 
 ======= __init__.py ======
 """Test package for m1f and s1f tools."""
@@ -4883,62 +4839,87 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port, debug=debug_mode)
 
 ======= research/README.md ======
-# m1f-research Integration Tests
+# M1F-Research Test Suite
 
-This directory contains comprehensive integration tests for the m1f-research
-scraping and content analysis pipeline.
+Comprehensive test suite for the m1f-research tool with 5 test files and ~25 test methods, covering research workflows, LLM integration, and content analysis.
 
-## Test Structure
+## 📁 Test Structure
 
-### test_scraping_integration.py
-
-Tests the complete web scraping workflow including:
-
-- **Full scraping workflow** - End-to-end scraping of multiple URLs
-- **Concurrent scraping behavior** - Validates concurrency limits are respected
-- **Retry mechanism** - Tests automatic retry on failed requests
-- **Rate limiting** - Ensures proper delays between requests
-- **Robots.txt compliance** - Tests respect for robots.txt when enabled
-- **HTML to Markdown conversion** - Validates quality of HTML conversion
-- **Error handling** - Tests graceful failure recovery
-- **Progress tracking** - Validates progress callback functionality
-- **Metadata extraction** - Tests extraction of response metadata
-
-### test_content_analysis.py
-
-Tests the content filtering and LLM-based analysis including:
-
-- **Content filtering pipeline** - Complete filtering workflow
-- **Spam detection** - Identifies and filters spam/low-quality content
-- **Language detection** - Filters content by language
-- **Quality scoring** - Evaluates content structure and readability
-- **Duplicate detection** - Identifies and removes duplicate content
-- **LLM-based analysis** - Integration with LLM for content analysis
-- **Template-based scoring** - Tests scoring adjustments based on templates
-- **Batch processing** - Validates concurrent batch analysis
-- **Error recovery** - Tests fallback mechanisms for LLM failures
-
-## Running Tests
-
-```bash
-# Run all research tests
-pytest tests/research/
-
-# Run specific test file
-pytest tests/research/test_scraping_integration.py
-pytest tests/research/test_content_analysis.py
-
-# Run with verbose output
-pytest tests/research/ -vv
-
-# Run specific test
-pytest tests/research/test_scraping_integration.py::TestScrapingIntegration::test_full_scraping_workflow
+```
+tests/research/
+├── README.md                           # This file
+├── conftest.py                         # Research-specific test fixtures (if exists)
+│
+├── Core Workflow Tests
+│   ├── test_research_workflow.py       # End-to-end research workflows
+│   └── test_scraping_integration.py    # Web scraping integration
+│
+├── Analysis Tests
+│   ├── test_content_analysis.py        # Content analysis and scoring
+│   └── test_analysis_templates.py      # Template system tests
+│
+└── Provider Tests
+    └── test_llm_providers.py           # LLM provider integrations
 ```
 
-## Test Fixtures
+## 🧪 Test Categories
 
-The `conftest.py` file provides common fixtures:
+### 1. **Research Workflows**
 
+**End-to-End Workflows** (`test_research_workflow.py`):
+- 🔄 Complete research pipelines
+- 📊 Multi-stage processing
+- 🎯 Goal-oriented workflows
+- 📝 Report generation
+- ⚡ Workflow optimization
+
+**Scraping Integration** (`test_scraping_integration.py`):
+- 🌐 Full scraping workflow
+- 🔀 Concurrent scraping behavior
+- 🔄 Retry mechanisms
+- ⏱️ Rate limiting compliance
+- 🤖 Robots.txt respect
+- 📝 HTML to Markdown conversion
+- ⚠️ Error handling
+- 📊 Progress tracking
+- 📋 Metadata extraction
+
+### 2. **Content Analysis**
+
+**Content Analysis** (`test_content_analysis.py`):
+- 🔍 Content filtering pipeline
+- 🚫 Spam detection
+- 🌍 Language detection
+- 📊 Quality scoring
+- 🔄 Duplicate detection
+- 🤖 LLM-based analysis
+- 📋 Template-based scoring
+- 🔀 Batch processing
+- ⚠️ Error recovery
+
+**Analysis Templates** (`test_analysis_templates.py`):
+- 📋 Template loading and parsing
+- 🎯 Template application
+- 🔧 Custom template creation
+- 📊 Scoring adjustments
+- 🔄 Template inheritance
+- ⚙️ Dynamic templates
+
+### 3. **LLM Provider Integration**
+
+**Provider Tests** (`test_llm_providers.py`):
+- 🤖 Provider abstraction layer
+- 🔌 Multiple provider support
+- 🔄 Fallback mechanisms
+- 📊 Response parsing
+- ⚠️ Error handling
+- 💰 Cost tracking
+- 🚦 Rate limit handling
+- 🔐 Authentication
+
+## 🧪 Test Fixtures
+
+**Core Fixtures:**
 - `default_scraping_config` - Standard scraping configuration
 - `default_analysis_config` - Standard analysis configuration
 - `mock_llm_provider` - Mock LLM provider for testing
@@ -4946,26 +4927,188 @@ The `conftest.py` file provides common fixtures:
 - `sample_scraped_content_list` - Sample scraped content
 - `temp_dir` - Temporary directory for test files
 
-## Key Testing Patterns
+**Mock Objects:**
+- LLM API responses
+- Web scraping results
+- Content analysis outputs
+- Template configurations
 
-1. **Async Testing**: Uses `pytest.mark.asyncio` for async functions
-2. **Mocking**: Extensive use of `AsyncMock` for external dependencies
-3. **Integration Focus**: Tests component interactions rather than units
-4. **Error Scenarios**: Covers various failure modes and recovery
-5. **Performance**: Tests concurrency limits and batch processing
+## 🚀 Running Tests
 
-## Coverage Areas
+### Run All Research Tests
+```bash
+pytest tests/research/ -v
+```
 
-- Web scraping with retry and rate limiting
-- Content quality assessment
-- Language detection
-- Spam filtering
-- Duplicate detection
-- LLM integration
-- Template-based scoring
-- Error handling and recovery
-- Progress tracking
-- Metadata extraction
+### Run Specific Test Files
+```bash
+# Workflow tests
+pytest tests/research/test_research_workflow.py -v
+
+# Scraping tests
+pytest tests/research/test_scraping_integration.py -v
+
+# Analysis tests
+pytest tests/research/test_content_analysis.py -v
+
+# LLM provider tests
+pytest tests/research/test_llm_providers.py -v
+```
+
+### Run with Options
+```bash
+# Async test support
+pytest tests/research/ -v --asyncio-mode=auto
+
+# Show output
+pytest tests/research/ -s
+
+# Run specific test
+pytest tests/research/test_scraping_integration.py::TestScrapingIntegration::test_full_scraping_workflow -v
+
+# With coverage
+pytest tests/research/ --cov=tools.research --cov-report=html
+```
+
+## 📊 Test Coverage
+
+**Scraping Integration:**
+- URL processing and validation
+- Concurrent request handling
+- Rate limiting and delays
+- Retry logic with backoff
+- Robots.txt compliance
+- HTML to Markdown conversion
+- Error recovery strategies
+
+**Content Analysis:**
+- Quality assessment algorithms
+- Language detection accuracy
+- Spam filtering effectiveness
+- Duplicate detection methods
+- LLM prompt engineering
+- Template matching logic
+- Batch processing efficiency
+
+**LLM Integration:**
+- Provider initialization
+- API request formatting
+- Response parsing
+- Token usage tracking
+- Cost calculation
+- Error handling
+- Fallback strategies
+
+## 🧪 Testing Patterns
+
+### Async Testing
+```python
+@pytest.mark.asyncio
+async def test_async_workflow():
+    """Test async research workflow."""
+    async with aiohttp.ClientSession() as session:
+        result = await research_function(session)
+        assert result.success
+```
+
+### Mock LLM Providers
+```python
+def test_llm_analysis(mock_llm_provider):
+    """Test with mocked LLM."""
+    mock_llm_provider.analyze.return_value = AsyncMock(
+        return_value={"score": 0.9, "summary": "test"}
+    )
+    # Test implementation
+```
+
+### Integration Testing
+```python
+async def test_full_pipeline():
+    """Test complete research pipeline."""
+    # Setup
+    config = ResearchConfig(...)
+    
+    # Execute
+    results = await run_research_pipeline(config)
+    
+    # Verify
+    assert all(r.analyzed for r in results)
+```
+
+## 📝 Writing New Tests
+
+### Test Template
+```python
+from __future__ import annotations
+
+import pytest
+from unittest.mock import AsyncMock
+from tools.research import ResearchWorkflow
+
+class TestNewFeature:
+    """Tests for new research feature."""
+    
+    @pytest.mark.asyncio
+    async def test_feature(self, mock_llm_provider, sample_scraped_content_list):
+        """Test description."""
+        # Arrange
+        workflow = ResearchWorkflow(
+            llm_provider=mock_llm_provider
+        )
+        
+        # Act
+        results = await workflow.process(sample_scraped_content_list)
+        
+        # Assert
+        assert len(results) > 0
+        assert all(r.processed for r in results)
+```
+
+### Best Practices
+1. **Use async fixtures** - For async components
+2. **Mock external APIs** - Don't make real API calls
+3. **Test error paths** - Include failure scenarios
+4. **Verify concurrency** - Test parallel execution
+5. **Check rate limits** - Ensure compliance
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Async Test Failures:**
+- Ensure `pytest-asyncio` is installed
+- Use `@pytest.mark.asyncio` decorator
+- Handle async context managers properly
+
+**Mock Issues:**
+- Use `AsyncMock` for async functions
+- Configure return values correctly
+- Reset mocks between tests
+
+**Integration Problems:**
+- Check fixture dependencies
+- Verify test data consistency
+- Monitor resource cleanup
+
+### Debug Commands
+```bash
+# Run with debug logging
+pytest tests/research/ -v --log-cli-level=DEBUG
+
+# Run with traceback
+pytest tests/research/ --tb=long
+
+# Run specific test with output
+pytest tests/research/test_content_analysis.py::test_spam_detection -vvs
+```
+
+## 🛠️ Maintenance
+
+- **Mock updates** - Keep mocks synchronized with actual APIs
+- **Test data** - Update sample content regularly
+- **Performance** - Monitor test execution time
+- **Coverage** - Maintain comprehensive test coverage
+- **Documentation** - Update when adding new features
 
 ======= research/__init__.py ======
 """
@@ -7229,119 +7372,278 @@ class TestScrapingIntegration:
                 assert results[1].url == "https://example.com/final-destination"
 
 ======= s1f/README.md ======
-# s1f (Split One File) Test Suite
+# S1F Test Suite
 
-This directory contains tests for the `s1f.py` utility (the s1f tool). The test
-suite verifies that files combined with m1f (`m1f.py`) using different separator
-styles can be correctly extracted back to their original form.
+Comprehensive test suite for the s1f (Split One File) tool with 6 test files and ~40 test methods, covering extraction, encoding, and security features.
 
-## Directory Structure
+## 📁 Test Structure
 
-- `source/`: Contains example files created during test setup (not used
-  directly)
-- `output/`: Contains combined files created with different separator styles
-- `extracted/`: Target directory for extracted files during tests
-
-## Test Setup
-
-Before running tests, combined test files need to be created using the m1f tool
-(`m1f.py`). These files serve as input for the s1f tests. Run the following
-commands from the project root to create the necessary test files:
-
-```bash
-# Create combined files with different separator styles
-m1f --source-directory tests/m1f/source --output-file tests/s1f/output/standard.txt --separator-style Standard --force
-m1f --source-directory tests/m1f/source --output-file tests/s1f/output/detailed.txt --separator-style Detailed --force
-m1f --source-directory tests/m1f/source --output-file tests/s1f/output/markdown.txt --separator-style Markdown --force
-m1f --source-directory tests/m1f/source --output-file tests/s1f/output/machinereadable.txt --separator-style MachineReadable --force
+```
+tests/s1f/
+├── README.md                          # This file
+├── conftest.py                        # s1f-specific test fixtures
+│
+├── Core Tests
+│   ├── test_s1f_basic.py             # Core extraction functionality
+│   ├── test_s1f.py                   # General functionality tests
+│   └── test_s1f_async.py             # Asynchronous operations
+│
+├── Encoding Tests
+│   ├── test_s1f_encoding.py          # Character encoding preservation
+│   └── test_s1f_target_encoding.py   # Encoding conversion tests
+│
+├── Security Tests
+│   └── test_path_traversal_security.py # Path traversal protection
+│
+└── Test Resources
+    ├── output/                        # Pre-generated M1F bundles
+    ├── extracted/                     # Extraction target directory
+    └── source/                        # Source files for testing
 ```
 
-## Running Tests
+## 🧪 Test Categories
 
-To run all tests:
+### 1. **Core Functionality**
 
+**Basic Extraction** (`test_s1f_basic.py`):
+- ✅ All M1F separator styles (Standard, Detailed, Markdown, MachineReadable)
+- ✅ File path preservation
+- ✅ Directory structure reconstruction
+- ✅ Content integrity verification
+- ✅ Metadata extraction
+- ✅ Force overwrite (`-f`) option
+- ✅ Timestamp handling
+
+**General Operations** (`test_s1f.py`):
+- 📋 Command-line interface testing
+- 🔍 Format auto-detection
+- 📁 Output directory creation
+- ⚠️ Error handling
+- 📊 Statistics reporting
+
+**Async Operations** (`test_s1f_async.py`):
+- ⚡ Asynchronous file extraction
+- 🔀 Concurrent processing
+- 📈 Performance optimization
+- 💾 Memory efficiency
+
+### 2. **Encoding & Character Handling**
+
+**Encoding Preservation** (`test_s1f_encoding.py`):
+- 🔤 UTF-8, UTF-16, Latin-1 preservation
+- 🌏 Exotic encoding support
+- 💾 BOM handling
+- ✅ Binary file extraction
+- 📝 Encoding metadata
+
+**Target Encoding** (`test_s1f_target_encoding.py`):
+- 🔄 Encoding conversion during extraction
+- 🎯 Target encoding specification
+- ⚠️ Conversion error handling
+- 📊 Encoding statistics
+
+### 3. **Security Features**
+
+**Path Traversal Protection** (`test_path_traversal_security.py`):
+- 🛡️ Path traversal attack prevention
+- 📁 Malicious path sanitization
+- 🔒 Sandbox enforcement
+- ⚠️ Security warnings
+- ✅ Safe path validation
+
+## 🧪 Test Fixtures (conftest.py)
+
+**Core Fixtures:**
+- `s1f_output_dir` - Output directory with auto-cleanup
+- `s1f_extracted_dir` - Extraction directory
+- `create_combined_file` - Creates test M1F files
+- `run_s1f` - Direct function testing
+- `s1f_cli_runner` - Subprocess CLI testing
+- `create_m1f_output` - Uses real M1F tool for test input
+
+**Separator Styles:**
+- Standard: `############ filename ############`
+- Detailed: `### START: filename ###`
+- Markdown: `## filename`
+- MachineReadable: JSON metadata format
+
+## 🚀 Running Tests
+
+### Run All S1F Tests
 ```bash
-# Activate the virtual environment first
-.venv/Scripts/activate  # Windows
-source .venv/bin/activate  # macOS/Linux
-
-# Run tests from the project root
-python tests/s1f/run_tests.py
+pytest tests/s1f/ -v
 ```
 
-Or, you can use pytest directly:
-
+### Run Specific Categories
 ```bash
-pytest tests/s1f/test_s1f.py -xvs
+# Core functionality
+pytest tests/s1f/test_s1f_basic.py -v
+
+# Encoding tests
+pytest tests/s1f/test_*encoding*.py -v
+
+# Security tests
+pytest tests/s1f/test_*security*.py -v
+
+# Async tests
+pytest tests/s1f/test_*async*.py -v
 ```
 
-## Test Cases
+### Run with Options
+```bash
+# Show output
+pytest tests/s1f/ -s
 
-The test suite includes the following test cases:
+# Stop on first failure
+pytest tests/s1f/ -x
 
-1. **Separator Style Tests**:
-   - Tests extraction with Standard separator style
-   - Tests extraction with Detailed separator style
-   - Tests extraction with Markdown separator style
-   - Tests extraction with MachineReadable separator style (optimized for AI
-     processing)
+# Verbose with full diff
+pytest tests/s1f/ -vv
 
-2. **Feature Tests**:
-   - Tests force overwrite of existing files
-   - Tests setting file timestamps to original or current time
+# Run specific test
+pytest tests/s1f/test_s1f_basic.py::test_extract_standard -v
+```
 
-3. **Integration Tests**:
-   - Tests command-line execution
-   - Tests compatibility with LLM workflow patterns
+## 📊 Test Coverage
 
-## AI and LLM Integration
+**Core Features:**
+- All M1F format variations
+- Path preservation accuracy
+- Content integrity (SHA-256)
+- Metadata handling
 
-The s1f tool is designed to work seamlessly with files generated by m1f for LLM
-context:
+**Edge Cases:**
+- Empty files
+- Binary files
+- Large files
+- Nested directories
+- Special characters
+- Unicode filenames
 
-- **Preserves Structure**: Maintains the exact directory structure for reference
-- **Integrity Verification**: Validates that files have not been altered during
-  AI processing
-- **Metadata Handling**: Correctly processes machine-readable metadata added for
-  AI interpretation
+**Error Handling:**
+- Corrupted M1F files
+- Missing separators
+- Invalid paths
+- Encoding errors
 
-## Recent Improvements
+## 🧪 Test Data
 
-The following improvements have been made to the s1f utility (`s1f.py`):
+### Pre-generated M1F Files
+The test suite uses pre-generated M1F bundles in various formats:
+```bash
+output/standard.txt       # Standard separator style
+output/detailed.txt       # Detailed separator style
+output/markdown.txt       # Markdown separator style
+output/machinereadable.txt # JSON metadata style
+```
 
-- **Improved Path Extraction**: Fixed issues with path extraction in the
-  Standard separator style. All separator styles now correctly extract and
-  preserve the original file paths.
-- **Consistent Behavior**: Ensured consistent behavior across all separator
-  styles (Standard, Detailed, Markdown, and MachineReadable).
-- **LLM Optimizations**: Enhanced support for AI-specific workflows and formats.
-- **Documentation Updates**: Updated documentation to reflect these
-  improvements.
+### Creating Test Data
+Test data is automatically generated by fixtures using the real M1F tool:
+```python
+# Example from conftest.py
+def create_m1f_output(source_dir, output_file, separator_style):
+    """Creates M1F bundle for testing."""
+    result = subprocess.run([
+        "m1f",
+        str(source_dir),
+        "-o", str(output_file),
+        "--separator-style", separator_style,
+        "--force"
+    ])
+```
 
-These changes ensure that the directory structure is properly reconstructed
-regardless of which separator style was used when creating the combined file.
+## 📝 Writing New Tests
 
-## Verification Process
+### Test Template
+```python
+from __future__ import annotations
 
-The tests verify that:
+import pytest
+from pathlib import Path
 
-1. Files are successfully extracted to the destination directory
-2. The directory structure is preserved
-3. File content matches the original files (verified using SHA-256 checksums)
-4. Command-line options work as expected
+class TestNewFeature:
+    """Tests for new s1f feature."""
+    
+    @pytest.mark.unit
+    def test_feature(self, run_s1f, create_combined_file):
+        """Test description."""
+        # Arrange
+        m1f_file = create_combined_file(
+            "test.txt", 
+            "content",
+            separator_style="Standard"
+        )
+        
+        # Act
+        result = run_s1f([
+            str(m1f_file),
+            "-o", "output_dir"
+        ])
+        
+        # Assert
+        assert result.returncode == 0
+        assert Path("output_dir/test.txt").exists()
+```
 
-## Maintainer Information
+### Best Practices
+1. **Use fixtures** - Don't create M1F files manually
+2. **Test all formats** - Verify with all separator styles
+3. **Verify integrity** - Check content matches original
+4. **Clean paths** - Fixtures handle cleanup
+5. **Cross-platform** - Consider path separators
 
-- Author: Franz und Franz
-- Homepage: https://franz.agency
-- Project: https://m1f.dev
-- License: See project LICENSE file
+## 🔧 Troubleshooting
 
-## Dependencies
+### Common Issues
 
-- Python 3.9+
-- pytest
-- Access to the original source files in `tests/m1f/source/`
+**Format Detection:**
+- Ensure M1F files have correct separators
+- Check for file corruption
+- Verify encoding compatibility
+
+**Path Issues:**
+- Windows path length limits
+- Case sensitivity differences
+- Path separator normalization
+
+**Encoding Problems:**
+- System locale settings
+- Missing codec support
+- BOM handling
+
+### Debug Commands
+```bash
+# Run with debugging
+pytest tests/s1f/ --pdb
+
+# Check test output
+pytest tests/s1f/ -s --log-cli-level=DEBUG
+
+# Run single test with tracing
+pytest tests/s1f/test_s1f_basic.py::test_extract_standard -vvs
+```
+
+## 🛡️ Security Testing
+
+The test suite includes security tests for:
+- Path traversal attempts (`../../../etc/passwd`)
+- Absolute path injections
+- Symbolic link attacks
+- Directory escape attempts
+
+## 🚀 Performance
+
+- Tests use async I/O where applicable
+- Parallel extraction support
+- Memory-efficient streaming
+- Large file handling
+
+## 🛠️ Maintenance
+
+- **Test data** - Regenerate M1F files after format changes
+- **Fixtures** - Keep fixtures simple and focused
+- **Coverage** - Maintain >90% code coverage
+- **Performance** - Monitor test execution time
 
 ======= s1f/__init__.py ======
 """S1F test package."""
