@@ -1,3 +1,17 @@
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Integration tests for m1f-research content analysis pipeline
 """
@@ -18,7 +32,7 @@ from tools.research.analysis_templates import get_template
 
 class TestContentAnalysisIntegration:
     """Test content filtering and LLM-based analysis integration"""
-    
+
     @pytest.fixture
     def analysis_config(self):
         """Create test analysis configuration"""
@@ -27,9 +41,9 @@ class TestContentAnalysisIntegration:
             max_content_length=10000,
             relevance_threshold=5.0,
             language="en",
-            prefer_code_examples=True
+            prefer_code_examples=True,
         )
-    
+
     @pytest.fixture
     def sample_scraped_content(self):
         """Create sample scraped content for testing"""
@@ -61,7 +75,7 @@ class TestContentAnalysisIntegration:
                 - Use meaningful test names
                 """,
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
             ScrapedContent(
                 url="https://example.com/spam-article",
@@ -78,14 +92,14 @@ class TestContentAnalysisIntegration:
                 https://spam.com/buy https://spam.com/buy https://spam.com/buy
                 """,
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
             ScrapedContent(
                 url="https://example.com/short-content",
                 title="Too Short",
                 content="This content is too short to be useful.",
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
             ScrapedContent(
                 url="https://example.com/non-english",
@@ -106,7 +120,7 @@ class TestContentAnalysisIntegration:
                 ```
                 """,
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
             ScrapedContent(
                 url="https://example.com/quality-content",
@@ -151,126 +165,144 @@ class TestContentAnalysisIntegration:
                 Understanding design patterns improves code quality and maintainability.
                 """,
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
         ]
-    
+
     @pytest.fixture
     def mock_llm_provider(self):
         """Create mock LLM provider"""
         provider = AsyncMock(spec=LLMProvider)
-        
+
         async def mock_query(prompt):
             # Parse the prompt to determine response
             # Debug: Check what's in the prompt
             prompt_lower = prompt.lower()
-            
-            if "python testing tutorial" in prompt_lower or "https://example.com/python-tutorial" in prompt:
+
+            if (
+                "python testing tutorial" in prompt_lower
+                or "https://example.com/python-tutorial" in prompt
+            ):
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 9.0,
-                        "key_points": [
-                            "Comprehensive guide to Python testing",
-                            "Covers unit testing with unittest framework",
-                            "Includes practical code examples",
-                            "Discusses testing best practices"
-                        ],
-                        "summary": "A thorough tutorial on Python testing covering unit tests, best practices, and practical examples.",
-                        "content_type": "tutorial",
-                        "topics": ["python", "testing", "unittest", "tdd"],
-                        "code_quality": "high",
-                        "technical_depth": "intermediate"
-                    }),
-                    usage={"total_tokens": 150}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 9.0,
+                            "key_points": [
+                                "Comprehensive guide to Python testing",
+                                "Covers unit testing with unittest framework",
+                                "Includes practical code examples",
+                                "Discusses testing best practices",
+                            ],
+                            "summary": "A thorough tutorial on Python testing covering unit tests, best practices, and practical examples.",
+                            "content_type": "tutorial",
+                            "topics": ["python", "testing", "unittest", "tdd"],
+                            "code_quality": "high",
+                            "technical_depth": "intermediate",
+                        }
+                    ),
+                    usage={"total_tokens": 150},
                 )
-            elif "advanced python" in prompt_lower and ("patterns" in prompt_lower or "design" in prompt_lower) or "https://example.com/quality-content" in prompt:
+            elif (
+                "advanced python" in prompt_lower
+                and ("patterns" in prompt_lower or "design" in prompt_lower)
+                or "https://example.com/quality-content" in prompt
+            ):
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 8.5,
-                        "key_points": [
-                            "Explains design patterns in Python",
-                            "Covers Singleton and Factory patterns",
-                            "Provides working code examples",
-                            "Discusses best practices for pattern usage"
-                        ],
-                        "summary": "An advanced guide to design patterns in Python with practical implementations.",
-                        "content_type": "technical",
-                        "topics": ["python", "design patterns", "singleton", "factory"],
-                        "code_quality": "high",
-                        "technical_depth": "advanced"
-                    }),
-                    usage={"total_tokens": 150}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 8.5,
+                            "key_points": [
+                                "Explains design patterns in Python",
+                                "Covers Singleton and Factory patterns",
+                                "Provides working code examples",
+                                "Discusses best practices for pattern usage",
+                            ],
+                            "summary": "An advanced guide to design patterns in Python with practical implementations.",
+                            "content_type": "technical",
+                            "topics": [
+                                "python",
+                                "design patterns",
+                                "singleton",
+                                "factory",
+                            ],
+                            "code_quality": "high",
+                            "technical_depth": "advanced",
+                        }
+                    ),
+                    usage={"total_tokens": 150},
                 )
             else:
                 # Default response for other content
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 3.0,
-                        "key_points": ["Generic content"],
-                        "summary": "Not particularly relevant to the query.",
-                        "content_type": "other"
-                    }),
-                    usage={"total_tokens": 50}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 3.0,
+                            "key_points": ["Generic content"],
+                            "summary": "Not particularly relevant to the query.",
+                            "content_type": "other",
+                        }
+                    ),
+                    usage={"total_tokens": 50},
                 )
-        
+
         provider.query = AsyncMock(side_effect=mock_query)
         return provider
-    
+
     def test_content_filtering_pipeline(self, analysis_config, sample_scraped_content):
         """Test complete content filtering pipeline"""
         filter = ContentFilter(analysis_config)
-        
+
         # Filter scraped content
         filtered = filter.filter_scraped_content(sample_scraped_content)
-        
+
         # Should filter out spam, short content, and non-English
         assert len(filtered) == 2
-        
+
         # Check that quality content passed
         urls = [c.url for c in filtered]
         assert "https://example.com/python-tutorial" in urls
         assert "https://example.com/quality-content" in urls
-        
+
         # Check that filtered content was removed
         assert "https://example.com/spam-article" not in urls  # Spam
         assert "https://example.com/short-content" not in urls  # Too short
         assert "https://example.com/non-english" not in urls  # Wrong language
-        
+
         # Verify filter stats
         stats = filter.get_filter_stats()
-        assert stats['total_seen'] == 2  # Two unique content hashes
-    
+        assert stats["total_seen"] == 2  # Two unique content hashes
+
     def test_spam_detection(self, analysis_config):
         """Test spam and low-quality content detection"""
         # Disable language filtering for spam detection test
         analysis_config.allowed_languages = None
         filter = ContentFilter(analysis_config)
-        
+
         # Test various spam patterns
         spam_contents = [
             "CLICK HERE NOW! LIMITED TIME OFFER! 100% FREE!",
             "Make money fast! Work from home! No experience needed!",
             "Congratulations! You have been selected for a special offer!",
             "Buy viagra cialis online cheap! Best prices guaranteed!",
-            "Join our MLM program! Get rich quick! Passive income!"
+            "Join our MLM program! Get rich quick! Passive income!",
         ]
-        
+
         for content in spam_contents:
             scraped = ScrapedContent(
                 url="https://spam.com/test",
                 title="Spam",
                 content=content * 5,  # Repeat to meet length requirement
                 scraped_at=datetime.now(),
-                metadata={}
+                metadata={},
             )
-            
+
             filtered = filter.filter_scraped_content([scraped])
             assert len(filtered) == 0, f"Failed to filter spam: {content[:50]}..."
-    
+
     def test_quality_scoring(self, analysis_config):
         """Test content quality scoring mechanism"""
         filter = ContentFilter(analysis_config)
-        
+
         # High quality content
         high_quality = ScrapedContent(
             url="https://example.com/high-quality",
@@ -300,61 +332,64 @@ class TestContentAnalysisIntegration:
             In summary, we have covered all the essential aspects.
             """,
             scraped_at=datetime.now(),
-            metadata={}
+            metadata={},
         )
-        
+
         # Very low quality content (needs to score < 0.3)
         # Use content with no structure, excessive repetition, and spam-like patterns
         very_low_quality = ScrapedContent(
             url="https://example.com/low-quality",
             title="Low Quality Article",
-            content="buy buy buy " * 100 + " click here " * 50,  # Spam-like repetitive content
+            content="buy buy buy " * 100
+            + " click here " * 50,  # Spam-like repetitive content
             scraped_at=datetime.now(),
-            metadata={}
+            metadata={},
         )
-        
+
         # Filter both
         filtered = filter.filter_scraped_content([high_quality, very_low_quality])
-        
+
         # High quality should pass, very low quality should fail
         assert len(filtered) == 1
         assert filtered[0].url == "https://example.com/high-quality"
-    
+
     @pytest.mark.asyncio
-    async def test_llm_analysis_integration(self, analysis_config, sample_scraped_content, mock_llm_provider):
+    async def test_llm_analysis_integration(
+        self, analysis_config, sample_scraped_content, mock_llm_provider
+    ):
         """Test LLM-based content analysis"""
         analyzer = ContentAnalyzer(mock_llm_provider, analysis_config)
-        
+
         # Filter content first
         filter = ContentFilter(analysis_config)
         filtered_content = filter.filter_scraped_content(sample_scraped_content)
-        
+
         # Analyze filtered content
         research_query = "Python testing best practices"
         analyzed = await analyzer.analyze_content(filtered_content, research_query)
-        
+
         # Verify analysis results
         assert len(analyzed) == 2
-        
+
         # Check Python tutorial analysis
         tutorial = next(a for a in analyzed if "python-tutorial" in a.url)
         assert tutorial.relevance_score == 9.0
         assert len(tutorial.key_points) == 4
         assert "unittest" in str(tutorial.key_points)
         assert tutorial.content_type == "tutorial"
-        
+
         # Check design patterns analysis
         patterns = next(a for a in analyzed if "quality-content" in a.url)
         assert patterns.relevance_score == 8.5
         assert "design patterns" in patterns.summary.lower()
         assert patterns.content_type == "technical"
-    
+
     @pytest.mark.asyncio
     async def test_template_based_scoring(self, analysis_config, mock_llm_provider):
         """Test template-based scoring adjustments"""
         # Test with different templates
         templates = ["technical", "tutorial", "reference"]
-        
+
         content = ScrapedContent(
             url="https://example.com/test",
             title="Test Content",
@@ -376,42 +411,49 @@ class TestContentAnalysisIntegration:
             - Dictionary with processed results
             """,
             scraped_at=datetime.now(),
-            metadata={}
+            metadata={},
         )
-        
+
         for template_name in templates:
-            analyzer = ContentAnalyzer(mock_llm_provider, analysis_config, template_name)
-            
+            analyzer = ContentAnalyzer(
+                mock_llm_provider, analysis_config, template_name
+            )
+
             # Mock different responses based on template
             async def mock_query(prompt):
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 7.0,
-                        "key_points": ["API documentation"],
-                        "summary": "Technical API documentation",
-                        "content_type": "documentation",
-                        "has_code_examples": True,
-                        "has_api_reference": True
-                    }),
-                    usage={"total_tokens": 100}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 7.0,
+                            "key_points": ["API documentation"],
+                            "summary": "Technical API documentation",
+                            "content_type": "documentation",
+                            "has_code_examples": True,
+                            "has_api_reference": True,
+                        }
+                    ),
+                    usage={"total_tokens": 100},
                 )
-            
+
             mock_llm_provider.query = mock_query
-            
+
             analyzed = await analyzer.analyze_content([content], "API documentation")
-            
+
             assert len(analyzed) == 1
             result = analyzed[0]
-            
+
             # Template scoring should adjust the relevance score
             if template_name == "reference":
                 # Reference template should boost score for API docs
-                assert hasattr(result.analysis_metadata, 'template_score') or 'template_score' in result.analysis_metadata
-    
+                assert (
+                    hasattr(result.analysis_metadata, "template_score")
+                    or "template_score" in result.analysis_metadata
+                )
+
     def test_duplicate_detection(self, analysis_config):
         """Test duplicate content detection"""
         filter = ContentFilter(analysis_config)
-        
+
         # Create similar content with slight variations
         base_content = """# Python Programming Guide
         
@@ -423,7 +465,7 @@ class TestContentAnalysisIntegration:
         ## Basic Syntax
         Here are the basics of Python syntax.
         """
-        
+
         contents = []
         for i in range(5):
             # Create variations
@@ -447,181 +489,191 @@ class TestContentAnalysisIntegration:
                 ## Different Content
                 Completely different from the base content.
                 """
-            
-            contents.append(ScrapedContent(
-                url=f"https://example.com/article{i}",
-                title=f"Article {i}",
-                content=markdown,
-                scraped_at=datetime.now(),
-                metadata={}
-            ))
-        
+
+            contents.append(
+                ScrapedContent(
+                    url=f"https://example.com/article{i}",
+                    title=f"Article {i}",
+                    content=markdown,
+                    scraped_at=datetime.now(),
+                    metadata={},
+                )
+            )
+
         # Filter content
         filtered = filter.filter_scraped_content(contents)
-        
+
         # Should keep first occurrence and truly different content
         assert len(filtered) == 2
         urls = [c.url for c in filtered]
         assert "https://example.com/article0" in urls  # First occurrence
         assert "https://example.com/article4" in urls  # Different content
-    
+
     def test_language_detection(self, analysis_config):
         """Test language detection functionality"""
         filter = ContentFilter(analysis_config)
-        
+
         # Test content in different languages
         test_cases = [
             {
                 "lang": "en",
                 "content": "This is an English article about programming. The quick brown fox jumps over the lazy dog.",
-                "should_pass": True
+                "should_pass": True,
             },
             {
                 "lang": "es",
                 "content": "Este es un artículo en español sobre programación. El perro come la comida en el jardín.",
-                "should_pass": False
+                "should_pass": False,
             },
             {
                 "lang": "fr",
                 "content": "Ceci est un article en français sur la programmation. Le chat mange dans la cuisine.",
-                "should_pass": False
+                "should_pass": False,
             },
             {
                 "lang": "de",
                 "content": "Dies ist ein deutscher Artikel über Programmierung. Der Hund spielt im Garten.",
-                "should_pass": False
+                "should_pass": False,
             },
             {
                 "lang": "mixed",
                 "content": "This article mixes English with some español and français words but is mostly English.",
-                "should_pass": True  # Mostly English
-            }
+                "should_pass": True,  # Mostly English
+            },
         ]
-        
+
         for test in test_cases:
             content = ScrapedContent(
                 url=f"https://example.com/{test['lang']}",
                 title=f"Article in {test['lang']}",
                 content=test["content"] * 10,  # Repeat to meet length requirement
                 scraped_at=datetime.now(),
-                metadata={}
+                metadata={},
             )
-            
+
             filtered = filter.filter_scraped_content([content])
-            
+
             if test["should_pass"]:
                 assert len(filtered) == 1, f"Failed to pass {test['lang']} content"
             else:
                 assert len(filtered) == 0, f"Failed to filter {test['lang']} content"
-    
+
     @pytest.mark.asyncio
     async def test_batch_processing(self, analysis_config, mock_llm_provider):
         """Test batch processing of content analysis"""
         analyzer = ContentAnalyzer(mock_llm_provider, analysis_config)
-        
+
         # Create many content items
         contents = []
         for i in range(20):
-            contents.append(ScrapedContent(
-                url=f"https://example.com/article{i}",
-                title=f"Article {i}",
-                content=f"# Article {i}\n\nThis is content for article {i}." * 20,
-                scraped_at=datetime.now(),
-                metadata={}
-            ))
-        
+            contents.append(
+                ScrapedContent(
+                    url=f"https://example.com/article{i}",
+                    title=f"Article {i}",
+                    content=f"# Article {i}\n\nThis is content for article {i}." * 20,
+                    scraped_at=datetime.now(),
+                    metadata={},
+                )
+            )
+
         # Track concurrent calls
         concurrent_count = 0
         max_concurrent = 0
-        
+
         async def mock_query(prompt):
             nonlocal concurrent_count, max_concurrent
-            
+
             concurrent_count += 1
             max_concurrent = max(max_concurrent, concurrent_count)
-            
+
             try:
                 await asyncio.sleep(0.05)  # Simulate processing time
-                
+
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 5.0,
-                        "key_points": ["Test content"],
-                        "summary": "Test summary",
-                        "content_type": "article"
-                    }),
-                    usage={"total_tokens": 50}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 5.0,
+                            "key_points": ["Test content"],
+                            "summary": "Test summary",
+                            "content_type": "article",
+                        }
+                    ),
+                    usage={"total_tokens": 50},
                 )
             finally:
                 concurrent_count -= 1
-        
+
         mock_llm_provider.query = mock_query
-        
+
         # Analyze with batch size of 5
         analyzed = await analyzer.analyze_content(contents, "test query", batch_size=5)
-        
+
         # Verify all content was analyzed
         assert len(analyzed) == 20
-        
+
         # Verify batch processing (max 5 concurrent)
         assert max_concurrent <= 5
-    
+
     @pytest.mark.asyncio
     async def test_error_recovery(self, analysis_config, sample_scraped_content):
         """Test error handling and recovery in analysis pipeline"""
         # Create LLM provider that fails intermittently
         provider = AsyncMock(spec=LLMProvider)
         fail_count = 0
-        
+
         async def mock_query(prompt):
             nonlocal fail_count
             fail_count += 1
-            
+
             if fail_count % 3 == 0:
                 # Fail every third call
                 raise Exception("LLM service unavailable")
-            
+
             return LLMResponse(
-                content=json.dumps({
-                    "relevance_score": 7.0,
-                    "key_points": ["Recovered from error"],
-                    "summary": "Successfully analyzed after error",
-                    "content_type": "article"
-                }),
-                usage={"total_tokens": 50}
+                content=json.dumps(
+                    {
+                        "relevance_score": 7.0,
+                        "key_points": ["Recovered from error"],
+                        "summary": "Successfully analyzed after error",
+                        "content_type": "article",
+                    }
+                ),
+                usage={"total_tokens": 50},
             )
-        
+
         provider.query = mock_query
-        
+
         analyzer = ContentAnalyzer(provider, analysis_config)
-        
+
         # Analyze content
-        analyzed = await analyzer.analyze_content(sample_scraped_content[:3], "test query")
-        
+        analyzed = await analyzer.analyze_content(
+            sample_scraped_content[:3], "test query"
+        )
+
         # Should handle errors gracefully
         assert len(analyzed) == 3
-        
+
         # Check that some succeeded and some have fallback analysis
         success_count = sum(1 for a in analyzed if a.relevance_score > 5.0)
         fallback_count = sum(1 for a in analyzed if a.relevance_score == 5.0)
-        
+
         assert success_count > 0  # Some should succeed
         assert fallback_count > 0  # Some should use fallback
-    
+
     def test_content_filtering_stats(self, analysis_config, sample_scraped_content):
         """Test filtering statistics and reporting"""
         filter = ContentFilter(analysis_config)
-        
+
         # Process content multiple times to accumulate stats
         for _ in range(3):
             filter.filter_scraped_content(sample_scraped_content)
-        
+
         stats = filter.get_filter_stats()
-        
+
         # Verify stats tracking
-        assert stats['total_seen'] > 0
-        assert stats['duplicate_checks'] > 0
-        
+        assert stats["total_seen"] > 0
+        assert stats["duplicate_checks"] > 0
+
         # Process with analyzed content
         analyzed_content = [
             AnalyzedContent(
@@ -632,13 +684,14 @@ class TestContentAnalysisIntegration:
                 key_points=["Point 1", "Point 2"],
                 summary="Test summary",
                 content_type="article",
-                analysis_metadata={}
-            ) for i, c in enumerate(sample_scraped_content)
+                analysis_metadata={},
+            )
+            for i, c in enumerate(sample_scraped_content)
         ]
-        
+
         # Filter analyzed content
         filtered_analyzed = filter.filter_analyzed_content(analyzed_content)
-        
+
         # Should filter based on relevance threshold (5.0)
         assert len(filtered_analyzed) < len(analyzed_content)
         assert all(a.relevance_score >= 5.0 for a in filtered_analyzed)

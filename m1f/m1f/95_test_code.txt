@@ -2063,7 +2063,7 @@ class TestM1FClaudeImprovements(unittest.TestCase):
                 mcp_config="/path/to/mcp.json",
                 cwd=Path("/custom/working/dir"),
             )
-            
+
             assert m1f.allowed_tools == "Read,Write,Edit"
             assert m1f.disallowed_tools == "Bash,System"
             assert m1f.permission_mode == "acceptEdits"
@@ -2075,7 +2075,7 @@ class TestM1FClaudeImprovements(unittest.TestCase):
     def test_permission_modes(self):
         """Test different permission modes."""
         modes = ["default", "acceptEdits", "plan", "bypassPermissions"]
-        
+
         for mode in modes:
             m1f = M1FClaude(permission_mode=mode)
             assert m1f.permission_mode == mode
@@ -2083,51 +2083,51 @@ class TestM1FClaudeImprovements(unittest.TestCase):
     def test_output_formats(self):
         """Test different output formats."""
         formats = ["text", "json", "stream-json"]
-        
+
         for fmt in formats:
             m1f = M1FClaude(output_format=fmt)
             assert m1f.output_format == fmt
 
     def test_mcp_config_loading(self):
         """Test MCP configuration file support."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             mcp_config = {
                 "servers": {
                     "example-server": {
                         "command": "npx",
                         "args": ["example-mcp-server"],
-                        "env": {"API_KEY": "test-key"}
+                        "env": {"API_KEY": "test-key"},
                     }
                 }
             }
             json.dump(mcp_config, f)
             f.flush()
-            
+
             m1f = M1FClaude(mcp_config=f.name)
             assert m1f.mcp_config == f.name
 
-    @patch('tools.m1f_claude.query')
+    @patch("tools.m1f_claude.query")
     def test_claude_code_options_structure(self, mock_query):
         """Test that ClaudeCodeOptions is created with correct parameters."""
         from claude_code_sdk import ClaudeCodeOptions
-        
+
         # Mock the query to capture options
         captured_options = None
-        
+
         async def mock_query_impl(prompt, options):
             nonlocal captured_options
             captured_options = options
             return []
-        
+
         mock_query.side_effect = mock_query_impl
-        
+
         m1f = M1FClaude(
             allowed_tools="Read,Write",
             permission_mode="acceptEdits",
             append_system_prompt="Custom prompt",
             mcp_config="/path/to/mcp.json",
         )
-        
+
         # Note: In real usage, this would be called with proper async handling
         # Here we're just testing the options structure
 
@@ -2139,34 +2139,49 @@ class TestM1FClaudeImprovements(unittest.TestCase):
             mcp_config="/etc/mcp.json",
             output_format="stream-json",
         )
-        
+
         # Test subprocess command building
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=1)  # Force fallback
-            
+
             # This should trigger the subprocess fallback display
             result = m1f.send_to_claude_code_subprocess("Test prompt")
-            
+
             # Verify the command would include new parameters
             assert result == "Manual execution required - see instructions above"
 
     def test_message_type_handling(self):
         """Test handling of different message types."""
         m1f = M1FClaude(debug=True)
-        
+
         # Test different event types
         test_events = [
             {"type": "system", "subtype": "init", "session_id": "test-123"},
-            {"type": "system", "subtype": "permission_prompt", "tool_name": "Read", "parameters": {"file": "test.py"}},
+            {
+                "type": "system",
+                "subtype": "permission_prompt",
+                "tool_name": "Read",
+                "parameters": {"file": "test.py"},
+            },
             {"type": "user", "content": "Hello Claude"},
-            {"type": "assistant", "message": {"content": [{"type": "text", "text": "Hello!"}]}},
+            {
+                "type": "assistant",
+                "message": {"content": [{"type": "text", "text": "Hello!"}]},
+            },
             {"type": "tool_use", "name": "Read", "input": {"file_path": "/test.py"}},
             {"type": "tool_result", "output": "File contents"},
-            {"type": "result", "subtype": "complete", "session_id": "test-123", "total_cost_usd": 0.01, "num_turns": 1, "duration": 2.5},
+            {
+                "type": "result",
+                "subtype": "complete",
+                "session_id": "test-123",
+                "total_cost_usd": 0.01,
+                "num_turns": 1,
+                "duration": 2.5,
+            },
             {"type": "result", "subtype": "error", "error": "Something went wrong"},
             {"type": "result", "subtype": "cancelled"},
         ]
-        
+
         # These would be processed in the _send_with_session method
         # Here we're just verifying the structure is correct
         for event in test_events:
@@ -2180,10 +2195,10 @@ class TestM1FClaudeImprovements(unittest.TestCase):
             permission_mode="acceptEdits",
             mcp_config="/path/to/mcp.json",
         )
-        
+
         prompt = "Help me set up m1f"
         enhanced = m1f.create_enhanced_prompt(prompt)
-        
+
         # Verify project description and priorities are included
         assert "A Python web application" in enhanced
         assert "Security and performance" in enhanced
@@ -2191,46 +2206,52 @@ class TestM1FClaudeImprovements(unittest.TestCase):
     def test_cli_argument_parsing(self):
         """Test that CLI arguments are parsed correctly."""
         from tools.m1f_claude import main
-        
+
         test_args = [
             "m1f-claude",
             "Test prompt",
-            "--permission-mode", "acceptEdits",
-            "--output-format", "json",
-            "--append-system-prompt", "Be helpful",
-            "--mcp-config", "/path/to/config.json",
-            "--cwd", "/project/dir",
-            "--disallowed-tools", "Bash,System",
+            "--permission-mode",
+            "acceptEdits",
+            "--output-format",
+            "json",
+            "--append-system-prompt",
+            "Be helpful",
+            "--mcp-config",
+            "/path/to/config.json",
+            "--cwd",
+            "/project/dir",
+            "--disallowed-tools",
+            "Bash,System",
             "--verbose",
             "--debug",
         ]
-        
-        with patch('sys.argv', test_args):
-            with patch('tools.m1f_claude.M1FClaude') as mock_class:
+
+        with patch("sys.argv", test_args):
+            with patch("tools.m1f_claude.M1FClaude") as mock_class:
                 # Mock the instance
                 mock_instance = MagicMock()
                 mock_class.return_value = mock_instance
-                
+
                 # Mock send_to_claude_code to prevent actual execution
                 mock_instance.send_to_claude_code.return_value = "Test response"
-                
-                with patch('builtins.print'):  # Suppress output
+
+                with patch("builtins.print"):  # Suppress output
                     try:
                         main()
                     except SystemExit:
                         pass  # Expected in some cases
-                
+
                 # Verify M1FClaude was initialized with correct parameters
                 mock_class.assert_called_once()
                 call_kwargs = mock_class.call_args[1]
-                
-                assert call_kwargs['permission_mode'] == 'acceptEdits'
-                assert call_kwargs['output_format'] == 'json'
-                assert call_kwargs['append_system_prompt'] == 'Be helpful'
-                assert call_kwargs['mcp_config'] == '/path/to/config.json'
-                assert call_kwargs['disallowed_tools'] == 'Bash,System'
-                assert call_kwargs['verbose'] is True
-                assert call_kwargs['debug'] is True
+
+                assert call_kwargs["permission_mode"] == "acceptEdits"
+                assert call_kwargs["output_format"] == "json"
+                assert call_kwargs["append_system_prompt"] == "Be helpful"
+                assert call_kwargs["mcp_config"] == "/path/to/config.json"
+                assert call_kwargs["disallowed_tools"] == "Bash,System"
+                assert call_kwargs["verbose"] is True
+                assert call_kwargs["debug"] is True
 
 
 if __name__ == "__main__":
@@ -4827,6 +4848,18 @@ if __name__ == "__main__":
 ======= html2md/test_meaningful_scraper_tests.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Meaningful integration tests for m1f-scrape that test actual functionality."""
 
@@ -6732,6 +6765,18 @@ if __name__ == "__main__":
 ======= html2md/test_url_allowed_path.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Tests for URL-based allowed_path functionality."""
 
@@ -8143,6 +8188,20 @@ Tests for m1f-research module
 """
 
 ======= research/conftest.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 pytest configuration for m1f-research tests
 """
@@ -8170,23 +8229,24 @@ def temp_dir():
 @pytest.fixture
 def mock_llm_response():
     """Mock LLM response for testing"""
+
     def _mock_response(query):
         if "search" in query.lower():
             return {
                 "urls": [
                     "https://example.com/article1",
                     "https://example.com/article2",
-                    "https://example.com/article3"
+                    "https://example.com/article3",
                 ]
             }
         elif "analyze" in query.lower():
             return {
                 "relevance": 8,
                 "key_points": ["Point 1", "Point 2", "Point 3"],
-                "content_type": "tutorial"
+                "content_type": "tutorial",
             }
         return {"response": "Mock response"}
-    
+
     return _mock_response
 
 
@@ -8224,7 +8284,7 @@ def example(): pass
 def mock_aiohttp_session():
     """Mock aiohttp session for testing"""
     session = AsyncMock()
-    
+
     async def mock_get(url, **kwargs):
         response = AsyncMock()
         response.status = 200
@@ -8232,7 +8292,7 @@ def mock_aiohttp_session():
         response.headers = {"Content-Type": "text/html"}
         response.text = AsyncMock(return_value="<html><body>Mock content</body></html>")
         return response
-    
+
     session.get = mock_get
     return session
 
@@ -8246,7 +8306,7 @@ def default_scraping_config():
         retry_attempts=2,
         user_agents=["TestAgent/1.0"],
         headers={"Accept": "text/html"},
-        respect_robots_txt=False
+        respect_robots_txt=False,
     )
 
 
@@ -8258,7 +8318,7 @@ def default_analysis_config():
         max_content_length=10000,
         relevance_threshold=5.0,
         language="en",
-        prefer_code_examples=True
+        prefer_code_examples=True,
     )
 
 
@@ -8266,19 +8326,21 @@ def default_analysis_config():
 def mock_llm_provider():
     """Create a mock LLM provider for testing"""
     provider = AsyncMock(spec=LLMProvider)
-    
+
     async def mock_query(prompt):
         # Default mock response
         return LLMResponse(
-            content=json.dumps({
-                "relevance_score": 7.0,
-                "key_points": ["Test point 1", "Test point 2"],
-                "summary": "Test summary of content",
-                "content_type": "article"
-            }),
-            tokens_used=100
+            content=json.dumps(
+                {
+                    "relevance_score": 7.0,
+                    "key_points": ["Test point 1", "Test point 2"],
+                    "summary": "Test summary of content",
+                    "content_type": "article",
+                }
+            ),
+            tokens_used=100,
         )
-    
+
     provider.query = mock_query
     return provider
 
@@ -8287,7 +8349,7 @@ def mock_llm_provider():
 def sample_scraped_content_list():
     """List of sample scraped content for testing"""
     from datetime import datetime
-    
+
     return [
         ScrapedContent(
             url="https://example.com/article1",
@@ -8295,7 +8357,7 @@ def sample_scraped_content_list():
             html="<html><body>Content 1</body></html>",
             markdown="# Test Article 1\n\nContent 1",
             scraped_at=datetime.now(),
-            metadata={"status_code": 200}
+            metadata={"status_code": 200},
         ),
         ScrapedContent(
             url="https://example.com/article2",
@@ -8303,7 +8365,7 @@ def sample_scraped_content_list():
             html="<html><body>Content 2</body></html>",
             markdown="# Test Article 2\n\nContent 2",
             scraped_at=datetime.now(),
-            metadata={"status_code": 200}
+            metadata={"status_code": 200},
         ),
         ScrapedContent(
             url="https://example.com/article3",
@@ -8311,7 +8373,7 @@ def sample_scraped_content_list():
             html="<html><body>Content 3</body></html>",
             markdown="# Test Article 3\n\nContent 3",
             scraped_at=datetime.now(),
-            metadata={"status_code": 200}
+            metadata={"status_code": 200},
         ),
     ]
 
@@ -8324,6 +8386,20 @@ def event_loop():
     loop.close()
 
 ======= research/test_analysis_templates.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Tests for analysis templates
 """
@@ -8336,108 +8412,134 @@ from tools.research.analysis_templates import (
     TUTORIAL_TEMPLATE,
     REFERENCE_TEMPLATE,
     GENERAL_TEMPLATE,
-    apply_template_scoring
+    apply_template_scoring,
 )
 
 
 class TestAnalysisTemplates:
     """Test analysis template functionality"""
-    
+
     def test_all_templates_exist(self):
         """Test that all templates are registered"""
-        expected_templates = ['general', 'technical', 'academic', 'tutorial', 'reference']
+        expected_templates = [
+            "general",
+            "technical",
+            "academic",
+            "tutorial",
+            "reference",
+        ]
         assert set(TEMPLATES.keys()) == set(expected_templates)
-    
+
     def test_get_template(self):
         """Test template retrieval"""
-        assert get_template('technical') == TECHNICAL_TEMPLATE
-        assert get_template('academic') == ACADEMIC_TEMPLATE
-        assert get_template('tutorial') == TUTORIAL_TEMPLATE
-        assert get_template('reference') == REFERENCE_TEMPLATE
-        assert get_template('general') == GENERAL_TEMPLATE
-        
+        assert get_template("technical") == TECHNICAL_TEMPLATE
+        assert get_template("academic") == ACADEMIC_TEMPLATE
+        assert get_template("tutorial") == TUTORIAL_TEMPLATE
+        assert get_template("reference") == REFERENCE_TEMPLATE
+        assert get_template("general") == GENERAL_TEMPLATE
+
         # Test fallback for unknown template
-        assert get_template('unknown') == GENERAL_TEMPLATE
-    
+        assert get_template("unknown") == GENERAL_TEMPLATE
+
     def test_template_structure(self):
         """Test that all templates have required fields"""
         required_fields = [
-            'name', 'description', 'focus_areas', 
-            'evaluation_criteria', 'prompt_paths', 'content_preferences'
+            "name",
+            "description",
+            "focus_areas",
+            "evaluation_criteria",
+            "prompt_paths",
+            "content_preferences",
         ]
-        
+
         for template_name, template in TEMPLATES.items():
             for field in required_fields:
                 assert hasattr(template, field), f"{template_name} missing {field}"
-            
+
             # Check prompt_paths has required keys
-            assert 'relevance' in template.prompt_paths
-            assert 'key_points' in template.prompt_paths
-    
+            assert "relevance" in template.prompt_paths
+            assert "key_points" in template.prompt_paths
+
     # def test_customize_analysis_prompt(self):
     #     """Test prompt customization"""
     #     template = TECHNICAL_TEMPLATE
     #     query = "python async programming"
-    #     
+    #
     #     # Test relevance prompt
     #     relevance_prompt = customize_analysis_prompt(template, 'relevance', query)
     #     assert query in relevance_prompt
     #     assert "implementation details" in relevance_prompt.lower()
-    #     
+    #
     #     # Test key points prompt
     #     key_points_prompt = customize_analysis_prompt(template, 'key_points', query)
     #     assert "implementation patterns" in key_points_prompt.lower()
-    
+
     def test_template_scoring(self):
         """Test template-based scoring"""
         # Test with technical template
         tech_analysis = {
-            'relevance_score': 8.0,
-            'summary': 'A detailed technical implementation guide',
-            'key_points': ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5'],
-            'content_type': 'tutorial',
-            'technical_level': 'advanced'
+            "relevance_score": 8.0,
+            "summary": "A detailed technical implementation guide",
+            "key_points": ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"],
+            "content_type": "tutorial",
+            "technical_level": "advanced",
         }
-        
+
         tech_score = apply_template_scoring(TECHNICAL_TEMPLATE, tech_analysis)
         assert 0 <= tech_score <= 10
-        
+
         # Test with academic template
         academic_analysis = {
-            'relevance_score': 7.0,
-            'summary': 'A theoretical analysis of the concept',
-            'key_points': ['Theory 1', 'Theory 2', 'Theory 3'],
-            'content_type': 'research',
-            'technical_level': 'intermediate'
+            "relevance_score": 7.0,
+            "summary": "A theoretical analysis of the concept",
+            "key_points": ["Theory 1", "Theory 2", "Theory 3"],
+            "content_type": "research",
+            "technical_level": "intermediate",
         }
-        
+
         academic_score = apply_template_scoring(ACADEMIC_TEMPLATE, academic_analysis)
         assert 0 <= academic_score <= 10
-    
+
     def test_template_content_preferences(self):
         """Test that templates have appropriate content preferences"""
         # Technical template should prefer code
-        assert TECHNICAL_TEMPLATE.content_preferences['prefer_code_examples'] is True
-        assert TECHNICAL_TEMPLATE.content_preferences['min_code_ratio'] > 0
-        
+        assert TECHNICAL_TEMPLATE.content_preferences["prefer_code_examples"] is True
+        assert TECHNICAL_TEMPLATE.content_preferences["min_code_ratio"] > 0
+
         # Academic template should not prefer code
-        assert ACADEMIC_TEMPLATE.content_preferences['prefer_code_examples'] is False
-        assert 'min_citation_count' in ACADEMIC_TEMPLATE.content_preferences
-        
+        assert ACADEMIC_TEMPLATE.content_preferences["prefer_code_examples"] is False
+        assert "min_citation_count" in ACADEMIC_TEMPLATE.content_preferences
+
         # Tutorial template should prefer numbered steps
-        assert TUTORIAL_TEMPLATE.content_preferences['prefer_numbered_steps'] is True
-        
+        assert TUTORIAL_TEMPLATE.content_preferences["prefer_numbered_steps"] is True
+
         # General template should be balanced
-        assert GENERAL_TEMPLATE.content_preferences['balanced_content'] is True
-    
+        assert GENERAL_TEMPLATE.content_preferences["balanced_content"] is True
+
     def test_evaluation_criteria_weights(self):
         """Test that evaluation criteria weights sum to reasonable values"""
         for template_name, template in TEMPLATES.items():
             total_weight = sum(template.evaluation_criteria.values())
             # Weights should sum to approximately 1.0
-            assert 0.9 <= total_weight <= 1.1, f"{template_name} weights sum to {total_weight}"
+            assert (
+                0.9 <= total_weight <= 1.1
+            ), f"{template_name} weights sum to {total_weight}"
 
 ======= research/test_content_analysis.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Integration tests for m1f-research content analysis pipeline
 """
@@ -8458,7 +8560,7 @@ from tools.research.analysis_templates import get_template
 
 class TestContentAnalysisIntegration:
     """Test content filtering and LLM-based analysis integration"""
-    
+
     @pytest.fixture
     def analysis_config(self):
         """Create test analysis configuration"""
@@ -8467,9 +8569,9 @@ class TestContentAnalysisIntegration:
             max_content_length=10000,
             relevance_threshold=5.0,
             language="en",
-            prefer_code_examples=True
+            prefer_code_examples=True,
         )
-    
+
     @pytest.fixture
     def sample_scraped_content(self):
         """Create sample scraped content for testing"""
@@ -8501,7 +8603,7 @@ class TestContentAnalysisIntegration:
                 - Use meaningful test names
                 """,
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
             ScrapedContent(
                 url="https://example.com/spam-article",
@@ -8518,14 +8620,14 @@ class TestContentAnalysisIntegration:
                 https://spam.com/buy https://spam.com/buy https://spam.com/buy
                 """,
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
             ScrapedContent(
                 url="https://example.com/short-content",
                 title="Too Short",
                 content="This content is too short to be useful.",
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
             ScrapedContent(
                 url="https://example.com/non-english",
@@ -8546,7 +8648,7 @@ class TestContentAnalysisIntegration:
                 ```
                 """,
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
             ScrapedContent(
                 url="https://example.com/quality-content",
@@ -8591,126 +8693,144 @@ class TestContentAnalysisIntegration:
                 Understanding design patterns improves code quality and maintainability.
                 """,
                 scraped_at=datetime.now(),
-                metadata={"status_code": 200}
+                metadata={"status_code": 200},
             ),
         ]
-    
+
     @pytest.fixture
     def mock_llm_provider(self):
         """Create mock LLM provider"""
         provider = AsyncMock(spec=LLMProvider)
-        
+
         async def mock_query(prompt):
             # Parse the prompt to determine response
             # Debug: Check what's in the prompt
             prompt_lower = prompt.lower()
-            
-            if "python testing tutorial" in prompt_lower or "https://example.com/python-tutorial" in prompt:
+
+            if (
+                "python testing tutorial" in prompt_lower
+                or "https://example.com/python-tutorial" in prompt
+            ):
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 9.0,
-                        "key_points": [
-                            "Comprehensive guide to Python testing",
-                            "Covers unit testing with unittest framework",
-                            "Includes practical code examples",
-                            "Discusses testing best practices"
-                        ],
-                        "summary": "A thorough tutorial on Python testing covering unit tests, best practices, and practical examples.",
-                        "content_type": "tutorial",
-                        "topics": ["python", "testing", "unittest", "tdd"],
-                        "code_quality": "high",
-                        "technical_depth": "intermediate"
-                    }),
-                    usage={"total_tokens": 150}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 9.0,
+                            "key_points": [
+                                "Comprehensive guide to Python testing",
+                                "Covers unit testing with unittest framework",
+                                "Includes practical code examples",
+                                "Discusses testing best practices",
+                            ],
+                            "summary": "A thorough tutorial on Python testing covering unit tests, best practices, and practical examples.",
+                            "content_type": "tutorial",
+                            "topics": ["python", "testing", "unittest", "tdd"],
+                            "code_quality": "high",
+                            "technical_depth": "intermediate",
+                        }
+                    ),
+                    usage={"total_tokens": 150},
                 )
-            elif "advanced python" in prompt_lower and ("patterns" in prompt_lower or "design" in prompt_lower) or "https://example.com/quality-content" in prompt:
+            elif (
+                "advanced python" in prompt_lower
+                and ("patterns" in prompt_lower or "design" in prompt_lower)
+                or "https://example.com/quality-content" in prompt
+            ):
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 8.5,
-                        "key_points": [
-                            "Explains design patterns in Python",
-                            "Covers Singleton and Factory patterns",
-                            "Provides working code examples",
-                            "Discusses best practices for pattern usage"
-                        ],
-                        "summary": "An advanced guide to design patterns in Python with practical implementations.",
-                        "content_type": "technical",
-                        "topics": ["python", "design patterns", "singleton", "factory"],
-                        "code_quality": "high",
-                        "technical_depth": "advanced"
-                    }),
-                    usage={"total_tokens": 150}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 8.5,
+                            "key_points": [
+                                "Explains design patterns in Python",
+                                "Covers Singleton and Factory patterns",
+                                "Provides working code examples",
+                                "Discusses best practices for pattern usage",
+                            ],
+                            "summary": "An advanced guide to design patterns in Python with practical implementations.",
+                            "content_type": "technical",
+                            "topics": [
+                                "python",
+                                "design patterns",
+                                "singleton",
+                                "factory",
+                            ],
+                            "code_quality": "high",
+                            "technical_depth": "advanced",
+                        }
+                    ),
+                    usage={"total_tokens": 150},
                 )
             else:
                 # Default response for other content
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 3.0,
-                        "key_points": ["Generic content"],
-                        "summary": "Not particularly relevant to the query.",
-                        "content_type": "other"
-                    }),
-                    usage={"total_tokens": 50}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 3.0,
+                            "key_points": ["Generic content"],
+                            "summary": "Not particularly relevant to the query.",
+                            "content_type": "other",
+                        }
+                    ),
+                    usage={"total_tokens": 50},
                 )
-        
+
         provider.query = AsyncMock(side_effect=mock_query)
         return provider
-    
+
     def test_content_filtering_pipeline(self, analysis_config, sample_scraped_content):
         """Test complete content filtering pipeline"""
         filter = ContentFilter(analysis_config)
-        
+
         # Filter scraped content
         filtered = filter.filter_scraped_content(sample_scraped_content)
-        
+
         # Should filter out spam, short content, and non-English
         assert len(filtered) == 2
-        
+
         # Check that quality content passed
         urls = [c.url for c in filtered]
         assert "https://example.com/python-tutorial" in urls
         assert "https://example.com/quality-content" in urls
-        
+
         # Check that filtered content was removed
         assert "https://example.com/spam-article" not in urls  # Spam
         assert "https://example.com/short-content" not in urls  # Too short
         assert "https://example.com/non-english" not in urls  # Wrong language
-        
+
         # Verify filter stats
         stats = filter.get_filter_stats()
-        assert stats['total_seen'] == 2  # Two unique content hashes
-    
+        assert stats["total_seen"] == 2  # Two unique content hashes
+
     def test_spam_detection(self, analysis_config):
         """Test spam and low-quality content detection"""
         # Disable language filtering for spam detection test
         analysis_config.allowed_languages = None
         filter = ContentFilter(analysis_config)
-        
+
         # Test various spam patterns
         spam_contents = [
             "CLICK HERE NOW! LIMITED TIME OFFER! 100% FREE!",
             "Make money fast! Work from home! No experience needed!",
             "Congratulations! You have been selected for a special offer!",
             "Buy viagra cialis online cheap! Best prices guaranteed!",
-            "Join our MLM program! Get rich quick! Passive income!"
+            "Join our MLM program! Get rich quick! Passive income!",
         ]
-        
+
         for content in spam_contents:
             scraped = ScrapedContent(
                 url="https://spam.com/test",
                 title="Spam",
                 content=content * 5,  # Repeat to meet length requirement
                 scraped_at=datetime.now(),
-                metadata={}
+                metadata={},
             )
-            
+
             filtered = filter.filter_scraped_content([scraped])
             assert len(filtered) == 0, f"Failed to filter spam: {content[:50]}..."
-    
+
     def test_quality_scoring(self, analysis_config):
         """Test content quality scoring mechanism"""
         filter = ContentFilter(analysis_config)
-        
+
         # High quality content
         high_quality = ScrapedContent(
             url="https://example.com/high-quality",
@@ -8740,61 +8860,64 @@ class TestContentAnalysisIntegration:
             In summary, we have covered all the essential aspects.
             """,
             scraped_at=datetime.now(),
-            metadata={}
+            metadata={},
         )
-        
+
         # Very low quality content (needs to score < 0.3)
         # Use content with no structure, excessive repetition, and spam-like patterns
         very_low_quality = ScrapedContent(
             url="https://example.com/low-quality",
             title="Low Quality Article",
-            content="buy buy buy " * 100 + " click here " * 50,  # Spam-like repetitive content
+            content="buy buy buy " * 100
+            + " click here " * 50,  # Spam-like repetitive content
             scraped_at=datetime.now(),
-            metadata={}
+            metadata={},
         )
-        
+
         # Filter both
         filtered = filter.filter_scraped_content([high_quality, very_low_quality])
-        
+
         # High quality should pass, very low quality should fail
         assert len(filtered) == 1
         assert filtered[0].url == "https://example.com/high-quality"
-    
+
     @pytest.mark.asyncio
-    async def test_llm_analysis_integration(self, analysis_config, sample_scraped_content, mock_llm_provider):
+    async def test_llm_analysis_integration(
+        self, analysis_config, sample_scraped_content, mock_llm_provider
+    ):
         """Test LLM-based content analysis"""
         analyzer = ContentAnalyzer(mock_llm_provider, analysis_config)
-        
+
         # Filter content first
         filter = ContentFilter(analysis_config)
         filtered_content = filter.filter_scraped_content(sample_scraped_content)
-        
+
         # Analyze filtered content
         research_query = "Python testing best practices"
         analyzed = await analyzer.analyze_content(filtered_content, research_query)
-        
+
         # Verify analysis results
         assert len(analyzed) == 2
-        
+
         # Check Python tutorial analysis
         tutorial = next(a for a in analyzed if "python-tutorial" in a.url)
         assert tutorial.relevance_score == 9.0
         assert len(tutorial.key_points) == 4
         assert "unittest" in str(tutorial.key_points)
         assert tutorial.content_type == "tutorial"
-        
+
         # Check design patterns analysis
         patterns = next(a for a in analyzed if "quality-content" in a.url)
         assert patterns.relevance_score == 8.5
         assert "design patterns" in patterns.summary.lower()
         assert patterns.content_type == "technical"
-    
+
     @pytest.mark.asyncio
     async def test_template_based_scoring(self, analysis_config, mock_llm_provider):
         """Test template-based scoring adjustments"""
         # Test with different templates
         templates = ["technical", "tutorial", "reference"]
-        
+
         content = ScrapedContent(
             url="https://example.com/test",
             title="Test Content",
@@ -8816,42 +8939,49 @@ class TestContentAnalysisIntegration:
             - Dictionary with processed results
             """,
             scraped_at=datetime.now(),
-            metadata={}
+            metadata={},
         )
-        
+
         for template_name in templates:
-            analyzer = ContentAnalyzer(mock_llm_provider, analysis_config, template_name)
-            
+            analyzer = ContentAnalyzer(
+                mock_llm_provider, analysis_config, template_name
+            )
+
             # Mock different responses based on template
             async def mock_query(prompt):
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 7.0,
-                        "key_points": ["API documentation"],
-                        "summary": "Technical API documentation",
-                        "content_type": "documentation",
-                        "has_code_examples": True,
-                        "has_api_reference": True
-                    }),
-                    usage={"total_tokens": 100}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 7.0,
+                            "key_points": ["API documentation"],
+                            "summary": "Technical API documentation",
+                            "content_type": "documentation",
+                            "has_code_examples": True,
+                            "has_api_reference": True,
+                        }
+                    ),
+                    usage={"total_tokens": 100},
                 )
-            
+
             mock_llm_provider.query = mock_query
-            
+
             analyzed = await analyzer.analyze_content([content], "API documentation")
-            
+
             assert len(analyzed) == 1
             result = analyzed[0]
-            
+
             # Template scoring should adjust the relevance score
             if template_name == "reference":
                 # Reference template should boost score for API docs
-                assert hasattr(result.analysis_metadata, 'template_score') or 'template_score' in result.analysis_metadata
-    
+                assert (
+                    hasattr(result.analysis_metadata, "template_score")
+                    or "template_score" in result.analysis_metadata
+                )
+
     def test_duplicate_detection(self, analysis_config):
         """Test duplicate content detection"""
         filter = ContentFilter(analysis_config)
-        
+
         # Create similar content with slight variations
         base_content = """# Python Programming Guide
         
@@ -8863,7 +8993,7 @@ class TestContentAnalysisIntegration:
         ## Basic Syntax
         Here are the basics of Python syntax.
         """
-        
+
         contents = []
         for i in range(5):
             # Create variations
@@ -8887,181 +9017,191 @@ class TestContentAnalysisIntegration:
                 ## Different Content
                 Completely different from the base content.
                 """
-            
-            contents.append(ScrapedContent(
-                url=f"https://example.com/article{i}",
-                title=f"Article {i}",
-                content=markdown,
-                scraped_at=datetime.now(),
-                metadata={}
-            ))
-        
+
+            contents.append(
+                ScrapedContent(
+                    url=f"https://example.com/article{i}",
+                    title=f"Article {i}",
+                    content=markdown,
+                    scraped_at=datetime.now(),
+                    metadata={},
+                )
+            )
+
         # Filter content
         filtered = filter.filter_scraped_content(contents)
-        
+
         # Should keep first occurrence and truly different content
         assert len(filtered) == 2
         urls = [c.url for c in filtered]
         assert "https://example.com/article0" in urls  # First occurrence
         assert "https://example.com/article4" in urls  # Different content
-    
+
     def test_language_detection(self, analysis_config):
         """Test language detection functionality"""
         filter = ContentFilter(analysis_config)
-        
+
         # Test content in different languages
         test_cases = [
             {
                 "lang": "en",
                 "content": "This is an English article about programming. The quick brown fox jumps over the lazy dog.",
-                "should_pass": True
+                "should_pass": True,
             },
             {
                 "lang": "es",
                 "content": "Este es un artículo en español sobre programación. El perro come la comida en el jardín.",
-                "should_pass": False
+                "should_pass": False,
             },
             {
                 "lang": "fr",
                 "content": "Ceci est un article en français sur la programmation. Le chat mange dans la cuisine.",
-                "should_pass": False
+                "should_pass": False,
             },
             {
                 "lang": "de",
                 "content": "Dies ist ein deutscher Artikel über Programmierung. Der Hund spielt im Garten.",
-                "should_pass": False
+                "should_pass": False,
             },
             {
                 "lang": "mixed",
                 "content": "This article mixes English with some español and français words but is mostly English.",
-                "should_pass": True  # Mostly English
-            }
+                "should_pass": True,  # Mostly English
+            },
         ]
-        
+
         for test in test_cases:
             content = ScrapedContent(
                 url=f"https://example.com/{test['lang']}",
                 title=f"Article in {test['lang']}",
                 content=test["content"] * 10,  # Repeat to meet length requirement
                 scraped_at=datetime.now(),
-                metadata={}
+                metadata={},
             )
-            
+
             filtered = filter.filter_scraped_content([content])
-            
+
             if test["should_pass"]:
                 assert len(filtered) == 1, f"Failed to pass {test['lang']} content"
             else:
                 assert len(filtered) == 0, f"Failed to filter {test['lang']} content"
-    
+
     @pytest.mark.asyncio
     async def test_batch_processing(self, analysis_config, mock_llm_provider):
         """Test batch processing of content analysis"""
         analyzer = ContentAnalyzer(mock_llm_provider, analysis_config)
-        
+
         # Create many content items
         contents = []
         for i in range(20):
-            contents.append(ScrapedContent(
-                url=f"https://example.com/article{i}",
-                title=f"Article {i}",
-                content=f"# Article {i}\n\nThis is content for article {i}." * 20,
-                scraped_at=datetime.now(),
-                metadata={}
-            ))
-        
+            contents.append(
+                ScrapedContent(
+                    url=f"https://example.com/article{i}",
+                    title=f"Article {i}",
+                    content=f"# Article {i}\n\nThis is content for article {i}." * 20,
+                    scraped_at=datetime.now(),
+                    metadata={},
+                )
+            )
+
         # Track concurrent calls
         concurrent_count = 0
         max_concurrent = 0
-        
+
         async def mock_query(prompt):
             nonlocal concurrent_count, max_concurrent
-            
+
             concurrent_count += 1
             max_concurrent = max(max_concurrent, concurrent_count)
-            
+
             try:
                 await asyncio.sleep(0.05)  # Simulate processing time
-                
+
                 return LLMResponse(
-                    content=json.dumps({
-                        "relevance_score": 5.0,
-                        "key_points": ["Test content"],
-                        "summary": "Test summary",
-                        "content_type": "article"
-                    }),
-                    usage={"total_tokens": 50}
+                    content=json.dumps(
+                        {
+                            "relevance_score": 5.0,
+                            "key_points": ["Test content"],
+                            "summary": "Test summary",
+                            "content_type": "article",
+                        }
+                    ),
+                    usage={"total_tokens": 50},
                 )
             finally:
                 concurrent_count -= 1
-        
+
         mock_llm_provider.query = mock_query
-        
+
         # Analyze with batch size of 5
         analyzed = await analyzer.analyze_content(contents, "test query", batch_size=5)
-        
+
         # Verify all content was analyzed
         assert len(analyzed) == 20
-        
+
         # Verify batch processing (max 5 concurrent)
         assert max_concurrent <= 5
-    
+
     @pytest.mark.asyncio
     async def test_error_recovery(self, analysis_config, sample_scraped_content):
         """Test error handling and recovery in analysis pipeline"""
         # Create LLM provider that fails intermittently
         provider = AsyncMock(spec=LLMProvider)
         fail_count = 0
-        
+
         async def mock_query(prompt):
             nonlocal fail_count
             fail_count += 1
-            
+
             if fail_count % 3 == 0:
                 # Fail every third call
                 raise Exception("LLM service unavailable")
-            
+
             return LLMResponse(
-                content=json.dumps({
-                    "relevance_score": 7.0,
-                    "key_points": ["Recovered from error"],
-                    "summary": "Successfully analyzed after error",
-                    "content_type": "article"
-                }),
-                usage={"total_tokens": 50}
+                content=json.dumps(
+                    {
+                        "relevance_score": 7.0,
+                        "key_points": ["Recovered from error"],
+                        "summary": "Successfully analyzed after error",
+                        "content_type": "article",
+                    }
+                ),
+                usage={"total_tokens": 50},
             )
-        
+
         provider.query = mock_query
-        
+
         analyzer = ContentAnalyzer(provider, analysis_config)
-        
+
         # Analyze content
-        analyzed = await analyzer.analyze_content(sample_scraped_content[:3], "test query")
-        
+        analyzed = await analyzer.analyze_content(
+            sample_scraped_content[:3], "test query"
+        )
+
         # Should handle errors gracefully
         assert len(analyzed) == 3
-        
+
         # Check that some succeeded and some have fallback analysis
         success_count = sum(1 for a in analyzed if a.relevance_score > 5.0)
         fallback_count = sum(1 for a in analyzed if a.relevance_score == 5.0)
-        
+
         assert success_count > 0  # Some should succeed
         assert fallback_count > 0  # Some should use fallback
-    
+
     def test_content_filtering_stats(self, analysis_config, sample_scraped_content):
         """Test filtering statistics and reporting"""
         filter = ContentFilter(analysis_config)
-        
+
         # Process content multiple times to accumulate stats
         for _ in range(3):
             filter.filter_scraped_content(sample_scraped_content)
-        
+
         stats = filter.get_filter_stats()
-        
+
         # Verify stats tracking
-        assert stats['total_seen'] > 0
-        assert stats['duplicate_checks'] > 0
-        
+        assert stats["total_seen"] > 0
+        assert stats["duplicate_checks"] > 0
+
         # Process with analyzed content
         analyzed_content = [
             AnalyzedContent(
@@ -9072,18 +9212,33 @@ class TestContentAnalysisIntegration:
                 key_points=["Point 1", "Point 2"],
                 summary="Test summary",
                 content_type="article",
-                analysis_metadata={}
-            ) for i, c in enumerate(sample_scraped_content)
+                analysis_metadata={},
+            )
+            for i, c in enumerate(sample_scraped_content)
         ]
-        
+
         # Filter analyzed content
         filtered_analyzed = filter.filter_analyzed_content(analyzed_content)
-        
+
         # Should filter based on relevance threshold (5.0)
         assert len(filtered_analyzed) < len(analyzed_content)
         assert all(a.relevance_score >= 5.0 for a in filtered_analyzed)
 
 ======= research/test_llm_providers.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Unit tests for LLM providers
 """
@@ -9099,41 +9254,41 @@ from tools.research.llm_interface import (
     GeminiProvider,
     CLIProvider,
     get_provider,
-    LLMResponse
+    LLMResponse,
 )
 
 
 class TestLLMProviders:
     """Test LLM provider implementations"""
-    
+
     def test_get_provider_factory(self):
         """Test provider factory function"""
         # Test Claude provider
         provider = get_provider("claude", model="claude-3-opus")
         assert isinstance(provider, ClaudeProvider)
         assert provider.model == "claude-3-opus"
-        
+
         # Test Gemini provider
         provider = get_provider("gemini")
         assert isinstance(provider, GeminiProvider)
         assert provider.model == "gemini-pro"
-        
+
         # Test CLI provider
         provider = get_provider("gemini-cli")
         assert isinstance(provider, CLIProvider)
         assert provider.command == "gemini"
-        
+
         # Test unknown provider
         with pytest.raises(ValueError):
             get_provider("unknown")
-    
+
     def test_llm_response_dataclass(self):
         """Test LLMResponse dataclass"""
         response = LLMResponse(
             content="Test response",
             raw_response={"test": "data"},
             usage={"tokens": 100},
-            error=None
+            error=None,
         )
         assert response.content == "Test response"
         assert response.raw_response["test"] == "data"
@@ -9143,169 +9298,183 @@ class TestLLMProviders:
 
 class TestClaudeProvider:
     """Test Claude provider"""
-    
+
     @pytest.fixture
     def claude_provider(self):
         """Create Claude provider with mock API key"""
         with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-key"}):
             return ClaudeProvider()
-    
+
     def test_claude_initialization(self):
         """Test Claude provider initialization"""
         # With explicit API key
         provider = ClaudeProvider(api_key="test-key", model="claude-3-sonnet")
         assert provider.api_key == "test-key"
         assert provider.model == "claude-3-sonnet"
-        
+
         # From environment
         with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "env-key"}):
             provider = ClaudeProvider()
             assert provider.api_key == "env-key"
             assert provider.model == "claude-3-opus-20240229"
-    
+
     @pytest.mark.asyncio
     async def test_claude_query_success(self, claude_provider):
         """Test successful Claude API query"""
         mock_response = {
             "content": [{"text": "Test response"}],
-            "usage": {"input_tokens": 10, "output_tokens": 20}
+            "usage": {"input_tokens": 10, "output_tokens": 20},
         }
-        
+
         # Create proper async context managers
         class MockResponse:
             def __init__(self, status, json_data):
                 self.status = status
                 self._json_data = json_data
-                
+
             async def json(self):
                 return self._json_data
-        
+
         class MockPostContext:
             def __init__(self, response):
                 self.response = response
-                
+
             async def __aenter__(self):
                 return self.response
-                
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
-        
+
         class MockSession:
             def __init__(self, response):
                 self.response = response
-                
+
             def post(self, url, **kwargs):
                 return MockPostContext(self.response)
-        
+
         class MockSessionContext:
             def __init__(self, session):
                 self.session = session
-                
+
             async def __aenter__(self):
                 return self.session
-                
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
-        
+
         # Mock aiohttp.ClientSession
-        with patch.object(claude_provider, '_validate_api_key'), patch('aiohttp.ClientSession') as mock_session_class:
+        with (
+            patch.object(claude_provider, "_validate_api_key"),
+            patch("aiohttp.ClientSession") as mock_session_class,
+        ):
             mock_resp = MockResponse(200, mock_response)
             mock_session = MockSession(mock_resp)
             mock_session_context = MockSessionContext(mock_session)
-            
+
             mock_session_class.return_value = mock_session_context
-            
+
             response = await claude_provider.query("Test prompt", system="Test system")
-            
+
             assert response.content == "Test response"
             assert response.usage["input_tokens"] == 10
             assert response.error is None
-    
+
     @pytest.mark.asyncio
     async def test_claude_query_error(self, claude_provider):
         """Test Claude API error handling"""
+
         # Create proper async context managers
         class MockResponse:
             def __init__(self, status, json_data):
                 self.status = status
                 self._json_data = json_data
-                
+
             async def json(self):
                 return self._json_data
-        
+
         class MockPostContext:
             def __init__(self, response):
                 self.response = response
-                
+
             async def __aenter__(self):
                 return self.response
-                
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
-        
+
         class MockSession:
             def __init__(self, response):
                 self.response = response
-                
+
             def post(self, url, **kwargs):
                 return MockPostContext(self.response)
-        
+
         class MockSessionContext:
             def __init__(self, session):
                 self.session = session
-                
+
             async def __aenter__(self):
                 return self.session
-                
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
-        
-        with patch.object(claude_provider, '_validate_api_key'), patch('aiohttp.ClientSession') as mock_session_class:
+
+        with (
+            patch.object(claude_provider, "_validate_api_key"),
+            patch("aiohttp.ClientSession") as mock_session_class,
+        ):
             mock_resp = MockResponse(400, {"error": {"message": "Bad request"}})
             mock_session = MockSession(mock_resp)
             mock_session_context = MockSessionContext(mock_session)
-            
+
             mock_session_class.return_value = mock_session_context
-            
+
             response = await claude_provider.query("Test prompt")
-            
+
             assert response.content == ""
             assert "Bad request" in response.error
-    
+
     @pytest.mark.asyncio
     async def test_claude_search_web(self, claude_provider):
         """Test Claude web search functionality"""
         mock_urls = [
-            {"url": "https://example1.com", "title": "Example 1", "description": "Desc 1"},
-            {"url": "https://example2.com", "title": "Example 2", "description": "Desc 2"}
+            {
+                "url": "https://example1.com",
+                "title": "Example 1",
+                "description": "Desc 1",
+            },
+            {
+                "url": "https://example2.com",
+                "title": "Example 2",
+                "description": "Desc 2",
+            },
         ]
-        
-        with patch.object(claude_provider, 'query') as mock_query:
+
+        with patch.object(claude_provider, "query") as mock_query:
             mock_query.return_value = LLMResponse(
-                content=f"```json\n{json.dumps(mock_urls)}\n```",
-                error=None
+                content=f"```json\n{json.dumps(mock_urls)}\n```", error=None
             )
-            
+
             results = await claude_provider.search_web("test query", num_results=2)
-            
+
             assert len(results) == 2
             assert results[0]["url"] == "https://example1.com"
             assert results[1]["title"] == "Example 2"
-    
+
     @pytest.mark.asyncio
     async def test_claude_analyze_content(self, claude_provider):
         """Test Claude content analysis"""
-        with patch.object(claude_provider, 'query') as mock_query:
+        with patch.object(claude_provider, "query") as mock_query:
             mock_query.return_value = LLMResponse(
                 content='{"relevance_score": 8, "reason": "Highly relevant"}',
-                error=None
+                error=None,
             )
-            
+
             result = await claude_provider.analyze_content("Test content", "relevance")
-            
+
             assert result["relevance_score"] == 8
             assert result["reason"] == "Highly relevant"
-    
+
     def test_claude_validate_api_key(self, claude_provider):
         """Test API key validation"""
         claude_provider.api_key = None
@@ -9315,209 +9484,210 @@ class TestClaudeProvider:
 
 class TestGeminiProvider:
     """Test Gemini provider"""
-    
+
     @pytest.fixture
     def gemini_provider(self):
         """Create Gemini provider with mock API key"""
         with patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
             return GeminiProvider()
-    
+
     def test_gemini_initialization(self):
         """Test Gemini provider initialization"""
         # With explicit API key
         provider = GeminiProvider(api_key="test-key", model="gemini-1.5-pro")
         assert provider.api_key == "test-key"
         assert provider.model == "gemini-1.5-pro"
-        
+
         # From environment
         with patch.dict("os.environ", {"GOOGLE_API_KEY": "env-key"}):
             provider = GeminiProvider()
             assert provider.api_key == "env-key"
             assert provider.model == "gemini-pro"
-    
+
     @pytest.mark.asyncio
     async def test_gemini_query_success(self, gemini_provider):
         """Test successful Gemini API query"""
         mock_response = {
-            "candidates": [{
-                "content": {
-                    "parts": [{"text": "Test response"}]
-                }
-            }],
-            "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 20}
+            "candidates": [{"content": {"parts": [{"text": "Test response"}]}}],
+            "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 20},
         }
-        
+
         # Create proper async context managers
         class MockResponse:
             def __init__(self, status, json_data):
                 self.status = status
                 self._json_data = json_data
-                
+
             async def json(self):
                 return self._json_data
-        
+
         class MockPostContext:
             def __init__(self, response):
                 self.response = response
-                
+
             async def __aenter__(self):
                 return self.response
-                
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
-        
+
         class MockSession:
             def __init__(self, response):
                 self.response = response
-                
+
             def post(self, url, **kwargs):
                 return MockPostContext(self.response)
-        
+
         class MockSessionContext:
             def __init__(self, session):
                 self.session = session
-                
+
             async def __aenter__(self):
                 return self.session
-                
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
-        
-        with patch.object(gemini_provider, '_validate_api_key'), patch('aiohttp.ClientSession') as mock_session_class:
+
+        with (
+            patch.object(gemini_provider, "_validate_api_key"),
+            patch("aiohttp.ClientSession") as mock_session_class,
+        ):
             mock_resp = MockResponse(200, mock_response)
             mock_session = MockSession(mock_resp)
             mock_session_context = MockSessionContext(mock_session)
-            
+
             mock_session_class.return_value = mock_session_context
-            
+
             response = await gemini_provider.query("Test prompt", temperature=0.5)
-            
+
             assert response.content == "Test response"
             assert response.usage["promptTokenCount"] == 10
             assert response.error is None
-    
+
     @pytest.mark.asyncio
     async def test_gemini_search_web(self, gemini_provider):
         """Test Gemini web search functionality"""
         mock_urls = [
             {"url": "https://example.com", "title": "Example", "description": "Desc"}
         ]
-        
-        with patch.object(gemini_provider, 'query') as mock_query:
+
+        with patch.object(gemini_provider, "query") as mock_query:
             mock_query.return_value = LLMResponse(
-                content=json.dumps(mock_urls),
-                error=None
+                content=json.dumps(mock_urls), error=None
             )
-            
+
             results = await gemini_provider.search_web("test query", num_results=1)
-            
+
             assert len(results) == 1
             assert results[0]["url"] == "https://example.com"
 
 
 class TestCLIProvider:
     """Test CLI provider"""
-    
+
     @pytest.fixture
     def cli_provider(self):
         """Create CLI provider"""
         return CLIProvider(command="test-llm")
-    
+
     def test_cli_initialization(self):
         """Test CLI provider initialization"""
         provider = CLIProvider(command="gemini", model="pro")
         assert provider.command == "gemini"
         assert provider.model == "pro"
         assert provider.api_key == "cli"  # Fixed value for CLI
-    
+
     @pytest.mark.asyncio
     async def test_cli_query_success(self, cli_provider):
         """Test successful CLI command execution"""
         with patch("asyncio.create_subprocess_exec") as mock_subprocess:
             mock_proc = MagicMock()
-            mock_proc.communicate = AsyncMock(
-                return_value=(b"Test response", b"")
-            )
+            mock_proc.communicate = AsyncMock(return_value=(b"Test response", b""))
             mock_proc.returncode = 0
             mock_subprocess.return_value = mock_proc
-            
+
             response = await cli_provider.query("Test prompt")
-            
+
             assert response.content == "Test response"
             assert response.error is None
-            
+
             # Verify command was called correctly
             mock_subprocess.assert_called_once()
             args = mock_subprocess.call_args[0]
             assert args[0] == "test-llm"
-    
+
     @pytest.mark.asyncio
     async def test_cli_query_error(self, cli_provider):
         """Test CLI command error handling"""
         with patch("asyncio.create_subprocess_exec") as mock_subprocess:
             mock_proc = MagicMock()
-            mock_proc.communicate = AsyncMock(
-                return_value=(b"", b"Command failed")
-            )
+            mock_proc.communicate = AsyncMock(return_value=(b"", b"Command failed"))
             mock_proc.returncode = 1
             mock_subprocess.return_value = mock_proc
-            
+
             response = await cli_provider.query("Test prompt")
-            
+
             assert response.content == ""
             assert "Command failed" in response.error
-    
+
     @pytest.mark.asyncio
     async def test_cli_with_custom_args(self, cli_provider):
         """Test CLI provider with custom arguments"""
         with patch("asyncio.create_subprocess_exec") as mock_subprocess:
             mock_proc = MagicMock()
-            mock_proc.communicate = AsyncMock(
-                return_value=(b"Response", b"")
-            )
+            mock_proc.communicate = AsyncMock(return_value=(b"Response", b""))
             mock_proc.returncode = 0
             mock_subprocess.return_value = mock_proc
-            
+
             response = await cli_provider.query(
-                "Test prompt",
-                cli_args=["--temperature", "0.5"]
+                "Test prompt", cli_args=["--temperature", "0.5"]
             )
-            
+
             # Verify additional args were passed
             args = mock_subprocess.call_args[0]
             assert "--temperature" in args
             assert "0.5" in args
-    
+
     @pytest.mark.asyncio
     async def test_cli_analyze_content(self, cli_provider):
         """Test CLI content analysis"""
-        with patch.object(cli_provider, 'query') as mock_query:
+        with patch.object(cli_provider, "query") as mock_query:
             mock_query.return_value = LLMResponse(
-                content='{"relevance_score": 7, "reason": "Relevant"}',
-                error=None
+                content='{"relevance_score": 7, "reason": "Relevant"}', error=None
             )
-            
+
             result = await cli_provider.analyze_content("Content", "relevance")
-            
+
             assert result["relevance_score"] == 7
-            
+
     @pytest.mark.asyncio
     async def test_cli_json_parsing_fallback(self, cli_provider):
         """Test JSON parsing fallback for malformed responses"""
-        with patch.object(cli_provider, 'query') as mock_query:
-            mock_query.return_value = LLMResponse(
-                content="Not valid JSON",
-                error=None
-            )
-            
+        with patch.object(cli_provider, "query") as mock_query:
+            mock_query.return_value = LLMResponse(content="Not valid JSON", error=None)
+
             result = await cli_provider.analyze_content("Content", "relevance")
-            
+
             # Should return fallback response
             assert result["relevance_score"] == 5
             assert "Could not parse analysis" in result["reason"]
             assert result["raw_response"] == "Not valid JSON"
 
 ======= research/test_research_workflow.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 End-to-end tests for m1f-research workflow
 """
@@ -9528,23 +9698,23 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
 
 from tools.research import (
-    ResearchConfig, 
+    ResearchConfig,
     EnhancedResearchOrchestrator,
     ClaudeProvider,
-    EnhancedResearchCommand
+    EnhancedResearchCommand,
 )
 from tools.research.models import ScrapedContent, AnalyzedContent
 
 
 class TestResearchWorkflow:
     """Test the complete research workflow"""
-    
+
     @pytest.fixture
     def temp_dir(self):
         """Create a temporary directory for test output"""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
-    
+
     @pytest.fixture
     def mock_config(self, temp_dir):
         """Create a test configuration"""
@@ -9555,7 +9725,7 @@ class TestResearchWorkflow:
             dry_run=False,
             verbose=1,
             no_filter=True,  # Disable filtering for easier testing
-            no_analysis=False
+            no_analysis=False,
         )
         # Set the search limit explicitly
         config.scraping.search_limit = 5
@@ -9563,57 +9733,64 @@ class TestResearchWorkflow:
         # Adjust minimum content length for test content
         config.analysis.min_content_length = 20
         return config
-    
+
     @pytest.fixture
     def mock_llm_provider(self):
         """Create a mock LLM provider"""
         provider = MagicMock(spec=ClaudeProvider)
-        
+
         # Mock search_web
         async def mock_search_web(query, num_results):
             return [
-                {"url": f"https://example{i}.com", "title": f"Example {i}", "description": f"Description {i}"}
+                {
+                    "url": f"https://example{i}.com",
+                    "title": f"Example {i}",
+                    "description": f"Description {i}",
+                }
                 for i in range(num_results)
             ]
-        
+
         # Mock query method for analyzer
         async def mock_query(prompt, system=None, **kwargs):
             from tools.research.llm_interface import LLMResponse
+
             return LLMResponse(
                 content='{"relevance_score": 8.0, "key_points": ["Point 1", "Point 2"], "summary": "Test summary", "content_type": "tutorial"}',
                 usage={"total_tokens": 100},
-                error=None
+                error=None,
             )
-        
+
         # Mock analyze_content
         async def mock_analyze_content(content, analysis_type):
             if analysis_type == "relevance":
                 return {
                     "relevance_score": 8.0,
                     "reason": "Highly relevant",
-                    "key_topics": ["topic1", "topic2"]
+                    "key_topics": ["topic1", "topic2"],
                 }
             elif analysis_type == "summary":
                 return {
                     "summary": "This is a summary",
                     "main_points": ["Point 1", "Point 2"],
-                    "content_type": "tutorial"
+                    "content_type": "tutorial",
                 }
             return {}
-        
+
         provider.query = AsyncMock(side_effect=mock_query)
         provider.search_web = AsyncMock(side_effect=mock_search_web)
         provider.analyze_content = AsyncMock(side_effect=mock_analyze_content)
-        
+
         return provider
-    
+
     @pytest.mark.asyncio
-    async def test_basic_research_workflow(self, mock_config, mock_llm_provider, temp_dir):
+    async def test_basic_research_workflow(
+        self, mock_config, mock_llm_provider, temp_dir
+    ):
         """Test basic research workflow end-to-end"""
         # Create orchestrator with mocked LLM
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
-        
+
         # Mock scraping to avoid actual web requests
         async def mock_scrape_urls(urls):
             return [
@@ -9621,17 +9798,21 @@ class TestResearchWorkflow:
                     url=url,
                     title=f"Title for {url}",
                     content=f"Content from {url}",
-                    content_type="text/html"
+                    content_type="text/html",
                 )
                 for url in urls[:3]
             ]
-        
+
         orchestrator._scrape_urls = mock_scrape_urls
-        
+
         # Mock the bundle creation to ensure it creates a file
         async def mock_create_bundle(content, query):
             # Use the orchestrator's output directory
-            output_dir = orchestrator.current_job.output_dir if orchestrator.current_job else mock_config.output.directory
+            output_dir = (
+                orchestrator.current_job.output_dir
+                if orchestrator.current_job
+                else mock_config.output.directory
+            )
             # Convert to Path if it's a string
             output_dir = Path(output_dir) if isinstance(output_dir, str) else output_dir
             # Ensure the output directory exists
@@ -9646,59 +9827,59 @@ Total sources: {len(content)}
 """
             for i, item in enumerate(content):
                 bundle_content += f"### {item.title}\n{item.content}\n\n"
-            
+
             bundle_path.write_text(bundle_content)
             return bundle_path
-        
+
         orchestrator._create_bundle = mock_create_bundle
-        
+
         # Run research
         result = await orchestrator.research("test query")
-        
+
         # Verify results
         assert result.bundle_path is not None
         assert result.bundle_path.exists()
         assert result.bundle_path.suffix == ".md"
-        
+
         # Check bundle content
         content = result.bundle_path.read_text()
         assert "Research: test query" in content
         assert "Total sources: 3" in content
         assert "https://example0.com" in content
-        
+
         # Verify LLM was called for search
         mock_llm_provider.search_web.assert_called_once_with("test query", 5)
         # Analysis happens via query method, not analyze_content in the workflow
         assert mock_llm_provider.query.call_count > 0
-    
+
     @pytest.mark.asyncio
     async def test_dry_run_mode(self, mock_config, mock_llm_provider, temp_dir):
         """Test dry run mode doesn't perform actual operations"""
         mock_config.dry_run = True
-        
+
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
-        
+
         # Run in dry mode
         result = await orchestrator.research("test query")
-        
+
         # Verify no actual operations were performed
         mock_llm_provider.search_web.assert_not_called()
         mock_llm_provider.analyze_content.assert_not_called()
-        
+
         # In dry run mode, bundle path is set to output dir but no bundle file is created
         assert result.bundle_path is not None
         assert result.bundle_path.is_dir()  # It's the output directory, not a file
         assert not result.bundle_created  # Bundle was not actually created
-    
+
     @pytest.mark.asyncio
     async def test_no_analysis_mode(self, mock_config, mock_llm_provider, temp_dir):
         """Test running without analysis"""
         mock_config.no_analysis = True
-        
+
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
-        
+
         # Mock scraping
         async def mock_scrape_urls(urls):
             return [
@@ -9706,30 +9887,30 @@ Total sources: {len(content)}
                     url=f"https://example{i}.com",
                     title=f"Example {i}",
                     content=f"Content {i}",
-                    content_type="text/markdown"
+                    content_type="text/markdown",
                 )
                 for i in range(2)
             ]
-        
+
         orchestrator._scrape_urls = mock_scrape_urls
-        
+
         # Run research
         result = await orchestrator.research("test query")
-        
+
         # Verify analysis was skipped
         mock_llm_provider.analyze_content.assert_not_called()
-        
+
         # But search should still happen
         mock_llm_provider.search_web.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_content_filtering(self, mock_config, temp_dir):
         """Test content filtering based on relevance"""
         mock_config.analysis.relevance_threshold = 7.0
         mock_config.analysis.min_content_length = 50  # Lower threshold for test
-        
+
         orchestrator = EnhancedResearchOrchestrator(mock_config)
-        
+
         # Create test content with different relevance scores
         content = [
             AnalyzedContent(
@@ -9739,57 +9920,60 @@ Total sources: {len(content)}
                 relevance_score=9.0,
                 key_points=["Point 1", "Point 2"],
                 summary="High quality summary",
-                content_type="tutorial"
+                content_type="tutorial",
             ),
             AnalyzedContent(
-                url="https://low.com", 
+                url="https://low.com",
                 title="Low relevance",
                 content="This is low-quality content with minimal information.",
                 relevance_score=4.0,
                 key_points=["Point 1"],
                 summary="Low quality summary",
-                content_type="blog"
+                content_type="blog",
             ),
             AnalyzedContent(
                 url="https://medium.com",
-                title="Medium relevance", 
+                title="Medium relevance",
                 content="This is medium-quality content with decent information.",
                 relevance_score=7.5,
                 key_points=["Point 1", "Point 2", "Point 3"],
                 summary="Medium quality summary",
-                content_type="reference"
-            )
+                content_type="reference",
+            ),
         ]
-        
+
         # Filter content
         from tools.research.content_filter import ContentFilter
+
         filter = ContentFilter(mock_config.analysis)
         filtered = filter.filter_analyzed_content(content)
-        
+
         # Verify filtering
         assert len(filtered) == 2
         assert all(item.relevance_score >= 7.0 for item in filtered)
         assert filtered[0].relevance_score == 9.0  # Should be sorted by relevance
-    
+
     def test_cli_argument_parsing(self):
         """Test CLI argument parsing"""
         command = EnhancedResearchCommand()
-        
+
         # Test basic args
-        args = command.parser.parse_args(["machine learning", "--urls", "30", "--scrape", "15"])
+        args = command.parser.parse_args(
+            ["machine learning", "--urls", "30", "--scrape", "15"]
+        )
         assert args.query == "machine learning"
         assert args.urls == 30
         assert args.scrape == 15
-        
+
         # Test provider selection
         args = command.parser.parse_args(["test", "--provider", "gemini"])
         assert args.provider == "gemini"
-        
+
         # Test interactive mode
         args = command.parser.parse_args(["--interactive"])
         assert args.interactive is True
         assert args.query is None  # Query not required in interactive mode
-    
+
     @pytest.mark.asyncio
     async def test_config_from_yaml(self, temp_dir):
         """Test loading configuration from YAML"""
@@ -9813,10 +9997,10 @@ research:
 """
         config_path = temp_dir / "test_config.yml"
         config_path.write_text(yaml_content)
-        
+
         # Load config
         config = ResearchConfig.from_yaml(config_path)
-        
+
         # Verify loaded values
         assert config.llm.provider == "gemini"
         assert config.llm.model == "gemini-pro"
@@ -9828,6 +10012,20 @@ research:
         assert config.templates["technical"].url_count == 30
 
 ======= research/test_scraping_integration.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Integration tests for m1f-research scraping pipeline
 """
@@ -9846,36 +10044,37 @@ from tools.research.models import ScrapedContent
 def create_mock_session(mock_get_handler):
     """Create a mock aiohttp session with a custom get handler"""
     mock_session = AsyncMock()
-    
+
     # Add a proper close method
     async def _close():
         pass
+
     mock_session.close = _close
-    
+
     def mock_get_wrapper(url, **kwargs):
         # Create context manager mock
         class MockContextManager:
             def __init__(self, url, **kwargs):
                 self.url = url
                 self.kwargs = kwargs
-                
+
             async def __aenter__(self):
                 # Call the handler when entering context
                 response = await mock_get_handler(self.url, **self.kwargs)
                 return response
-                
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
-        
+
         return MockContextManager(url, **kwargs)
-    
+
     mock_session.get = mock_get_wrapper
     return mock_session
 
 
 class TestScrapingIntegration:
     """Test full scraping workflow from URLs to content"""
-    
+
     @pytest.fixture
     def scraping_config(self):
         """Create test scraping configuration"""
@@ -9885,19 +10084,35 @@ class TestScrapingIntegration:
             retry_attempts=2,
             user_agents=["TestAgent/1.0"],
             headers={"Accept": "text/html"},
-            respect_robots_txt=False  # Disable for testing
+            respect_robots_txt=False,  # Disable for testing
         )
-    
+
     @pytest.fixture
     def sample_urls(self):
         """Sample URLs for testing"""
         return [
-            {"url": "https://example.com/article1", "title": "Article 1", "description": "Test article 1"},
-            {"url": "https://example.com/article2", "title": "Article 2", "description": "Test article 2"},
-            {"url": "https://example.com/article3", "title": "Article 3", "description": "Test article 3"},
-            {"url": "https://example.com/fail", "title": "Failed Article", "description": "This will fail"},
+            {
+                "url": "https://example.com/article1",
+                "title": "Article 1",
+                "description": "Test article 1",
+            },
+            {
+                "url": "https://example.com/article2",
+                "title": "Article 2",
+                "description": "Test article 2",
+            },
+            {
+                "url": "https://example.com/article3",
+                "title": "Article 3",
+                "description": "Test article 3",
+            },
+            {
+                "url": "https://example.com/fail",
+                "title": "Failed Article",
+                "description": "This will fail",
+            },
         ]
-    
+
     @pytest.fixture
     def mock_html_responses(self):
         """Mock HTML responses for different URLs"""
@@ -9944,196 +10159,216 @@ class TestScrapingIntegration:
                 </html>
             """,
         }
-    
+
     @pytest.mark.asyncio
-    async def test_full_scraping_workflow(self, scraping_config, sample_urls, mock_html_responses):
+    async def test_full_scraping_workflow(
+        self, scraping_config, sample_urls, mock_html_responses
+    ):
         """Test complete scraping workflow with multiple URLs"""
+
         # Mock handler for HTTP requests
         async def mock_get_handler(url, **kwargs):
             response = AsyncMock()
             response.status = 200 if url in mock_html_responses else 404
             response.url = url
             response.headers = {"Content-Type": "text/html"}
-            
+
             async def _text():
                 if url in mock_html_responses:
                     return mock_html_responses[url]
                 raise aiohttp.ClientError("Not found")
-            
+
             response.text = _text
             return response
-        
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get_handler)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 # Track progress
                 progress_updates = []
-                scraper.set_progress_callback(lambda completed, total: progress_updates.append((completed, total)))
-                
+                scraper.set_progress_callback(
+                    lambda completed, total: progress_updates.append((completed, total))
+                )
+
                 # Scrape URLs
                 results = await scraper.scrape_urls(sample_urls)
-                
+
                 # Verify results
                 assert len(results) == 3  # 3 successful, 1 failed
                 assert all(isinstance(r, ScrapedContent) for r in results)
-                
+
                 # Check content
                 for result in results:
                     assert result.url in mock_html_responses
                     assert result.title is not None
                     assert result.content is not None
                     assert isinstance(result.scraped_at, datetime)
-                    assert result.metadata['status_code'] == 200
-                
+                    assert result.metadata["status_code"] == 200
+
                 # Verify progress tracking
                 assert len(progress_updates) > 0
                 # With retry_attempts=2, failed URL is attempted twice: 4 URLs + 1 retry = 5
-                assert progress_updates[-1][0] == 5  # All URLs attempted including retries
-                
+                assert (
+                    progress_updates[-1][0] == 5
+                )  # All URLs attempted including retries
+
                 # Check stats
                 stats = scraper.get_stats()
-                assert stats['total_urls'] == 4
-                assert stats['completed_urls'] == 5  # 4 URLs + 1 retry
-                assert stats['failed_urls'] == 1
-                assert stats['success_rate'] == 1.25  # 5/4 because of retry
-    
+                assert stats["total_urls"] == 4
+                assert stats["completed_urls"] == 5  # 4 URLs + 1 retry
+                assert stats["failed_urls"] == 1
+                assert stats["success_rate"] == 1.25  # 5/4 because of retry
+
     @pytest.mark.asyncio
     async def test_concurrent_scraping_behavior(self, scraping_config):
         """Test that concurrent scraping respects limits"""
         scraping_config.max_concurrent = 2  # Limit to 2 concurrent requests
-        
+
         # Track concurrent requests
         concurrent_count = 0
         max_concurrent_observed = 0
         request_times = []
-        
+
         async def mock_get(url, **kwargs):
             nonlocal concurrent_count, max_concurrent_observed
-            
+
             # Track request start
             concurrent_count += 1
-            request_times.append(('start', url, asyncio.get_event_loop().time()))
+            request_times.append(("start", url, asyncio.get_event_loop().time()))
             max_concurrent_observed = max(max_concurrent_observed, concurrent_count)
-            
+
             # Simulate request time
             await asyncio.sleep(0.1)
-            
+
             # Track request end
             concurrent_count -= 1
-            request_times.append(('end', url, asyncio.get_event_loop().time()))
-            
+            request_times.append(("end", url, asyncio.get_event_loop().time()))
+
             response = AsyncMock()
             response.status = 200
             response.url = url
+
             async def _text():
                 return "<html><body>Test</body></html>"
+
             response.text = _text
             return response
-        
+
         # Create many URLs to test concurrency
-        urls = [{"url": f"https://example.com/page{i}", "title": f"Page {i}"} for i in range(10)]
-        
+        urls = [
+            {"url": f"https://example.com/page{i}", "title": f"Page {i}"}
+            for i in range(10)
+        ]
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 await scraper.scrape_urls(urls)
-                
+
                 # Verify concurrency limit was respected
                 assert max_concurrent_observed <= 2
-                
+
                 # Verify all requests completed
-                assert len([t for t in request_times if t[0] == 'end']) == 10
-    
+                assert len([t for t in request_times if t[0] == "end"]) == 10
+
     @pytest.mark.asyncio
     async def test_retry_mechanism(self, scraping_config):
         """Test retry logic for failed requests"""
         scraping_config.retry_attempts = 3
-        
+
         # Track retry attempts
         attempt_counts = {}
-        
+
         async def mock_get(url, **kwargs):
             # Count attempts
             attempt_counts[url] = attempt_counts.get(url, 0) + 1
-            
+
             response = AsyncMock()
-            
+
             # Fail first 2 attempts, succeed on 3rd
             if attempt_counts[url] < 3:
                 raise aiohttp.ClientError(f"Attempt {attempt_counts[url]} failed")
-            
+
             response.status = 200
             response.url = url
+
             async def _text():
                 return "<html><body>Success after retries</body></html>"
+
             response.text = _text
             return response
-        
+
         urls = [{"url": "https://example.com/retry-test", "title": "Retry Test"}]
-        
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 results = await scraper.scrape_urls(urls)
-                
+
                 # Should succeed after retries
                 assert len(results) == 1
                 assert results[0].url == "https://example.com/retry-test"
-                
+
                 # Verify retry attempts
                 assert attempt_counts["https://example.com/retry-test"] == 3
-    
+
     @pytest.mark.asyncio
     async def test_rate_limiting(self, scraping_config):
         """Test rate limiting with random delays"""
         scraping_config.timeout_range = "0.5-1.0"  # 0.5-1.0 second delays
-        
+
         request_times = []
-        
+
         async def mock_get(url, **kwargs):
             request_times.append(asyncio.get_event_loop().time())
             response = AsyncMock()
             response.status = 200
             response.url = url
+
             async def _text():
                 return "<html><body>Test</body></html>"
+
             response.text = _text
             return response
-        
-        urls = [{"url": f"https://example.com/rate{i}", "title": f"Rate {i}"} for i in range(3)]
-        
+
+        urls = [
+            {"url": f"https://example.com/rate{i}", "title": f"Rate {i}"}
+            for i in range(3)
+        ]
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 start_time = asyncio.get_event_loop().time()
                 await scraper.scrape_urls(urls)
-                
+
                 # Verify delays between requests
                 for i in range(1, len(request_times)):
-                    delay = request_times[i] - request_times[i-1]
+                    delay = request_times[i] - request_times[i - 1]
                     # Account for concurrent requests - at least some should show delays
                     if i % scraping_config.max_concurrent == 0:
                         assert delay >= 0.4  # Close to minimum delay
-    
+
     @pytest.mark.asyncio
     async def test_robots_txt_compliance(self, scraping_config):
         """Test robots.txt compliance when enabled"""
         scraping_config.respect_robots_txt = True
-        
+
         # Mock robots.txt response
         async def mock_get(url, **kwargs):
             response = AsyncMock()
-            
+
             if url.endswith("/robots.txt"):
                 response.status = 200
+
                 async def _text():
                     return """
                     User-agent: *
@@ -10141,42 +10376,51 @@ class TestScrapingIntegration:
                     Disallow: /admin/
                     Allow: /public/
                 """
+
                 response.text = _text
             elif "/private/" in url or "/admin/" in url:
                 # Should not reach here if robots.txt is respected
                 response.status = 403
+
                 async def _text():
                     return "Forbidden"
+
                 response.text = _text
             else:
                 response.status = 200
+
                 async def _text():
                     return "<html><body>Allowed content</body></html>"
+
                 response.text = _text
-            
+
             response.url = url
             return response
-        
+
         urls = [
             {"url": "https://example.com/public/article", "title": "Public Article"},
             {"url": "https://example.com/private/data", "title": "Private Data"},
             {"url": "https://example.com/admin/panel", "title": "Admin Panel"},
         ]
-        
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 results = await scraper.scrape_urls(urls)
-                
+
                 # Only public URL should be scraped
                 assert len(results) == 1
                 assert "public" in results[0].url
-                assert all("private" not in r.url and "admin" not in r.url for r in results)
-    
+                assert all(
+                    "private" not in r.url and "admin" not in r.url for r in results
+                )
+
     @pytest.mark.asyncio
-    async def test_html_to_markdown_conversion(self, scraping_config, mock_html_responses):
+    async def test_html_to_markdown_conversion(
+        self, scraping_config, mock_html_responses
+    ):
         """Test HTML to Markdown conversion quality"""
         # Use a specific HTML with various elements
         test_html = """
@@ -10202,28 +10446,30 @@ class TestScrapingIntegration:
             </body>
         </html>
         """
-        
+
         async def mock_get(url, **kwargs):
             response = AsyncMock()
             response.status = 200
             response.url = url
+
             async def _text():
                 return test_html
+
             response.text = _text
             return response
-        
+
         urls = [{"url": "https://example.com/test", "title": "Test"}]
-        
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 results = await scraper.scrape_urls(urls)
-                
+
                 assert len(results) == 1
                 content = results[0].content
-                
+
                 # Verify markdown conversion (SmartScraper converts HTML to markdown)
                 assert "# Main Title" in content
                 assert "## Subtitle" in content
@@ -10234,19 +10480,20 @@ class TestScrapingIntegration:
                 assert "[External Link](https://example.com)" in content
                 assert "`inline_code()`" in content
                 assert "def block_code():" in content
-                
+
                 # Verify script and style removal
                 assert "<script>" not in content
                 assert "alert(" not in content
                 assert "<style>" not in content
                 assert "color: red" not in content
-                
+
                 # Verify relative URL conversion
                 assert "[Relative Link](https://example.com/relative/path)" in content
-    
+
     @pytest.mark.asyncio
     async def test_error_handling_and_fallback(self, scraping_config):
         """Test error handling for various failure scenarios"""
+
         # Define different error scenarios
         async def mock_get(url, **kwargs):
             if "timeout" in url:
@@ -10262,19 +10509,23 @@ class TestScrapingIntegration:
                 response = AsyncMock()
                 response.status = 200
                 response.url = url
+
                 async def _text():
                     raise UnicodeDecodeError("utf-8", b"", 0, 1, "invalid")
+
                 response.text = _text
                 return response
             else:
                 response = AsyncMock()
                 response.status = 200
                 response.url = url
+
                 async def _text():
                     return "<html><body>Success</body></html>"
+
                 response.text = _text
                 return response
-        
+
         urls = [
             {"url": "https://example.com/success", "title": "Success"},
             {"url": "https://example.com/timeout", "title": "Timeout"},
@@ -10282,79 +10533,92 @@ class TestScrapingIntegration:
             {"url": "https://example.com/network", "title": "Network Error"},
             {"url": "https://example.com/invalid", "title": "Invalid Encoding"},
         ]
-        
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 results = await scraper.scrape_urls(urls)
-                
+
                 # Only successful request should return content
                 assert len(results) == 1
                 assert results[0].url == "https://example.com/success"
-                
+
                 # Check failed URLs
                 stats = scraper.get_stats()
-                assert stats['failed_urls'] == 4
-                assert "timeout" in str(stats['failed_url_list'])
-    
+                assert stats["failed_urls"] == 4
+                assert "timeout" in str(stats["failed_url_list"])
+
     @pytest.mark.asyncio
     async def test_progress_callback_integration(self, scraping_config):
         """Test progress callback functionality"""
         progress_history = []
-        
+
         async def mock_get(url, **kwargs):
             # Simulate some delay to see progress updates
             await asyncio.sleep(0.05)
             response = AsyncMock()
             response.status = 200
             response.url = url
+
             async def _text():
                 return "<html><body>Test</body></html>"
+
             response.text = _text
             return response
-        
+
         def progress_callback(completed, total):
-            progress_history.append({
-                'completed': completed,
-                'total': total,
-                'percentage': (completed / total * 100) if total > 0 else 0
-            })
-        
-        urls = [{"url": f"https://example.com/page{i}", "title": f"Page {i}"} for i in range(5)]
-        
+            progress_history.append(
+                {
+                    "completed": completed,
+                    "total": total,
+                    "percentage": (completed / total * 100) if total > 0 else 0,
+                }
+            )
+
+        urls = [
+            {"url": f"https://example.com/page{i}", "title": f"Page {i}"}
+            for i in range(5)
+        ]
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 scraper.set_progress_callback(progress_callback)
                 await scraper.scrape_urls(urls)
-                
+
                 # Verify progress updates
                 assert len(progress_history) == 5
-                assert progress_history[0]['completed'] == 1
-                assert progress_history[-1]['completed'] == 5
-                assert all(p['total'] == 5 for p in progress_history)
-                
+                assert progress_history[0]["completed"] == 1
+                assert progress_history[-1]["completed"] == 5
+                assert all(p["total"] == 5 for p in progress_history)
+
                 # Check progress percentages
                 expected_percentages = [20, 40, 60, 80, 100]
-                actual_percentages = [p['percentage'] for p in progress_history]
+                actual_percentages = [p["percentage"] for p in progress_history]
                 assert actual_percentages == expected_percentages
-    
+
     @pytest.mark.asyncio
     async def test_metadata_extraction(self, scraping_config):
         """Test metadata extraction from responses"""
+
         async def mock_get(url, **kwargs):
             response = AsyncMock()
             response.status = 200
-            response.url = url if "redirect" not in url else "https://example.com/final-destination"
+            response.url = (
+                url
+                if "redirect" not in url
+                else "https://example.com/final-destination"
+            )
             response.headers = {
                 "Content-Type": "text/html; charset=utf-8",
                 "Content-Length": "1234",
-                "Last-Modified": "Wed, 21 Oct 2015 07:28:00 GMT"
+                "Last-Modified": "Wed, 21 Oct 2015 07:28:00 GMT",
             }
+
             async def _text():
                 return """
                 <html>
@@ -10369,33 +10633,37 @@ class TestScrapingIntegration:
                     </body>
                 </html>
             """
+
             response.text = _text
             return response
-        
+
         urls = [
             {"url": "https://example.com/normal", "title": "Normal Page"},
             {"url": "https://example.com/redirect", "title": "Redirect Page"},
         ]
-        
+
         # Create mock session and patch
         mock_session = create_mock_session(mock_get)
-        
-        with patch('aiohttp.ClientSession', return_value=mock_session):
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             async with SmartScraper(scraping_config) as scraper:
                 results = await scraper.scrape_urls(urls)
-                
+
                 assert len(results) == 2
-                
+
                 # Check normal page metadata
                 normal_meta = results[0].metadata
-                assert normal_meta['status_code'] == 200
-                assert normal_meta['content_type'] == "text/html; charset=utf-8"
-                assert normal_meta['content_length'] > 0
-                assert normal_meta['final_url'] == "https://example.com/normal"
-                
+                assert normal_meta["status_code"] == 200
+                assert normal_meta["content_type"] == "text/html; charset=utf-8"
+                assert normal_meta["content_length"] > 0
+                assert normal_meta["final_url"] == "https://example.com/normal"
+
                 # Check redirect handling
                 redirect_meta = results[1].metadata
-                assert redirect_meta['final_url'] == "https://example.com/final-destination"
+                assert (
+                    redirect_meta["final_url"]
+                    == "https://example.com/final-destination"
+                )
                 assert results[1].url == "https://example.com/final-destination"
 
 ======= s1f/README.md ======
@@ -12699,7 +12967,18 @@ class TestS1FEncoding(BaseS1FTest):
 ======= s1f/test_s1f_target_encoding.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
-# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Test script for s1f.py's new --target-encoding parameter.
@@ -21771,6 +22050,231 @@ console.log(`The sum is: ${result}`);</code></pre>
 </body>
 </html> 
 
+======= html2md/test_claude_files/m1f/all_html_files_20250703_175956.log ======
+2025-07-03 19:59:56,754 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 19:59:56,754 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 19:59:56,755 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 19:59:56,756 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_175956_filelist.txt
+2025-07-03 19:59:56,756 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_175956_dirlist.txt
+2025-07-03 19:59:56,756 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 19:59:56,756 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 19:59:56,757 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_175956.txt'
+2025-07-03 19:59:57,019 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 19:59:57,019 - m1f_main - [32mINFO[0m: Total execution time: 0.27 seconds
+2025-07-03 19:59:57,019 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_175956.txt ======
+========================================================================================
+== FILE: test1.html
+== DATE: 2025-07-03 17:56:06 | SIZE: 802 B | TYPE: .html
+== ENCODING: utf-8
+== CHECKSUM_SHA256: a81587a76230feb71076e5f2ec2479b26a37310e64101b0f60595c7a62bddc19
+========================================================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Document 1</title>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Test Site</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+        </nav>
+    </header>
+    
+    <main>
+        <article>
+            <h2>First Article</h2>
+            <p>This is the first paragraph of content that should be converted to Markdown.</p>
+            <p>Here's another paragraph with <strong>bold text</strong> and <em>italic text</em>.</p>
+            <ul>
+                <li>First item</li>
+                <li>Second item</li>
+                <li>Third item</li>
+            </ul>
+        </article>
+    </main>
+    
+    <footer>
+        <p>Copyright 2024</p>
+    </footer>
+</body>
+</html>
+
+========================================================================================
+== FILE: test2.html
+== DATE: 2025-07-03 17:56:17 | SIZE: 1.09 KB | TYPE: .html
+== ENCODING: utf-8
+== CHECKSUM_SHA256: 45398226496d7332eebdb91dc3d0e4c6f3ec6d6c00d1c74562c60dc0aefdd146
+========================================================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Document 2</title>
+</head>
+<body>
+    <div class="container">
+        <header class="site-header">
+            <h1>Documentation Page</h1>
+        </header>
+        
+        <main class="content">
+            <section id="introduction">
+                <h2>Introduction</h2>
+                <p>This is a documentation page with code examples.</p>
+                <pre><code>def hello_world():
+    print("Hello, World!")
+    return True</code></pre>
+            </section>
+            
+            <section id="features">
+                <h2>Features</h2>
+                <ol>
+                    <li>Easy to use</li>
+                    <li>Fast performance</li>
+                    <li>Great documentation</li>
+                </ol>
+            </section>
+        </main>
+        
+        <aside class="sidebar">
+            <h3>Related Links</h3>
+            <ul>
+                <li><a href="/api">API Docs</a></li>
+                <li><a href="/examples">Examples</a></li>
+            </ul>
+        </aside>
+    </div>
+</body>
+</html>
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_175956_dirlist.txt ======
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_175956_filelist.txt ======
+test1.html
+test2.html
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_180233.log ======
+2025-07-03 20:02:33,349 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:02:33,349 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:02:33,350 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:02:33,351 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_180233_filelist.txt
+2025-07-03 20:02:33,351 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_180233_dirlist.txt
+2025-07-03 20:02:33,351 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:02:33,352 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:02:33,353 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_180233.txt'
+2025-07-03 20:02:33,544 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:02:33,545 - m1f_main - [32mINFO[0m: Total execution time: 0.20 seconds
+2025-07-03 20:02:33,545 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_180703.log ======
+2025-07-03 20:07:03,801 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:07:03,801 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:07:03,803 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:07:03,803 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_180703_filelist.txt
+2025-07-03 20:07:03,804 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_180703_dirlist.txt
+2025-07-03 20:07:03,804 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:07:03,804 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:07:03,805 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_180703.txt'
+2025-07-03 20:07:03,915 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:07:03,915 - m1f_main - [32mINFO[0m: Total execution time: 0.11 seconds
+2025-07-03 20:07:03,915 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_181400.log ======
+2025-07-03 20:14:00,007 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:14:00,007 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:14:00,009 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:14:00,010 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181400_filelist.txt
+2025-07-03 20:14:00,010 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181400_dirlist.txt
+2025-07-03 20:14:00,010 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:14:00,010 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:14:00,011 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181400.txt'
+2025-07-03 20:14:00,136 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:14:00,136 - m1f_main - [32mINFO[0m: Total execution time: 0.13 seconds
+2025-07-03 20:14:00,136 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_181550.log ======
+2025-07-03 20:15:50,937 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:15:50,937 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:15:50,939 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:15:50,939 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181550_filelist.txt
+2025-07-03 20:15:50,940 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181550_dirlist.txt
+2025-07-03 20:15:50,940 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:15:50,940 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:15:50,941 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181550.txt'
+2025-07-03 20:15:51,048 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:15:51,048 - m1f_main - [32mINFO[0m: Total execution time: 0.11 seconds
+2025-07-03 20:15:51,048 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_181637.log ======
+2025-07-03 20:16:37,011 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:16:37,011 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:16:37,013 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:16:37,014 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181637_filelist.txt
+2025-07-03 20:16:37,014 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181637_dirlist.txt
+2025-07-03 20:16:37,014 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:16:37,014 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:16:37,016 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_181637.txt'
+2025-07-03 20:16:37,135 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:16:37,135 - m1f_main - [32mINFO[0m: Total execution time: 0.12 seconds
+2025-07-03 20:16:37,135 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_182032.log ======
+2025-07-03 20:20:32,879 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:20:32,879 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:20:32,881 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:20:32,882 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182032_filelist.txt
+2025-07-03 20:20:32,882 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182032_dirlist.txt
+2025-07-03 20:20:32,882 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:20:32,882 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:20:32,883 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182032.txt'
+2025-07-03 20:20:32,987 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:20:32,987 - m1f_main - [32mINFO[0m: Total execution time: 0.11 seconds
+2025-07-03 20:20:32,987 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_182217.log ======
+2025-07-03 20:22:17,258 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:22:17,258 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:22:17,260 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:22:17,261 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182217_filelist.txt
+2025-07-03 20:22:17,261 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182217_dirlist.txt
+2025-07-03 20:22:17,261 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:22:17,261 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:22:17,262 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182217.txt'
+2025-07-03 20:22:17,369 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:22:17,369 - m1f_main - [32mINFO[0m: Total execution time: 0.11 seconds
+2025-07-03 20:22:17,369 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_182755.log ======
+2025-07-03 20:27:55,112 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:27:55,112 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:27:55,114 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:27:55,115 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182755_filelist.txt
+2025-07-03 20:27:55,115 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182755_dirlist.txt
+2025-07-03 20:27:55,115 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:27:55,116 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:27:55,116 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182755.txt'
+2025-07-03 20:27:55,228 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:27:55,229 - m1f_main - [32mINFO[0m: Total execution time: 0.12 seconds
+2025-07-03 20:27:55,229 - m1f_main - [32mINFO[0m: Processed 2 files
+
+======= html2md/test_claude_files/m1f/all_html_files_20250703_182951.log ======
+2025-07-03 20:29:51,764 - tools.m1f.core - [32mINFO[0m: Source directory: /home/fuf-user/git/m1f/tests/html2md/test_claude_files
+2025-07-03 20:29:51,764 - tools.m1f.core - [32mINFO[0m: Separator style: Detailed
+2025-07-03 20:29:51,766 - tools.m1f.core - [32mINFO[0m: Found 2 files to process
+2025-07-03 20:29:51,767 - tools.m1f.core - [32mINFO[0m: Wrote 2 files to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182951_filelist.txt
+2025-07-03 20:29:51,768 - tools.m1f.core - [32mINFO[0m: Wrote 0 directories to /home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182951_dirlist.txt
+2025-07-03 20:29:51,768 - tools.m1f.output_writer - [32mINFO[0m: Processing 2 file(s) for inclusion...
+2025-07-03 20:29:51,768 - tools.m1f.output_writer - [32mINFO[0m: Using parallel processing for file reading...
+2025-07-03 20:29:51,769 - tools.m1f.core - [32mINFO[0m: Successfully combined 2 files into '/home/fuf-user/git/m1f/tests/html2md/test_claude_files/m1f/all_html_files_20250703_182951.txt'
+2025-07-03 20:29:51,890 - tools.m1f.core - [32mINFO[0m: Output file contains approximately 677 tokens
+2025-07-03 20:29:51,890 - m1f_main - [32mINFO[0m: Total execution time: 0.13 seconds
+2025-07-03 20:29:51,890 - m1f_main - [32mINFO[0m: Processed 2 files
+
 ======= html2md_server/static/css/modern.css ======
 :root {
   --primary-color: #3b82f6;
@@ -22432,3 +22936,71 @@ if (typeof module !== 'undefined' && module.exports) {
     </ol>
 </body>
 </html>
+
+======= html2md/test_claude_files/m1f/analysis/html_analysis_1.txt ======
+FILE: test1.html
+URL PATH: /test1.html
+
+CONTENT STRUCTURE:
+- Main container: main
+- Backup selectors: article, body > main > article
+- Content confidence: High
+
+EXCLUDE PATTERNS:
+- Navigation: header, nav
+- UI Chrome: header > h1
+- Metadata: footer
+
+SPECIAL FINDINGS:
+- Simple, semantic HTML structure with proper main/article tags
+- Content is cleanly separated in article element
+- No special content types (code blocks, callouts, tables)
+- Clean document structure ideal for extraction
+
+SUGGESTED SELECTORS:
+content_selector: "main"
+alternative_selectors:
+  - "article"
+  - "body > main > article"
+ignore_selectors:
+  - "header"
+  - "nav"
+  - "footer"
+
+ANALYSIS_COMPLETE_OK
+
+======= html2md/test_claude_files/m1f/analysis/html_analysis_2.txt ======
+FILE: test2.html
+URL PATH: /test2.html
+
+CONTENT STRUCTURE:
+- Main container: main.content
+- Backup selectors: main, .content
+- Content confidence: High
+
+EXCLUDE PATTERNS:
+- Navigation: header.site-header
+- UI Chrome: aside.sidebar
+- Metadata: head
+
+SPECIAL FINDINGS:
+- Clean semantic HTML structure with proper main element
+- Code blocks are in pre > code structure
+- Sections have ID attributes for easy targeting
+- Clear separation between content and UI elements
+
+SUGGESTED SELECTORS:
+content_selector: "main.content"
+alternative_selectors:
+  - "main"
+  - ".content"
+  - "div.container > main"
+ignore_selectors:
+  - "header.site-header"
+  - "aside.sidebar"
+  - ".sidebar"
+
+ANALYSIS_COMPLETE_OK
+
+======= html2md/test_claude_files/m1f/analysis/log.txt ======
+Analysis started: 2025-07-03T20:29:51.606062

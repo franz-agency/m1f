@@ -1,3 +1,17 @@
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Analysis templates for different research types
 """
@@ -8,6 +22,7 @@ from dataclasses import dataclass
 @dataclass
 class AnalysisTemplate:
     """Template for content analysis"""
+
     name: str
     description: str
     focus_areas: List[str]
@@ -25,27 +40,33 @@ TECHNICAL_TEMPLATE = AnalysisTemplate(
         "code_examples",
         "performance_considerations",
         "best_practices",
-        "common_pitfalls"
+        "common_pitfalls",
     ],
     evaluation_criteria={
         "code_quality": 0.3,
         "practical_examples": 0.3,
         "depth_of_explanation": 0.2,
-        "accuracy": 0.2
+        "accuracy": 0.2,
     },
     prompt_paths={
         "relevance": "analysis/technical_relevance.md",
-        "key_points": "analysis/technical_key_points.md"
+        "key_points": "analysis/technical_key_points.md",
     },
     content_preferences={
         "prefer_code_examples": True,
         "min_code_ratio": 0.2,
         "preferred_content_types": ["tutorial", "documentation", "code"],
         "relevance_boost_keywords": [
-            "implementation", "example", "code", "performance",
-            "optimization", "pattern", "practice", "tutorial"
-        ]
-    }
+            "implementation",
+            "example",
+            "code",
+            "performance",
+            "optimization",
+            "pattern",
+            "practice",
+            "tutorial",
+        ],
+    },
 )
 
 
@@ -58,28 +79,35 @@ ACADEMIC_TEMPLATE = AnalysisTemplate(
         "research_methodology",
         "citations_references",
         "empirical_evidence",
-        "future_directions"
+        "future_directions",
     ],
     evaluation_criteria={
         "theoretical_depth": 0.3,
         "citations_quality": 0.2,
         "methodology_rigor": 0.2,
         "novelty": 0.15,
-        "clarity": 0.15
+        "clarity": 0.15,
     },
     prompt_paths={
         "relevance": "analysis/academic_relevance.md",
-        "key_points": "analysis/academic_key_points.md"
+        "key_points": "analysis/academic_key_points.md",
     },
     content_preferences={
         "prefer_code_examples": False,
         "min_citation_count": 5,
         "preferred_content_types": ["research", "paper", "study", "analysis"],
         "relevance_boost_keywords": [
-            "research", "study", "theory", "framework", "methodology",
-            "findings", "conclusion", "hypothesis", "evidence"
-        ]
-    }
+            "research",
+            "study",
+            "theory",
+            "framework",
+            "methodology",
+            "findings",
+            "conclusion",
+            "hypothesis",
+            "evidence",
+        ],
+    },
 )
 
 
@@ -92,27 +120,34 @@ TUTORIAL_TEMPLATE = AnalysisTemplate(
         "clear_instructions",
         "practical_exercises",
         "prerequisite_coverage",
-        "common_mistakes"
+        "common_mistakes",
     ],
     evaluation_criteria={
         "clarity": 0.3,
         "completeness": 0.25,
         "practical_examples": 0.25,
-        "learning_curve": 0.2
+        "learning_curve": 0.2,
     },
     prompt_paths={
         "relevance": "analysis/tutorial_relevance.md",
-        "key_points": "analysis/tutorial_key_points.md"
+        "key_points": "analysis/tutorial_key_points.md",
     },
     content_preferences={
         "prefer_code_examples": True,
         "prefer_numbered_steps": True,
         "preferred_content_types": ["tutorial", "guide", "howto", "walkthrough"],
         "relevance_boost_keywords": [
-            "step-by-step", "tutorial", "guide", "learn", "example",
-            "exercise", "practice", "beginner", "getting started"
-        ]
-    }
+            "step-by-step",
+            "tutorial",
+            "guide",
+            "learn",
+            "example",
+            "exercise",
+            "practice",
+            "beginner",
+            "getting started",
+        ],
+    },
 )
 
 
@@ -122,30 +157,38 @@ REFERENCE_TEMPLATE = AnalysisTemplate(
     description="For API documentation and reference materials",
     focus_areas=[
         "api_completeness",
-        "parameter_documentation", 
+        "parameter_documentation",
         "return_value_specs",
         "usage_examples",
-        "error_handling"
+        "error_handling",
     ],
     evaluation_criteria={
         "completeness": 0.3,
         "accuracy": 0.3,
         "examples": 0.2,
-        "organization": 0.2
+        "organization": 0.2,
     },
     prompt_paths={
         "relevance": "analysis/reference_relevance.md",
-        "key_points": "analysis/reference_key_points.md"
+        "key_points": "analysis/reference_key_points.md",
     },
     content_preferences={
         "prefer_code_examples": True,
         "prefer_structured_data": True,
         "preferred_content_types": ["documentation", "reference", "api", "spec"],
         "relevance_boost_keywords": [
-            "api", "reference", "documentation", "parameters", "returns",
-            "method", "function", "class", "interface", "specification"
-        ]
-    }
+            "api",
+            "reference",
+            "documentation",
+            "parameters",
+            "returns",
+            "method",
+            "function",
+            "class",
+            "interface",
+            "specification",
+        ],
+    },
 )
 
 
@@ -158,24 +201,24 @@ GENERAL_TEMPLATE = AnalysisTemplate(
         "practical_applications",
         "examples_illustrations",
         "pros_and_cons",
-        "related_topics"
+        "related_topics",
     ],
     evaluation_criteria={
         "relevance": 0.3,
         "clarity": 0.25,
         "depth": 0.25,
-        "practicality": 0.2
+        "practicality": 0.2,
     },
     prompt_paths={
         "relevance": "analysis/general_relevance.md",
-        "key_points": "analysis/general_key_points.md"
+        "key_points": "analysis/general_key_points.md",
     },
     content_preferences={
         "prefer_code_examples": False,
         "balanced_content": True,
         "preferred_content_types": None,  # No preference
-        "relevance_boost_keywords": []
-    }
+        "relevance_boost_keywords": [],
+    },
 )
 
 
@@ -185,7 +228,7 @@ TEMPLATES = {
     "academic": ACADEMIC_TEMPLATE,
     "tutorial": TUTORIAL_TEMPLATE,
     "reference": REFERENCE_TEMPLATE,
-    "general": GENERAL_TEMPLATE
+    "general": GENERAL_TEMPLATE,
 }
 
 
@@ -194,13 +237,13 @@ def get_template(name: str) -> AnalysisTemplate:
     return TEMPLATES.get(name, GENERAL_TEMPLATE)
 
 
-
-
-def apply_template_scoring(template: AnalysisTemplate, analysis_results: Dict[str, Any]) -> float:
+def apply_template_scoring(
+    template: AnalysisTemplate, analysis_results: Dict[str, Any]
+) -> float:
     """Apply template-specific scoring weights to analysis results"""
     weighted_score = 0.0
     total_weight = 0.0
-    
+
     # Map analysis results to template criteria
     criteria_scores = {
         "relevance": analysis_results.get("relevance_score", 5.0),
@@ -208,15 +251,15 @@ def apply_template_scoring(template: AnalysisTemplate, analysis_results: Dict[st
         "completeness": estimate_completeness_score(analysis_results),
         "accuracy": analysis_results.get("technical_accuracy", 7.0),
         "practical_examples": estimate_example_score(analysis_results),
-        "depth": estimate_depth_score(analysis_results)
+        "depth": estimate_depth_score(analysis_results),
     }
-    
+
     # Apply template weights
     for criterion, weight in template.evaluation_criteria.items():
         if criterion in criteria_scores:
             weighted_score += criteria_scores[criterion] * weight
             total_weight += weight
-    
+
     # Normalize to 0-10 scale
     return (weighted_score / total_weight) if total_weight > 0 else 5.0
 
@@ -255,7 +298,7 @@ def estimate_depth_score(analysis: Dict[str, Any]) -> float:
     # Based on technical level and key points
     level = analysis.get("technical_level", "intermediate")
     key_points = len(analysis.get("key_points", []))
-    
+
     if level == "advanced" and key_points >= 4:
         return 9.0
     elif level == "intermediate" and key_points >= 3:

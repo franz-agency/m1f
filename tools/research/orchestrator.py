@@ -1,3 +1,17 @@
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Enhanced research orchestrator with job management and persistence
 """
@@ -119,7 +133,9 @@ class EnhancedResearchOrchestrator:
                 analyzed_content = await self._analyze_content(filtered_content)
             else:
                 # Convert to AnalyzedContent with defaults
-                analyzed_content = [self._scraped_to_analyzed(s) for s in filtered_content]
+                analyzed_content = [
+                    self._scraped_to_analyzed(s) for s in filtered_content
+                ]
 
             # Phase 5: Bundle Creation
             bundle_path = await self._create_bundle(analyzed_content, query)
@@ -319,11 +335,11 @@ class EnhancedResearchOrchestrator:
             return [self._scraped_to_analyzed(s) for s in content]
 
         analyzer = ContentAnalyzer(self.llm, self.config.analysis)
-        
+
         # Call the proper analyze_content method with the research query
         try:
             analyzed = await analyzer.analyze_content(content, self.current_job.query)
-            
+
             # Save analysis to database
             for result in analyzed:
                 self.job_db.save_analysis(
@@ -336,18 +352,18 @@ class EnhancedResearchOrchestrator:
                         "metadata": result.analysis_metadata,
                     },
                 )
-            
+
             # Sort by relevance
             analyzed.sort(key=lambda x: x.relevance_score, reverse=True)
-            
+
             # Update stats
             self.job_manager.update_job_stats(
                 self.current_job,
                 analyzed_urls=len(analyzed),
             )
-            
+
             return analyzed
-            
+
         except Exception as e:
             logger.error(f"Error analyzing content: {e}")
             # Fallback to basic conversion
