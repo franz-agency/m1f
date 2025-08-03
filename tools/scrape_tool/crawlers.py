@@ -337,12 +337,16 @@ class WebCrawler:
         # Initialize database for tracking
         self._init_database(output_dir)
 
-        # Check if this is a resume operation
-        scraped_urls = self._get_scraped_urls()
-        if scraped_urls:
-            logger.info(
-                f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs"
-            )
+        # Check if this is a resume operation (skip if force_rescrape is enabled)
+        scraped_urls = set()
+        if not self.config.force_rescrape:
+            scraped_urls = self._get_scraped_urls()
+            if scraped_urls:
+                logger.info(
+                    f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs"
+                )
+        else:
+            logger.info("Force rescrape enabled - ignoring database cache")
 
         # Create scraper instance
         backend_name = self.config.scraper_backend.value
@@ -385,8 +389,8 @@ class WebCrawler:
                         scraper.set_resume_info(resume_info)
 
                 async for page in scraper.scrape_site(start_url):
-                    # Skip if already scraped
-                    if self._is_url_scraped(page.url):
+                    # Skip if already scraped (unless force_rescrape is enabled)
+                    if not self.config.force_rescrape and self._is_url_scraped(page.url):
                         logger.info(f"Skipping already scraped URL: {page.url}")
                         continue
 

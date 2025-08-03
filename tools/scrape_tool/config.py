@@ -104,6 +104,10 @@ class CrawlerConfig(BaseModel):
         default=True,
         description="Check for SSRF vulnerabilities by blocking private IP addresses",
     )
+    force_rescrape: bool = Field(
+        default=False,
+        description="Force re-scraping of all URLs, ignoring database cache",
+    )
 
 
 class Config(BaseModel):

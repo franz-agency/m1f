@@ -60,6 +60,47 @@ class CustomArgumentParser(argparse.ArgumentParser):
         self.exit(2)
 
 
+def clear_urls_from_database(db_path: Path, pattern: str) -> None:
+    """Clear URLs matching a pattern from the database.
+    
+    Args:
+        db_path: Path to the SQLite database
+        pattern: Pattern to match URLs (uses SQL LIKE)
+    """
+    if not db_path.exists():
+        warning("No database found. Nothing to clear.")
+        return
+    
+    try:
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        
+        # First count how many URLs will be deleted
+        cursor.execute(
+            "SELECT COUNT(*) FROM scraped_urls WHERE url LIKE ?",
+            (f"%{pattern}%",)
+        )
+        count = cursor.fetchone()[0]
+        
+        if count == 0:
+            warning(f"No URLs found matching pattern: {pattern}")
+        else:
+            # Delete the URLs
+            cursor.execute(
+                "DELETE FROM scraped_urls WHERE url LIKE ?",
+                (f"%{pattern}%",)
+            )
+            conn.commit()
+            success(f"Cleared {count} URLs matching pattern: {pattern}")
+        
+        conn.close()
+        
+    except sqlite3.Error as e:
+        error(f"Database error: {e}")
+    except Exception as e:
+        error(f"Error clearing URLs: {e}")
+
+
 def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
     """Show information from the scrape tracker database.
 
@@ -305,6 +346,11 @@ For more information, see the documentation."""
         action="store_true",
         help="Disable SSRF vulnerability checks (allows crawling private IPs)",
     )
+    security_group.add_argument(
+        "--force-rescrape",
+        action="store_true",
+        help="Force re-scraping of all URLs, ignoring the database cache",
+    )
 
     # Database options group
     db_group = parser.add_argument_group("Database Options")
@@ -322,6 +368,12 @@ For more information, see the documentation."""
         "--show-scraped-urls",
         action="store_true",
         help="List all scraped URLs from the database",
+    )
+    db_group.add_argument(
+        "--clear-urls",
+        type=str,
+        metavar="PATTERN",
+        help="Clear URLs from database matching the pattern (e.g., '/Extensions/' or 'example.com')",
     )
 
     return parser
@@ -353,6 +405,7 @@ def main() -> None:
     config.crawler.ignore_get_params = args.ignore_get_params
     config.crawler.check_canonical = not args.ignore_canonical
     config.crawler.check_content_duplicates = not args.ignore_duplicates
+    config.crawler.force_rescrape = args.force_rescrape
 
     # Load scraper-specific config if provided
     if args.scraper_config:
@@ -380,6 +433,12 @@ def main() -> None:
             level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
         )
 
+    # Check if clear-urls is requested
+    if args.clear_urls:
+        db_path = args.output / "scrape_tracker.db"
+        clear_urls_from_database(db_path, args.clear_urls)
+        return
+    
     # Check if only database query options are requested
     if args.show_db_stats or args.show_errors or args.show_scraped_urls:
         # Just show database info and exit
