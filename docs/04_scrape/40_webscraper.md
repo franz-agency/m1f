@@ -50,11 +50,23 @@ m1f-scrape https://example.com -o ./html \
 # Use different scraper backend
 m1f-scrape https://example.com -o ./html --scraper httrack
 
-# List downloaded files after completion
+# List downloaded files after completion (limited to 30 files for large sites)
 m1f-scrape https://example.com -o ./html --list-files
+
+# Save all scraped URLs to a file for later analysis
+m1f-scrape https://example.com -o ./html --save-urls ./scraped_urls.txt
+
+# Save list of all downloaded files to a file
+m1f-scrape https://example.com -o ./html --save-files ./file_list.txt
 
 # Resume interrupted scraping (with verbose mode to see progress)
 m1f-scrape https://example.com -o ./html -v
+
+# Force rescrape to update content (ignores cache)
+m1f-scrape https://example.com -o ./html --force-rescrape
+
+# Clear URLs and start fresh (keeps content checksums)
+m1f-scrape https://example.com -o ./html --clear-urls
 ```
 
 ## Command Line Interface
@@ -86,8 +98,12 @@ m1f-scrape <url> -o <output> [options]
 | `--ignore-get-params`   | Ignore GET parameters in URLs (e.g., ?tab=linux)              | False         |
 | `--ignore-canonical`    | Ignore canonical URL tags (checking is enabled by default)    | False         |
 | `--ignore-duplicates`   | Ignore duplicate content detection (enabled by default)       | False         |
-| `--list-files`          | List all downloaded files after completion                    | False         |
-| `-v, --verbose`         | Enable verbose output                                         | False         |
+| `--clear-urls`          | Clear all URLs from database and start fresh                  | False         |
+| `--force-rescrape`      | Force rescraping of all URLs (ignores cached content)         | False         |
+| `--list-files`          | List all downloaded files after completion (limited display)  | False         |
+| `--save-urls`           | Save all scraped URLs to a file (one per line)                | None          |
+| `--save-files`          | Save list of all downloaded files to a file (one per line)    | None          |
+| `-v, --verbose`         | Enable verbose output (file listing limited to 30 files)      | False         |
 | `-q, --quiet`           | Suppress all output except errors                             | False         |
 | `--show-db-stats`       | Show scraping statistics from the database                    | False         |
 | `--show-errors`         | Show URLs that had errors during scraping                     | False         |
@@ -295,6 +311,31 @@ m1f-scrape https://example.com -o ./html \
   --scraper-config ./scrapy-settings.yaml
 ```
 
+## Scraping Summary and Statistics
+
+After each scraping session, m1f-scrape displays a comprehensive summary with:
+
+- **Success metrics**: Number of successfully scraped pages
+- **Error count**: Number of failed page downloads
+- **Success rate**: Percentage of successful downloads
+- **Time statistics**: Total duration and average time per page
+- **File counts**: Number of HTML files saved
+
+Example output:
+```
+============================================================
+Scraping Summary
+============================================================
+✓ Successfully scraped 142 pages
+⚠ Failed to scrape 3 pages
+Total URLs processed: 145
+Success rate: 97.9%
+Total duration: 435.2 seconds
+Average time per page: 3.00 seconds
+Output directory: ./html/example.com
+HTML files saved: 142
+```
+
 ## Output Structure
 
 Downloaded files are organized to mirror the website structure:
@@ -429,6 +470,21 @@ m1f-scrape https://docs.example.com -o ./docs --max-pages 100 -v
 # Processing: https://docs.example.com/new-page (page 26)
 ```
 
+### Overriding Resume Behavior
+
+You can override the resume functionality using the new flags:
+
+```bash
+# Force rescraping all pages even if already in database
+m1f-scrape https://docs.example.com -o ./docs --force-rescrape
+
+# Clear all URLs and start from the beginning
+m1f-scrape https://docs.example.com -o ./docs --clear-urls
+
+# Both together for a complete fresh start
+m1f-scrape https://docs.example.com -o ./docs --clear-urls --force-rescrape
+```
+
 ### Database Inspection
 
 ```bash
@@ -445,6 +501,108 @@ m1f-scrape -o docs/ --show-errors
 m1f-scrape -o docs/ --show-db-stats --show-errors
 ```
 
+## Force Rescraping and Clearing URLs
+
+The scraper provides two options for managing cached content and URLs in the database:
+
+### --clear-urls: Start Fresh
+
+The `--clear-urls` option removes all URL tracking from the database while preserving content checksums:
+
+```bash
+# Clear all URLs and start a fresh scrape
+m1f-scrape https://docs.example.com -o ./docs --clear-urls
+
+# This will:
+# - Remove all URL records from the database
+# - Keep content checksums for deduplication
+# - Start scraping from the beginning
+```
+
+**Use cases:**
+- Website structure has changed significantly
+- Want to re-crawl all pages without resetting content deduplication
+- Need to update navigation paths while avoiding duplicate content
+
+### --force-rescrape: Ignore Cached Content
+
+The `--force-rescrape` option forces the scraper to re-download all pages, ignoring the cache:
+
+```bash
+# Force rescraping all pages (ignores cache)
+m1f-scrape https://docs.example.com -o ./docs --force-rescrape
+
+# Combine with clear-urls for complete reset
+m1f-scrape https://docs.example.com -o ./docs --clear-urls --force-rescrape
+```
+
+**Use cases:**
+- Content has been updated on the website
+- Need fresh copies of all pages
+- Want to override resume functionality temporarily
+
+### Interaction with Content Checksums
+
+Content checksums are preserved even when using `--clear-urls`, which means:
+
+```bash
+# First scrape - downloads all content
+m1f-scrape https://example.com -o ./html
+
+# Clear URLs but keep checksums
+m1f-scrape https://example.com -o ./html --clear-urls
+
+# Second scrape - URLs are re-crawled but duplicate content is still detected
+# Pages with identical text content will be skipped based on checksums
+```
+
+To completely reset everything including checksums:
+
+```bash
+# Option 1: Delete the database file
+rm ./html/scrape_tracker.db
+m1f-scrape https://example.com -o ./html
+
+# Option 2: Use both flags together
+m1f-scrape https://example.com -o ./html --clear-urls --force-rescrape
+```
+
+### Examples of Force Rescraping Scenarios
+
+#### Scenario 1: Documentation Update
+```bash
+# Initial scrape of documentation
+m1f-scrape https://docs.framework.com -o ./docs_v1
+
+# Framework releases new version with updated docs
+# Force rescrape to get all updated content
+m1f-scrape https://docs.framework.com -o ./docs_v2 --force-rescrape
+```
+
+#### Scenario 2: Partial Scrape Recovery
+```bash
+# Scrape was interrupted or had errors
+m1f-scrape https://large-site.com -o ./site --max-pages 1000
+
+# Clear URLs and try again with different settings
+m1f-scrape https://large-site.com -o ./site \
+  --clear-urls \
+  --max-pages 500 \
+  --request-delay 30
+```
+
+#### Scenario 3: Testing Different Scraper Backends
+```bash
+# Try with BeautifulSoup first
+m1f-scrape https://complex-site.com -o ./test --max-pages 10
+
+# Site has JavaScript - clear and try with Playwright
+m1f-scrape https://complex-site.com -o ./test \
+  --clear-urls \
+  --scraper playwright \
+  --max-pages 10
+```
+
 ## Best Practices
 
 1. **Respect robots.txt**: The tool automatically respects robots.txt files
@@ -453,9 +611,12 @@ m1f-scrape -o docs/ --show-db-stats --show-errors
 3. **Limit concurrent requests**: Use `--concurrent-requests` responsibly
    (default: 2 connections)
 4. **Test with small crawls**: Start with `--max-pages 10` to test your settings
-5. **Check output**: Use `--list-files` to verify what was downloaded
-6. **Use verbose mode**: Add `-v` flag to see progress and resume information
-7. **Keep commands consistent**: Use the exact same command to resume a session
+5. **Check output**: Use `--list-files` to verify what was downloaded (limited to 30 files for large sites)
+6. **Save URLs for analysis**: Use `--save-urls` to keep a record of all scraped URLs
+7. **Track downloaded files**: Use `--save-files` to maintain a list of all downloaded files
+8. **Use verbose mode**: Add `-v` flag to see progress and resume information
+9. **Keep commands consistent**: Use the exact same command to resume a session
+10. **Monitor statistics**: Check the summary statistics to verify scraping efficiency
 
 ## Dealing with Cloudflare Protection
 

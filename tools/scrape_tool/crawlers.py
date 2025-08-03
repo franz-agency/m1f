@@ -591,3 +591,42 @@ class WebCrawler:
         except KeyboardInterrupt:
             # Re-raise to let CLI handle it gracefully
             raise
+
+    def crawl_sync_with_stats(self, start_url: str, output_dir: Path) -> Dict[str, Any]:
+        """Synchronous version of crawl method that returns detailed statistics.
+
+        Args:
+            start_url: Starting URL for crawling
+            output_dir: Directory to store downloaded files
+
+        Returns:
+            Dictionary containing:
+            - site_dir: Path to site directory
+            - scraped_urls: List of all scraped URLs
+            - errors: List of errors encountered
+            - total_pages: Total number of pages scraped
+        """
+        try:
+            # Run async crawl using asyncio.run()
+            result = asyncio.run(self.crawl(start_url, output_dir))
+            
+            # Get scraped URLs from database
+            db_path = output_dir / "scrape_tracker.db"
+            scraped_urls = []
+            if db_path.exists():
+                conn = sqlite3.connect(str(db_path))
+                cursor = conn.cursor()
+                cursor.execute("SELECT url FROM scraped_urls WHERE error IS NULL")
+                scraped_urls = [row[0] for row in cursor.fetchall()]
+                cursor.close()
+                conn.close()
+            
+            return {
+                "site_dir": result["output_dir"],
+                "scraped_urls": scraped_urls,
+                "errors": result.get("errors", []),
+                "total_pages": result.get("total_pages", 0),
+            }
+        except KeyboardInterrupt:
+            # Re-raise to let CLI handle it gracefully
+            raise
