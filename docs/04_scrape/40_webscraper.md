@@ -108,6 +108,11 @@ m1f-scrape <url> -o <output> [options]
 | `--show-db-stats`       | Show scraping statistics from the database                    | False         |
 | `--show-errors`         | Show URLs that had errors during scraping                     | False         |
 | `--show-scraped-urls`   | List all scraped URLs from the database                       | False         |
+| `--show-sessions`       | Show all scraping sessions with basic info                    | False         |
+| `--show-sessions-detailed` | Show detailed information for all sessions                 | False         |
+| `--clear-session`       | Clear a specific session by ID                                | None          |
+| `--clear-last-session`  | Clear the most recent scraping session                        | False         |
+| `--cleanup-sessions`    | Clean up orphaned sessions from crashes                       | False         |
 | `--version`             | Show version information and exit                             | -             |
 
 ## Scraper Backends
@@ -311,10 +316,76 @@ m1f-scrape https://example.com -o ./html \
   --scraper-config ./scrapy-settings.yaml
 ```
 
+## Session Management
+
+m1f-scrape tracks each scraping run as a session with full statistics and state management.
+
+### Session Tracking
+
+Every scraping run creates a session with:
+- Unique session ID
+- Start/end timestamps  
+- Configuration parameters used
+- Success/failure statistics
+- Session status (running, completed, interrupted, failed)
+
+### View Sessions
+
+```bash
+# Show all sessions with basic info
+m1f-scrape --show-sessions -o ./html
+
+# Show detailed session information
+m1f-scrape --show-sessions-detailed -o ./html
+
+# Example output:
+ID  | Status    | Started             | Pages | Success | Failed | URL
+----------------------------------------------------------------------------------------------------
+3   | completed | 2025-08-03 14:23:12 | 142   | 140     | 2      | https://docs.example.com
+2   | interrupted| 2025-08-03 13:45:00 | 45    | 45      | 0      | https://api.example.com/v2
+1   | completed | 2025-08-03 12:00:00 | 250   | 248     | 2      | https://example.com
+```
+
+### Clean Up Sessions
+
+```bash
+# Clear the most recent session
+m1f-scrape --clear-last-session -o ./html
+
+# Clear a specific session by ID
+m1f-scrape --clear-session 2 -o ./html
+
+# Clean up orphaned sessions (from crashes)
+m1f-scrape --cleanup-sessions -o ./html
+```
+
+### Automatic Cleanup
+
+The scraper automatically:
+- Detects sessions left in 'running' state from crashes
+- Marks sessions as 'interrupted' if no URLs have been scraped for >1 hour
+- Preserves statistics for interrupted sessions
+- Does NOT interrupt long-running active sessions (they can run for many hours)
+
+### Session Recovery
+
+If a process is killed (kill -9, system crash, etc.), the session will be left in 'running' state. On the next run:
+
+1. **Automatic cleanup**: Sessions older than 1 hour are automatically marked as interrupted
+2. **Manual cleanup**: Use `--cleanup-sessions` to manually review and clean up
+3. **Resume capability**: The scraping can still resume from where it left off
+
+```bash
+# After a crash, cleanup and resume
+m1f-scrape --cleanup-sessions -o ./html
+m1f-scrape https://example.com -o ./html  # Resumes from last position
+```
+
 ## Scraping Summary and Statistics
 
 After each scraping session, m1f-scrape displays a comprehensive summary with:
 
+- **Session ID**: Unique identifier for this scraping run
 - **Success metrics**: Number of successfully scraped pages
 - **Error count**: Number of failed page downloads
 - **Success rate**: Percentage of successful downloads
@@ -324,7 +395,7 @@ After each scraping session, m1f-scrape displays a comprehensive summary with:
 Example output:
 ```
 ============================================================
-Scraping Summary
+Scraping Summary (Session #3)
 ============================================================
 ✓ Successfully scraped 142 pages
 ⚠ Failed to scrape 3 pages
@@ -333,7 +404,10 @@ Success rate: 97.9%
 Total duration: 435.2 seconds
 Average time per page: 3.00 seconds
 Output directory: ./html/example.com
-HTML files saved: 142
+HTML files saved in this session: 142
+
+Session ID: #3
+To clear this session: m1f-scrape --clear-session 3 -o ./html
 ```
 
 ## Output Structure

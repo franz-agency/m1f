@@ -8,6 +8,20 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- **m1f-scrape Session Management**: Complete session tracking system for scraping runs
+  - Each scraping run creates a unique session with ID, timestamps, and statistics
+  - Sessions track status: running, completed, interrupted, failed
+  - Automatic cleanup of orphaned sessions (no activity >1 hour) on startup
+  - Manual cleanup with `--cleanup-sessions` command
+  - Session viewing with `--show-sessions` and `--show-sessions-detailed`
+  - Clear specific sessions with `--clear-session ID` or `--clear-last-session`
+  - Database migration to v2 with session support (auto-migrates existing DBs)
+  - Session statistics calculated correctly at end of each run
+  - Graceful handling of Ctrl+C, crashes, and kill signals
+  - Long-running sessions (>1hr) not interrupted if still actively scraping
+
 ### Fixed
 
 - **m1f-scrape Max-Pages Counting**: Fixed to count only successfully scraped pages

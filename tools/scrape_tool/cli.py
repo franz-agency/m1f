@@ -61,6 +61,389 @@ class CustomArgumentParser(argparse.ArgumentParser):
         self.exit(2)
 
 
+def cleanup_orphaned_sessions(db_path: Path) -> None:
+    """Clean up sessions that were left in 'running' state.
+    
+    Args:
+        db_path: Path to the SQLite database
+    """
+    if not db_path.exists():
+        warning("No database found.")
+        return
+    
+    try:
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        
+        # Check if scraping_sessions table exists
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'"
+        )
+        if not cursor.fetchone():
+            warning("No sessions table found in database")
+            conn.close()
+            return
+        
+        # Find all running sessions
+        cursor.execute(
+            """
+            SELECT id, start_url, start_time 
+            FROM scraping_sessions 
+            WHERE status = 'running'
+            ORDER BY start_time DESC
+            """
+        )
+        
+        running_sessions = cursor.fetchall()
+        
+        if not running_sessions:
+            info("No running sessions found")
+            conn.close()
+            return
+        
+        # Check which sessions are truly orphaned (no activity in last hour)
+        from datetime import datetime, timedelta
+        one_hour_ago = datetime.now() - timedelta(hours=1)
+        orphaned_sessions = []
+        active_sessions = []
+        
+        header(f"Found {len(running_sessions)} running session(s):")
+        for session_id, start_url, start_time in running_sessions:
+            # Get last activity time
+            cursor.execute(
+                """
+                SELECT MAX(scraped_at), COUNT(*), 
+                       COUNT(CASE WHEN error IS NULL THEN 1 END)
+                FROM scraped_urls 
+                WHERE session_id = ?
+                """,
+                (session_id,)
+            )
+            result = cursor.fetchone()
+            last_activity, total, successful = result if result else (None, 0, 0)
+            
+            # Use start_time if no URLs scraped yet
+            last_activity = last_activity or start_time
+            
+            # Convert string timestamp to datetime if needed
+            if isinstance(last_activity, str):
+                last_activity_dt = datetime.fromisoformat(last_activity.replace('Z', '+00:00'))
+            else:
+                last_activity_dt = last_activity
+            
+            is_orphaned = last_activity_dt < one_hour_ago
+            
+            info(f"  Session #{session_id}: {start_url}")
+            info(f"    Started: {start_time}")
+            info(f"    Last activity: {last_activity}")
+            info(f"    Pages scraped: {successful}/{total}")
+            
+            if is_orphaned:
+                info(f"    Status: ORPHANED (no activity for >1 hour)")
+                orphaned_sessions.append((session_id, start_url, start_time))
+            else:
+                info(f"    Status: ACTIVE (recent activity)")
+                active_sessions.append(session_id)
+        
+        if not orphaned_sessions:
+            if active_sessions:
+                info(f"\nAll {len(active_sessions)} session(s) appear to be actively running.")
+            info("No orphaned sessions found.")
+            conn.close()
+            return
+        
+        # Ask for confirmation only for orphaned sessions
+        info(f"\n{len(orphaned_sessions)} session(s) appear to be orphaned (no activity for >1 hour).")
+        if active_sessions:
+            info(f"{len(active_sessions)} session(s) are still active and will not be touched.")
+        response = input("Mark orphaned sessions as 'interrupted'? (y/N): ")
+        
+        if response.lower() == 'y':
+            for session_id, _, _ in orphaned_sessions:  # Only process orphaned sessions
+                # Get final statistics
+                cursor.execute(
+                    """
+                    SELECT 
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN error IS NULL THEN 1 END) as successful,
+                        COUNT(CASE WHEN error IS NOT NULL THEN 1 END) as failed
+                    FROM scraped_urls 
+                    WHERE session_id = ?
+                    """,
+                    (session_id,)
+                )
+                result = cursor.fetchone()
+                total, successful, failed = result if result else (0, 0, 0)
+                
+                # Update session
+                cursor.execute(
+                    """
+                    UPDATE scraping_sessions 
+                    SET status = 'interrupted',
+                        end_time = ?,
+                        total_pages = ?,
+                        successful_pages = ?,
+                        failed_pages = ?
+                    WHERE id = ?
+                    """,
+                    (datetime.now(), total, successful, failed, session_id)
+                )
+            
+            conn.commit()
+            success(f"Marked {len(orphaned_sessions)} orphaned session(s) as interrupted")
+        else:
+            info("No changes made")
+        
+        conn.close()
+        
+    except sqlite3.Error as e:
+        error(f"Database error: {e}")
+    except Exception as e:
+        error(f"Error cleaning up sessions: {e}")
+
+
+def show_scraping_sessions(db_path: Path, detailed: bool = False) -> None:
+    """Show all scraping sessions from the database.
+    
+    Args:
+        db_path: Path to the SQLite database
+        detailed: If True, show detailed session information
+    """
+    if not db_path.exists():
+        warning("No database found.")
+        return
+    
+    try:
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        
+        # Check if scraping_sessions table exists
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'"
+        )
+        if not cursor.fetchone():
+            # Fall back to old behavior if no sessions table
+            cursor.execute("""
+                SELECT 
+                    DATE(scraped_at) as session_date,
+                    MIN(TIME(scraped_at)) as start_time,
+                    MAX(TIME(scraped_at)) as end_time,
+                    COUNT(*) as url_count,
+                    COUNT(CASE WHEN error IS NULL THEN 1 END) as successful,
+                    COUNT(CASE WHEN error IS NOT NULL THEN 1 END) as failed
+                FROM scraped_urls
+                GROUP BY DATE(scraped_at)
+                ORDER BY session_date DESC
+            """)
+            
+            sessions = cursor.fetchall()
+            
+            if sessions:
+                header("Scraping Sessions (Legacy):")
+                info("Date       | Start    | End      | Total URLs | Success | Failed")
+                info("-" * 70)
+                for session in sessions:
+                    date, start, end, total, success_count, failed = session
+                    info(f"{date} | {start[:8] if start else 'N/A'} | {end[:8] if end else 'N/A'} | {total:10} | {success_count:7} | {failed:6}")
+            else:
+                warning("No scraping sessions found in database")
+        else:
+            # Use new sessions table
+            cursor.execute("""
+                SELECT 
+                    id,
+                    start_url,
+                    start_time,
+                    end_time,
+                    status,
+                    total_pages,
+                    successful_pages,
+                    failed_pages,
+                    scraper_backend,
+                    max_pages,
+                    max_depth
+                FROM scraping_sessions
+                ORDER BY start_time DESC
+            """)
+            
+            sessions = cursor.fetchall()
+            
+            if sessions:
+                header("Scraping Sessions:")
+                if detailed:
+                    for session in sessions:
+                        (session_id, start_url, start_time, end_time, status,
+                         total, successful, failed, backend, max_pages, max_depth) = session
+                        
+                        info(f"\nSession #{session_id}:")
+                        info(f"  URL: {start_url}")
+                        info(f"  Started: {start_time}")
+                        info(f"  Ended: {end_time if end_time else 'Still running'}")
+                        info(f"  Status: {status}")
+                        info(f"  Backend: {backend}")
+                        info(f"  Pages: {successful} success, {failed} failed (total: {total})")
+                        info(f"  Limits: max_pages={max_pages}, max_depth={max_depth}")
+                else:
+                    info("ID  | Status    | Started             | Pages | Success | Failed | URL")
+                    info("-" * 100)
+                    for session in sessions:
+                        (session_id, start_url, start_time, end_time, status,
+                         total, successful, failed, backend, _, _) = session
+                        
+                        # Truncate URL if too long
+                        url_display = start_url[:40] + "..." if len(start_url) > 40 else start_url
+                        
+                        info(f"{session_id:3} | {status:9} | {start_time[:19]} | {total:5} | {successful:7} | {failed:6} | {url_display}")
+            else:
+                warning("No scraping sessions found in database")
+        
+        conn.close()
+        
+    except sqlite3.Error as e:
+        error(f"Database error: {e}")
+    except Exception as e:
+        error(f"Error showing sessions: {e}")
+
+
+def clear_session(db_path: Path, session_id: Optional[int] = None) -> None:
+    """Clear URLs from a specific scraping session or the last session.
+    
+    Args:
+        db_path: Path to the SQLite database
+        session_id: Specific session ID to clear, or None for the last session
+    """
+    if not db_path.exists():
+        warning("No database found.")
+        return
+    
+    try:
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        
+        # Check if scraping_sessions table exists
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'"
+        )
+        has_sessions_table = cursor.fetchone() is not None
+        
+        if has_sessions_table:
+            # Use session-based deletion
+            if session_id is None:
+                # Find the most recent session
+                cursor.execute(
+                    "SELECT id FROM scraping_sessions ORDER BY start_time DESC LIMIT 1"
+                )
+                result = cursor.fetchone()
+                if not result:
+                    warning("No scraping sessions found in database")
+                    conn.close()
+                    return
+                session_id = result[0]
+            
+            # Get session info
+            cursor.execute(
+                "SELECT start_url, start_time FROM scraping_sessions WHERE id = ?",
+                (session_id,)
+            )
+            session_info = cursor.fetchone()
+            if not session_info:
+                warning(f"Session #{session_id} not found")
+                conn.close()
+                return
+            
+            start_url, start_time = session_info
+            
+            # Get checksums of URLs from this session
+            cursor.execute(
+                """SELECT content_checksum 
+                   FROM scraped_urls 
+                   WHERE session_id = ? AND content_checksum IS NOT NULL""",
+                (session_id,)
+            )
+            checksums = [row[0] for row in cursor.fetchall()]
+            
+            # Count URLs to be deleted
+            cursor.execute(
+                "SELECT COUNT(*) FROM scraped_urls WHERE session_id = ?",
+                (session_id,)
+            )
+            url_count = cursor.fetchone()[0]
+            
+            # Delete URLs from session
+            cursor.execute("DELETE FROM scraped_urls WHERE session_id = ?", (session_id,))
+            
+            # Delete the session record
+            cursor.execute("DELETE FROM scraping_sessions WHERE id = ?", (session_id,))
+            
+            # Delete associated checksums
+            checksum_count = 0
+            if checksums:
+                for checksum in checksums:
+                    cursor.execute(
+                        "DELETE FROM content_checksums WHERE checksum = ?",
+                        (checksum,)
+                    )
+                    checksum_count += cursor.rowcount
+            
+            conn.commit()
+            success(f"Cleared session #{session_id} ({url_count} URLs from {start_url} at {start_time})")
+            if checksum_count > 0:
+                info(f"Also cleared {checksum_count} associated content checksums")
+        else:
+            # Fall back to date-based deletion for legacy databases
+            cursor.execute(
+                "SELECT MAX(DATE(scraped_at)) as last_date FROM scraped_urls"
+            )
+            result = cursor.fetchone()
+            if not result or not result[0]:
+                warning("No scraping sessions found in database")
+                conn.close()
+                return
+            
+            last_date = result[0]
+            
+            # Get checksums of URLs from last session
+            cursor.execute(
+                """SELECT content_checksum 
+                   FROM scraped_urls 
+                   WHERE DATE(scraped_at) = ? AND content_checksum IS NOT NULL""",
+                (last_date,)
+            )
+            checksums = [row[0] for row in cursor.fetchall()]
+            
+            # Count URLs to be deleted
+            cursor.execute(
+                "SELECT COUNT(*) FROM scraped_urls WHERE DATE(scraped_at) = ?",
+                (last_date,)
+            )
+            url_count = cursor.fetchone()[0]
+            
+            # Delete URLs from last session
+            cursor.execute("DELETE FROM scraped_urls WHERE DATE(scraped_at) = ?", (last_date,))
+            
+            # Delete associated checksums
+            checksum_count = 0
+            if checksums:
+                for checksum in checksums:
+                    cursor.execute(
+                        "DELETE FROM content_checksums WHERE checksum = ?",
+                        (checksum,)
+                    )
+                    checksum_count += cursor.rowcount
+            
+            conn.commit()
+            success(f"Cleared {url_count} URLs from session {last_date}")
+            if checksum_count > 0:
+                info(f"Also cleared {checksum_count} associated content checksums")
+        
+        conn.close()
+        
+    except sqlite3.Error as e:
+        error(f"Database error: {e}")
+    except Exception as e:
+        error(f"Error clearing session: {e}")
+
+
 def clear_urls_from_database(db_path: Path, pattern: str) -> None:
     """Clear URLs matching a pattern from the database.
     
@@ -411,6 +794,32 @@ For more information, see the documentation."""
         metavar="PATTERN",
         help="Clear URLs from database matching the pattern (e.g., '/Extensions/' or 'example.com')",
     )
+    db_group.add_argument(
+        "--clear-last-session",
+        action="store_true",
+        help="Clear URLs from the last scraping session",
+    )
+    db_group.add_argument(
+        "--clear-session",
+        type=int,
+        metavar="ID",
+        help="Clear a specific session by its ID",
+    )
+    db_group.add_argument(
+        "--show-sessions",
+        action="store_true",
+        help="Show all scraping sessions with timestamps and URL counts",
+    )
+    db_group.add_argument(
+        "--show-sessions-detailed",
+        action="store_true",
+        help="Show detailed information for all scraping sessions",
+    )
+    db_group.add_argument(
+        "--cleanup-sessions",
+        action="store_true",
+        help="Clean up orphaned sessions (left in 'running' state from crashes)",
+    )
 
     return parser
 
@@ -475,6 +884,30 @@ def main() -> None:
         clear_urls_from_database(db_path, args.clear_urls)
         return
     
+    # Check if clear-last-session is requested
+    if args.clear_last_session:
+        db_path = args.output / "scrape_tracker.db"
+        clear_session(db_path)
+        return
+    
+    # Check if clear-session is requested
+    if args.clear_session:
+        db_path = args.output / "scrape_tracker.db"
+        clear_session(db_path, args.clear_session)
+        return
+    
+    # Check if cleanup-sessions is requested
+    if args.cleanup_sessions:
+        db_path = args.output / "scrape_tracker.db"
+        cleanup_orphaned_sessions(db_path)
+        return
+    
+    # Check if show-sessions is requested
+    if args.show_sessions or args.show_sessions_detailed:
+        db_path = args.output / "scrape_tracker.db"
+        show_scraping_sessions(db_path, detailed=args.show_sessions_detailed)
+        return
+    
     # Check if only database query options are requested
     if args.show_db_stats or args.show_errors or args.show_scraped_urls:
         # Just show database info and exit
@@ -505,6 +938,7 @@ def main() -> None:
         scraped_urls = crawl_result.get("scraped_urls", [])
         errors = crawl_result.get("errors", [])
         session_files = crawl_result.get("session_files", [])
+        session_id = crawl_result.get("session_id")
 
         # Calculate statistics for this session only
         duration = time.time() - start_time
@@ -515,7 +949,7 @@ def main() -> None:
 
         # Display summary statistics
         header("\n" + "=" * 60)
-        header("Scraping Summary (Current Session)")
+        header(f"Scraping Summary (Session #{session_id})" if session_id else "Scraping Summary (Current Session)")
         header("=" * 60)
         success(f"✓ Successfully scraped {successful_urls} pages")
         if errors:
@@ -526,6 +960,9 @@ def main() -> None:
         info(f"Average time per page: {avg_time_per_page:.2f} seconds")
         info(f"Output directory: {site_dir}")
         info(f"HTML files saved in this session: {len(session_files)}")
+        if session_id:
+            info(f"\nSession ID: #{session_id}")
+            info(f"To clear this session: m1f-scrape --clear-session {session_id} -o {args.output}")
 
         # Save URLs to file if requested
         if args.save_urls:
@@ -572,8 +1009,9 @@ def main() -> None:
                 info("\nNo new files downloaded in this session (all URLs were already scraped)")
 
     except KeyboardInterrupt:
-        warning("⚠️  Scraping interrupted by user")
+        warning("\n⚠️  Scraping interrupted by user")
         info("Run the same command again to resume where you left off")
+        info(f"To view session details: m1f-scrape --show-sessions -o {args.output}")
         sys.exit(0)
     except Exception as e:
         error(f"Error during scraping: {e}")
