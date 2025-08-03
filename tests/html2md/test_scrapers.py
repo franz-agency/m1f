@@ -98,7 +98,7 @@ class TestScraperConfig:
         """Test default configuration values."""
         config = ScraperConfig()
         assert config.max_depth == 10
-        assert config.max_pages == 1000
+        assert config.max_pages == 10000
         assert config.respect_robots_txt is True
         assert config.concurrent_requests == 5
         assert config.request_delay == 0.5

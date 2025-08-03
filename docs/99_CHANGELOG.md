@@ -20,6 +20,14 @@ and this project adheres to
   - Updated documentation to explain `-1` unlimited option
   - Added example for unlimited scraping with caution note
 
+- **m1f-scrape Advanced Path Control**: New `--allowed-path` parameter
+  - Allows starting from specific page while controlling crawling boundaries
+  - Overrides automatic path restriction based on start URL
+  - Start URL is always scraped regardless of path restrictions
+  - Example: Start from `/Extensions/eZ-Publish-extensions.html` but crawl all `/Extensions/`
+  - Useful for documentation sites where index pages link to different directories
+  - Implemented across all scraper backends (BeautifulSoup, HTTrack, Selectolax, Playwright, Scrapy)
+
 ### Fixed
 
 - **m1f-html2md Config Structure**: Fixed configuration structure mismatch

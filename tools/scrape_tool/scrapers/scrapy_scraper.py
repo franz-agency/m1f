@@ -64,6 +64,19 @@ class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
         else:
             self.allowed_domains = [parsed.netloc]
 
+        # Store the base path for subdirectory restriction
+        # Use allowed_path if specified, otherwise use the start URL's path
+        if config.allowed_path:
+            self.base_path = config.allowed_path.rstrip("/")
+            logger.info(f"Restricting crawl to allowed path: {self.base_path}")
+        else:
+            self.base_path = parsed.path.rstrip("/")
+            if self.base_path:
+                logger.info(f"Restricting crawl to subdirectory: {self.base_path}")
+
+        # Store start URL for comparison
+        self.start_url = start_url
+
     def parse(self, response):
         """Parse a response and extract data."""
         # Check page limit (skip if -1 for unlimited)
@@ -108,6 +121,21 @@ class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
                 # Skip non-HTTP links
                 if href.startswith(("mailto:", "tel:", "javascript:", "#")):
                     continue
+
+                # Get absolute URL to check path restriction
+                absolute_url = response.urljoin(href)
+                parsed_url = urlparse(absolute_url)
+
+                # Check subdirectory restriction (but always allow the start URL)
+                if self.base_path and absolute_url != self.start_url:
+                    if (
+                        not parsed_url.path.startswith(self.base_path + "/")
+                        and parsed_url.path != self.base_path
+                    ):
+                        logger.debug(
+                            f"Skipping {absolute_url} - outside allowed path {self.base_path}"
+                        )
+                        continue
 
                 # Skip if matches exclude pattern
                 if self.config.exclude_patterns:

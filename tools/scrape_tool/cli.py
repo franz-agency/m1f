@@ -173,6 +173,11 @@ def create_parser() -> argparse.ArgumentParser:
         default=10000,
         help="Maximum pages to crawl (-1 for unlimited)",
     )
+    parser.add_argument(
+        "--allowed-path",
+        type=str,
+        help="Restrict crawling to this path and subdirectories (e.g., /docs/)",
+    )
 
     # Request options
     parser.add_argument(
@@ -245,6 +250,7 @@ def main() -> None:
     config = Config()
     config.crawler.max_depth = args.max_depth
     config.crawler.max_pages = args.max_pages
+    config.crawler.allowed_path = args.allowed_path
     config.crawler.scraper_backend = ScraperBackend(args.scraper)
     config.crawler.request_delay = args.request_delay
     config.crawler.concurrent_requests = args.concurrent_requests

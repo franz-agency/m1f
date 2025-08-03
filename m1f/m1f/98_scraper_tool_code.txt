@@ -225,6 +225,11 @@ def create_parser() -> argparse.ArgumentParser:
         default=10000,
         help="Maximum pages to crawl (-1 for unlimited)",
     )
+    parser.add_argument(
+        "--allowed-path",
+        type=str,
+        help="Restrict crawling to this path and subdirectories (e.g., /docs/)",
+    )
 
     # Request options
     parser.add_argument(
@@ -297,6 +302,7 @@ def main() -> None:
     config = Config()
     config.crawler.max_depth = args.max_depth
     config.crawler.max_pages = args.max_pages
+    config.crawler.allowed_path = args.allowed_path
     config.crawler.scraper_backend = ScraperBackend(args.scraper)
     config.crawler.request_delay = args.request_delay
     config.crawler.concurrent_requests = args.concurrent_requests
@@ -439,6 +445,10 @@ class CrawlerConfig(BaseModel):
     allowed_domains: Optional[list[str]] = Field(
         default=None, description="List of allowed domains to crawl"
     )
+    allowed_path: Optional[str] = Field(
+        default=None,
+        description="Restrict crawling to this path and its subdirectories (e.g., /docs/)",
+    )
     excluded_paths: list[str] = Field(
         default_factory=list, description="URL paths to exclude from crawling"
     )
@@ -482,6 +492,10 @@ class CrawlerConfig(BaseModel):
     check_content_duplicates: bool = Field(
         default=True,
         description="Skip pages with duplicate content (based on text-only checksum)",
+    )
+    check_ssrf: bool = Field(
+        default=True,
+        description="Check for SSRF vulnerabilities by blocking private IP addresses",
     )
 
 
@@ -561,6 +575,7 @@ class WebCrawler:
             "max_depth": self.config.max_depth,
             "max_pages": self.config.max_pages,
             "allowed_domains": allowed_domains,
+            "allowed_path": self.config.allowed_path,
             "exclude_patterns": exclude_patterns,
             "respect_robots_txt": self.config.respect_robots_txt,
             "concurrent_requests": self.config.concurrent_requests,
@@ -570,6 +585,7 @@ class WebCrawler:
             "ignore_get_params": self.config.ignore_get_params,
             "check_canonical": self.config.check_canonical,
             "check_content_duplicates": self.config.check_content_duplicates,
+            "check_ssrf": self.config.check_ssrf,
         }
 
         # Only add user_agent if it's not None
@@ -1284,6 +1300,7 @@ class ScraperConfig:
     max_depth: int = 10
     max_pages: int = 10000
     allowed_domains: Optional[List[str]] = None
+    allowed_path: Optional[str] = None
     exclude_patterns: Optional[List[str]] = None
     respect_robots_txt: bool = True
     concurrent_requests: int = 5
@@ -1298,6 +1315,7 @@ class ScraperConfig:
     ignore_get_params: bool = False
     check_canonical: bool = True
     check_content_duplicates: bool = True
+    check_ssrf: bool = True
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -1438,8 +1456,8 @@ class WebScraperBase(ABC):
             # Extract hostname (remove port if present)
             hostname = parsed.hostname or parsed.netloc.split(":")[0]
 
-            # Check for SSRF - block private IPs
-            if self._is_private_ip(hostname):
+            # Check for SSRF - block private IPs (if enabled)
+            if self.config.check_ssrf and self._is_private_ip(hostname):
                 logger.warning(f"Blocked URL {url} - private IP address detected")
                 return False
 
@@ -1828,9 +1846,14 @@ class BeautifulSoupScraper(WebScraperBase):
         base_domain = start_parsed.netloc
 
         # Store the base path for subdirectory restriction
-        base_path = start_parsed.path.rstrip("/")
-        if base_path:
-            logger.info(f"Restricting crawl to subdirectory: {base_path}")
+        # Use allowed_path if specified, otherwise use the start URL's path
+        if self.config.allowed_path:
+            base_path = self.config.allowed_path.rstrip("/")
+            logger.info(f"Restricting crawl to allowed path: {base_path}")
+        else:
+            base_path = start_parsed.path.rstrip("/")
+            if base_path:
+                logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # If no allowed domains specified, restrict to start domain
         if not self.config.allowed_domains:
@@ -1877,15 +1900,15 @@ class BeautifulSoupScraper(WebScraperBase):
                 if not await self.validate_url(url):
                     continue
 
-                # Check subdirectory restriction
-                if base_path:
+                # Check subdirectory restriction (but always allow the start URL)
+                if base_path and url != start_url:
                     url_parsed = urlparse(url)
                     if (
                         not url_parsed.path.startswith(base_path + "/")
                         and url_parsed.path != base_path
                     ):
                         logger.debug(
-                            f"Skipping {url} - outside subdirectory {base_path}"
+                            f"Skipping {url} - outside allowed path {base_path}"
                         )
                         continue
 
@@ -2301,7 +2324,15 @@ class HTTrackScraper(WebScraperBase):
             cmd.extend(["+*" + parsed.netloc + "*"])
 
         # Add subdirectory restriction if path is specified
-        if base_path:
+        # Use allowed_path if specified, otherwise use the URL's path
+        if self.config.allowed_path:
+            allowed_path = self.config.allowed_path.rstrip("/")
+            logger.info(f"Restricting HTTrack crawl to allowed path: {allowed_path}")
+            # Allow the specified path and everything under it
+            cmd.extend([f"+*{parsed.netloc}{allowed_path}/*"])
+            # Exclude everything else on the same domain
+            cmd.extend([f"-*{parsed.netloc}/*"])
+        elif base_path:
             logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
             # Allow the base path and everything under it
             cmd.extend([f"+*{parsed.netloc}{base_path}/*"])
@@ -2774,6 +2805,16 @@ class PlaywrightScraper(WebScraperBase):
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
 
+        # Store the base path for subdirectory restriction
+        # Use allowed_path if specified, otherwise use the start URL's path
+        if self.config.allowed_path:
+            base_path = self.config.allowed_path.rstrip("/")
+            logger.info(f"Restricting crawl to allowed path: {base_path}")
+        else:
+            base_path = parsed_start.path.rstrip("/")
+            if base_path:
+                logger.info(f"Restricting crawl to subdirectory: {base_path}")
+
         # Initialize queue
         queue = asyncio.Queue()
         await queue.put((start_url, 0))  # (url, depth)
@@ -2859,6 +2900,17 @@ class PlaywrightScraper(WebScraperBase):
                                     continue
                             elif parsed_url.netloc != base_domain:
                                 continue
+
+                            # Check subdirectory restriction (but always allow the start URL)
+                            if base_path and link != start_url:
+                                if (
+                                    not parsed_url.path.startswith(base_path + "/")
+                                    and parsed_url.path != base_path
+                                ):
+                                    logger.debug(
+                                        f"Skipping {link} - outside allowed path {base_path}"
+                                    )
+                                    continue
 
                             # Skip if matches exclude pattern
                             if self.config.exclude_patterns:
@@ -2998,6 +3050,19 @@ class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
         else:
             self.allowed_domains = [parsed.netloc]
 
+        # Store the base path for subdirectory restriction
+        # Use allowed_path if specified, otherwise use the start URL's path
+        if config.allowed_path:
+            self.base_path = config.allowed_path.rstrip("/")
+            logger.info(f"Restricting crawl to allowed path: {self.base_path}")
+        else:
+            self.base_path = parsed.path.rstrip("/")
+            if self.base_path:
+                logger.info(f"Restricting crawl to subdirectory: {self.base_path}")
+
+        # Store start URL for comparison
+        self.start_url = start_url
+
     def parse(self, response):
         """Parse a response and extract data."""
         # Check page limit (skip if -1 for unlimited)
@@ -3042,6 +3107,21 @@ class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
                 # Skip non-HTTP links
                 if href.startswith(("mailto:", "tel:", "javascript:", "#")):
                     continue
+
+                # Get absolute URL to check path restriction
+                absolute_url = response.urljoin(href)
+                parsed_url = urlparse(absolute_url)
+
+                # Check subdirectory restriction (but always allow the start URL)
+                if self.base_path and absolute_url != self.start_url:
+                    if (
+                        not parsed_url.path.startswith(self.base_path + "/")
+                        and parsed_url.path != self.base_path
+                    ):
+                        logger.debug(
+                            f"Skipping {absolute_url} - outside allowed path {self.base_path}"
+                        )
+                        continue
 
                 # Skip if matches exclude pattern
                 if self.config.exclude_patterns:
@@ -3564,9 +3644,14 @@ class SelectolaxScraper(WebScraperBase):
         base_domain = parsed_start.netloc
 
         # Store the base path for subdirectory restriction
-        base_path = parsed_start.path.rstrip("/")
-        if base_path:
-            logger.info(f"Restricting crawl to subdirectory: {base_path}")
+        # Use allowed_path if specified, otherwise use the start URL's path
+        if self.config.allowed_path:
+            base_path = self.config.allowed_path.rstrip("/")
+            logger.info(f"Restricting crawl to allowed path: {base_path}")
+        else:
+            base_path = parsed_start.path.rstrip("/")
+            if base_path:
+                logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # Initialize queue with start URL
         queue = asyncio.Queue()
@@ -3621,8 +3706,8 @@ class SelectolaxScraper(WebScraperBase):
                             elif parsed_url.netloc != base_domain:
                                 continue
 
-                            # Check subdirectory restriction
-                            if base_path:
+                            # Check subdirectory restriction (but always allow the start URL)
+                            if base_path and url != start_url:
                                 if (
                                     not parsed_url.path.startswith(base_path + "/")
                                     and parsed_url.path != base_path

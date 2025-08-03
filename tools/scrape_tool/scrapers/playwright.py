@@ -315,6 +315,16 @@ class PlaywrightScraper(WebScraperBase):
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
 
+        # Store the base path for subdirectory restriction
+        # Use allowed_path if specified, otherwise use the start URL's path
+        if self.config.allowed_path:
+            base_path = self.config.allowed_path.rstrip("/")
+            logger.info(f"Restricting crawl to allowed path: {base_path}")
+        else:
+            base_path = parsed_start.path.rstrip("/")
+            if base_path:
+                logger.info(f"Restricting crawl to subdirectory: {base_path}")
+
         # Initialize queue
         queue = asyncio.Queue()
         await queue.put((start_url, 0))  # (url, depth)
@@ -400,6 +410,17 @@ class PlaywrightScraper(WebScraperBase):
                                     continue
                             elif parsed_url.netloc != base_domain:
                                 continue
+
+                            # Check subdirectory restriction (but always allow the start URL)
+                            if base_path and link != start_url:
+                                if (
+                                    not parsed_url.path.startswith(base_path + "/")
+                                    and parsed_url.path != base_path
+                                ):
+                                    logger.debug(
+                                        f"Skipping {link} - outside allowed path {base_path}"
+                                    )
+                                    continue
 
                             # Skip if matches exclude pattern
                             if self.config.exclude_patterns:

@@ -79,6 +79,7 @@ m1f-scrape <url> -o <output> [options]
 | `--scraper-config`      | Path to scraper-specific config file (YAML/JSON)              | None          |
 | `--max-depth`           | Maximum crawl depth                                           | 5             |
 | `--max-pages`           | Maximum pages to crawl (-1 for unlimited)                     | 10000         |
+| `--allowed-path`        | Restrict crawling to this path (overrides automatic)          | None          |
 | `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
 | `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
@@ -235,6 +236,28 @@ m1f-scrape https://api.example.com/v2/reference -o ./api_docs
 m1f-scrape https://learn.example.com/tutorials -o ./tutorials_only
 ```
 
+### Advanced Path Control with --allowed-path
+
+Sometimes you need to start from a specific page but allow crawling in a different directory. 
+Use `--allowed-path` to override the automatic path restriction:
+
+```bash
+# Start from extensions index but allow crawling all extensions
+m1f-scrape https://ezpublishdoc.mugo.ca/Extensions/eZ-Publish-extensions.html -o ./extensions \
+  --allowed-path /Extensions/
+
+# Start from a deep nested page but allow broader documentation crawling
+m1f-scrape https://docs.example.com/v2/api/users/create.html -o ./api_docs \
+  --allowed-path /v2/api/
+
+# Start from main docs page but restrict to specific section
+m1f-scrape https://docs.example.com/index.html -o ./guides \
+  --allowed-path /guides/
+```
+
+The start URL is always scraped regardless of path restrictions, making it perfect for
+documentation sites where the index page links to content in different directories.
+
 ### Controlled Crawling
 
 ```bash
@@ -252,6 +275,11 @@ m1f-scrape https://docs.example.com -o ./docs \
 m1f-scrape https://example.com -o ./html \
   --request-delay 2.0 \
   --concurrent-requests 2
+
+# Start from specific page but allow broader crawling area
+m1f-scrape https://docs.example.com/api/index.html -o ./api_docs \
+  --allowed-path /api/ \
+  --max-pages 100
 ```
 
 ### Custom Configuration

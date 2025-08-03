@@ -64,6 +64,7 @@ class WebCrawler:
             "max_depth": self.config.max_depth,
             "max_pages": self.config.max_pages,
             "allowed_domains": allowed_domains,
+            "allowed_path": self.config.allowed_path,
             "exclude_patterns": exclude_patterns,
             "respect_robots_txt": self.config.respect_robots_txt,
             "concurrent_requests": self.config.concurrent_requests,
@@ -73,6 +74,7 @@ class WebCrawler:
             "ignore_get_params": self.config.ignore_get_params,
             "check_canonical": self.config.check_canonical,
             "check_content_duplicates": self.config.check_content_duplicates,
+            "check_ssrf": self.config.check_ssrf,
         }
 
         # Only add user_agent if it's not None

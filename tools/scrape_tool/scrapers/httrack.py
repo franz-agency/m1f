@@ -269,7 +269,15 @@ class HTTrackScraper(WebScraperBase):
             cmd.extend(["+*" + parsed.netloc + "*"])
 
         # Add subdirectory restriction if path is specified
-        if base_path:
+        # Use allowed_path if specified, otherwise use the URL's path
+        if self.config.allowed_path:
+            allowed_path = self.config.allowed_path.rstrip("/")
+            logger.info(f"Restricting HTTrack crawl to allowed path: {allowed_path}")
+            # Allow the specified path and everything under it
+            cmd.extend([f"+*{parsed.netloc}{allowed_path}/*"])
+            # Exclude everything else on the same domain
+            cmd.extend([f"-*{parsed.netloc}/*"])
+        elif base_path:
             logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
             # Allow the base path and everything under it
             cmd.extend([f"+*{parsed.netloc}{base_path}/*"])

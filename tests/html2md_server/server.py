@@ -48,6 +48,7 @@ TEST_PAGES_DIR = Path(__file__).parent / "test_pages"
 
 # Dynamically build test pages configuration based on existing files
 TEST_PAGES = {}
+ALL_PAGES = {}  # Track all pages including subdirectories
 
 # Define metadata for known pages
 PAGE_METADATA = {
@@ -91,21 +92,75 @@ PAGE_METADATA = {
         "title": "Multimedia Content Test",
         "description": "Tests images, videos, and other media elements",
     },
+    # Subdirectory page metadata
+    "docs/index": {
+        "title": "Documentation Index",
+        "description": "Main documentation page",
+    },
+    "api/overview": {
+        "title": "API Overview",
+        "description": "API documentation overview",
+    },
+    "api/endpoints": {
+        "title": "API Endpoints",
+        "description": "Available API endpoints",
+    },
+    "api/authentication": {
+        "title": "API Authentication",
+        "description": "API authentication methods",
+    },
+    "guides/getting-started": {
+        "title": "Getting Started Guide",
+        "description": "Introduction and getting started guide",
+    },
 }
 
-# Only include pages that actually exist
+# Build comprehensive page index including subdirectories
 if TEST_PAGES_DIR.exists():
+    # First, find all HTML files in root directory
     for html_file in TEST_PAGES_DIR.glob("*.html"):
         if html_file.name != "404.html":  # Skip error page
             page_name = html_file.stem
+            page_path = page_name
+
             if page_name in PAGE_METADATA:
-                TEST_PAGES[page_name] = PAGE_METADATA[page_name]
+                metadata = PAGE_METADATA[page_name]
             else:
                 # Add unknown pages with generic metadata
-                TEST_PAGES[page_name] = {
+                metadata = {
                     "title": page_name.replace("-", " ").title(),
                     "description": f"Test page: {page_name}",
                 }
+
+            TEST_PAGES[page_name] = metadata
+            ALL_PAGES[page_path] = {
+                "file_path": html_file,
+                "metadata": metadata,
+                "url_path": f"/{page_name}.html" if page_name != "index" else "/",
+            }
+
+    # Then, find all HTML files in subdirectories
+    for html_file in TEST_PAGES_DIR.glob("**/*.html"):
+        if html_file.name != "404.html" and html_file.parent != TEST_PAGES_DIR:
+            # Get relative path from test_pages directory
+            rel_path = html_file.relative_to(TEST_PAGES_DIR)
+            page_path = str(rel_path.with_suffix(""))  # Remove .html extension
+
+            if page_path in PAGE_METADATA:
+                metadata = PAGE_METADATA[page_path]
+            else:
+                # Generate metadata from path
+                title = html_file.stem.replace("-", " ").replace("_", " ").title()
+                metadata = {
+                    "title": title,
+                    "description": f"Test page: {page_path}",
+                }
+
+            ALL_PAGES[page_path] = {
+                "file_path": html_file,
+                "metadata": metadata,
+                "url_path": f"/{rel_path}",
+            }
 
 
 @app.route("/")
@@ -159,10 +214,56 @@ def serve_page(page_name):
     return "Page not found", 404
 
 
+@app.route("/<path:subpath>")
+def serve_subpath(subpath):
+    """Serve pages from subdirectories with proper routing."""
+    # Remove .html extension if present to match our page_path keys
+    if subpath.endswith(".html"):
+        page_path = subpath[:-5]  # Remove .html
+    else:
+        page_path = subpath
+
+    # Check if this page exists in our ALL_PAGES registry
+    if page_path in ALL_PAGES:
+        page_info = ALL_PAGES[page_path]
+        file_path = page_info["file_path"]
+
+        if file_path.exists():
+            # Serve the file directly
+            return send_file(str(file_path.absolute()), mimetype="text/html")
+
+    # If not found in registry, try to find the file directly
+    # Handle both with and without .html extension
+    possible_paths = [
+        TEST_PAGES_DIR / f"{subpath}",
+        TEST_PAGES_DIR / f"{subpath}.html",
+    ]
+
+    for file_path in possible_paths:
+        if file_path.exists() and file_path.is_file():
+            return send_file(str(file_path.absolute()), mimetype="text/html")
+
+    return "Page not found", 404
+
+
 @app.route("/api/test-pages")
 def api_test_pages():
     """API endpoint to list all test pages."""
     return jsonify(TEST_PAGES)
+
+
+@app.route("/api/all-pages")
+def api_all_pages():
+    """API endpoint to list all pages including subdirectories."""
+    # Convert to a more useful format for the API
+    result = {}
+    for page_path, page_info in ALL_PAGES.items():
+        result[page_path] = {
+            "title": page_info["metadata"]["title"],
+            "description": page_info["metadata"]["description"],
+            "url": page_info["url_path"],
+        }
+    return jsonify(result)
 
 
 @app.route("/static/<path:path>")
@@ -190,17 +291,33 @@ if __name__ == "__main__":
     if os.environ.get("FLASK_ENV") != "testing":
         header("HTML2MD Test Server")
         info(f"Server running at: http://localhost:{port}")
-        info(f"\nAvailable test pages ({len(TEST_PAGES)} found):")
+        info(f"\nAvailable test pages ({len(ALL_PAGES)} total found):")
 
-        # Sort pages for consistent display
-        for page in sorted(TEST_PAGES.keys()):
-            info = TEST_PAGES[page]
-            # Truncate title if too long
-            title = info["title"][:25]
-            info(f"  • /page/{page:<20} - {title}")
+        # Sort pages for consistent display - show root pages first, then subdirectories
+        root_pages = [p for p in ALL_PAGES.keys() if "/" not in p]
+        subdir_pages = [p for p in ALL_PAGES.keys() if "/" in p]
 
-        if not TEST_PAGES:
+        info(f"\nRoot pages ({len(root_pages)}):")
+        for page_path in sorted(root_pages):
+            page_info = ALL_PAGES[page_path]
+            title = page_info["metadata"]["title"][:30]
+            url = page_info["url_path"]
+            info(f"  • {url:<25} - {title}")
+
+        if subdir_pages:
+            info(f"\nSubdirectory pages ({len(subdir_pages)}):")
+            for page_path in sorted(subdir_pages):
+                page_info = ALL_PAGES[page_path]
+                title = page_info["metadata"]["title"][:30]
+                url = page_info["url_path"]
+                info(f"  • {url:<25} - {title}")
+
+        if not ALL_PAGES:
             info("  No test pages found in test_pages directory!")
+
+        info(f"\nAPI endpoints:")
+        info(f"  • /api/test-pages      - Root pages only")
+        info(f"  • /api/all-pages       - All pages including subdirs")
 
         info("\nPress Ctrl+C to stop the server")
         info("=" * 60)

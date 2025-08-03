@@ -34,6 +34,7 @@ class ScraperConfig:
     max_depth: int = 10
     max_pages: int = 10000
     allowed_domains: Optional[List[str]] = None
+    allowed_path: Optional[str] = None
     exclude_patterns: Optional[List[str]] = None
     respect_robots_txt: bool = True
     concurrent_requests: int = 5
@@ -48,6 +49,7 @@ class ScraperConfig:
     ignore_get_params: bool = False
     check_canonical: bool = True
     check_content_duplicates: bool = True
+    check_ssrf: bool = True
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -188,8 +190,8 @@ class WebScraperBase(ABC):
             # Extract hostname (remove port if present)
             hostname = parsed.hostname or parsed.netloc.split(":")[0]
 
-            # Check for SSRF - block private IPs
-            if self._is_private_ip(hostname):
+            # Check for SSRF - block private IPs (if enabled)
+            if self.config.check_ssrf and self._is_private_ip(hostname):
                 logger.warning(f"Blocked URL {url} - private IP address detected")
                 return False
 

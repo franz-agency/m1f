@@ -48,6 +48,10 @@ class CrawlerConfig(BaseModel):
     allowed_domains: Optional[list[str]] = Field(
         default=None, description="List of allowed domains to crawl"
     )
+    allowed_path: Optional[str] = Field(
+        default=None,
+        description="Restrict crawling to this path and its subdirectories (e.g., /docs/)",
+    )
     excluded_paths: list[str] = Field(
         default_factory=list, description="URL paths to exclude from crawling"
     )
@@ -91,6 +95,10 @@ class CrawlerConfig(BaseModel):
     check_content_duplicates: bool = Field(
         default=True,
         description="Skip pages with duplicate content (based on text-only checksum)",
+    )
+    check_ssrf: bool = Field(
+        default=True,
+        description="Check for SSRF vulnerabilities by blocking private IP addresses",
     )
 
 
