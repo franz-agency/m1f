@@ -8,6 +8,18 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- **m1f-scrape Unlimited Pages Option**: Support for unlimited scraping
+  - Changed default `max_pages` from 1000 to 10000 across all configurations
+  - Added support for `-1` as unlimited pages (no limit)
+  - Updated validation to allow up to 10 million pages
+  - All scrapers now handle `-1` as unlimited:
+    - playwright, selectolax, beautifulsoup, scrapy: Skip page limit check when -1
+    - httrack: Uses very large number (999999999) for unlimited
+  - Updated documentation to explain `-1` unlimited option
+  - Added example for unlimited scraping with caution note
+
 ### Fixed
 
 - **m1f-html2md Config Structure**: Fixed configuration structure mismatch
@@ -17,6 +29,12 @@ and this project adheres to
   - Updated all prompts to generate the correct structure: `conversion.outermost_selector`
   - Fixed output message to show "outermost_selector" instead of "content_selector"
   - Config files now work correctly with proper field mapping
+
+- **Claude Code Documentation Scraper**: Fixed config file usage
+  - When using `--use-config`, script now creates backup directory instead of deleting existing markdown
+  - Backup directories named with timestamp: `claude-code-markdown_backup_YYYYMMDD_HHMMSS`
+  - Ensures existing markdown files are preserved when re-converting with different config
+  - Added datetime import for timestamp generation
 
 ## [3.8.0] - 2025-07-24
 

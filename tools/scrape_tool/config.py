@@ -37,7 +37,10 @@ class CrawlerConfig(BaseModel):
 
     max_depth: int = Field(default=5, ge=1, le=20, description="Maximum crawl depth")
     max_pages: int = Field(
-        default=1000, ge=1, le=10000, description="Maximum pages to crawl"
+        default=10000,
+        ge=-1,
+        le=10000000,
+        description="Maximum pages to crawl (-1 for unlimited)",
     )
     follow_external_links: bool = Field(
         default=False, description="Follow links to external domains"

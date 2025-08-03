@@ -22,7 +22,15 @@ from pathlib import Path
 from typing import Optional
 
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 from . import __version__
 from .config import Config, ScraperBackend
@@ -37,9 +45,7 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
         args: Command line arguments
     """
     if not db_path.exists():
-        warning(
-            "No database found. Have you scraped anything yet?"
-        )
+        warning("No database found. Have you scraped anything yet?")
         return
 
     try:
@@ -162,7 +168,10 @@ def create_parser() -> argparse.ArgumentParser:
     # Crawl options
     parser.add_argument("--max-depth", type=int, default=5, help="Maximum crawl depth")
     parser.add_argument(
-        "--max-pages", type=int, default=1000, help="Maximum pages to crawl"
+        "--max-pages",
+        type=int,
+        default=10000,
+        help="Maximum pages to crawl (-1 for unlimited)",
     )
 
     # Request options
@@ -301,9 +310,7 @@ def main() -> None:
         # Find all downloaded HTML files
         html_files = crawler.find_downloaded_files(site_dir)
 
-        success(
-            f"Successfully downloaded {len(html_files)} HTML files"
-        )
+        success(f"Successfully downloaded {len(html_files)} HTML files")
         info(f"Output directory: {site_dir}")
 
         # List downloaded files if requested
@@ -315,9 +322,7 @@ def main() -> None:
 
     except KeyboardInterrupt:
         warning("⚠️  Scraping interrupted by user")
-        info(
-            "Run the same command again to resume where you left off"
-        )
+        info("Run the same command again to resume where you left off")
         sys.exit(0)
     except Exception as e:
         error(f"Error during scraping: {e}")

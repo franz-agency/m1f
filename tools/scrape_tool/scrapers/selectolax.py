@@ -344,8 +344,11 @@ class SelectolaxScraper(WebScraperBase):
                 try:
                     url, depth = queue.get_nowait()
 
-                    # Check max pages limit
-                    if pages_scraped >= self.config.max_pages:
+                    # Check max pages limit (skip if -1 for unlimited)
+                    if (
+                        self.config.max_pages != -1
+                        and pages_scraped >= self.config.max_pages
+                    ):
                         break
 
                     # Create task
@@ -368,8 +371,11 @@ class SelectolaxScraper(WebScraperBase):
                         pages_scraped += 1
                         yield page
 
-                        # Check if we've hit the page limit
-                        if pages_scraped >= self.config.max_pages:
+                        # Check if we've hit the page limit (skip if -1 for unlimited)
+                        if (
+                            self.config.max_pages != -1
+                            and pages_scraped >= self.config.max_pages
+                        ):
                             # Cancel remaining tasks
                             for t in tasks:
                                 t.cancel()

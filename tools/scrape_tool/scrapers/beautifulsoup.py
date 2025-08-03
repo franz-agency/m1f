@@ -294,7 +294,10 @@ class BeautifulSoupScraper(WebScraperBase):
                 logger.info(
                     f"Found {len(to_visit)} URLs to visit after analyzing scraped pages"
                 )
-            while to_visit and len(self._visited_urls) < self.config.max_pages:
+            while to_visit and (
+                self.config.max_pages == -1
+                or len(self._visited_urls) < self.config.max_pages
+            ):
                 # Get next URL
                 url = to_visit.pop()
 

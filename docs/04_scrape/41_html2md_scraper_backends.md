@@ -104,7 +104,7 @@ Common options for all scrapers:
 --scraper BACKEND           # Choose scraper backend (beautifulsoup, bs4, httrack,
                            # selectolax, httpx, scrapy, playwright)
 --max-depth N               # Maximum crawl depth (default: 5)
---max-pages N               # Maximum pages to crawl (default: 1000)
+--max-pages N               # Maximum pages to crawl (default: 10000, -1 for unlimited)
 --request-delay SECONDS     # Delay between requests (default: 15.0)
 --concurrent-requests N     # Number of concurrent requests (default: 2)
 --user-agent STRING         # Custom user agent

@@ -32,7 +32,7 @@ class ScraperConfig:
     """Configuration for web scrapers."""
 
     max_depth: int = 10
-    max_pages: int = 1000
+    max_pages: int = 10000
     allowed_domains: Optional[List[str]] = None
     exclude_patterns: Optional[List[str]] = None
     respect_robots_txt: bool = True

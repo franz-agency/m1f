@@ -31248,7 +31248,15 @@ from pathlib import Path
 from typing import Optional
 
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 from . import __version__
 from .config import Config, ScraperBackend
@@ -31263,9 +31271,7 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
         args: Command line arguments
     """
     if not db_path.exists():
-        warning(
-            "No database found. Have you scraped anything yet?"
-        )
+        warning("No database found. Have you scraped anything yet?")
         return
 
     try:
@@ -31388,7 +31394,10 @@ def create_parser() -> argparse.ArgumentParser:
     # Crawl options
     parser.add_argument("--max-depth", type=int, default=5, help="Maximum crawl depth")
     parser.add_argument(
-        "--max-pages", type=int, default=1000, help="Maximum pages to crawl"
+        "--max-pages",
+        type=int,
+        default=10000,
+        help="Maximum pages to crawl (-1 for unlimited)",
     )
 
     # Request options
@@ -31527,9 +31536,7 @@ def main() -> None:
         # Find all downloaded HTML files
         html_files = crawler.find_downloaded_files(site_dir)
 
-        success(
-            f"Successfully downloaded {len(html_files)} HTML files"
-        )
+        success(f"Successfully downloaded {len(html_files)} HTML files")
         info(f"Output directory: {site_dir}")
 
         # List downloaded files if requested
@@ -31541,9 +31548,7 @@ def main() -> None:
 
     except KeyboardInterrupt:
         warning("⚠️  Scraping interrupted by user")
-        info(
-            "Run the same command again to resume where you left off"
-        )
+        info("Run the same command again to resume where you left off")
         sys.exit(0)
     except Exception as e:
         error(f"Error during scraping: {e}")
@@ -31597,7 +31602,10 @@ class CrawlerConfig(BaseModel):
 
     max_depth: int = Field(default=5, ge=1, le=20, description="Maximum crawl depth")
     max_pages: int = Field(
-        default=1000, ge=1, le=10000, description="Maximum pages to crawl"
+        default=10000,
+        ge=-1,
+        le=10000000,
+        description="Maximum pages to crawl (-1 for unlimited)",
     )
     follow_external_links: bool = Field(
         default=False, description="Follow links to external domains"
@@ -34595,7 +34603,7 @@ class ScraperConfig:
     """Configuration for web scrapers."""
 
     max_depth: int = 10
-    max_pages: int = 1000
+    max_pages: int = 10000
     allowed_domains: Optional[List[str]] = None
     exclude_patterns: Optional[List[str]] = None
     respect_robots_txt: bool = True
@@ -35174,7 +35182,10 @@ class BeautifulSoupScraper(WebScraperBase):
                 logger.info(
                     f"Found {len(to_visit)} URLs to visit after analyzing scraped pages"
                 )
-            while to_visit and len(self._visited_urls) < self.config.max_pages:
+            while to_visit and (
+                self.config.max_pages == -1
+                or len(self._visited_urls) < self.config.max_pages
+            ):
                 # Get next URL
                 url = to_visit.pop()
 
@@ -35593,7 +35604,7 @@ class HTTrackScraper(WebScraperBase):
             "--timeout=" + str(int(self.config.timeout)),
             f"--sockets={concurrent_connections}",  # Max 2 connections
             f"--connection-per-second={connection_rate:.2f}",  # Max 0.5/sec
-            f"--max-files={self.config.max_pages}",
+            f"--max-files={self.config.max_pages if self.config.max_pages != -1 else 999999999}",  # Use very large number for unlimited
             "--max-rate=100000",  # Limit bandwidth to 100KB/s
             "--min-rate=1000",  # Minimum 1KB/s
         ]
@@ -36202,8 +36213,11 @@ class PlaywrightScraper(WebScraperBase):
                 try:
                     url, depth = queue.get_nowait()
 
-                    # Check max pages limit
-                    if pages_scraped >= self.config.max_pages:
+                    # Check max pages limit (skip if -1 for unlimited)
+                    if (
+                        self.config.max_pages != -1
+                        and pages_scraped >= self.config.max_pages
+                    ):
                         break
 
                     # Create task
@@ -36226,8 +36240,11 @@ class PlaywrightScraper(WebScraperBase):
                         pages_scraped += 1
                         yield page
 
-                        # Check if we've hit the page limit
-                        if pages_scraped >= self.config.max_pages:
+                        # Check if we've hit the page limit (skip if -1 for unlimited)
+                        if (
+                            self.config.max_pages != -1
+                            and pages_scraped >= self.config.max_pages
+                        ):
                             # Cancel remaining tasks
                             for t in tasks:
                                 t.cancel()
@@ -36304,8 +36321,8 @@ class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
 
     def parse(self, response):
         """Parse a response and extract data."""
-        # Check page limit
-        if self.pages_scraped >= self.config.max_pages:
+        # Check page limit (skip if -1 for unlimited)
+        if self.config.max_pages != -1 and self.pages_scraped >= self.config.max_pages:
             return
 
         self.pages_scraped += 1
@@ -36338,7 +36355,9 @@ class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
 
         # Follow links if not at max depth
         depth = response.meta.get("depth", 0)
-        if depth < self.config.max_depth and self.pages_scraped < self.config.max_pages:
+        if depth < self.config.max_depth and (
+            self.config.max_pages == -1 or self.pages_scraped < self.config.max_pages
+        ):
             # Extract all links
             for href in response.css("a::attr(href)").getall():
                 # Skip non-HTTP links
@@ -36601,8 +36620,11 @@ class ScrapyScraper(WebScraperBase):
                             yield ScrapedPage(**data)
                             pages_yielded += 1
 
-                            # Check page limit
-                            if pages_yielded >= self.config.max_pages:
+                            # Check page limit (skip if -1 for unlimited)
+                            if (
+                                self.config.max_pages != -1
+                                and pages_yielded >= self.config.max_pages
+                            ):
                                 # Terminate the process
                                 process.terminate()
                                 process.join(timeout=5)
@@ -36964,8 +36986,11 @@ class SelectolaxScraper(WebScraperBase):
                 try:
                     url, depth = queue.get_nowait()
 
-                    # Check max pages limit
-                    if pages_scraped >= self.config.max_pages:
+                    # Check max pages limit (skip if -1 for unlimited)
+                    if (
+                        self.config.max_pages != -1
+                        and pages_scraped >= self.config.max_pages
+                    ):
                         break
 
                     # Create task
@@ -36988,8 +37013,11 @@ class SelectolaxScraper(WebScraperBase):
                         pages_scraped += 1
                         yield page
 
-                        # Check if we've hit the page limit
-                        if pages_scraped >= self.config.max_pages:
+                        # Check if we've hit the page limit (skip if -1 for unlimited)
+                        if (
+                            self.config.max_pages != -1
+                            and pages_scraped >= self.config.max_pages
+                        ):
                             # Cancel remaining tasks
                             for t in tasks:
                                 t.cancel()
@@ -37919,7 +37947,7 @@ scraper_config:
   
 crawler:
   max_depth: 10
-  max_pages: 1000
+  max_pages: 10000
   # Conservative delays to avoid Cloudflare detection
   request_delay: 20  # 20 seconds between requests (0.05 requests/sec)
   concurrent_requests: 2  # Max 2 simultaneous connections
@@ -38082,7 +38110,7 @@ scrapy_config:
 
 # Basic scraper settings
 max_depth: 10
-max_pages: 1000
+max_pages: 10000
 request_delay: 0.1  # Minimal delay for high performance
 concurrent_requests: 20  # Higher concurrency for speed
 respect_robots_txt: true

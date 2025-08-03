@@ -251,7 +251,7 @@ class HTTrackScraper(WebScraperBase):
             "--timeout=" + str(int(self.config.timeout)),
             f"--sockets={concurrent_connections}",  # Max 2 connections
             f"--connection-per-second={connection_rate:.2f}",  # Max 0.5/sec
-            f"--max-files={self.config.max_pages}",
+            f"--max-files={self.config.max_pages if self.config.max_pages != -1 else 999999999}",  # Use very large number for unlimited
             "--max-rate=100000",  # Limit bandwidth to 100KB/s
             "--min-rate=1000",  # Minimum 1KB/s
         ]

@@ -66,8 +66,8 @@ class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
 
     def parse(self, response):
         """Parse a response and extract data."""
-        # Check page limit
-        if self.pages_scraped >= self.config.max_pages:
+        # Check page limit (skip if -1 for unlimited)
+        if self.config.max_pages != -1 and self.pages_scraped >= self.config.max_pages:
             return
 
         self.pages_scraped += 1
@@ -100,7 +100,9 @@ class ScrapySpider(scrapy.Spider if SCRAPY_AVAILABLE else object):
 
         # Follow links if not at max depth
         depth = response.meta.get("depth", 0)
-        if depth < self.config.max_depth and self.pages_scraped < self.config.max_pages:
+        if depth < self.config.max_depth and (
+            self.config.max_pages == -1 or self.pages_scraped < self.config.max_pages
+        ):
             # Extract all links
             for href in response.css("a::attr(href)").getall():
                 # Skip non-HTTP links
@@ -363,8 +365,11 @@ class ScrapyScraper(WebScraperBase):
                             yield ScrapedPage(**data)
                             pages_yielded += 1
 
-                            # Check page limit
-                            if pages_yielded >= self.config.max_pages:
+                            # Check page limit (skip if -1 for unlimited)
+                            if (
+                                self.config.max_pages != -1
+                                and pages_yielded >= self.config.max_pages
+                            ):
                                 # Terminate the process
                                 process.terminate()
                                 process.join(timeout=5)

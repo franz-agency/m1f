@@ -78,7 +78,7 @@ m1f-scrape <url> -o <output> [options]
 |                         | selectolax, httpx, scrapy, playwright)                        |               |
 | `--scraper-config`      | Path to scraper-specific config file (YAML/JSON)              | None          |
 | `--max-depth`           | Maximum crawl depth                                           | 5             |
-| `--max-pages`           | Maximum pages to crawl                                        | 1000          |
+| `--max-pages`           | Maximum pages to crawl (-1 for unlimited)                     | 10000         |
 | `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
 | `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
@@ -242,6 +242,11 @@ m1f-scrape https://learn.example.com/tutorials -o ./tutorials_only
 m1f-scrape https://blog.example.com -o ./blog \
   --max-depth 2 \
   --max-pages 20
+
+# Unlimited scraping (use with caution!)
+m1f-scrape https://docs.example.com -o ./docs \
+  --max-pages -1 \
+  --request-delay 2.0
 
 # Slow crawling to be respectful
 m1f-scrape https://example.com -o ./html \
