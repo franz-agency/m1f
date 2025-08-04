@@ -164,7 +164,7 @@ conversion:
 
 # Asset handling configuration
 assets:
-  download_images: false
+  download: false
   image_directory: "images"
   link_prefix: ""
   process_links: true
