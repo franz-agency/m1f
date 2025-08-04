@@ -18687,15 +18687,6 @@ file_extensions_test\test.md
 file_extensions_test\test.py
 file_extensions_test\test.txt
 
-======= s1f/output/encoding_test.txt ======
-========================================================================================
-== FILE: test_file.txt
-== DATE: 2023-06-15 14:30:21 | SIZE: 2.50 KB | TYPE: .txt
-== ENCODING: latin-1 (with conversion errors)
-========================================================================================
-
-Hello with special chars: äöüß привет こんにちは 你好
-
 ======= s1f/output/machinereadable.txt ======
 --- PYMK1F_BEGIN_FILE_METADATA_BLOCK_84f5279b-3632-468e-99fb-503b653a5816 ---
 METADATA_JSON:

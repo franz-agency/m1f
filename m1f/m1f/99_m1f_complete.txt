@@ -50330,7 +50330,7 @@ class ClaudeRunner:
         work_dir = working_dir if working_dir is not None else self.working_dir
 
         # Build command
-        cmd = [self.claude_binary, "--print", "--allowedTools", allowed_tools]
+        cmd = [self.claude_binary, "-p", "--allowedTools", allowed_tools]
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
@@ -52345,10 +52345,9 @@ def handle_claude_analysis_improved(
         "exactly 5 representative", f"exactly {num_files_to_analyze} representative"
     )
 
-    # Add the list of available HTML files to the prompt
-    file_list = "\n".join(relative_paths)
-    simple_prompt = f"""Available HTML files in the directory:
-{file_list}
+    # The file list is already saved in all_html_files_filelist.txt
+    # Use absolute path so Claude can read it directly
+    simple_prompt = f"""Available HTML files are listed in: {str(file_list_path)}
 
 {simple_prompt_template}"""
 
@@ -52361,40 +52360,71 @@ def handle_claude_analysis_improved(
     )
     info(f"   {Colors.DIM}This may take 10-30 seconds...{Colors.RESET}")
 
-    # Step 3: Use Claude to select representative files
+    # Step 3: Use Claude to select representative files    
     returncode, stdout, stderr = runner.run_claude_streaming(
         prompt=simple_prompt,
-        allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
-        add_dir=str(common_parent),
+        allowed_tools="Read,Task,TodoWrite",  # Allow Read for file access, Task for sub-agents, TodoWrite for task management
+        add_dir=str(common_parent),  # Set working directory for file resolution
         timeout=180,  # 3 minutes for file selection
-        show_output=True,
+        show_output=False,  # Capture output instead of showing it
     )
 
     if returncode != 0:
         error(f"❌ Claude command failed: {stderr}")
         return
 
+    # Debug: Show what Claude returned
+    if not stdout.strip():
+        warning("⚠️  Claude returned empty output")
+        info(f"Debug - stdout length: {len(stdout)}")
+        info(f"Debug - stderr length: {len(stderr)}")
+        if stderr:
+            warning(f"Debug - stderr: {stderr[:500]}")
+    else:
+        # Show Claude's raw output for debugging
+        info("\n🔍 Claude's raw output:")
+        info("-" * 40)
+        # Show first 20 lines or 2000 chars, whichever is shorter
+        output_lines = stdout.strip().split("\n")
+        for i, line in enumerate(output_lines[:20]):
+            info(f"  Line {i+1}: {line[:100]}{'...' if len(line) > 100 else ''}")
+        if len(output_lines) > 20:
+            info(f"  ... ({len(output_lines) - 20} more lines)")
+        info("-" * 40)
+    
     selected_files = stdout.strip().split("\n")
     selected_files = [f.strip() for f in selected_files if f.strip()]
 
-    # Filter out any lines that are not file paths and normalize paths
+    # Filter out any lines that are not file paths
     valid_files = []
-    for f in selected_files:
-        if (
-            any(
-                word in f.lower()
-                for word in ["select", "based on", "analysis", "representative"]
-            )
-            or len(f) > 200
-        ):
+    for line in selected_files:
+        line = line.strip()
+        
+        # Skip empty lines and the completion marker
+        if not line or "FILE_SELECTION_COMPLETE_OK" in line:
             continue
-        if "FILE_SELECTION_COMPLETE_OK" in f:
+            
+        # Skip lines that look like explanatory text
+        if any(word in line.lower() for word in ["select", "based", "analysis", "representative", "file:", "path:"]):
             continue
-        if ".html" in f or ".htm" in f:
-            # Normalize path - remove common_parent prefix if present
-            if str(common_parent) in f:
-                f = f.replace(str(common_parent) + "/", "")
-            valid_files.append(f)
+            
+        # Skip lines that are too long to be reasonable file paths
+        if len(line) > 300:
+            continue
+            
+        # Accept lines that look like HTML file paths
+        if ".html" in line.lower() or ".htm" in line.lower():
+            # Clean up the path - remove any leading/trailing whitespace or quotes
+            clean_path = line.strip().strip('"').strip("'")
+            
+            # If the path is in our relative_paths list, it's definitely valid
+            if clean_path in relative_paths:
+                valid_files.append(clean_path)
+            else:
+                # Otherwise, try to normalize it
+                if str(common_parent) in clean_path:
+                    clean_path = clean_path.replace(str(common_parent) + "/", "")
+                valid_files.append(clean_path)
 
     selected_files = valid_files
 
@@ -52405,36 +52435,40 @@ def handle_claude_analysis_improved(
     # Step 4: Verify the selected files exist
     info("\nVerifying selected HTML files...")
     verified_files = []
-
+    
     for file_path in selected_files[:num_files_to_analyze]:
         file_path = file_path.strip()
-
-        # Try different path resolutions
-        paths_to_try = [
-            common_parent / file_path,  # Relative to common_parent
-            Path(file_path),  # Absolute path
-            common_parent / Path(file_path).name,  # Just filename in common_parent
-        ]
-
-        found = False
-        for test_path in paths_to_try:
-            if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
-                # Store relative path from common_parent
-                try:
-                    rel_path = test_path.relative_to(common_parent)
-                    verified_files.append(str(rel_path))
-                    success(f"✅ Found: {rel_path}")
-                    found = True
-                    break
-                except ValueError:
-                    # If not relative to common_parent, use the filename
-                    verified_files.append(test_path.name)
-                    success(f"✅ Found: {test_path.name}")
-                    found = True
-                    break
-
-        if not found:
-            warning(f"⚠️  Not found: {file_path}")
+        
+        # First check if this path is exactly in our relative_paths list
+        if file_path in relative_paths:
+            # It's a valid path from our list
+            full_path = common_parent / file_path
+            if full_path.exists():
+                verified_files.append(file_path)
+                success(f"✅ Found: {file_path}")
+                continue
+        
+        # If not found exactly, try as a path relative to common_parent
+        test_path = common_parent / file_path
+        if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
+            try:
+                rel_path = test_path.relative_to(common_parent)
+                verified_files.append(str(rel_path))
+                success(f"✅ Found: {rel_path}")
+                continue
+            except ValueError:
+                pass
+        
+        # If still not found, log it as missing
+        warning(f"⚠️  Not found: {file_path}")
+        warning(f"   Expected it to be in: {common_parent}")
+        
+        # Show a few similar paths from our list to help debug
+        similar = [p for p in relative_paths if Path(p).name == Path(file_path).name]
+        if similar:
+            info(f"   Did you mean one of these?")
+            for s in similar[:3]:
+                info(f"     - {s}")
 
     if not verified_files:
         error("❌ No HTML files could be verified")
@@ -52492,7 +52526,7 @@ def handle_claude_analysis_improved(
                 "name": f"Analysis {i}: {file_path}",
                 "prompt": individual_prompt,
                 "add_dir": str(common_parent),
-                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
+                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write,Bash,Task",  # Include Bash for ls, grep etc., and Task for sub-agents
                 "timeout": 300,  # 5 minutes per file
                 "working_dir": str(common_parent),  # Set working directory
             }
@@ -76090,6 +76124,8 @@ class Config:
 ======= tools/html2md_tool/prompts/analyze_individual_file.md ======
 # Individual HTML File Analysis
 
+Use deep thinking, task list, and sub agents as needed.
+
 You are analyzing a single HTML file to understand its structure for optimal
 content extraction.
 
@@ -76508,8 +76544,11 @@ Use `backticks` for inline code, commands, or file names
 ======= tools/html2md_tool/prompts/select_files_from_project.md ======
 # Strategic HTML File Selection for CSS Selector Analysis
 
-From the list of available HTML files provided above, select the most
-representative files for CSS selector analysis.
+Use deep thinking, task list, and sub agents as needed.
+
+A file path has been provided above.
+First, use the Read tool to read that file - it contains the complete list of HTML files.
+After reading the file, select the most representative files for CSS selector analysis.
 
 ## Your Mission:
 
@@ -76555,16 +76594,24 @@ Select files that likely have:
 
 ## Output Format:
 
-Return EXACTLY 5 file paths, one per line. No explanations, no formatting, no
-numbering. Do not include any text before or after the file paths. Just the file
-paths, nothing else.
+Your response MUST contain ONLY:
+1. Exactly 5 file paths (one per line)
+2. Each path must be copied EXACTLY from the provided list
+3. The text "FILE_SELECTION_COMPLETE_OK" on the last line
 
-Example format: docs/getting-started/index.html
-api/reference/authentication.html guides/advanced/performance-tuning.html
-tutorials/quickstart.html concepts/architecture/overview.html
+Do NOT include:
+- Explanations or reasoning
+- Numbering or bullet points
+- Modified or invented paths
+- Any other text
 
-IMPORTANT: After listing the files, print "FILE_SELECTION_COMPLETE_OK" on the
-last line to confirm completion.
+Example of correct output format:
+path/to/file1.html
+path/to/file2.html
+path/to/file3.html
+path/to/file4.html
+path/to/file5.html
+FILE_SELECTION_COMPLETE_OK
 
 ======= tools/html2md_tool/prompts/synthesize_config.md ======
 # Configuration Synthesis from Individual File Analyses

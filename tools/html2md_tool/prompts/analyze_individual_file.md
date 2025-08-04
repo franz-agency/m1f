@@ -1,5 +1,7 @@
 # Individual HTML File Analysis
 
+Use deep thinking, task list, and sub agents as needed.
+
 You are analyzing a single HTML file to understand its structure for optimal
 content extraction.
 

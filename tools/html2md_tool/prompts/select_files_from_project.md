@@ -1,7 +1,10 @@
 # Strategic HTML File Selection for CSS Selector Analysis
 
-From the list of available HTML files provided above, select the most
-representative files for CSS selector analysis.
+Use deep thinking, task list, and sub agents as needed.
+
+A file path has been provided above.
+First, use the Read tool to read that file - it contains the complete list of HTML files.
+After reading the file, select the most representative files for CSS selector analysis.
 
 ## Your Mission:
 
@@ -47,13 +50,21 @@ Select files that likely have:
 
 ## Output Format:
 
-Return EXACTLY 5 file paths, one per line. No explanations, no formatting, no
-numbering. Do not include any text before or after the file paths. Just the file
-paths, nothing else.
+Your response MUST contain ONLY:
+1. Exactly 5 file paths (one per line)
+2. Each path must be copied EXACTLY from the provided list
+3. The text "FILE_SELECTION_COMPLETE_OK" on the last line
 
-Example format: docs/getting-started/index.html
-api/reference/authentication.html guides/advanced/performance-tuning.html
-tutorials/quickstart.html concepts/architecture/overview.html
+Do NOT include:
+- Explanations or reasoning
+- Numbering or bullet points
+- Modified or invented paths
+- Any other text
 
-IMPORTANT: After listing the files, print "FILE_SELECTION_COMPLETE_OK" on the
-last line to confirm completion.
+Example of correct output format:
+path/to/file1.html
+path/to/file2.html
+path/to/file3.html
+path/to/file4.html
+path/to/file5.html
+FILE_SELECTION_COMPLETE_OK
