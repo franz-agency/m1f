@@ -35466,19 +35466,19 @@ parallel: true # Enable parallel processing
 max_workers: 4
 overwrite: false # Overwrite existing files
 
-# Synthesis notes (not used by the tool, just for documentation)
-notes: |
-  Analysis Summary:
-  - Analyzed N files representing different page types
-  - Primary selector works on X/N files
-  - Fallback selectors provide Y% coverage
-
-  Key Findings:
-  - [Main pattern discovered]
-  - [Secondary pattern]
-  - [Edge cases to watch]
-
-  Confidence: [High/Medium/Low] based on consistency across files
+# Synthesis notes (comment them out to avoid warnings)
+# The 'notes' field causes warnings, so include your notes as comments instead:
+# Analysis Summary:
+# - Analyzed N files representing different page types
+# - Primary selector works on X/N files
+# - Fallback selectors provide Y% coverage
+#
+# Key Findings:
+# - [Main pattern discovered]
+# - [Secondary pattern]
+# - [Edge cases to watch]
+#
+# Confidence: [High/Medium/Low] based on consistency across files
 ````
 
 **CRITICAL REQUIREMENTS**:
@@ -35768,19 +35768,19 @@ parallel: false # Enable parallel processing
 max_workers: 4
 overwrite: false # Overwrite existing files
 
-# Synthesis notes (not used by the tool, just for documentation)
-notes: |
-  Analysis Summary:
-  - Analyzed N files representing different page types
-  - Primary selector works on X/N files
-  - Fallback selectors provide Y% coverage
-
-  Key Findings:
-  - [Main pattern discovered]
-  - [Secondary pattern]
-  - [Edge cases to watch]
-
-  Confidence: [High/Medium/Low] based on consistency across files
+# Synthesis notes (comment them out to avoid warnings)
+# The 'notes' field causes warnings, so include your notes as comments instead:
+# Analysis Summary:
+# - Analyzed N files representing different page types
+# - Primary selector works on X/N files
+# - Fallback selectors provide Y% coverage
+#
+# Key Findings:
+# - [Main pattern discovered]
+# - [Secondary pattern]
+# - [Edge cases to watch]
+#
+# Confidence: [High/Medium/Low] based on consistency across files
 ````
 
 ## Selection Criteria
