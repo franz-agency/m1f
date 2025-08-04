@@ -14396,9 +14396,9 @@ def handle_claude_analysis_improved(
     # Prepare tasks for parallel execution
     tasks = []
     for i, file_path in enumerate(verified_files, 1):
-        # Construct paths - use relative paths when possible
-        # For output, we need to ensure it's relative to where Claude is running
-        output_path = f"m1f/analysis/html_analysis_{i}.txt"
+        # Construct paths - use absolute path to ensure correct location
+        # Analysis files go into the m1f/analysis directory
+        output_path = str(analysis_dir / f"html_analysis_{i}.txt")
 
         # Customize prompt for this specific file
         individual_prompt = individual_prompt_template.replace("{filename}", file_path)
@@ -14465,7 +14465,9 @@ def handle_claude_analysis_improved(
     # Build the file list dynamically with relative paths
     file_list = []
     for i in range(1, len(verified_files) + 1):
-        file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
+        # Use absolute paths for synthesis to ensure files are found
+        analysis_file_path = str(analysis_dir / f"html_analysis_{i}.txt")
+        file_list.append(f"- {analysis_file_path}")
 
     # Replace the static file list with the dynamic one
     old_file_list = """Read the 5 analysis files:
