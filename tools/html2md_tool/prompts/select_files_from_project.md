@@ -51,7 +51,7 @@ Select files that likely have:
 ## Output Format:
 
 Your response MUST contain ONLY:
-1. Exactly 5 file paths (one per line)
+1. EXACTLY 5 file paths (one per line)
 2. Each path must be copied EXACTLY from the provided list
 3. The text "FILE_SELECTION_COMPLETE_OK" on the last line
 

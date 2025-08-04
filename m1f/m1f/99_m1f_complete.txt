@@ -52344,6 +52344,9 @@ def handle_claude_analysis_improved(
     simple_prompt_template = simple_prompt_template.replace(
         "exactly 5 representative", f"exactly {num_files_to_analyze} representative"
     )
+    simple_prompt_template = simple_prompt_template.replace(
+        "exactly 5 files", f"exactly {num_files_to_analyze} files"
+    )
 
     # The file list is already saved in all_html_files_filelist.txt
     # Use absolute path so Claude can read it directly
@@ -52431,12 +52434,20 @@ def handle_claude_analysis_improved(
     info(f"\nClaude selected {len(selected_files)} files:")
     for f in selected_files:
         info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
+    
+    # Check if Claude returned fewer files than requested
+    if len(selected_files) < num_files_to_analyze:
+        warning(f"⚠️  Claude returned only {len(selected_files)} files instead of {num_files_to_analyze} requested")
+        warning("   Proceeding with the files that were selected...")
+    elif len(selected_files) > num_files_to_analyze:
+        info(f"📝 Claude returned {len(selected_files)} files, using first {num_files_to_analyze}")
+        selected_files = selected_files[:num_files_to_analyze]
 
     # Step 4: Verify the selected files exist
     info("\nVerifying selected HTML files...")
     verified_files = []
     
-    for file_path in selected_files[:num_files_to_analyze]:
+    for file_path in selected_files:
         file_path = file_path.strip()
         
         # First check if this path is exactly in our relative_paths list
@@ -52473,6 +52484,12 @@ def handle_claude_analysis_improved(
     if not verified_files:
         error("❌ No HTML files could be verified")
         return
+    
+    # Check if we have fewer verified files than requested
+    if len(verified_files) < num_files_to_analyze:
+        warning(f"⚠️  Only {len(verified_files)} files passed verification (requested {num_files_to_analyze})")
+        if len(verified_files) < len(selected_files):
+            warning(f"   {len(selected_files) - len(verified_files)} files failed verification")
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
@@ -76597,7 +76614,7 @@ Select files that likely have:
 ## Output Format:
 
 Your response MUST contain ONLY:
-1. Exactly 5 file paths (one per line)
+1. EXACTLY 5 file paths (one per line)
 2. Each path must be copied EXACTLY from the provided list
 3. The text "FILE_SELECTION_COMPLETE_OK" on the last line
 
