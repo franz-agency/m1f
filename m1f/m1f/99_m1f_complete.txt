@@ -13254,13 +13254,16 @@ I'll analyze your project and create an optimal m1f configuration that:
             context = self._analyze_project_context()
             info(context)
 
-        # Check if basic bundles exist
+        # Check if basic bundles exist - either complete or docs
         project_name = self.project_path.name
-        if not (m1f_dir / f"{project_name}_complete.txt").exists():
+        complete_bundle = m1f_dir / f"{project_name}_complete.txt"
+        docs_bundle = m1f_dir / f"{project_name}_docs.txt"
+        
+        if not complete_bundle.exists() and not docs_bundle.exists():
             warning("Basic bundles not found. Please run 'm1f-init' first!")
-            info("\nExpected to find:")
-            info(f"  • m1f/{project_name}_complete.txt")
-            info(f"  • m1f/{project_name}_docs.txt")
+            info("\nExpected to find at least one of:")
+            info(f"  • m1f/{project_name}_complete.txt (for code projects)")
+            info(f"  • m1f/{project_name}_docs.txt (for documentation projects)")
             return
 
         # Run advanced segmentation with Claude
