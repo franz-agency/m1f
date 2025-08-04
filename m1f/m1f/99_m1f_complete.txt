@@ -11739,13 +11739,13 @@ logger = logging.getLogger(__name__)
 
 def find_claude_executable() -> Optional[str]:
     """Find the Claude executable in various possible locations."""
-    # First check if claude is available via npx
+    # First check if claude is directly available in PATH
     try:
         result = subprocess.run(
-            ["npx", "claude", "--version"], capture_output=True, text=True, timeout=5
+            ["claude", "--version"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
-            return "npx claude"
+            return "claude"
     except:
         pass
 
@@ -13532,31 +13532,17 @@ bundles:
                 return None, None
 
             # Build command - use stream-json for real-time feedback
-            if claude_cmd == "npx claude":
-                cmd = [
-                    "npx",
-                    "claude",
-                    "--print",
-                    (
-                        "--verbose" if self.output_format == "stream-json" else None
-                    ),  # Required for stream-json
-                    "--output-format",
-                    self.output_format,
-                    "--allowedTools",
-                    self.allowed_tools,
-                ]
-            else:
-                cmd = [
-                    claude_cmd,
-                    "--print",
-                    (
-                        "--verbose" if self.output_format == "stream-json" else None
-                    ),  # Required for stream-json
-                    "--output-format",
-                    self.output_format,
-                    "--allowedTools",
-                    self.allowed_tools,
-                ]
+            cmd = [
+                claude_cmd,
+                "--print",
+                (
+                    "--verbose" if self.output_format == "stream-json" else None
+                ),  # Required for stream-json
+                "--output-format",
+                self.output_format,
+                "--allowedTools",
+                self.allowed_tools,
+            ]
 
             # Filter out None values
             cmd = [x for x in cmd if x is not None]
