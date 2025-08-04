@@ -77,9 +77,8 @@ conversion:
 # Asset handling configuration
 assets:
   download: false
-  image_directory: "images"
-  link_prefix: ""
-  process_links: true
+  directory: "assets"
+  max_size: 10485760  # 10MB in bytes
 
 # File handling options
 file_extensions: [".html", ".htm"]
