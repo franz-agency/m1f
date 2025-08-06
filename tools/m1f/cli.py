@@ -27,6 +27,7 @@ try:
     from ..shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
 except ImportError:
     COLORAMA_AVAILABLE = False
+
     # Fallback formatter
     class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         pass
@@ -134,8 +135,8 @@ Perfect for:
     format_group.add_argument(
         "--separator-style",
         choices=["Standard", "Detailed", "Markdown", "MachineReadable", "None"],
-        default="Detailed",
-        help="Format of the separator between files (default: Detailed)",
+        default="Standard",
+        help="Format of the separator between files (default: Standard)",
     )
 
     format_group.add_argument(

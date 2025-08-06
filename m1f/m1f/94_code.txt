@@ -16550,6 +16550,7 @@ try:
     from ..shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
 except ImportError:
     COLORAMA_AVAILABLE = False
+
     # Fallback formatter
     class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         pass
@@ -16657,8 +16658,8 @@ Perfect for:
     format_group.add_argument(
         "--separator-style",
         choices=["Standard", "Detailed", "Markdown", "MachineReadable", "None"],
-        default="Detailed",
-        help="Format of the separator between files (default: Detailed)",
+        default="Standard",
+        help="Format of the separator between files (default: Standard)",
     )
 
     format_group.add_argument(
@@ -17006,7 +17007,7 @@ class OutputConfig:
     force_overwrite: bool = False
     minimal_output: bool = False
     skip_output_file: bool = False
-    separator_style: SeparatorStyle = SeparatorStyle.DETAILED
+    separator_style: SeparatorStyle = SeparatorStyle.STANDARD
     line_ending: LineEnding = LineEnding.LF
     parallel: bool = True  # Default to parallel processing for better performance
     enable_content_deduplication: bool = True  # Enable content deduplication by default
@@ -17310,11 +17311,11 @@ class Config:
             or (global_settings.skip_output_file or False),
             separator_style=(
                 SeparatorStyle(args.separator_style)
-                if args.separator_style != "Detailed"
+                if args.separator_style != "Standard"
                 else (
                     SeparatorStyle(global_settings.separator_style)
                     if global_settings.separator_style
-                    else SeparatorStyle.DETAILED
+                    else SeparatorStyle.STANDARD
                 )
             ),
             line_ending=(
@@ -18273,6 +18274,10 @@ class FileCombiner:
 
                 # Sort directories by depth and name
                 sorted_paths = sort_directories_by_depth_and_name(list(unique_dirs))
+
+            # Only write if there's content to write
+            if not sorted_paths:
+                return
 
             # Write to file
             def write_file():

@@ -8,6 +8,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- **m1f Output Improvements**: Optimized file generation behavior
+  - Default separator style changed from "Detailed" to "Standard" for simpler output
+  - Directory list file is no longer created when no directories exist
+  - File list is no longer created when no files are processed
+  - Reduces unnecessary empty file creation
+
 ### Added
 
 - **m1f-scrape Session Management**: Complete session tracking system for scraping runs

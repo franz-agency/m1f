@@ -762,6 +762,53 @@ Werkzeug==3.1.3
 yarl==1.20.1
 zope.interface==7.2
 
+======= test_output.log ======
+2025-08-07 00:44:18,724 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/test_output
+2025-08-07 00:44:18,724 - tools.m1f.core - INFO    : Separator style: Standard
+2025-08-07 00:44:18,725 - tools.m1f.core - INFO    : Found 2 files to process
+2025-08-07 00:44:18,725 - tools.m1f.output_writer - INFO    : Processing 2 file(s) for inclusion...
+2025-08-07 00:44:18,725 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-08-07 00:44:18,726 - tools.m1f.core - INFO    : Successfully combined 2 files into '/home/fuf-user/git/m1f/test_output.txt'
+2025-08-07 00:44:19,039 - tools.m1f.core - INFO    : Output file contains approximately 22 tokens
+2025-08-07 00:44:19,039 - m1f_main - INFO    : Total execution time: 0.32 seconds
+2025-08-07 00:44:19,039 - m1f_main - INFO    : Processed 2 files
+
+======= test_output2.log ======
+2025-08-07 00:44:28,198 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/test_output
+2025-08-07 00:44:28,199 - tools.m1f.core - INFO    : Separator style: Standard
+2025-08-07 00:44:28,199 - tools.m1f.core - INFO    : Found 2 files to process
+2025-08-07 00:44:28,200 - tools.m1f.core - INFO    : Wrote 2 files to /home/fuf-user/git/m1f/test_output2_filelist.txt
+2025-08-07 00:44:28,200 - tools.m1f.output_writer - INFO    : Processing 2 file(s) for inclusion...
+2025-08-07 00:44:28,200 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-08-07 00:44:28,201 - tools.m1f.core - INFO    : Successfully combined 2 files into '/home/fuf-user/git/m1f/test_output2.txt'
+2025-08-07 00:44:28,347 - tools.m1f.core - INFO    : Output file contains approximately 22 tokens
+2025-08-07 00:44:28,347 - m1f_main - INFO    : Total execution time: 0.15 seconds
+2025-08-07 00:44:28,348 - m1f_main - INFO    : Processed 2 files
+
+======= test_output3.log ======
+2025-08-07 00:44:43,910 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/test_output
+2025-08-07 00:44:43,910 - tools.m1f.core - INFO    : Separator style: Standard
+2025-08-07 00:44:43,911 - tools.m1f.core - INFO    : Found 3 files to process
+2025-08-07 00:44:43,912 - tools.m1f.core - INFO    : Wrote 3 files to /home/fuf-user/git/m1f/test_output3_filelist.txt
+2025-08-07 00:44:43,913 - tools.m1f.core - INFO    : Wrote 1 directories to /home/fuf-user/git/m1f/test_output3_dirlist.txt
+2025-08-07 00:44:43,913 - tools.m1f.output_writer - INFO    : Processing 3 file(s) for inclusion...
+2025-08-07 00:44:43,913 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-08-07 00:44:43,914 - tools.m1f.core - INFO    : Successfully combined 3 files into '/home/fuf-user/git/m1f/test_output3.txt'
+2025-08-07 00:44:44,069 - tools.m1f.core - INFO    : Output file contains approximately 34 tokens
+2025-08-07 00:44:44,069 - m1f_main - INFO    : Total execution time: 0.16 seconds
+2025-08-07 00:44:44,069 - m1f_main - INFO    : Processed 3 files
+
+======= test_output4.log ======
+2025-08-07 00:44:56,662 - tools.m1f.core - INFO    : Source directory: /home/fuf-user/git/m1f/test_output
+2025-08-07 00:44:56,663 - tools.m1f.core - INFO    : Separator style: Detailed
+2025-08-07 00:44:56,663 - tools.m1f.core - INFO    : Found 3 files to process
+2025-08-07 00:44:56,664 - tools.m1f.output_writer - INFO    : Processing 3 file(s) for inclusion...
+2025-08-07 00:44:56,664 - tools.m1f.output_writer - INFO    : Using parallel processing for file reading...
+2025-08-07 00:44:56,664 - tools.m1f.core - INFO    : Successfully combined 3 files into '/home/fuf-user/git/m1f/test_output4.txt'
+2025-08-07 00:44:56,817 - tools.m1f.core - INFO    : Output file contains approximately 297 tokens
+2025-08-07 00:44:56,817 - m1f_main - INFO    : Total execution time: 0.15 seconds
+2025-08-07 00:44:56,817 - m1f_main - INFO    : Processed 3 files
+
 ======= bin/m1f ======
 #!/usr/bin/env bash
 # m1f - Make One File
@@ -1223,6 +1270,14 @@ and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Changed
+
+- **m1f Output Improvements**: Optimized file generation behavior
+  - Default separator style changed from "Detailed" to "Standard" for simpler output
+  - Directory list file is no longer created when no directories exist
+  - File list is no longer created when no files are processed
+  - Reduces unnecessary empty file creation
 
 ### Added
 
@@ -54660,6 +54715,7 @@ try:
     from ..shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
 except ImportError:
     COLORAMA_AVAILABLE = False
+
     # Fallback formatter
     class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         pass
@@ -54767,8 +54823,8 @@ Perfect for:
     format_group.add_argument(
         "--separator-style",
         choices=["Standard", "Detailed", "Markdown", "MachineReadable", "None"],
-        default="Detailed",
-        help="Format of the separator between files (default: Detailed)",
+        default="Standard",
+        help="Format of the separator between files (default: Standard)",
     )
 
     format_group.add_argument(
@@ -55116,7 +55172,7 @@ class OutputConfig:
     force_overwrite: bool = False
     minimal_output: bool = False
     skip_output_file: bool = False
-    separator_style: SeparatorStyle = SeparatorStyle.DETAILED
+    separator_style: SeparatorStyle = SeparatorStyle.STANDARD
     line_ending: LineEnding = LineEnding.LF
     parallel: bool = True  # Default to parallel processing for better performance
     enable_content_deduplication: bool = True  # Enable content deduplication by default
@@ -55420,11 +55476,11 @@ class Config:
             or (global_settings.skip_output_file or False),
             separator_style=(
                 SeparatorStyle(args.separator_style)
-                if args.separator_style != "Detailed"
+                if args.separator_style != "Standard"
                 else (
                     SeparatorStyle(global_settings.separator_style)
                     if global_settings.separator_style
-                    else SeparatorStyle.DETAILED
+                    else SeparatorStyle.STANDARD
                 )
             ),
             line_ending=(
@@ -56383,6 +56439,10 @@ class FileCombiner:
 
                 # Sort directories by depth and name
                 sorted_paths = sort_directories_by_depth_and_name(list(unique_dirs))
+
+            # Only write if there's content to write
+            if not sorted_paths:
+                return
 
             # Write to file
             def write_file():
