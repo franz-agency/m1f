@@ -34,11 +34,13 @@ import asyncio
 import anyio
 import signal
 from claude_code_sdk import query, ClaudeCodeOptions, Message, ResultMessage
+import tempfile
 
 # Use unified colorama module
 try:
     from .shared.colors import (
         Colors,
+        ColoredHelpFormatter,
         success,
         error,
         warning,
@@ -51,6 +53,7 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from tools.shared.colors import (
         Colors,
+        ColoredHelpFormatter,
         success,
         error,
         warning,
@@ -74,13 +77,13 @@ logger = logging.getLogger(__name__)
 
 def find_claude_executable() -> Optional[str]:
     """Find the Claude executable in various possible locations."""
-    # First check if claude is available via npx
+    # First check if claude is directly available in PATH
     try:
         result = subprocess.run(
-            ["npx", "claude", "--version"], capture_output=True, text=True, timeout=5
+            ["claude", "--version"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
-            return "npx claude"
+            return "claude"
     except:
         pass
 
@@ -155,10 +158,17 @@ class M1FClaude:
         self,
         project_path: Path = None,
         allowed_tools: str = "Read,Edit,MultiEdit,Write,Glob,Grep,Bash",
+        disallowed_tools: str = None,
         debug: bool = False,
         verbose: bool = False,
         project_description: str = None,
         project_priorities: str = None,
+        permission_mode: str = "default",
+        append_system_prompt: str = None,
+        output_format: str = "text",
+        input_format: str = "auto",
+        mcp_config: str = None,
+        cwd: Path = None,
     ):
         """Initialize m1f-claude with project context."""
         self.project_path = project_path or Path.cwd()
@@ -166,12 +176,19 @@ class M1FClaude:
         self.session_id = None  # Store session ID for conversation continuity
         self.conversation_started = False  # Track if conversation has started
         self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
+        self.disallowed_tools = disallowed_tools  # Tools to disallow
         self.debug = debug  # Enable debug output
         self.verbose = verbose  # Show all prompts and parameters
         self.project_description = (
             project_description  # User-provided project description
         )
         self.project_priorities = project_priorities  # User-provided project priorities
+        self.permission_mode = permission_mode  # Permission handling mode
+        self.append_system_prompt = append_system_prompt  # Additional system prompt
+        self.output_format = output_format  # Output format (text, json, stream-json)
+        self.input_format = input_format  # Input format
+        self.mcp_config = mcp_config  # MCP configuration file
+        self.cwd = cwd or self.project_path  # Working directory
 
         # Check for m1f documentation in various locations
         self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
@@ -1155,11 +1172,21 @@ I'll analyze your project and create an optimal m1f configuration that:
                 resume=(
                     self.session_id if not is_first_prompt and self.session_id else None
                 ),
-                # Enable file permissions for initialization
-                allow_write_files=True,
-                allow_read_files=True,
-                allow_edit_files=True,
+                # Use proper SDK parameters
+                allowed_tools=(
+                    self.allowed_tools.split(",") if self.allowed_tools else None
+                ),
+                permission_mode=self.permission_mode,
+                cwd=str(self.cwd) if self.cwd else None,
             )
+
+            # Add optional parameters if provided
+            if self.append_system_prompt:
+                options.system_prompt = self.append_system_prompt
+            if self.disallowed_tools:
+                options.disallowed_tools = self.disallowed_tools.split(",")
+            if self.mcp_config:
+                options.mcp_config = self.mcp_config
 
             async with anyio.create_task_group() as tg:
 
@@ -1188,10 +1215,16 @@ I'll analyze your project and create an optimal m1f configuration that:
                                         logger.info(
                                             "🔗 Session established with Claude Code"
                                         )
-                                # Handle cost field gracefully
+                                # Extract metadata from ResultMessage
                                 if hasattr(message, "cost_usd"):
                                     if self.debug:
                                         logger.info(f"Cost: ${message.cost_usd}")
+                                if hasattr(message, "duration"):
+                                    if self.debug:
+                                        logger.info(f"Duration: {message.duration}s")
+                                if hasattr(message, "num_turns"):
+                                    if self.debug:
+                                        logger.info(f"Turns: {message.num_turns}")
                     except Exception as e:
                         if self.debug:
                             logger.error(f"SDK error during message collection: {e}")
@@ -1263,7 +1296,22 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             # Prepare command with proper tools and directory access
             # Note: For initialization, we'll display the command rather than execute it
-            cmd_display = f"claude --add-dir {self.project_path} --allowedTools Read,Write,Edit,MultiEdit"
+            cmd_parts = [
+                "claude",
+                f"--add-dir {self.project_path}",
+                f"--allowedTools {self.allowed_tools}",
+            ]
+
+            if self.permission_mode != "default":
+                cmd_parts.append(f"--permission-mode {self.permission_mode}")
+            if self.append_system_prompt:
+                cmd_parts.append(
+                    f'--append-system-prompt "{self.append_system_prompt}"'
+                )
+            if self.mcp_config:
+                cmd_parts.append(f"--mcp-config {self.mcp_config}")
+
+            cmd_display = " ".join(cmd_parts)
 
             # Display the command and prompt for manual execution
             info(f"\n{Colors.CYAN}{'='*60}{Colors.RESET}")
@@ -1544,13 +1592,16 @@ I'll analyze your project and create an optimal m1f configuration that:
             context = self._analyze_project_context()
             info(context)
 
-        # Check if basic bundles exist
+        # Check if basic bundles exist - either complete or docs
         project_name = self.project_path.name
-        if not (m1f_dir / f"{project_name}_complete.txt").exists():
+        complete_bundle = m1f_dir / f"{project_name}_complete.txt"
+        docs_bundle = m1f_dir / f"{project_name}_docs.txt"
+        
+        if not complete_bundle.exists() and not docs_bundle.exists():
             warning("Basic bundles not found. Please run 'm1f-init' first!")
-            info("\nExpected to find:")
-            info(f"  • m1f/{project_name}_complete.txt")
-            info(f"  • m1f/{project_name}_docs.txt")
+            info("\nExpected to find at least one of:")
+            info(f"  • m1f/{project_name}_complete.txt (for code projects)")
+            info(f"  • m1f/{project_name}_docs.txt (for documentation projects)")
             return
 
         # Run advanced segmentation with Claude
@@ -1584,15 +1635,26 @@ I'll analyze your project and create an optimal m1f configuration that:
             # PHASE 1: Run Claude with streaming output
             runner = M1FClaudeRunner(claude_binary=claude_path)
 
+            # Build kwargs with new parameters
+            run_kwargs = {
+                "prompt": segmentation_prompt,
+                "working_dir": str(self.project_path),
+                "allowed_tools": self.allowed_tools,
+                "add_dir": str(self.project_path),
+                "timeout": 300,  # 5 minutes timeout
+                "show_output": True,
+            }
+
+            # Add optional parameters
+            if self.permission_mode != "default":
+                run_kwargs["permission_mode"] = self.permission_mode
+            if self.append_system_prompt:
+                run_kwargs["append_system_prompt"] = self.append_system_prompt
+            if self.mcp_config:
+                run_kwargs["mcp_config"] = self.mcp_config
+
             # Execute with streaming and timeout handling
-            returncode, stdout, stderr = runner.run_claude_streaming(
-                prompt=segmentation_prompt,
-                working_dir=str(self.project_path),
-                allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep",
-                add_dir=str(self.project_path),
-                timeout=300,  # 5 minutes timeout
-                show_output=True,
-            )
+            returncode, stdout, stderr = runner.run_claude_streaming(**run_kwargs)
 
             result = type("Result", (), {"returncode": returncode})
 
@@ -1637,15 +1699,11 @@ I'll analyze your project and create an optimal m1f configuration that:
             info("⏳ This includes checking bundle quality and fixing any issues...\n")
 
             # Run Claude again to verify and improve
+            run_kwargs["prompt"] = verification_prompt
+            run_kwargs["allowed_tools"] = self.allowed_tools  # Use configured tools
+
             returncode_verify, stdout_verify, stderr_verify = (
-                runner.run_claude_streaming(
-                    prompt=verification_prompt,
-                    working_dir=str(self.project_path),
-                    allowed_tools="Read,Write,Edit,MultiEdit,Glob,Grep,Bash",
-                    add_dir=str(self.project_path),
-                    timeout=300,  # 5 minutes timeout
-                    show_output=True,
-                )
+                runner.run_claude_streaming(**run_kwargs)
             )
 
             verify_result = type("Result", (), {"returncode": returncode_verify})
@@ -1812,27 +1870,32 @@ bundles:
                 return None, None
 
             # Build command - use stream-json for real-time feedback
-            if claude_cmd == "npx claude":
-                cmd = [
-                    "npx",
-                    "claude",
-                    "--print",
-                    "--verbose",  # Required for stream-json
-                    "--output-format",
-                    "stream-json",
-                    "--allowedTools",
-                    self.allowed_tools,
-                ]
-            else:
-                cmd = [
-                    claude_cmd,
-                    "--print",
-                    "--verbose",  # Required for stream-json
-                    "--output-format",
-                    "stream-json",
-                    "--allowedTools",
-                    self.allowed_tools,
-                ]
+            cmd = [
+                claude_cmd,
+                "--print",
+                (
+                    "--verbose" if self.output_format == "stream-json" else None
+                ),  # Required for stream-json
+                "--output-format",
+                self.output_format,
+                "--allowedTools",
+                self.allowed_tools,
+            ]
+
+            # Filter out None values
+            cmd = [x for x in cmd if x is not None]
+
+            # Add optional parameters
+            if self.disallowed_tools:
+                cmd.extend(["--disallowedTools", self.disallowed_tools])
+            if self.permission_mode != "default":
+                cmd.extend(["--permission-mode", self.permission_mode])
+            if self.append_system_prompt:
+                cmd.extend(["--append-system-prompt", self.append_system_prompt])
+            if self.mcp_config:
+                cmd.extend(["--mcp-config", self.mcp_config])
+            if self.cwd and self.cwd != self.project_path:
+                cmd.extend(["--cwd", str(self.cwd)])
 
             # Note: --debug flag interferes with JSON parsing, only use in stderr
             if self.debug:
@@ -1892,6 +1955,13 @@ bundles:
                             new_session_id = data.get("session_id", session_id)
                             if self.debug:
                                 info(f"[DEBUG] Session initialized: {new_session_id}")
+                        elif data.get("subtype") == "permission_prompt":
+                            # Handle permission prompt for MCP tools
+                            tool_name = data.get("tool_name", "Unknown")
+                            tool_params = data.get("parameters", {})
+                            warning(f"[⚠️  Permission required for {tool_name}]")
+                            if self.debug:
+                                info(f"[DEBUG] Parameters: {tool_params}")
                         elif self.debug:
                             info(f"[DEBUG] System message: {data}")
 
@@ -1955,9 +2025,21 @@ bundles:
                             elif output == False:
                                 error("[✗ Failed]", flush=True)
 
+                    elif event_type == "user":
+                        # User messages (for conversation tracking)
+                        if self.debug:
+                            user_content = data.get("content", "")
+                            info(
+                                f"[DEBUG] User: {user_content[:100]}..."
+                                if len(user_content) > 100
+                                else f"[DEBUG] User: {user_content}"
+                            )
+
                     elif event_type == "assistant":
                         # Assistant messages have a nested structure
-                        message_data = data.get("message", {})
+                        message_data = data.get(
+                            "message", data
+                        )  # Handle both nested and flat structures
                         content = message_data.get("content", [])
 
                         if isinstance(content, list):
@@ -2018,17 +2100,33 @@ bundles:
                             print(content, end="", flush=True)
 
                     elif event_type == "result":
-                        # Final result message
-                        new_session_id = data.get("session_id", session_id)
-                        # Show completion indicator
-                        success("[✅ Response complete]", flush=True)
-                        if self.debug:
-                            info(f"[DEBUG] Session ID: {new_session_id}")
-                            info(f"[DEBUG] Cost: ${data.get('total_cost_usd', 0):.4f}")
-                            info(f"[DEBUG] Turns: {data.get('num_turns', 0)}")
+                        # Final result message with various subtypes
+                        subtype = data.get("subtype", "")
+                        if subtype == "error":
+                            error(f"[❌ Error: {data.get('error', 'Unknown error')}]")
+                        elif subtype == "cancelled":
+                            warning("[⚠️  Response cancelled]")
+                        else:
+                            # Normal completion
+                            new_session_id = data.get("session_id", session_id)
+                            # Show completion indicator
+                            success("[✅ Response complete]", flush=True)
+                            if self.debug:
+                                info(f"[DEBUG] Session ID: {new_session_id}")
+                                info(
+                                    f"[DEBUG] Cost: ${data.get('total_cost_usd', 0):.4f}"
+                                )
+                                info(f"[DEBUG] Turns: {data.get('num_turns', 0)}")
+                                info(
+                                    f"[DEBUG] Duration: {data.get('duration', 0):.2f}s"
+                                )
 
                 except json.JSONDecodeError:
-                    if self.debug:
+                    # Handle non-JSON output (might be plain text in some formats)
+                    if self.output_format == "text":
+                        response_text += line + "\n"
+                        print(line)
+                    elif self.debug:
                         info(f"[DEBUG] Non-JSON line: {line}")
                 except Exception as e:
                     if self.debug:
@@ -2189,24 +2287,24 @@ def main():
 
     parser = argparse.ArgumentParser(
         description="Enhance your Claude prompts with m1f knowledge",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  m1f-claude "Help me bundle my Python project"
-  m1f-claude -i                    # Interactive mode
-  m1f-claude --setup     # Add topic bundles to existing setup
-  m1f-claude --check              # Check setup status
+        formatter_class=ColoredHelpFormatter,
+        epilog=f"""
+{Colors.BOLD}Examples:{Colors.RESET}
+  {Colors.CYAN}m1f-claude "Help me bundle my Python project"{Colors.RESET}
+  {Colors.CYAN}m1f-claude -i{Colors.RESET}                    # Interactive mode
+  {Colors.CYAN}m1f-claude --setup{Colors.RESET}     # Add topic bundles to existing setup
+  {Colors.CYAN}m1f-claude --check{Colors.RESET}              # Check setup status
   
-Initialization workflow:
-  1. Run 'm1f-init' first to create basic bundles
-  2. Run 'm1f-claude --setup' for topic-specific bundles
+{Colors.BOLD}Initialization workflow:{Colors.RESET}
+  1. Run {Colors.CYAN}'m1f-init'{Colors.RESET} first to create basic bundles
+  2. Run {Colors.CYAN}'m1f-claude --setup'{Colors.RESET} for topic-specific bundles
   
-Note: m1f-init works on all platforms (Windows, Linux, Mac)
+{Colors.BOLD}Note:{Colors.RESET} {Colors.CYAN}m1f-init{Colors.RESET} works on all platforms (Windows, Linux, Mac)
   
-💡 Recommended: Use Claude Code with a subscription plan due to 
+{Colors.YELLOW}💡 Recommended:{Colors.RESET} Use Claude Code with a subscription plan due to 
    potentially high token usage during project setup and configuration.
   
-First time? Run 'm1f-init' to set up your project!
+{Colors.GREEN}First time? Run 'm1f-init' to set up your project!{Colors.RESET}
 """,
     )
 
@@ -2278,6 +2376,46 @@ First time? Run 'm1f-init' to set up your project!
         help="What's important for this project (performance, security, maintainability, etc.)",
     )
 
+    parser.add_argument(
+        "--permission-mode",
+        type=str,
+        default="default",
+        choices=["default", "acceptEdits", "plan", "bypassPermissions"],
+        help="Permission handling mode (default: default)",
+    )
+
+    parser.add_argument(
+        "--output-format",
+        type=str,
+        default="text",
+        choices=["text", "json", "stream-json"],
+        help="Output format (default: text)",
+    )
+
+    parser.add_argument(
+        "--append-system-prompt",
+        type=str,
+        help="Additional system prompt to append",
+    )
+
+    parser.add_argument(
+        "--mcp-config",
+        type=str,
+        help="Path to MCP configuration JSON file",
+    )
+
+    parser.add_argument(
+        "--cwd",
+        type=str,
+        help="Working directory for Claude (defaults to project path)",
+    )
+
+    parser.add_argument(
+        "--disallowed-tools",
+        type=str,
+        help="Comma-separated list of disallowed tools",
+    )
+
     args = parser.parse_args()
 
     # Handle /setup command in prompt
@@ -2288,10 +2426,16 @@ First time? Run 'm1f-init' to set up your project!
     # Initialize m1f-claude
     m1f_claude = M1FClaude(
         allowed_tools=args.allowed_tools,
+        disallowed_tools=args.disallowed_tools,
         debug=args.debug,
         verbose=args.verbose,
         project_description=args.project_description,
         project_priorities=args.project_priorities,
+        permission_mode=args.permission_mode,
+        append_system_prompt=args.append_system_prompt,
+        output_format=args.output_format,
+        mcp_config=args.mcp_config,
+        cwd=Path(args.cwd) if args.cwd else None,
     )
 
     # Check status

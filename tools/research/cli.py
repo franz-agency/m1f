@@ -1,3 +1,17 @@
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Enhanced CLI interface for m1f-research with improved UX
 """
@@ -21,8 +35,10 @@ try:
 except ImportError:
     # Fallback to local implementation
     from .output import Colors, COLORAMA_AVAILABLE
-    def info(msg): print(msg)
-    
+
+    def info(msg):
+        print(msg)
+
     class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         """Fallback help formatter with colors if available."""
 
@@ -37,7 +53,9 @@ except ImportError:
 
             return parts
 
-        def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
+        def _format_usage(
+            self, usage: str, actions, groups, prefix: Optional[str]
+        ) -> str:
             """Format usage line with colors."""
             result = super()._format_usage(usage, actions, groups, prefix)
 
@@ -48,6 +66,7 @@ except ImportError:
                 result = result.replace(prog_name, colored_prog, 1)
 
             return result
+
 
 # Import version
 try:
@@ -591,12 +610,12 @@ Combine multiple filters:
 
 ## CLI Providers
 
-For privacy or offline use:
+For enhanced integration:
 
-# Claude CLI (requires claude-cli installed)
+# Claude Code SDK (uses proper Claude Code SDK integration)
 m1f-research "topic" --provider claude-cli
 
-# Gemini CLI (requires gemini-cli installed)
+# Gemini CLI (requires gemini-cli installed) 
 m1f-research "topic" --provider gemini-cli
 
 ## Configuration File

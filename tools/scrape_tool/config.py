@@ -28,22 +28,33 @@ class ScraperBackend(str, Enum):
     BS4 = "bs4"  # Alias for beautifulsoup
     SELECTOLAX = "selectolax"
     HTTPX = "httpx"
-    SCRAPY = "scrapy"
     PLAYWRIGHT = "playwright"
 
 
 class CrawlerConfig(BaseModel):
     """Configuration for web crawler."""
 
-    max_depth: int = Field(default=5, ge=1, le=20, description="Maximum crawl depth")
+    max_depth: int = Field(
+        default=5,
+        ge=-1,
+        le=1000,
+        description="Maximum crawl depth (-1 for unlimited)",
+    )
     max_pages: int = Field(
-        default=1000, ge=1, le=10000, description="Maximum pages to crawl"
+        default=10000,
+        ge=-1,
+        le=10000000,
+        description="Maximum pages to crawl (-1 for unlimited)",
     )
     follow_external_links: bool = Field(
         default=False, description="Follow links to external domains"
     )
     allowed_domains: Optional[list[str]] = Field(
         default=None, description="List of allowed domains to crawl"
+    )
+    allowed_path: Optional[str] = Field(
+        default=None,
+        description="Restrict crawling to this path/URL and its subdirectories (e.g., /docs/ or https://example.com/docs/)",
     )
     excluded_paths: list[str] = Field(
         default_factory=list, description="URL paths to exclude from crawling"
@@ -88,6 +99,14 @@ class CrawlerConfig(BaseModel):
     check_content_duplicates: bool = Field(
         default=True,
         description="Skip pages with duplicate content (based on text-only checksum)",
+    )
+    check_ssrf: bool = Field(
+        default=True,
+        description="Check for SSRF vulnerabilities by blocking private IP addresses",
+    )
+    force_rescrape: bool = Field(
+        default=False,
+        description="Force re-scraping of all URLs, ignoring database cache",
     )
 
 

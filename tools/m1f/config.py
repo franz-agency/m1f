@@ -88,7 +88,7 @@ class OutputConfig:
     force_overwrite: bool = False
     minimal_output: bool = False
     skip_output_file: bool = False
-    separator_style: SeparatorStyle = SeparatorStyle.DETAILED
+    separator_style: SeparatorStyle = SeparatorStyle.STANDARD
     line_ending: LineEnding = LineEnding.LF
     parallel: bool = True  # Default to parallel processing for better performance
     enable_content_deduplication: bool = True  # Enable content deduplication by default
@@ -392,11 +392,11 @@ class Config:
             or (global_settings.skip_output_file or False),
             separator_style=(
                 SeparatorStyle(args.separator_style)
-                if args.separator_style != "Detailed"
+                if args.separator_style != "Standard"
                 else (
                     SeparatorStyle(global_settings.separator_style)
                     if global_settings.separator_style
-                    else SeparatorStyle.DETAILED
+                    else SeparatorStyle.STANDARD
                 )
             ),
             line_ending=(

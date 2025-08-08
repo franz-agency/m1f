@@ -167,11 +167,13 @@ def handle_claude_analysis_improved(
     simple_prompt_template = simple_prompt_template.replace(
         "exactly 5 representative", f"exactly {num_files_to_analyze} representative"
     )
+    simple_prompt_template = simple_prompt_template.replace(
+        "exactly 5 files", f"exactly {num_files_to_analyze} files"
+    )
 
-    # Add the list of available HTML files to the prompt
-    file_list = "\n".join(relative_paths)
-    simple_prompt = f"""Available HTML files in the directory:
-{file_list}
+    # The file list is already saved in all_html_files_filelist.txt
+    # Use absolute path so Claude can read it directly
+    simple_prompt = f"""Available HTML files are listed in: {str(file_list_path)}
 
 {simple_prompt_template}"""
 
@@ -184,84 +186,133 @@ def handle_claude_analysis_improved(
     )
     info(f"   {Colors.DIM}This may take 10-30 seconds...{Colors.RESET}")
 
-    # Step 3: Use Claude to select representative files
+    # Step 3: Use Claude to select representative files    
     returncode, stdout, stderr = runner.run_claude_streaming(
         prompt=simple_prompt,
-        allowed_tools="Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
-        add_dir=str(common_parent),
+        allowed_tools="Read,Task,TodoWrite",  # Allow Read for file access, Task for sub-agents, TodoWrite for task management
+        add_dir=str(common_parent),  # Set working directory for file resolution
         timeout=180,  # 3 minutes for file selection
-        show_output=True,
+        show_output=False,  # Capture output instead of showing it
     )
 
     if returncode != 0:
         error(f"❌ Claude command failed: {stderr}")
         return
 
+    # Debug: Show what Claude returned
+    if not stdout.strip():
+        warning("⚠️  Claude returned empty output")
+        info(f"Debug - stdout length: {len(stdout)}")
+        info(f"Debug - stderr length: {len(stderr)}")
+        if stderr:
+            warning(f"Debug - stderr: {stderr[:500]}")
+    else:
+        # Show Claude's raw output for debugging
+        info("\n🔍 Claude's raw output:")
+        info("-" * 40)
+        # Show first 20 lines or 2000 chars, whichever is shorter
+        output_lines = stdout.strip().split("\n")
+        for i, line in enumerate(output_lines[:20]):
+            info(f"  Line {i+1}: {line[:100]}{'...' if len(line) > 100 else ''}")
+        if len(output_lines) > 20:
+            info(f"  ... ({len(output_lines) - 20} more lines)")
+        info("-" * 40)
+    
     selected_files = stdout.strip().split("\n")
     selected_files = [f.strip() for f in selected_files if f.strip()]
 
-    # Filter out any lines that are not file paths and normalize paths
+    # Filter out any lines that are not file paths
     valid_files = []
-    for f in selected_files:
-        if (
-            any(
-                word in f.lower()
-                for word in ["select", "based on", "analysis", "representative"]
-            )
-            or len(f) > 200
-        ):
+    for line in selected_files:
+        line = line.strip()
+        
+        # Skip empty lines and the completion marker
+        if not line or "FILE_SELECTION_COMPLETE_OK" in line:
             continue
-        if "FILE_SELECTION_COMPLETE_OK" in f:
+            
+        # Skip lines that look like explanatory text
+        if any(word in line.lower() for word in ["select", "based", "analysis", "representative", "file:", "path:"]):
             continue
-        if ".html" in f or ".htm" in f:
-            # Normalize path - remove common_parent prefix if present
-            if str(common_parent) in f:
-                f = f.replace(str(common_parent) + "/", "")
-            valid_files.append(f)
+            
+        # Skip lines that are too long to be reasonable file paths
+        if len(line) > 300:
+            continue
+            
+        # Accept lines that look like HTML file paths
+        if ".html" in line.lower() or ".htm" in line.lower():
+            # Clean up the path - remove any leading/trailing whitespace or quotes
+            clean_path = line.strip().strip('"').strip("'")
+            
+            # If the path is in our relative_paths list, it's definitely valid
+            if clean_path in relative_paths:
+                valid_files.append(clean_path)
+            else:
+                # Otherwise, try to normalize it
+                if str(common_parent) in clean_path:
+                    clean_path = clean_path.replace(str(common_parent) + "/", "")
+                valid_files.append(clean_path)
 
     selected_files = valid_files
 
     info(f"\nClaude selected {len(selected_files)} files:")
     for f in selected_files:
         info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
+    
+    # Check if Claude returned fewer files than requested
+    if len(selected_files) < num_files_to_analyze:
+        warning(f"⚠️  Claude returned only {len(selected_files)} files instead of {num_files_to_analyze} requested")
+        warning("   Proceeding with the files that were selected...")
+    elif len(selected_files) > num_files_to_analyze:
+        info(f"📝 Claude returned {len(selected_files)} files, using first {num_files_to_analyze}")
+        selected_files = selected_files[:num_files_to_analyze]
 
     # Step 4: Verify the selected files exist
     info("\nVerifying selected HTML files...")
     verified_files = []
-
-    for file_path in selected_files[:num_files_to_analyze]:
+    
+    for file_path in selected_files:
         file_path = file_path.strip()
-
-        # Try different path resolutions
-        paths_to_try = [
-            common_parent / file_path,  # Relative to common_parent
-            Path(file_path),  # Absolute path
-            common_parent / Path(file_path).name,  # Just filename in common_parent
-        ]
-
-        found = False
-        for test_path in paths_to_try:
-            if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
-                # Store relative path from common_parent
-                try:
-                    rel_path = test_path.relative_to(common_parent)
-                    verified_files.append(str(rel_path))
-                    success(f"✅ Found: {rel_path}")
-                    found = True
-                    break
-                except ValueError:
-                    # If not relative to common_parent, use the filename
-                    verified_files.append(test_path.name)
-                    success(f"✅ Found: {test_path.name}")
-                    found = True
-                    break
-
-        if not found:
-            warning(f"⚠️  Not found: {file_path}")
+        
+        # First check if this path is exactly in our relative_paths list
+        if file_path in relative_paths:
+            # It's a valid path from our list
+            full_path = common_parent / file_path
+            if full_path.exists():
+                verified_files.append(file_path)
+                success(f"✅ Found: {file_path}")
+                continue
+        
+        # If not found exactly, try as a path relative to common_parent
+        test_path = common_parent / file_path
+        if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
+            try:
+                rel_path = test_path.relative_to(common_parent)
+                verified_files.append(str(rel_path))
+                success(f"✅ Found: {rel_path}")
+                continue
+            except ValueError:
+                pass
+        
+        # If still not found, log it as missing
+        warning(f"⚠️  Not found: {file_path}")
+        warning(f"   Expected it to be in: {common_parent}")
+        
+        # Show a few similar paths from our list to help debug
+        similar = [p for p in relative_paths if Path(p).name == Path(file_path).name]
+        if similar:
+            info(f"   Did you mean one of these?")
+            for s in similar[:3]:
+                info(f"     - {s}")
 
     if not verified_files:
         error("❌ No HTML files could be verified")
         return
+    
+    # Check if we have fewer verified files than requested
+    if len(verified_files) < num_files_to_analyze:
+        warning(f"⚠️  Only {len(verified_files)} files passed verification (requested {num_files_to_analyze})")
+        if len(verified_files) < len(selected_files):
+            warning(f"   {len(selected_files) - len(verified_files)} files failed verification")
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
@@ -295,9 +346,9 @@ def handle_claude_analysis_improved(
     # Prepare tasks for parallel execution
     tasks = []
     for i, file_path in enumerate(verified_files, 1):
-        # Construct paths - use relative paths when possible
-        # For output, we need to ensure it's relative to where Claude is running
-        output_path = f"m1f/analysis/html_analysis_{i}.txt"
+        # Construct paths - use absolute path to ensure correct location
+        # Analysis files go into the m1f/analysis directory
+        output_path = str(analysis_dir / f"html_analysis_{i}.txt")
 
         # Customize prompt for this specific file
         individual_prompt = individual_prompt_template.replace("{filename}", file_path)
@@ -315,7 +366,7 @@ def handle_claude_analysis_improved(
                 "name": f"Analysis {i}: {file_path}",
                 "prompt": individual_prompt,
                 "add_dir": str(common_parent),
-                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write",  # All tools except Bash and Notebook*
+                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write,Bash,Task",  # Include Bash for ls, grep etc., and Task for sub-agents
                 "timeout": 300,  # 5 minutes per file
                 "working_dir": str(common_parent),  # Set working directory
             }
@@ -364,7 +415,9 @@ def handle_claude_analysis_improved(
     # Build the file list dynamically with relative paths
     file_list = []
     for i in range(1, len(verified_files) + 1):
-        file_list.append(f"- m1f/analysis/html_analysis_{i}.txt")
+        # Use absolute paths for synthesis to ensure files are found
+        analysis_file_path = str(analysis_dir / f"html_analysis_{i}.txt")
+        file_list.append(f"- {analysis_file_path}")
 
     # Replace the static file list with the dynamic one
     old_file_list = """Read the 5 analysis files:

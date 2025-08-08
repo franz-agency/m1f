@@ -21,7 +21,16 @@ from pathlib import Path
 from typing import List, Optional
 
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    ColoredHelpFormatter,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 from . import __version__
 from .api import Html2mdConverter
@@ -29,71 +38,102 @@ from .config import Config, OutputFormat
 from .claude_runner import ClaudeRunner
 
 
-def create_parser() -> argparse.ArgumentParser:
+class CustomArgumentParser(argparse.ArgumentParser):
+    """Custom argument parser with better error messages."""
+
+    def error(self, message: str) -> None:
+        """Display error message with colors if available."""
+        error_msg = f"ERROR: {message}"
+
+        if COLORAMA_AVAILABLE:
+            error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
+
+        self.print_usage(sys.stderr)
+        print(f"\n{error_msg}", file=sys.stderr)
+        print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
+        self.exit(2)
+
+
+def create_parser() -> CustomArgumentParser:
     """Create the argument parser."""
-    parser = argparse.ArgumentParser(
+    description = """m1f-html2md - HTML to Markdown Converter
+=====================================
+
+Convert HTML files to clean Markdown format with advanced content extraction options.
+Supports both local processing and Claude AI-powered conversion for optimal results.
+
+Perfect for:
+• Converting scraped documentation to readable Markdown
+• Extracting main content from complex HTML layouts
+• Batch processing entire documentation sites
+• AI-powered intelligent content extraction"""
+
+    epilog = """Examples:
+  %(prog)s convert file.html -o file.md
+  %(prog)s convert ./html/ -o ./markdown/
+  %(prog)s convert ./html/ -c config.yaml
+  %(prog)s convert ./html/ -o ./md/ --content-selector "article.post"
+  %(prog)s analyze ./html/ --claude
+  %(prog)s analyze ./html/ --claude --analyze-files 10
+  %(prog)s convert ./html/ -o ./markdown/ --claude --model opus
+  
+For more information, see the documentation."""
+
+    parser = CustomArgumentParser(
         prog="m1f-html2md",
-        description="Convert HTML files to Markdown format with advanced options and optional Claude AI integration",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Convert a single file
-  m1f-html2md convert file.html -o file.md
-  
-  # Convert entire directory
-  m1f-html2md convert ./docs/html/ -o ./docs/markdown/
-  
-  # Use configuration file
-  m1f-html2md convert ./html/ -c config.yaml
-  
-  # Extract specific content
-  m1f-html2md convert ./html/ -o ./md/ --content-selector "article.post"
-  
-  # Analyze HTML structure with AI assistance
-  m1f-html2md analyze ./html/ --claude
-  
-  # Analyze with more files for better coverage
-  m1f-html2md analyze ./html/ --claude --analyze-files 10
-  
-  # Convert HTML to clean Markdown using AI
-  m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus --sleep 2
-""",
+        description=description,
+        epilog=epilog,
+        formatter_class=ColoredHelpFormatter,
+        add_help=True,
     )
 
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show program version and exit",
     )
 
-    # Global options
-    parser.add_argument(
+    # Output control group
+    output_group = parser.add_argument_group("Output Control")
+    output_group.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
-
-    parser.add_argument(
+    output_group.add_argument(
         "-q", "--quiet", action="store_true", help="Suppress all output except errors"
     )
-
-    parser.add_argument("--log-file", type=Path, help="Log to file")
+    output_group.add_argument("--log-file", type=Path, help="Write logs to file")
 
     # Subcommands
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers = parser.add_subparsers(
+        dest="command",
+        help="Available commands",
+        required=True,
+        metavar="COMMAND",
+    )
 
     # Convert command
     convert_parser = subparsers.add_parser(
         "convert",
-        help="Convert HTML files to Markdown (supports Claude AI with --claude)",
+        help="Convert HTML files to Markdown",
+        formatter_class=ColoredHelpFormatter,
     )
     add_convert_arguments(convert_parser)
 
     # Analyze command
     analyze_parser = subparsers.add_parser(
         "analyze",
-        help="Analyze HTML structure for selector suggestions (supports Claude AI with --claude)",
+        help="Analyze HTML structure for content extraction",
+        formatter_class=ColoredHelpFormatter,
     )
     add_analyze_arguments(analyze_parser)
 
     # Config command
-    config_parser = subparsers.add_parser("config", help="Generate configuration file")
+    config_parser = subparsers.add_parser(
+        "config",
+        help="Generate configuration file template",
+        formatter_class=ColoredHelpFormatter,
+    )
     add_config_arguments(config_parser)
 
     return parser
@@ -101,61 +141,83 @@ Examples:
 
 def add_convert_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for convert command."""
-    parser.add_argument("source", type=Path, help="Source file or directory")
-
+    # Positional arguments
+    parser.add_argument("source", type=Path, help="Source HTML file or directory")
     parser.add_argument(
         "-o", "--output", type=Path, required=True, help="Output file or directory"
     )
 
-    parser.add_argument("-c", "--config", type=Path, help="Configuration file")
-
-    parser.add_argument(
+    # Configuration group
+    config_group = parser.add_argument_group("Configuration")
+    config_group.add_argument(
+        "-c", "--config", type=Path, help="Configuration file (YAML/JSON/TOML)"
+    )
+    config_group.add_argument(
         "--format",
         choices=["markdown", "m1f_bundle", "json"],
         default="markdown",
-        help="Output format",
+        help="Output format (default: markdown)",
     )
 
-    # Content extraction options
-    parser.add_argument("--content-selector", help="CSS selector for main content")
-
-    parser.add_argument("--ignore-selectors", nargs="+", help="CSS selectors to ignore")
-
-    parser.add_argument(
-        "--heading-offset", type=int, default=0, help="Offset heading levels"
+    # Content extraction group
+    extraction_group = parser.add_argument_group("Content Extraction")
+    extraction_group.add_argument(
+        "--content-selector",
+        metavar="SELECTOR",
+        help="CSS selector for main content area",
+    )
+    extraction_group.add_argument(
+        "--ignore-selectors",
+        nargs="+",
+        metavar="SELECTOR",
+        help="CSS selectors to ignore (nav, header, footer, etc.)",
+    )
+    extraction_group.add_argument(
+        "--extractor",
+        type=Path,
+        metavar="FILE",
+        help="Path to custom extractor Python file",
     )
 
-    parser.add_argument(
-        "--no-frontmatter", action="store_true", help="Don't add YAML frontmatter"
+    # Processing options group
+    processing_group = parser.add_argument_group("Processing Options")
+    processing_group.add_argument(
+        "--heading-offset",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Offset heading levels by N (default: 0)",
+    )
+    processing_group.add_argument(
+        "--no-frontmatter",
+        action="store_true",
+        help="Don't add YAML frontmatter to output",
+    )
+    processing_group.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Enable parallel processing for multiple files",
     )
 
-    parser.add_argument(
-        "--parallel", action="store_true", help="Enable parallel processing"
-    )
-
-    parser.add_argument(
-        "--extractor", type=Path, help="Path to custom extractor Python file"
-    )
-
-    # Claude AI conversion options
-    parser.add_argument(
+    # Claude AI options group
+    ai_group = parser.add_argument_group("Claude AI Options")
+    ai_group.add_argument(
         "--claude",
         action="store_true",
-        help="Use Claude AI to convert HTML to Markdown (content only, no headers/navigation)",
+        help="Use Claude AI for intelligent HTML to Markdown conversion",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--model",
         choices=["opus", "sonnet"],
         default="sonnet",
         help="Claude model to use (default: sonnet)",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--sleep",
         type=float,
         default=1.0,
-        help="Sleep time in seconds between Claude API calls (default: 1.0)",
+        metavar="SECONDS",
+        help="Delay between Claude API calls (default: 1.0)",
     )
 
 
@@ -165,70 +227,73 @@ def add_analyze_arguments(parser: argparse.ArgumentParser) -> None:
         "paths",
         nargs="+",
         type=Path,
-        help="HTML files or directories to analyze (automatically finds all HTML files in directories)",
+        help="HTML files or directories to analyze",
     )
 
-    parser.add_argument(
-        "--show-structure", action="store_true", help="Show detailed HTML structure"
+    # Analysis options group
+    analysis_group = parser.add_argument_group("Analysis Options")
+    analysis_group.add_argument(
+        "--show-structure",
+        action="store_true",
+        help="Show detailed HTML structure analysis",
     )
-
-    parser.add_argument(
+    analysis_group.add_argument(
         "--common-patterns",
         action="store_true",
-        help="Find common patterns across files",
+        help="Find common patterns across multiple files",
     )
-
-    parser.add_argument(
+    analysis_group.add_argument(
         "--suggest-selectors",
         action="store_true",
         help="Suggest CSS selectors for content extraction",
     )
 
-    parser.add_argument(
+    # Claude AI options group
+    ai_group = parser.add_argument_group("Claude AI Options")
+    ai_group.add_argument(
         "--claude",
         action="store_true",
-        help="Use Claude AI to intelligently select representative files and suggest selectors",
+        help="Use Claude AI for intelligent analysis and selector suggestions",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--analyze-files",
         type=int,
         default=5,
         metavar="N",
         help="Number of files to analyze with Claude (1-20, default: 5)",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--parallel-workers",
         type=int,
         default=5,
         metavar="N",
-        help="Number of parallel Claude sessions for file analysis (1-10, default: 5)",
+        help="Number of parallel Claude sessions (1-10, default: 5)",
     )
-
-    parser.add_argument(
+    ai_group.add_argument(
         "--project-description",
         type=str,
         default="",
-        help="Project description to help Claude understand the context (avoids interactive prompt)",
+        metavar="TEXT",
+        help="Project description for Claude context",
     )
 
 
 def add_config_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for config command."""
-    parser.add_argument(
+    # Configuration options group
+    config_group = parser.add_argument_group("Configuration Options")
+    config_group.add_argument(
         "-o",
         "--output",
         type=Path,
         default=Path("config.yaml"),
-        help="Output configuration file",
+        help="Output configuration file (default: config.yaml)",
     )
-
-    parser.add_argument(
+    config_group.add_argument(
         "--format",
         choices=["yaml", "toml", "json"],
         default="yaml",
-        help="Configuration format",
+        help="Configuration file format (default: yaml)",
     )
 
 
@@ -261,6 +326,12 @@ def handle_convert(args: argparse.Namespace) -> None:
                 for key, value in config_data["extractor"].items():
                     if hasattr(config.extractor, key):
                         setattr(config.extractor, key, value)
+
+            # Apply conversion settings from the config file
+            if "conversion" in config_data:
+                for key, value in config_data["conversion"].items():
+                    if hasattr(config.conversion, key):
+                        setattr(config.conversion, key, value)
         else:
             # Full config file - load it normally
             config = load_config(args.config)
@@ -271,10 +342,10 @@ def handle_convert(args: argparse.Namespace) -> None:
 
     # Update config with CLI arguments
     if args.content_selector:
-        config.extractor.content_selector = args.content_selector
+        config.conversion.outermost_selector = args.content_selector
 
     if args.ignore_selectors:
-        config.extractor.ignore_selectors = args.ignore_selectors
+        config.conversion.ignore_selectors = args.ignore_selectors
 
     if args.heading_offset:
         config.processor.heading_offset = args.heading_offset
@@ -410,7 +481,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
         info("```yaml")
         info("extractor:")
         if suggestions["content"]:
-            info(f"  content_selector: \"{suggestions['content'][0][0]}\"")
+            info(f"  outermost_selector: \"{suggestions['content'][0][0]}\"")
         info("  ignore_selectors:")
         for selector in suggestions["ignore"]:
             info(f'    - "{selector}"')
@@ -607,9 +678,7 @@ def _handle_claude_analysis(
 
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        warning(
-            f"Only {len(html_files)} files available. Will analyze all of them."
-        )
+        warning(f"Only {len(html_files)} files available. Will analyze all of them.")
 
     # Ask user for project description if not provided
     if not project_description:
@@ -623,9 +692,7 @@ def _handle_claude_analysis(
         info(
             "\nTip: If there are particularly important files to analyze, mention them in your description"
         )
-        info(
-            "     so Claude will prioritize those files in the analysis."
-        )
+        info("     so Claude will prioritize those files in the analysis.")
         project_description = input("\nProject description: ").strip()
     else:
         header(f"Project Context: {project_description}")
@@ -777,9 +844,7 @@ def _handle_claude_analysis(
                     continue
 
         if not claude_found:
-            error(
-                "claude command not found. Please install Claude CLI."
-            )
+            error("claude command not found. Please install Claude CLI.")
             warning(
                 "If claude is installed as an alias, try adding it to your PATH or creating a symlink."
             )
@@ -818,9 +883,7 @@ def _handle_claude_analysis(
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
     if not individual_prompt_path.exists():
-        error(
-            f"Prompt file not found: {individual_prompt_path}"
-        )
+        error(f"Prompt file not found: {individual_prompt_path}")
         return
 
     individual_prompt_template = individual_prompt_path.read_text()
@@ -1051,34 +1114,53 @@ def _handle_claude_analysis(
 
                 # Show clear usage instructions
                 info("\n" + "=" * 60)
-                info(f"{Colors.GREEN}{Colors.BOLD}✨ Analysis Complete! Here's how to convert your HTML files:{Colors.RESET}")
+                info(
+                    f"{Colors.GREEN}{Colors.BOLD}✨ Analysis Complete! Here's how to convert your HTML files:{Colors.RESET}"
+                )
                 info("=" * 60 + "\n")
 
-                info(f"{Colors.BOLD}Option 1: Use the generated configuration (RECOMMENDED){Colors.RESET}")
-                info("This uses the CSS selectors Claude identified to extract only the main content:\n")
-                info(f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown -c {config_file}{Colors.RESET}\n")
+                info(
+                    f"{Colors.BOLD}Option 1: Use the generated configuration (RECOMMENDED){Colors.RESET}"
+                )
+                info(
+                    "This uses the CSS selectors Claude identified to extract only the main content:\n"
+                )
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown -c {config_file}{Colors.RESET}\n"
+                )
 
-                info(f"{Colors.BOLD}Option 2: Use Claude AI for each file{Colors.RESET}")
-                info("This uses Claude to intelligently extract content from each file individually:")
+                info(
+                    f"{Colors.BOLD}Option 2: Use Claude AI for each file{Colors.RESET}"
+                )
+                info(
+                    "This uses Claude to intelligently extract content from each file individually:"
+                )
                 info("(Slower but may handle edge cases better)\n")
-                info(f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown --claude{Colors.RESET}\n")
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert {common_parent} -o ./markdown --claude{Colors.RESET}\n"
+                )
 
                 info(f"{Colors.BOLD}Option 3: Convert a single file{Colors.RESET}")
                 info("To test the configuration on a single file first:\n")
-                info(f"{Colors.CYAN}m1f-html2md convert path/to/file.html -o test.md -c {config_file}{Colors.RESET}\n")
+                info(
+                    f"{Colors.CYAN}m1f-html2md convert path/to/file.html -o test.md -c {config_file}{Colors.RESET}\n"
+                )
 
                 info("=" * 60)
             else:
-                warning(
-                    "Could not extract YAML configuration from Claude's response"
+                warning("Could not extract YAML configuration from Claude's response")
+                info(
+                    "Please manually create html2md_config.yaml based on the analysis above."
                 )
                 info(
-                    "Please manually create html2md_config.yaml based on the analysis above.")
-                info("\nExpected format: The YAML should be between ```yaml and ``` markers.")
+                    "\nExpected format: The YAML should be between ```yaml and ``` markers."
+                )
 
         except Exception as e:
             warning(f"Could not save configuration: {e}")
-            info(f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above.")
+            info(
+                f"Please manually create {common_parent}/html2md_config.yaml based on the analysis above."
+            )
 
     except subprocess.TimeoutExpired:
         warning("Timeout synthesizing configuration (5 minutes)")
@@ -1088,8 +1170,7 @@ def _handle_claude_analysis(
 
     # Ask if temporary analysis files should be deleted
     header("Cleanup:")
-    cleanup = input(
-        "Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
+    cleanup = input("Delete temporary analysis files (html_analysis_*.txt)? [Y/n]: ")
 
     if cleanup.lower() != "n":
         # Delete analysis files
@@ -1106,7 +1187,9 @@ def _handle_claude_analysis(
         if deleted_count > 0:
             success(f"Deleted {deleted_count} temporary analysis files")
     else:
-        info(f"{Colors.BLUE}ℹ️  Temporary analysis files kept in m1f/ directory{Colors.RESET}")
+        info(
+            f"{Colors.BLUE}ℹ️  Temporary analysis files kept in m1f/ directory{Colors.RESET}"
+        )
 
 
 def _suggest_selectors(parsed_files):

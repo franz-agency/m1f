@@ -146,10 +146,30 @@ class SelectolaxScraper(WebScraperBase):
                     normalized_canonical = self._normalize_url(canonical_url)
 
                     if normalized_url != normalized_canonical:
-                        logger.info(
-                            f"Skipping {url} - canonical URL differs: {canonical_url}"
-                        )
-                        return None  # Return None to indicate skip, not an error
+                        # Check if we should respect the canonical URL
+                        should_skip = True
+
+                        if self.config.allowed_path:
+                            # Parse URLs to check paths
+                            current_parsed = urlparse(normalized_url)
+                            canonical_parsed = urlparse(normalized_canonical)
+
+                            # If current URL is within allowed_path but canonical is outside,
+                            # don't skip - the user explicitly wants content from allowed_path
+                            if current_parsed.path.startswith(self.config.allowed_path):
+                                if not canonical_parsed.path.startswith(
+                                    self.config.allowed_path
+                                ):
+                                    should_skip = False
+                                    logger.info(
+                                        f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
+                                    )
+
+                        if should_skip:
+                            logger.info(
+                                f"Skipping {url} - canonical URL differs: {canonical_url}"
+                            )
+                            return None  # Return None to indicate skip, not an error
 
             # 3. Content duplicate check
             if self.config.check_content_duplicates:
@@ -243,9 +263,24 @@ class SelectolaxScraper(WebScraperBase):
         base_domain = parsed_start.netloc
 
         # Store the base path for subdirectory restriction
-        base_path = parsed_start.path.rstrip("/")
-        if base_path:
-            logger.info(f"Restricting crawl to subdirectory: {base_path}")
+        # Use allowed_path if specified, otherwise use the start URL's path
+        allowed_domain = None
+        if self.config.allowed_path:
+            # Check if allowed_path is a full URL or just a path
+            if self.config.allowed_path.startswith(("http://", "https://")):
+                # It's a full URL - extract domain and path
+                parsed_allowed = urlparse(self.config.allowed_path)
+                allowed_domain = parsed_allowed.netloc
+                base_path = parsed_allowed.path.rstrip("/")
+                logger.info(f"Restricting crawl to URL: {allowed_domain}{base_path}")
+            else:
+                # It's just a path
+                base_path = self.config.allowed_path.rstrip("/")
+                logger.info(f"Restricting crawl to allowed path: {base_path}")
+        else:
+            base_path = parsed_start.path.rstrip("/")
+            if base_path:
+                logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # Initialize queue with start URL
         queue = asyncio.Queue()
@@ -279,7 +314,7 @@ class SelectolaxScraper(WebScraperBase):
                         return None
 
                     # Extract links if not at max depth
-                    if depth < self.config.max_depth:
+                    if self.config.max_depth == -1 or depth < self.config.max_depth:
                         html_parser = HTMLParser(page.content)
 
                         for link in html_parser.css("a[href]"):
@@ -300,8 +335,15 @@ class SelectolaxScraper(WebScraperBase):
                             elif parsed_url.netloc != base_domain:
                                 continue
 
-                            # Check subdirectory restriction
-                            if base_path:
+                            # Check subdirectory restriction (but always allow the start URL)
+                            if base_path and absolute_url != start_url:
+                                # If allowed_path was a full URL, check domain too
+                                if (
+                                    allowed_domain
+                                    and parsed_url.netloc != allowed_domain
+                                ):
+                                    continue
+
                                 if (
                                     not parsed_url.path.startswith(base_path + "/")
                                     and parsed_url.path != base_path
@@ -344,8 +386,11 @@ class SelectolaxScraper(WebScraperBase):
                 try:
                     url, depth = queue.get_nowait()
 
-                    # Check max pages limit
-                    if pages_scraped >= self.config.max_pages:
+                    # Check max pages limit (skip if -1 for unlimited)
+                    if (
+                        self.config.max_pages != -1
+                        and pages_scraped >= self.config.max_pages
+                    ):
                         break
 
                     # Create task
@@ -368,8 +413,11 @@ class SelectolaxScraper(WebScraperBase):
                         pages_scraped += 1
                         yield page
 
-                        # Check if we've hit the page limit
-                        if pages_scraped >= self.config.max_pages:
+                        # Check if we've hit the page limit (skip if -1 for unlimited)
+                        if (
+                            self.config.max_pages != -1
+                            and pages_scraped >= self.config.max_pages
+                        ):
                             # Cancel remaining tasks
                             for t in tasks:
                                 t.cancel()

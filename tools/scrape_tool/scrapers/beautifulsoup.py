@@ -156,12 +156,32 @@ class BeautifulSoupScraper(WebScraperBase):
                             normalized_canonical = self._normalize_url(canonical_url)
 
                             if normalized_url != normalized_canonical:
-                                logger.info(
-                                    f"Skipping {url} - canonical URL differs: {canonical_url}"
-                                )
-                                return (
-                                    None  # Return None to indicate skip, not an error
-                                )
+                                # Check if we should respect the canonical URL
+                                should_skip = True
+
+                                if self.config.allowed_path:
+                                    # Parse URLs to check paths
+                                    current_parsed = urlparse(normalized_url)
+                                    canonical_parsed = urlparse(normalized_canonical)
+
+                                    # If current URL is within allowed_path but canonical is outside,
+                                    # don't skip - the user explicitly wants content from allowed_path
+                                    if current_parsed.path.startswith(
+                                        self.config.allowed_path
+                                    ):
+                                        if not canonical_parsed.path.startswith(
+                                            self.config.allowed_path
+                                        ):
+                                            should_skip = False
+                                            logger.info(
+                                                f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
+                                            )
+
+                                if should_skip:
+                                    logger.info(
+                                        f"Skipping {url} - canonical URL differs: {canonical_url}"
+                                    )
+                                    return None  # Return None to indicate skip, not an error
 
                     # 3. Content duplicate check
                     if self.config.check_content_duplicates:
@@ -233,7 +253,7 @@ class BeautifulSoupScraper(WebScraperBase):
             depth_map: Mapping of URLs to their depth
             current_depth: Current crawl depth
         """
-        if current_depth < self.config.max_depth:
+        if self.config.max_depth == -1 or current_depth < self.config.max_depth:
             new_urls = self._extract_links(content, url)
             for new_url in new_urls:
                 normalized_new_url = self._normalize_url(new_url)
@@ -261,9 +281,24 @@ class BeautifulSoupScraper(WebScraperBase):
         base_domain = start_parsed.netloc
 
         # Store the base path for subdirectory restriction
-        base_path = start_parsed.path.rstrip("/")
-        if base_path:
-            logger.info(f"Restricting crawl to subdirectory: {base_path}")
+        # Use allowed_path if specified, otherwise use the start URL's path
+        allowed_domain = None
+        if self.config.allowed_path:
+            # Check if allowed_path is a full URL or just a path
+            if self.config.allowed_path.startswith(("http://", "https://")):
+                # It's a full URL - extract domain and path
+                parsed_allowed = urlparse(self.config.allowed_path)
+                allowed_domain = parsed_allowed.netloc
+                base_path = parsed_allowed.path.rstrip("/")
+                logger.info(f"Restricting crawl to URL: {allowed_domain}{base_path}")
+            else:
+                # It's just a path
+                base_path = self.config.allowed_path.rstrip("/")
+                logger.info(f"Restricting crawl to allowed path: {base_path}")
+        else:
+            base_path = start_parsed.path.rstrip("/")
+            if base_path:
+                logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # If no allowed domains specified, restrict to start domain
         if not self.config.allowed_domains:
@@ -294,7 +329,11 @@ class BeautifulSoupScraper(WebScraperBase):
                 logger.info(
                     f"Found {len(to_visit)} URLs to visit after analyzing scraped pages"
                 )
-            while to_visit and len(self._visited_urls) < self.config.max_pages:
+            pages_scraped = 0  # Track actual pages scraped, not just URLs attempted
+
+            while to_visit and (
+                self.config.max_pages == -1 or pages_scraped < self.config.max_pages
+            ):
                 # Get next URL
                 url = to_visit.pop()
 
@@ -307,15 +346,23 @@ class BeautifulSoupScraper(WebScraperBase):
                 if not await self.validate_url(url):
                     continue
 
-                # Check subdirectory restriction
-                if base_path:
+                # Check subdirectory restriction (but always allow the start URL)
+                if base_path and url != start_url:
                     url_parsed = urlparse(url)
+
+                    # If allowed_path was a full URL, check domain too
+                    if allowed_domain and url_parsed.netloc != allowed_domain:
+                        logger.debug(
+                            f"Skipping {url} - different domain than allowed {allowed_domain}"
+                        )
+                        continue
+
                     if (
                         not url_parsed.path.startswith(base_path + "/")
                         and url_parsed.path != base_path
                     ):
                         logger.debug(
-                            f"Skipping {url} - outside subdirectory {base_path}"
+                            f"Skipping {url} - outside allowed path {base_path}"
                         )
                         continue
 
@@ -326,7 +373,10 @@ class BeautifulSoupScraper(WebScraperBase):
 
                 # Check depth
                 current_depth = depth_map.get(url, 0)
-                if current_depth > self.config.max_depth:
+                if (
+                    self.config.max_depth != -1
+                    and current_depth > self.config.max_depth
+                ):
                     logger.debug(
                         f"Skipping {url} - exceeds max depth {self.config.max_depth}"
                     )
@@ -344,6 +394,7 @@ class BeautifulSoupScraper(WebScraperBase):
                         continue
 
                     yield page
+                    pages_scraped += 1  # Only increment for successfully scraped pages
 
                     # Extract links if not at max depth
                     await self.populate_queue_from_content(
@@ -361,6 +412,12 @@ class BeautifulSoupScraper(WebScraperBase):
 
         finally:
             # Clean up session if we created it
+            # Log why crawling stopped
+            if self.config.max_pages != -1 and pages_scraped >= self.config.max_pages:
+                logger.info(f"Reached max_pages limit of {self.config.max_pages}")
+            elif not to_visit:
+                logger.info("No more URLs to visit")
+            
             if should_close_session:
                 await self.__aexit__(None, None, None)
 

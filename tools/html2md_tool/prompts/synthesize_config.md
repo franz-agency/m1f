@@ -37,31 +37,30 @@ Create a YAML configuration in this exact format:
 source: ./html
 destination: ./markdown
 
-# Extractor configuration - CSS selectors for content extraction
+# Extractor configuration
 extractor:
-  # Primary selector that works across most/all analyzed files
-  content_selector: "main.content, article.documentation"
+  parser: "html.parser"  # BeautifulSoup parser
+  encoding: "utf-8"
+  decode_errors: "ignore"
+  prettify: false
 
-  # Fallback selectors in priority order
-  alternative_selectors:
-    - "[selector that works on most files]"
-    - "[selector that works on some files]"
-    - "[generic but safe fallback]"
-
-  # Exclusions that apply across all files
+# Conversion options - Markdown formatting preferences
+conversion:
+  # Primary content selector (use comma-separated list for multiple)
+  outermost_selector: "main.content, article.documentation"
+  
+  # Elements to remove from the content
   ignore_selectors:
     # Navigation (found in X/N files)
     - "nav"
     - ".navigation"
-
+    
     # Headers/Footers (found in X/N files)
     - "header.site-header"
     - "footer.site-footer"
-
+    
     # [Continue with all common exclusions]
-
-# Conversion options - Markdown formatting preferences
-conversion:
+  
   strip_tags: ["script", "style", "noscript"]
   keep_html_tags: [] # HTML tags to preserve in output
   heading_style: "atx" # atx (###) or setext (underlines)
@@ -77,10 +76,9 @@ conversion:
 
 # Asset handling configuration
 assets:
-  download_images: false
-  image_directory: "images"
-  link_prefix: ""
-  process_links: true
+  download: false
+  directory: "assets"
+  max_size: 10485760  # 10MB in bytes
 
 # File handling options
 file_extensions: [".html", ".htm"]
@@ -92,34 +90,29 @@ parallel: false # Enable parallel processing
 max_workers: 4
 overwrite: false # Overwrite existing files
 
-# Synthesis notes (not used by the tool, just for documentation)
-notes: |
-  Analysis Summary:
-  - Analyzed N files representing different page types
-  - Primary selector works on X/N files
-  - Fallback selectors provide Y% coverage
-
-  Key Findings:
-  - [Main pattern discovered]
-  - [Secondary pattern]
-  - [Edge cases to watch]
-
-  Confidence: [High/Medium/Low] based on consistency across files
+# Synthesis notes (comment them out to avoid warnings)
+# The 'notes' field causes warnings, so include your notes as comments instead:
+# Analysis Summary:
+# - Analyzed N files representing different page types
+# - Primary selector works on X/N files
+# - Fallback selectors provide Y% coverage
+#
+# Key Findings:
+# - [Main pattern discovered]
+# - [Secondary pattern]
+# - [Edge cases to watch]
+#
+# Confidence: [High/Medium/Low] based on consistency across files
 ````
 
 ## Selection Criteria
 
-**Primary Content Selector**:
+**Primary Content Selector (outermost_selector)**:
 
 - Choose selector that works on most files (80%+ coverage)
 - If no single selector works on most, combine multiple with commas
 - Prefer semantic selectors (main, article) over class-based
-
-**Alternative Selectors**:
-
-- Order by coverage (most files first)
-- Include at least one generic fallback
-- Each should be valid CSS selector
+- This goes in conversion.outermost_selector
 
 **Ignore Selectors**:
 

@@ -18,7 +18,7 @@
 import asyncio
 import logging
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set
 from urllib.parse import urlparse
@@ -42,6 +42,7 @@ class WebCrawler:
         self._scraper_config = self._create_scraper_config()
         self._db_path: Optional[Path] = None
         self._db_conn: Optional[sqlite3.Connection] = None
+        self._session_id: Optional[int] = None
 
     def _create_scraper_config(self) -> ScraperConfig:
         """Create scraper configuration from crawler config.
@@ -64,6 +65,7 @@ class WebCrawler:
             "max_depth": self.config.max_depth,
             "max_pages": self.config.max_pages,
             "allowed_domains": allowed_domains,
+            "allowed_path": self.config.allowed_path,
             "exclude_patterns": exclude_patterns,
             "respect_robots_txt": self.config.respect_robots_txt,
             "concurrent_requests": self.config.concurrent_requests,
@@ -73,6 +75,7 @@ class WebCrawler:
             "ignore_get_params": self.config.ignore_get_params,
             "check_canonical": self.config.check_canonical,
             "check_content_duplicates": self.config.check_content_duplicates,
+            "check_ssrf": self.config.check_ssrf,
         }
 
         # Only add user_agent if it's not None
@@ -98,6 +101,164 @@ class WebCrawler:
 
         return scraper_config
 
+    def _migrate_database_v2(self, cursor) -> None:
+        """Migrate database to v2 with session support.
+        
+        TODO: Remove this migration after 2025-10 when all users have updated.
+        Migration adds:
+        - scraping_sessions table
+        - session_id column to scraped_urls
+        - Default session 1 for legacy data
+        """
+        # Check if migration is needed
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'")
+        if cursor.fetchone() is not None:
+            return  # Already migrated
+        
+        logger.info("Migrating database to v2 (adding session support)")
+        
+        # Create scraping_sessions table
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS scraping_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                start_url TEXT NOT NULL,
+                start_time TIMESTAMP NOT NULL,
+                end_time TIMESTAMP,
+                total_pages INTEGER DEFAULT 0,
+                successful_pages INTEGER DEFAULT 0,
+                failed_pages INTEGER DEFAULT 0,
+                max_depth INTEGER,
+                max_pages INTEGER,
+                allowed_path TEXT,
+                excluded_paths TEXT,
+                scraper_backend TEXT,
+                request_delay REAL,
+                concurrent_requests INTEGER,
+                ignore_get_params BOOLEAN,
+                check_canonical BOOLEAN,
+                check_content_duplicates BOOLEAN,
+                force_rescrape BOOLEAN,
+                user_agent TEXT,
+                timeout INTEGER,
+                status TEXT DEFAULT 'running'
+            )
+        """
+        )
+        
+        # Check if scraped_urls exists and needs session_id column
+        cursor.execute("PRAGMA table_info(scraped_urls)")
+        columns = [col[1] for col in cursor.fetchall()]
+        
+        if columns and 'session_id' not in columns:
+            # Add session_id column
+            cursor.execute("ALTER TABLE scraped_urls ADD COLUMN session_id INTEGER DEFAULT 1")
+            
+            # Create default session for existing data
+            cursor.execute("""
+                INSERT INTO scraping_sessions 
+                (id, start_url, start_time, status, total_pages)
+                VALUES (1, 'Legacy data (before session tracking)', 
+                        COALESCE((SELECT MIN(scraped_at) FROM scraped_urls), datetime('now')),
+                        'completed',
+                        (SELECT COUNT(*) FROM scraped_urls WHERE error IS NULL))
+            """)
+            
+            # Update all existing URLs to session 1
+            cursor.execute("UPDATE scraped_urls SET session_id = 1 WHERE session_id IS NULL")
+        
+        self._db_conn.commit()
+        logger.info("Database migration to v2 completed")
+
+    def _cleanup_orphaned_sessions(self) -> None:
+        """Clean up sessions that were left in 'running' state from crashes or kills.
+        
+        Mark old running sessions as 'interrupted' if no URLs have been scraped 
+        in the last hour (indicating the process died).
+        """
+        if not self._db_conn:
+            return
+            
+        cursor = self._db_conn.cursor()
+        
+        # Find sessions that are still marked as running
+        cursor.execute(
+            """
+            SELECT id, start_url, start_time 
+            FROM scraping_sessions 
+            WHERE status = 'running'
+            """
+        )
+        
+        running_sessions = cursor.fetchall()
+        orphaned_sessions = []
+        
+        one_hour_ago = datetime.now() - timedelta(hours=1)
+        
+        # Check each running session to see if it's truly orphaned
+        for session_id, start_url, start_time in running_sessions:
+            # Get the most recent scraped URL timestamp for this session
+            cursor.execute(
+                """
+                SELECT MAX(scraped_at) 
+                FROM scraped_urls 
+                WHERE session_id = ?
+                """,
+                (session_id,)
+            )
+            result = cursor.fetchone()
+            last_activity = result[0] if result and result[0] else start_time
+            
+            # If no activity in the last hour, consider it orphaned
+            # Convert string timestamp to datetime if needed
+            if isinstance(last_activity, str):
+                from datetime import datetime as dt
+                last_activity = dt.fromisoformat(last_activity.replace('Z', '+00:00'))
+            
+            if last_activity < one_hour_ago:
+                orphaned_sessions.append((session_id, start_url, start_time))
+        
+        for session_id, start_url, start_time in orphaned_sessions:
+            # Get statistics for the orphaned session
+            cursor.execute(
+                """
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(CASE WHEN error IS NULL THEN 1 END) as successful,
+                    COUNT(CASE WHEN error IS NOT NULL THEN 1 END) as failed
+                FROM scraped_urls 
+                WHERE session_id = ?
+                """,
+                (session_id,)
+            )
+            result = cursor.fetchone()
+            total, successful, failed = result if result else (0, 0, 0)
+            
+            # Mark as interrupted and update statistics
+            cursor.execute(
+                """
+                UPDATE scraping_sessions 
+                SET status = 'interrupted', 
+                    end_time = ?,
+                    total_pages = ?,
+                    successful_pages = ?,
+                    failed_pages = ?
+                WHERE id = ?
+                """,
+                (start_time, total, successful, failed, session_id)
+            )
+            
+            logger.warning(
+                f"Cleaned up orphaned session #{session_id} from {start_time} "
+                f"({successful} pages scraped before interruption)"
+            )
+        
+        if orphaned_sessions:
+            self._db_conn.commit()
+            logger.info(f"Cleaned up {len(orphaned_sessions)} orphaned sessions")
+        
+        cursor.close()
+
     def _init_database(self, output_dir: Path) -> None:
         """Initialize SQLite database for tracking scraped URLs.
 
@@ -109,17 +270,57 @@ class WebCrawler:
 
         # Create table if it doesn't exist
         cursor = self._db_conn.cursor()
+        
+        # Run migration if needed (TODO: Remove after 2025-10)
+        self._migrate_database_v2(cursor)
+        
+        # Clean up any orphaned sessions from previous crashes
+        self._cleanup_orphaned_sessions()
+        
+        # Create current schema tables (if not created by migration)
+        # Create scraping_sessions table
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS scraping_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                start_url TEXT NOT NULL,
+                start_time TIMESTAMP NOT NULL,
+                end_time TIMESTAMP,
+                total_pages INTEGER DEFAULT 0,
+                successful_pages INTEGER DEFAULT 0,
+                failed_pages INTEGER DEFAULT 0,
+                max_depth INTEGER,
+                max_pages INTEGER,
+                allowed_path TEXT,
+                excluded_paths TEXT,
+                scraper_backend TEXT,
+                request_delay REAL,
+                concurrent_requests INTEGER,
+                ignore_get_params BOOLEAN,
+                check_canonical BOOLEAN,
+                check_content_duplicates BOOLEAN,
+                force_rescrape BOOLEAN,
+                user_agent TEXT,
+                timeout INTEGER,
+                status TEXT DEFAULT 'running'
+            )
+        """
+        )
+        
+        # Create scraped_urls table with session_id
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS scraped_urls (
                 url TEXT PRIMARY KEY,
+                session_id INTEGER,
                 normalized_url TEXT,
                 canonical_url TEXT,
                 content_checksum TEXT,
                 status_code INTEGER,
                 target_filename TEXT,
                 scraped_at TIMESTAMP,
-                error TEXT
+                error TEXT,
+                FOREIGN KEY (session_id) REFERENCES scraping_sessions(id)
             )
         """
         )
@@ -137,9 +338,118 @@ class WebCrawler:
         self._db_conn.commit()
         cursor.close()
 
+    def _start_session(self, start_url: str) -> int:
+        """Start a new scraping session.
+        
+        Args:
+            start_url: The starting URL for this session
+            
+        Returns:
+            The session ID
+        """
+        if not self._db_conn:
+            return None
+            
+        cursor = self._db_conn.cursor()
+        
+        # Convert excluded_paths set to JSON string if present
+        import json
+        excluded_paths_str = None
+        if self.config.excluded_paths:
+            excluded_paths_str = json.dumps(list(self.config.excluded_paths))
+        
+        cursor.execute(
+            """
+            INSERT INTO scraping_sessions (
+                start_url, start_time, max_depth, max_pages, allowed_path,
+                excluded_paths, scraper_backend, request_delay, concurrent_requests,
+                ignore_get_params, check_canonical, check_content_duplicates,
+                force_rescrape, user_agent, timeout, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                start_url,
+                datetime.now(),
+                self.config.max_depth,
+                self.config.max_pages,
+                self.config.allowed_path,
+                excluded_paths_str,
+                self.config.scraper_backend.value if self.config.scraper_backend else None,
+                self.config.request_delay,
+                self.config.concurrent_requests,
+                self.config.ignore_get_params,
+                self.config.check_canonical,
+                self.config.check_content_duplicates,
+                self.config.force_rescrape,
+                self.config.user_agent,
+                self.config.timeout,
+                'running'
+            )
+        )
+        self._db_conn.commit()
+        
+        self._session_id = cursor.lastrowid
+        cursor.close()
+        
+        logger.info(f"Started scraping session #{self._session_id}")
+        return self._session_id
+    
+    def _end_session(self, status: str = 'completed') -> None:
+        """End the current scraping session.
+        
+        Args:
+            status: The final status of the session (completed, interrupted, failed)
+        """
+        if not self._db_conn or not self._session_id:
+            return
+            
+        cursor = self._db_conn.cursor()
+        
+        # Get counts from the current session
+        cursor.execute(
+            """
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN error IS NULL THEN 1 END) as successful,
+                COUNT(CASE WHEN error IS NOT NULL THEN 1 END) as failed
+            FROM scraped_urls 
+            WHERE session_id = ?
+            """,
+            (self._session_id,)
+        )
+        result = cursor.fetchone()
+        if result:
+            total, successful, failed = result
+        else:
+            total, successful, failed = 0, 0, 0
+        
+        cursor.execute(
+            """
+            UPDATE scraping_sessions 
+            SET end_time = ?, status = ?, total_pages = ?, 
+                successful_pages = ?, failed_pages = ?
+            WHERE id = ?
+            """,
+            (
+                datetime.now(),
+                status,
+                total,
+                successful,
+                failed,
+                self._session_id
+            )
+        )
+        self._db_conn.commit()
+        cursor.close()
+        
+        logger.info(f"Ended scraping session #{self._session_id} with status: {status}")
+
     def _close_database(self) -> None:
         """Close the database connection."""
         if self._db_conn:
+            # End session if still running (should not happen in normal flow)
+            if self._session_id:
+                self._end_session('completed')
             self._db_conn.close()
             self._db_conn = None
 
@@ -264,12 +574,13 @@ class WebCrawler:
         cursor.execute(
             """
             INSERT OR REPLACE INTO scraped_urls 
-            (url, normalized_url, canonical_url, content_checksum, 
+            (url, session_id, normalized_url, canonical_url, content_checksum, 
              status_code, target_filename, scraped_at, error)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 url,
+                self._session_id,
                 normalized_url,
                 canonical_url,
                 content_checksum,
@@ -279,6 +590,7 @@ class WebCrawler:
                 error,
             ),
         )
+        
         self._db_conn.commit()
         cursor.close()
 
@@ -334,13 +646,20 @@ class WebCrawler:
 
         # Initialize database for tracking
         self._init_database(output_dir)
+        
+        # Start a new session
+        self._start_session(start_url)
 
-        # Check if this is a resume operation
-        scraped_urls = self._get_scraped_urls()
-        if scraped_urls:
-            logger.info(
-                f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs"
-            )
+        # Check if this is a resume operation (skip if force_rescrape is enabled)
+        scraped_urls = set()
+        if not self.config.force_rescrape:
+            scraped_urls = self._get_scraped_urls()
+            if scraped_urls:
+                logger.info(
+                    f"Resuming crawl - found {len(scraped_urls)} previously scraped URLs"
+                )
+        else:
+            logger.info("Force rescrape enabled - ignoring database cache")
 
         # Create scraper instance
         backend_name = self.config.scraper_backend.value
@@ -383,14 +702,14 @@ class WebCrawler:
                         scraper.set_resume_info(resume_info)
 
                 async for page in scraper.scrape_site(start_url):
-                    # Skip if already scraped
-                    if self._is_url_scraped(page.url):
+                    # Skip if already scraped (unless force_rescrape is enabled)
+                    if not self.config.force_rescrape and self._is_url_scraped(page.url):
                         logger.info(f"Skipping already scraped URL: {page.url}")
                         continue
 
                     # Log progress - show current URL being scraped
-                    logger.info(f"Processing: {page.url} (page {len(pages) + 1})")
                     pages.append(page)
+                    logger.info(f"Processing: {page.url} (page {len(pages)})")
 
                     # Save page to disk
                     try:
@@ -427,8 +746,13 @@ class WebCrawler:
 
         except Exception as e:
             logger.error(f"Crawl failed: {e}")
+            if self._session_id:
+                self._end_session('failed')
             raise
         finally:
+            # End session with completed status if not already ended
+            if self._session_id and self._db_conn:
+                self._end_session('completed')
             # Always close database connection
             self._close_database()
 
@@ -439,6 +763,7 @@ class WebCrawler:
         return {
             "pages": pages,
             "total_pages": len(pages),
+            "pages_scraped": len(pages),  # For compatibility
             "errors": errors,
             "output_dir": site_dir,
         }
@@ -582,5 +907,69 @@ class WebCrawler:
             result = asyncio.run(self.crawl(start_url, output_dir))
             return result["output_dir"]
         except KeyboardInterrupt:
+            # Mark session as interrupted before re-raising
+            if self._session_id:
+                try:
+                    self._end_session('interrupted')
+                except:
+                    pass  # Don't let DB errors mask the interrupt
+            # Re-raise to let CLI handle it gracefully
+            raise
+
+    def crawl_sync_with_stats(self, start_url: str, output_dir: Path) -> Dict[str, Any]:
+        """Synchronous version of crawl method that returns detailed statistics.
+
+        Args:
+            start_url: Starting URL for crawling
+            output_dir: Directory to store downloaded files
+
+        Returns:
+            Dictionary containing:
+            - site_dir: Path to site directory
+            - scraped_urls: List of URLs scraped in this session
+            - errors: List of errors encountered in this session
+            - total_pages: Total number of pages scraped in this session
+            - session_files: List of files created in this session
+            - session_id: ID of this scraping session
+        """
+        try:
+            # Run async crawl using asyncio.run()
+            result = asyncio.run(self.crawl(start_url, output_dir))
+            
+            # Extract URLs from the pages scraped in this session
+            pages = result.get("pages", [])
+            scraped_urls = [page.url for page in pages]
+            
+            # Get list of files created in this session
+            session_files = []
+            for page in pages:
+                # Reconstruct the file path for each scraped page
+                parsed_url = urlparse(page.url)
+                domain = parsed_url.netloc
+                path = parsed_url.path.strip("/")
+                if not path or path.endswith("/"):
+                    path = path + "index.html"
+                elif not path.endswith(".html"):
+                    path = path + ".html"
+                file_path = result["output_dir"] / domain / path
+                if file_path.exists():
+                    session_files.append(file_path)
+            
+            return {
+                "site_dir": result["output_dir"],
+                "scraped_urls": scraped_urls,
+                "errors": result.get("errors", []),
+                "total_pages": len(pages),
+                "pages_scraped": result.get("pages_scraped", len(pages)),
+                "session_files": session_files,
+                "session_id": self._session_id,
+            }
+        except KeyboardInterrupt:
+            # Mark session as interrupted before re-raising
+            if self._session_id:
+                try:
+                    self._end_session('interrupted')
+                except:
+                    pass  # Don't let DB errors mask the interrupt
             # Re-raise to let CLI handle it gracefully
             raise

@@ -419,6 +419,10 @@ class FileCombiner:
                 # Sort directories by depth and name
                 sorted_paths = sort_directories_by_depth_and_name(list(unique_dirs))
 
+            # Only write if there's content to write
+            if not sorted_paths:
+                return
+
             # Write to file
             def write_file():
                 with open(path, "w", encoding="utf-8") as f:

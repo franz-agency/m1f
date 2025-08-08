@@ -153,7 +153,7 @@ class ClaudeRunner:
         work_dir = working_dir if working_dir is not None else self.working_dir
 
         # Build command
-        cmd = [self.claude_binary, "--print", "--allowedTools", allowed_tools]
+        cmd = [self.claude_binary, "-p", "--allowedTools", allowed_tools]
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])

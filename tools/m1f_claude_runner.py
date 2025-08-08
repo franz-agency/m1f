@@ -21,8 +21,16 @@ import subprocess
 import time
 import sys
 from pathlib import Path
-from typing import Tuple, Optional, IO
+from typing import Tuple, Optional, IO, Callable
 import signal
+
+# Use unified colorama module
+try:
+    from .shared.colors import success, error, warning, info
+except ImportError:
+    # Try direct import if running as script
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from tools.shared.colors import success, error, warning, info
 
 
 class M1FClaudeRunner:
@@ -84,6 +92,12 @@ class M1FClaudeRunner:
         timeout: int = 600,  # 10 minutes default
         show_output: bool = True,
         output_handler: Optional[callable] = None,
+        permission_mode: str = "default",
+        append_system_prompt: Optional[str] = None,
+        mcp_config: Optional[str] = None,
+        disallowed_tools: Optional[str] = None,
+        output_format: str = "text",
+        cwd: Optional[str] = None,
     ) -> Tuple[int, str, str]:
         """
         Run Claude with real-time streaming output and improved timeout handling.
@@ -110,6 +124,20 @@ class M1FClaudeRunner:
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
+        
+        # Add new optional parameters
+        if permission_mode != "default":
+            cmd.extend(["--permission-mode", permission_mode])
+        if append_system_prompt:
+            cmd.extend(["--append-system-prompt", append_system_prompt])
+        if mcp_config:
+            cmd.extend(["--mcp-config", mcp_config])
+        if disallowed_tools:
+            cmd.extend(["--disallowedTools", disallowed_tools])
+        if output_format != "text":
+            cmd.extend(["--output-format", output_format])
+        if cwd:
+            cmd.extend(["--cwd", cwd])
 
         # Use conservative timeout (at least 60 seconds)
         actual_timeout = max(60, timeout)

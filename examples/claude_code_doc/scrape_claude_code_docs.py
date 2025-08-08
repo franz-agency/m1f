@@ -8,11 +8,22 @@ Works on both Linux and Windows.
 
 This script:
 1. Scrapes Claude Code docs from docs.anthropic.com
-2. Converts HTML to clean Markdown
+2. Converts HTML to clean Markdown (optionally using existing config)
 3. Runs m1f-init to create the documentation bundle
 4. Returns the path to the created bundle
 
-Usage: python scrape_claude_code_docs.py <target_directory>
+Usage:
+    # Basic usage (with Claude analysis):
+    python scrape_claude_code_docs.py ~/claude-docs
+
+    # Use existing config (skip Claude analysis):
+    python scrape_claude_code_docs.py ~/claude-docs --use-config html2md_claude_code_doc.config.yml
+
+    # Force re-download and regenerate config:
+    python scrape_claude_code_docs.py ~/claude-docs --force-download
+
+    # With logging to file and console:
+    python scrape_claude_code_docs.py ~/claude-docs 2>&1 | tee scrape_log.txt
 """
 
 import subprocess
@@ -21,11 +32,12 @@ import os
 from pathlib import Path
 import argparse
 import shutil
+from datetime import datetime
 
 
 # Configuration - all hardcoded for Claude Code
 CLAUDE_DOCS_URL = "https://docs.anthropic.com/en/docs/claude-code"
-SCRAPE_DELAY = 15  # seconds between requests
+SCRAPE_DELAY = 15  # Respectful delay between requests
 CONTENT_SELECTOR = "main"
 IGNORE_SELECTORS = ["nav", "header", "footer"]
 PROJECT_NAME = "Claude Code Documentation"
@@ -56,15 +68,36 @@ def run_command(cmd, description, capture_output=True):
         return False, None
 
 
+def copy_config_file(config_path, target_dir):
+    """Copy config file to target directory"""
+    target_config = target_dir / "html2md_config.yaml"
+    try:
+        shutil.copy2(str(config_path), str(target_config))
+        print(f"✅ Copied config file to: {target_config}")
+        return target_config
+    except Exception as e:
+        print(f"❌ Failed to copy config file: {e}")
+        return None
+
+
 def main():
     # Parse arguments
     parser = argparse.ArgumentParser(
         description="Scrape Claude Code documentation and create a bundle",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Example:
+Examples:
+    # With Claude analysis (default):
     python scrape_claude_code_docs.py ~/claude-docs
+    
+    # Use existing config (skip Claude analysis - faster):
+    python scrape_claude_code_docs.py ~/claude-docs --use-config html2md_claude_code_doc.config.yml
+    
+    # Force re-download:
     python scrape_claude_code_docs.py ~/claude-docs --force-download
+    
+    # With logging:
+    python scrape_claude_code_docs.py ~/claude-docs 2>&1 | tee scrape_log.txt
     
 This will create the documentation bundle in the specified directory.
 The final bundle will be in the 'm1f' subdirectory of the markdown folder.
@@ -76,6 +109,23 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
         action="store_true",
         help="Force re-download even if HTML files exist",
     )
+    parser.add_argument(
+        "--use-config",
+        metavar="CONFIG_FILE",
+        help="Use existing config file (skip Claude analysis)",
+    )
+    parser.add_argument(
+        "--parallel",
+        action="store_true",
+        default=True,
+        help="Enable parallel processing for HTML conversion (default: True)",
+    )
+    parser.add_argument(
+        "--delay",
+        type=int,
+        default=SCRAPE_DELAY,
+        help=f"Delay between scraping requests in seconds (default: {SCRAPE_DELAY})",
+    )
     args = parser.parse_args()
 
     # Determine output directory
@@ -85,7 +135,24 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
     print("=" * 50)
     print(f"Target: {CLAUDE_DOCS_URL}")
     print(f"Output directory: {output_path}")
-    print(f"Total time: ~15-20 minutes")
+
+    # Calculate estimated time based on options
+    if args.use_config:
+        if (
+            output_path.joinpath("claude-code-html").exists()
+            and not args.force_download
+        ):
+            estimated_time = "~1-2 minutes (using existing HTML + config)"
+        else:
+            estimated_time = (
+                f"~{(31 * args.delay) // 60 + 2} minutes (scraping + conversion)"
+            )
+    else:
+        estimated_time = f"~{(31 * args.delay) // 60 + 10} minutes (full process)"
+
+    print(f"Total time: {estimated_time}")
+    if args.use_config:
+        print(f"Config: {args.use_config} (skipping Claude analysis)")
     print("=" * 50)
 
     # Create output directory if needed
@@ -118,8 +185,10 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
         print(f"\n{'='*50}")
         print("STEP 1: Scraping Claude Code Documentation")
         print(f"{'='*50}")
-        print(f"📄 Will download ~30 HTML pages from Claude Code docs")
-        print(f"⏱️  Expected duration: 7-8 minutes (15s delay between pages)")
+        print(f"📄 Will download ~31 HTML pages from Claude Code docs")
+        print(
+            f"⏱️  Expected duration: {(31 * args.delay) // 60} minutes ({args.delay}s delay between pages)"
+        )
 
         scrape_cmd = [
             "m1f-scrape",
@@ -127,7 +196,7 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
             "-o",
             str(html_dir),
             "--request-delay",
-            str(SCRAPE_DELAY),
+            str(args.delay),
             "-v",
         ]
 
@@ -159,7 +228,7 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
             print(f"✅ Moved content to: {html_dir}")
 
     html_files = list(html_dir.glob("**/*.html"))
-    print(f"✅ Scraped {len(html_files)} HTML files")
+    print(f"✅ Found {len(html_files)} HTML files")
 
     if len(html_files) < 5:
         print(
@@ -167,71 +236,120 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
         )
 
     # Check if we should skip analysis if markdown already exists
-    skip_analysis = False
+    skip_conversion = False
     if markdown_dir.exists() and not args.force_download:
         existing_md_files = list(markdown_dir.glob("**/*.md"))
         if len(existing_md_files) >= 25:
-            print(f"\n📁 Found existing Markdown files: {len(existing_md_files)} files")
-            print("⏭️  Skipping HTML analysis and conversion")
-            skip_analysis = True
-            md_files = existing_md_files
+            if args.use_config:
+                print(
+                    f"\n📁 Found existing Markdown files: {len(existing_md_files)} files"
+                )
+                print("🔄 Re-converting with provided config file")
+                # Create backup directory with timestamp
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_dir = output_path / f"claude-code-markdown_backup_{timestamp}"
+                shutil.move(str(markdown_dir), str(backup_dir))
+                print(f"📦 Backed up existing markdown to: {backup_dir.name}")
+                # Don't skip conversion when using config
+                skip_conversion = False
+            else:
+                print(
+                    f"\n📁 Found existing Markdown files: {len(existing_md_files)} files"
+                )
+                print("⏭️  Skipping HTML analysis and conversion")
+                skip_conversion = True
+                md_files = existing_md_files
 
-    if not skip_analysis:
-        # Step 2: Analyze HTML structure with Claude
-        print(f"\n{'='*50}")
-        print("STEP 2: Analyzing HTML Structure with Claude")
-        print(f"{'='*50}")
-        print(f"🤖 Claude will analyze 5 representative HTML files")
-        print(f"⏱️  Expected duration: 5-8 minutes")
-
-        analyze_cmd = [
-            "m1f-html2md",
-            "analyze",
-            str(html_dir),
-            "--claude",
-            "--project-description",
-            PROJECT_DESCRIPTION,
-        ]
-
-        print("🤖 Using Claude AI for intelligent HTML analysis...")
-        success, output = run_command(
-            analyze_cmd, "Analyzing HTML with Claude", capture_output=False
-        )
-
-        # Check if Claude created the config file
-        # The analyze command creates html2md_config.yaml in the HTML directory
-        config_file = html_dir / "html2md_config.yaml"
+    if not skip_conversion:
+        # Handle config file
+        config_file = None
         use_config = False
 
-        if success and config_file.exists():
-            print(f"📊 Claude analysis complete")
-            print(f"   📌 Using Claude's config: {config_file}")
-            use_config = True
-        else:
-            if not success:
-                print("⚠️  Claude analysis failed, using defaults")
-            if not config_file.exists():
-                print("⚠️  Config file not created, using defaults")
+        if args.use_config:
+            # Use provided config file
+            config_source = Path(args.use_config)
+            if not config_source.is_absolute():
+                # Try relative to original directory first
+                config_source = original_dir / config_source
+                if not config_source.exists():
+                    # Try relative to script directory
+                    script_dir = Path(__file__).parent
+                    config_source = script_dir / args.use_config
+
+            if config_source.exists():
+                config_file = copy_config_file(config_source, html_dir)
+                if config_file:
+                    use_config = True
+                    print(f"📊 Using existing config file (skipping Claude analysis)")
+                else:
+                    print(
+                        "⚠️  Failed to copy config file, will fall back to Claude analysis"
+                    )
+            else:
+                print(f"⚠️  Config file not found: {args.use_config}")
+                print("   Will fall back to Claude analysis")
+
+        if not use_config:
+            # Step 2: Analyze HTML structure with Claude
+            print(f"\n{'='*50}")
+            print("STEP 2: Analyzing HTML Structure with Claude")
+            print(f"{'='*50}")
+            print(f"🤖 Claude will analyze 5 representative HTML files")
+            print(f"⏱️  Expected duration: 5-8 minutes")
+
+            analyze_cmd = [
+                "m1f-html2md",
+                "analyze",
+                str(html_dir),
+                "--claude",
+                "--project-description",
+                PROJECT_DESCRIPTION,
+            ]
+
+            print("🤖 Using Claude AI for intelligent HTML analysis...")
+            success, output = run_command(
+                analyze_cmd, "Analyzing HTML with Claude", capture_output=False
+            )
+
+            # Check if Claude created the config file
+            # The analyze command creates html2md_config.yaml in the HTML directory
+            config_file = html_dir / "html2md_config.yaml"
+
+            if success and config_file.exists():
+                print(f"📊 Claude analysis complete")
+                print(f"   📌 Using Claude's config: {config_file}")
+                use_config = True
+            else:
+                if not success:
+                    print("⚠️  Claude analysis failed, using defaults")
+                if not config_file.exists():
+                    print("⚠️  Config file not created, using defaults")
 
         # Step 3: Convert HTML to Markdown
         print(f"\n{'='*50}")
         print("STEP 3: Converting to Markdown")
         print(f"{'='*50}")
         print(f"📄 Converting all {len(html_files)} HTML files to Markdown")
+        if args.parallel:
+            print(f"⚡ Using parallel processing for faster conversion")
         print(f"⏱️  Expected duration: <1 minute")
 
         convert_cmd = ["m1f-html2md", "convert", str(html_dir), "-o", str(markdown_dir)]
 
-        # Use Claude's config file if it exists
-        if use_config and config_file.exists():
+        # Use config file if available
+        if use_config and config_file and config_file.exists():
             convert_cmd.extend(["-c", str(config_file)])
-            print(f"   📄 Using Claude's configuration file")
+            print(f"   📄 Using configuration file: {config_file.name}")
         else:
             # Use defaults
             convert_cmd.extend(["--content-selector", CONTENT_SELECTOR])
             for selector in IGNORE_SELECTORS:
                 convert_cmd.extend(["--ignore-selectors", selector])
             print(f"   📌 Using default selectors")
+
+        # Add parallel processing flag
+        if args.parallel:
+            convert_cmd.append("--parallel")
 
         success, _ = run_command(
             convert_cmd, "Converting HTML to Markdown", capture_output=False
@@ -256,6 +374,9 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
             convert_cmd.extend(["--content-selector", CONTENT_SELECTOR])
             for selector in IGNORE_SELECTORS:
                 convert_cmd.extend(["--ignore-selectors", selector])
+
+            if args.parallel:
+                convert_cmd.append("--parallel")
 
             success, _ = run_command(
                 convert_cmd,
@@ -357,6 +478,18 @@ The final bundle will be in the 'm1f' subdirectory of the markdown folder.
     print(f"\n🧹 Cleanup (optional):")
     print(f"   Remove HTML: rm -rf {output_path}/claude-code-html")
     print(f"   Keep Markdown: {markdown_dir} (contains the bundle)")
+
+    # Save config if it was generated by Claude
+    if use_config and config_file and config_file.exists() and not args.use_config:
+        config_backup = output_path / "html2md_claude_code_doc.config.yml"
+        try:
+            shutil.copy2(str(config_file), str(config_backup))
+            print(f"\n💾 Config saved: {config_backup}")
+            print(
+                f"   Use --use-config {config_backup.name} next time to skip Claude analysis"
+            )
+        except:
+            pass
 
     # Change back to original directory
     os.chdir(original_dir)

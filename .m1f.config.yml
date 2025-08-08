@@ -9,8 +9,7 @@ global:
     - "**/tmp/**"
     - "tmp/**"  # Exclude project root tmp directory
     - "**/dev/**"
-    - "**/tests/**"  # Exclude all test directories
-    - "**/test/**"   # Also common test directory name
+    # Note: Don't exclude test directories globally - handle test data files via bundle-specific excludes
         
   global_settings:
     # Default security setting for all files
@@ -74,6 +73,14 @@ bundles:
     output: "m1f/m1f/all-docs.txt"
     sources:
       - path: "."
+        excludes:
+          # Exclude test data files but keep test documentation (README.md)
+          - "**/tests/**/source/**"
+          - "**/tests/**/extracted/**"
+          - "**/tests/**/output/**"
+          - "**/tests/**/expected/**"
+          - "**/tests/**/scraped_examples/**"
+          - "**/test_pages/**"
     docs_only: true
 
   # Source code bundles
@@ -146,3 +153,10 @@ bundles:
     output: "m1f/m1f/99_m1f_complete.txt"
     sources:
       - path: "."
+        excludes: 
+          # Exclude test data files but keep test Python files
+          - "**/tests/**/source/**"
+          - "**/tests/**/extracted/**"
+          - "**/tests/**/output/**"
+          - "**/tests/**/expected/**"
+          - "**/tests/**/scraped_examples/**"

@@ -6,6 +6,196 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **m1f Output Improvements**: Optimized file generation behavior
+  - Default separator style changed from "Detailed" to "Standard" for simpler output
+  - Directory list file is no longer created when no directories exist
+  - File list is no longer created when no files are processed
+  - Reduces unnecessary empty file creation
+
+### Added
+
+- **m1f-scrape Session Management**: Complete session tracking system for scraping runs
+  - Each scraping run creates a unique session with ID, timestamps, and statistics
+  - Sessions track status: running, completed, interrupted, failed
+  - Automatic cleanup of orphaned sessions (no activity >1 hour) on startup
+  - Manual cleanup with `--cleanup-sessions` command
+  - Session viewing with `--show-sessions` and `--show-sessions-detailed`
+  - Clear specific sessions with `--clear-session ID` or `--clear-last-session`
+  - Database migration to v2 with session support (auto-migrates existing DBs)
+  - Session statistics calculated correctly at end of each run
+  - Graceful handling of Ctrl+C, crashes, and kill signals
+  - Long-running sessions (>1hr) not interrupted if still actively scraping
+  - Optional file deletion when clearing sessions with `--delete-files` flag
+  - Interactive confirmation prompt for file deletion (skipped with flag)
+
+### Fixed
+
+- **m1f-scrape Max-Pages Counting**: Fixed to count only successfully scraped pages
+  - Previously counted all attempted URLs including errors and redirects
+  - Now only increments counter for pages that were actually saved
+  - Ensures --max-pages limit is respected correctly
+  - Fixed issue where scraper would stop prematurely at 1001 URLs when more pages were available
+
+- **m1f-scrape Test Infrastructure**: Fixed all 65 scraping tests to pass
+  - Fixed test server startup issues by changing subprocess.PIPE to subprocess.DEVNULL
+  - Fixed test server canonical parameter injection causing 500 errors
+  - Fixed mock configuration for async context managers in tests
+  - Fixed ScraperConfig/CrawlerConfig parameter mismatch
+  - Fixed Playwright browser_config parameter handling
+  - Fixed Selectolax allowed_path logic for start URL handling
+  - Updated test expectations to match corrected behavior
+
+### Added
+
+- **m1f-scrape URL Support for allowed_path**: Parameter now accepts full URLs
+  - Can use both paths (`/docs/`) and full URLs (`https://example.com/docs/`)
+  - HTTrack properly extracts domain and path from URL-based allowed_path
+  - BeautifulSoup validates URLs in should_crawl_url method
+  - Useful for restricting crawl to specific subdomains or protocols
+
+- **m1f-scrape Python Mirror Scraper**: New fallback scraper for HTTrack
+  - Pure Python implementation for website mirroring
+  - Automatically used when HTTrack fails or for localhost URLs
+  - Preserves directory structure similar to HTTrack
+  - Supports all standard scraper features (robots.txt, rate limiting, etc.)
+
+### Improved
+
+- **m1f-scrape Canonical URL Logic**: Better handling with allowed_path
+  - Pages within allowed_path are now kept even if canonical points outside
+  - Respects user's intent to scrape content within allowed boundaries
+  - All scrapers (BeautifulSoup, HTTrack, Selectolax, Playwright) updated
+  - Added comprehensive test coverage for canonical/allowed_path interaction
+
+- **m1f-scrape Unlimited Pages Option**: Support for unlimited scraping
+  - Changed default `max_pages` from 1000 to 10000 across all configurations
+  - Added support for `-1` as unlimited pages (no limit)
+  - Updated validation to allow up to 10 million pages
+  - All scrapers now handle `-1` as unlimited:
+    - playwright, selectolax, beautifulsoup, scrapy: Skip page limit check when -1
+    - httrack: Uses very large number (999999999) for unlimited
+  - Updated documentation to explain `-1` unlimited option
+  - Added example for unlimited scraping with caution note
+
+- **m1f-scrape Advanced Path Control**: New `--allowed-path` parameter
+  - Allows starting from specific page while controlling crawling boundaries
+  - Overrides automatic path restriction based on start URL
+  - Start URL is always scraped regardless of path restrictions
+  - Example: Start from `/Extensions/eZ-Publish-extensions.html` but crawl all `/Extensions/`
+  - Useful for documentation sites where index pages link to different directories
+  - Implemented across all scraper backends (BeautifulSoup, HTTrack, Selectolax, Playwright, Scrapy)
+  - Added `check_ssrf` configuration parameter to enable/disable SSRF protection (defaults to enabled)
+  - Fixed test server to support subdirectory routing for comprehensive testing
+  - Added integration and unit tests with proper mocking
+
+### Fixed
+
+- **m1f-scrape Canonical URL Logic**: Fixed canonical URL handling with allowed_path
+  - Pages within allowed_path are now kept even if canonical points outside
+  - Properly handles canonical URLs when both current and canonical are within allowed_path
+  - Fixed across all scrapers (BeautifulSoup, HTTrack, Selectolax, Playwright)
+  - Added comprehensive tests to verify the behavior
+
+### Improved
+
+- **m1f-scrape Parameter Help Text**: Clarified confusing CLI parameter descriptions
+  - `--ignore-canonical` now clearly states default behavior (pages with different canonical URLs are skipped)
+  - `--ignore-duplicates` help text clarified to explain default duplicate detection
+  - Better organization of parameters into logical groups
+
+- **m1f-scrape Test Coverage**: Created meaningful integration tests
+  - Real HTTP requests with local test server instead of mocks
+  - Tests that verify actual functionality, not just configuration:
+    - `test_ignore_get_params_actually_works` - Verifies URL normalization
+    - `test_canonical_url_with_allowed_path_real_behavior` - Tests canonical/allowed_path interaction
+    - `test_excluded_paths_actually_excludes` - Verifies paths are actually excluded
+    - `test_duplicate_content_detection_actually_works` - Tests content deduplication
+    - `test_max_depth_unlimited_actually_works` - Verifies unlimited depth crawling
+    - `test_timeout_actually_enforced` - Tests timeout enforcement
+  - Separate integration tests for each scraper backend
+  - Fixed test server to properly handle canonical parameter injection
+
+### Added
+
+- **m1f-scrape Missing CLI Parameters**: Exposed configuration options in CLI
+  - `--excluded-paths`: URL paths to exclude from crawling (can specify multiple)
+  - `--timeout`: Request timeout in seconds (default: 30)
+  - `--retry-count`: Number of retries for failed requests (default: 3)
+  - `--disable-ssrf-check`: Disable SSRF vulnerability checks (allows localhost)
+  - Note: Respecting robots.txt is mandatory and cannot be disabled
+
+- **m1f-scrape Unlimited Depth**: Support for unlimited crawl depth
+  - `--max-depth` now accepts -1 for unlimited depth (similar to --max-pages)
+  - All scrapers updated to handle unlimited depth correctly
+  - HTTrack uses very large number (999999) internally
+
+### Removed
+
+- **m1f-scrape Scrapy Support**: Completely removed Scrapy scraper implementation
+  - Removed scrapy_scraper.py and all related tests
+  - Removed Scrapy from ScraperBackend enum
+  - Simplified scraper selection logic
+
+- **m1f-scrape Comprehensive Parameter Tests**: New test suite for all parameters
+  - Tests for content filtering (ignore-get-params, ignore-canonical, ignore-duplicates)
+  - Tests for excluded paths functionality
+  - Tests for request options (user-agent, timeout, retry-count)
+  - Tests for different scraper backends
+  - Tests for database query options
+  - All tests use local test server (no external dependencies)
+
+### Removed
+
+- **m1f-scrape Scrapy Backend**: Removed Scrapy scraper implementation
+  - Scrapy had different architecture that complicated maintenance
+  - Other scrapers (BeautifulSoup, Selectolax, HTTrack, Playwright) provide sufficient coverage
+  - Removed from CLI choices, configuration enum, and all tests
+  - Simplifies codebase and reduces dependencies
+
+### Changed
+
+- **m1f-scrape Canonical URL Handling**: Improved canonical URL logic to respect allowed_path
+  - Fixed issue where pages within allowed_path were skipped if canonical URL pointed outside
+  - Pages within allowed_path are now kept even if their canonical URL points outside the restricted area
+  - Added canonical URL checking to Playwright scraper (was previously missing)
+  - Improved help text for content filtering options to be clearer:
+    - `--ignore-get-params`: Now explains it strips query parameters
+    - `--ignore-canonical`: Clarifies it disables canonical URL deduplication
+    - `--ignore-duplicates`: Explains it disables content-based deduplication
+
+- **m1f-scrape Help Output**: Improved organization with colorama support
+  - Added colorama formatting to match m1f's help output style
+  - Organized parameters into logical groups (Output Control, Scraper Options, etc.)
+  - Added colored error messages for better visibility
+  - Help text now renders with proper formatting on terminals that support it
+
+- **m1f-scrape Real Integration Tests**: Replaced mocked tests with real server tests
+  - Selectolax now has comprehensive integration tests using local test server
+  - HTTrack tests check for installation and run real tests when available
+  - Playwright tests verify JavaScript rendering and browser functionality
+  - All integration tests use local test server to avoid external dependencies
+  - Fixed test server environment issues for reliable testing
+
+### Fixed
+
+- **m1f-html2md Config Structure**: Fixed configuration structure mismatch
+  - Config loader now properly handles nested configuration objects
+  - CLI correctly maps arguments to `conversion.outermost_selector` and `conversion.ignore_selectors`
+  - Fixed prompts that were generating incorrect config structure with `extractor.content_selector`
+  - Updated all prompts to generate the correct structure: `conversion.outermost_selector`
+  - Fixed output message to show "outermost_selector" instead of "content_selector"
+  - Config files now work correctly with proper field mapping
+
+- **Claude Code Documentation Scraper**: Fixed config file usage
+  - When using `--use-config`, script now creates backup directory instead of deleting existing markdown
+  - Backup directories named with timestamp: `claude-code-markdown_backup_YYYYMMDD_HHMMSS`
+  - Ensures existing markdown files are preserved when re-converting with different config
+  - Added datetime import for timestamp generation
+
 ## [3.8.0] - 2025-07-24
 
 ### Added

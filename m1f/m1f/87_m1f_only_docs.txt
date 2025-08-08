@@ -5752,6 +5752,159 @@ When you use `m1f-claude --setup`, it:
 Windows users can manually customize their .m1f.config.yml after running
 m1f-init.
 
+### Permission System
+
+Control how Claude handles file operations with the `--permission-mode` flag:
+
+```bash
+# Auto-accept all file edits
+m1f-claude --permission-mode acceptEdits "Help me refactor this code"
+
+# Plan mode - Claude describes changes without executing
+m1f-claude --permission-mode plan "What changes would you make?"
+
+# Bypass all permission checks (use with caution)
+m1f-claude --permission-mode bypassPermissions "Fix all issues"
+
+# Default mode - prompts for each operation
+m1f-claude --permission-mode default "Update the config"
+```
+
+### Output Formats
+
+Choose how Claude's responses are formatted:
+
+```bash
+# Plain text output (default)
+m1f-claude --output-format text "Explain this code"
+
+# JSON output for programmatic processing
+m1f-claude --output-format json "Analyze project structure"
+
+# Streaming JSON for real-time processing
+m1f-claude --output-format stream-json "Refactor the codebase"
+```
+
+### MCP (Model Context Protocol) Support
+
+Extend Claude's capabilities with MCP servers:
+
+```bash
+# Load MCP configuration from file
+m1f-claude --mcp-config ./mcp-servers.json "Use the database tools"
+
+# Example MCP configuration file:
+cat > mcp-servers.json << 'EOF'
+{
+  "servers": {
+    "postgres-tools": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/postgres-server"],
+      "env": {
+        "DATABASE_URL": "postgresql://user:pass@localhost/mydb"
+      }
+    }
+  }
+}
+EOF
+```
+
+### Tool Control
+
+Fine-grained control over which tools Claude can use:
+
+```bash
+# Allow specific tools only
+m1f-claude --allowed-tools "Read,Write,Edit" "Update the documentation"
+
+# Disallow dangerous tools
+m1f-claude --disallowed-tools "Bash,System" "Review the code"
+
+# Combine both for precise control
+m1f-claude --allowed-tools "Read,Edit,MultiEdit,Write,Glob,Grep" \
+           --disallowed-tools "Bash" \
+           "Refactor without running commands"
+```
+
+### System Prompt Enhancement
+
+Append custom instructions to Claude's system prompt:
+
+```bash
+# Add specific instructions
+m1f-claude --append-system-prompt "Focus on security best practices" \
+           "Review this authentication code"
+
+# Multiple instructions
+m1f-claude --append-system-prompt "Be concise. Explain your reasoning. Focus on performance." \
+           "Optimize this algorithm"
+```
+
+### Working Directory Control
+
+Set a specific working directory for Claude:
+
+```bash
+# Work in a different directory than current
+m1f-claude --cwd /path/to/project "List all Python files"
+
+# Useful for monorepos
+m1f-claude --cwd ./packages/frontend "Set up the React components"
+```
+
+### Enhanced Message Handling
+
+m1f-claude handles all message types from Claude:
+
+- **System Messages**: Session initialization, permission prompts, notifications
+- **User Messages**: Tracked for conversation context
+- **Assistant Messages**: Handles both flat and nested content structures
+- **Tool Messages**: Tool use events with parameters, results with smart
+  truncation
+- **Result Messages**: Success/error/cancellation states, cost tracking,
+  metadata
+
+### Usage Examples
+
+#### Basic Setup with Enhanced Features
+
+```bash
+# Initialize with specific permissions and tools
+m1f-claude --setup \
+  --permission-mode acceptEdits \
+  --allowed-tools "Read,Write,Edit,MultiEdit,Glob,Grep" \
+  --project-description "E-commerce platform using Django" \
+  --project-priorities "Security, scalability, maintainability"
+```
+
+#### Interactive Mode with MCP
+
+```bash
+# Start interactive mode with database tools
+m1f-claude -i \
+  --mcp-config ./database-tools.json \
+  --append-system-prompt "You have access to PostgreSQL tools"
+```
+
+#### Automated Refactoring
+
+```bash
+# Refactor with auto-accept and specific output format
+m1f-claude --permission-mode acceptEdits \
+  --output-format json \
+  --max-turns 5 \
+  "Refactor all Python files to use type hints"
+```
+
+#### Safe Code Review
+
+```bash
+# Review without write permissions
+m1f-claude --allowed-tools "Read,Grep,Glob" \
+  --permission-mode default \
+  "Review the codebase for security issues"
+```
+
 ### 💡 Important: Claude Code Subscription Recommended
 
 **We strongly recommend using Claude Code with a subscription plan** when using
@@ -6064,6 +6217,15 @@ m1f-claude "Setup m1f for a typical Python project with tests and docs"
 
 # Interactive Claude session
 m1f-claude -i
+
+# With specific permissions and tools
+m1f-claude --permission-mode acceptEdits --allowed-tools "Read,Write,Edit" "Update the README"
+
+# JSON output for automation
+m1f-claude --output-format json "List all Python files"
+
+# With MCP database tools
+m1f-claude --mcp-config ./mcp.json "Query the user database"
 
 # Security audit bundle
 m1f -s . -o audit.txt --security-check error --minimal-output

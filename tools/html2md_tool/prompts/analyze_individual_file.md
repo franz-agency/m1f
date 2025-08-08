@@ -1,5 +1,7 @@
 # Individual HTML File Analysis
 
+Use deep thinking, task list, and sub agents as needed.
+
 You are analyzing a single HTML file to understand its structure for optimal
 content extraction.
 
@@ -80,10 +82,7 @@ SPECIAL FINDINGS:
 - [Warnings]
 
 SUGGESTED SELECTORS:
-content_selector: "[primary selector]"
-alternative_selectors:
-  - "[fallback 1]"
-  - "[fallback 2]"
+outermost_selector: "[primary selector]"
 ignore_selectors:
   - "[exclude 1]"
   - "[exclude 2]"

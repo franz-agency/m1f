@@ -37,10 +37,10 @@ import os
 
 # Use unified colorama module
 try:
-    from tools.shared.colors import warning
+    from tools.shared.colors import Colors, ColoredHelpFormatter, warning
 except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from tools.shared.colors import warning
+    from tools.shared.colors import Colors, ColoredHelpFormatter, warning
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
@@ -80,7 +80,9 @@ async def async_main() -> int:
             import argparse
 
             parser = argparse.ArgumentParser(
-                prog="m1f auto-bundle", description="Auto-bundle functionality for m1f"
+                prog="m1f auto-bundle",
+                description="Auto-bundle functionality for m1f",
+                formatter_class=ColoredHelpFormatter,
             )
             parser.add_argument(
                 "bundle_name", nargs="?", help="Name of specific bundle to create"
