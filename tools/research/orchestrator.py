@@ -17,6 +17,7 @@ Enhanced research orchestrator with job management and persistence
 """
 
 import asyncio
+import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -68,9 +69,26 @@ class EnhancedResearchOrchestrator:
             return None
 
         try:
+            # Determine effective provider with sensible defaults
+            provider_name = (self.config.llm.provider or "claude").lower()
+
+            if provider_name == "auto":
+                # Prefer Claude Code subscription (no API key needed)
+                provider_name = "claude-code"
+                # If Claude Code is not desired, fallback to Claude API if key is present
+                if not os.getenv("CLAUDE_CODE", "1") and os.getenv("ANTHROPIC_API_KEY"):
+                    provider_name = "claude"
+                # Else fallback to Gemini if key available
+                elif not os.getenv("CLAUDE_CODE", "1") and not os.getenv("ANTHROPIC_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+                    provider_name = "gemini"
+
+            # If user selected Claude but no API key is present, transparently use Claude Code
+            if provider_name == "claude" and not os.getenv("ANTHROPIC_API_KEY"):
+                provider_name = "claude-code"
+
             return get_provider(
-                self.config.llm.provider,
-                api_key=None,  # Will use env var
+                provider_name,
+                api_key=None,  # Providers will read from environment when needed
                 model=self.config.llm.model,
             )
         except Exception as e:
