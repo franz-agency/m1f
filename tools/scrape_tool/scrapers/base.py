@@ -139,6 +139,8 @@ class WebScraperBase(ABC):
         import ipaddress
 
         try:
+            # Set a timeout for DNS resolution to avoid hanging
+            socket.setdefaulttimeout(2.0)
             # Get IP address from hostname
             ip = socket.gethostbyname(hostname)
             ip_obj = ipaddress.ip_address(ip)
@@ -166,8 +168,10 @@ class WebScraperBase(ABC):
             return False
 
         except (socket.gaierror, ValueError):
-            # If we can't resolve the hostname, err on the side of caution
-            return True
+            # If we can't resolve the hostname, it's likely a normal website
+            # with DNS issues or a domain that doesn't exist anymore
+            # Don't treat this as a private IP
+            return False
 
     async def validate_url(self, url: str) -> bool:
         """Validate if a URL should be scraped based on configuration and robots.txt.
