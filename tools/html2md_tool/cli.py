@@ -19,6 +19,7 @@ import argparse
 import sys
 from pathlib import Path
 from typing import List, Optional
+from collections import Counter
 
 # Use unified colorama module
 from ..shared.colors import (
@@ -335,6 +336,12 @@ def handle_convert(args: argparse.Namespace) -> None:
         else:
             # Full config file - load it normally
             config = load_config(args.config)
+            
+            # IMPORTANT: CLI arguments should always override config file values
+            # Only override if CLI args were explicitly provided
+            cli_source_path = args.source.parent if args.source.is_file() else args.source
+            config.source = cli_source_path
+            config.destination = args.output
     else:
         # When source is a file, use its parent directory as the source
         source_path = args.source.parent if args.source.is_file() else args.source
