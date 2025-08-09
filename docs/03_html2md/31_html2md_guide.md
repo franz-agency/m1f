@@ -458,6 +458,36 @@ m1f-html2md convert ./html \
   --ignore-selectors nav footer
 ```
 
+### Example 4: Tailscale Documentation Bundle
+
+A complete example for scraping and bundling documentation is available in `examples/tailscale_doc/`:
+
+```bash
+# Download ~422 HTML files and create 11 thematic bundles
+python examples/tailscale_doc/scrape_tailscale_docs.py ~/tailscale-docs
+
+# Or skip download if HTML already exists
+python examples/tailscale_doc/scrape_tailscale_docs.py ~/tailscale-docs --skip-download
+```
+
+This example demonstrates:
+- Scraping ~422 HTML pages with respectful delays
+- Converting HTML to Markdown with optimized selectors
+- Creating 11 thematic bundles (2.4MB total):
+  - Complete documentation bundle
+  - Getting started guide (27KB)
+  - Platform installations (374KB)  
+  - Networking & DNS (200KB)
+  - Authentication & Security (418KB)
+  - And 6 more specialized bundles
+
+The configuration files showcase:
+- Custom HTML extraction selectors for Tailscale's documentation structure
+- Intelligent bundle organization for LLM consumption
+- Parallel processing for faster conversion
+
+See `examples/tailscale_doc/README.md` for full details.
+
 ## Troubleshooting
 
 ### Common Issues

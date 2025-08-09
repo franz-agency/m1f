@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.8.0] - Unreleased
+
 ### Changed
 
 - **m1f Output Improvements**: Optimized file generation behavior
@@ -17,6 +19,14 @@ and this project adheres to
   - Reduces unnecessary empty file creation
 
 ### Added
+
+- **Tailscale Documentation Scraper Example**: Complete example for scraping and bundling documentation
+  - Scrapes ~422 HTML pages from Tailscale KB
+  - Optimized bundle configuration with 11 thematic bundles (2.4MB total)
+  - Includes HTML-to-Markdown conversion with tailored selectors
+  - Supports parallel processing and skip-download options
+  - Comprehensive README with usage examples and troubleshooting
+  - Located in `examples/tailscale_doc/`
 
 - **m1f-scrape Session Management**: Complete session tracking system for scraping runs
   - Each scraping run creates a unique session with ID, timestamps, and statistics
@@ -196,7 +206,11 @@ and this project adheres to
   - Ensures existing markdown files are preserved when re-converting with different config
   - Added datetime import for timestamp generation
 
-## [3.8.0] - 2025-07-24
+- **html2md_tool CLI Override**: Fixed command-line argument precedence
+  - CLI source/destination arguments now properly override config file values
+  - Ensures expected behavior where command-line parameters take priority
+
+## [3.7.0] - 2025-07-21
 
 ### Added
 
