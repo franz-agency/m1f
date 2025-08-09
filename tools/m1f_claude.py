@@ -1388,7 +1388,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     prompt_to_send = user_input
 
                 # Send to Claude using subprocess
-                info("🤖 Claude is thinking...", end="", flush=True)
+                print("🤖 Claude is thinking...", end="", flush=True)
                 response, new_session_id = self._send_with_session(
                     prompt_to_send, session_id
                 )
@@ -1396,7 +1396,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                 if response is not None:  # Empty response is still valid
                     # Clear the "thinking" message
                     print("\r" + " " * 30 + "\r", end="", flush=True)
-                    info("Claude: ", end="", flush=True)
+                    print("Claude: ", end="", flush=True)
                     if new_session_id:
                         session_id = new_session_id
                     first_prompt = False
