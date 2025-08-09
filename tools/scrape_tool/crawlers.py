@@ -943,15 +943,42 @@ class WebCrawler:
             # Get list of files created in this session
             session_files = []
             for page in pages:
-                # Reconstruct the file path for each scraped page
-                parsed_url = urlparse(page.url)
-                domain = parsed_url.netloc
-                path = parsed_url.path.strip("/")
-                if not path or path.endswith("/"):
-                    path = path + "index.html"
-                elif not path.endswith(".html"):
-                    path = path + ".html"
-                file_path = result["output_dir"] / domain / path
+                # Reconstruct the file path for each scraped page using same logic as _save_page
+                parsed = urlparse(page.url)
+                site_dir = result["output_dir"] / parsed.netloc
+                
+                # Same logic as in _save_page method
+                if parsed.path and parsed.path != "/":
+                    path_parts = parsed.path.lstrip("/").split("/")
+                    
+                    # Handle file extension
+                    if path_parts[-1].endswith(".html") or "." in path_parts[-1]:
+                        filename = path_parts[-1]
+                        subdirs = path_parts[:-1]
+                    else:
+                        # Assume it's a directory, create index.html
+                        filename = "index.html"
+                        subdirs = path_parts
+                    
+                    # Build the file path
+                    if subdirs:
+                        # Sanitize subdirectory names (same as _save_page)
+                        safe_subdirs = []
+                        for part in subdirs:
+                            safe_part = part.replace("..", "").replace("./", "").replace("\\", "")
+                            if safe_part and safe_part not in (".", ".."):
+                                safe_subdirs.append(safe_part)
+                        
+                        if safe_subdirs:
+                            file_path = site_dir / Path(*safe_subdirs) / filename
+                        else:
+                            file_path = site_dir / filename
+                    else:
+                        file_path = site_dir / filename
+                else:
+                    # Root page
+                    file_path = site_dir / "index.html"
+                
                 if file_path.exists():
                     session_files.append(file_path)
             
