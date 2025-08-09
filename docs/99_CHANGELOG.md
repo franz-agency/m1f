@@ -20,13 +20,18 @@ and this project adheres to
 
 ### Added
 
-- **Tailscale Documentation Scraper Example**: Complete example for scraping and bundling documentation
-  - Scrapes ~422 HTML pages from Tailscale KB
-  - Optimized bundle configuration with 11 thematic bundles (2.4MB total)
-  - Includes HTML-to-Markdown conversion with tailored selectors
-  - Supports parallel processing and skip-download options
-  - Comprehensive README with usage examples and troubleshooting
-  - Located in `examples/tailscale_doc/`
+- **Documentation Scraper Examples**: Complete examples for scraping and bundling documentation
+  - **Claude Code Documentation Scraper** (`examples/claude_code_doc/`)
+    - Scrapes ~31 HTML pages from docs.anthropic.com/claude-code
+    - Optimized config for fast conversion (saves 5-8 minutes)
+    - Supports Claude AI analysis for automatic config generation
+    - Creates clean Markdown documentation bundle
+  - **Tailscale Documentation Scraper** (`examples/tailscale_doc/`)
+    - Scrapes ~422 HTML pages from Tailscale KB
+    - Optimized bundle configuration with 11 thematic bundles (2.4MB total)
+    - Includes HTML-to-Markdown conversion with tailored selectors
+    - Supports parallel processing and skip-download options
+    - Comprehensive README with usage examples and troubleshooting
 
 - **m1f-scrape Session Management**: Complete session tracking system for scraping runs
   - Each scraping run creates a unique session with ID, timestamps, and statistics

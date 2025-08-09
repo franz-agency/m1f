@@ -458,7 +458,29 @@ m1f-html2md convert ./html \
   --ignore-selectors nav footer
 ```
 
-### Example 4: Tailscale Documentation Bundle
+### Example 4: Claude Code Documentation Bundle
+
+A complete example for scraping Claude Code documentation is available in `examples/claude_code_doc/`:
+
+```bash
+# Fast mode with existing config (saves 5-8 minutes!)
+source .venv/bin/activate
+python examples/claude_code_doc/scrape_claude_code_docs.py ~/claude-docs \
+    --use-config examples/claude_code_doc/html2md_claude_code_doc.config.yml
+
+# Or let Claude AI analyze and create config automatically
+python examples/claude_code_doc/scrape_claude_code_docs.py ~/claude-docs
+```
+
+This example:
+- Scrapes ~31 HTML pages from docs.anthropic.com/claude-code
+- Uses optimized config or Claude AI analysis for content extraction
+- Creates clean Markdown documentation bundle
+- Supports both fast mode (with config) and full analysis mode
+
+See `examples/claude_code_doc/README.md` for details.
+
+### Example 5: Tailscale Documentation Bundle
 
 A complete example for scraping and bundling documentation is available in `examples/tailscale_doc/`:
 
