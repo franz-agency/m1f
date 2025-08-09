@@ -521,6 +521,30 @@ m1f -s ./react_md -o ./react_documentation.txt
 # "Here is the React documentation: <contents of react_documentation.txt>"
 ```
 
+### Real-World Examples
+
+The m1f project includes two complete documentation scraper examples:
+
+#### Claude Code Documentation
+Located in `examples/claude_code_doc/`:
+- Scrapes ~31 pages from docs.anthropic.com/claude-code
+- Includes optimized HTML extraction config (saves 5-8 minutes)
+- Creates clean Markdown bundle for LLM consumption
+- See the [README](../../examples/claude_code_doc/README.md) for usage
+
+#### Tailscale Documentation  
+Located in `examples/tailscale_doc/`:
+- Scrapes ~422 pages from tailscale.com/kb
+- Creates 11 thematic bundles (2.4MB total) organized by topic
+- Includes parallel processing and skip-download options
+- See the [README](../../examples/tailscale_doc/README.md) for details
+
+Both examples demonstrate best practices for:
+- Respectful scraping with delays
+- Optimized HTML-to-Markdown conversion
+- Bundle organization for LLM usage
+- Configuration reuse to save time
+
 ## Resume Functionality
 
 The scraper supports interrupting and resuming downloads, making it ideal for
