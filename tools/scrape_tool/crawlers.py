@@ -768,8 +768,101 @@ class WebCrawler:
             "output_dir": site_dir,
         }
 
+    def _adjust_html_links(self, html_content: str, original_url: str, saved_path: Path, site_dir: Path) -> str:
+        """Adjust relative links in HTML content to work from the new saved location.
+        
+        Args:
+            html_content: The HTML content to adjust
+            original_url: The original URL of the page
+            saved_path: Where the file will be saved
+            site_dir: The site directory (domain folder)
+            
+        Returns:
+            HTML content with adjusted links
+        """
+        import os
+        from bs4 import BeautifulSoup
+        from urllib.parse import urljoin, urlparse
+        
+        soup = BeautifulSoup(html_content, 'html.parser')
+        original_parsed = urlparse(original_url)
+        
+        # Calculate the relative path from saved location to site root
+        try:
+            rel_to_root = os.path.relpath(site_dir, saved_path.parent)
+            if rel_to_root == '.':
+                rel_to_root = ''
+            else:
+                rel_to_root = rel_to_root.replace('\\', '/') + '/'
+        except ValueError:
+            # If on different drives on Windows
+            rel_to_root = ''
+        
+        # Adjust all links
+        for tag_name, attr_name in [('a', 'href'), ('link', 'href'), ('script', 'src'), ('img', 'src')]:
+            for tag in soup.find_all(tag_name):
+                attr_value = tag.get(attr_name)
+                if not attr_value:
+                    continue
+                    
+                # Skip absolute URLs, anchors, and special protocols
+                if attr_value.startswith(('http://', 'https://', '//', '#', 'mailto:', 'javascript:', 'data:')):
+                    continue
+                
+                # Handle relative URLs
+                if attr_value.startswith('/'):
+                    # Absolute path - make it relative to site root
+                    new_path = rel_to_root + attr_value.lstrip('/')
+                    tag[attr_name] = new_path
+                elif attr_value.startswith('./'):
+                    # Relative to current directory - need to adjust based on original URL structure
+                    # Get the original directory path
+                    orig_path_parts = original_parsed.path.rstrip('/').split('/')
+                    if orig_path_parts[-1] and ('.' in orig_path_parts[-1] or not orig_path_parts[-1]):
+                        # Last part is a file, remove it
+                        orig_path_parts = orig_path_parts[:-1]
+                    
+                    # Reconstruct the path
+                    relative_part = attr_value[2:]  # Remove ./
+                    if orig_path_parts:
+                        # The link was relative to /magazin/ or similar
+                        new_path = rel_to_root + '/'.join(orig_path_parts[1:]) + '/' + relative_part
+                    else:
+                        new_path = rel_to_root + relative_part
+                    
+                    # Clean up the path
+                    new_path = new_path.replace('//', '/')
+                    tag[attr_name] = new_path
+                elif attr_value.startswith('../'):
+                    # Handle parent directory references
+                    # This is complex, so for now just make it relative to root
+                    cleaned = attr_value
+                    levels_up = 0
+                    while cleaned.startswith('../'):
+                        levels_up += 1
+                        cleaned = cleaned[3:]
+                    
+                    orig_path_parts = original_parsed.path.rstrip('/').split('/')
+                    if orig_path_parts[-1] and '.' in orig_path_parts[-1]:
+                        orig_path_parts = orig_path_parts[:-1]
+                    
+                    # Go up the required number of levels
+                    if len(orig_path_parts) > levels_up:
+                        base_parts = orig_path_parts[1:-levels_up] if levels_up > 0 else orig_path_parts[1:]
+                        if base_parts:
+                            new_path = rel_to_root + '/'.join(base_parts) + '/' + cleaned
+                        else:
+                            new_path = rel_to_root + cleaned
+                    else:
+                        new_path = rel_to_root + cleaned
+                    
+                    new_path = new_path.replace('//', '/')
+                    tag[attr_name] = new_path
+        
+        return str(soup)
+
     async def _save_page(self, page: ScrapedPage, output_dir: Path) -> Path:
-        """Save a scraped page to disk.
+        """Save a scraped page to disk with adjusted links.
 
         Args:
             page: ScrapedPage instance
@@ -825,9 +918,17 @@ class WebCrawler:
         elif file_path.suffix not in (".html", ".htm"):
             file_path = file_path.with_name(f"{file_path.name}.html")
 
+        # Adjust links in HTML content before saving
+        adjusted_content = self._adjust_html_links(
+            page.content, 
+            page.url, 
+            file_path,
+            output_dir.parent  # This is the site_dir (domain folder)
+        )
+
         # Write content
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(page.content, encoding=page.encoding)
+        file_path.write_text(adjusted_content, encoding=page.encoding)
 
         logger.debug(f"Saved {page.url} to {file_path}")
 
