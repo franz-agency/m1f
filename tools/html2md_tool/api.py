@@ -195,6 +195,10 @@ class Html2mdConverter:
                 markdown, source_file, self.config.destination
             )
 
+        # Adjust internal links to convert .html to .md
+        from .utils import adjust_internal_links
+        markdown = adjust_internal_links(markdown)
+
         return markdown
 
     def _convert_absolute_paths_to_relative(

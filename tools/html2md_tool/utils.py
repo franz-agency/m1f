@@ -229,15 +229,15 @@ def convert_html(
     return result
 
 
-def adjust_internal_links(content, base_path: str = "") -> None:
-    """Adjust internal links in HTML content (BeautifulSoup object).
+def adjust_internal_links(content, base_path: str = ""):
+    """Adjust internal links in HTML/Markdown content.
 
     Args:
-        content: BeautifulSoup object or string
+        content: BeautifulSoup object or Markdown string
         base_path: Base path for links
 
     Returns:
-        None (modifies in place)
+        Modified string if content is string, None if BeautifulSoup (modifies in place)
     """
     from bs4 import BeautifulSoup
 
@@ -260,9 +260,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
             if base_path and not url.startswith("/"):
                 url = f"{base_path}/{url}"
 
-            # Convert .html to .md
+            # Convert .html/.htm to .md
             if url.endswith(".html"):
                 url = url[:-5] + ".md"
+            elif url.endswith(".htm"):
+                url = url[:-4] + ".md"
 
             return f"[{text}]({url})"
 
@@ -278,9 +280,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
                     if base_path and not href.startswith("/"):
                         href = f"{base_path}/{href}"
 
-                    # Convert .html to .md
+                    # Convert .html/.htm to .md
                     if href.endswith(".html"):
                         href = href[:-5] + ".md"
+                    elif href.endswith(".htm"):
+                        href = href[:-4] + ".md"
 
                     link["href"] = href
 
