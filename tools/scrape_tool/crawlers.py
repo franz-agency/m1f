@@ -945,7 +945,8 @@ class WebCrawler:
             for page in pages:
                 # Reconstruct the file path for each scraped page using same logic as _save_page
                 parsed = urlparse(page.url)
-                site_dir = result["output_dir"] / parsed.netloc
+                # Note: result["output_dir"] already contains the domain (it's actually site_dir)
+                site_dir = result["output_dir"]
                 
                 # Same logic as in _save_page method
                 if parsed.path and parsed.path != "/":
