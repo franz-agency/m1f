@@ -1,0 +1,468 @@
+# m1f Configuration - Tailscale Documentation
+# Optimized into 10 logical bundles + complete bundle
+
+global:
+  global_excludes:
+    - "m1f/**"
+    - "**/*.lock"
+    - "**/LICENSE*"
+    - "**/CLAUDE.md"
+  
+  defaults:
+    force_overwrite: true
+    minimal_output: true
+
+bundles:
+  # 0. Complete documentation bundle (everything)
+  complete:
+    description: "Complete Tailscale documentation - all markdown files"
+    output: "m1f/00_complete.txt"
+    sources:
+      - path: "."
+    include_extensions: [".md"]
+    separator: "Standard"
+
+  # 1. Getting Started & Basic Installation 
+  getting_started:
+    description: "Getting started essentials and main platform installation"
+    output: "m1f/01_getting_started.txt"
+    sources:
+      - path: "."
+        includes: [
+          "./index.md",
+          "1346/**/*.md",  # start directory
+          "1017/**/*.md",  # install directory
+          "1031/**/*.md",  # install-linux
+          "1016/**/*.md",  # install-mac
+          "1022/**/*.md",  # install-windows
+          "1020/**/*.md",  # install-ios
+          "1079/**/*.md",  # install-android
+          "1030/**/*.md",  # next-steps
+          "1064/**/*.md"   # invite-team-members
+        ]
+    separator: "Standard"
+
+  # 2. Platform-Specific Installation (specialized platforms)
+  platform_install:
+    description: "Installation for specialized platforms, cloud, NAS, routers"
+    output: "m1f/02_platform_install.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1025/**/*.md",  # install-rpi
+          "1197/**/*.md",  # install-rpi-bullseye
+          "1202/**/*.md",  # install-rpi-stretch
+          "1063/**/*.md",  # install-nixos
+          "1097/**/*.md",  # install-opnsense
+          "1146/**/*.md",  # pfsense
+          "1131/**/*.md",  # synology
+          "1273/**/*.md",  # qnap
+          "1478/**/*.md",  # unraid
+          "1483/**/*.md",  # truenas
+          "1267/**/*.md",  # install-chromebook
+          "1394/**/*.md",  # install-amazon-fire
+          "1021/**/*.md",  # install-aws
+          "104*/**/*.md",  # opensuse variants (1045, 1049)
+          "151*/**/*.md",  # opensuse leap variants
+          "103*/**/*.md",  # ubuntu/debian variants
+          "104*/**/*.md",  # debian/rhel variants
+          "105*/**/*.md",  # fedora/centos variants
+          "111*/**/*.md",  # oracle linux variants
+          "115*/**/*.md",  # ubuntu newer versions
+          "117*/**/*.md",  # ubuntu newer versions
+          "118*/**/*.md",  # centos stream
+          "119*/**/*.md"   # rhel 9
+        ]
+    separator: "Standard"
+
+  # 3. Core Networking
+  networking:
+    description: "DNS, subnets, exit nodes, routing, firewall, VPN"
+    output: "m1f/03_networking.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1019/**/*.md",  # subnets
+          "1054/**/*.md",  # dns
+          "1081/**/*.md",  # magicdns
+          "1103/**/*.md",  # exit-nodes
+          "1033/**/*.md",  # ip-and-dns-addresses
+          "1015/**/*.md",  # 100.x-addresses
+          "1381/**/*.md",  # what-is-quad100
+          "1121/**/*.md",  # ipv6
+          "1134/**/*.md",  # ipv6-faq
+          "1201/**/*.md",  # 4via6-subnets
+          "1218/**/*.md",  # nextdns
+          "1235/**/*.md",  # resolv-conf
+          "1120/**/*.md",  # subnet-site-to-site
+          "1214/**/*.md",  # site-to-site
+          "1298/**/*.md",  # subnet-bgp
+          "1118/**/*.md",  # custom-derp-servers
+          "1232/**/*.md",  # derp-servers
+          "1112/**/*.md",  # userspace-networking
+          "1177/**/*.md",  # kernel-vs-userspace-routers
+          "1257/**/*.md",  # connection-types
+          "1304/**/*.md",  # ip-pool
+          "1392/**/*.md",  # auto-exit-nodes
+          "1413/**/*.md",  # mandatory-exit-nodes
+          "1258/**/*.md",  # mullvad-exit-nodes
+          "1082/**/*.md",  # firewall-ports
+          "1181/**/*.md",  # firewalls
+          "1294/**/*.md",  # firewall-mode
+          "1333/**/*.md",  # firewall-palo-alto
+          "1361/**/*.md",  # firewall
+          "1059/**/*.md"   # ip-blocklist-relays
+        ]
+    separator: "Standard"
+
+  # 4. Authentication & Security
+  auth_security:
+    description: "SSO, ACLs, grants, security policies, encryption"
+    output: "m1f/04_auth_security.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1013/**/*.md",  # sso-providers
+          "1066/**/*.md",  # sso-okta
+          "1070/**/*.md",  # sso-onelogin
+          "1180/**/*.md",  # sso-okta-scim
+          "1199/**/*.md",  # sso-google
+          "1240/**/*.md",  # sso-custom-oidc
+          "1249/**/*.md",  # sso-entra-id
+          "1283/**/*.md",  # sso-apple
+          "1284/**/*.md",  # sso-github
+          "1285/**/*.md",  # sso-microsoft
+          "1317/**/*.md",  # sso-google-saml
+          "1075/**/*.md",  # multifactor-auth
+          "1085/**/*.md",  # auth-keys
+          "1269/**/*.md",  # passkeys
+          "1341/**/*.md",  # tailnet-passkey-authentication
+          "1018/**/*.md",  # acls
+          "1192/**/*.md",  # acl-samples
+          "1337/**/*.md",  # policy-syntax
+          "1338/**/*.md",  # edit-policies
+          "1393/**/*.md",  # access-control
+          "1395/**/*.md",  # tailnet-policy-file
+          "1324/**/*.md",  # grants
+          "1458/**/*.md",  # grant-examples
+          "1467/**/*.md",  # grants-vs-acls
+          "1468/**/*.md",  # grants-troubleshooting
+          "1537/**/*.md",  # grants-app-connectors
+          "1538/**/*.md",  # grants-syntax
+          "1542/**/*.md",  # grants-migration
+          "1443/**/*.md",  # just-in-time-access
+          "1206/**/*.md",  # jit-access-sym
+          "1208/**/*.md",  # jit-access-conductorone
+          "1209/**/*.md",  # jit-access-opal
+          "1226/**/*.md",  # tailnet-lock
+          "1230/**/*.md",  # tailnet-lock-whitepaper
+          "1243/**/*.md",  # tailscale-lock
+          "1196/**/*.md",  # security-hardening
+          "1301/**/*.md",  # secret-scanning
+          "1252/**/*.md",  # key-secret-management
+          "1277/**/*.md",  # key-prefixes
+          "1028/**/*.md",  # key-expiry
+          "1212/**/*.md",  # shared-responsibility
+          "1504/**/*.md",  # encryption
+          "1123/**/*.md",  # zero-trust
+          "1595/**/*.md",  # secure-auth
+          "1596/**/*.md"   # secure-node
+        ]
+    separator: "Standard"
+
+  # 5. User & Device Management
+  user_device_mgmt:
+    description: "User management, device management, MDM integrations"
+    output: "m1f/05_user_device_mgmt.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1138/**/*.md",  # user-roles
+          "1171/**/*.md",  # changing-user-roles
+          "1225/**/*.md",  # fast-user-switching
+          "1239/**/*.md",  # user-approval
+          "1271/**/*.md",  # invite-any-user-without-email
+          "1371/**/*.md",  # invite-users
+          "1373/**/*.md",  # manage-users
+          "1145/**/*.md",  # remove-team-members
+          "1248/**/*.md",  # offboarding-users
+          "1099/**/*.md",  # device-approval
+          "1288/**/*.md",  # device-posture
+          "1326/**/*.md",  # device-identity
+          "1316/**/*.md",  # device-add
+          "1336/**/*.md",  # device-add-with-pre-authentication
+          "1260/**/*.md",  # device-remove
+          "1372/**/*.md",  # manage-devices
+          "1411/**/*.md",  # device-connectivity
+          "1325/**/*.md",  # device-web-interface
+          "1383/**/*.md",  # device-posture-integrations
+          "1286/**/*.md",  # macos-mdm
+          "1318/**/*.md",  # windows-mdm
+          "1380/**/*.md",  # ios-mdm
+          "1384/**/*.md",  # android-mdm
+          "1327/**/*.md",  # mdm-microsoft-intune
+          "1328/**/*.md",  # mdm-jamf
+          "1329/**/*.md",  # mdm-kandji
+          "1330/**/*.md",  # mdm-simplemdm
+          "1385/**/*.md",  # mdm-tinymdm
+          "1386/**/*.md",  # mdm-google-workspace
+          "1485/**/*.md",  # mdm-jumpcloud
+          "1448/**/*.md",  # mdm-integration-testing
+          "1362/**/*.md",  # mdm
+          "1315/**/*.md",  # mdm-keys
+          "1087/**/*.md",  # device-visibility
+          "1176/**/*.md",  # filter-devices
+          "1228/**/*.md",  # export-device-list
+          "1229/**/*.md"   # export-user-list
+        ]
+    separator: "Standard"
+
+  # 6. Remote Access (SSH, Serve, Funnel)
+  remote_access:
+    description: "Tailscale SSH, Serve, Funnel, sharing features"
+    output: "m1f/06_remote_access.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1193/**/*.md",  # tailscale-ssh
+          "1216/**/*.md",  # tailscale-ssh-console
+          "1246/**/*.md",  # tailscale-ssh-session-recording
+          "1262/**/*.md",  # multiple-recorder-nodes
+          "1263/**/*.md",  # session-recording-s3
+          "1009/**/*.md",  # protect-ssh-servers
+          "1077/**/*.md",  # secure-server-ubuntu
+          "1095/**/*.md",  # secure-rdp-windows
+          "1308/**/*.md",  # quick-guide-ssh-raspberry-pi
+          "1242/**/*.md",  # tailscale-serve
+          "1311/**/*.md",  # tailscale-funnel
+          "1223/**/*.md",  # funnel
+          "1247/**/*.md",  # funnel-examples
+          "1312/**/*.md",  # serve
+          "1313/**/*.md",  # serve-examples
+          "1464/**/*.md",  # funnel-vs-serve
+          "1354/**/*.md",  # share
+          "1353/**/*.md",  # share-web-content
+          "1084/**/*.md",  # sharing
+          "1106/**/*.md",  # taildrop
+          "1369/**/*.md",  # taildrive
+          "1418/**/*.md",  # taildrop-nas
+          "1100/**/*.md"   # services
+        ]
+    separator: "Standard"
+
+  # 7. Cloud & Containers
+  cloud_containers:
+    description: "Cloud platforms, Kubernetes, Docker, serverless"
+    output: "m1f/07_cloud_containers.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1142/**/*.md",  # cloud-azure-linux
+          "1143/**/*.md",  # cloud-azure-windows
+          "1147/**/*.md",  # cloud-gce
+          "1149/**/*.md",  # cloud-oracle
+          "1150/**/*.md",  # cloud-hetzner
+          "1296/**/*.md",  # aws-reference-architecture
+          "1314/**/*.md",  # azure-reference-architecture
+          "1510/**/*.md",  # gcp-reference-architecture
+          "1293/**/*.md",  # cloud-init
+          "1185/**/*.md",  # kubernetes
+          "1236/**/*.md",  # kubernetes-operator
+          "143*/**/*.md",  # kubernetes-operator variants
+          "144*/**/*.md",  # kubernetes-operator variants
+          "145*/**/*.md",  # kubernetes-operator session recording
+          "148*/**/*.md",  # kubernetes-operator variants
+          "151*/**/*.md",  # kubernetes-operator app connectors
+          "154*/**/*.md",  # kubernetes-operator multi-tailnet
+          "1184/**/*.md",  # docker-desktop
+          "1282/**/*.md",  # docker
+          "1453/**/*.md",  # quick-guide-docker
+          "1358/**/*.md",  # containers-identity
+          "1130/**/*.md",  # lxc-unprivileged
+          "1133/**/*.md",  # proxmox
+          "1107/**/*.md",  # heroku
+          "1108/**/*.md",  # cloudrun
+          "1113/**/*.md",  # aws-lambda
+          "1126/**/*.md",  # azure-app-service
+          "1127/**/*.md",  # aws-app-runner
+          "1128/**/*.md",  # aws-lightsail
+          "1132/**/*.md",  # flydotio
+          "1547/**/*.md",  # koyeb
+          "1364/**/*.md",  # serverless
+          "1281/**/*.md",  # app-connectors
+          "1332/**/*.md",  # app-connectors-best-practices
+          "1342/**/*.md"   # app-connectors-setup
+        ]
+    separator: "Standard"
+
+  # 8. Developer & API
+  developer:
+    description: "API, SDKs, tsnet, infrastructure as code"
+    output: "m1f/08_developer.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1101/**/*.md",  # api
+          "1244/**/*.md",  # tsnet
+          "1521/**/*.md",  # hello-tsnet
+          "1522/**/*.md",  # tsnet-server
+          "1213/**/*.md",  # webhooks
+          "1215/**/*.md",  # oauth-clients
+          "1210/**/*.md",  # terraform-provider
+          "1211/**/*.md",  # pulumi-provider
+          "1204/**/*.md",  # gitops-acls
+          "1254/**/*.md",  # gitops-acls-github
+          "1302/**/*.md",  # gitops-acls-gitlab
+          "1306/**/*.md",  # gitops-acls-other
+          "1276/**/*.md",  # tailscale-github-action
+          "1287/**/*.md",  # tailscale-gitlab-ci
+          "1370/**/*.md",  # infrastructure
+          "1160/**/*.md",  # github-codespaces
+          "1161/**/*.md",  # gitpod
+          "1162/**/*.md",  # openvscode
+          "1163/**/*.md",  # coder
+          "1164/**/*.md",  # codeserver
+          "1166/**/*.md",  # vscode-ipad
+          "1221/**/*.md",  # codesandbox
+          "1265/**/*.md",  # vscode-remote-tunnel
+          "1360/**/*.md",  # developer-environments
+          "1363/**/*.md"   # remote-code
+        ]
+    separator: "Standard"
+
+  # 9. Admin & Operations
+  admin_operations:
+    description: "Admin console, monitoring, troubleshooting, support"
+    output: "m1f/09_admin_operations.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1321/**/*.md",  # admin-console-session-timeout
+          "1461/**/*.md",  # admin-console-session-expiry
+          "1431/**/*.md",  # manage-account
+          "1430/**/*.md",  # automations
+          "1350/**/*.md",  # manage
+          "1203/**/*.md",  # audit-logging
+          "1219/**/*.md",  # network-flow-logs
+          "1255/**/*.md",  # log-streaming
+          "1482/**/*.md",  # client-metrics
+          "1523/**/*.md",  # grafana
+          "1011/**/*.md",  # log-mesh-traffic
+          "1349/**/*.md",  # log-events
+          "1182/**/*.md",  # billing-information
+          "1154/**/*.md",  # free-plans-discounts
+          "1251/**/*.md",  # pricing-v3
+          "1250/**/*.md",  # support-plans
+          "1432/**/*.md",  # get-support
+          "1023/**/*.md",  # troubleshooting
+          "1463/**/*.md",  # troubleshoot-exit-nodes
+          "1457/**/*.md",  # captive-portals
+          "1477/**/*.md",  # av-flagging
+          "1227/**/*.md",  # bug-report
+          "1300/**/*.md",  # production-best-practices
+          "1320/**/*.md",  # performance-best-practices
+          "1344/**/*.md",  # deployment
+          "155*/**/*.md",  # messages variants
+          "156*/**/*.md",  # messages variants
+          "157*/**/*.md",  # messages variants
+          "158*/**/*.md"   # messages variants
+        ]
+    separator: "Standard"
+
+  # 10. Reference & Concepts
+  concepts_reference:
+    description: "Core concepts, FAQ, CLI reference, terminology"
+    output: "m1f/10_concepts_reference.txt"
+    sources:
+      - path: "."
+        includes: [
+          "1151/**/*.md",  # what-is-tailscale
+          "1155/**/*.md",  # terminology-and-concepts
+          "1136/**/*.md",  # tailnet
+          "1217/**/*.md",  # tailnet-name
+          "1010/**/*.md",  # node-keys
+          "1098/**/*.md",  # machine-names
+          "1168/**/*.md",  # versions
+          "1167/**/*.md",  # release-stages
+          "1376/**/*.md",  # tech-overviews
+          "1508/**/*.md",  # control-data-planes
+          "1035/**/*.md",  # wireguard
+          "1122/**/*.md",  # wireguard-dynamic-ip
+          "1456/**/*.md",  # osi
+          "1462/**/*.md",  # what-is-stun
+          "1465/**/*.md",  # ping-types
+          "1080/**/*.md",  # cli
+          "1241/**/*.md",  # tailscale-up
+          "1278/**/*.md",  # tailscaled
+          "1072/**/*.md",  # client-preferences
+          "1088/**/*.md",  # run-unattended
+          "1067/**/*.md",  # update
+          "1069/**/*.md",  # uninstall
+          "1068/**/*.md",  # tags
+          "1111/**/*.md",  # ephemeral-nodes
+          "1378/**/*.md",  # via
+          "1396/**/*.md",  # targets
+          "1387/**/*.md",  # ipsets
+          "1115/**/*.md",  # high-availability
+          "1366/**/*.md",  # faq
+          "1091/**/*.md",  # what-happens-if-the-coordination-server-is-down
+          "1093/**/*.md",  # can-tailscale-decrypt-my-traffic
+          "1094/**/*.md",  # is-all-traffic-routed-through-tailscale
+          "1367/**/*.md",  # reference
+          "1368/**/*.md",  # resources
+          "1377/**/*.md",  # use-cases
+          "1355/**/*.md",  # solutions
+          "1348/**/*.md",  # guides
+          "1415/**/*.md",  # quick-guides
+          "130*/**/*.md",  # quick-guide variants
+          "140*/**/*.md",  # quick-guide variants
+          "144*/**/*.md",  # quick-guide variants
+          "1004/**/*.md",  # all-your-offices
+          "1005/**/*.md",  # multifactor-anything
+          "1006/**/*.md",  # deprecate-physical-security
+          "1007/**/*.md",  # laptop-anywhere
+          "1008/**/*.md",  # interconnect-microservices
+          "1012/**/*.md",  # internal-apps-anywhere
+          "1526/**/*.md",  # openvpn-migration-guide
+          "1549/**/*.md",  # legacy-vpn-migration-guide
+          "1144/**/*.md",  # corporate-vpn
+          "1105/**/*.md",  # other-vpns
+          "1109/**/*.md",  # devices-without-tailscale
+          "1195/**/*.md",  # dns-rebinding
+          "1388/**/*.md",  # inviting-vs-sharing
+          "1096/**/*.md",  # nixos-minecraft
+          "1137/**/*.md",  # minecraft
+          "1310/**/*.md",  # quick-guide-host-minecraft-server
+          "1141/**/*.md",  # aws-rds
+          "1231/**/*.md",  # crunchy-bridge
+          "1359/**/*.md",  # database
+          "1289/**/*.md",  # crowdstrike-falcon
+          "1390/**/*.md",  # sentinelone
+          "1405/**/*.md",  # kandji
+          "1407/**/*.md",  # kolide
+          "1409/**/*.md",  # jamf-pro
+          "1410/**/*.md",  # intune
+          "1153/**/*.md",  # enabling-https
+          "1190/**/*.md",  # caddy-certificates
+          "1234/**/*.md",  # traefik-certificates
+          "1365/**/*.md",  # webserver
+          "1307/**/*.md",  # nas
+          "1280/**/*.md",  # appletv
+          "1292/**/*.md",  # pikvm
+          "1114/**/*.md",  # pi-hole
+          "1299/**/*.md",  # opnsense-unbound
+          "1403/**/*.md",  # control-d
+          "1356/**/*.md",  # integrations
+          "1531/**/*.md",  # community-projects
+          "1076/**/*.md",  # dogcam
+          "1233/**/*.md",  # mac-ios-shortcuts
+          "1034/**/*.md",  # local-team-server
+          "1207/**/*.md",  # small-tailscale
+          "1220/**/*.md",  # azure-marketplace
+          "1222/**/*.md",  # invite-only-feature
+          "1224/**/*.md",  # contact-preferences
+          "1237/**/*.md"   # delete-tailnet
+        ]
+    separator: "Standard"
+
+# Use 'm1f-update' to regenerate bundles after making changes
