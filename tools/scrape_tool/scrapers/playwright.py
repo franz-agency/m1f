@@ -445,13 +445,9 @@ class PlaywrightScraper(WebScraperBase):
                                 )
                                 continue
 
-                            # Skip if matches exclude pattern
-                            if self.config.exclude_patterns:
-                                if any(
-                                    re.match(pattern, link)
-                                    for pattern in self.config.exclude_patterns
-                                ):
-                                    continue
+                            # Skip if URL should be excluded
+                            if self._should_exclude_url(link):
+                                continue
 
                             # Skip if already visited
                             if link in self._visited_urls:

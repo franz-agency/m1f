@@ -38057,12 +38057,9 @@ class WebScraperBase(ABC):
                 if not domain_allowed:
                     return False
 
-            # Check exclude patterns
-            if self.config.exclude_patterns:
-                for pattern in self.config.exclude_patterns:
-                    if pattern in url:
-                        logger.debug(f"URL {url} excluded by pattern: {pattern}")
-                        return False
+            # Check if URL should be excluded
+            if self._should_exclude_url(url):
+                return False
 
             return True
 
@@ -38205,6 +38202,42 @@ class WebScraperBase(ABC):
                 self._allowed_path_configs.append((None, base_path))
                 logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
+    def _should_exclude_url(self, url: str) -> bool:
+        """Check if URL should be excluded based on patterns.
+        
+        Args:
+            url: URL to check for exclusion
+            
+        Returns:
+            True if URL should be excluded, False otherwise
+        """
+        import re
+        from urllib.parse import urlparse
+        
+        # Check exclude_patterns (regex-based for flexibility)
+        if self.config.exclude_patterns:
+            for pattern in self.config.exclude_patterns:
+                try:
+                    # Try as regex first
+                    if re.search(pattern, url):
+                        logger.debug(f"URL {url} excluded by regex pattern: {pattern}")
+                        return True
+                except re.error:
+                    # Fall back to substring matching if not valid regex
+                    if pattern in url:
+                        logger.debug(f"URL {url} excluded by substring pattern: {pattern}")
+                        return True
+        
+        # Check excluded_paths (path-only matching)
+        if hasattr(self.config, 'excluded_paths') and self.config.excluded_paths:
+            parsed = urlparse(url)
+            for excluded in self.config.excluded_paths:
+                if excluded in parsed.path:
+                    logger.debug(f"URL {url} excluded by path: {excluded}")
+                    return True
+        
+        return False
+    
     def _is_path_allowed(self, url: str, start_url: str) -> bool:
         """Check if URL path matches any allowed path configuration.
         
@@ -38266,12 +38299,6 @@ class WebScraperBase(ABC):
         elif hasattr(self.config, 'allowed_path') and self.config.allowed_path:
             if not parsed.path.startswith(self.config.allowed_path):
                 return False
-        
-        # Check excluded paths if configured
-        if hasattr(self.config, 'excluded_paths') and self.config.excluded_paths:
-            for excluded in self.config.excluded_paths:
-                if excluded in parsed.path:
-                    return False
         
         return True
 
@@ -40043,13 +40070,9 @@ class PlaywrightScraper(WebScraperBase):
                                 )
                                 continue
 
-                            # Skip if matches exclude pattern
-                            if self.config.exclude_patterns:
-                                if any(
-                                    re.match(pattern, link)
-                                    for pattern in self.config.exclude_patterns
-                                ):
-                                    continue
+                            # Skip if URL should be excluded
+                            if self._should_exclude_url(link):
+                                continue
 
                             # Skip if already visited
                             if link in self._visited_urls:
@@ -40758,13 +40781,9 @@ class SelectolaxScraper(WebScraperBase):
                             if not self._is_path_allowed(absolute_url, start_url):
                                 continue
 
-                            # Skip if matches exclude pattern
-                            if self.config.exclude_patterns:
-                                if any(
-                                    re.match(pattern, absolute_url)
-                                    for pattern in self.config.exclude_patterns
-                                ):
-                                    continue
+                            # Skip if URL should be excluded
+                            if self._should_exclude_url(absolute_url):
+                                continue
 
                             # Normalize URL
                             normalized_url = self._normalize_url(absolute_url)

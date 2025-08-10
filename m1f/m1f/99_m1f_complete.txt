@@ -51405,6 +51405,176 @@ class TestAssetDownloadSecurity:
             import asyncio
             asyncio.run(crawler._save_binary_file(page, output_dir))
 
+======= tests/scrape_tool/test_exclude_patterns_dry.py ======
+#!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Test the refactored exclude patterns functionality."""
+
+import pytest
+from tools.scrape_tool.scrapers.base import WebScraperBase, ScraperConfig
+
+
+class TestExcludePatternsDRY:
+    """Test that exclude patterns work consistently across all scrapers."""
+    
+    def test_should_exclude_url_regex(self):
+        """Test regex pattern exclusion."""
+        # Create a minimal concrete implementation for testing
+        class TestScraper(WebScraperBase):
+            async def scrape_url(self, url: str):
+                pass
+            async def scrape_site(self, start_url: str):
+                pass
+        
+        config = ScraperConfig(
+            exclude_patterns=[
+                r".*\.pdf$",  # Regex: ends with .pdf
+                r"/admin/.*",  # Regex: admin paths
+                r".*\?utm_.*",  # Regex: URLs with utm parameters
+            ]
+        )
+        scraper = TestScraper(config)
+        
+        # Test regex patterns
+        assert scraper._should_exclude_url("http://example.com/file.pdf")
+        assert scraper._should_exclude_url("http://example.com/docs/guide.pdf")
+        assert scraper._should_exclude_url("http://example.com/admin/settings")
+        assert scraper._should_exclude_url("http://example.com/admin/users/list")
+        assert scraper._should_exclude_url("http://example.com/page?utm_source=test")
+        
+        # Should NOT exclude these
+        assert not scraper._should_exclude_url("http://example.com/file.html")
+        assert not scraper._should_exclude_url("http://example.com/administrator")
+        assert not scraper._should_exclude_url("http://example.com/page?ref=test")
+    
+    def test_should_exclude_url_substring(self):
+        """Test substring pattern exclusion (fallback for invalid regex)."""
+        class TestScraper(WebScraperBase):
+            async def scrape_url(self, url: str):
+                pass
+            async def scrape_site(self, start_url: str):
+                pass
+        
+        config = ScraperConfig(
+            exclude_patterns=[
+                "private",  # Simple substring
+                "staging",  # Simple substring
+                "/temp/",  # Path substring
+            ]
+        )
+        scraper = TestScraper(config)
+        
+        # Test substring patterns
+        assert scraper._should_exclude_url("http://example.com/private/docs")
+        assert scraper._should_exclude_url("http://example.com/docs/private-api")
+        assert scraper._should_exclude_url("http://staging.example.com/page")
+        assert scraper._should_exclude_url("http://example.com/temp/file.html")
+        
+        # Should NOT exclude these
+        assert not scraper._should_exclude_url("http://example.com/public/docs")
+        assert not scraper._should_exclude_url("http://example.com/temporary")
+    
+    def test_excluded_paths(self):
+        """Test excluded_paths (path-only matching)."""
+        class TestScraper(WebScraperBase):
+            async def scrape_url(self, url: str):
+                pass
+            async def scrape_site(self, start_url: str):
+                pass
+        
+        # Mock config with excluded_paths
+        config = ScraperConfig()
+        config.excluded_paths = ["/internal/", "/test/", "/debug"]
+        scraper = TestScraper(config)
+        
+        # Test path exclusions
+        assert scraper._should_exclude_url("http://example.com/internal/api")
+        assert scraper._should_exclude_url("http://example.com/test/suite")
+        assert scraper._should_exclude_url("http://example.com/debug/logs")
+        assert scraper._should_exclude_url("http://example.com/path/debug/info")
+        
+        # Should NOT exclude these (domain/query params ignored)
+        assert not scraper._should_exclude_url("http://example.com/public/api")
+        assert not scraper._should_exclude_url("http://example.com/production")
+    
+    def test_mixed_patterns_and_paths(self):
+        """Test combination of exclude_patterns and excluded_paths."""
+        class TestScraper(WebScraperBase):
+            async def scrape_url(self, url: str):
+                pass
+            async def scrape_site(self, start_url: str):
+                pass
+        
+        config = ScraperConfig(
+            exclude_patterns=[r".*\.zip$", "download"]
+        )
+        config.excluded_paths = ["/archive/"]
+        scraper = TestScraper(config)
+        
+        # Test both types work together
+        assert scraper._should_exclude_url("http://example.com/file.zip")  # Pattern
+        assert scraper._should_exclude_url("http://example.com/download/file")  # Pattern
+        assert scraper._should_exclude_url("http://example.com/archive/old")  # Path
+        
+        # Should NOT exclude
+        assert not scraper._should_exclude_url("http://example.com/file.pdf")
+        assert not scraper._should_exclude_url("http://example.com/uploads/file")
+    
+    @pytest.mark.asyncio
+    async def test_validate_url_uses_should_exclude(self):
+        """Test that validate_url properly uses _should_exclude_url."""
+        class TestScraper(WebScraperBase):
+            async def scrape_url(self, url: str):
+                pass
+            async def scrape_site(self, start_url: str):
+                pass
+        
+        config = ScraperConfig(
+            exclude_patterns=["blocked"],
+            check_ssrf=False  # Disable SSRF check for testing
+        )
+        scraper = TestScraper(config)
+        
+        # Test that validate_url excludes based on patterns
+        assert await scraper.validate_url("http://example.com/allowed") is True
+        assert await scraper.validate_url("http://example.com/blocked/page") is False
+    
+    @pytest.mark.asyncio
+    async def test_validate_url_async(self):
+        """Test async validate_url method."""
+        class TestScraper(WebScraperBase):
+            async def scrape_url(self, url: str):
+                pass
+            async def scrape_site(self, start_url: str):
+                pass
+        
+        config = ScraperConfig(
+            exclude_patterns=["forbidden"],
+            check_ssrf=False
+        )
+        scraper = TestScraper(config)
+        
+        # Test async validation
+        assert await scraper.validate_url("http://example.com/good") is True
+        assert await scraper.validate_url("http://example.com/forbidden") is False
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
+
 ======= tests/scrape_tool/test_file_validator.py ======
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
@@ -81758,12 +81928,9 @@ class WebScraperBase(ABC):
                 if not domain_allowed:
                     return False
 
-            # Check exclude patterns
-            if self.config.exclude_patterns:
-                for pattern in self.config.exclude_patterns:
-                    if pattern in url:
-                        logger.debug(f"URL {url} excluded by pattern: {pattern}")
-                        return False
+            # Check if URL should be excluded
+            if self._should_exclude_url(url):
+                return False
 
             return True
 
@@ -81906,6 +82073,42 @@ class WebScraperBase(ABC):
                 self._allowed_path_configs.append((None, base_path))
                 logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
+    def _should_exclude_url(self, url: str) -> bool:
+        """Check if URL should be excluded based on patterns.
+        
+        Args:
+            url: URL to check for exclusion
+            
+        Returns:
+            True if URL should be excluded, False otherwise
+        """
+        import re
+        from urllib.parse import urlparse
+        
+        # Check exclude_patterns (regex-based for flexibility)
+        if self.config.exclude_patterns:
+            for pattern in self.config.exclude_patterns:
+                try:
+                    # Try as regex first
+                    if re.search(pattern, url):
+                        logger.debug(f"URL {url} excluded by regex pattern: {pattern}")
+                        return True
+                except re.error:
+                    # Fall back to substring matching if not valid regex
+                    if pattern in url:
+                        logger.debug(f"URL {url} excluded by substring pattern: {pattern}")
+                        return True
+        
+        # Check excluded_paths (path-only matching)
+        if hasattr(self.config, 'excluded_paths') and self.config.excluded_paths:
+            parsed = urlparse(url)
+            for excluded in self.config.excluded_paths:
+                if excluded in parsed.path:
+                    logger.debug(f"URL {url} excluded by path: {excluded}")
+                    return True
+        
+        return False
+    
     def _is_path_allowed(self, url: str, start_url: str) -> bool:
         """Check if URL path matches any allowed path configuration.
         
@@ -81967,12 +82170,6 @@ class WebScraperBase(ABC):
         elif hasattr(self.config, 'allowed_path') and self.config.allowed_path:
             if not parsed.path.startswith(self.config.allowed_path):
                 return False
-        
-        # Check excluded paths if configured
-        if hasattr(self.config, 'excluded_paths') and self.config.excluded_paths:
-            for excluded in self.config.excluded_paths:
-                if excluded in parsed.path:
-                    return False
         
         return True
 
@@ -83744,13 +83941,9 @@ class PlaywrightScraper(WebScraperBase):
                                 )
                                 continue
 
-                            # Skip if matches exclude pattern
-                            if self.config.exclude_patterns:
-                                if any(
-                                    re.match(pattern, link)
-                                    for pattern in self.config.exclude_patterns
-                                ):
-                                    continue
+                            # Skip if URL should be excluded
+                            if self._should_exclude_url(link):
+                                continue
 
                             # Skip if already visited
                             if link in self._visited_urls:
@@ -84459,13 +84652,9 @@ class SelectolaxScraper(WebScraperBase):
                             if not self._is_path_allowed(absolute_url, start_url):
                                 continue
 
-                            # Skip if matches exclude pattern
-                            if self.config.exclude_patterns:
-                                if any(
-                                    re.match(pattern, absolute_url)
-                                    for pattern in self.config.exclude_patterns
-                                ):
-                                    continue
+                            # Skip if URL should be excluded
+                            if self._should_exclude_url(absolute_url):
+                                continue
 
                             # Normalize URL
                             normalized_url = self._normalize_url(absolute_url)

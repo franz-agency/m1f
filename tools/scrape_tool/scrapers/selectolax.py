@@ -335,13 +335,9 @@ class SelectolaxScraper(WebScraperBase):
                             if not self._is_path_allowed(absolute_url, start_url):
                                 continue
 
-                            # Skip if matches exclude pattern
-                            if self.config.exclude_patterns:
-                                if any(
-                                    re.match(pattern, absolute_url)
-                                    for pattern in self.config.exclude_patterns
-                                ):
-                                    continue
+                            # Skip if URL should be excluded
+                            if self._should_exclude_url(absolute_url):
+                                continue
 
                             # Normalize URL
                             normalized_url = self._normalize_url(absolute_url)
