@@ -16,7 +16,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, AsyncGenerator, Set
+from typing import List, Dict, Optional, AsyncGenerator, Set, Tuple
 from pathlib import Path
 import logging
 from urllib.parse import urlparse, urljoin
@@ -105,6 +105,7 @@ class WebScraperBase(ABC):
         self._robots_parsers: Dict[str, RobotFileParser] = {}
         self._robots_fetch_lock = asyncio.Lock()
         self._checksum_callback = None  # Callback to check if checksum exists
+        self._allowed_path_configs: List[Tuple[Optional[str], str]] = []  # List of (domain, path) tuples
 
     @abstractmethod
     async def scrape_url(self, url: str) -> ScrapedPage:
@@ -318,6 +319,84 @@ class WebScraperBase(ABC):
             callback: Function that takes a checksum string and returns bool
         """
         self._checksum_callback = callback
+
+    def _initialize_allowed_paths(self, start_url: str) -> None:
+        """Initialize allowed path configurations based on config and start URL.
+        
+        Args:
+            start_url: The starting URL for crawling
+        """
+        self._allowed_path_configs.clear()
+        start_parsed = urlparse(start_url)
+        
+        # Get list of allowed paths (new multiple paths or fallback to single path)
+        allowed_paths_list = None
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths is not None:
+            # If allowed_paths is explicitly set, use it (even if empty list)
+            allowed_paths_list = self.config.allowed_paths
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
+        # Process allowed paths if we have any (not None and not empty)
+        if allowed_paths_list is not None and len(allowed_paths_list) > 0:
+            for allowed_path in allowed_paths_list:
+                # Check if allowed_path is a full URL or just a path
+                if allowed_path.startswith(("http://", "https://")):
+                    # It's a full URL - extract domain and path
+                    parsed_allowed = urlparse(allowed_path)
+                    path_config = (parsed_allowed.netloc, parsed_allowed.path.rstrip("/"))
+                    self._allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to URL: {parsed_allowed.netloc}{parsed_allowed.path.rstrip('/')}")
+                else:
+                    # It's just a path
+                    path_config = (None, allowed_path.rstrip("/"))
+                    self._allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to allowed path: {allowed_path.rstrip('/')}")
+        else:
+            # Use the start URL's path if no allowed paths specified
+            # This applies when allowed_paths is None or empty list []
+            base_path = start_parsed.path.rstrip("/")
+            # Extract directory path (remove file name if present)
+            if base_path and '/' in base_path:
+                # If path ends with a file (has extension), use parent directory
+                if '.' in base_path.split('/')[-1]:
+                    base_path = '/'.join(base_path.split('/')[:-1])
+            if base_path:
+                self._allowed_path_configs.append((None, base_path))
+                logger.info(f"Restricting crawl to subdirectory: {base_path}")
+
+    def _is_path_allowed(self, url: str, start_url: str) -> bool:
+        """Check if URL path matches any allowed path configuration.
+        
+        Args:
+            url: URL to check
+            start_url: The starting URL (always allowed)
+            
+        Returns:
+            True if URL is allowed, False otherwise
+        """
+        # Always allow the start URL
+        if url == start_url:
+            return True
+            
+        # If no allowed path configs, allow all paths
+        if not self._allowed_path_configs:
+            return True
+            
+        url_parsed = urlparse(url)
+        
+        # Check if URL matches any of the allowed path configurations
+        for allowed_domain_config, allowed_path_config in self._allowed_path_configs:
+            # If a domain is specified in the config, check it matches
+            if allowed_domain_config and url_parsed.netloc != allowed_domain_config:
+                continue  # Try next config
+            
+            # Check if the path is allowed
+            if (url_parsed.path.startswith(allowed_path_config + "/") or 
+                url_parsed.path == allowed_path_config):
+                return True
+        
+        return False
     
     def _is_url_allowed(self, url: str) -> bool:
         """Check if URL is allowed based on domain and path restrictions.

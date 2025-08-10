@@ -275,41 +275,8 @@ class SelectolaxScraper(WebScraperBase):
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
 
-        # Store the base path for subdirectory restriction
-        # Handle allowed paths (single or multiple)
-        allowed_domain = None
-        allowed_path_configs = []  # List of (domain, path) tuples
-        
-        # Get list of allowed paths (new multiple paths or fallback to single path)
-        allowed_paths_list = []
-        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
-            allowed_paths_list = self.config.allowed_paths
-        elif self.config.allowed_path:
-            allowed_paths_list = [self.config.allowed_path]
-        
-        if allowed_paths_list:
-            for allowed_path in allowed_paths_list:
-                # Check if allowed_path is a full URL or just a path
-                if allowed_path.startswith(("http://", "https://")):
-                    # It's a full URL - extract domain and path
-                    parsed_allowed = urlparse(allowed_path)
-                    path_config = (parsed_allowed.netloc, parsed_allowed.path.rstrip("/"))
-                    allowed_path_configs.append(path_config)
-                    logger.info(f"Restricting crawl to URL: {parsed_allowed.netloc}{parsed_allowed.path.rstrip('/')}")
-                    # For backward compatibility, set allowed_domain from first URL if not set
-                    if allowed_domain is None:
-                        allowed_domain = parsed_allowed.netloc
-                else:
-                    # It's just a path
-                    path_config = (None, allowed_path.rstrip("/"))
-                    allowed_path_configs.append(path_config)
-                    logger.info(f"Restricting crawl to allowed path: {allowed_path.rstrip('/')}")
-        else:
-            # Use the start URL's path if no allowed paths specified
-            base_path = parsed_start.path.rstrip("/")
-            if base_path:
-                allowed_path_configs.append((None, base_path))
-                logger.info(f"Restricting crawl to subdirectory: {base_path}")
+        # Initialize allowed paths configuration
+        self._initialize_allowed_paths(start_url)
 
         # Initialize queue with start URL
         queue = asyncio.Queue()
@@ -364,23 +331,9 @@ class SelectolaxScraper(WebScraperBase):
                             elif parsed_url.netloc != base_domain:
                                 continue
 
-                            # Check subdirectory restriction (but always allow the start URL)
-                            if allowed_path_configs and absolute_url != start_url:
-                                # Check if URL matches any of the allowed path configurations
-                                path_allowed = False
-                                for allowed_domain_config, allowed_path_config in allowed_path_configs:
-                                    # If a domain is specified in the config, check it matches
-                                    if allowed_domain_config and parsed_url.netloc != allowed_domain_config:
-                                        continue  # Try next config
-                                    
-                                    # Check if the path is allowed
-                                    if (parsed_url.path.startswith(allowed_path_config + "/") or 
-                                        parsed_url.path == allowed_path_config):
-                                        path_allowed = True
-                                        break  # Found a matching config
-                                
-                                if not path_allowed:
-                                    continue
+                            # Check path restriction using base class method
+                            if not self._is_path_allowed(absolute_url, start_url):
+                                continue
 
                             # Skip if matches exclude pattern
                             if self.config.exclude_patterns:

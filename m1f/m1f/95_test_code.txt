@@ -5783,9 +5783,16 @@ class TestMultipleAllowedPathsFeature:
     def test_base_scraper_url_allowed_multiple_paths(self):
         """Test that base scraper _is_url_allowed works with multiple paths."""
         from tools.scrape_tool.scrapers.base import WebScraperBase, ScraperConfig
+        
+        # Create a minimal concrete implementation for testing
+        class TestScraper(WebScraperBase):
+            async def scrape_url(self, url: str):
+                pass
+            async def scrape_site(self, start_url: str):
+                pass
 
         config = ScraperConfig(allowed_paths=["/docs/", "/api/"])
-        scraper = WebScraperBase(config)
+        scraper = TestScraper(config)
 
         # URLs within allowed paths should be allowed
         assert scraper._is_url_allowed("http://test.com/docs/guide.html")
@@ -5801,17 +5808,24 @@ class TestMultipleAllowedPathsFeature:
     def test_base_scraper_backward_compatibility(self):
         """Test that base scraper still works with single allowed_path."""
         from tools.scrape_tool.scrapers.base import WebScraperBase, ScraperConfig
+        
+        # Create a minimal concrete implementation for testing
+        class TestScraper(WebScraperBase):
+            async def scrape_url(self, url: str):
+                pass
+            async def scrape_site(self, start_url: str):
+                pass
 
         # Test with old single allowed_path
         config = ScraperConfig(allowed_path="/docs/")
-        scraper = WebScraperBase(config)
+        scraper = TestScraper(config)
 
         assert scraper._is_url_allowed("http://test.com/docs/guide.html")
         assert not scraper._is_url_allowed("http://test.com/api/endpoints.html")
 
         # Test with no path restrictions
         config = ScraperConfig()
-        scraper = WebScraperBase(config)
+        scraper = TestScraper(config)
 
         assert scraper._is_url_allowed("http://test.com/docs/guide.html")
         assert scraper._is_url_allowed("http://test.com/api/endpoints.html")

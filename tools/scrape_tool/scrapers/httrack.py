@@ -263,6 +263,8 @@ class HTTrackScraper(PythonMirrorScraper):
         Yields:
             ScrapedPage objects as they are scraped
         """
+        # Initialize allowed paths configuration
+        self._initialize_allowed_paths(start_url)
         # If HTTrack is not available, use parent Python implementation
         if not self.use_httrack:
             async for page in super().scrape_site(start_url):
@@ -320,37 +322,25 @@ class HTTrackScraper(PythonMirrorScraper):
             # Restrict to same domain by default
             cmd.extend(["+*" + parsed.netloc + "*"])
 
-        # Add subdirectory restriction if path is specified
-        # Handle allowed paths (single or multiple)
-        allowed_paths_list = []
-        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
-            allowed_paths_list = self.config.allowed_paths
-        elif self.config.allowed_path:
-            allowed_paths_list = [self.config.allowed_path]
-        
-        if allowed_paths_list:
+        # Add subdirectory restriction using base class configuration
+        if self._allowed_path_configs:
             allowed_domains = set()  # Track domains we're allowing
-            for allowed_path in allowed_paths_list:
-                # Check if allowed_path is a full URL or just a path
-                if allowed_path.startswith(("http://", "https://")):
-                    # It's a full URL - extract domain and path
-                    parsed_allowed = urlparse(allowed_path)
-                    allowed_domain = parsed_allowed.netloc
-                    path_part = parsed_allowed.path.rstrip("/")
+            for allowed_domain_config, allowed_path_config in self._allowed_path_configs:
+                if allowed_domain_config:
+                    # Full URL specified
                     logger.info(
-                        f"Restricting HTTrack crawl to URL: {allowed_domain}{path_part}"
+                        f"Restricting HTTrack crawl to URL: {allowed_domain_config}{allowed_path_config}"
                     )
                     # Allow the specified URL and everything under it
-                    cmd.extend([f"+*{allowed_domain}{path_part}/*"])
-                    allowed_domains.add(allowed_domain)
+                    cmd.extend([f"+*{allowed_domain_config}{allowed_path_config}/*"])
+                    allowed_domains.add(allowed_domain_config)
                 else:
-                    # It's just a path
-                    path_part = allowed_path.rstrip("/")
+                    # Just a path - use the start URL's domain
                     logger.info(
-                        f"Restricting HTTrack crawl to allowed path: {path_part}"
+                        f"Restricting HTTrack crawl to allowed path: {allowed_path_config}"
                     )
                     # Allow the specified path and everything under it
-                    cmd.extend([f"+*{parsed.netloc}{path_part}/*"])
+                    cmd.extend([f"+*{parsed.netloc}{allowed_path_config}/*"])
                     allowed_domains.add(parsed.netloc)
             
             # Exclude everything else on each domain we're allowing from
