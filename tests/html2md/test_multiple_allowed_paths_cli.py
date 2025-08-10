@@ -27,7 +27,7 @@ class TestMultipleAllowedPathsCLI:
     """Test CLI parsing for multiple allowed paths feature."""
 
     def test_single_allowed_path_parsing(self):
-        """Test that single --allowed-path still works."""
+        """Test that --allowed-path works as an alias for --allowed-paths."""
         parser = create_parser()
         args = parser.parse_args([
             'https://example.com', 
@@ -35,8 +35,8 @@ class TestMultipleAllowedPathsCLI:
             '--allowed-path', '/docs/'
         ])
         
-        assert args.allowed_path == '/docs/'
-        assert args.allowed_paths is None
+        # --allowed-path is now an alias for --allowed-paths
+        assert args.allowed_paths == ['/docs/']
 
     def test_multiple_allowed_paths_parsing(self):
         """Test that --allowed-paths accepts multiple paths."""
@@ -47,7 +47,6 @@ class TestMultipleAllowedPathsCLI:
             '--allowed-paths', '/docs/', '/api/', '/guides/'
         ])
         
-        assert args.allowed_path is None
         assert args.allowed_paths == ['/docs/', '/api/', '/guides/']
 
     def test_empty_allowed_paths_parsing(self):
@@ -59,20 +58,22 @@ class TestMultipleAllowedPathsCLI:
             '--allowed-paths'
         ])
         
-        assert args.allowed_path is None
         assert args.allowed_paths == []
 
-    def test_mutual_exclusivity_error(self):
-        """Test that --allowed-path and --allowed-paths cannot be used together."""
+    def test_both_aliases_work_together(self):
+        """Test that --allowed-path and --allowed-paths work together as aliases."""
         parser = create_parser()
         
-        with pytest.raises(SystemExit):
-            args = parser.parse_args([
-                'https://example.com', 
-                '-o', '/tmp/output',
-                '--allowed-path', '/docs/',
-                '--allowed-paths', '/api/', '/guides/'
-            ])
+        # Since they're aliases, the last one wins
+        args = parser.parse_args([
+            'https://example.com', 
+            '-o', '/tmp/output',
+            '--allowed-path', '/docs/',
+            '--allowed-paths', '/api/', '/guides/'
+        ])
+        
+        # The last argument (--allowed-paths) overrides the previous one
+        assert args.allowed_paths == ['/api/', '/guides/']
 
     def test_neither_path_option(self):
         """Test that neither path option is fine."""
@@ -82,17 +83,18 @@ class TestMultipleAllowedPathsCLI:
             '-o', '/tmp/output'
         ])
         
-        assert args.allowed_path is None
+        # Only allowed_paths exists now (allowed_path is an alias)
         assert args.allowed_paths is None
 
     def test_help_text_includes_new_option(self):
-        """Test that help text includes the new --allowed-paths option."""
+        """Test that help text includes the --allowed-paths option."""
         parser = create_parser()
         help_text = parser.format_help()
         
-        assert '--allowed-path' in help_text
+        # Only --allowed-paths should be visible in help
+        # --allowed-path is a hidden alias
         assert '--allowed-paths' in help_text
-        assert 'multiple paths' in help_text
+        assert 'restrict crawling to specified paths' in help_text.lower()
 
 
 if __name__ == "__main__":

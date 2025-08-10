@@ -3248,10 +3248,10 @@ class TestAllowedPathFeature:
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_allowed_path(self, mock_html_responses, temp_dir):
-        """Test BeautifulSoup scraper with allowed_path parameter."""
-        # Create config with allowed_path
+        """Test BeautifulSoup scraper with allowed_paths parameter."""
+        # Create config with allowed_paths
         config = ScraperConfig(
-            max_pages=20, max_depth=3, allowed_path="/api/", request_delay=0.1
+            max_pages=20, max_depth=3, allowed_paths=["/api/"], request_delay=0.1
         )
 
         scraper = BeautifulSoupScraper(config)
@@ -3312,15 +3312,13 @@ class TestAllowedPathFeature:
 
     @pytest.mark.asyncio
     async def test_without_allowed_path(self, mock_html_responses, temp_dir):
-        """Test that without allowed_path, it restricts to start URL's exact path.
+        """Test that without allowed_paths, it restricts to start URL's directory.
 
-        NOTE: The current implementation uses the full file path (including filename)
-        as the base path when no allowed_path is specified. This means if you start
-        from /api/overview.html, it will only scrape that exact file and not follow
-        links to other files in the same directory. This might be a bug, but we test
-        the current behavior here.
+        When no allowed_paths is specified, the scraper automatically restricts
+        to the directory of the start URL. So starting from /api/overview.html
+        will allow scraping of all files under /api/
         """
-        # Create config WITHOUT allowed_path
+        # Create config WITHOUT allowed_paths (empty list gets initialized to start URL's directory)
         config = ScraperConfig(max_pages=20, max_depth=3, request_delay=0.1)
 
         scraper = BeautifulSoupScraper(config)
@@ -3368,25 +3366,27 @@ class TestAllowedPathFeature:
                     ):
                         scraped_urls.append(page.url)
 
-        # With current implementation, only the start URL is scraped
+        # The start URL is always scraped
         assert "http://test.com/api/overview.html" in scraped_urls
 
-        # Due to the current path restriction logic, these won't be scraped
-        # (they should be if the directory logic was used instead of file path)
-        assert "http://test.com/api/endpoints.html" not in scraped_urls
-        assert "http://test.com/api/auth.html" not in scraped_urls
+        # With empty allowed_paths, it gets initialized to /api/ (directory of start URL)
+        # So these files under /api/ will be scraped
+        assert "http://test.com/api/endpoints.html" in scraped_urls
+        assert "http://test.com/api/auth.html" in scraped_urls
+        
+        # But files outside /api/ won't be scraped
         assert "http://test.com/guides/api.html" not in scraped_urls
 
-        # Should only scrape the start URL
-        assert len(scraped_urls) == 1
+        # Should have scraped the /api/ directory
+        assert len(scraped_urls) == 3  # overview, endpoints, auth
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not SELECTOLAX_AVAILABLE, reason="selectolax not installed")
     async def test_selectolax_allowed_path(self, mock_html_responses, temp_dir):
-        """Test Selectolax scraper with allowed_path parameter."""
-        # Create config with allowed_path
+        """Test Selectolax scraper with allowed_paths parameter."""
+        # Create config with allowed_paths
         config = ScraperConfig(
-            max_pages=20, max_depth=3, allowed_path="/api/", request_delay=0.1
+            max_pages=20, max_depth=3, allowed_paths=["/api/"], request_delay=0.1
         )
 
         scraper = SelectolaxScraper(config)
@@ -3434,7 +3434,7 @@ class TestAllowedPathFeature:
         # Check that we scraped the start URL (always allowed)
         assert "http://test.com/docs/index.html" in scraped_urls
 
-        # With allowed_path="/api/", only links to /api/ should be followed
+        # With allowed_paths=["/api/"], only links to /api/ should be followed
         assert "http://test.com/api/overview.html" in scraped_urls
         assert "http://test.com/api/endpoints.html" in scraped_urls
         assert "http://test.com/api/auth.html" in scraped_urls
@@ -3443,15 +3443,15 @@ class TestAllowedPathFeature:
         assert "http://test.com/guides/start.html" not in scraped_urls
         assert "http://test.com/blog/news.html" not in scraped_urls
 
-    def test_crawler_config_allowed_path(self):
-        """Test that CrawlerConfig properly accepts allowed_path."""
-        config = CrawlerConfig(max_depth=5, max_pages=100, allowed_path="/docs/")
+    def test_crawler_config_allowed_paths(self):
+        """Test that CrawlerConfig properly accepts allowed_paths."""
+        config = CrawlerConfig(max_depth=5, max_pages=100, allowed_paths=["/docs/"])
 
-        assert config.allowed_path == "/docs/"
+        assert config.allowed_paths == ["/docs/"]
 
         # Test that it can be None
         config2 = CrawlerConfig()
-        assert config2.allowed_path is None
+        assert config2.allowed_paths is None
 
 
 if __name__ == "__main__":
@@ -5864,7 +5864,7 @@ class TestMultipleAllowedPathsCLI:
     """Test CLI parsing for multiple allowed paths feature."""
 
     def test_single_allowed_path_parsing(self):
-        """Test that single --allowed-path still works."""
+        """Test that --allowed-path works as an alias for --allowed-paths."""
         parser = create_parser()
         args = parser.parse_args([
             'https://example.com', 
@@ -5872,8 +5872,8 @@ class TestMultipleAllowedPathsCLI:
             '--allowed-path', '/docs/'
         ])
         
-        assert args.allowed_path == '/docs/'
-        assert args.allowed_paths is None
+        # --allowed-path is now an alias for --allowed-paths
+        assert args.allowed_paths == ['/docs/']
 
     def test_multiple_allowed_paths_parsing(self):
         """Test that --allowed-paths accepts multiple paths."""
@@ -5884,7 +5884,6 @@ class TestMultipleAllowedPathsCLI:
             '--allowed-paths', '/docs/', '/api/', '/guides/'
         ])
         
-        assert args.allowed_path is None
         assert args.allowed_paths == ['/docs/', '/api/', '/guides/']
 
     def test_empty_allowed_paths_parsing(self):
@@ -5896,20 +5895,22 @@ class TestMultipleAllowedPathsCLI:
             '--allowed-paths'
         ])
         
-        assert args.allowed_path is None
         assert args.allowed_paths == []
 
-    def test_mutual_exclusivity_error(self):
-        """Test that --allowed-path and --allowed-paths cannot be used together."""
+    def test_both_aliases_work_together(self):
+        """Test that --allowed-path and --allowed-paths work together as aliases."""
         parser = create_parser()
         
-        with pytest.raises(SystemExit):
-            args = parser.parse_args([
-                'https://example.com', 
-                '-o', '/tmp/output',
-                '--allowed-path', '/docs/',
-                '--allowed-paths', '/api/', '/guides/'
-            ])
+        # Since they're aliases, the last one wins
+        args = parser.parse_args([
+            'https://example.com', 
+            '-o', '/tmp/output',
+            '--allowed-path', '/docs/',
+            '--allowed-paths', '/api/', '/guides/'
+        ])
+        
+        # The last argument (--allowed-paths) overrides the previous one
+        assert args.allowed_paths == ['/api/', '/guides/']
 
     def test_neither_path_option(self):
         """Test that neither path option is fine."""
@@ -5919,17 +5920,18 @@ class TestMultipleAllowedPathsCLI:
             '-o', '/tmp/output'
         ])
         
-        assert args.allowed_path is None
+        # Only allowed_paths exists now (allowed_path is an alias)
         assert args.allowed_paths is None
 
     def test_help_text_includes_new_option(self):
-        """Test that help text includes the new --allowed-paths option."""
+        """Test that help text includes the --allowed-paths option."""
         parser = create_parser()
         help_text = parser.format_help()
         
-        assert '--allowed-path' in help_text
+        # Only --allowed-paths should be visible in help
+        # --allowed-path is a hidden alias
         assert '--allowed-paths' in help_text
-        assert 'multiple paths' in help_text
+        assert 'restrict crawling to specified paths' in help_text.lower()
 
 
 if __name__ == "__main__":

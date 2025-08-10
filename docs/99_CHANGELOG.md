@@ -13,12 +13,11 @@ and this project adheres to
 ### Added
 
 - **m1f-scrape Multiple Allowed Paths**: Support for multiple path restrictions
-  - New `--allowed-paths` parameter accepts multiple paths for crawling
-  - Backward compatible with existing `--allowed-path` (single path)
+  - `--allowed-paths` parameter accepts multiple paths for crawling
   - Supports both simple paths (`/docs/`) and full URLs (`https://example.com/docs/`)
-  - Mutually exclusive with `--allowed-path` to prevent confusion
   - Database schema migration (v3) to support multiple paths storage
   - Comprehensive test coverage for all path configurations
+  - Backward compatible (--allowed-path is a hidden alias)
 
 ### Improved
 
@@ -64,7 +63,7 @@ and this project adheres to
   - File size limits with chunked reading
   - SSRF protection for asset downloads
   - External CDN support for assets (configurable)
-  - Automatic path adjustment in HTML files when using --allowed-path/--allowed-paths
+  - Automatic path adjustment in HTML files when using --allowed-paths
   - Fixed binary file reading issue in resume functionality
 
 ### Security
@@ -173,15 +172,13 @@ and this project adheres to
   - Updated documentation to explain `-1` unlimited option
   - Added example for unlimited scraping with caution note
 
-- **m1f-scrape Advanced Path Control**: New `--allowed-path` and `--allowed-paths` parameters
-  - **Single Path (Legacy)**: `--allowed-path` for backward compatibility
-    - Allows starting from specific page while controlling crawling boundaries
-    - Overrides automatic path restriction based on start URL
-    - Example: Start from `/products/widget.html` but crawl all `/products/`
-  - **Multiple Paths (New)**: `--allowed-paths` for crawling multiple directories
-    - Accepts space-separated list of paths
-    - Example: `--allowed-paths /docs/ /api/ /reference/`
-    - Cannot be used together with `--allowed-path` (mutually exclusive)
+- **m1f-scrape Advanced Path Control**: New `--allowed-paths` parameter
+  - Allows specifying multiple directories for crawling
+  - Accepts space-separated list of paths
+  - Example: `--allowed-paths /docs/ /api/ /reference/`
+  - Overrides automatic path restriction based on start URL
+  - Allows starting from specific page while controlling crawling boundaries
+  - Example: Start from `/products/widget.html` but crawl all `/products/`
   - Start URL is always scraped regardless of path restrictions
   - Useful for documentation sites where index pages link to different directories
   - Implemented across all scraper backends (BeautifulSoup, HTTrack, Selectolax, Playwright, Scrapy)

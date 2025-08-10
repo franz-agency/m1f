@@ -105,7 +105,7 @@ Common options for all scrapers:
                            # selectolax, httpx, scrapy, playwright)
 --max-depth N               # Maximum crawl depth (default: 5)
 --max-pages N               # Maximum pages to crawl (default: 10000, -1 for unlimited)
---allowed-path PATH         # Restrict crawling to this path (overrides automatic restriction)
+--allowed-paths [PATHS...]  # Restrict crawling to specified paths and subdirectories
 --request-delay SECONDS     # Delay between requests (default: 15.0)
 --concurrent-requests N     # Number of concurrent requests (default: 2)
 --user-agent STRING         # Custom user agent

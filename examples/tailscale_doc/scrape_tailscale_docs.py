@@ -197,7 +197,7 @@ Expected result:
             TAILSCALE_DOCS_URL,
             "-o",
             str(html_dir),
-            "--allowed-path",
+            "--allowed-paths",
             "/kb",
             "--request-delay",
             str(args.delay),

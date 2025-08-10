@@ -118,10 +118,10 @@ class TestAllowedPathFeature:
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_allowed_path(self, mock_html_responses, temp_dir):
-        """Test BeautifulSoup scraper with allowed_path parameter."""
-        # Create config with allowed_path
+        """Test BeautifulSoup scraper with allowed_paths parameter."""
+        # Create config with allowed_paths
         config = ScraperConfig(
-            max_pages=20, max_depth=3, allowed_path="/api/", request_delay=0.1
+            max_pages=20, max_depth=3, allowed_paths=["/api/"], request_delay=0.1
         )
 
         scraper = BeautifulSoupScraper(config)
@@ -182,15 +182,13 @@ class TestAllowedPathFeature:
 
     @pytest.mark.asyncio
     async def test_without_allowed_path(self, mock_html_responses, temp_dir):
-        """Test that without allowed_path, it restricts to start URL's exact path.
+        """Test that without allowed_paths, it restricts to start URL's directory.
 
-        NOTE: The current implementation uses the full file path (including filename)
-        as the base path when no allowed_path is specified. This means if you start
-        from /api/overview.html, it will only scrape that exact file and not follow
-        links to other files in the same directory. This might be a bug, but we test
-        the current behavior here.
+        When no allowed_paths is specified, the scraper automatically restricts
+        to the directory of the start URL. So starting from /api/overview.html
+        will allow scraping of all files under /api/
         """
-        # Create config WITHOUT allowed_path
+        # Create config WITHOUT allowed_paths (empty list gets initialized to start URL's directory)
         config = ScraperConfig(max_pages=20, max_depth=3, request_delay=0.1)
 
         scraper = BeautifulSoupScraper(config)
@@ -238,25 +236,27 @@ class TestAllowedPathFeature:
                     ):
                         scraped_urls.append(page.url)
 
-        # With current implementation, only the start URL is scraped
+        # The start URL is always scraped
         assert "http://test.com/api/overview.html" in scraped_urls
 
-        # Due to the current path restriction logic, these won't be scraped
-        # (they should be if the directory logic was used instead of file path)
-        assert "http://test.com/api/endpoints.html" not in scraped_urls
-        assert "http://test.com/api/auth.html" not in scraped_urls
+        # With empty allowed_paths, it gets initialized to /api/ (directory of start URL)
+        # So these files under /api/ will be scraped
+        assert "http://test.com/api/endpoints.html" in scraped_urls
+        assert "http://test.com/api/auth.html" in scraped_urls
+        
+        # But files outside /api/ won't be scraped
         assert "http://test.com/guides/api.html" not in scraped_urls
 
-        # Should only scrape the start URL
-        assert len(scraped_urls) == 1
+        # Should have scraped the /api/ directory
+        assert len(scraped_urls) == 3  # overview, endpoints, auth
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not SELECTOLAX_AVAILABLE, reason="selectolax not installed")
     async def test_selectolax_allowed_path(self, mock_html_responses, temp_dir):
-        """Test Selectolax scraper with allowed_path parameter."""
-        # Create config with allowed_path
+        """Test Selectolax scraper with allowed_paths parameter."""
+        # Create config with allowed_paths
         config = ScraperConfig(
-            max_pages=20, max_depth=3, allowed_path="/api/", request_delay=0.1
+            max_pages=20, max_depth=3, allowed_paths=["/api/"], request_delay=0.1
         )
 
         scraper = SelectolaxScraper(config)
@@ -304,7 +304,7 @@ class TestAllowedPathFeature:
         # Check that we scraped the start URL (always allowed)
         assert "http://test.com/docs/index.html" in scraped_urls
 
-        # With allowed_path="/api/", only links to /api/ should be followed
+        # With allowed_paths=["/api/"], only links to /api/ should be followed
         assert "http://test.com/api/overview.html" in scraped_urls
         assert "http://test.com/api/endpoints.html" in scraped_urls
         assert "http://test.com/api/auth.html" in scraped_urls
@@ -313,15 +313,15 @@ class TestAllowedPathFeature:
         assert "http://test.com/guides/start.html" not in scraped_urls
         assert "http://test.com/blog/news.html" not in scraped_urls
 
-    def test_crawler_config_allowed_path(self):
-        """Test that CrawlerConfig properly accepts allowed_path."""
-        config = CrawlerConfig(max_depth=5, max_pages=100, allowed_path="/docs/")
+    def test_crawler_config_allowed_paths(self):
+        """Test that CrawlerConfig properly accepts allowed_paths."""
+        config = CrawlerConfig(max_depth=5, max_pages=100, allowed_paths=["/docs/"])
 
-        assert config.allowed_path == "/docs/"
+        assert config.allowed_paths == ["/docs/"]
 
         # Test that it can be None
         config2 = CrawlerConfig()
-        assert config2.allowed_path is None
+        assert config2.allowed_paths is None
 
 
 if __name__ == "__main__":
