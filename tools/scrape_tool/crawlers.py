@@ -698,10 +698,14 @@ class WebCrawler:
                         try:
                             file_path = output_dir / page_info["filename"]
                             if file_path.exists():
-                                content = file_path.read_text(encoding="utf-8")
-                                resume_info.append(
-                                    {"url": page_info["url"], "content": content}
-                                )
+                                # Only read HTML files, skip binary files (images, PDFs, etc.)
+                                if file_path.suffix.lower() in ['.html', '.htm', '.xhtml']:
+                                    content = file_path.read_text(encoding="utf-8")
+                                    resume_info.append(
+                                        {"url": page_info["url"], "content": content}
+                                    )
+                                else:
+                                    logger.debug(f"Skipping binary file for resume: {page_info['filename']}")
                         except Exception as e:
                             logger.warning(
                                 f"Failed to read {page_info['filename']}: {e}"
