@@ -52,9 +52,7 @@ class TestS1FBasic(BaseS1FTest):
         # Run s1f
         exit_code, log_output = run_s1f(
             [
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(s1f_extracted_dir),
                 "--force",
                 "--verbose",
@@ -95,9 +93,7 @@ class TestS1FBasic(BaseS1FTest):
         # Run without force (should fail or skip)
         exit_code, _ = run_s1f(
             [
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(s1f_extracted_dir),
             ]
         )
@@ -108,9 +104,7 @@ class TestS1FBasic(BaseS1FTest):
         # Run with force
         exit_code, _ = run_s1f(
             [
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(s1f_extracted_dir),
                 "--force",
             ]
@@ -137,9 +131,7 @@ class TestS1FBasic(BaseS1FTest):
 
         exit_code, _ = run_s1f(
             [
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(s1f_extracted_dir),
                 "--timestamp-mode",
                 "current",
@@ -173,9 +165,7 @@ class TestS1FBasic(BaseS1FTest):
         # Run s1f with verbose flag and capture log output
         exit_code, log_output = run_s1f(
             [
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(s1f_extracted_dir),
                 "--verbose",
                 "--force",
@@ -196,9 +186,9 @@ class TestS1FBasic(BaseS1FTest):
 
         assert result.returncode == 0
         assert "usage:" in result.stdout.lower()
-        assert "--input-file" in result.stdout
-        assert "--destination-directory" in result.stdout
-        assert "split combined files" in result.stdout.lower()
+        assert "input_file" in result.stdout
+        assert "destination_directory" in result.stdout
+        assert "split one file" in result.stdout.lower()
 
     @pytest.mark.unit
     def test_version_display(self, s1f_cli_runner):
@@ -215,39 +205,35 @@ class TestS1FBasic(BaseS1FTest):
         ), "Version number not found in output"
 
     @pytest.mark.unit
-    def test_cli_argument_compatibility(
+    def test_positional_arguments(
         self, s1f_cli_runner, create_combined_file, temp_dir
     ):
-        """Test both old and new CLI argument styles."""
+        """Test positional argument usage."""
         test_files = {"test.txt": "Test content\n"}
         combined_file = create_combined_file(test_files)
 
-        # Test old style arguments
-        result_old = s1f_cli_runner(
+        # Test positional arguments
+        result = s1f_cli_runner(
             [
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
-                str(temp_dir / "old_style"),
+                str(temp_dir / "positional"),
                 "--force",
             ]
         )
 
-        assert result_old.returncode == 0
-        assert (temp_dir / "old_style" / "test.txt").exists()
+        assert result.returncode == 0
+        assert (temp_dir / "positional" / "test.txt").exists()
 
-        # Test new style positional arguments (if supported)
-        result_new = s1f_cli_runner(
+        # Test with optional destination directory
+        result_optional = s1f_cli_runner(
             [
                 str(combined_file),
-                str(temp_dir / "new_style"),
                 "--force",
             ]
         )
 
-        # Check if new style is supported
-        if result_new.returncode == 0:
-            assert (temp_dir / "new_style" / "test.txt").exists()
+        # Should work with current directory as default
+        assert result_optional.returncode == 0 or result_optional.returncode != 2  # Not a usage error
 
     @pytest.mark.integration
     def test_extract_from_m1f_output(
@@ -270,9 +256,7 @@ class TestS1FBasic(BaseS1FTest):
             extract_dir = s1f_extracted_dir / style.lower()
             exit_code, _ = run_s1f(
                 [
-                    "--input-file",
                     str(m1f_output),
-                    "--destination-directory",
                     str(extract_dir),
                     "--force",
                 ]

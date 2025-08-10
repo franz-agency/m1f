@@ -132,7 +132,8 @@ class TestM1FEncoding(BaseM1FTest):
             try:
                 content = output_file.read_text(encoding=target_encoding)
                 # Basic check that file is readable in target encoding
-                assert "FILE:" in content or "==== FILE:" in content
+                # Check that the file separator is present (Standard format uses =======)
+                assert "=======" in content or "FILE:" in content
             except UnicodeDecodeError:
                 pytest.fail(f"Output file not properly encoded in {target_encoding}")
 

@@ -96,9 +96,7 @@ class TestS1FEncoding(BaseS1FTest):
         # Extract without respecting encoding (default UTF-8)
         exit_code, _ = run_s1f(
             [
-                "--input-file",
                 str(output_file),
-                "--destination-directory",
                 str(s1f_extracted_dir / "default"),
                 "--force",
             ]
@@ -118,9 +116,7 @@ class TestS1FEncoding(BaseS1FTest):
         # Extract with --respect-encoding
         exit_code, _ = run_s1f(
             [
-                "--input-file",
                 str(output_file),
-                "--destination-directory",
                 str(s1f_extracted_dir / "respected"),
                 "--respect-encoding",
                 "--force",
@@ -171,9 +167,7 @@ class TestS1FEncoding(BaseS1FTest):
 
             exit_code, _ = run_s1f(
                 [
-                    "--input-file",
                     str(combined_file),
-                    "--destination-directory",
                     str(extract_dir),
                     "--target-encoding",
                     target_encoding,
@@ -230,9 +224,7 @@ class TestS1FEncoding(BaseS1FTest):
         # Extract files
         exit_code, _ = run_s1f(
             [
-                "--input-file",
                 str(output_file),
-                "--destination-directory",
                 str(s1f_extracted_dir),
                 "--force",
             ]
@@ -277,9 +269,7 @@ class TestS1FEncoding(BaseS1FTest):
         # Extract
         exit_code, _ = run_s1f(
             [
-                "--input-file",
                 str(output_file),
-                "--destination-directory",
                 str(s1f_extracted_dir),
                 "--force",
             ]
@@ -360,9 +350,7 @@ class TestS1FEncoding(BaseS1FTest):
         # Extract with s1f
         exit_code, _ = run_s1f(
             [
-                "--input-file",
                 str(m1f_output),
-                "--destination-directory",
                 str(s1f_extracted_dir),
                 "--force",
             ]

@@ -17082,6 +17082,11 @@ def parse_args(
 ) -> argparse.Namespace:
     """Parse command-line arguments."""
     parsed_args = parser.parse_args(args)
+    
+    # Store the raw command line arguments to detect which were explicitly provided
+    # This helps with preset override logic
+    import sys
+    parsed_args._cli_args = args if args is not None else sys.argv[1:]
 
     # Skip validation if presets are being used - they may provide required values
     if not parsed_args.preset_files or parsed_args.disable_presets:
@@ -17490,18 +17495,21 @@ class Config:
             or (global_settings.minimal_output or False),
             skip_output_file=getattr(args, "skip_output_file", False)
             or (global_settings.skip_output_file or False),
+            # CLI args always take precedence over preset
+            # Check if separator_style was explicitly set in CLI
             separator_style=(
                 SeparatorStyle(args.separator_style)
-                if args.separator_style != "Standard"
+                if '--separator-style' in getattr(args, '_cli_args', [])
                 else (
                     SeparatorStyle(global_settings.separator_style)
                     if global_settings.separator_style
                     else SeparatorStyle.STANDARD
                 )
             ),
+            # CLI args always take precedence over preset
             line_ending=(
                 LineEnding.from_str(args.line_ending)
-                if args.line_ending != "lf"
+                if '--line-ending' in getattr(args, '_cli_args', [])
                 else (
                     LineEnding.from_str(global_settings.line_ending)
                     if global_settings.line_ending

@@ -65,9 +65,7 @@ def test_target_encoding():
             [
                 sys.executable,
                 str(Path(__file__).parent.parent.parent / "tools" / "s1f.py"),
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(extract_dir_default),
                 "--force",
             ],
@@ -105,9 +103,7 @@ def test_target_encoding():
             [
                 sys.executable,
                 str(Path(__file__).parent.parent.parent / "tools" / "s1f.py"),
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(extract_dir_respect),
                 "--force",
                 "--respect-encoding",
@@ -153,9 +149,7 @@ def test_target_encoding():
             [
                 sys.executable,
                 str(Path(__file__).parent.parent.parent / "tools" / "s1f.py"),
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(extract_dir_target),
                 "--force",
                 "--target-encoding",

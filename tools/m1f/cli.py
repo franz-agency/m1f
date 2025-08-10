@@ -378,6 +378,11 @@ def parse_args(
 ) -> argparse.Namespace:
     """Parse command-line arguments."""
     parsed_args = parser.parse_args(args)
+    
+    # Store the raw command line arguments to detect which were explicitly provided
+    # This helps with preset override logic
+    import sys
+    parsed_args._cli_args = args if args is not None else sys.argv[1:]
 
     # Skip validation if presets are being used - they may provide required values
     if not parsed_args.preset_files or parsed_args.disable_presets:

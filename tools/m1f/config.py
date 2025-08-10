@@ -390,18 +390,21 @@ class Config:
             or (global_settings.minimal_output or False),
             skip_output_file=getattr(args, "skip_output_file", False)
             or (global_settings.skip_output_file or False),
+            # CLI args always take precedence over preset
+            # Check if separator_style was explicitly set in CLI
             separator_style=(
                 SeparatorStyle(args.separator_style)
-                if args.separator_style != "Standard"
+                if '--separator-style' in getattr(args, '_cli_args', [])
                 else (
                     SeparatorStyle(global_settings.separator_style)
                     if global_settings.separator_style
                     else SeparatorStyle.STANDARD
                 )
             ),
+            # CLI args always take precedence over preset
             line_ending=(
                 LineEnding.from_str(args.line_ending)
-                if args.line_ending != "lf"
+                if '--line-ending' in getattr(args, '_cli_args', [])
                 else (
                     LineEnding.from_str(global_settings.line_ending)
                     if global_settings.line_ending

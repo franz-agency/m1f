@@ -164,9 +164,7 @@ class TestS1F:
         # Run with verbose to see logging output
         run_s1f(
             [
-                "--input-file",
                 str(input_file),
-                "--destination-directory",
                 str(EXTRACTED_DIR),
                 "--force",
                 "--verbose",
@@ -205,9 +203,7 @@ class TestS1F:
         # Run the script programmatically
         run_s1f(
             [
-                "--input-file",
                 str(input_file),
-                "--destination-directory",
                 str(EXTRACTED_DIR),
                 "--force",
             ]
@@ -234,9 +230,7 @@ class TestS1F:
         # Run the script programmatically
         run_s1f(
             [
-                "--input-file",
                 str(input_file),
-                "--destination-directory",
                 str(EXTRACTED_DIR),
                 "--force",
             ]
@@ -263,9 +257,7 @@ class TestS1F:
         # Run the script programmatically
         run_s1f(
             [
-                "--input-file",
                 str(input_file),
-                "--destination-directory",
                 str(EXTRACTED_DIR),
                 "--respect-encoding",
                 "--force",
@@ -309,9 +301,7 @@ class TestS1F:
         # Run the script with force overwrite
         run_s1f(
             [
-                "--input-file",
                 str(input_file),
-                "--destination-directory",
                 str(EXTRACTED_DIR),
                 "--force",
             ]
@@ -331,9 +321,7 @@ class TestS1F:
         # Run the script with current timestamp mode
         run_s1f(
             [
-                "--input-file",
                 str(input_file),
-                "--destination-directory",
                 str(EXTRACTED_DIR),
                 "--timestamp-mode",
                 "current",
@@ -373,9 +361,7 @@ class TestS1F:
             [
                 sys.executable,
                 str(script_path),
-                "--input-file",
                 str(input_file),
-                "--destination-directory",
                 str(EXTRACTED_DIR),
                 "--force",
                 "--verbose",
@@ -474,9 +460,7 @@ class TestS1F:
 
         run_s1f(
             [
-                "--input-file",
                 str(m1f_output),
-                "--destination-directory",
                 str(default_extract_dir),
                 "--force",
                 "--verbose",
@@ -505,9 +489,7 @@ class TestS1F:
 
         run_s1f(
             [
-                "--input-file",
                 str(m1f_output),
-                "--destination-directory",
                 str(respected_extract_dir),
                 "--respect-encoding",
                 "--force",

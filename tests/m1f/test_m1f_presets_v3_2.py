@@ -334,7 +334,7 @@ test_group:
         content = output_file.read_text()
         assert "From CLI dir" in content
         assert "From preset dir" not in content
-        assert "=======" in content  # Standard separator, not Markdown
+        assert "=======" in content  # Standard separator, not Markdown (CLI overrides preset)
         # In quiet mode, we should have minimal output (but preset loading still shows some DEBUG)
         # So we check that we don't have the verbose file processing DEBUG messages
         assert "Processing file:" not in log_output
