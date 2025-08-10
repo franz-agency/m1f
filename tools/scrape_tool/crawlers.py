@@ -815,9 +815,11 @@ class WebCrawler:
                             # Track downloaded assets for this page
                             downloaded_assets = {}
                             
+                            # Prepare list of assets to download
+                            assets_to_download = []
                             for asset_url in asset_urls:
                                 # Security: Check total assets limit (if configured)
-                                if self.config.total_assets_limit > 0 and self._total_assets_downloaded >= self.config.total_assets_limit:
+                                if self.config.total_assets_limit > 0 and self._total_assets_downloaded + len(assets_to_download) >= self.config.total_assets_limit:
                                     logger.warning(
                                         f"Reached total assets limit of {self.config.total_assets_limit}, "
                                         f"skipping remaining assets"
@@ -833,33 +835,65 @@ class WebCrawler:
                                         downloaded_assets[asset_url] = output_dir / asset_info['target_filename']
                                     continue
                                 
-                                # Download asset
-                                logger.debug(f"Downloading asset: {asset_url}")
-                                asset_page = await scraper.download_binary_file(
-                                    asset_url, self.config.max_asset_size
+                                assets_to_download.append(asset_url)
+                            
+                            # Download assets concurrently for better performance
+                            if assets_to_download:
+                                logger.info(f"Downloading {len(assets_to_download)} assets concurrently")
+                                
+                                async def download_and_save_asset(asset_url):
+                                    """Download and save a single asset."""
+                                    try:
+                                        logger.debug(f"Downloading asset: {asset_url}")
+                                        asset_page = await scraper.download_binary_file(
+                                            asset_url, self.config.max_asset_size
+                                        )
+                                        
+                                        if asset_page:
+                                            try:
+                                                asset_path = await self._save_page(asset_page, site_dir)
+                                                self._record_scraped_url(
+                                                    asset_page.url,
+                                                    asset_page.status_code,
+                                                    str(asset_path.relative_to(output_dir)),
+                                                    error=None,
+                                                    file_type=asset_page.file_type,
+                                                    file_size=asset_page.file_size,
+                                                )
+                                                logger.debug(f"Saved asset {asset_url} to {asset_path}")
+                                                return (asset_url, asset_path)
+                                            except ValueError as e:
+                                                # Security exception (dangerous file, path traversal, etc.)
+                                                logger.error(f"Security: Blocked asset {asset_url}: {e}")
+                                            except Exception as e:
+                                                logger.error(f"Failed to save asset {asset_url}: {e}")
+                                        else:
+                                            logger.warning(f"Failed to download asset: {asset_url}")
+                                        return None
+                                    except Exception as e:
+                                        logger.error(f"Error downloading asset {asset_url}: {e}")
+                                        return None
+                                
+                                # Use concurrent requests config to limit parallel downloads
+                                # But cap at a reasonable number for assets (default 5, max 10)
+                                max_concurrent_assets = min(
+                                    self.config.concurrent_requests if hasattr(self.config, 'concurrent_requests') else 5,
+                                    10
                                 )
                                 
-                                if asset_page:
-                                    try:
-                                        asset_path = await self._save_page(asset_page, site_dir)
-                                        self._record_scraped_url(
-                                            asset_page.url,
-                                            asset_page.status_code,
-                                            str(asset_path.relative_to(output_dir)),
-                                            error=None,
-                                            file_type=asset_page.file_type,
-                                            file_size=asset_page.file_size,
-                                        )
-                                        self._total_assets_downloaded += 1
-                                        downloaded_assets[asset_url] = asset_path
-                                        logger.debug(f"Saved asset {asset_url} to {asset_path}")
-                                    except ValueError as e:
-                                        # Security exception (dangerous file, path traversal, etc.)
-                                        logger.error(f"Security: Blocked asset {asset_url}: {e}")
-                                    except Exception as e:
-                                        logger.error(f"Failed to save asset {asset_url}: {e}")
-                                else:
-                                    logger.warning(f"Failed to download asset: {asset_url}")
+                                # Download assets in batches to avoid overwhelming the server
+                                for i in range(0, len(assets_to_download), max_concurrent_assets):
+                                    batch = assets_to_download[i:i + max_concurrent_assets]
+                                    download_tasks = [download_and_save_asset(url) for url in batch]
+                                    results = await asyncio.gather(*download_tasks, return_exceptions=True)
+                                    
+                                    for result in results:
+                                        if isinstance(result, tuple) and result:
+                                            asset_url, asset_path = result
+                                            downloaded_assets[asset_url] = asset_path
+                                            self._total_assets_downloaded += 1
+                                        elif isinstance(result, Exception):
+                                            logger.error(f"Asset download task failed: {result}")
                             
                             # Update HTML file with correct asset paths if we downloaded any
                             if downloaded_assets:
