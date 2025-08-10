@@ -753,8 +753,8 @@ Perfect for:
     epilog = """Examples:
   %(prog)s https://example.com/docs -o ./html
   %(prog)s https://example.com/docs -o ./html --max-pages 100
-  %(prog)s https://example.com/blog -o ./html --allowed-path /blog/2024/
   %(prog)s https://example.com/docs -o ./html --allowed-paths /docs/ /api/ /guides/
+  %(prog)s https://example.com/blog -o ./html --allowed-paths /blog/2024/
   %(prog)s https://example.com -o ./html --scraper httrack
   %(prog)s --show-db-stats -o ./html  # Show scraping statistics
 
