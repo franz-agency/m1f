@@ -108,6 +108,51 @@ class CrawlerConfig(BaseModel):
         default=False,
         description="Force re-scraping of all URLs, ignoring database cache",
     )
+    download_assets: bool = Field(
+        default=False,
+        description="Download linked assets like images, PDFs, and other files",
+    )
+    download_external_assets: bool = Field(
+        default=True,
+        description="Allow downloading assets from external domains (CDNs, etc.)",
+    )
+    asset_types: list[str] = Field(
+        default_factory=lambda: [
+            # Images (safe)
+            ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico",
+            # Stylesheets and fonts (safe)
+            ".css", ".woff", ".woff2", ".ttf", ".eot",
+            # Documents (potentially risky but commonly needed)
+            ".pdf", ".txt", ".md", ".csv",
+            # Data formats (safe)
+            ".json", ".xml",
+            # Note: .js removed by default for security
+            # Note: Office files removed by default (.doc, .docx, .xls, .xlsx, .ppt, .pptx)
+            # Note: Archives removed by default (.zip, .tar, .gz, .rar, .7z)
+            # Note: Media files removed by default (.mp4, .webm, .mp3, .wav, .ogg)
+        ],
+        description="File extensions to download when download_assets is enabled (security-filtered defaults)",
+    )
+    max_asset_size: int = Field(
+        default=50 * 1024 * 1024,  # 50MB
+        ge=0,
+        le=1024 * 1024 * 1024,  # 1GB max
+        description="Maximum file size in bytes for asset downloads",
+    )
+    assets_subdirectory: str = Field(
+        default="assets",
+        description="Subdirectory name for storing downloaded assets",
+    )
+    max_assets_per_page: int = Field(
+        default=-1,  # -1 means no limit
+        ge=-1,
+        description="Maximum number of assets to download per page (-1 for unlimited)",
+    )
+    total_assets_limit: int = Field(
+        default=-1,  # -1 means no limit
+        ge=-1,
+        description="Maximum total number of assets to download in a session (-1 for unlimited)",
+    )
 
 
 class Config(BaseModel):

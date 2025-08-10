@@ -567,6 +567,10 @@ class Html2mdConverter:
                 markdown, source_file, self.config.destination
             )
 
+        # Adjust internal links to convert .html to .md
+        from .utils import adjust_internal_links
+        markdown = adjust_internal_links(markdown)
+
         return markdown
 
     def _convert_absolute_paths_to_relative(
@@ -1690,6 +1694,7 @@ import argparse
 import sys
 from pathlib import Path
 from typing import List, Optional
+from collections import Counter
 
 # Use unified colorama module
 from ..shared.colors import (
@@ -2006,6 +2011,12 @@ def handle_convert(args: argparse.Namespace) -> None:
         else:
             # Full config file - load it normally
             config = load_config(args.config)
+            
+            # IMPORTANT: CLI arguments should always override config file values
+            # Only override if CLI args were explicitly provided
+            cli_source_path = args.source.parent if args.source.is_file() else args.source
+            config.source = cli_source_path
+            config.destination = args.output
     else:
         # When source is a file, use its parent directory as the source
         source_path = args.source.parent if args.source.is_file() else args.source
@@ -4777,15 +4788,15 @@ def convert_html(
     return result
 
 
-def adjust_internal_links(content, base_path: str = "") -> None:
-    """Adjust internal links in HTML content (BeautifulSoup object).
+def adjust_internal_links(content, base_path: str = ""):
+    """Adjust internal links in HTML/Markdown content.
 
     Args:
-        content: BeautifulSoup object or string
+        content: BeautifulSoup object or Markdown string
         base_path: Base path for links
 
     Returns:
-        None (modifies in place)
+        Modified string if content is string, None if BeautifulSoup (modifies in place)
     """
     from bs4 import BeautifulSoup
 
@@ -4808,9 +4819,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
             if base_path and not url.startswith("/"):
                 url = f"{base_path}/{url}"
 
-            # Convert .html to .md
+            # Convert .html/.htm to .md
             if url.endswith(".html"):
                 url = url[:-5] + ".md"
+            elif url.endswith(".htm"):
+                url = url[:-4] + ".md"
 
             return f"[{text}]({url})"
 
@@ -4826,9 +4839,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
                     if base_path and not href.startswith("/"):
                         href = f"{base_path}/{href}"
 
-                    # Convert .html to .md
+                    # Convert .html/.htm to .md
                     if href.endswith(".html"):
                         href = href[:-5] + ".md"
+                    elif href.endswith(".htm"):
+                        href = href[:-4] + ".md"
 
                     link["href"] = href
 

@@ -2350,8 +2350,11 @@ class ScrapingConfig:
     search_limit: int = 20  # Number of URLs to search for
     scrape_limit: int = 10  # Maximum URLs to scrape
     timeout_range: str = "1-3"  # seconds
+    timeout: int = 30  # Total timeout for requests in seconds
+    delay: List[float] = field(default_factory=lambda: [1.0, 3.0])  # delay range in seconds
     max_concurrent: int = 5
     retry_attempts: int = 2
+    retries: int = 2  # Number of retries for failed requests
     user_agents: List[str] = field(
         default_factory=lambda: [
             "Mozilla/5.0 (m1f-research/0.1.0) AppleWebKit/537.36",
@@ -3471,6 +3474,7 @@ class ClaudeProvider(LLMProvider):
         api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         super().__init__(api_key, model)
         self.base_url = "https://api.anthropic.com/v1"
+ 
 
     @property
     def default_model(self) -> str:
@@ -3561,7 +3565,6 @@ Return ONLY valid JSON array, no other text."""
         self, content: str, analysis_type: str = "relevance"
     ) -> Dict[str, Any]:
         """Analyze content with Claude"""
-
         prompts = {
             "relevance": """Analyze this content and rate its relevance (0-10) for the research topic.
 Return JSON with: relevance_score, reason, key_topics""",
@@ -4135,6 +4138,7 @@ Enhanced research orchestrator with job management and persistence
 """
 
 import asyncio
+import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -4186,9 +4190,26 @@ class EnhancedResearchOrchestrator:
             return None
 
         try:
+            # Determine effective provider with sensible defaults
+            provider_name = (self.config.llm.provider or "claude").lower()
+
+            if provider_name == "auto":
+                # Prefer Claude Code subscription (no API key needed)
+                provider_name = "claude-code"
+                # If Claude Code is not desired, fallback to Claude API if key is present
+                if not os.getenv("CLAUDE_CODE", "1") and os.getenv("ANTHROPIC_API_KEY"):
+                    provider_name = "claude"
+                # Else fallback to Gemini if key available
+                elif not os.getenv("CLAUDE_CODE", "1") and not os.getenv("ANTHROPIC_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+                    provider_name = "gemini"
+
+            # If user selected Claude but no API key is present, transparently use Claude Code
+            if provider_name == "claude" and not os.getenv("ANTHROPIC_API_KEY"):
+                provider_name = "claude-code"
+
             return get_provider(
-                self.config.llm.provider,
-                api_key=None,  # Will use env var
+                provider_name,
+                api_key=None,  # Providers will read from environment when needed
                 model=self.config.llm.model,
             )
         except Exception as e:

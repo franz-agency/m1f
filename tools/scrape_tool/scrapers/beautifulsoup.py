@@ -136,6 +136,26 @@ class BeautifulSoupScraper(WebScraperBase):
                         content = content_bytes.decode("utf-8", errors="replace")
                         encoding = "utf-8"
 
+                    # Validate HTML content
+                    content_type_header = headers.get('content-type', '').lower()
+                    validation_result = None
+                    
+                    # Check if it's HTML (by Content-Type or by trying to parse)
+                    is_html = 'text/html' in content_type_header or not content_type_header
+                    
+                    if is_html:
+                        from ..file_validator import FileValidator
+                        validation_result = FileValidator.validate_file(
+                            content_bytes, '.html', content_type_header
+                        )
+                        
+                        if not validation_result.get('valid', True):
+                            logger.warning(f"HTML validation failed for {url}: {validation_result.get('error', 'Unknown error')}")
+                        
+                        if validation_result.get('warnings'):
+                            for warning in validation_result['warnings']:
+                                logger.debug(f"HTML validation warning for {url}: {warning}")
+                    
                     # Parse with BeautifulSoup
                     soup = BeautifulSoup(content, "html.parser")
 
@@ -201,6 +221,22 @@ class BeautifulSoupScraper(WebScraperBase):
                     title_text = title.get_text(strip=True) if title else None
 
                     metadata = self._extract_metadata(soup)
+                    
+                    # Add validation result to metadata if available
+                    if validation_result:
+                        metadata['html_validation'] = {
+                            'valid': validation_result.get('valid', True),
+                            'warnings_count': len(validation_result.get('warnings', [])),
+                        }
+                        
+                        # Include inline binaries info if present
+                        if 'inline_binaries' in validation_result:
+                            metadata['html_validation']['inline_binaries_count'] = len(validation_result['inline_binaries'])
+                            metadata['html_validation']['inline_binaries'] = validation_result['inline_binaries']
+                        
+                        # Include HTML stats if available
+                        if 'html_stats' in validation_result:
+                            metadata['html_validation']['stats'] = validation_result['html_stats']
 
                     return ScrapedPage(
                         url=str(response.url),  # Use final URL after redirects
@@ -468,6 +504,7 @@ class BeautifulSoupScraper(WebScraperBase):
             Set of absolute URLs found in the content
         """
         links = set()
+        asset_links = set()
 
         try:
             soup = BeautifulSoup(html_content, "html.parser")
@@ -515,3 +552,74 @@ class BeautifulSoupScraper(WebScraperBase):
             logger.error(f"Error extracting links from {base_url}: {e}")
 
         return links
+    
+    def extract_asset_urls(self, html_content: str, base_url: str, asset_types: list[str]) -> Set[str]:
+        """Extract all asset URLs from HTML content.
+        
+        Args:
+            html_content: HTML content to parse
+            base_url: Base URL for resolving relative links
+            asset_types: List of file extensions to consider as assets
+            
+        Returns:
+            Set of absolute asset URLs found in the content
+        """
+        asset_urls = set()
+        
+        try:
+            soup = BeautifulSoup(html_content, "html.parser")
+            
+            # Extract image sources
+            for img in soup.find_all("img"):
+                src = img.get("src") or img.get("data-src")
+                if src and not src.startswith("data:"):
+                    absolute_url = urljoin(base_url, src)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+            # Extract stylesheet links
+            for link in soup.find_all("link"):
+                href = link.get("href")
+                if href:
+                    rel = link.get("rel", [])
+                    if "stylesheet" in rel or href.endswith(".css"):
+                        absolute_url = urljoin(base_url, href)
+                        if self.is_asset_url(absolute_url, asset_types):
+                            asset_urls.add(absolute_url)
+            
+            # Extract script sources
+            for script in soup.find_all("script"):
+                src = script.get("src")
+                if src:
+                    absolute_url = urljoin(base_url, src)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+            # Extract video/audio sources
+            for tag in soup.find_all(["video", "audio", "source"]):
+                src = tag.get("src")
+                if src:
+                    absolute_url = urljoin(base_url, src)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+            # Extract object/embed sources
+            for tag in soup.find_all(["object", "embed"]):
+                src = tag.get("data") or tag.get("src")
+                if src:
+                    absolute_url = urljoin(base_url, src)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+            # Extract downloadable links (PDFs, documents, etc.)
+            for a in soup.find_all("a"):
+                href = a.get("href")
+                if href and not href.startswith(("#", "javascript:", "mailto:", "tel:")):
+                    absolute_url = urljoin(base_url, href)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+        except Exception as e:
+            logger.error(f"Error extracting asset URLs from {base_url}: {e}")
+        
+        return asset_urls

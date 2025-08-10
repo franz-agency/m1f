@@ -5836,7 +5836,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     prompt_to_send = user_input
 
                 # Send to Claude using subprocess
-                info("🤖 Claude is thinking...", end="", flush=True)
+                print("🤖 Claude is thinking...", end="", flush=True)
                 response, new_session_id = self._send_with_session(
                     prompt_to_send, session_id
                 )
@@ -5844,7 +5844,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                 if response is not None:  # Empty response is still valid
                     # Clear the "thinking" message
                     print("\r" + " " * 30 + "\r", end="", flush=True)
-                    info("Claude: ", end="", flush=True)
+                    print("Claude: ", end="", flush=True)
                     if new_session_id:
                         session_id = new_session_id
                     first_prompt = False
@@ -9212,6 +9212,172 @@ The included `html2md_claude_code_doc.config.yml` file contains optimized select
 - On Windows, use PowerShell for better command support
 - Windows paths use backslashes (`\`) instead of forward slashes (`/`)
 
+======= examples/tailscale_doc/README.md ======
+# Tailscale Documentation Scraper Example
+
+This example downloads and processes the complete Tailscale documentation from `https://tailscale.com/kb` (~422 HTML pages).
+
+## Prerequisites
+
+- m1f tools installed and on PATH
+- Python 3.10+
+- ~500 MB free disk space
+
+## Files in this directory
+
+- `scrape_tailscale_docs.py` - Main script to download and process documentation
+- `.m1f.tailscale.config.yml` - m1f configuration for creating 11 thematic bundles
+- `html2md_config.tailscale.yml` - HTML to Markdown conversion configuration
+
+## Quickstart
+
+```bash
+# Download ~422 HTML files and create bundles
+python examples/tailscale_doc/scrape_tailscale_docs.py ~/tailscale-docs
+```
+
+This will:
+
+1. **Scrape HTML** (~422 files) to `~/tailscale-docs/tailscale-kb-html/`
+2. **Convert to Markdown** in `~/tailscale-docs/tailscale-kb-md/`
+3. **Create 11 m1f bundles** in `~/tailscale-docs/tailscale-kb-md/m1f/`:
+   - `00_complete.txt` - Complete documentation (2.4 MB)
+   - `01_getting_started.txt` - Basic installation guides (27 KB)
+   - `02_platform_install.txt` - Specialized platforms (374 KB)
+   - `03_networking.txt` - Networking & DNS (200 KB)
+   - `04_auth_security.txt` - Authentication & Security (418 KB)
+   - `05_user_device_mgmt.txt` - User & Device Management (254 KB)
+   - `06_remote_access.txt` - SSH, Serve, Funnel (181 KB)
+   - `07_cloud_containers.txt` - Cloud & Kubernetes (450 KB)
+   - `08_developer.txt` - API & Developer Tools (162 KB)
+   - `09_admin_operations.txt` - Admin & Operations (257 KB)
+   - `10_concepts_reference.txt` - Concepts & Reference (542 KB)
+
+## Options
+
+- `--force-download`: Re-download HTML even if already present
+- `--skip-download`: Skip download if HTML files already exist
+- `--delay <seconds>`: Request delay between pages (default: 3s)
+- `--parallel`: Enable parallel HTML→Markdown conversion (default: on)
+
+## Examples
+
+### Skip download if HTML already exists
+```bash
+python examples/tailscale_doc/scrape_tailscale_docs.py \
+  ~/tailscale-docs \
+  --skip-download
+```
+
+### Force re-download everything
+```bash
+python examples/tailscale_doc/scrape_tailscale_docs.py \
+  ~/tailscale-docs \
+  --force-download
+```
+
+### Custom delay for polite scraping
+```bash
+python examples/tailscale_doc/scrape_tailscale_docs.py \
+  ~/tailscale-docs \
+  --delay 5
+```
+
+## Using the bundles
+
+### Use complete documentation with Claude
+```bash
+m1f-claude ~/tailscale-docs/tailscale-kb-md/m1f/00_complete.txt
+```
+
+### Use specific topic bundle
+```bash
+# For networking questions
+m1f-claude ~/tailscale-docs/tailscale-kb-md/m1f/03_networking.txt
+
+# For Kubernetes questions
+m1f-claude ~/tailscale-docs/tailscale-kb-md/m1f/07_cloud_containers.txt
+
+# For security questions
+m1f-claude ~/tailscale-docs/tailscale-kb-md/m1f/04_auth_security.txt
+```
+
+### Create symlinks for easy access
+```bash
+ln -s ~/tailscale-docs/tailscale-kb-md/m1f/00_complete.txt ~/tailscale-complete.txt
+ln -s ~/tailscale-docs/tailscale-kb-md/m1f/03_networking.txt ~/tailscale-network.txt
+```
+
+## Time estimates
+
+- **Full download**: ~21 minutes (422 files × 3s delay)
+- **HTML to Markdown conversion**: ~1-2 minutes
+- **Bundle creation**: <1 minute
+- **Total (first run)**: ~25 minutes
+- **Subsequent runs** (with --skip-download): ~3 minutes
+
+## Disk usage
+
+- HTML files: ~50 MB
+- Markdown files: ~15 MB
+- m1f bundles: ~5.3 MB total (2.4 MB complete + thematic bundles)
+- Total: ~70 MB
+
+## Configuration files
+
+### `.m1f.tailscale.config.yml`
+Defines the 11 bundles structure:
+- Complete bundle with all documentation
+- 10 thematic bundles for specific topics
+
+### `html2md_config.tailscale.yml`
+Optimized HTML extraction settings for Tailscale's documentation structure:
+- Main content selector
+- Elements to ignore (navigation, headers, footers)
+- Processing options
+
+## Cleanup (optional)
+
+After creating the bundles, you can remove intermediate files:
+
+```bash
+# Remove HTML files (save 50 MB)
+rm -rf ~/tailscale-docs/tailscale-kb-html
+
+# Keep markdown files - they contain the bundles
+# ~/tailscale-docs/tailscale-kb-md/
+```
+
+## Troubleshooting
+
+### "Command not found" errors
+Make sure m1f tools are installed:
+```bash
+# Linux/macOS
+./scripts/install.sh
+
+# Windows
+.\scripts\install.ps1
+```
+
+### Fewer files than expected
+The script expects ~422 HTML files. If significantly fewer are downloaded:
+- Check your internet connection
+- The site structure may have changed
+- Try with `--force-download` to re-download
+
+### Bundle creation fails
+- Ensure `.m1f.tailscale.config.yml` exists in this directory
+- Check that `html2md_config.tailscale.yml` exists
+- Verify m1f-update is installed and working
+
+## Notes
+
+- The script respects robots.txt and uses polite delays
+- GET parameters are stripped to avoid duplicate content
+- The bundles are optimized for use with Claude and other LLMs
+- Each thematic bundle focuses on specific aspects for targeted assistance
+
 ======= scripts/hooks/pre-commit-external ======
 #!/bin/bash
 # m1f Git Pre-Commit Hook (External Projects)
@@ -11386,6 +11552,10 @@ class Html2mdConverter:
                 markdown, source_file, self.config.destination
             )
 
+        # Adjust internal links to convert .html to .md
+        from .utils import adjust_internal_links
+        markdown = adjust_internal_links(markdown)
+
         return markdown
 
     def _convert_absolute_paths_to_relative(
@@ -12509,6 +12679,7 @@ import argparse
 import sys
 from pathlib import Path
 from typing import List, Optional
+from collections import Counter
 
 # Use unified colorama module
 from ..shared.colors import (
@@ -12825,6 +12996,12 @@ def handle_convert(args: argparse.Namespace) -> None:
         else:
             # Full config file - load it normally
             config = load_config(args.config)
+            
+            # IMPORTANT: CLI arguments should always override config file values
+            # Only override if CLI args were explicitly provided
+            cli_source_path = args.source.parent if args.source.is_file() else args.source
+            config.source = cli_source_path
+            config.destination = args.output
     else:
         # When source is a file, use its parent directory as the source
         source_path = args.source.parent if args.source.is_file() else args.source
@@ -15596,15 +15773,15 @@ def convert_html(
     return result
 
 
-def adjust_internal_links(content, base_path: str = "") -> None:
-    """Adjust internal links in HTML content (BeautifulSoup object).
+def adjust_internal_links(content, base_path: str = ""):
+    """Adjust internal links in HTML/Markdown content.
 
     Args:
-        content: BeautifulSoup object or string
+        content: BeautifulSoup object or Markdown string
         base_path: Base path for links
 
     Returns:
-        None (modifies in place)
+        Modified string if content is string, None if BeautifulSoup (modifies in place)
     """
     from bs4 import BeautifulSoup
 
@@ -15627,9 +15804,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
             if base_path and not url.startswith("/"):
                 url = f"{base_path}/{url}"
 
-            # Convert .html to .md
+            # Convert .html/.htm to .md
             if url.endswith(".html"):
                 url = url[:-5] + ".md"
+            elif url.endswith(".htm"):
+                url = url[:-4] + ".md"
 
             return f"[{text}]({url})"
 
@@ -15645,9 +15824,11 @@ def adjust_internal_links(content, base_path: str = "") -> None:
                     if base_path and not href.startswith("/"):
                         href = f"{base_path}/{href}"
 
-                    # Convert .html to .md
+                    # Convert .html/.htm to .md
                     if href.endswith(".html"):
                         href = href[:-5] + ".md"
+                    elif href.endswith(".htm"):
+                        href = href[:-4] + ".md"
 
                     link["href"] = href
 
@@ -25323,8 +25504,11 @@ class ScrapingConfig:
     search_limit: int = 20  # Number of URLs to search for
     scrape_limit: int = 10  # Maximum URLs to scrape
     timeout_range: str = "1-3"  # seconds
+    timeout: int = 30  # Total timeout for requests in seconds
+    delay: List[float] = field(default_factory=lambda: [1.0, 3.0])  # delay range in seconds
     max_concurrent: int = 5
     retry_attempts: int = 2
+    retries: int = 2  # Number of retries for failed requests
     user_agents: List[str] = field(
         default_factory=lambda: [
             "Mozilla/5.0 (m1f-research/0.1.0) AppleWebKit/537.36",
@@ -26444,6 +26628,7 @@ class ClaudeProvider(LLMProvider):
         api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         super().__init__(api_key, model)
         self.base_url = "https://api.anthropic.com/v1"
+ 
 
     @property
     def default_model(self) -> str:
@@ -26534,7 +26719,6 @@ Return ONLY valid JSON array, no other text."""
         self, content: str, analysis_type: str = "relevance"
     ) -> Dict[str, Any]:
         """Analyze content with Claude"""
-
         prompts = {
             "relevance": """Analyze this content and rate its relevance (0-10) for the research topic.
 Return JSON with: relevance_score, reason, key_topics""",
@@ -27108,6 +27292,7 @@ Enhanced research orchestrator with job management and persistence
 """
 
 import asyncio
+import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -27159,9 +27344,26 @@ class EnhancedResearchOrchestrator:
             return None
 
         try:
+            # Determine effective provider with sensible defaults
+            provider_name = (self.config.llm.provider or "claude").lower()
+
+            if provider_name == "auto":
+                # Prefer Claude Code subscription (no API key needed)
+                provider_name = "claude-code"
+                # If Claude Code is not desired, fallback to Claude API if key is present
+                if not os.getenv("CLAUDE_CODE", "1") and os.getenv("ANTHROPIC_API_KEY"):
+                    provider_name = "claude"
+                # Else fallback to Gemini if key available
+                elif not os.getenv("CLAUDE_CODE", "1") and not os.getenv("ANTHROPIC_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+                    provider_name = "gemini"
+
+            # If user selected Claude but no API key is present, transparently use Claude Code
+            if provider_name == "claude" and not os.getenv("ANTHROPIC_API_KEY"):
+                provider_name = "claude-code"
+
             return get_provider(
-                self.config.llm.provider,
-                api_key=None,  # Will use env var
+                provider_name,
+                api_key=None,  # Providers will read from environment when needed
                 model=self.config.llm.model,
             )
         except Exception as e:
@@ -32790,6 +32992,31 @@ For more information, see the documentation."""
         action="store_true",
         help="Disable content-based deduplication (keeps pages even if their content is identical)",
     )
+    
+    # Asset download options
+    filter_group.add_argument(
+        "--download-assets",
+        action="store_true",
+        help="Download linked assets like images, PDFs, CSS, JS, and other files",
+    )
+    filter_group.add_argument(
+        "--asset-types",
+        type=str,
+        nargs="*",
+        help="File extensions to download (e.g., .pdf .jpg .png). Default: common web assets",
+    )
+    filter_group.add_argument(
+        "--max-asset-size",
+        type=int,
+        metavar="BYTES",
+        help="Maximum file size for asset downloads in bytes (default: 50MB)",
+    )
+    filter_group.add_argument(
+        "--assets-subdirectory",
+        type=str,
+        default="assets",
+        help="Subdirectory name for storing downloaded assets (default: assets)",
+    )
 
     # Display options group
     display_group = parser.add_argument_group("Display Options")
@@ -32909,6 +33136,14 @@ def main() -> None:
     config.crawler.check_canonical = not args.ignore_canonical
     config.crawler.check_content_duplicates = not args.ignore_duplicates
     config.crawler.force_rescrape = args.force_rescrape
+    
+    # Asset download configuration
+    config.crawler.download_assets = args.download_assets
+    if args.asset_types:
+        config.crawler.asset_types = args.asset_types
+    if args.max_asset_size:
+        config.crawler.max_asset_size = args.max_asset_size
+    config.crawler.assets_subdirectory = args.assets_subdirectory
 
     # Load scraper-specific config if provided
     if args.scraper_config:
@@ -33196,6 +33431,51 @@ class CrawlerConfig(BaseModel):
         default=False,
         description="Force re-scraping of all URLs, ignoring database cache",
     )
+    download_assets: bool = Field(
+        default=False,
+        description="Download linked assets like images, PDFs, and other files",
+    )
+    download_external_assets: bool = Field(
+        default=True,
+        description="Allow downloading assets from external domains (CDNs, etc.)",
+    )
+    asset_types: list[str] = Field(
+        default_factory=lambda: [
+            # Images (safe)
+            ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico",
+            # Stylesheets and fonts (safe)
+            ".css", ".woff", ".woff2", ".ttf", ".eot",
+            # Documents (potentially risky but commonly needed)
+            ".pdf", ".txt", ".md", ".csv",
+            # Data formats (safe)
+            ".json", ".xml",
+            # Note: .js removed by default for security
+            # Note: Office files removed by default (.doc, .docx, .xls, .xlsx, .ppt, .pptx)
+            # Note: Archives removed by default (.zip, .tar, .gz, .rar, .7z)
+            # Note: Media files removed by default (.mp4, .webm, .mp3, .wav, .ogg)
+        ],
+        description="File extensions to download when download_assets is enabled (security-filtered defaults)",
+    )
+    max_asset_size: int = Field(
+        default=50 * 1024 * 1024,  # 50MB
+        ge=0,
+        le=1024 * 1024 * 1024,  # 1GB max
+        description="Maximum file size in bytes for asset downloads",
+    )
+    assets_subdirectory: str = Field(
+        default="assets",
+        description="Subdirectory name for storing downloaded assets",
+    )
+    max_assets_per_page: int = Field(
+        default=-1,  # -1 means no limit
+        ge=-1,
+        description="Maximum number of assets to download per page (-1 for unlimited)",
+    )
+    total_assets_limit: int = Field(
+        default=-1,  # -1 means no limit
+        ge=-1,
+        description="Maximum total number of assets to download in a session (-1 for unlimited)",
+    )
 
 
 class Config(BaseModel):
@@ -33226,6 +33506,7 @@ class Config(BaseModel):
 """Web crawling functionality using configurable scraper backends."""
 
 import asyncio
+import json
 import logging
 import sqlite3
 from datetime import datetime, timedelta
@@ -33528,6 +33809,8 @@ class WebCrawler:
                 content_checksum TEXT,
                 status_code INTEGER,
                 target_filename TEXT,
+                file_type TEXT DEFAULT 'html',
+                file_size INTEGER,
                 scraped_at TIMESTAMP,
                 error TEXT,
                 FOREIGN KEY (session_id) REFERENCES scraping_sessions(id)
@@ -33765,6 +34048,8 @@ class WebCrawler:
         normalized_url: Optional[str] = None,
         canonical_url: Optional[str] = None,
         content_checksum: Optional[str] = None,
+        file_type: str = "html",
+        file_size: Optional[int] = None,
     ) -> None:
         """Record a scraped URL in the database.
 
@@ -33776,6 +34061,8 @@ class WebCrawler:
             normalized_url: URL after GET parameter normalization
             canonical_url: Canonical URL from the page
             content_checksum: SHA-256 checksum of text content
+            file_type: Type of file (html, image, pdf, etc.)
+            file_size: Size of file in bytes
         """
         if not self._db_conn:
             return
@@ -33785,8 +34072,8 @@ class WebCrawler:
             """
             INSERT OR REPLACE INTO scraped_urls 
             (url, session_id, normalized_url, canonical_url, content_checksum, 
-             status_code, target_filename, scraped_at, error)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             status_code, target_filename, file_type, file_size, scraped_at, error)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 url,
@@ -33796,6 +34083,8 @@ class WebCrawler:
                 content_checksum,
                 status_code,
                 target_filename,
+                file_type,
+                file_size,
                 datetime.now(),
                 error,
             ),
@@ -33933,6 +34222,8 @@ class WebCrawler:
                             normalized_url=page.normalized_url,
                             canonical_url=page.canonical_url,
                             content_checksum=page.content_checksum,
+                            file_type=page.file_type,
+                            file_size=page.file_size,
                         )
                         # Record content checksum if present
                         if (
@@ -33942,6 +34233,67 @@ class WebCrawler:
                             self._record_content_checksum(
                                 page.content_checksum, page.url
                             )
+                        
+                        # Extract and download assets if enabled
+                        if self.config.download_assets and not page.is_binary:
+                            asset_urls = scraper.extract_asset_urls(
+                                page.content, page.url, self.config.asset_types
+                            )
+                            
+                            # Security: Limit assets per page (if configured)
+                            if self.config.max_assets_per_page > 0 and len(asset_urls) > self.config.max_assets_per_page:
+                                logger.warning(
+                                    f"Page {page.url} has {len(asset_urls)} assets, "
+                                    f"limiting to {self.config.max_assets_per_page}"
+                                )
+                                asset_urls = list(asset_urls)[:self.config.max_assets_per_page]
+                            
+                            logger.info(f"Found {len(asset_urls)} assets on {page.url}")
+                            
+                            # Track total assets downloaded
+                            if not hasattr(self, '_total_assets_downloaded'):
+                                self._total_assets_downloaded = 0
+                            
+                            for asset_url in asset_urls:
+                                # Security: Check total assets limit (if configured)
+                                if self.config.total_assets_limit > 0 and self._total_assets_downloaded >= self.config.total_assets_limit:
+                                    logger.warning(
+                                        f"Reached total assets limit of {self.config.total_assets_limit}, "
+                                        f"skipping remaining assets"
+                                    )
+                                    break
+                                
+                                # Skip if already downloaded
+                                if not self.config.force_rescrape and self._is_url_scraped(asset_url):
+                                    logger.debug(f"Skipping already downloaded asset: {asset_url}")
+                                    continue
+                                
+                                # Download asset
+                                logger.debug(f"Downloading asset: {asset_url}")
+                                asset_page = await scraper.download_binary_file(
+                                    asset_url, self.config.max_asset_size
+                                )
+                                
+                                if asset_page:
+                                    try:
+                                        asset_path = await self._save_page(asset_page, site_dir)
+                                        self._record_scraped_url(
+                                            asset_page.url,
+                                            asset_page.status_code,
+                                            str(asset_path.relative_to(output_dir)),
+                                            error=None,
+                                            file_type=asset_page.file_type,
+                                            file_size=asset_page.file_size,
+                                        )
+                                        self._total_assets_downloaded += 1
+                                        logger.debug(f"Saved asset {asset_url} to {asset_path}")
+                                    except ValueError as e:
+                                        # Security exception (dangerous file, path traversal, etc.)
+                                        logger.error(f"Security: Blocked asset {asset_url}: {e}")
+                                    except Exception as e:
+                                        logger.error(f"Failed to save asset {asset_url}: {e}")
+                                else:
+                                    logger.warning(f"Failed to download asset: {asset_url}")
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})
@@ -33978,8 +34330,101 @@ class WebCrawler:
             "output_dir": site_dir,
         }
 
+    def _adjust_html_links(self, html_content: str, original_url: str, saved_path: Path, site_dir: Path) -> str:
+        """Adjust relative links in HTML content to work from the new saved location.
+        
+        Args:
+            html_content: The HTML content to adjust
+            original_url: The original URL of the page
+            saved_path: Where the file will be saved
+            site_dir: The site directory (domain folder)
+            
+        Returns:
+            HTML content with adjusted links
+        """
+        import os
+        from bs4 import BeautifulSoup
+        from urllib.parse import urljoin, urlparse
+        
+        soup = BeautifulSoup(html_content, 'html.parser')
+        original_parsed = urlparse(original_url)
+        
+        # Calculate the relative path from saved location to site root
+        try:
+            rel_to_root = os.path.relpath(site_dir, saved_path.parent)
+            if rel_to_root == '.':
+                rel_to_root = ''
+            else:
+                rel_to_root = rel_to_root.replace('\\', '/') + '/'
+        except ValueError:
+            # If on different drives on Windows
+            rel_to_root = ''
+        
+        # Adjust all links
+        for tag_name, attr_name in [('a', 'href'), ('link', 'href'), ('script', 'src'), ('img', 'src')]:
+            for tag in soup.find_all(tag_name):
+                attr_value = tag.get(attr_name)
+                if not attr_value:
+                    continue
+                    
+                # Skip absolute URLs, anchors, and special protocols
+                if attr_value.startswith(('http://', 'https://', '//', '#', 'mailto:', 'javascript:', 'data:')):
+                    continue
+                
+                # Handle relative URLs
+                if attr_value.startswith('/'):
+                    # Absolute path - make it relative to site root
+                    new_path = rel_to_root + attr_value.lstrip('/')
+                    tag[attr_name] = new_path
+                elif attr_value.startswith('./'):
+                    # Relative to current directory - need to adjust based on original URL structure
+                    # Get the original directory path
+                    orig_path_parts = original_parsed.path.rstrip('/').split('/')
+                    if orig_path_parts[-1] and ('.' in orig_path_parts[-1] or not orig_path_parts[-1]):
+                        # Last part is a file, remove it
+                        orig_path_parts = orig_path_parts[:-1]
+                    
+                    # Reconstruct the path
+                    relative_part = attr_value[2:]  # Remove ./
+                    if orig_path_parts:
+                        # The link was relative to /magazin/ or similar
+                        new_path = rel_to_root + '/'.join(orig_path_parts[1:]) + '/' + relative_part
+                    else:
+                        new_path = rel_to_root + relative_part
+                    
+                    # Clean up the path
+                    new_path = new_path.replace('//', '/')
+                    tag[attr_name] = new_path
+                elif attr_value.startswith('../'):
+                    # Handle parent directory references
+                    # This is complex, so for now just make it relative to root
+                    cleaned = attr_value
+                    levels_up = 0
+                    while cleaned.startswith('../'):
+                        levels_up += 1
+                        cleaned = cleaned[3:]
+                    
+                    orig_path_parts = original_parsed.path.rstrip('/').split('/')
+                    if orig_path_parts[-1] and '.' in orig_path_parts[-1]:
+                        orig_path_parts = orig_path_parts[:-1]
+                    
+                    # Go up the required number of levels
+                    if len(orig_path_parts) > levels_up:
+                        base_parts = orig_path_parts[1:-levels_up] if levels_up > 0 else orig_path_parts[1:]
+                        if base_parts:
+                            new_path = rel_to_root + '/'.join(base_parts) + '/' + cleaned
+                        else:
+                            new_path = rel_to_root + cleaned
+                    else:
+                        new_path = rel_to_root + cleaned
+                    
+                    new_path = new_path.replace('//', '/')
+                    tag[attr_name] = new_path
+        
+        return str(soup)
+
     async def _save_page(self, page: ScrapedPage, output_dir: Path) -> Path:
-        """Save a scraped page to disk.
+        """Save a scraped page to disk with adjusted links.
 
         Args:
             page: ScrapedPage instance
@@ -33988,6 +34433,10 @@ class WebCrawler:
         Returns:
             Path to saved file
         """
+        # Handle binary files differently
+        if page.is_binary and page.binary_content:
+            return await self._save_binary_file(page, output_dir)
+        
         # Parse URL to create file path
         parsed = urlparse(page.url)
 
@@ -34035,9 +34484,17 @@ class WebCrawler:
         elif file_path.suffix not in (".html", ".htm"):
             file_path = file_path.with_name(f"{file_path.name}.html")
 
+        # Adjust links in HTML content before saving
+        adjusted_content = self._adjust_html_links(
+            page.content, 
+            page.url, 
+            file_path,
+            output_dir.parent  # This is the site_dir (domain folder)
+        )
+
         # Write content
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(page.content, encoding=page.encoding)
+        file_path.write_text(adjusted_content, encoding=page.encoding)
 
         logger.debug(f"Saved {page.url} to {file_path}")
 
@@ -34073,6 +34530,156 @@ class WebCrawler:
             logger.warning(f"Failed to save metadata for {page.url}: {e}")
             # Don't fail the entire page save just because metadata failed
 
+        return file_path
+
+    async def _save_binary_file(self, page: ScrapedPage, output_dir: Path) -> Path:
+        """Save binary file to disk with security checks.
+        
+        Args:
+            page: ScrapedPage with binary content
+            output_dir: Directory to save the file
+            
+        Returns:
+            Path to saved file
+            
+        Raises:
+            ValueError: If file path is unsafe or file type is dangerous
+        """
+        import hashlib
+        import re
+        import os
+        
+        # Security: Define dangerous file extensions that should never be saved
+        DANGEROUS_EXTENSIONS = {
+            '.exe', '.dll', '.bat', '.cmd', '.com', '.scr', '.vbs', '.vbe',
+            '.js', '.jse', '.wsf', '.wsh', '.ps1', '.psm1', '.msi', '.jar',
+            '.app', '.deb', '.rpm', '.dmg', '.pkg', '.sh', '.bash', '.zsh',
+            '.fish', '.ksh', '.csh', '.tcsh', '.py', '.pyc', '.pyo', '.pyw',
+            '.rb', '.pl', '.php', '.asp', '.aspx', '.jsp', '.cgi'
+        }
+        
+        # Parse URL to create file path
+        parsed = urlparse(page.url)
+        
+        # Create assets subdirectory if configured
+        assets_dir = output_dir / self.config.assets_subdirectory
+        assets_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create file path from URL
+        if parsed.path and parsed.path != "/":
+            path_parts = parsed.path.lstrip("/").split("/")
+            filename = path_parts[-1]
+            subdirs = path_parts[:-1] if len(path_parts) > 1 else []
+            
+            # Security: Check for dangerous extensions
+            file_ext = Path(filename).suffix.lower()
+            if file_ext in DANGEROUS_EXTENSIONS:
+                logger.warning(f"Blocked dangerous file type {file_ext}: {page.url}")
+                raise ValueError(f"Dangerous file type {file_ext} not allowed")
+            
+            # Security: Sanitize filename more aggressively
+            # Remove any character that could be used for path traversal or command injection
+            safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+            safe_filename = safe_filename.lstrip('.')  # Remove leading dots
+            
+            if not safe_filename:
+                safe_filename = f"asset_{hashlib.md5(page.url.encode()).hexdigest()[:8]}"
+            
+            # Create subdirectories with strict sanitization
+            if subdirs:
+                safe_subdirs = []
+                for part in subdirs:
+                    # Security: More aggressive sanitization
+                    safe_part = re.sub(r'[^a-zA-Z0-9._-]', '_', part)
+                    safe_part = safe_part.strip('._')  # Remove leading/trailing dots and underscores
+                    if safe_part and safe_part not in (".", ".."):
+                        safe_subdirs.append(safe_part)
+                
+                if safe_subdirs:
+                    subdir = assets_dir / Path(*safe_subdirs)
+                    subdir.mkdir(parents=True, exist_ok=True)
+                    file_path = subdir / safe_filename  # Use safe_filename instead of filename
+                else:
+                    file_path = assets_dir / safe_filename  # Use safe_filename
+            else:
+                file_path = assets_dir / safe_filename  # Use safe_filename
+        else:
+            # Use URL hash for files without clear names
+            url_hash = hashlib.md5(page.url.encode()).hexdigest()[:8]
+            extension = ""
+            if page.file_type == "image":
+                # Try to determine extension from content type
+                content_type = page.headers.get("content-type", "")
+                if "jpeg" in content_type or "jpg" in content_type:
+                    extension = ".jpg"
+                elif "png" in content_type:
+                    extension = ".png"
+                elif "gif" in content_type:
+                    extension = ".gif"
+                elif "webp" in content_type:
+                    extension = ".webp"
+                elif "svg" in content_type:
+                    extension = ".svg"
+            elif page.file_type == "pdf":
+                extension = ".pdf"
+            
+            # Security: Check extension even for generated filenames
+            if extension.lower() in DANGEROUS_EXTENSIONS:
+                logger.warning(f"Blocked dangerous file type {extension}: {page.url}")
+                raise ValueError(f"Dangerous file type {extension} not allowed")
+            
+            file_path = assets_dir / f"asset_{url_hash}{extension}"
+        
+        # Security: Final path validation - ensure file_path is within output_dir
+        try:
+            # Don't use resolve() on non-existent paths - it can cause issues
+            # Instead, check the relative path components
+            import os
+            output_dir_abs = output_dir.resolve()
+            
+            # Get the relative path from output_dir to file_path
+            try:
+                rel_path = os.path.relpath(file_path, output_dir)
+                # Check if path tries to escape (contains ..)
+                if ".." in rel_path:
+                    raise ValueError(f"Path traversal attempt detected: {rel_path}")
+            except ValueError:
+                # os.path.relpath raises ValueError if on different drives on Windows
+                raise ValueError(f"Invalid file path: {file_path}")
+                
+        except Exception as e:
+            logger.error(f"Path validation failed for {page.url}: {e}")
+            raise ValueError(f"Invalid file path: {e}")
+        
+        # Security: Check file size before writing
+        if page.file_size and page.file_size > self.config.max_asset_size:
+            raise ValueError(f"File size {page.file_size} exceeds limit {self.config.max_asset_size}")
+        
+        # Write binary content
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_bytes(page.binary_content)
+        
+        # Save metadata
+        try:
+            metadata_path = file_path.with_suffix(file_path.suffix + ".meta.json")
+            metadata = {
+                "url": page.url,
+                "file_type": page.file_type,
+                "file_size": page.file_size,
+                "status_code": page.status_code,
+                "headers": page.headers or {},
+                "checksum": hashlib.sha256(page.binary_content).hexdigest(),
+            }
+            
+            # Add validation results if available
+            if page.metadata and 'validation' in page.metadata:
+                metadata['validation'] = page.metadata['validation']
+            
+            metadata_path.write_text(json.dumps(metadata, indent=2, default=str))
+        except Exception as e:
+            logger.warning(f"Failed to save metadata for binary file {page.url}: {e}")
+        
+        logger.debug(f"Saved binary file {page.url} to {file_path}")
         return file_path
 
     def find_downloaded_files(self, site_dir: Path) -> List[Path]:
@@ -34153,15 +34760,43 @@ class WebCrawler:
             # Get list of files created in this session
             session_files = []
             for page in pages:
-                # Reconstruct the file path for each scraped page
-                parsed_url = urlparse(page.url)
-                domain = parsed_url.netloc
-                path = parsed_url.path.strip("/")
-                if not path or path.endswith("/"):
-                    path = path + "index.html"
-                elif not path.endswith(".html"):
-                    path = path + ".html"
-                file_path = result["output_dir"] / domain / path
+                # Reconstruct the file path for each scraped page using same logic as _save_page
+                parsed = urlparse(page.url)
+                # Note: result["output_dir"] already contains the domain (it's actually site_dir)
+                site_dir = result["output_dir"]
+                
+                # Same logic as in _save_page method
+                if parsed.path and parsed.path != "/":
+                    path_parts = parsed.path.lstrip("/").split("/")
+                    
+                    # Handle file extension
+                    if path_parts[-1].endswith(".html") or "." in path_parts[-1]:
+                        filename = path_parts[-1]
+                        subdirs = path_parts[:-1]
+                    else:
+                        # Assume it's a directory, create index.html
+                        filename = "index.html"
+                        subdirs = path_parts
+                    
+                    # Build the file path
+                    if subdirs:
+                        # Sanitize subdirectory names (same as _save_page)
+                        safe_subdirs = []
+                        for part in subdirs:
+                            safe_part = part.replace("..", "").replace("./", "").replace("\\", "")
+                            if safe_part and safe_part not in (".", ".."):
+                                safe_subdirs.append(safe_part)
+                        
+                        if safe_subdirs:
+                            file_path = site_dir / Path(*safe_subdirs) / filename
+                        else:
+                            file_path = site_dir / filename
+                    else:
+                        file_path = site_dir / filename
+                else:
+                    # Root page
+                    file_path = site_dir / "index.html"
+                
                 if file_path.exists():
                     session_files.append(file_path)
             
@@ -34183,6 +34818,528 @@ class WebCrawler:
                     pass  # Don't let DB errors mask the interrupt
             # Re-raise to let CLI handle it gracefully
             raise
+
+======= tools/scrape_tool/file_validator.py ======
+#!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""File validation for downloaded assets using magic numbers and basic checks."""
+
+import logging
+from typing import Optional, Dict, Tuple
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+
+class FileValidator:
+    """Validates downloaded files by checking magic numbers and basic structure."""
+    
+    # Magic numbers (file signatures) for common file types
+    # Format: file_extension -> (offset, bytes_to_match, description)
+    MAGIC_NUMBERS = {
+        # Images
+        '.jpg': [(0, b'\xFF\xD8\xFF', 'JPEG image')],
+        '.jpeg': [(0, b'\xFF\xD8\xFF', 'JPEG image')],
+        '.png': [(0, b'\x89PNG\r\n\x1a\n', 'PNG image')],
+        '.gif': [
+            (0, b'GIF87a', 'GIF87a image'),
+            (0, b'GIF89a', 'GIF89a image')
+        ],
+        '.webp': [(8, b'WEBP', 'WebP image')],  # RIFF....WEBP
+        '.ico': [
+            (0, b'\x00\x00\x01\x00', 'ICO icon'),
+            (0, b'\x00\x00\x02\x00', 'CUR cursor')
+        ],
+        '.svg': [(0, b'<svg', 'SVG image'), (0, b'<?xml', 'SVG/XML image')],
+        '.bmp': [(0, b'BM', 'BMP image')],
+        
+        # Documents
+        '.pdf': [(0, b'%PDF-', 'PDF document')],
+        '.doc': [(0, b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1', 'MS Office document')],
+        '.docx': [(0, b'PK\x03\x04', 'Office Open XML')],  # Actually a ZIP
+        '.xls': [(0, b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1', 'MS Office document')],
+        '.xlsx': [(0, b'PK\x03\x04', 'Office Open XML')],
+        '.ppt': [(0, b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1', 'MS Office document')],
+        '.pptx': [(0, b'PK\x03\x04', 'Office Open XML')],
+        
+        # Archives
+        '.zip': [(0, b'PK\x03\x04', 'ZIP archive'), (0, b'PK\x05\x06', 'Empty ZIP')],
+        '.gz': [(0, b'\x1f\x8b', 'GZIP archive')],
+        '.tar': [(257, b'ustar', 'TAR archive')],
+        '.rar': [
+            (0, b'Rar!\x1A\x07\x00', 'RAR v1.5+'),
+            (0, b'Rar!\x1A\x07\x01\x00', 'RAR v5+')
+        ],
+        '.7z': [(0, b'7z\xBC\xAF\x27\x1C', '7-Zip archive')],
+        
+        # Fonts
+        '.ttf': [
+            (0, b'\x00\x01\x00\x00', 'TrueType font'),
+            (0, b'true', 'TrueType font'),
+            (0, b'OTTO', 'OpenType font')
+        ],
+        '.otf': [(0, b'OTTO', 'OpenType font')],
+        '.woff': [(0, b'wOFF', 'WOFF font')],
+        '.woff2': [(0, b'wOF2', 'WOFF2 font')],
+        '.eot': [(0, b'\x00\x00\x00\x00', 'EOT font')],  # Less reliable
+        
+        # Media
+        '.mp4': [(4, b'ftyp', 'MP4 video')],
+        '.webm': [(0, b'\x1A\x45\xDF\xA3', 'WebM video')],
+        '.mp3': [
+            (0, b'ID3', 'MP3 with ID3'),
+            (0, b'\xFF\xFB', 'MP3 audio'),
+            (0, b'\xFF\xF3', 'MP3 audio'),
+            (0, b'\xFF\xF2', 'MP3 audio')
+        ],
+        '.wav': [(0, b'RIFF', 'WAV audio'), (8, b'WAVE', 'WAV audio')],
+        '.ogg': [(0, b'OggS', 'OGG media')],
+        
+        # Text/Code (these don't have magic numbers, need content check)
+        '.html': None,
+        '.htm': None,
+        '.css': None,
+        '.js': None,
+        '.json': None,
+        '.xml': None,
+        '.txt': None,
+        '.md': None,
+        '.csv': None,
+    }
+    
+    @classmethod
+    def validate_file(cls, content: bytes, file_extension: str, 
+                      content_type: Optional[str] = None) -> Dict[str, any]:
+        """Validate file content against expected format.
+        
+        Args:
+            content: Binary content of the file
+            file_extension: File extension (with dot, e.g., '.jpg')
+            content_type: Optional HTTP Content-Type header
+            
+        Returns:
+            Dictionary with validation results:
+            - valid: Boolean indicating if file is valid
+            - format_match: Boolean if magic number matches
+            - detected_type: Detected file type
+            - warnings: List of warning messages
+            - error: Error message if validation failed
+        """
+        result = {
+            'valid': False,
+            'format_match': False,
+            'detected_type': None,
+            'warnings': [],
+            'error': None,
+            'file_size': len(content),
+        }
+        
+        # Check minimum size
+        if len(content) == 0:
+            result['error'] = 'Empty file'
+            return result
+        
+        # Normalize extension
+        ext = file_extension.lower() if file_extension else ''
+        if not ext.startswith('.'):
+            ext = '.' + ext
+        
+        # Check if we have magic numbers for this type
+        if ext not in cls.MAGIC_NUMBERS:
+            result['warnings'].append(f'Unknown file type: {ext}')
+            result['valid'] = True  # Assume valid if we don't know the type
+            return result
+        
+        magic_specs = cls.MAGIC_NUMBERS[ext]
+        
+        # Text files don't have magic numbers
+        if magic_specs is None:
+            return cls._validate_text_file(content, ext, result)
+        
+        # Check magic numbers
+        for offset, expected_bytes, description in magic_specs:
+            if cls._check_magic_number(content, offset, expected_bytes):
+                result['format_match'] = True
+                result['detected_type'] = description
+                result['valid'] = True
+                break
+        
+        if not result['format_match']:
+            # Try to detect actual type
+            actual_type = cls._detect_file_type(content)
+            if actual_type:
+                result['error'] = f'File extension {ext} does not match content (detected: {actual_type})'
+                result['detected_type'] = actual_type
+            else:
+                result['error'] = f'Invalid {ext} file: magic number mismatch'
+        
+        # Additional validation for specific types
+        if result['valid']:
+            if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                cls._validate_image_structure(content, ext, result)
+            elif ext == '.pdf':
+                cls._validate_pdf_structure(content, result)
+            elif ext in ['.zip', '.gz', '.tar', '.rar', '.7z']:
+                cls._validate_archive_structure(content, ext, result)
+        
+        # Check content type mismatch
+        if content_type and result['valid']:
+            cls._check_content_type_match(ext, content_type, result)
+        
+        return result
+    
+    @staticmethod
+    def _check_magic_number(content: bytes, offset: int, expected: bytes) -> bool:
+        """Check if content matches expected bytes at offset."""
+        if len(content) < offset + len(expected):
+            return False
+        return content[offset:offset + len(expected)] == expected
+    
+    @classmethod
+    def _detect_file_type(cls, content: bytes) -> Optional[str]:
+        """Try to detect actual file type from content."""
+        # Check against all known magic numbers
+        for ext, magic_specs in cls.MAGIC_NUMBERS.items():
+            if magic_specs is None:
+                continue
+            for offset, expected_bytes, description in magic_specs:
+                if cls._check_magic_number(content, offset, expected_bytes):
+                    return f'{description} ({ext})'
+        return None
+    
+    @classmethod
+    def _validate_text_file(cls, content: bytes, ext: str, result: Dict) -> Dict:
+        """Validate text-based files."""
+        try:
+            # Try to decode as UTF-8
+            text = content.decode('utf-8')
+            result['valid'] = True
+            result['format_match'] = True
+            
+            # Specific checks for different text types
+            if ext == '.json':
+                import json
+                try:
+                    json.loads(text)
+                    result['detected_type'] = 'JSON document'
+                except json.JSONDecodeError as e:
+                    result['warnings'].append(f'Invalid JSON: {str(e)[:100]}')
+                    result['valid'] = False
+                    
+            elif ext in ['.html', '.htm']:
+                result['detected_type'] = 'HTML document'
+                cls._validate_html_content(text, result)
+                
+            elif ext == '.xml' or ext == '.svg':
+                if not text.strip().startswith('<'):
+                    result['warnings'].append('XML/SVG should start with <')
+                result['detected_type'] = 'XML document'
+                
+            elif ext == '.css':
+                # Basic CSS check - look for common patterns
+                css_patterns = ['{', '}', ':', ';', '/*', '*/']
+                if not any(p in text for p in css_patterns):
+                    result['warnings'].append('File does not appear to contain CSS')
+                result['detected_type'] = 'CSS stylesheet'
+                
+            elif ext == '.js':
+                # Basic JavaScript check
+                js_keywords = ['function', 'var', 'let', 'const', 'return', 
+                              'if', 'for', 'while', '=>', '=', '(', ')']
+                if not any(kw in text for kw in js_keywords):
+                    result['warnings'].append('File does not appear to contain JavaScript')
+                result['detected_type'] = 'JavaScript code'
+                
+            elif ext == '.csv':
+                # Check for comma/tab/semicolon separators
+                if ',' not in text and '\t' not in text and ';' not in text:
+                    result['warnings'].append('CSV file has no visible delimiters')
+                result['detected_type'] = 'CSV data'
+                
+            else:
+                result['detected_type'] = 'Plain text'
+                
+        except UnicodeDecodeError:
+            result['error'] = f'Invalid {ext} file: not valid UTF-8 text'
+            result['valid'] = False
+            
+        return result
+    
+    @classmethod
+    def _validate_html_content(cls, text: str, result: Dict):
+        """Validate HTML content and check for inline binaries."""
+        import re
+        
+        # Check basic HTML structure
+        text_lower = text.lower()
+        
+        # Check for HTML tags
+        if '<html' not in text_lower and '<!doctype' not in text_lower:
+            # May be a fragment, still valid
+            if not re.search(r'<[^>]+>', text):
+                result['warnings'].append('No HTML tags found')
+                result['valid'] = False
+                return
+        
+        # Check for common HTML elements
+        html_elements = ['<head', '<body', '<div', '<p', '<a', '<img', '<script', '<style']
+        if not any(elem in text_lower for elem in html_elements):
+            result['warnings'].append('Missing common HTML elements')
+        
+        # Check for balanced tags (basic check)
+        open_tags = len(re.findall(r'<[^/][^>]*>', text))
+        close_tags = len(re.findall(r'</[^>]+>', text))
+        if open_tags > 0 and abs(open_tags - close_tags) > open_tags * 0.3:  # Allow 30% imbalance
+            result['warnings'].append(f'Potentially unbalanced HTML tags (open: {open_tags}, close: {close_tags})')
+        
+        # Detect inline binaries (data: URLs)
+        inline_binaries = []
+        
+        # Find data URLs in various contexts
+        data_url_pattern = r'data:([^;,]+)(;[^,]*)?,([^"\'\s>]+)'
+        data_urls = re.findall(data_url_pattern, text)
+        
+        for mime_type, encoding, data in data_urls:
+            # Check the MIME type
+            if mime_type:
+                inline_binaries.append({
+                    'mime_type': mime_type,
+                    'encoding': encoding.strip(';') if encoding else None,
+                    'size': len(data)
+                })
+        
+        if inline_binaries:
+            result['inline_binaries'] = inline_binaries
+            result['warnings'].append(f'Found {len(inline_binaries)} inline binary data URLs')
+            
+            # Check for suspicious inline binaries
+            suspicious_types = ['application/x-', 'application/octet-stream']
+            for binary in inline_binaries:
+                if any(susp in binary['mime_type'] for susp in suspicious_types):
+                    result['warnings'].append(f'Suspicious inline binary type: {binary["mime_type"]}')
+        
+        # Check for external scripts/resources
+        external_resources = []
+        
+        # Find external scripts
+        script_srcs = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', text, re.IGNORECASE)
+        for src in script_srcs:
+            if src.startswith(('http://', 'https://', '//')):
+                external_resources.append(('script', src))
+        
+        # Find external stylesheets
+        link_hrefs = re.findall(r'<link[^>]+href=["\']([^"\']+)["\']', text, re.IGNORECASE)
+        for href in link_hrefs:
+            if href.startswith(('http://', 'https://', '//')):
+                external_resources.append(('stylesheet', href))
+        
+        # Find external images
+        img_srcs = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', text, re.IGNORECASE)
+        for src in img_srcs:
+            if not src.startswith('data:') and src.startswith(('http://', 'https://', '//')):
+                external_resources.append(('image', src))
+        
+        if external_resources:
+            result['external_resources'] = external_resources
+            result['warnings'].append(f'Found {len(external_resources)} external resources')
+        
+        # Check for potentially malicious patterns
+        malicious_patterns = [
+            (r'<script[^>]*>.*?eval\s*\(', 'Potential eval() in script'),
+            (r'javascript:\s*eval\s*\(', 'eval() in javascript: URL'),
+            (r'on\w+\s*=\s*["\'].*?eval\s*\(', 'eval() in event handler'),
+            (r'<iframe[^>]+src=["\']javascript:', 'JavaScript URL in iframe'),
+            (r'<object[^>]+data=["\']javascript:', 'JavaScript URL in object'),
+        ]
+        
+        for pattern, description in malicious_patterns:
+            if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
+                result['warnings'].append(f'Security warning: {description}')
+        
+        # Try to parse with BeautifulSoup for more thorough validation
+        try:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(text, 'html.parser')
+            
+            # Check if parsing resulted in meaningful content
+            if not soup.find_all():
+                result['warnings'].append('HTML parsing resulted in no elements')
+            
+            # Count various elements
+            result['html_stats'] = {
+                'total_tags': len(soup.find_all()),
+                'images': len(soup.find_all('img')),
+                'scripts': len(soup.find_all('script')),
+                'styles': len(soup.find_all('style')),
+                'links': len(soup.find_all('a')),
+                'forms': len(soup.find_all('form')),
+            }
+            
+        except Exception as e:
+            result['warnings'].append(f'BeautifulSoup parsing error: {str(e)[:100]}')
+    
+    @staticmethod
+    def _validate_image_structure(content: bytes, ext: str, result: Dict):
+        """Additional validation for image files using Pillow if available."""
+        # Check minimum reasonable size for images
+        if len(content) < 100:
+            result['warnings'].append('Suspiciously small image file')
+        
+        # Try to use Pillow for proper validation
+        try:
+            from PIL import Image
+            import io
+            
+            # Try to open and verify the image
+            try:
+                img = Image.open(io.BytesIO(content))
+                img.verify()  # Verify image integrity
+                
+                # Get image info
+                result['image_info'] = {
+                    'format': img.format,
+                    'mode': img.mode,
+                    'size': img.size if hasattr(img, 'size') else None,
+                }
+                
+                # Check if format matches extension
+                expected_formats = {
+                    '.jpg': ['JPEG'],
+                    '.jpeg': ['JPEG'],
+                    '.png': ['PNG'],
+                    '.gif': ['GIF'],
+                    '.webp': ['WEBP'],
+                    '.bmp': ['BMP'],
+                    '.ico': ['ICO'],
+                }
+                
+                if ext in expected_formats:
+                    if img.format not in expected_formats[ext]:
+                        result['warnings'].append(
+                            f'Image format mismatch: {img.format} saved as {ext}'
+                        )
+                
+            except Exception as e:
+                result['warnings'].append(f'Pillow validation failed: {str(e)[:100]}')
+                result['valid'] = False
+                
+        except ImportError:
+            # Pillow not available, fall back to basic checks
+            # JPEG specific
+            if ext in ['.jpg', '.jpeg']:
+                # Check for JPEG end marker
+                if not content.endswith(b'\xFF\xD9'):
+                    result['warnings'].append('JPEG file may be truncated (missing end marker)')
+            
+            # PNG specific
+            elif ext == '.png':
+                # Check for PNG end chunk
+                if not content.endswith(b'\x00\x00\x00\x00IEND\xAE\x42\x60\x82'):
+                    result['warnings'].append('PNG file may be truncated (missing IEND chunk)')
+            
+            # GIF specific
+            elif ext == '.gif':
+                # Check for GIF trailer
+                if not content.endswith(b'\x00;') and not content.endswith(b';'):
+                    result['warnings'].append('GIF file may be truncated (missing trailer)')
+    
+    @staticmethod
+    def _validate_pdf_structure(content: bytes, result: Dict):
+        """Additional validation for PDF files using PyPDF2 if available."""
+        # Try to use PyPDF2 for proper validation
+        try:
+            import PyPDF2
+            import io
+            
+            try:
+                pdf_file = io.BytesIO(content)
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+                
+                # Get PDF info
+                result['pdf_info'] = {
+                    'num_pages': len(pdf_reader.pages),
+                    'is_encrypted': pdf_reader.is_encrypted,
+                }
+                
+                # Try to access metadata
+                if pdf_reader.metadata:
+                    metadata = {}
+                    if pdf_reader.metadata.title:
+                        metadata['title'] = str(pdf_reader.metadata.title)
+                    if pdf_reader.metadata.author:
+                        metadata['author'] = str(pdf_reader.metadata.author)
+                    if metadata:
+                        result['pdf_info']['metadata'] = metadata
+                
+            except Exception as e:
+                result['warnings'].append(f'PyPDF2 validation failed: {str(e)[:100]}')
+                # Don't mark as invalid - might be encrypted or have other issues
+                
+        except ImportError:
+            # PyPDF2 not available, fall back to basic checks
+            # Check for PDF end marker
+            if b'%%EOF' not in content[-1024:]:  # Check last 1KB
+                result['warnings'].append('PDF file may be truncated (missing %%EOF)')
+            
+            # Check for basic PDF structure
+            if b'endobj' not in content:
+                result['warnings'].append('PDF file appears corrupted (no objects found)')
+    
+    @staticmethod
+    def _validate_archive_structure(content: bytes, ext: str, result: Dict):
+        """Additional validation for archive files."""
+        # Check minimum reasonable size
+        if len(content) < 22:  # Minimum ZIP size
+            result['warnings'].append('Archive file too small to be valid')
+        
+        # ZIP specific
+        if ext == '.zip':
+            # Check for central directory end signature
+            if b'PK\x05\x06' not in content[-65536:]:  # Check last 64KB
+                result['warnings'].append('ZIP file may be corrupted (missing end record)')
+    
+    @staticmethod
+    def _check_content_type_match(ext: str, content_type: str, result: Dict):
+        """Check if file extension matches Content-Type header."""
+        content_type = content_type.lower().split(';')[0].strip()
+        
+        expected_types = {
+            '.jpg': ['image/jpeg', 'image/jpg'],
+            '.jpeg': ['image/jpeg', 'image/jpg'],
+            '.png': ['image/png'],
+            '.gif': ['image/gif'],
+            '.webp': ['image/webp'],
+            '.svg': ['image/svg+xml', 'text/xml', 'application/xml'],
+            '.pdf': ['application/pdf'],
+            '.css': ['text/css'],
+            '.js': ['application/javascript', 'text/javascript', 'application/x-javascript'],
+            '.json': ['application/json', 'text/json'],
+            '.xml': ['application/xml', 'text/xml'],
+            '.txt': ['text/plain'],
+            '.html': ['text/html', 'application/xhtml+xml'],
+            '.htm': ['text/html', 'application/xhtml+xml'],
+            '.zip': ['application/zip', 'application/x-zip-compressed'],
+            '.gz': ['application/gzip', 'application/x-gzip'],
+        }
+        
+        if ext in expected_types:
+            if content_type not in expected_types[ext]:
+                result['warnings'].append(
+                    f'Content-Type mismatch: got {content_type}, expected {expected_types[ext][0]}'
+                )
 
 ======= tools/scrape_tool/utils.py ======
 #!/usr/bin/env python3
@@ -36590,6 +37747,10 @@ class ScrapedPage:
     normalized_url: Optional[str] = None
     canonical_url: Optional[str] = None
     content_checksum: Optional[str] = None
+    file_type: str = "html"  # 'html', 'image', 'pdf', 'css', 'js', etc.
+    file_size: Optional[int] = None  # File size in bytes
+    is_binary: bool = False  # True for binary files like images, PDFs
+    binary_content: Optional[bytes] = None  # Binary content for non-HTML files
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -36654,6 +37815,8 @@ class WebScraperBase(ABC):
         import ipaddress
 
         try:
+            # Set a timeout for DNS resolution to avoid hanging
+            socket.setdefaulttimeout(2.0)
             # Get IP address from hostname
             ip = socket.gethostbyname(hostname)
             ip_obj = ipaddress.ip_address(ip)
@@ -36681,8 +37844,10 @@ class WebScraperBase(ABC):
             return False
 
         except (socket.gaierror, ValueError):
-            # If we can't resolve the hostname, err on the side of caution
-            return True
+            # If we can't resolve the hostname, it's likely a normal website
+            # with DNS issues or a domain that doesn't exist anymore
+            # Don't treat this as a private IP
+            return False
 
     async def validate_url(self, url: str) -> bool:
         """Validate if a URL should be scraped based on configuration and robots.txt.
@@ -36822,6 +37987,202 @@ class WebScraperBase(ABC):
             callback: Function that takes a checksum string and returns bool
         """
         self._checksum_callback = callback
+    
+    def _is_url_allowed(self, url: str) -> bool:
+        """Check if URL is allowed based on domain and path restrictions.
+        
+        Args:
+            url: URL to check
+            
+        Returns:
+            True if URL is allowed, False otherwise
+        """
+        parsed = urlparse(url)
+        
+        # Check allowed domains if configured
+        if hasattr(self.config, 'allowed_domains') and self.config.allowed_domains:
+            if parsed.netloc not in self.config.allowed_domains:
+                return False
+        
+        # Check allowed path if configured
+        if hasattr(self.config, 'allowed_path') and self.config.allowed_path:
+            if not parsed.path.startswith(self.config.allowed_path):
+                return False
+        
+        # Check excluded paths if configured
+        if hasattr(self.config, 'excluded_paths') and self.config.excluded_paths:
+            for excluded in self.config.excluded_paths:
+                if excluded in parsed.path:
+                    return False
+        
+        return True
+
+    async def download_binary_file(self, url: str, max_size: Optional[int] = None) -> Optional[ScrapedPage]:
+        """Download binary content from URL with security checks.
+        
+        Args:
+            url: URL to download
+            max_size: Maximum file size in bytes
+            
+        Returns:
+            ScrapedPage with binary content or None if download fails
+        """
+        import aiohttp
+        import mimetypes
+        from pathlib import Path
+        
+        # Security: For assets, we allow external domains (CDNs, etc.)
+        # Assets like images, CSS, JS often come from CDNs and should be allowed
+        # Path restrictions don't apply to assets - only to crawled HTML pages
+        parsed = urlparse(url)
+        
+        # Check if external assets are allowed
+        if hasattr(self.config, 'download_external_assets') and not self.config.download_external_assets:
+            # If external assets are disabled, check if it's from allowed domains
+            if hasattr(self.config, 'allowed_domains') and self.config.allowed_domains:
+                if parsed.netloc not in self.config.allowed_domains:
+                    logger.debug(f"External asset blocked (download_external_assets=False): {url}")
+                    return None
+        
+        # Security: Check for SSRF if enabled (this is always important)
+        if self.config.check_ssrf:
+            if self._is_private_ip(parsed.netloc.split(':')[0]):
+                logger.warning(f"SSRF protection: Blocked private IP for {url}")
+                return None
+        
+        try:
+            # Determine file type from URL
+            parsed_url = urlparse(url)
+            path = parsed_url.path.lower()
+            file_extension = Path(path).suffix
+            mime_type, _ = mimetypes.guess_type(path)
+            
+            # Determine file type category
+            file_type = "unknown"
+            if file_extension in [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico"]:
+                file_type = "image"
+            elif file_extension == ".pdf":
+                file_type = "pdf"
+            elif file_extension == ".css":
+                file_type = "css"
+            elif file_extension == ".js":
+                file_type = "js"
+            elif file_extension in [".woff", ".woff2", ".ttf", ".eot"]:
+                file_type = "font"
+            elif file_extension in [".mp4", ".webm", ".mp3", ".wav", ".ogg"]:
+                file_type = "media"
+            elif file_extension in [".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"]:
+                file_type = "document"
+            elif file_extension in [".zip", ".tar", ".gz", ".rar", ".7z"]:
+                file_type = "archive"
+            elif file_extension in [".md", ".txt", ".csv", ".json", ".xml"]:
+                file_type = "text"
+            
+            async with aiohttp.ClientSession() as session:
+                headers = {"User-Agent": self.config.user_agent} if self.config.user_agent else {}
+                async with session.get(url, headers=headers, timeout=self.config.timeout) as response:
+                    if response.status != 200:
+                        logger.warning(f"Failed to download {url}: HTTP {response.status}")
+                        return None
+                    
+                    # Security: Validate Content-Type header
+                    content_type_header = response.headers.get('content-type', '').lower()
+                    
+                    # Block potentially dangerous content types
+                    dangerous_content_types = [
+                        'application/x-executable',
+                        'application/x-msdownload', 
+                        'application/x-msdos-program',
+                        'application/x-sh',
+                        'application/x-shellscript',
+                        'application/x-httpd-php',
+                        'application/x-httpd-cgi',
+                    ]
+                    
+                    for dangerous_type in dangerous_content_types:
+                        if dangerous_type in content_type_header:
+                            logger.warning(f"Blocked dangerous content type {content_type_header}: {url}")
+                            return None
+                    
+                    # Check content length
+                    content_length = response.headers.get('content-length')
+                    if content_length and max_size:
+                        if int(content_length) > max_size:
+                            logger.warning(f"File {url} too large: {content_length} bytes (max: {max_size})")
+                            return None
+                    
+                    # Read content with size limit - read in chunks to prevent memory exhaustion
+                    chunks = []
+                    total_size = 0
+                    chunk_size = 8192  # 8KB chunks
+                    
+                    async for chunk in response.content.iter_chunked(chunk_size):
+                        total_size += len(chunk)
+                        if max_size and total_size > max_size:
+                            logger.warning(f"Downloaded file {url} exceeds size limit: {total_size} bytes")
+                            return None
+                        chunks.append(chunk)
+                    
+                    content = b''.join(chunks)
+                    
+                    # Validate file content
+                    from ..file_validator import FileValidator
+                    validation_result = FileValidator.validate_file(
+                        content, file_extension, content_type_header
+                    )
+                    
+                    if not validation_result['valid']:
+                        logger.error(f"File validation failed for {url}: {validation_result['error']}")
+                        # Still return the file but mark it as potentially invalid
+                        # User can decide what to do with invalid files
+                    
+                    if validation_result.get('warnings'):
+                        for warning in validation_result['warnings']:
+                            logger.warning(f"File validation warning for {url}: {warning}")
+                    
+                    # Create ScrapedPage for binary content
+                    page = ScrapedPage(
+                        url=url,
+                        content="",  # Empty for binary files
+                        title=Path(parsed_url.path).name if parsed_url.path else "download",
+                        metadata={
+                            "mime_type": mime_type or "application/octet-stream",
+                            "validation": validation_result
+                        },
+                        status_code=response.status,
+                        headers=dict(response.headers),
+                        file_type=file_type,
+                        file_size=len(content),
+                        is_binary=True,
+                        binary_content=content
+                    )
+                    
+                    return page
+                    
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout downloading {url}")
+            return None
+        except Exception as e:
+            logger.error(f"Error downloading {url}: {e}")
+            return None
+
+    def is_asset_url(self, url: str, allowed_extensions: list[str]) -> bool:
+        """Check if URL points to an asset file based on extension.
+        
+        Args:
+            url: URL to check
+            allowed_extensions: List of allowed file extensions (with dots)
+            
+        Returns:
+            True if URL is for an allowed asset type
+        """
+        parsed_url = urlparse(url)
+        path = parsed_url.path.lower()
+        
+        for ext in allowed_extensions:
+            if path.endswith(ext.lower()):
+                return True
+        return False
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -36970,6 +38331,26 @@ class BeautifulSoupScraper(WebScraperBase):
                         content = content_bytes.decode("utf-8", errors="replace")
                         encoding = "utf-8"
 
+                    # Validate HTML content
+                    content_type_header = headers.get('content-type', '').lower()
+                    validation_result = None
+                    
+                    # Check if it's HTML (by Content-Type or by trying to parse)
+                    is_html = 'text/html' in content_type_header or not content_type_header
+                    
+                    if is_html:
+                        from ..file_validator import FileValidator
+                        validation_result = FileValidator.validate_file(
+                            content_bytes, '.html', content_type_header
+                        )
+                        
+                        if not validation_result.get('valid', True):
+                            logger.warning(f"HTML validation failed for {url}: {validation_result.get('error', 'Unknown error')}")
+                        
+                        if validation_result.get('warnings'):
+                            for warning in validation_result['warnings']:
+                                logger.debug(f"HTML validation warning for {url}: {warning}")
+                    
                     # Parse with BeautifulSoup
                     soup = BeautifulSoup(content, "html.parser")
 
@@ -37035,6 +38416,22 @@ class BeautifulSoupScraper(WebScraperBase):
                     title_text = title.get_text(strip=True) if title else None
 
                     metadata = self._extract_metadata(soup)
+                    
+                    # Add validation result to metadata if available
+                    if validation_result:
+                        metadata['html_validation'] = {
+                            'valid': validation_result.get('valid', True),
+                            'warnings_count': len(validation_result.get('warnings', [])),
+                        }
+                        
+                        # Include inline binaries info if present
+                        if 'inline_binaries' in validation_result:
+                            metadata['html_validation']['inline_binaries_count'] = len(validation_result['inline_binaries'])
+                            metadata['html_validation']['inline_binaries'] = validation_result['inline_binaries']
+                        
+                        # Include HTML stats if available
+                        if 'html_stats' in validation_result:
+                            metadata['html_validation']['stats'] = validation_result['html_stats']
 
                     return ScrapedPage(
                         url=str(response.url),  # Use final URL after redirects
@@ -37302,6 +38699,7 @@ class BeautifulSoupScraper(WebScraperBase):
             Set of absolute URLs found in the content
         """
         links = set()
+        asset_links = set()
 
         try:
             soup = BeautifulSoup(html_content, "html.parser")
@@ -37349,6 +38747,77 @@ class BeautifulSoupScraper(WebScraperBase):
             logger.error(f"Error extracting links from {base_url}: {e}")
 
         return links
+    
+    def extract_asset_urls(self, html_content: str, base_url: str, asset_types: list[str]) -> Set[str]:
+        """Extract all asset URLs from HTML content.
+        
+        Args:
+            html_content: HTML content to parse
+            base_url: Base URL for resolving relative links
+            asset_types: List of file extensions to consider as assets
+            
+        Returns:
+            Set of absolute asset URLs found in the content
+        """
+        asset_urls = set()
+        
+        try:
+            soup = BeautifulSoup(html_content, "html.parser")
+            
+            # Extract image sources
+            for img in soup.find_all("img"):
+                src = img.get("src") or img.get("data-src")
+                if src and not src.startswith("data:"):
+                    absolute_url = urljoin(base_url, src)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+            # Extract stylesheet links
+            for link in soup.find_all("link"):
+                href = link.get("href")
+                if href:
+                    rel = link.get("rel", [])
+                    if "stylesheet" in rel or href.endswith(".css"):
+                        absolute_url = urljoin(base_url, href)
+                        if self.is_asset_url(absolute_url, asset_types):
+                            asset_urls.add(absolute_url)
+            
+            # Extract script sources
+            for script in soup.find_all("script"):
+                src = script.get("src")
+                if src:
+                    absolute_url = urljoin(base_url, src)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+            # Extract video/audio sources
+            for tag in soup.find_all(["video", "audio", "source"]):
+                src = tag.get("src")
+                if src:
+                    absolute_url = urljoin(base_url, src)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+            # Extract object/embed sources
+            for tag in soup.find_all(["object", "embed"]):
+                src = tag.get("data") or tag.get("src")
+                if src:
+                    absolute_url = urljoin(base_url, src)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+            # Extract downloadable links (PDFs, documents, etc.)
+            for a in soup.find_all("a"):
+                href = a.get("href")
+                if href and not href.startswith(("#", "javascript:", "mailto:", "tel:")):
+                    absolute_url = urljoin(base_url, href)
+                    if self.is_asset_url(absolute_url, asset_types):
+                        asset_urls.add(absolute_url)
+            
+        except Exception as e:
+            logger.error(f"Error extracting asset URLs from {base_url}: {e}")
+        
+        return asset_urls
 
 ======= tools/scrape_tool/scrapers/httrack.py ======
 # Copyright 2025 Franz und Franz GmbH

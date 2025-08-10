@@ -839,6 +839,31 @@ For more information, see the documentation."""
         action="store_true",
         help="Disable content-based deduplication (keeps pages even if their content is identical)",
     )
+    
+    # Asset download options
+    filter_group.add_argument(
+        "--download-assets",
+        action="store_true",
+        help="Download linked assets like images, PDFs, CSS, JS, and other files",
+    )
+    filter_group.add_argument(
+        "--asset-types",
+        type=str,
+        nargs="*",
+        help="File extensions to download (e.g., .pdf .jpg .png). Default: common web assets",
+    )
+    filter_group.add_argument(
+        "--max-asset-size",
+        type=int,
+        metavar="BYTES",
+        help="Maximum file size for asset downloads in bytes (default: 50MB)",
+    )
+    filter_group.add_argument(
+        "--assets-subdirectory",
+        type=str,
+        default="assets",
+        help="Subdirectory name for storing downloaded assets (default: assets)",
+    )
 
     # Display options group
     display_group = parser.add_argument_group("Display Options")
@@ -958,6 +983,14 @@ def main() -> None:
     config.crawler.check_canonical = not args.ignore_canonical
     config.crawler.check_content_duplicates = not args.ignore_duplicates
     config.crawler.force_rescrape = args.force_rescrape
+    
+    # Asset download configuration
+    config.crawler.download_assets = args.download_assets
+    if args.asset_types:
+        config.crawler.asset_types = args.asset_types
+    if args.max_asset_size:
+        config.crawler.max_asset_size = args.max_asset_size
+    config.crawler.assets_subdirectory = args.assets_subdirectory
 
     # Load scraper-specific config if provided
     if args.scraper_config:

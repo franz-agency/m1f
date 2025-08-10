@@ -75,6 +75,10 @@ class ScrapedPage:
     normalized_url: Optional[str] = None
     canonical_url: Optional[str] = None
     content_checksum: Optional[str] = None
+    file_type: str = "html"  # 'html', 'image', 'pdf', 'css', 'js', etc.
+    file_size: Optional[int] = None  # File size in bytes
+    is_binary: bool = False  # True for binary files like images, PDFs
+    binary_content: Optional[bytes] = None  # Binary content for non-HTML files
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -311,6 +315,202 @@ class WebScraperBase(ABC):
             callback: Function that takes a checksum string and returns bool
         """
         self._checksum_callback = callback
+    
+    def _is_url_allowed(self, url: str) -> bool:
+        """Check if URL is allowed based on domain and path restrictions.
+        
+        Args:
+            url: URL to check
+            
+        Returns:
+            True if URL is allowed, False otherwise
+        """
+        parsed = urlparse(url)
+        
+        # Check allowed domains if configured
+        if hasattr(self.config, 'allowed_domains') and self.config.allowed_domains:
+            if parsed.netloc not in self.config.allowed_domains:
+                return False
+        
+        # Check allowed path if configured
+        if hasattr(self.config, 'allowed_path') and self.config.allowed_path:
+            if not parsed.path.startswith(self.config.allowed_path):
+                return False
+        
+        # Check excluded paths if configured
+        if hasattr(self.config, 'excluded_paths') and self.config.excluded_paths:
+            for excluded in self.config.excluded_paths:
+                if excluded in parsed.path:
+                    return False
+        
+        return True
+
+    async def download_binary_file(self, url: str, max_size: Optional[int] = None) -> Optional[ScrapedPage]:
+        """Download binary content from URL with security checks.
+        
+        Args:
+            url: URL to download
+            max_size: Maximum file size in bytes
+            
+        Returns:
+            ScrapedPage with binary content or None if download fails
+        """
+        import aiohttp
+        import mimetypes
+        from pathlib import Path
+        
+        # Security: For assets, we allow external domains (CDNs, etc.)
+        # Assets like images, CSS, JS often come from CDNs and should be allowed
+        # Path restrictions don't apply to assets - only to crawled HTML pages
+        parsed = urlparse(url)
+        
+        # Check if external assets are allowed
+        if hasattr(self.config, 'download_external_assets') and not self.config.download_external_assets:
+            # If external assets are disabled, check if it's from allowed domains
+            if hasattr(self.config, 'allowed_domains') and self.config.allowed_domains:
+                if parsed.netloc not in self.config.allowed_domains:
+                    logger.debug(f"External asset blocked (download_external_assets=False): {url}")
+                    return None
+        
+        # Security: Check for SSRF if enabled (this is always important)
+        if self.config.check_ssrf:
+            if self._is_private_ip(parsed.netloc.split(':')[0]):
+                logger.warning(f"SSRF protection: Blocked private IP for {url}")
+                return None
+        
+        try:
+            # Determine file type from URL
+            parsed_url = urlparse(url)
+            path = parsed_url.path.lower()
+            file_extension = Path(path).suffix
+            mime_type, _ = mimetypes.guess_type(path)
+            
+            # Determine file type category
+            file_type = "unknown"
+            if file_extension in [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico"]:
+                file_type = "image"
+            elif file_extension == ".pdf":
+                file_type = "pdf"
+            elif file_extension == ".css":
+                file_type = "css"
+            elif file_extension == ".js":
+                file_type = "js"
+            elif file_extension in [".woff", ".woff2", ".ttf", ".eot"]:
+                file_type = "font"
+            elif file_extension in [".mp4", ".webm", ".mp3", ".wav", ".ogg"]:
+                file_type = "media"
+            elif file_extension in [".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"]:
+                file_type = "document"
+            elif file_extension in [".zip", ".tar", ".gz", ".rar", ".7z"]:
+                file_type = "archive"
+            elif file_extension in [".md", ".txt", ".csv", ".json", ".xml"]:
+                file_type = "text"
+            
+            async with aiohttp.ClientSession() as session:
+                headers = {"User-Agent": self.config.user_agent} if self.config.user_agent else {}
+                async with session.get(url, headers=headers, timeout=self.config.timeout) as response:
+                    if response.status != 200:
+                        logger.warning(f"Failed to download {url}: HTTP {response.status}")
+                        return None
+                    
+                    # Security: Validate Content-Type header
+                    content_type_header = response.headers.get('content-type', '').lower()
+                    
+                    # Block potentially dangerous content types
+                    dangerous_content_types = [
+                        'application/x-executable',
+                        'application/x-msdownload', 
+                        'application/x-msdos-program',
+                        'application/x-sh',
+                        'application/x-shellscript',
+                        'application/x-httpd-php',
+                        'application/x-httpd-cgi',
+                    ]
+                    
+                    for dangerous_type in dangerous_content_types:
+                        if dangerous_type in content_type_header:
+                            logger.warning(f"Blocked dangerous content type {content_type_header}: {url}")
+                            return None
+                    
+                    # Check content length
+                    content_length = response.headers.get('content-length')
+                    if content_length and max_size:
+                        if int(content_length) > max_size:
+                            logger.warning(f"File {url} too large: {content_length} bytes (max: {max_size})")
+                            return None
+                    
+                    # Read content with size limit - read in chunks to prevent memory exhaustion
+                    chunks = []
+                    total_size = 0
+                    chunk_size = 8192  # 8KB chunks
+                    
+                    async for chunk in response.content.iter_chunked(chunk_size):
+                        total_size += len(chunk)
+                        if max_size and total_size > max_size:
+                            logger.warning(f"Downloaded file {url} exceeds size limit: {total_size} bytes")
+                            return None
+                        chunks.append(chunk)
+                    
+                    content = b''.join(chunks)
+                    
+                    # Validate file content
+                    from ..file_validator import FileValidator
+                    validation_result = FileValidator.validate_file(
+                        content, file_extension, content_type_header
+                    )
+                    
+                    if not validation_result['valid']:
+                        logger.error(f"File validation failed for {url}: {validation_result['error']}")
+                        # Still return the file but mark it as potentially invalid
+                        # User can decide what to do with invalid files
+                    
+                    if validation_result.get('warnings'):
+                        for warning in validation_result['warnings']:
+                            logger.warning(f"File validation warning for {url}: {warning}")
+                    
+                    # Create ScrapedPage for binary content
+                    page = ScrapedPage(
+                        url=url,
+                        content="",  # Empty for binary files
+                        title=Path(parsed_url.path).name if parsed_url.path else "download",
+                        metadata={
+                            "mime_type": mime_type or "application/octet-stream",
+                            "validation": validation_result
+                        },
+                        status_code=response.status,
+                        headers=dict(response.headers),
+                        file_type=file_type,
+                        file_size=len(content),
+                        is_binary=True,
+                        binary_content=content
+                    )
+                    
+                    return page
+                    
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout downloading {url}")
+            return None
+        except Exception as e:
+            logger.error(f"Error downloading {url}: {e}")
+            return None
+
+    def is_asset_url(self, url: str, allowed_extensions: list[str]) -> bool:
+        """Check if URL points to an asset file based on extension.
+        
+        Args:
+            url: URL to check
+            allowed_extensions: List of allowed file extensions (with dots)
+            
+        Returns:
+            True if URL is for an allowed asset type
+        """
+        parsed_url = urlparse(url)
+        path = parsed_url.path.lower()
+        
+        for ext in allowed_extensions:
+            if path.endswith(ext.lower()):
+                return True
+        return False
 
     async def __aenter__(self):
         """Async context manager entry."""

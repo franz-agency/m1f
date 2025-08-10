@@ -16,6 +16,7 @@
 """Web crawling functionality using configurable scraper backends."""
 
 import asyncio
+import json
 import logging
 import sqlite3
 from datetime import datetime, timedelta
@@ -318,6 +319,8 @@ class WebCrawler:
                 content_checksum TEXT,
                 status_code INTEGER,
                 target_filename TEXT,
+                file_type TEXT DEFAULT 'html',
+                file_size INTEGER,
                 scraped_at TIMESTAMP,
                 error TEXT,
                 FOREIGN KEY (session_id) REFERENCES scraping_sessions(id)
@@ -555,6 +558,8 @@ class WebCrawler:
         normalized_url: Optional[str] = None,
         canonical_url: Optional[str] = None,
         content_checksum: Optional[str] = None,
+        file_type: str = "html",
+        file_size: Optional[int] = None,
     ) -> None:
         """Record a scraped URL in the database.
 
@@ -566,6 +571,8 @@ class WebCrawler:
             normalized_url: URL after GET parameter normalization
             canonical_url: Canonical URL from the page
             content_checksum: SHA-256 checksum of text content
+            file_type: Type of file (html, image, pdf, etc.)
+            file_size: Size of file in bytes
         """
         if not self._db_conn:
             return
@@ -575,8 +582,8 @@ class WebCrawler:
             """
             INSERT OR REPLACE INTO scraped_urls 
             (url, session_id, normalized_url, canonical_url, content_checksum, 
-             status_code, target_filename, scraped_at, error)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             status_code, target_filename, file_type, file_size, scraped_at, error)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 url,
@@ -586,6 +593,8 @@ class WebCrawler:
                 content_checksum,
                 status_code,
                 target_filename,
+                file_type,
+                file_size,
                 datetime.now(),
                 error,
             ),
@@ -723,6 +732,8 @@ class WebCrawler:
                             normalized_url=page.normalized_url,
                             canonical_url=page.canonical_url,
                             content_checksum=page.content_checksum,
+                            file_type=page.file_type,
+                            file_size=page.file_size,
                         )
                         # Record content checksum if present
                         if (
@@ -732,6 +743,67 @@ class WebCrawler:
                             self._record_content_checksum(
                                 page.content_checksum, page.url
                             )
+                        
+                        # Extract and download assets if enabled
+                        if self.config.download_assets and not page.is_binary:
+                            asset_urls = scraper.extract_asset_urls(
+                                page.content, page.url, self.config.asset_types
+                            )
+                            
+                            # Security: Limit assets per page (if configured)
+                            if self.config.max_assets_per_page > 0 and len(asset_urls) > self.config.max_assets_per_page:
+                                logger.warning(
+                                    f"Page {page.url} has {len(asset_urls)} assets, "
+                                    f"limiting to {self.config.max_assets_per_page}"
+                                )
+                                asset_urls = list(asset_urls)[:self.config.max_assets_per_page]
+                            
+                            logger.info(f"Found {len(asset_urls)} assets on {page.url}")
+                            
+                            # Track total assets downloaded
+                            if not hasattr(self, '_total_assets_downloaded'):
+                                self._total_assets_downloaded = 0
+                            
+                            for asset_url in asset_urls:
+                                # Security: Check total assets limit (if configured)
+                                if self.config.total_assets_limit > 0 and self._total_assets_downloaded >= self.config.total_assets_limit:
+                                    logger.warning(
+                                        f"Reached total assets limit of {self.config.total_assets_limit}, "
+                                        f"skipping remaining assets"
+                                    )
+                                    break
+                                
+                                # Skip if already downloaded
+                                if not self.config.force_rescrape and self._is_url_scraped(asset_url):
+                                    logger.debug(f"Skipping already downloaded asset: {asset_url}")
+                                    continue
+                                
+                                # Download asset
+                                logger.debug(f"Downloading asset: {asset_url}")
+                                asset_page = await scraper.download_binary_file(
+                                    asset_url, self.config.max_asset_size
+                                )
+                                
+                                if asset_page:
+                                    try:
+                                        asset_path = await self._save_page(asset_page, site_dir)
+                                        self._record_scraped_url(
+                                            asset_page.url,
+                                            asset_page.status_code,
+                                            str(asset_path.relative_to(output_dir)),
+                                            error=None,
+                                            file_type=asset_page.file_type,
+                                            file_size=asset_page.file_size,
+                                        )
+                                        self._total_assets_downloaded += 1
+                                        logger.debug(f"Saved asset {asset_url} to {asset_path}")
+                                    except ValueError as e:
+                                        # Security exception (dangerous file, path traversal, etc.)
+                                        logger.error(f"Security: Blocked asset {asset_url}: {e}")
+                                    except Exception as e:
+                                        logger.error(f"Failed to save asset {asset_url}: {e}")
+                                else:
+                                    logger.warning(f"Failed to download asset: {asset_url}")
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})
@@ -871,6 +943,10 @@ class WebCrawler:
         Returns:
             Path to saved file
         """
+        # Handle binary files differently
+        if page.is_binary and page.binary_content:
+            return await self._save_binary_file(page, output_dir)
+        
         # Parse URL to create file path
         parsed = urlparse(page.url)
 
@@ -964,6 +1040,156 @@ class WebCrawler:
             logger.warning(f"Failed to save metadata for {page.url}: {e}")
             # Don't fail the entire page save just because metadata failed
 
+        return file_path
+
+    async def _save_binary_file(self, page: ScrapedPage, output_dir: Path) -> Path:
+        """Save binary file to disk with security checks.
+        
+        Args:
+            page: ScrapedPage with binary content
+            output_dir: Directory to save the file
+            
+        Returns:
+            Path to saved file
+            
+        Raises:
+            ValueError: If file path is unsafe or file type is dangerous
+        """
+        import hashlib
+        import re
+        import os
+        
+        # Security: Define dangerous file extensions that should never be saved
+        DANGEROUS_EXTENSIONS = {
+            '.exe', '.dll', '.bat', '.cmd', '.com', '.scr', '.vbs', '.vbe',
+            '.js', '.jse', '.wsf', '.wsh', '.ps1', '.psm1', '.msi', '.jar',
+            '.app', '.deb', '.rpm', '.dmg', '.pkg', '.sh', '.bash', '.zsh',
+            '.fish', '.ksh', '.csh', '.tcsh', '.py', '.pyc', '.pyo', '.pyw',
+            '.rb', '.pl', '.php', '.asp', '.aspx', '.jsp', '.cgi'
+        }
+        
+        # Parse URL to create file path
+        parsed = urlparse(page.url)
+        
+        # Create assets subdirectory if configured
+        assets_dir = output_dir / self.config.assets_subdirectory
+        assets_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create file path from URL
+        if parsed.path and parsed.path != "/":
+            path_parts = parsed.path.lstrip("/").split("/")
+            filename = path_parts[-1]
+            subdirs = path_parts[:-1] if len(path_parts) > 1 else []
+            
+            # Security: Check for dangerous extensions
+            file_ext = Path(filename).suffix.lower()
+            if file_ext in DANGEROUS_EXTENSIONS:
+                logger.warning(f"Blocked dangerous file type {file_ext}: {page.url}")
+                raise ValueError(f"Dangerous file type {file_ext} not allowed")
+            
+            # Security: Sanitize filename more aggressively
+            # Remove any character that could be used for path traversal or command injection
+            safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+            safe_filename = safe_filename.lstrip('.')  # Remove leading dots
+            
+            if not safe_filename:
+                safe_filename = f"asset_{hashlib.md5(page.url.encode()).hexdigest()[:8]}"
+            
+            # Create subdirectories with strict sanitization
+            if subdirs:
+                safe_subdirs = []
+                for part in subdirs:
+                    # Security: More aggressive sanitization
+                    safe_part = re.sub(r'[^a-zA-Z0-9._-]', '_', part)
+                    safe_part = safe_part.strip('._')  # Remove leading/trailing dots and underscores
+                    if safe_part and safe_part not in (".", ".."):
+                        safe_subdirs.append(safe_part)
+                
+                if safe_subdirs:
+                    subdir = assets_dir / Path(*safe_subdirs)
+                    subdir.mkdir(parents=True, exist_ok=True)
+                    file_path = subdir / safe_filename  # Use safe_filename instead of filename
+                else:
+                    file_path = assets_dir / safe_filename  # Use safe_filename
+            else:
+                file_path = assets_dir / safe_filename  # Use safe_filename
+        else:
+            # Use URL hash for files without clear names
+            url_hash = hashlib.md5(page.url.encode()).hexdigest()[:8]
+            extension = ""
+            if page.file_type == "image":
+                # Try to determine extension from content type
+                content_type = page.headers.get("content-type", "")
+                if "jpeg" in content_type or "jpg" in content_type:
+                    extension = ".jpg"
+                elif "png" in content_type:
+                    extension = ".png"
+                elif "gif" in content_type:
+                    extension = ".gif"
+                elif "webp" in content_type:
+                    extension = ".webp"
+                elif "svg" in content_type:
+                    extension = ".svg"
+            elif page.file_type == "pdf":
+                extension = ".pdf"
+            
+            # Security: Check extension even for generated filenames
+            if extension.lower() in DANGEROUS_EXTENSIONS:
+                logger.warning(f"Blocked dangerous file type {extension}: {page.url}")
+                raise ValueError(f"Dangerous file type {extension} not allowed")
+            
+            file_path = assets_dir / f"asset_{url_hash}{extension}"
+        
+        # Security: Final path validation - ensure file_path is within output_dir
+        try:
+            # Don't use resolve() on non-existent paths - it can cause issues
+            # Instead, check the relative path components
+            import os
+            output_dir_abs = output_dir.resolve()
+            
+            # Get the relative path from output_dir to file_path
+            try:
+                rel_path = os.path.relpath(file_path, output_dir)
+                # Check if path tries to escape (contains ..)
+                if ".." in rel_path:
+                    raise ValueError(f"Path traversal attempt detected: {rel_path}")
+            except ValueError:
+                # os.path.relpath raises ValueError if on different drives on Windows
+                raise ValueError(f"Invalid file path: {file_path}")
+                
+        except Exception as e:
+            logger.error(f"Path validation failed for {page.url}: {e}")
+            raise ValueError(f"Invalid file path: {e}")
+        
+        # Security: Check file size before writing
+        if page.file_size and page.file_size > self.config.max_asset_size:
+            raise ValueError(f"File size {page.file_size} exceeds limit {self.config.max_asset_size}")
+        
+        # Write binary content
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_bytes(page.binary_content)
+        
+        # Save metadata
+        try:
+            metadata_path = file_path.with_suffix(file_path.suffix + ".meta.json")
+            metadata = {
+                "url": page.url,
+                "file_type": page.file_type,
+                "file_size": page.file_size,
+                "status_code": page.status_code,
+                "headers": page.headers or {},
+                "checksum": hashlib.sha256(page.binary_content).hexdigest(),
+            }
+            
+            # Add validation results if available
+            if page.metadata and 'validation' in page.metadata:
+                metadata['validation'] = page.metadata['validation']
+            
+            metadata_path.write_text(json.dumps(metadata, indent=2, default=str))
+        except Exception as e:
+            logger.warning(f"Failed to save metadata for binary file {page.url}: {e}")
+        
+        logger.debug(f"Saved binary file {page.url} to {file_path}")
         return file_path
 
     def find_downloaded_files(self, site_dir: Path) -> List[Path]:
