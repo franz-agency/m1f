@@ -1226,6 +1226,32 @@ and this project adheres to
 
 ## [3.8.0] - Unreleased
 
+### Added
+
+- **m1f-scrape Multiple Allowed Paths**: Support for multiple path restrictions
+  - New `--allowed-paths` parameter accepts multiple paths for crawling
+  - Backward compatible with existing `--allowed-path` (single path)
+  - Supports both simple paths (`/docs/`) and full URLs (`https://example.com/docs/`)
+  - Mutually exclusive with `--allowed-path` to prevent confusion
+  - Database schema migration (v3) to support multiple paths storage
+  - Comprehensive test coverage for all path configurations
+
+### Improved
+
+- **m1f-scrape Code Refactoring**: Applied DRY principle to eliminate duplication
+  - Consolidated allowed_paths logic into WebScraperBase._initialize_allowed_paths()
+  - Centralized URL exclusion logic in WebScraperBase._should_exclude_url()
+  - Removed ~200 lines of duplicated code across 4 scraper implementations
+  - Standardized pattern matching supporting both regex and substring exclusions
+  - All scrapers now inherit common path/exclusion logic from base class
+
+- **m1f-scrape Asset Download Performance**: Optimized concurrent asset downloads
+  - Assets (images, CSS, JS) now download concurrently in batches (max 10)
+  - No request delays applied to binary/asset downloads (only HTML pages)
+  - Significantly faster asset downloads (e.g., 20 assets: 2s → 200-400ms)
+  - Smart batching respects server limits while maximizing performance
+  - Asset deduplication works across sessions via SQLite database
+
 ### Changed
 
 - **m1f Output Improvements**: Optimized file generation behavior
