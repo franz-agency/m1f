@@ -84,7 +84,6 @@ class TestCrossPlatformPaths(BaseM1FTest):
                 "-m",
                 "tools.s1f",
                 str(output_file),
-                "-d",
                 str(extract_dir),
                 "-f",
             ],
