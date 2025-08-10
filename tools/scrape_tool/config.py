@@ -70,10 +70,10 @@ class CrawlerConfig(BaseModel):
         default_factory=dict, description="Backend-specific configuration"
     )
     request_delay: float = Field(
-        default=15.0,
+        default=5.0,
         ge=0,
         le=60,
-        description="Delay between requests in seconds (default: 15s for Cloudflare)",
+        description="Delay between requests in seconds (default: 5s for rate limiting)",
     )
     concurrent_requests: int = Field(
         default=2,

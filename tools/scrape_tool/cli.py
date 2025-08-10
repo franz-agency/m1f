@@ -809,8 +809,8 @@ For more information, see the documentation."""
     request_group.add_argument(
         "--request-delay",
         type=float,
-        default=15.0,
-        help="Delay between requests in seconds (default: 15.0)",
+        default=5.0,
+        help="Delay between requests in seconds (default: 5.0)",
     )
     request_group.add_argument(
         "--concurrent-requests",

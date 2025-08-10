@@ -13515,12 +13515,18 @@ optimal LLM context usage.
   - Canonical URL checking (enabled by default)
   - Content-based deduplication (enabled by default)
   - GET parameter normalization (optional with `--ignore-get-params`)
+- **Asset Downloading**: Download images, CSS, JS, and other assets with pages
+  - Concurrent batch downloads (up to 10 parallel)
+  - No delays for asset downloads (only HTML pages)
+  - Smart deduplication across sessions
 - **Metadata Preservation**: Saves HTTP headers and metadata alongside HTML
   files
 - **Domain Restriction**: Automatically restricts crawling to the starting
   domain
-- **Subdirectory Restriction**: When URL contains a path, only scrapes within
-  that subdirectory
+- **Path Control**: Flexible path restrictions with single or multiple paths
+  - Subdirectory restriction based on start URL
+  - `--allowed-path` for single path override
+  - `--allowed-paths` for multiple directory crawling
 - **Rate Limiting**: Configurable delays between requests
 - **Progress Tracking**: Real-time download progress with file listing
 - **Resume Support**: Interrupt and resume scraping sessions with SQLite
@@ -13583,13 +13589,23 @@ m1f-scrape <url> -o <output> [options]
 | `--max-pages`           | Maximum pages to crawl (-1 for unlimited)                     | 10000         |
 | `--allowed-path`        | Restrict crawling to this path (legacy, single path)          | None          |
 | `--allowed-paths`       | Restrict crawling to multiple paths (new, space-separated)    | None          |
-| `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
+| `--excluded-paths`      | URL paths to exclude from crawling (space-separated)          | None          |
+| `--exclude-patterns`    | Regex or substring patterns to exclude URLs                   | None          |
+| `--request-delay`       | Delay between requests in seconds (for rate limiting)         | 5.0           |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
+| `--timeout`             | Request timeout in seconds                                    | 30            |
+| `--retry-count`         | Number of retries for failed requests                         | 3             |
 | `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
 | `--ignore-get-params`   | Ignore GET parameters in URLs (e.g., ?tab=linux)              | False         |
 | `--ignore-canonical`    | Ignore canonical URL tags (checking is enabled by default)    | False         |
 | `--ignore-duplicates`   | Ignore duplicate content detection (enabled by default)       | False         |
-| `--clear-urls`          | Clear all URLs from database and start fresh                  | False         |
+| `--download-assets`     | Download linked assets (images, CSS, JS, PDFs, etc.)          | False         |
+| `--asset-types`         | Asset file extensions to download (space-separated)           | images css js |
+| `--max-asset-size`      | Maximum size for asset downloads in bytes                     | 50MB          |
+| `--max-assets-per-page` | Maximum assets to download per HTML page (-1 for unlimited)   | -1            |
+| `--assets-subdirectory` | Subdirectory name for storing downloaded assets               | assets        |
+| `--disable-ssrf-check`  | Disable SSRF vulnerability checks (allows private IPs)        | False         |
+| `--clear-urls`          | Clear URLs from database matching pattern                     | None          |
 | `--force-rescrape`      | Force rescraping of all URLs (ignores cached content)         | False         |
 | `--list-files`          | List all downloaded files after completion (limited display)  | False         |
 | `--save-urls`           | Save all scraped URLs to a file (one per line)                | None          |
@@ -13603,6 +13619,7 @@ m1f-scrape <url> -o <output> [options]
 | `--show-sessions-detailed` | Show detailed information for all sessions                 | False         |
 | `--clear-session`       | Clear a specific session by ID                                | None          |
 | `--clear-last-session`  | Clear the most recent scraping session                        | False         |
+| `--delete-files`        | Also delete downloaded files when clearing sessions           | False         |
 | `--cleanup-sessions`    | Clean up orphaned sessions from crashes                       | False         |
 | `--version`             | Show version information and exit                             | -             |
 
@@ -13747,6 +13764,101 @@ m1f-scrape https://api.example.com/v2/reference -o ./api_docs
 # This will NOT scrape /products, /blog, etc. - only /tutorials/*
 m1f-scrape https://learn.example.com/tutorials -o ./tutorials_only
 ```
+
+### Asset Downloading
+
+Download images, stylesheets, scripts, and other assets along with HTML pages:
+
+```bash
+# Download HTML with all assets (images, CSS, JS)
+m1f-scrape https://docs.example.com -o ./docs \
+  --download-assets
+
+# Download only specific asset types
+m1f-scrape https://docs.example.com -o ./docs \
+  --download-assets \
+  --asset-types images css
+
+# Limit asset size and quantity
+m1f-scrape https://docs.example.com -o ./docs \
+  --download-assets \
+  --max-asset-size 5000000 \
+  --max-assets-per-page 50
+```
+
+**Performance Features:**
+- **Concurrent downloads**: Assets download in parallel batches (up to 10 concurrent)
+- **No delays for assets**: Request delays only apply to HTML pages, not assets
+- **Smart deduplication**: Each asset downloaded only once, even if referenced by multiple pages
+- **Database tracking**: Assets tracked in SQLite for resume support
+
+**Asset Types:**
+- `images`: jpg, jpeg, png, gif, svg, webp, ico
+- `css`: CSS stylesheets
+- `js`: JavaScript files
+- `fonts`: woff, woff2, ttf, eot
+- `docs`: pdf, doc, docx, xls, xlsx
+- Custom extensions can be specified
+
+### Path Filtering: How allowed-paths and excluded-paths Work Together
+
+The scraper applies path filtering in a specific order to determine which URLs to crawl:
+
+1. **Allowed Paths (Whitelist)**: If specified, ONLY URLs within these paths are considered
+2. **Excluded Paths (Blacklist)**: URLs matching these patterns are rejected
+3. **Exclude Patterns (Advanced)**: Regex or substring patterns for fine-grained exclusion
+
+#### Filtering Priority Order
+
+```
+URL → Allowed Paths Check → Excluded Paths Check → Exclude Patterns Check → Final Decision
+      (if specified,         (always checked)      (if specified)
+       must match)
+```
+
+#### Examples of Path Filtering Logic
+
+```bash
+# Example 1: Only crawl /docs/ and /api/, but exclude /docs/internal/
+m1f-scrape https://example.com -o ./output \
+  --allowed-paths /docs/ /api/ \
+  --excluded-paths /docs/internal/
+
+# Results:
+# ✓ https://example.com/docs/guide.html     (in allowed-paths)
+# ✗ https://example.com/docs/internal/secret.html (excluded-paths wins)
+# ✓ https://example.com/api/v2/users.html   (in allowed-paths)
+# ✗ https://example.com/blog/post.html      (not in allowed-paths)
+
+# Example 2: Exclude multiple paths
+m1f-scrape https://example.com -o ./output \
+  --excluded-paths /admin/ /private/ /test/
+
+# Results:
+# ✓ https://example.com/docs/guide.html     (not excluded)
+# ✗ https://example.com/admin/login.html    (in excluded-paths)
+# ✗ https://example.com/test/debug.html     (in excluded-paths)
+# ✓ https://example.com/public/page.html    (not excluded)
+
+# Example 3: Complex filtering with patterns
+m1f-scrape https://example.com -o ./output \
+  --allowed-paths /docs/ /reference/ \
+  --excluded-paths /docs/archive/ \
+  --exclude-patterns ".*\\.pdf$" "staging"
+
+# Results:
+# ✓ https://example.com/docs/guide.html     (passes all checks)
+# ✗ https://example.com/docs/manual.pdf     (matches exclude pattern)
+# ✗ https://example.com/docs/archive/old.html (in excluded-paths)
+# ✗ https://staging.example.com/docs/test.html (matches "staging" pattern)
+```
+
+#### Key Rules
+
+1. **Allowed paths are restrictive**: If you specify `--allowed-paths`, ONLY those paths will be crawled
+2. **Excluded paths always win**: Even if a URL is in allowed-paths, excluded-paths will block it
+3. **Patterns are flexible**: `--exclude-patterns` supports both regex and substring matching
+4. **Start URL is special**: The initial URL is always scraped regardless of path restrictions
 
 ### Advanced Path Control with --allowed-path and --allowed-paths
 
