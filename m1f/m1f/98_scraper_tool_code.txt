@@ -1411,7 +1411,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 from .scrapers import create_scraper, ScraperConfig, ScrapedPage
 from .config import CrawlerConfig, ScraperBackend
@@ -2153,6 +2153,9 @@ class WebCrawler:
                             if not hasattr(self, '_total_assets_downloaded'):
                                 self._total_assets_downloaded = 0
                             
+                            # Track downloaded assets for this page
+                            downloaded_assets = {}
+                            
                             for asset_url in asset_urls:
                                 # Security: Check total assets limit (if configured)
                                 if self.config.total_assets_limit > 0 and self._total_assets_downloaded >= self.config.total_assets_limit:
@@ -2165,6 +2168,10 @@ class WebCrawler:
                                 # Skip if already downloaded
                                 if not self.config.force_rescrape and self._is_url_scraped(asset_url):
                                     logger.debug(f"Skipping already downloaded asset: {asset_url}")
+                                    # Still track it for HTML update if we can find its path
+                                    asset_info = self._get_scraped_url_info(asset_url)
+                                    if asset_info and asset_info.get('target_filename'):
+                                        downloaded_assets[asset_url] = output_dir / asset_info['target_filename']
                                     continue
                                 
                                 # Download asset
@@ -2185,6 +2192,7 @@ class WebCrawler:
                                             file_size=asset_page.file_size,
                                         )
                                         self._total_assets_downloaded += 1
+                                        downloaded_assets[asset_url] = asset_path
                                         logger.debug(f"Saved asset {asset_url} to {asset_path}")
                                     except ValueError as e:
                                         # Security exception (dangerous file, path traversal, etc.)
@@ -2193,6 +2201,10 @@ class WebCrawler:
                                         logger.error(f"Failed to save asset {asset_url}: {e}")
                                 else:
                                     logger.warning(f"Failed to download asset: {asset_url}")
+                            
+                            # Update HTML file with correct asset paths if we downloaded any
+                            if downloaded_assets:
+                                await self._update_html_with_asset_paths(file_path, page, site_dir, downloaded_assets)
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})
@@ -2229,7 +2241,67 @@ class WebCrawler:
             "output_dir": site_dir,
         }
 
-    def _adjust_html_links(self, html_content: str, original_url: str, saved_path: Path, site_dir: Path) -> str:
+    def _get_scraped_url_info(self, url: str) -> Optional[Dict[str, Any]]:
+        """Get information about a previously scraped URL.
+        
+        Args:
+            url: The URL to look up
+            
+        Returns:
+            Dictionary with url info or None if not found
+        """
+        if not self._db_conn:
+            return None
+        
+        try:
+            cursor = self._db_conn.cursor()
+            cursor.execute(
+                "SELECT target_filename, status_code, error, scraped_at FROM scraped_urls WHERE url = ?",
+                (url,)
+            )
+            row = cursor.fetchone()
+            if row:
+                return {
+                    'target_filename': row[0],
+                    'status_code': row[1],
+                    'error': row[2],
+                    'scraped_at': row[3]
+                }
+        except Exception as e:
+            logger.error(f"Failed to get scraped URL info: {e}")
+        
+        return None
+    
+    async def _update_html_with_asset_paths(self, html_path: Path, page: ScrapedPage, site_dir: Path, downloaded_assets: Dict[str, Path]):
+        """Update HTML file with correct paths to downloaded assets.
+        
+        Args:
+            html_path: Path to the HTML file to update
+            page: The original ScrapedPage object
+            site_dir: The site directory
+            downloaded_assets: Map of asset URLs to their local paths
+        """
+        try:
+            # Read the current HTML content
+            html_content = html_path.read_text(encoding=page.encoding)
+            
+            # Adjust links with the downloaded asset paths
+            updated_content = self._adjust_html_links(
+                html_content,
+                page.url,
+                html_path,
+                site_dir,
+                downloaded_assets
+            )
+            
+            # Write the updated content back
+            html_path.write_text(updated_content, encoding=page.encoding)
+            logger.debug(f"Updated HTML file {html_path} with {len(downloaded_assets)} asset paths")
+            
+        except Exception as e:
+            logger.error(f"Failed to update HTML with asset paths: {e}")
+    
+    def _adjust_html_links(self, html_content: str, original_url: str, saved_path: Path, site_dir: Path, downloaded_assets: Dict[str, Path] = None) -> str:
         """Adjust relative links in HTML content to work from the new saved location.
         
         Args:
@@ -2237,6 +2309,7 @@ class WebCrawler:
             original_url: The original URL of the page
             saved_path: Where the file will be saved
             site_dir: The site directory (domain folder)
+            downloaded_assets: Optional mapping of asset URLs to their local paths
             
         Returns:
             HTML content with adjusted links
@@ -2260,14 +2333,44 @@ class WebCrawler:
             rel_to_root = ''
         
         # Adjust all links
-        for tag_name, attr_name in [('a', 'href'), ('link', 'href'), ('script', 'src'), ('img', 'src')]:
+        for tag_name, attr_name in [('a', 'href'), ('link', 'href'), ('script', 'src'), ('img', 'src'), 
+                                     ('source', 'srcset'), ('source', 'src'), ('video', 'src'), ('audio', 'src')]:
             for tag in soup.find_all(tag_name):
                 attr_value = tag.get(attr_name)
                 if not attr_value:
                     continue
                     
-                # Skip absolute URLs, anchors, and special protocols
-                if attr_value.startswith(('http://', 'https://', '//', '#', 'mailto:', 'javascript:', 'data:')):
+                # Skip anchors and special protocols (but not http/https - we might have downloaded them)
+                if attr_value.startswith(('#', 'mailto:', 'javascript:', 'data:')):
+                    continue
+                
+                # Check if this is an asset we downloaded
+                if downloaded_assets and self.config.download_assets:
+                    # Build the absolute URL for this attribute
+                    if attr_value.startswith(('http://', 'https://', '//')):
+                        absolute_url = attr_value
+                        if attr_value.startswith('//'):
+                            absolute_url = original_parsed.scheme + ':' + attr_value
+                    else:
+                        # Relative URL - resolve it against the original page URL
+                        absolute_url = urljoin(original_url, attr_value)
+                    
+                    # Check if we downloaded this asset
+                    if absolute_url in downloaded_assets:
+                        # Replace with path to downloaded asset
+                        asset_path = downloaded_assets[absolute_url]
+                        # Calculate relative path from HTML file to asset
+                        try:
+                            rel_path = os.path.relpath(asset_path, saved_path.parent)
+                            rel_path = rel_path.replace('\\', '/')
+                            tag[attr_name] = rel_path
+                            continue  # Skip normal link adjustment for this asset
+                        except ValueError:
+                            # Different drives on Windows, use the original logic
+                            pass
+                
+                # Skip absolute URLs after checking for downloaded assets
+                if attr_value.startswith(('http://', 'https://', '//')):
                     continue
                 
                 # Handle relative URLs
