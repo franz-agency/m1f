@@ -781,19 +781,14 @@ For more information, see the documentation."""
         help="Maximum pages to crawl (default: 10000, use -1 for unlimited)",
     )
     
-    # Path restriction options (mutually exclusive)
-    path_group = crawl_group.add_mutually_exclusive_group()
-    path_group.add_argument(
-        "--allowed-path",
-        type=str,
-        help="Restrict crawling to this path and subdirectories (e.g., /docs/)",
-    )
-    path_group.add_argument(
-        "--allowed-paths",
+    # Path restriction options
+    # --allowed-path is kept as a hidden alias for backward compatibility
+    crawl_group.add_argument(
+        "--allowed-paths", "--allowed-path",
         type=str,
         nargs="*",
         metavar="PATH",
-        help="Restrict crawling to multiple paths and subdirectories (e.g., /docs/ /api/)",
+        help="Restrict crawling to specified paths and subdirectories (e.g., /docs/ /api/)",
     )
     
     crawl_group.add_argument(
@@ -977,7 +972,8 @@ def main() -> None:
     config = Config()
     config.crawler.max_depth = args.max_depth
     config.crawler.max_pages = args.max_pages
-    config.crawler.allowed_path = args.allowed_path
+    # --allowed-path is now an alias for --allowed-paths
+    config.crawler.allowed_path = None  # Deprecated, kept for compatibility
     config.crawler.allowed_paths = args.allowed_paths
     if args.excluded_paths:
         config.crawler.excluded_paths = args.excluded_paths

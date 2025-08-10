@@ -33,10 +33,9 @@ optimal LLM context usage.
   files
 - **Domain Restriction**: Automatically restricts crawling to the starting
   domain
-- **Path Control**: Flexible path restrictions with single or multiple paths
+- **Path Control**: Flexible path restrictions with multiple paths
   - Subdirectory restriction based on start URL
-  - `--allowed-path` for single path override
-  - `--allowed-paths` for multiple directory crawling
+  - `--allowed-paths` for specifying allowed directories
 - **Rate Limiting**: Configurable delays between requests
 - **Progress Tracking**: Real-time download progress with file listing
 - **Resume Support**: Interrupt and resume scraping sessions with SQLite
@@ -97,10 +96,8 @@ m1f-scrape <url> -o <output> [options]
 | `--scraper-config`      | Path to scraper-specific config file (YAML/JSON)              | None          |
 | `--max-depth`           | Maximum crawl depth                                           | 5             |
 | `--max-pages`           | Maximum pages to crawl (-1 for unlimited)                     | 10000         |
-| `--allowed-path`        | Restrict crawling to this path (legacy, single path)          | None          |
-| `--allowed-paths`       | Restrict crawling to multiple paths (new, space-separated)    | None          |
+| `--allowed-paths`       | Restrict crawling to specified paths (space-separated)        | None          |
 | `--excluded-paths`      | URL paths to exclude from crawling (space-separated)          | None          |
-| `--exclude-patterns`    | Regex or substring patterns to exclude URLs                   | None          |
 | `--request-delay`       | Delay between requests in seconds (for rate limiting)         | 5.0           |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
 | `--timeout`             | Request timeout in seconds                                    | 30            |
@@ -315,14 +312,13 @@ m1f-scrape https://docs.example.com -o ./docs \
 The scraper applies path filtering in a specific order to determine which URLs to crawl:
 
 1. **Allowed Paths (Whitelist)**: If specified, ONLY URLs within these paths are considered
-2. **Excluded Paths (Blacklist)**: URLs matching these patterns are rejected
-3. **Exclude Patterns (Advanced)**: Regex or substring patterns for fine-grained exclusion
+2. **Excluded Paths (Blacklist)**: URLs matching these paths are rejected
 
 #### Filtering Priority Order
 
 ```
-URL → Allowed Paths Check → Excluded Paths Check → Exclude Patterns Check → Final Decision
-      (if specified,         (always checked)      (if specified)
+URL → Allowed Paths Check → Excluded Paths Check → Final Decision
+      (if specified,         (always checked)
        must match)
 ```
 
@@ -350,51 +346,33 @@ m1f-scrape https://example.com -o ./output \
 # ✗ https://example.com/test/debug.html     (in excluded-paths)
 # ✓ https://example.com/public/page.html    (not excluded)
 
-# Example 3: Complex filtering with patterns
+# Example 3: Combined filtering
 m1f-scrape https://example.com -o ./output \
   --allowed-paths /docs/ /reference/ \
-  --excluded-paths /docs/archive/ \
-  --exclude-patterns ".*\\.pdf$" "staging"
+  --excluded-paths /docs/archive/
 
 # Results:
 # ✓ https://example.com/docs/guide.html     (passes all checks)
-# ✗ https://example.com/docs/manual.pdf     (matches exclude pattern)
+# ✓ https://example.com/reference/api.html  (in allowed-paths)
 # ✗ https://example.com/docs/archive/old.html (in excluded-paths)
-# ✗ https://staging.example.com/docs/test.html (matches "staging" pattern)
+# ✗ https://example.com/blog/post.html      (not in allowed-paths)
 ```
 
 #### Key Rules
 
 1. **Allowed paths are restrictive**: If you specify `--allowed-paths`, ONLY those paths will be crawled
 2. **Excluded paths always win**: Even if a URL is in allowed-paths, excluded-paths will block it
-3. **Patterns are flexible**: `--exclude-patterns` supports both regex and substring matching
-4. **Start URL is special**: The initial URL is always scraped regardless of path restrictions
+3. **Start URL is special**: The initial URL is always scraped regardless of path restrictions
 
-### Advanced Path Control with --allowed-path and --allowed-paths
+### Advanced Path Control with --allowed-paths
 
-Sometimes you need to start from a specific page but allow crawling in different directories. 
-
-#### Single Path (Legacy)
-Use `--allowed-path` to override the automatic path restriction with a single path:
+Sometimes you need to start from a specific page but allow crawling in different directories. Use `--allowed-paths` to override the automatic path restriction:
 
 ```bash
 # Start from product page but allow crawling all products
 m1f-scrape https://docs.example.com/products/widget.html -o ./products \
-  --allowed-path /products/
+  --allowed-paths /products/
 
-# Start from a deep nested page but allow broader documentation crawling
-m1f-scrape https://docs.example.com/v2/api/users/create.html -o ./api_docs \
-  --allowed-path /v2/api/
-
-# Start from main docs page but restrict to specific section
-m1f-scrape https://docs.example.com/index.html -o ./guides \
-  --allowed-path /guides/
-```
-
-#### Multiple Paths (New)
-Use `--allowed-paths` to allow crawling in multiple directories:
-
-```bash
 # Scrape both documentation and API reference sections
 m1f-scrape https://example.com -o ./docs \
   --allowed-paths /docs/ /api/ /reference/
@@ -407,8 +385,6 @@ m1f-scrape https://docs.example.com/index.html -o ./selected_docs \
 m1f-scrape https://framework.com/docs -o ./framework_docs \
   --allowed-paths /docs/core/ /docs/plugins/ /docs/api/
 ```
-
-**Note**: You cannot use both `--allowed-path` and `--allowed-paths` in the same command. The `--allowed-path` option is maintained for backward compatibility.
 
 The start URL is always scraped regardless of path restrictions, making it perfect for
 documentation sites where the index page links to content in different directories.
@@ -431,12 +407,12 @@ m1f-scrape https://example.com -o ./html \
   --request-delay 2.0 \
   --concurrent-requests 2
 
-# Start from specific page but allow broader crawling area (single path)
+# Start from specific page but allow broader crawling area
 m1f-scrape https://docs.example.com/api/index.html -o ./api_docs \
-  --allowed-path /api/ \
+  --allowed-paths /api/ \
   --max-pages 100
 
-# Scrape multiple sections with the new --allowed-paths option
+# Scrape multiple sections
 m1f-scrape https://docs.example.com -o ./docs \
   --allowed-paths /api/ /guides/ /reference/ \
   --max-pages 200
