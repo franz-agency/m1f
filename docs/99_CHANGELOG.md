@@ -12,6 +12,14 @@ and this project adheres to
 
 ### Added
 
+- **m1f Auto-loading of .gitignore and .m1fignore**: Automatic exclusion of ignored files
+  - Automatically loads `.gitignore` files from source directories (disable with `--no-auto-gitignore`)
+  - Automatically loads `.m1fignore` files from source directories (always enabled)
+  - Respects global_settings.exclude_paths_file from `.m1f.config.yml`
+  - Works with multiple source directories
+  - Prevents duplicate loading of the same ignore file
+  - Added comprehensive test coverage for all auto-loading scenarios
+
 - **m1f-scrape Multiple Allowed Paths**: Support for multiple path restrictions
   - `--allowed-paths` parameter accepts multiple paths for crawling
   - Supports both simple paths (`/docs/`) and full URLs (`https://example.com/docs/`)
@@ -77,6 +85,11 @@ and this project adheres to
   - Security best practices and checklist
 
 ### Fixed
+
+- **m1f .gitignore Auto-loading Bug**: Fixed issue where files listed in .gitignore were included in bundles
+  - Root cause: .gitignore files were not being automatically loaded from source directories
+  - Now automatically loads .gitignore and .m1fignore files without requiring explicit --exclude-paths-file
+  - Added regression test that would have caught the original bug
 
 - **m1f-scrape Test Infrastructure**: Improved test reliability
   - Removed unreliable async mock tests that were causing failures
