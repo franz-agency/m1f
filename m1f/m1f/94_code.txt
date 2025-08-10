@@ -4130,7 +4130,7 @@ python server.py
 python manage_server.py start
 
 # Access test pages
-http://localhost:8080/
+http://localhost:8090/
 ```
 
 Provides:
@@ -4147,7 +4147,7 @@ Provides:
 2. **Fixture Not Found**: Check conftest.py placement
 3. **Encoding Failures**: Some tests require specific system encodings
 4. **Permission Errors**: Temporary file cleanup issues
-5. **Port Conflicts**: Test server requires port 8080
+5. **Port Conflicts**: Test server uses port 8090 by default (configurable via HTML2MD_SERVER_PORT)
 6. **Async Errors**: Ensure anyio is installed
 
 ### Platform-Specific Issues
@@ -9925,7 +9925,7 @@ pip install flask flask-cors beautifulsoup4 markdownify pytest pytest-asyncio ai
 # Start the test server
 python tests/html2md_server/server.py
 
-# Server will run at http://localhost:8080
+# Server will run at http://localhost:8090
 ```
 
 ### Running Tests
@@ -9976,19 +9976,19 @@ tests/html2md_server/
    ```bash
    # Basic conversion
    m1f-html2md \
-     --source-dir http://localhost:8080/page \
+     --source-dir http://localhost:8090/page \
      --destination-dir ./output
 
    # With content selection
    m1f-html2md \
-     --source-dir http://localhost:8080/page \
+     --source-dir http://localhost:8090/page \
      --destination-dir ./output \
      --outermost-selector "article" \
      --ignore-selectors "nav" ".sidebar" "footer"
 
    # Specific page with options
    m1f-html2md \
-     --source-dir http://localhost:8080/page/code-examples \
+     --source-dir http://localhost:8090/page/code-examples \
      --destination-dir ./output \
      --add-frontmatter \
      --heading-offset 1

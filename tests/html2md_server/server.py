@@ -359,7 +359,7 @@ def page_not_found(e):
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
-    port = int(os.environ.get("HTML2MD_SERVER_PORT", 8080))
+    port = int(os.environ.get("HTML2MD_SERVER_PORT", 8090))
 
     # Ensure TEST_PAGES is populated
     if not TEST_PAGES:

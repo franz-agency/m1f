@@ -227,7 +227,7 @@ python server.py
 python manage_server.py start
 
 # Access test pages
-http://localhost:8080/
+http://localhost:8090/
 ```
 
 Provides:
@@ -244,7 +244,7 @@ Provides:
 2. **Fixture Not Found**: Check conftest.py placement
 3. **Encoding Failures**: Some tests require specific system encodings
 4. **Permission Errors**: Temporary file cleanup issues
-5. **Port Conflicts**: Test server requires port 8080
+5. **Port Conflicts**: Test server uses port 8090 by default (configurable via HTML2MD_SERVER_PORT)
 6. **Async Errors**: Ensure anyio is installed
 
 ### Platform-Specific Issues

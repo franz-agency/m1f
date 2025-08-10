@@ -23,6 +23,7 @@ import subprocess
 import time
 import os
 import requests
+import socket
 from pathlib import Path
 from typing import Set
 
@@ -69,14 +70,34 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestPlaywrightIntegration:
     """Integration tests for Playwright scraper."""
+    
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:8090"
+        
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -93,7 +114,7 @@ class TestPlaywrightIntegration:
         max_attempts = 30
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(cls.server_url)
                 if response.status_code == 200:
                     break
             except requests.ConnectionError:
@@ -147,7 +168,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -172,7 +193,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Scrape a page - Playwright should render JavaScript
-            page = await scraper.scrape_url("http://localhost:8080/")
+            page = await scraper.scrape_url(f"{cls.server_url}/")
 
             assert page is not None
             assert page.title is not None
@@ -200,7 +221,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             page = await scraper.scrape_url(
-                "http://localhost:8080/page/m1f-documentation"
+                f"{cls.server_url}/page/m1f-documentation"
             )
 
             assert page is not None
@@ -225,7 +246,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/docs/index.html"
+        start_url = f"{cls.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -255,7 +276,7 @@ class TestPlaywrightIntegration:
         async with scraper:
             # Test page with canonical URL - using scrape_site for proper flow
             start_url = (
-                "http://localhost:8080/page/index?canonical=http://localhost:8080/"
+                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
             )
 
             pages_scraped = []
@@ -287,7 +308,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url("http://localhost:8080/")
+            page = await scraper.scrape_url(f"{cls.server_url}/")
 
             assert page is not None
             # The page should have waited for h1 before returning
@@ -314,7 +335,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url("http://localhost:8080/")
+            page = await scraper.scrape_url(f"{cls.server_url}/")
 
             assert page is not None
             assert page.metadata["viewport"] == {"width": 1920, "height": 1080}
@@ -335,7 +356,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)

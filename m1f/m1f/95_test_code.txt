@@ -228,7 +228,7 @@ python server.py
 python manage_server.py start
 
 # Access test pages
-http://localhost:8080/
+http://localhost:8090/
 ```
 
 Provides:
@@ -245,7 +245,7 @@ Provides:
 2. **Fixture Not Found**: Check conftest.py placement
 3. **Encoding Failures**: Some tests require specific system encodings
 4. **Permission Errors**: Temporary file cleanup issues
-5. **Port Conflicts**: Test server requires port 8080
+5. **Port Conflicts**: Test server uses port 8090 by default (configurable via HTML2MD_SERVER_PORT)
 6. **Async Errors**: Ensure anyio is installed
 
 ### Platform-Specific Issues
@@ -670,10 +670,14 @@ import shutil
 import tempfile
 import gc
 import time
+import socket
+import subprocess
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+import requests
 
 # Add colorama imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -986,6 +990,75 @@ def _remove_readonly_attributes(directory: Path) -> None:
                     pass  # Ignore errors, best effort
     except (OSError, PermissionError):
         pass  # Ignore errors, best effort
+
+
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
+@pytest.fixture(scope="session")
+def html2md_test_server():
+    """Provide a test server for HTML2MD integration tests."""
+    # Find a free port
+    server_port = find_free_port(8090)
+    server_url = f"http://localhost:{server_port}"
+    
+    # Set up environment
+    env = os.environ.copy()
+    env["FLASK_ENV"] = "testing"
+    env["HTML2MD_SERVER_PORT"] = str(server_port)
+    env.pop("WERKZEUG_RUN_MAIN", None)
+    env.pop("WERKZEUG_SERVER_FD", None)
+
+    # Start server
+    server_path = Path(__file__).parent / "html2md_server" / "server.py"
+    process = subprocess.Popen(
+        [sys.executable, str(server_path)],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    # Wait for server to start
+    max_attempts = 30
+    for i in range(max_attempts):
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            pytest.fail(f"Server process terminated: {stderr.decode() if stderr else 'Unknown error'}")
+            
+        try:
+            response = requests.get(server_url, timeout=2)
+            if response.status_code == 200:
+                break
+        except requests.ConnectionError:
+            pass
+        time.sleep(0.5)
+    else:
+        process.terminate()
+        pytest.fail("Test server failed to start within timeout")
+
+    # Yield server info
+    yield {
+        "url": server_url,
+        "port": server_port,
+        "process": process
+    }
+
+    # Cleanup
+    try:
+        process.terminate()
+        process.wait(timeout=5)
+    except Exception:
+        process.kill()
+        process.wait()
 
 
 @pytest.fixture
@@ -2493,13 +2566,15 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 import platform
 import logging
+from typing import Optional
 
 # Add logging for debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Test server configuration
-TEST_SERVER_URL = "http://localhost:8080"
+# Test server configuration - will be set dynamically
+TEST_SERVER_URL = None
+TEST_SERVER_PORT = None
 
 
 def is_port_in_use(port):
@@ -2512,20 +2587,35 @@ def is_port_in_use(port):
             return True
 
 
+def find_free_port(start_port: int = 8090, max_attempts: int = 10) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + max_attempts):
+        if not is_port_in_use(port):
+            return port
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 @pytest.fixture(scope="module", autouse=True)
 def test_server():
     """Start the test server before running tests."""
-    server_port = 8080
+    global TEST_SERVER_URL, TEST_SERVER_PORT
+    
+    # Find a free port starting from 8090
+    server_port = find_free_port(8090)
     server_path = Path(__file__).parent / "html2md_server" / "server.py"
 
     # Check if server script exists
     if not server_path.exists():
         pytest.fail(f"Server script not found: {server_path}")
 
-    # Check if port is already in use
+    # Set global variables for tests to use
+    TEST_SERVER_PORT = server_port
+    TEST_SERVER_URL = f"http://localhost:{server_port}"
+    
+    # Check if port is already in use (shouldn't be since we found a free one)
     if is_port_in_use(server_port):
         logger.warning(
-            f"Port {server_port} is already in use. Assuming server is already running."
+            f"Port {server_port} became occupied after selection. Trying to connect."
         )
         # Try to connect to existing server
         try:
@@ -2768,8 +2858,9 @@ class TestHTML2MDServer:
         response = requests.get(f"{TEST_SERVER_URL}/nonexistent-page")
         assert response.status_code == 404
 
-        # Should contain helpful 404 content
-        assert "404" in response.text or "Not Found" in response.text
+        # Should contain helpful 404 content - check case-insensitively
+        response_lower = response.text.lower()
+        assert "404" in response.text or "not found" in response_lower or "page not found" in response_lower
 
     def test_page_structure_for_conversion(self):
         """Test that pages have structure suitable for HTML to Markdown conversion."""
@@ -5963,6 +6054,7 @@ import subprocess
 import time
 import os
 import requests
+import socket
 from pathlib import Path
 from typing import Set
 
@@ -6009,14 +6101,34 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestPlaywrightIntegration:
     """Integration tests for Playwright scraper."""
+    
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:8090"
+        
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -6033,7 +6145,7 @@ class TestPlaywrightIntegration:
         max_attempts = 30
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(cls.server_url)
                 if response.status_code == 200:
                     break
             except requests.ConnectionError:
@@ -6087,7 +6199,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -6112,7 +6224,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Scrape a page - Playwright should render JavaScript
-            page = await scraper.scrape_url("http://localhost:8080/")
+            page = await scraper.scrape_url(f"{cls.server_url}/")
 
             assert page is not None
             assert page.title is not None
@@ -6140,7 +6252,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             page = await scraper.scrape_url(
-                "http://localhost:8080/page/m1f-documentation"
+                f"{cls.server_url}/page/m1f-documentation"
             )
 
             assert page is not None
@@ -6165,7 +6277,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/docs/index.html"
+        start_url = f"{cls.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -6195,7 +6307,7 @@ class TestPlaywrightIntegration:
         async with scraper:
             # Test page with canonical URL - using scrape_site for proper flow
             start_url = (
-                "http://localhost:8080/page/index?canonical=http://localhost:8080/"
+                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
             )
 
             pages_scraped = []
@@ -6227,7 +6339,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url("http://localhost:8080/")
+            page = await scraper.scrape_url(f"{cls.server_url}/")
 
             assert page is not None
             # The page should have waited for h1 before returning
@@ -6254,7 +6366,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url("http://localhost:8080/")
+            page = await scraper.scrape_url(f"{cls.server_url}/")
 
             assert page is not None
             assert page.metadata["viewport"] == {"width": 1920, "height": 1080}
@@ -6275,7 +6387,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -7748,7 +7860,7 @@ pip install flask flask-cors beautifulsoup4 markdownify pytest pytest-asyncio ai
 # Start the test server
 python tests/html2md_server/server.py
 
-# Server will run at http://localhost:8080
+# Server will run at http://localhost:8090
 ```
 
 ### Running Tests
@@ -7799,19 +7911,19 @@ tests/html2md_server/
    ```bash
    # Basic conversion
    m1f-html2md \
-     --source-dir http://localhost:8080/page \
+     --source-dir http://localhost:8090/page \
      --destination-dir ./output
 
    # With content selection
    m1f-html2md \
-     --source-dir http://localhost:8080/page \
+     --source-dir http://localhost:8090/page \
      --destination-dir ./output \
      --outermost-selector "article" \
      --ignore-selectors "nav" ".sidebar" "footer"
 
    # Specific page with options
    m1f-html2md \
-     --source-dir http://localhost:8080/page/code-examples \
+     --source-dir http://localhost:8090/page/code-examples \
      --destination-dir ./output \
      --add-frontmatter \
      --heading-offset 1
@@ -7975,7 +8087,8 @@ def start_server():
     # Save PID
     PID_FILE.write_text(str(process.pid))
     success(f"Server started with PID: {process.pid}")
-    info("Server running at: http://localhost:8080")
+    port = os.environ.get("HTML2MD_SERVER_PORT", "8090")
+    info(f"Server running at: http://localhost:{port}")
 
 
 def stop_server():
@@ -8212,12 +8325,12 @@ cleanup() {
 trap cleanup EXIT
 
 # Check if server is running
-if ! curl -s http://localhost:8080 > /dev/null; then
+if ! curl -s http://localhost:8090 > /dev/null; then
     echo -e "${RED}Error: Test server failed to start${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}Test server running at http://localhost:8080${NC}"
+echo -e "${GREEN}Test server running at http://localhost:8090${NC}"
 echo ""
 
 # Run tests
@@ -8618,7 +8731,7 @@ def page_not_found(e):
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
-    port = int(os.environ.get("HTML2MD_SERVER_PORT", 8080))
+    port = int(os.environ.get("HTML2MD_SERVER_PORT", 8090))
 
     # Ensure TEST_PAGES is populated
     if not TEST_PAGES:

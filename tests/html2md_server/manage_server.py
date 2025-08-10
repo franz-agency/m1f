@@ -73,7 +73,8 @@ def start_server():
     # Save PID
     PID_FILE.write_text(str(process.pid))
     success(f"Server started with PID: {process.pid}")
-    info("Server running at: http://localhost:8080")
+    port = os.environ.get("HTML2MD_SERVER_PORT", "8090")
+    info(f"Server running at: http://localhost:{port}")
 
 
 def stop_server():
