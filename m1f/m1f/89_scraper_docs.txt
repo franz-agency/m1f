@@ -92,7 +92,8 @@ m1f-scrape <url> -o <output> [options]
 | `--scraper-config`      | Path to scraper-specific config file (YAML/JSON)              | None          |
 | `--max-depth`           | Maximum crawl depth                                           | 5             |
 | `--max-pages`           | Maximum pages to crawl (-1 for unlimited)                     | 10000         |
-| `--allowed-path`        | Restrict crawling to this path (overrides automatic)          | None          |
+| `--allowed-path`        | Restrict crawling to this path (legacy, single path)          | None          |
+| `--allowed-paths`       | Restrict crawling to multiple paths (new, space-separated)    | None          |
 | `--request-delay`       | Delay between requests in seconds (for Cloudflare protection) | 15.0          |
 | `--concurrent-requests` | Number of concurrent requests (for Cloudflare protection)     | 2             |
 | `--user-agent`          | Custom user agent string                                      | Mozilla/5.0   |
@@ -258,15 +259,17 @@ m1f-scrape https://api.example.com/v2/reference -o ./api_docs
 m1f-scrape https://learn.example.com/tutorials -o ./tutorials_only
 ```
 
-### Advanced Path Control with --allowed-path
+### Advanced Path Control with --allowed-path and --allowed-paths
 
-Sometimes you need to start from a specific page but allow crawling in a different directory. 
-Use `--allowed-path` to override the automatic path restriction:
+Sometimes you need to start from a specific page but allow crawling in different directories. 
+
+#### Single Path (Legacy)
+Use `--allowed-path` to override the automatic path restriction with a single path:
 
 ```bash
-# Start from extensions index but allow crawling all extensions
-m1f-scrape https://ezpublishdoc.mugo.ca/Extensions/eZ-Publish-extensions.html -o ./extensions \
-  --allowed-path /Extensions/
+# Start from product page but allow crawling all products
+m1f-scrape https://docs.example.com/products/widget.html -o ./products \
+  --allowed-path /products/
 
 # Start from a deep nested page but allow broader documentation crawling
 m1f-scrape https://docs.example.com/v2/api/users/create.html -o ./api_docs \
@@ -276,6 +279,25 @@ m1f-scrape https://docs.example.com/v2/api/users/create.html -o ./api_docs \
 m1f-scrape https://docs.example.com/index.html -o ./guides \
   --allowed-path /guides/
 ```
+
+#### Multiple Paths (New)
+Use `--allowed-paths` to allow crawling in multiple directories:
+
+```bash
+# Scrape both documentation and API reference sections
+m1f-scrape https://example.com -o ./docs \
+  --allowed-paths /docs/ /api/ /reference/
+
+# Start from main page but only scrape specific sections
+m1f-scrape https://docs.example.com/index.html -o ./selected_docs \
+  --allowed-paths /tutorials/ /how-to/ /faq/
+
+# Combine multiple documentation areas
+m1f-scrape https://framework.com/docs -o ./framework_docs \
+  --allowed-paths /docs/core/ /docs/plugins/ /docs/api/
+```
+
+**Note**: You cannot use both `--allowed-path` and `--allowed-paths` in the same command. The `--allowed-path` option is maintained for backward compatibility.
 
 The start URL is always scraped regardless of path restrictions, making it perfect for
 documentation sites where the index page links to content in different directories.
@@ -298,10 +320,15 @@ m1f-scrape https://example.com -o ./html \
   --request-delay 2.0 \
   --concurrent-requests 2
 
-# Start from specific page but allow broader crawling area
+# Start from specific page but allow broader crawling area (single path)
 m1f-scrape https://docs.example.com/api/index.html -o ./api_docs \
   --allowed-path /api/ \
   --max-pages 100
+
+# Scrape multiple sections with the new --allowed-paths option
+m1f-scrape https://docs.example.com -o ./docs \
+  --allowed-paths /api/ /guides/ /reference/ \
+  --max-pages 200
 ```
 
 ### Custom Configuration

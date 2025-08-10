@@ -32855,6 +32855,7 @@ Perfect for:
   %(prog)s https://example.com/docs -o ./html
   %(prog)s https://example.com/docs -o ./html --max-pages 100
   %(prog)s https://example.com/blog -o ./html --allowed-path /blog/2024/
+  %(prog)s https://example.com/docs -o ./html --allowed-paths /docs/ /api/ /guides/
   %(prog)s https://example.com -o ./html --scraper httrack
   %(prog)s --show-db-stats -o ./html  # Show scraping statistics
 
@@ -32932,11 +32933,22 @@ For more information, see the documentation."""
         default=10000,
         help="Maximum pages to crawl (default: 10000, use -1 for unlimited)",
     )
-    crawl_group.add_argument(
+    
+    # Path restriction options (mutually exclusive)
+    path_group = crawl_group.add_mutually_exclusive_group()
+    path_group.add_argument(
         "--allowed-path",
         type=str,
         help="Restrict crawling to this path and subdirectories (e.g., /docs/)",
     )
+    path_group.add_argument(
+        "--allowed-paths",
+        type=str,
+        nargs="*",
+        metavar="PATH",
+        help="Restrict crawling to multiple paths and subdirectories (e.g., /docs/ /api/)",
+    )
+    
     crawl_group.add_argument(
         "--excluded-paths",
         type=str,
@@ -33119,6 +33131,7 @@ def main() -> None:
     config.crawler.max_depth = args.max_depth
     config.crawler.max_pages = args.max_pages
     config.crawler.allowed_path = args.allowed_path
+    config.crawler.allowed_paths = args.allowed_paths
     if args.excluded_paths:
         config.crawler.excluded_paths = args.excluded_paths
     config.crawler.scraper_backend = ScraperBackend(args.scraper)
@@ -33379,6 +33392,10 @@ class CrawlerConfig(BaseModel):
         default=None,
         description="Restrict crawling to this path/URL and its subdirectories (e.g., /docs/ or https://example.com/docs/)",
     )
+    allowed_paths: Optional[list[str]] = Field(
+        default=None,
+        description="List of paths/URLs to restrict crawling to (alternative to allowed_path)",
+    )
     excluded_paths: list[str] = Field(
         default_factory=list, description="URL paths to exclude from crawling"
     )
@@ -33551,12 +33568,20 @@ class WebCrawler:
             list(self.config.excluded_paths) if self.config.excluded_paths else []
         )
 
+        # Handle allowed paths - convert single path to list if needed
+        allowed_paths_list = None
+        if self.config.allowed_paths:
+            allowed_paths_list = list(self.config.allowed_paths)
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
         # Create scraper config
         scraper_kwargs = {
             "max_depth": self.config.max_depth,
             "max_pages": self.config.max_pages,
             "allowed_domains": allowed_domains,
             "allowed_path": self.config.allowed_path,
+            "allowed_paths": allowed_paths_list,
             "exclude_patterns": exclude_patterns,
             "respect_robots_txt": self.config.respect_robots_txt,
             "concurrent_requests": self.config.concurrent_requests,
@@ -33622,6 +33647,7 @@ class WebCrawler:
                 max_depth INTEGER,
                 max_pages INTEGER,
                 allowed_path TEXT,
+                allowed_paths TEXT,
                 excluded_paths TEXT,
                 scraper_backend TEXT,
                 request_delay REAL,
@@ -33660,6 +33686,30 @@ class WebCrawler:
         
         self._db_conn.commit()
         logger.info("Database migration to v2 completed")
+
+    def _migrate_database_v3(self, cursor) -> None:
+        """Migrate database to v3 with allowed_paths column.
+        
+        Migration adds:
+        - allowed_paths column to scraping_sessions table
+        """
+        # Check if migration is needed
+        cursor.execute("PRAGMA table_info(scraping_sessions)")
+        columns = [col[1] for col in cursor.fetchall()]
+        
+        if 'allowed_paths' in columns:
+            return  # Already migrated
+        
+        logger.info("Migrating database to v3 (adding allowed_paths column)")
+        
+        try:
+            # Add allowed_paths column
+            cursor.execute("ALTER TABLE scraping_sessions ADD COLUMN allowed_paths TEXT")
+            self._db_conn.commit()
+            logger.info("Database migration to v3 completed")
+        except Exception as e:
+            logger.error(f"Failed to migrate database to v3: {e}")
+            # Don't fail the entire operation, just log the error
 
     def _cleanup_orphaned_sessions(self) -> None:
         """Clean up sessions that were left in 'running' state from crashes or kills.
@@ -33768,6 +33818,9 @@ class WebCrawler:
         # Clean up any orphaned sessions from previous crashes
         self._cleanup_orphaned_sessions()
         
+        # Run additional migration for allowed_paths column if needed
+        self._migrate_database_v3(cursor)
+        
         # Create current schema tables (if not created by migration)
         # Create scraping_sessions table
         cursor.execute(
@@ -33783,6 +33836,7 @@ class WebCrawler:
                 max_depth INTEGER,
                 max_pages INTEGER,
                 allowed_path TEXT,
+                allowed_paths TEXT,
                 excluded_paths TEXT,
                 scraper_backend TEXT,
                 request_delay REAL,
@@ -33845,20 +33899,26 @@ class WebCrawler:
             
         cursor = self._db_conn.cursor()
         
-        # Convert excluded_paths set to JSON string if present
+        # Convert excluded_paths and allowed_paths to JSON strings if present
         import json
         excluded_paths_str = None
         if self.config.excluded_paths:
             excluded_paths_str = json.dumps(list(self.config.excluded_paths))
         
+        allowed_paths_str = None
+        if self.config.allowed_paths:
+            allowed_paths_str = json.dumps(list(self.config.allowed_paths))
+        elif self.config.allowed_path:
+            allowed_paths_str = json.dumps([self.config.allowed_path])
+        
         cursor.execute(
             """
             INSERT INTO scraping_sessions (
-                start_url, start_time, max_depth, max_pages, allowed_path,
+                start_url, start_time, max_depth, max_pages, allowed_path, allowed_paths,
                 excluded_paths, scraper_backend, request_delay, concurrent_requests,
                 ignore_get_params, check_canonical, check_content_duplicates,
                 force_rescrape, user_agent, timeout, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 start_url,
@@ -33866,6 +33926,7 @@ class WebCrawler:
                 self.config.max_depth,
                 self.config.max_pages,
                 self.config.allowed_path,
+                allowed_paths_str,
                 excluded_paths_str,
                 self.config.scraper_backend.value if self.config.scraper_backend else None,
                 self.config.request_delay,
@@ -37814,6 +37875,7 @@ class ScraperConfig:
     max_pages: int = 10000
     allowed_domains: Optional[List[str]] = None
     allowed_path: Optional[str] = None
+    allowed_paths: Optional[List[str]] = None
     exclude_patterns: Optional[List[str]] = None
     respect_robots_txt: bool = True
     concurrent_requests: int = 5
@@ -37834,6 +37896,8 @@ class ScraperConfig:
         """Initialize mutable defaults."""
         if self.allowed_domains is None:
             self.allowed_domains = []
+        if self.allowed_paths is None:
+            self.allowed_paths = []
         if self.exclude_patterns is None:
             self.exclude_patterns = []
         if self.custom_headers is None:
@@ -38111,8 +38175,16 @@ class WebScraperBase(ABC):
             if parsed.netloc not in self.config.allowed_domains:
                 return False
         
-        # Check allowed path if configured
-        if hasattr(self.config, 'allowed_path') and self.config.allowed_path:
+        # Check allowed paths (new multiple paths logic)
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+            path_allowed = any(
+                parsed.path.startswith(allowed_path) 
+                for allowed_path in self.config.allowed_paths
+            )
+            if not path_allowed:
+                return False
+        # Fallback to old single path for backward compatibility
+        elif hasattr(self.config, 'allowed_path') and self.config.allowed_path:
             if not parsed.path.startswith(self.config.allowed_path):
                 return False
         
@@ -38481,23 +38553,34 @@ class BeautifulSoupScraper(WebScraperBase):
                                 # Check if we should respect the canonical URL
                                 should_skip = True
 
-                                if self.config.allowed_path:
+                                # Check allowed paths (single or multiple)
+                                allowed_paths_list = []
+                                if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+                                    allowed_paths_list = self.config.allowed_paths
+                                elif self.config.allowed_path:
+                                    allowed_paths_list = [self.config.allowed_path]
+                                
+                                if allowed_paths_list:
                                     # Parse URLs to check paths
                                     current_parsed = urlparse(normalized_url)
                                     canonical_parsed = urlparse(normalized_canonical)
 
-                                    # If current URL is within allowed_path but canonical is outside,
+                                    # If current URL is within any allowed_path but canonical is outside all,
                                     # don't skip - the user explicitly wants content from allowed_path
-                                    if current_parsed.path.startswith(
-                                        self.config.allowed_path
-                                    ):
-                                        if not canonical_parsed.path.startswith(
-                                            self.config.allowed_path
-                                        ):
-                                            should_skip = False
-                                            logger.info(
-                                                f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
-                                            )
+                                    current_in_allowed = any(
+                                        current_parsed.path.startswith(allowed_path)
+                                        for allowed_path in allowed_paths_list
+                                    )
+                                    canonical_in_allowed = any(
+                                        canonical_parsed.path.startswith(allowed_path)
+                                        for allowed_path in allowed_paths_list
+                                    )
+                                    
+                                    if current_in_allowed and not canonical_in_allowed:
+                                        should_skip = False
+                                        logger.info(
+                                            f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_paths {allowed_paths_list}"
+                                        )
 
                                 if should_skip:
                                     logger.info(
@@ -38619,23 +38702,39 @@ class BeautifulSoupScraper(WebScraperBase):
         base_domain = start_parsed.netloc
 
         # Store the base path for subdirectory restriction
-        # Use allowed_path if specified, otherwise use the start URL's path
+        # Handle allowed paths (single or multiple)
         allowed_domain = None
-        if self.config.allowed_path:
-            # Check if allowed_path is a full URL or just a path
-            if self.config.allowed_path.startswith(("http://", "https://")):
-                # It's a full URL - extract domain and path
-                parsed_allowed = urlparse(self.config.allowed_path)
-                allowed_domain = parsed_allowed.netloc
-                base_path = parsed_allowed.path.rstrip("/")
-                logger.info(f"Restricting crawl to URL: {allowed_domain}{base_path}")
-            else:
-                # It's just a path
-                base_path = self.config.allowed_path.rstrip("/")
-                logger.info(f"Restricting crawl to allowed path: {base_path}")
+        allowed_path_configs = []  # List of (domain, path) tuples
+        
+        # Get list of allowed paths (new multiple paths or fallback to single path)
+        allowed_paths_list = []
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+            allowed_paths_list = self.config.allowed_paths
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
+        if allowed_paths_list:
+            for allowed_path in allowed_paths_list:
+                # Check if allowed_path is a full URL or just a path
+                if allowed_path.startswith(("http://", "https://")):
+                    # It's a full URL - extract domain and path
+                    parsed_allowed = urlparse(allowed_path)
+                    path_config = (parsed_allowed.netloc, parsed_allowed.path.rstrip("/"))
+                    allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to URL: {parsed_allowed.netloc}{parsed_allowed.path.rstrip('/')}")
+                    # For backward compatibility, set allowed_domain from first URL if not set
+                    if allowed_domain is None:
+                        allowed_domain = parsed_allowed.netloc
+                else:
+                    # It's just a path
+                    path_config = (None, allowed_path.rstrip("/"))
+                    allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to allowed path: {allowed_path.rstrip('/')}")
         else:
+            # Use the start URL's path if no allowed paths specified
             base_path = start_parsed.path.rstrip("/")
             if base_path:
+                allowed_path_configs.append((None, base_path))
                 logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # If no allowed domains specified, restrict to start domain
@@ -38685,22 +38784,25 @@ class BeautifulSoupScraper(WebScraperBase):
                     continue
 
                 # Check subdirectory restriction (but always allow the start URL)
-                if base_path and url != start_url:
+                if allowed_path_configs and url != start_url:
                     url_parsed = urlparse(url)
-
-                    # If allowed_path was a full URL, check domain too
-                    if allowed_domain and url_parsed.netloc != allowed_domain:
+                    
+                    # Check if URL matches any of the allowed path configurations
+                    path_allowed = False
+                    for allowed_domain_config, allowed_path_config in allowed_path_configs:
+                        # If a domain is specified in the config, check it matches
+                        if allowed_domain_config and url_parsed.netloc != allowed_domain_config:
+                            continue  # Try next config
+                        
+                        # Check if the path is allowed
+                        if (url_parsed.path.startswith(allowed_path_config + "/") or 
+                            url_parsed.path == allowed_path_config):
+                            path_allowed = True
+                            break  # Found a matching config
+                    
+                    if not path_allowed:
                         logger.debug(
-                            f"Skipping {url} - different domain than allowed {allowed_domain}"
-                        )
-                        continue
-
-                    if (
-                        not url_parsed.path.startswith(base_path + "/")
-                        and url_parsed.path != base_path
-                    ):
-                        logger.debug(
-                            f"Skipping {url} - outside allowed path {base_path}"
+                            f"Skipping {url} - outside allowed paths {allowed_path_configs}"
                         )
                         continue
 
@@ -39250,31 +39352,41 @@ class HTTrackScraper(PythonMirrorScraper):
             cmd.extend(["+*" + parsed.netloc + "*"])
 
         # Add subdirectory restriction if path is specified
-        # Use allowed_path if specified, otherwise use the URL's path
-        if self.config.allowed_path:
-            # Check if allowed_path is a full URL or just a path
-            if self.config.allowed_path.startswith(("http://", "https://")):
-                # It's a full URL - extract domain and path
-                parsed_allowed = urlparse(self.config.allowed_path)
-                allowed_domain = parsed_allowed.netloc
-                allowed_path = parsed_allowed.path.rstrip("/")
-                logger.info(
-                    f"Restricting HTTrack crawl to URL: {allowed_domain}{allowed_path}"
-                )
-                # Allow the specified URL and everything under it
-                cmd.extend([f"+*{allowed_domain}{allowed_path}/*"])
-                # Exclude everything else on that domain
-                cmd.extend([f"-*{allowed_domain}/*"])
-            else:
-                # It's just a path
-                allowed_path = self.config.allowed_path.rstrip("/")
-                logger.info(
-                    f"Restricting HTTrack crawl to allowed path: {allowed_path}"
-                )
-                # Allow the specified path and everything under it
-                cmd.extend([f"+*{parsed.netloc}{allowed_path}/*"])
-                # Exclude everything else on the same domain
-                cmd.extend([f"-*{parsed.netloc}/*"])
+        # Handle allowed paths (single or multiple)
+        allowed_paths_list = []
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+            allowed_paths_list = self.config.allowed_paths
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
+        if allowed_paths_list:
+            allowed_domains = set()  # Track domains we're allowing
+            for allowed_path in allowed_paths_list:
+                # Check if allowed_path is a full URL or just a path
+                if allowed_path.startswith(("http://", "https://")):
+                    # It's a full URL - extract domain and path
+                    parsed_allowed = urlparse(allowed_path)
+                    allowed_domain = parsed_allowed.netloc
+                    path_part = parsed_allowed.path.rstrip("/")
+                    logger.info(
+                        f"Restricting HTTrack crawl to URL: {allowed_domain}{path_part}"
+                    )
+                    # Allow the specified URL and everything under it
+                    cmd.extend([f"+*{allowed_domain}{path_part}/*"])
+                    allowed_domains.add(allowed_domain)
+                else:
+                    # It's just a path
+                    path_part = allowed_path.rstrip("/")
+                    logger.info(
+                        f"Restricting HTTrack crawl to allowed path: {path_part}"
+                    )
+                    # Allow the specified path and everything under it
+                    cmd.extend([f"+*{parsed.netloc}{path_part}/*"])
+                    allowed_domains.add(parsed.netloc)
+            
+            # Exclude everything else on each domain we're allowing from
+            for domain in allowed_domains:
+                cmd.extend([f"-*{domain}/*"])
         elif base_path:
             logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
             # Allow the base path and everything under it
@@ -39392,23 +39504,34 @@ class HTTrackScraper(PythonMirrorScraper):
                                 # Check if we should respect the canonical URL
                                 should_skip = True
 
-                                if self.config.allowed_path:
+                                # Check allowed paths (single or multiple)
+                                allowed_paths_list = []
+                                if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+                                    allowed_paths_list = self.config.allowed_paths
+                                elif self.config.allowed_path:
+                                    allowed_paths_list = [self.config.allowed_path]
+                                
+                                if allowed_paths_list:
                                     # Parse URLs to check paths
                                     current_parsed = urlparse(normalized_url)
                                     canonical_parsed = urlparse(normalized_canonical)
 
-                                    # If current URL is within allowed_path but canonical is outside,
+                                    # If current URL is within any allowed_path but canonical is outside all,
                                     # don't skip - the user explicitly wants content from allowed_path
-                                    if current_parsed.path.startswith(
-                                        self.config.allowed_path
-                                    ):
-                                        if not canonical_parsed.path.startswith(
-                                            self.config.allowed_path
-                                        ):
-                                            should_skip = False
-                                            logger.info(
-                                                f"Not skipping {url} - canonical URL {canonical_url_found} is outside allowed_path {self.config.allowed_path}"
-                                            )
+                                    current_in_allowed = any(
+                                        current_parsed.path.startswith(allowed_path)
+                                        for allowed_path in allowed_paths_list
+                                    )
+                                    canonical_in_allowed = any(
+                                        canonical_parsed.path.startswith(allowed_path)
+                                        for allowed_path in allowed_paths_list
+                                    )
+                                    
+                                    if current_in_allowed and not canonical_in_allowed:
+                                        should_skip = False
+                                        logger.info(
+                                            f"Not skipping {url} - canonical URL {canonical_url_found} is outside allowed_paths {allowed_paths_list}"
+                                        )
 
                                 if should_skip:
                                     logger.info(
@@ -39771,23 +39894,39 @@ class PlaywrightScraper(WebScraperBase):
         base_domain = parsed_start.netloc
 
         # Store the base path for subdirectory restriction
-        # Use allowed_path if specified, otherwise use the start URL's path
+        # Handle allowed paths (single or multiple)
         allowed_domain = None
-        if self.config.allowed_path:
-            # Check if allowed_path is a full URL or just a path
-            if self.config.allowed_path.startswith(("http://", "https://")):
-                # It's a full URL - extract domain and path
-                parsed_allowed = urlparse(self.config.allowed_path)
-                allowed_domain = parsed_allowed.netloc
-                base_path = parsed_allowed.path.rstrip("/")
-                logger.info(f"Restricting crawl to URL: {allowed_domain}{base_path}")
-            else:
-                # It's just a path
-                base_path = self.config.allowed_path.rstrip("/")
-                logger.info(f"Restricting crawl to allowed path: {base_path}")
+        allowed_path_configs = []  # List of (domain, path) tuples
+        
+        # Get list of allowed paths (new multiple paths or fallback to single path)
+        allowed_paths_list = []
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+            allowed_paths_list = self.config.allowed_paths
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
+        if allowed_paths_list:
+            for allowed_path in allowed_paths_list:
+                # Check if allowed_path is a full URL or just a path
+                if allowed_path.startswith(("http://", "https://")):
+                    # It's a full URL - extract domain and path
+                    parsed_allowed = urlparse(allowed_path)
+                    path_config = (parsed_allowed.netloc, parsed_allowed.path.rstrip("/"))
+                    allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to URL: {parsed_allowed.netloc}{parsed_allowed.path.rstrip('/')}")
+                    # For backward compatibility, set allowed_domain from first URL if not set
+                    if allowed_domain is None:
+                        allowed_domain = parsed_allowed.netloc
+                else:
+                    # It's just a path
+                    path_config = (None, allowed_path.rstrip("/"))
+                    allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to allowed path: {allowed_path.rstrip('/')}")
         else:
+            # Use the start URL's path if no allowed paths specified
             base_path = parsed_start.path.rstrip("/")
             if base_path:
+                allowed_path_configs.append((None, base_path))
                 logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # Initialize queue
@@ -39851,23 +39990,34 @@ class PlaywrightScraper(WebScraperBase):
                             # Check if we should respect the canonical URL
                             should_skip = True
 
-                            if self.config.allowed_path:
+                            # Check allowed paths (single or multiple)
+                            allowed_paths_list = []
+                            if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+                                allowed_paths_list = self.config.allowed_paths
+                            elif self.config.allowed_path:
+                                allowed_paths_list = [self.config.allowed_path]
+                            
+                            if allowed_paths_list:
                                 # Parse URLs to check paths
                                 current_parsed = urlparse(normalized_current)
                                 canonical_parsed = urlparse(normalized_canonical)
 
-                                # If current URL is within allowed_path but canonical is outside,
+                                # If current URL is within any allowed_path but canonical is outside all,
                                 # don't skip - the user explicitly wants content from allowed_path
-                                if current_parsed.path.startswith(
-                                    self.config.allowed_path
-                                ):
-                                    if not canonical_parsed.path.startswith(
-                                        self.config.allowed_path
-                                    ):
-                                        should_skip = False
-                                        logger.info(
-                                            f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
-                                        )
+                                current_in_allowed = any(
+                                    current_parsed.path.startswith(allowed_path)
+                                    for allowed_path in allowed_paths_list
+                                )
+                                canonical_in_allowed = any(
+                                    canonical_parsed.path.startswith(allowed_path)
+                                    for allowed_path in allowed_paths_list
+                                )
+                                
+                                if current_in_allowed and not canonical_in_allowed:
+                                    should_skip = False
+                                    logger.info(
+                                        f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_paths {allowed_paths_list}"
+                                    )
 
                             if should_skip:
                                 logger.info(
@@ -39912,23 +40062,23 @@ class PlaywrightScraper(WebScraperBase):
                                 continue
 
                             # Check subdirectory restriction (but always allow the start URL)
-                            if base_path and link != start_url:
-                                # If allowed_path was a full URL, check domain too
-                                if (
-                                    allowed_domain
-                                    and parsed_url.netloc != allowed_domain
-                                ):
+                            if allowed_path_configs and link != start_url:
+                                # Check if URL matches any of the allowed path configurations
+                                path_allowed = False
+                                for allowed_domain_config, allowed_path_config in allowed_path_configs:
+                                    # If a domain is specified in the config, check it matches
+                                    if allowed_domain_config and parsed_url.netloc != allowed_domain_config:
+                                        continue  # Try next config
+                                    
+                                    # Check if the path is allowed
+                                    if (parsed_url.path.startswith(allowed_path_config + "/") or 
+                                        parsed_url.path == allowed_path_config):
+                                        path_allowed = True
+                                        break  # Found a matching config
+                                
+                                if not path_allowed:
                                     logger.debug(
-                                        f"Skipping {link} - different domain than allowed {allowed_domain}"
-                                    )
-                                    continue
-
-                                if (
-                                    not parsed_url.path.startswith(base_path + "/")
-                                    and parsed_url.path != base_path
-                                ):
-                                    logger.debug(
-                                        f"Skipping {link} - outside allowed path {base_path}"
+                                        f"Skipping {link} - outside allowed paths {allowed_path_configs}"
                                     )
                                     continue
 
@@ -40461,21 +40611,34 @@ class SelectolaxScraper(WebScraperBase):
                         # Check if we should respect the canonical URL
                         should_skip = True
 
-                        if self.config.allowed_path:
+                        # Check allowed paths (single or multiple)
+                        allowed_paths_list = []
+                        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+                            allowed_paths_list = self.config.allowed_paths
+                        elif self.config.allowed_path:
+                            allowed_paths_list = [self.config.allowed_path]
+                        
+                        if allowed_paths_list:
                             # Parse URLs to check paths
                             current_parsed = urlparse(normalized_url)
                             canonical_parsed = urlparse(normalized_canonical)
 
-                            # If current URL is within allowed_path but canonical is outside,
+                            # If current URL is within any allowed_path but canonical is outside all,
                             # don't skip - the user explicitly wants content from allowed_path
-                            if current_parsed.path.startswith(self.config.allowed_path):
-                                if not canonical_parsed.path.startswith(
-                                    self.config.allowed_path
-                                ):
-                                    should_skip = False
-                                    logger.info(
-                                        f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_path {self.config.allowed_path}"
-                                    )
+                            current_in_allowed = any(
+                                current_parsed.path.startswith(allowed_path)
+                                for allowed_path in allowed_paths_list
+                            )
+                            canonical_in_allowed = any(
+                                canonical_parsed.path.startswith(allowed_path)
+                                for allowed_path in allowed_paths_list
+                            )
+                            
+                            if current_in_allowed and not canonical_in_allowed:
+                                should_skip = False
+                                logger.info(
+                                    f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_paths {allowed_paths_list}"
+                                )
 
                         if should_skip:
                             logger.info(
@@ -40575,23 +40738,39 @@ class SelectolaxScraper(WebScraperBase):
         base_domain = parsed_start.netloc
 
         # Store the base path for subdirectory restriction
-        # Use allowed_path if specified, otherwise use the start URL's path
+        # Handle allowed paths (single or multiple)
         allowed_domain = None
-        if self.config.allowed_path:
-            # Check if allowed_path is a full URL or just a path
-            if self.config.allowed_path.startswith(("http://", "https://")):
-                # It's a full URL - extract domain and path
-                parsed_allowed = urlparse(self.config.allowed_path)
-                allowed_domain = parsed_allowed.netloc
-                base_path = parsed_allowed.path.rstrip("/")
-                logger.info(f"Restricting crawl to URL: {allowed_domain}{base_path}")
-            else:
-                # It's just a path
-                base_path = self.config.allowed_path.rstrip("/")
-                logger.info(f"Restricting crawl to allowed path: {base_path}")
+        allowed_path_configs = []  # List of (domain, path) tuples
+        
+        # Get list of allowed paths (new multiple paths or fallback to single path)
+        allowed_paths_list = []
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+            allowed_paths_list = self.config.allowed_paths
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
+        if allowed_paths_list:
+            for allowed_path in allowed_paths_list:
+                # Check if allowed_path is a full URL or just a path
+                if allowed_path.startswith(("http://", "https://")):
+                    # It's a full URL - extract domain and path
+                    parsed_allowed = urlparse(allowed_path)
+                    path_config = (parsed_allowed.netloc, parsed_allowed.path.rstrip("/"))
+                    allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to URL: {parsed_allowed.netloc}{parsed_allowed.path.rstrip('/')}")
+                    # For backward compatibility, set allowed_domain from first URL if not set
+                    if allowed_domain is None:
+                        allowed_domain = parsed_allowed.netloc
+                else:
+                    # It's just a path
+                    path_config = (None, allowed_path.rstrip("/"))
+                    allowed_path_configs.append(path_config)
+                    logger.info(f"Restricting crawl to allowed path: {allowed_path.rstrip('/')}")
         else:
+            # Use the start URL's path if no allowed paths specified
             base_path = parsed_start.path.rstrip("/")
             if base_path:
+                allowed_path_configs.append((None, base_path))
                 logger.info(f"Restricting crawl to subdirectory: {base_path}")
 
         # Initialize queue with start URL
@@ -40648,18 +40827,21 @@ class SelectolaxScraper(WebScraperBase):
                                 continue
 
                             # Check subdirectory restriction (but always allow the start URL)
-                            if base_path and absolute_url != start_url:
-                                # If allowed_path was a full URL, check domain too
-                                if (
-                                    allowed_domain
-                                    and parsed_url.netloc != allowed_domain
-                                ):
-                                    continue
-
-                                if (
-                                    not parsed_url.path.startswith(base_path + "/")
-                                    and parsed_url.path != base_path
-                                ):
+                            if allowed_path_configs and absolute_url != start_url:
+                                # Check if URL matches any of the allowed path configurations
+                                path_allowed = False
+                                for allowed_domain_config, allowed_path_config in allowed_path_configs:
+                                    # If a domain is specified in the config, check it matches
+                                    if allowed_domain_config and parsed_url.netloc != allowed_domain_config:
+                                        continue  # Try next config
+                                    
+                                    # Check if the path is allowed
+                                    if (parsed_url.path.startswith(allowed_path_config + "/") or 
+                                        parsed_url.path == allowed_path_config):
+                                        path_allowed = True
+                                        break  # Found a matching config
+                                
+                                if not path_allowed:
                                     continue
 
                             # Skip if matches exclude pattern

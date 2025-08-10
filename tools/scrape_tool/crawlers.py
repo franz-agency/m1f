@@ -61,12 +61,20 @@ class WebCrawler:
             list(self.config.excluded_paths) if self.config.excluded_paths else []
         )
 
+        # Handle allowed paths - convert single path to list if needed
+        allowed_paths_list = None
+        if self.config.allowed_paths:
+            allowed_paths_list = list(self.config.allowed_paths)
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
         # Create scraper config
         scraper_kwargs = {
             "max_depth": self.config.max_depth,
             "max_pages": self.config.max_pages,
             "allowed_domains": allowed_domains,
             "allowed_path": self.config.allowed_path,
+            "allowed_paths": allowed_paths_list,
             "exclude_patterns": exclude_patterns,
             "respect_robots_txt": self.config.respect_robots_txt,
             "concurrent_requests": self.config.concurrent_requests,
@@ -132,6 +140,7 @@ class WebCrawler:
                 max_depth INTEGER,
                 max_pages INTEGER,
                 allowed_path TEXT,
+                allowed_paths TEXT,
                 excluded_paths TEXT,
                 scraper_backend TEXT,
                 request_delay REAL,
@@ -170,6 +179,30 @@ class WebCrawler:
         
         self._db_conn.commit()
         logger.info("Database migration to v2 completed")
+
+    def _migrate_database_v3(self, cursor) -> None:
+        """Migrate database to v3 with allowed_paths column.
+        
+        Migration adds:
+        - allowed_paths column to scraping_sessions table
+        """
+        # Check if migration is needed
+        cursor.execute("PRAGMA table_info(scraping_sessions)")
+        columns = [col[1] for col in cursor.fetchall()]
+        
+        if 'allowed_paths' in columns:
+            return  # Already migrated
+        
+        logger.info("Migrating database to v3 (adding allowed_paths column)")
+        
+        try:
+            # Add allowed_paths column
+            cursor.execute("ALTER TABLE scraping_sessions ADD COLUMN allowed_paths TEXT")
+            self._db_conn.commit()
+            logger.info("Database migration to v3 completed")
+        except Exception as e:
+            logger.error(f"Failed to migrate database to v3: {e}")
+            # Don't fail the entire operation, just log the error
 
     def _cleanup_orphaned_sessions(self) -> None:
         """Clean up sessions that were left in 'running' state from crashes or kills.
@@ -278,6 +311,9 @@ class WebCrawler:
         # Clean up any orphaned sessions from previous crashes
         self._cleanup_orphaned_sessions()
         
+        # Run additional migration for allowed_paths column if needed
+        self._migrate_database_v3(cursor)
+        
         # Create current schema tables (if not created by migration)
         # Create scraping_sessions table
         cursor.execute(
@@ -293,6 +329,7 @@ class WebCrawler:
                 max_depth INTEGER,
                 max_pages INTEGER,
                 allowed_path TEXT,
+                allowed_paths TEXT,
                 excluded_paths TEXT,
                 scraper_backend TEXT,
                 request_delay REAL,
@@ -355,20 +392,26 @@ class WebCrawler:
             
         cursor = self._db_conn.cursor()
         
-        # Convert excluded_paths set to JSON string if present
+        # Convert excluded_paths and allowed_paths to JSON strings if present
         import json
         excluded_paths_str = None
         if self.config.excluded_paths:
             excluded_paths_str = json.dumps(list(self.config.excluded_paths))
         
+        allowed_paths_str = None
+        if self.config.allowed_paths:
+            allowed_paths_str = json.dumps(list(self.config.allowed_paths))
+        elif self.config.allowed_path:
+            allowed_paths_str = json.dumps([self.config.allowed_path])
+        
         cursor.execute(
             """
             INSERT INTO scraping_sessions (
-                start_url, start_time, max_depth, max_pages, allowed_path,
+                start_url, start_time, max_depth, max_pages, allowed_path, allowed_paths,
                 excluded_paths, scraper_backend, request_delay, concurrent_requests,
                 ignore_get_params, check_canonical, check_content_duplicates,
                 force_rescrape, user_agent, timeout, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 start_url,
@@ -376,6 +419,7 @@ class WebCrawler:
                 self.config.max_depth,
                 self.config.max_pages,
                 self.config.allowed_path,
+                allowed_paths_str,
                 excluded_paths_str,
                 self.config.scraper_backend.value if self.config.scraper_backend else None,
                 self.config.request_delay,

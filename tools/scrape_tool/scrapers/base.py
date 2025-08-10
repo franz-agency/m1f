@@ -35,6 +35,7 @@ class ScraperConfig:
     max_pages: int = 10000
     allowed_domains: Optional[List[str]] = None
     allowed_path: Optional[str] = None
+    allowed_paths: Optional[List[str]] = None
     exclude_patterns: Optional[List[str]] = None
     respect_robots_txt: bool = True
     concurrent_requests: int = 5
@@ -55,6 +56,8 @@ class ScraperConfig:
         """Initialize mutable defaults."""
         if self.allowed_domains is None:
             self.allowed_domains = []
+        if self.allowed_paths is None:
+            self.allowed_paths = []
         if self.exclude_patterns is None:
             self.exclude_patterns = []
         if self.custom_headers is None:
@@ -332,8 +335,16 @@ class WebScraperBase(ABC):
             if parsed.netloc not in self.config.allowed_domains:
                 return False
         
-        # Check allowed path if configured
-        if hasattr(self.config, 'allowed_path') and self.config.allowed_path:
+        # Check allowed paths (new multiple paths logic)
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+            path_allowed = any(
+                parsed.path.startswith(allowed_path) 
+                for allowed_path in self.config.allowed_paths
+            )
+            if not path_allowed:
+                return False
+        # Fallback to old single path for backward compatibility
+        elif hasattr(self.config, 'allowed_path') and self.config.allowed_path:
             if not parsed.path.startswith(self.config.allowed_path):
                 return False
         

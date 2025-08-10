@@ -702,6 +702,7 @@ Perfect for:
   %(prog)s https://example.com/docs -o ./html
   %(prog)s https://example.com/docs -o ./html --max-pages 100
   %(prog)s https://example.com/blog -o ./html --allowed-path /blog/2024/
+  %(prog)s https://example.com/docs -o ./html --allowed-paths /docs/ /api/ /guides/
   %(prog)s https://example.com -o ./html --scraper httrack
   %(prog)s --show-db-stats -o ./html  # Show scraping statistics
 
@@ -779,11 +780,22 @@ For more information, see the documentation."""
         default=10000,
         help="Maximum pages to crawl (default: 10000, use -1 for unlimited)",
     )
-    crawl_group.add_argument(
+    
+    # Path restriction options (mutually exclusive)
+    path_group = crawl_group.add_mutually_exclusive_group()
+    path_group.add_argument(
         "--allowed-path",
         type=str,
         help="Restrict crawling to this path and subdirectories (e.g., /docs/)",
     )
+    path_group.add_argument(
+        "--allowed-paths",
+        type=str,
+        nargs="*",
+        metavar="PATH",
+        help="Restrict crawling to multiple paths and subdirectories (e.g., /docs/ /api/)",
+    )
+    
     crawl_group.add_argument(
         "--excluded-paths",
         type=str,
@@ -966,6 +978,7 @@ def main() -> None:
     config.crawler.max_depth = args.max_depth
     config.crawler.max_pages = args.max_pages
     config.crawler.allowed_path = args.allowed_path
+    config.crawler.allowed_paths = args.allowed_paths
     if args.excluded_paths:
         config.crawler.excluded_paths = args.excluded_paths
     config.crawler.scraper_backend = ScraperBackend(args.scraper)

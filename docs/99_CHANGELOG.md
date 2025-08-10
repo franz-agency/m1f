@@ -38,6 +38,8 @@ and this project adheres to
   - File size limits with chunked reading
   - SSRF protection for asset downloads
   - External CDN support for assets (configurable)
+  - Automatic path adjustment in HTML files when using --allowed-path/--allowed-paths
+  - Fixed binary file reading issue in resume functionality
 
 ### Security
 
@@ -145,13 +147,19 @@ and this project adheres to
   - Updated documentation to explain `-1` unlimited option
   - Added example for unlimited scraping with caution note
 
-- **m1f-scrape Advanced Path Control**: New `--allowed-path` parameter
-  - Allows starting from specific page while controlling crawling boundaries
-  - Overrides automatic path restriction based on start URL
+- **m1f-scrape Advanced Path Control**: New `--allowed-path` and `--allowed-paths` parameters
+  - **Single Path (Legacy)**: `--allowed-path` for backward compatibility
+    - Allows starting from specific page while controlling crawling boundaries
+    - Overrides automatic path restriction based on start URL
+    - Example: Start from `/products/widget.html` but crawl all `/products/`
+  - **Multiple Paths (New)**: `--allowed-paths` for crawling multiple directories
+    - Accepts space-separated list of paths
+    - Example: `--allowed-paths /docs/ /api/ /reference/`
+    - Cannot be used together with `--allowed-path` (mutually exclusive)
   - Start URL is always scraped regardless of path restrictions
-  - Example: Start from `/Extensions/eZ-Publish-extensions.html` but crawl all `/Extensions/`
   - Useful for documentation sites where index pages link to different directories
   - Implemented across all scraper backends (BeautifulSoup, HTTrack, Selectolax, Playwright, Scrapy)
+  - Database schema updated to support multiple paths (v3 migration)
   - Added `check_ssrf` configuration parameter to enable/disable SSRF protection (defaults to enabled)
   - Fixed test server to support subdirectory routing for comprehensive testing
   - Added integration and unit tests with proper mocking

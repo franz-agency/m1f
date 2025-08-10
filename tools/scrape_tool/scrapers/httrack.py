@@ -321,31 +321,41 @@ class HTTrackScraper(PythonMirrorScraper):
             cmd.extend(["+*" + parsed.netloc + "*"])
 
         # Add subdirectory restriction if path is specified
-        # Use allowed_path if specified, otherwise use the URL's path
-        if self.config.allowed_path:
-            # Check if allowed_path is a full URL or just a path
-            if self.config.allowed_path.startswith(("http://", "https://")):
-                # It's a full URL - extract domain and path
-                parsed_allowed = urlparse(self.config.allowed_path)
-                allowed_domain = parsed_allowed.netloc
-                allowed_path = parsed_allowed.path.rstrip("/")
-                logger.info(
-                    f"Restricting HTTrack crawl to URL: {allowed_domain}{allowed_path}"
-                )
-                # Allow the specified URL and everything under it
-                cmd.extend([f"+*{allowed_domain}{allowed_path}/*"])
-                # Exclude everything else on that domain
-                cmd.extend([f"-*{allowed_domain}/*"])
-            else:
-                # It's just a path
-                allowed_path = self.config.allowed_path.rstrip("/")
-                logger.info(
-                    f"Restricting HTTrack crawl to allowed path: {allowed_path}"
-                )
-                # Allow the specified path and everything under it
-                cmd.extend([f"+*{parsed.netloc}{allowed_path}/*"])
-                # Exclude everything else on the same domain
-                cmd.extend([f"-*{parsed.netloc}/*"])
+        # Handle allowed paths (single or multiple)
+        allowed_paths_list = []
+        if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+            allowed_paths_list = self.config.allowed_paths
+        elif self.config.allowed_path:
+            allowed_paths_list = [self.config.allowed_path]
+        
+        if allowed_paths_list:
+            allowed_domains = set()  # Track domains we're allowing
+            for allowed_path in allowed_paths_list:
+                # Check if allowed_path is a full URL or just a path
+                if allowed_path.startswith(("http://", "https://")):
+                    # It's a full URL - extract domain and path
+                    parsed_allowed = urlparse(allowed_path)
+                    allowed_domain = parsed_allowed.netloc
+                    path_part = parsed_allowed.path.rstrip("/")
+                    logger.info(
+                        f"Restricting HTTrack crawl to URL: {allowed_domain}{path_part}"
+                    )
+                    # Allow the specified URL and everything under it
+                    cmd.extend([f"+*{allowed_domain}{path_part}/*"])
+                    allowed_domains.add(allowed_domain)
+                else:
+                    # It's just a path
+                    path_part = allowed_path.rstrip("/")
+                    logger.info(
+                        f"Restricting HTTrack crawl to allowed path: {path_part}"
+                    )
+                    # Allow the specified path and everything under it
+                    cmd.extend([f"+*{parsed.netloc}{path_part}/*"])
+                    allowed_domains.add(parsed.netloc)
+            
+            # Exclude everything else on each domain we're allowing from
+            for domain in allowed_domains:
+                cmd.extend([f"-*{domain}/*"])
         elif base_path:
             logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
             # Allow the base path and everything under it
@@ -463,23 +473,34 @@ class HTTrackScraper(PythonMirrorScraper):
                                 # Check if we should respect the canonical URL
                                 should_skip = True
 
-                                if self.config.allowed_path:
+                                # Check allowed paths (single or multiple)
+                                allowed_paths_list = []
+                                if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+                                    allowed_paths_list = self.config.allowed_paths
+                                elif self.config.allowed_path:
+                                    allowed_paths_list = [self.config.allowed_path]
+                                
+                                if allowed_paths_list:
                                     # Parse URLs to check paths
                                     current_parsed = urlparse(normalized_url)
                                     canonical_parsed = urlparse(normalized_canonical)
 
-                                    # If current URL is within allowed_path but canonical is outside,
+                                    # If current URL is within any allowed_path but canonical is outside all,
                                     # don't skip - the user explicitly wants content from allowed_path
-                                    if current_parsed.path.startswith(
-                                        self.config.allowed_path
-                                    ):
-                                        if not canonical_parsed.path.startswith(
-                                            self.config.allowed_path
-                                        ):
-                                            should_skip = False
-                                            logger.info(
-                                                f"Not skipping {url} - canonical URL {canonical_url_found} is outside allowed_path {self.config.allowed_path}"
-                                            )
+                                    current_in_allowed = any(
+                                        current_parsed.path.startswith(allowed_path)
+                                        for allowed_path in allowed_paths_list
+                                    )
+                                    canonical_in_allowed = any(
+                                        canonical_parsed.path.startswith(allowed_path)
+                                        for allowed_path in allowed_paths_list
+                                    )
+                                    
+                                    if current_in_allowed and not canonical_in_allowed:
+                                        should_skip = False
+                                        logger.info(
+                                            f"Not skipping {url} - canonical URL {canonical_url_found} is outside allowed_paths {allowed_paths_list}"
+                                        )
 
                                 if should_skip:
                                     logger.info(
