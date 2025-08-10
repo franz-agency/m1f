@@ -53,7 +53,7 @@ class TestMultipleAllowedPathsFeature:
     def mock_html_responses(self):
         """Mock HTML responses for testing multiple paths."""
         return {
-            "http://test.com/docs/index.html": """
+            "http://example.com/docs/index.html": """
                 <html>
                 <body>
                     <h1>Documentation Index</h1>
@@ -66,7 +66,7 @@ class TestMultipleAllowedPathsFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/docs/guide.html": """
+            "http://example.com/docs/guide.html": """
                 <html>
                 <body>
                     <h1>Guide</h1>
@@ -75,7 +75,7 @@ class TestMultipleAllowedPathsFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/docs/advanced.html": """
+            "http://example.com/docs/advanced.html": """
                 <html>
                 <body>
                     <h1>Advanced Guide</h1>
@@ -83,7 +83,7 @@ class TestMultipleAllowedPathsFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/api/overview.html": """
+            "http://example.com/api/overview.html": """
                 <html>
                 <body>
                     <h1>API Overview</h1>
@@ -92,7 +92,7 @@ class TestMultipleAllowedPathsFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/api/endpoints.html": """
+            "http://example.com/api/endpoints.html": """
                 <html>
                 <body>
                     <h1>API Endpoints</h1>
@@ -100,7 +100,7 @@ class TestMultipleAllowedPathsFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/api/auth.html": """
+            "http://example.com/api/auth.html": """
                 <html>
                 <body>
                     <h1>Authentication</h1>
@@ -108,7 +108,7 @@ class TestMultipleAllowedPathsFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/guides/start.html": """
+            "http://example.com/guides/start.html": """
                 <html>
                 <body>
                     <h1>Getting Started</h1>
@@ -116,7 +116,7 @@ class TestMultipleAllowedPathsFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/blog/news.html": """
+            "http://example.com/blog/news.html": """
                 <html>
                 <body>
                     <h1>Blog News</h1>
@@ -124,7 +124,7 @@ class TestMultipleAllowedPathsFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/admin/settings.html": """
+            "http://example.com/admin/settings.html": """
                 <html>
                 <body>
                     <h1>Admin Settings</h1>
@@ -180,25 +180,25 @@ class TestMultipleAllowedPathsFeature:
             # Mock robots.txt check to always allow
             with patch.object(scraper, "can_fetch", return_value=True):
                 async with scraper:
-                    async for page in scraper.scrape_site("http://test.com/docs/index.html"):
+                    async for page in scraper.scrape_site("http://example.com/docs/index.html"):
                         scraped_urls.append(page.url)
 
         # Check that we scraped the start URL (always allowed)
-        assert "http://test.com/docs/index.html" in scraped_urls
+        assert "http://example.com/docs/index.html" in scraped_urls
 
         # Check that we scraped pages under /docs/
-        assert "http://test.com/docs/guide.html" in scraped_urls
-        assert "http://test.com/docs/advanced.html" in scraped_urls
+        assert "http://example.com/docs/guide.html" in scraped_urls
+        assert "http://example.com/docs/advanced.html" in scraped_urls
 
         # Check that we scraped pages under /api/
-        assert "http://test.com/api/overview.html" in scraped_urls
-        assert "http://test.com/api/endpoints.html" in scraped_urls
-        assert "http://test.com/api/auth.html" in scraped_urls
+        assert "http://example.com/api/overview.html" in scraped_urls
+        assert "http://example.com/api/endpoints.html" in scraped_urls
+        assert "http://example.com/api/auth.html" in scraped_urls
 
         # Check that we did NOT scrape pages outside /docs/ and /api/
-        assert "http://test.com/guides/start.html" not in scraped_urls
-        assert "http://test.com/blog/news.html" not in scraped_urls
-        assert "http://test.com/admin/settings.html" not in scraped_urls
+        assert "http://example.com/guides/start.html" not in scraped_urls
+        assert "http://example.com/blog/news.html" not in scraped_urls
+        assert "http://example.com/admin/settings.html" not in scraped_urls
 
     @pytest.mark.asyncio
     async def test_beautifulsoup_empty_allowed_paths(self, mock_html_responses, temp_dir):
@@ -246,17 +246,17 @@ class TestMultipleAllowedPathsFeature:
             # Mock robots.txt check to always allow
             with patch.object(scraper, "can_fetch", return_value=True):
                 async with scraper:
-                    async for page in scraper.scrape_site("http://test.com/docs/index.html"):
+                    async for page in scraper.scrape_site("http://example.com/docs/index.html"):
                         scraped_urls.append(page.url)
 
         # Should fall back to using the start URL's path (/docs/)
-        assert "http://test.com/docs/index.html" in scraped_urls
-        assert "http://test.com/docs/guide.html" in scraped_urls
-        assert "http://test.com/docs/advanced.html" in scraped_urls
+        assert "http://example.com/docs/index.html" in scraped_urls
+        assert "http://example.com/docs/guide.html" in scraped_urls
+        assert "http://example.com/docs/advanced.html" in scraped_urls
 
         # Should NOT scrape pages outside /docs/
-        assert "http://test.com/api/overview.html" not in scraped_urls
-        assert "http://test.com/guides/start.html" not in scraped_urls
+        assert "http://example.com/api/overview.html" not in scraped_urls
+        assert "http://example.com/guides/start.html" not in scraped_urls
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not SELECTOLAX_AVAILABLE, reason="selectolax not installed")
@@ -302,23 +302,23 @@ class TestMultipleAllowedPathsFeature:
             # Mock robots.txt check to always allow
             with patch.object(scraper, "can_fetch", return_value=True):
                 async with scraper:
-                    async for page in scraper.scrape_site("http://test.com/docs/index.html"):
+                    async for page in scraper.scrape_site("http://example.com/docs/index.html"):
                         scraped_urls.append(page.url)
 
         # Check that we scraped the start URL (always allowed)
-        assert "http://test.com/docs/index.html" in scraped_urls
+        assert "http://example.com/docs/index.html" in scraped_urls
 
         # Check that we scraped pages under both /docs/ and /api/
-        assert "http://test.com/docs/guide.html" in scraped_urls
-        assert "http://test.com/docs/advanced.html" in scraped_urls
-        assert "http://test.com/api/overview.html" in scraped_urls
-        assert "http://test.com/api/endpoints.html" in scraped_urls
-        assert "http://test.com/api/auth.html" in scraped_urls
+        assert "http://example.com/docs/guide.html" in scraped_urls
+        assert "http://example.com/docs/advanced.html" in scraped_urls
+        assert "http://example.com/api/overview.html" in scraped_urls
+        assert "http://example.com/api/endpoints.html" in scraped_urls
+        assert "http://example.com/api/auth.html" in scraped_urls
 
         # Check that we did NOT scrape pages outside /docs/ and /api/
-        assert "http://test.com/guides/start.html" not in scraped_urls
-        assert "http://test.com/blog/news.html" not in scraped_urls
-        assert "http://test.com/admin/settings.html" not in scraped_urls
+        assert "http://example.com/guides/start.html" not in scraped_urls
+        assert "http://example.com/blog/news.html" not in scraped_urls
+        assert "http://example.com/admin/settings.html" not in scraped_urls
 
     def test_crawler_config_multiple_allowed_paths(self):
         """Test that CrawlerConfig properly accepts allowed_paths."""
@@ -348,15 +348,15 @@ class TestMultipleAllowedPathsFeature:
         scraper = TestScraper(config)
 
         # URLs within allowed paths should be allowed
-        assert scraper._is_url_allowed("http://test.com/docs/guide.html")
-        assert scraper._is_url_allowed("http://test.com/api/endpoints.html")
-        assert scraper._is_url_allowed("http://test.com/docs/")
-        assert scraper._is_url_allowed("http://test.com/api/")
+        assert scraper._is_url_allowed("http://example.com/docs/guide.html")
+        assert scraper._is_url_allowed("http://example.com/api/endpoints.html")
+        assert scraper._is_url_allowed("http://example.com/docs/")
+        assert scraper._is_url_allowed("http://example.com/api/")
 
         # URLs outside allowed paths should be blocked
-        assert not scraper._is_url_allowed("http://test.com/guides/start.html")
-        assert not scraper._is_url_allowed("http://test.com/blog/news.html")
-        assert not scraper._is_url_allowed("http://test.com/admin/settings.html")
+        assert not scraper._is_url_allowed("http://example.com/guides/start.html")
+        assert not scraper._is_url_allowed("http://example.com/blog/news.html")
+        assert not scraper._is_url_allowed("http://example.com/admin/settings.html")
 
     def test_base_scraper_backward_compatibility(self):
         """Test that base scraper still works with single allowed_path."""
@@ -373,15 +373,15 @@ class TestMultipleAllowedPathsFeature:
         config = ScraperConfig(allowed_path="/docs/")
         scraper = TestScraper(config)
 
-        assert scraper._is_url_allowed("http://test.com/docs/guide.html")
-        assert not scraper._is_url_allowed("http://test.com/api/endpoints.html")
+        assert scraper._is_url_allowed("http://example.com/docs/guide.html")
+        assert not scraper._is_url_allowed("http://example.com/api/endpoints.html")
 
         # Test with no path restrictions
         config = ScraperConfig()
         scraper = TestScraper(config)
 
-        assert scraper._is_url_allowed("http://test.com/docs/guide.html")
-        assert scraper._is_url_allowed("http://test.com/api/endpoints.html")
+        assert scraper._is_url_allowed("http://example.com/docs/guide.html")
+        assert scraper._is_url_allowed("http://example.com/api/endpoints.html")
 
 
 if __name__ == "__main__":

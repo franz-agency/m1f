@@ -54,7 +54,7 @@ class TestAllowedPathFeature:
     def mock_html_responses(self):
         """Mock HTML responses for testing."""
         return {
-            "http://test.com/docs/index.html": """
+            "http://example.com/docs/index.html": """
                 <html>
                 <body>
                     <h1>Documentation Index</h1>
@@ -64,7 +64,7 @@ class TestAllowedPathFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/api/overview.html": """
+            "http://example.com/api/overview.html": """
                 <html>
                 <body>
                     <h1>API Overview</h1>
@@ -74,7 +74,7 @@ class TestAllowedPathFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/api/endpoints.html": """
+            "http://example.com/api/endpoints.html": """
                 <html>
                 <body>
                     <h1>API Endpoints</h1>
@@ -82,7 +82,7 @@ class TestAllowedPathFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/api/auth.html": """
+            "http://example.com/api/auth.html": """
                 <html>
                 <body>
                     <h1>Authentication</h1>
@@ -90,7 +90,7 @@ class TestAllowedPathFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/guides/start.html": """
+            "http://example.com/guides/start.html": """
                 <html>
                 <body>
                     <h1>Getting Started</h1>
@@ -98,7 +98,7 @@ class TestAllowedPathFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/guides/api.html": """
+            "http://example.com/guides/api.html": """
                 <html>
                 <body>
                     <h1>API Guide</h1>
@@ -106,7 +106,7 @@ class TestAllowedPathFeature:
                 </body>
                 </html>
             """,
-            "http://test.com/blog/news.html": """
+            "http://example.com/blog/news.html": """
                 <html>
                 <body>
                     <h1>Blog News</h1>
@@ -163,22 +163,22 @@ class TestAllowedPathFeature:
             with patch.object(scraper, "can_fetch", return_value=True):
                 async with scraper:
                     async for page in scraper.scrape_site(
-                        "http://test.com/docs/index.html"
+                        "http://example.com/docs/index.html"
                     ):
                         scraped_urls.append(page.url)
 
         # Check that we scraped the start URL (always allowed)
-        assert "http://test.com/docs/index.html" in scraped_urls
+        assert "http://example.com/docs/index.html" in scraped_urls
 
         # Check that we scraped pages under /api/
-        assert "http://test.com/api/overview.html" in scraped_urls
-        assert "http://test.com/api/endpoints.html" in scraped_urls
-        assert "http://test.com/api/auth.html" in scraped_urls
+        assert "http://example.com/api/overview.html" in scraped_urls
+        assert "http://example.com/api/endpoints.html" in scraped_urls
+        assert "http://example.com/api/auth.html" in scraped_urls
 
         # Check that we did NOT scrape pages outside /api/ (except start URL)
-        assert "http://test.com/guides/start.html" not in scraped_urls
-        assert "http://test.com/guides/api.html" not in scraped_urls
-        assert "http://test.com/blog/news.html" not in scraped_urls
+        assert "http://example.com/guides/start.html" not in scraped_urls
+        assert "http://example.com/guides/api.html" not in scraped_urls
+        assert "http://example.com/blog/news.html" not in scraped_urls
 
     @pytest.mark.asyncio
     async def test_without_allowed_path(self, mock_html_responses, temp_dir):
@@ -232,20 +232,20 @@ class TestAllowedPathFeature:
                     # Start from /api/overview.html - will only scrape the start URL due to
                     # current implementation using full file path as restriction
                     async for page in scraper.scrape_site(
-                        "http://test.com/api/overview.html"
+                        "http://example.com/api/overview.html"
                     ):
                         scraped_urls.append(page.url)
 
         # The start URL is always scraped
-        assert "http://test.com/api/overview.html" in scraped_urls
+        assert "http://example.com/api/overview.html" in scraped_urls
 
         # With empty allowed_paths, it gets initialized to /api/ (directory of start URL)
         # So these files under /api/ will be scraped
-        assert "http://test.com/api/endpoints.html" in scraped_urls
-        assert "http://test.com/api/auth.html" in scraped_urls
+        assert "http://example.com/api/endpoints.html" in scraped_urls
+        assert "http://example.com/api/auth.html" in scraped_urls
         
         # But files outside /api/ won't be scraped
-        assert "http://test.com/guides/api.html" not in scraped_urls
+        assert "http://example.com/guides/api.html" not in scraped_urls
 
         # Should have scraped the /api/ directory
         assert len(scraped_urls) == 3  # overview, endpoints, auth
@@ -297,21 +297,21 @@ class TestAllowedPathFeature:
             with patch.object(scraper, "can_fetch", return_value=True):
                 async with scraper:
                     async for page in scraper.scrape_site(
-                        "http://test.com/docs/index.html"
+                        "http://example.com/docs/index.html"
                     ):
                         scraped_urls.append(page.url)
 
         # Check that we scraped the start URL (always allowed)
-        assert "http://test.com/docs/index.html" in scraped_urls
+        assert "http://example.com/docs/index.html" in scraped_urls
 
         # With allowed_paths=["/api/"], only links to /api/ should be followed
-        assert "http://test.com/api/overview.html" in scraped_urls
-        assert "http://test.com/api/endpoints.html" in scraped_urls
-        assert "http://test.com/api/auth.html" in scraped_urls
+        assert "http://example.com/api/overview.html" in scraped_urls
+        assert "http://example.com/api/endpoints.html" in scraped_urls
+        assert "http://example.com/api/auth.html" in scraped_urls
 
         # These should NOT be scraped as they're outside /api/
-        assert "http://test.com/guides/start.html" not in scraped_urls
-        assert "http://test.com/blog/news.html" not in scraped_urls
+        assert "http://example.com/guides/start.html" not in scraped_urls
+        assert "http://example.com/blog/news.html" not in scraped_urls
 
     def test_crawler_config_allowed_paths(self):
         """Test that CrawlerConfig properly accepts allowed_paths."""

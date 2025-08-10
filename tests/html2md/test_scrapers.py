@@ -181,10 +181,10 @@ class TestBeautifulSoupScraper:
     @pytest.mark.asyncio
     async def test_validate_url_with_allowed_domains(self, scraper):
         """Test URL validation with allowed domains."""
-        scraper.config.allowed_domains = ["example.com", "test.com"]
+        scraper.config.allowed_domains = ["example.com", "example.com"]
 
         assert await scraper.validate_url("https://example.com/page") is True
-        assert await scraper.validate_url("https://test.com/page") is True
+        assert await scraper.validate_url("https://example.com/page") is True
         assert await scraper.validate_url("https://other.com/page") is False
 
     @pytest.mark.asyncio
