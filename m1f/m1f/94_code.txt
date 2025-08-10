@@ -352,117 +352,6 @@ before™**
 _P.S. If you're reading this, you're probably the kind of developer who reads
 documentation. We like you already._
 
-======= requirements.txt ======
-# Core dependencies
-aiofiles==24.1.0
-aiohttp==3.12.14
-anyio==4.9.0
-application_properties==0.9.0
-beautifulsoup4==4.13.4
-black==25.1.0
-certifi==2025.6.15
-chardet==5.2.0
-charset-normalizer==3.4.2
-click==8.2.1
-colorama==0.4.6
-Columnar==1.4.1
-detect-secrets==1.5.0
-html5lib==1.1
-idna==3.10
-iniconfig==2.1.0
-markdownify==1.1.0
-mypy_extensions==1.1.0
-packaging==25.0
-pathspec==0.12.1
-platformdirs==4.3.8
-pluggy==1.6.0
-pydantic==2.11.7
-pymarkdownlnt==0.9.30
-pytest==8.4.1
-pytest-asyncio==1.1.0a1
-pytest-timeout==2.4.0
-PyYAML==6.0.2
-regex==2024.11.6
-requests==2.32.4
-tiktoken==0.9.0
-tomli==2.2.1
-toolz==1.0.0
-typing_extensions==4.14.1
-urllib3==2.5.0
-wcwidth==0.2.13
-
-# Claude Code SDK for m1f-claude
-claude-code-sdk==0.0.14
-
-# Web scraping dependencies
-httpx==0.27.2
-lxml==6.0.0
-playwright==1.53.0
-scrapy==2.13.3
-selectolax==0.3.31
-
-# Test server dependencies
-Flask==3.1.1
-flask-cors==6.0.1
-
-# Additional dependencies (automatically installed)
-aiohappyeyeballs==2.6.1
-aiosignal==1.4.0
-annotated-types==0.7.0
-attrs==25.3.0
-Automat==25.4.16
-blinker==1.9.0
-cffi==1.17.1
-constantly==23.10.4
-cryptography==45.0.5
-cssselect==1.3.0
-defusedxml==0.8.0rc2
-filelock==3.18.0
-frozenlist==1.7.0
-greenlet==3.2.3
-h11==0.16.0
-httpcore==1.0.9
-hyperlink==21.0.0
-incremental==24.7.2
-itemadapter==0.11.0
-itemloaders==1.3.2
-itsdangerous==2.2.0
-Jinja2==3.1.6
-jmespath==1.0.1
-markdown-it-py==3.0.0
-MarkupSafe==3.0.2
-mdurl==0.1.2
-multidict==6.6.3
-nest-asyncio==1.6.0
-parsel==1.10.0
-propcache==0.3.2
-Protego==0.5.0
-pyasn1==0.6.1
-pyasn1_modules==0.4.2
-pycparser==2.22
-pydantic_core==2.33.2
-PyDispatcher==2.0.7
-pyee==13.0.0
-Pygments==2.19.2
-pyjson5==1.6.9
-pyOpenSSL==25.1.0
-queuelib==1.8.0
-requests-file==2.1.0
-service-identity==24.2.0
-setuptools==80.9.0
-six==1.17.0
-sniffio==1.3.1
-soupsieve==2.7
-tldextract==5.3.0
-truststore==0.10.1
-Twisted==25.5.0
-typing-inspection==0.4.1
-w3lib==2.3.1
-webencodings==0.5.1
-Werkzeug==3.1.3
-yarl==1.20.1
-zope.interface==7.2
-
 ======= docs/README.md ======
 # m1f Documentation
 
@@ -10076,38 +9965,6 @@ To add new test cases:
 
 Part of the M1F project. See main project license.
 
-======= tests/html2md_server/requirements.txt ======
-# HTML2MD Test Server Requirements
-
-# Web Framework
-flask>=2.3.0
-flask-cors>=4.0.0
-
-# HTML Processing
-beautifulsoup4>=4.12.0
-markdownify>=0.11.0
-lxml>=4.9.0
-
-# Testing
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
-pytest-timeout>=2.1.0
-
-# HTTP Client for Tests
-aiohttp>=3.8.0
-requests>=2.31.0
-
-# Utilities
-pyyaml>=6.0
-chardet>=5.2.0
-psutil>=5.9.0
-
-# Development
-black>=23.0.0
-flake8>=6.0.0
-mypy>=1.5.0 
-
 ======= tests/m1f/README.md ======
 # M1F Test Suite
 
@@ -16486,25 +16343,33 @@ class AutoBundler:
         if "preset_group" in bundle_config:
             cmd_parts.extend(["--preset-group", bundle_config["preset_group"]])
 
-        # Exclude paths file(s)
+        # Exclude paths file(s) - check bundle config first, then global settings
+        exclude_files = None
         if "exclude_paths_file" in bundle_config:
             exclude_files = bundle_config["exclude_paths_file"]
+        elif "global_settings" in global_config and "exclude_paths_file" in global_config["global_settings"]:
+            exclude_files = global_config["global_settings"]["exclude_paths_file"]
+        
+        if exclude_files:
             if isinstance(exclude_files, str):
                 exclude_files = [exclude_files]
-            if exclude_files:
-                cmd_parts.append("--exclude-paths-file")
-                for file in exclude_files:
-                    cmd_parts.append(str(self.project_root / file))
+            cmd_parts.append("--exclude-paths-file")
+            for file in exclude_files:
+                cmd_parts.append(str(self.project_root / file))
 
-        # Include paths file(s)
+        # Include paths file(s) - check bundle config first, then global settings
+        include_files = None
         if "include_paths_file" in bundle_config:
             include_files = bundle_config["include_paths_file"]
+        elif "global_settings" in global_config and "include_paths_file" in global_config["global_settings"]:
+            include_files = global_config["global_settings"]["include_paths_file"]
+        
+        if include_files:
             if isinstance(include_files, str):
                 include_files = [include_files]
-            if include_files:
-                cmd_parts.append("--include-paths-file")
-                for file in include_files:
-                    cmd_parts.append(str(self.project_root / file))
+            cmd_parts.append("--include-paths-file")
+            for file in include_files:
+                cmd_parts.append(str(self.project_root / file))
 
         # Other options
         if bundle_config.get("filename_mtime_hash"):
@@ -16953,6 +16818,12 @@ Perfect for:
     )
 
     filter_group.add_argument(
+        "--no-auto-gitignore",
+        action="store_true",
+        help="Disable automatic loading of .gitignore files (but .m1fignore is still loaded)",
+    )
+
+    filter_group.add_argument(
         "--remove-scraped-metadata",
         action="store_true",
         help="Remove scraped metadata (URL, timestamp) from HTML2MD files during processing",
@@ -17215,6 +17086,7 @@ class FilterConfig:
     include_binary_files: bool = False
     include_symlinks: bool = False
     no_default_excludes: bool = False
+    no_auto_gitignore: bool = False  # Disable automatic loading of .gitignore (but not .m1fignore)
     max_file_size: Optional[int] = None  # Size in bytes
     remove_scraped_metadata: bool = False
 
@@ -17366,6 +17238,7 @@ class Config:
             include_binary_files=getattr(args, "include_binary_files", False),
             include_symlinks=getattr(args, "include_symlinks", False),
             no_default_excludes=getattr(args, "no_default_excludes", False),
+            no_auto_gitignore=getattr(args, "no_auto_gitignore", False),
             max_file_size=max_file_size_bytes,
             remove_scraped_metadata=getattr(args, "remove_scraped_metadata", False),
         )
@@ -17898,6 +17771,17 @@ DEFAULT_EXCLUDED_FILES: Set[str] = {
     "poetry.lock",
     "Pipfile.lock",
     "yarn.lock",
+}
+
+# Default file patterns to exclude
+DEFAULT_EXCLUDED_PATTERNS: Set[str] = {
+    "*.tmp",
+    "*.bak",
+    "*.swp",
+    "*.swo",
+    "*~",
+    ".DS_Store",
+    "Thumbs.db",
 }
 
 # Maximum symlink depth to prevent infinite loops
@@ -18975,7 +18859,7 @@ from typing import List, Tuple, Set, Optional
 import pathspec
 
 from .config import Config, FilterConfig
-from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, MAX_SYMLINK_DEPTH
+from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, DEFAULT_EXCLUDED_PATTERNS, MAX_SYMLINK_DEPTH
 from .exceptions import FileNotFoundError, ValidationError
 from .logging import LoggerManager
 from .utils import (
@@ -19009,11 +18893,12 @@ class FileProcessor:
             except Exception as e:
                 self.logger.warning(f"Failed to load preset settings: {e}")
 
-        # Build exclusion sets
-        self._build_exclusion_sets()
-
-        # Apply global filter settings if available
+        # Apply global filter settings first (before building exclusion sets)
+        # This ensures global exclude_paths_file is available for _build_exclusion_sets
         self._apply_global_filter_settings()
+
+        # Build exclusion sets (will now use merged config including global settings)
+        self._build_exclusion_sets()
 
     def _build_exclusion_sets(self) -> None:
         """Build the exclusion sets from configuration."""
@@ -19026,6 +18911,10 @@ class FileProcessor:
         all_exclude_patterns = list(self.config.filter.exclude_patterns)
         if self.global_settings and self.global_settings.exclude_patterns:
             all_exclude_patterns.extend(self.global_settings.exclude_patterns)
+        
+        # Add default patterns unless disabled
+        if not self.config.filter.no_default_excludes:
+            all_exclude_patterns.extend(DEFAULT_EXCLUDED_PATTERNS)
 
         # Process exclude patterns - determine if they are directories or files
         for pattern in all_exclude_patterns:
@@ -19057,6 +18946,9 @@ class FileProcessor:
         if self.config.filter.exclude_paths_file:
             self._load_exclude_patterns()
 
+        # Auto-load .m1fignore and .gitignore files from source directories
+        self._auto_load_ignore_files()
+
         # Load inclusions from file
         self.exact_includes = set()
         self.include_gitignore_spec = None
@@ -19066,6 +18958,58 @@ class FileProcessor:
 
         # Build gitignore spec from command-line patterns
         self._build_gitignore_spec()
+
+    def _auto_load_ignore_files(self) -> None:
+        """Automatically load .m1fignore and .gitignore files from source directories."""
+        # Recursion protection - ensure this is only called once
+        if hasattr(self, '_auto_load_ignore_files_called'):
+            self.logger.warning("_auto_load_ignore_files called recursively - skipping")
+            return
+        self._auto_load_ignore_files_called = True
+        
+        if not self.config.source_directories:
+            return
+        
+        # Track which files we've already loaded to avoid duplicates
+        loaded_files = set()
+        if self.config.filter.exclude_paths_file:
+            if isinstance(self.config.filter.exclude_paths_file, (str, Path)):
+                # Use strict=False to avoid issues with circular symlinks
+                try:
+                    loaded_files.add(Path(self.config.filter.exclude_paths_file).resolve(strict=False))
+                except Exception as e:
+                    self.logger.warning(f"Could not resolve path: {e}")
+            else:
+                for f in self.config.filter.exclude_paths_file:
+                    try:
+                        loaded_files.add(Path(f).resolve(strict=False))
+                    except Exception as e:
+                        self.logger.warning(f"Could not resolve path: {e}")
+        
+        # Process each source directory
+        for source_dir in self.config.source_directories:
+            # Always load .m1fignore if it exists
+            m1fignore_path = source_dir / ".m1fignore"
+            try:
+                m1fignore_resolved = m1fignore_path.resolve(strict=False)
+                if m1fignore_path.exists() and m1fignore_resolved not in loaded_files:
+                    self.logger.debug(f"Auto-loading .m1fignore from {source_dir}")
+                    self._load_exclude_patterns_from_file(m1fignore_path)
+                    loaded_files.add(m1fignore_resolved)
+            except Exception as e:
+                self.logger.warning(f"Error loading .m1fignore: {e}")
+            
+            # Load .gitignore unless disabled
+            if not self.config.filter.no_auto_gitignore:
+                gitignore_path = source_dir / ".gitignore"
+                try:
+                    gitignore_resolved = gitignore_path.resolve(strict=False)
+                    if gitignore_path.exists() and gitignore_resolved not in loaded_files:
+                        self.logger.debug(f"Auto-loading .gitignore from {source_dir}")
+                        self._load_exclude_patterns_from_file(gitignore_path)
+                        loaded_files.add(gitignore_resolved)
+                except Exception as e:
+                    self.logger.warning(f"Error loading .gitignore: {e}")
 
     def _load_exclude_patterns(self) -> None:
         """Load exclusion patterns from file(s)."""
@@ -19226,6 +19170,10 @@ class FileProcessor:
     def _build_gitignore_spec(self) -> None:
         """Build gitignore spec from command-line patterns."""
         patterns = []
+
+        # Add default patterns unless disabled
+        if not self.config.filter.no_default_excludes:
+            patterns.extend(DEFAULT_EXCLUDED_PATTERNS)
 
         # ALL patterns should be processed, not just those with wildcards
         # This allows excluding specific files like "CLAUDE.md" without wildcards
@@ -19835,6 +19783,16 @@ class FileProcessor:
                 self._global_max_file_size = None
         else:
             self._global_max_file_size = None
+
+        # Apply exclude_paths_file from global settings
+        if self.global_settings.exclude_paths_file and not self.config.filter.exclude_paths_file:
+            # Only apply if not already set in config (config takes precedence)
+            self.config.filter.exclude_paths_file = self.global_settings.exclude_paths_file
+
+        # Apply include_paths_file from global settings  
+        if self.global_settings.include_paths_file and not self.config.filter.include_paths_file:
+            # Only apply if not already set in config (config takes precedence)
+            self.config.filter.include_paths_file = self.global_settings.include_paths_file
 
     def _load_exclude_patterns_from_file(self, exclude_file: Path) -> None:
         """Load exclusion patterns from a file (helper method)."""

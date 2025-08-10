@@ -249,6 +249,12 @@ Perfect for:
     )
 
     filter_group.add_argument(
+        "--no-auto-gitignore",
+        action="store_true",
+        help="Disable automatic loading of .gitignore files (but .m1fignore is still loaded)",
+    )
+
+    filter_group.add_argument(
         "--remove-scraped-metadata",
         action="store_true",
         help="Remove scraped metadata (URL, timestamp) from HTML2MD files during processing",

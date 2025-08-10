@@ -110,6 +110,7 @@ class FilterConfig:
     include_binary_files: bool = False
     include_symlinks: bool = False
     no_default_excludes: bool = False
+    no_auto_gitignore: bool = False  # Disable automatic loading of .gitignore (but not .m1fignore)
     max_file_size: Optional[int] = None  # Size in bytes
     remove_scraped_metadata: bool = False
 
@@ -261,6 +262,7 @@ class Config:
             include_binary_files=getattr(args, "include_binary_files", False),
             include_symlinks=getattr(args, "include_symlinks", False),
             no_default_excludes=getattr(args, "no_default_excludes", False),
+            no_auto_gitignore=getattr(args, "no_auto_gitignore", False),
             max_file_size=max_file_size_bytes,
             remove_scraped_metadata=getattr(args, "remove_scraped_metadata", False),
         )

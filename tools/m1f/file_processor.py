@@ -27,7 +27,7 @@ from typing import List, Tuple, Set, Optional
 import pathspec
 
 from .config import Config, FilterConfig
-from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, MAX_SYMLINK_DEPTH
+from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, DEFAULT_EXCLUDED_PATTERNS, MAX_SYMLINK_DEPTH
 from .exceptions import FileNotFoundError, ValidationError
 from .logging import LoggerManager
 from .utils import (
@@ -61,11 +61,12 @@ class FileProcessor:
             except Exception as e:
                 self.logger.warning(f"Failed to load preset settings: {e}")
 
-        # Build exclusion sets
-        self._build_exclusion_sets()
-
-        # Apply global filter settings if available
+        # Apply global filter settings first (before building exclusion sets)
+        # This ensures global exclude_paths_file is available for _build_exclusion_sets
         self._apply_global_filter_settings()
+
+        # Build exclusion sets (will now use merged config including global settings)
+        self._build_exclusion_sets()
 
     def _build_exclusion_sets(self) -> None:
         """Build the exclusion sets from configuration."""
@@ -78,6 +79,10 @@ class FileProcessor:
         all_exclude_patterns = list(self.config.filter.exclude_patterns)
         if self.global_settings and self.global_settings.exclude_patterns:
             all_exclude_patterns.extend(self.global_settings.exclude_patterns)
+        
+        # Add default patterns unless disabled
+        if not self.config.filter.no_default_excludes:
+            all_exclude_patterns.extend(DEFAULT_EXCLUDED_PATTERNS)
 
         # Process exclude patterns - determine if they are directories or files
         for pattern in all_exclude_patterns:
@@ -109,6 +114,9 @@ class FileProcessor:
         if self.config.filter.exclude_paths_file:
             self._load_exclude_patterns()
 
+        # Auto-load .m1fignore and .gitignore files from source directories
+        self._auto_load_ignore_files()
+
         # Load inclusions from file
         self.exact_includes = set()
         self.include_gitignore_spec = None
@@ -118,6 +126,58 @@ class FileProcessor:
 
         # Build gitignore spec from command-line patterns
         self._build_gitignore_spec()
+
+    def _auto_load_ignore_files(self) -> None:
+        """Automatically load .m1fignore and .gitignore files from source directories."""
+        # Recursion protection - ensure this is only called once
+        if hasattr(self, '_auto_load_ignore_files_called'):
+            self.logger.warning("_auto_load_ignore_files called recursively - skipping")
+            return
+        self._auto_load_ignore_files_called = True
+        
+        if not self.config.source_directories:
+            return
+        
+        # Track which files we've already loaded to avoid duplicates
+        loaded_files = set()
+        if self.config.filter.exclude_paths_file:
+            if isinstance(self.config.filter.exclude_paths_file, (str, Path)):
+                # Use strict=False to avoid issues with circular symlinks
+                try:
+                    loaded_files.add(Path(self.config.filter.exclude_paths_file).resolve(strict=False))
+                except Exception as e:
+                    self.logger.warning(f"Could not resolve path: {e}")
+            else:
+                for f in self.config.filter.exclude_paths_file:
+                    try:
+                        loaded_files.add(Path(f).resolve(strict=False))
+                    except Exception as e:
+                        self.logger.warning(f"Could not resolve path: {e}")
+        
+        # Process each source directory
+        for source_dir in self.config.source_directories:
+            # Always load .m1fignore if it exists
+            m1fignore_path = source_dir / ".m1fignore"
+            try:
+                m1fignore_resolved = m1fignore_path.resolve(strict=False)
+                if m1fignore_path.exists() and m1fignore_resolved not in loaded_files:
+                    self.logger.debug(f"Auto-loading .m1fignore from {source_dir}")
+                    self._load_exclude_patterns_from_file(m1fignore_path)
+                    loaded_files.add(m1fignore_resolved)
+            except Exception as e:
+                self.logger.warning(f"Error loading .m1fignore: {e}")
+            
+            # Load .gitignore unless disabled
+            if not self.config.filter.no_auto_gitignore:
+                gitignore_path = source_dir / ".gitignore"
+                try:
+                    gitignore_resolved = gitignore_path.resolve(strict=False)
+                    if gitignore_path.exists() and gitignore_resolved not in loaded_files:
+                        self.logger.debug(f"Auto-loading .gitignore from {source_dir}")
+                        self._load_exclude_patterns_from_file(gitignore_path)
+                        loaded_files.add(gitignore_resolved)
+                except Exception as e:
+                    self.logger.warning(f"Error loading .gitignore: {e}")
 
     def _load_exclude_patterns(self) -> None:
         """Load exclusion patterns from file(s)."""
@@ -278,6 +338,10 @@ class FileProcessor:
     def _build_gitignore_spec(self) -> None:
         """Build gitignore spec from command-line patterns."""
         patterns = []
+
+        # Add default patterns unless disabled
+        if not self.config.filter.no_default_excludes:
+            patterns.extend(DEFAULT_EXCLUDED_PATTERNS)
 
         # ALL patterns should be processed, not just those with wildcards
         # This allows excluding specific files like "CLAUDE.md" without wildcards
@@ -887,6 +951,16 @@ class FileProcessor:
                 self._global_max_file_size = None
         else:
             self._global_max_file_size = None
+
+        # Apply exclude_paths_file from global settings
+        if self.global_settings.exclude_paths_file and not self.config.filter.exclude_paths_file:
+            # Only apply if not already set in config (config takes precedence)
+            self.config.filter.exclude_paths_file = self.global_settings.exclude_paths_file
+
+        # Apply include_paths_file from global settings  
+        if self.global_settings.include_paths_file and not self.config.filter.include_paths_file:
+            # Only apply if not already set in config (config takes precedence)
+            self.config.filter.include_paths_file = self.global_settings.include_paths_file
 
     def _load_exclude_patterns_from_file(self, exclude_file: Path) -> None:
         """Load exclusion patterns from a file (helper method)."""

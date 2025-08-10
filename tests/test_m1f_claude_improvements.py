@@ -126,7 +126,9 @@ class TestM1FClaudeImprovements(unittest.TestCase):
 
         # Test subprocess command building
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1)  # Force fallback
+            # First call is for finding claude executable (returns success)
+            # This makes find_claude_executable return "claude"
+            mock_run.return_value = MagicMock(returncode=0, stdout="claude version 1.0.0")
 
             # This should trigger the subprocess fallback display
             result = m1f.send_to_claude_code_subprocess("Test prompt")
