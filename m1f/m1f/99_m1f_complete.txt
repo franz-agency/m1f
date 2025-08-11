@@ -11346,10 +11346,10 @@ import os
 
 # Use unified colorama module
 try:
-    from tools.shared.colors import Colors, ColoredHelpFormatter, warning
+    from tools.shared.colors import Colors, ColoredHelpFormatter, warning, error, info
 except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from tools.shared.colors import Colors, ColoredHelpFormatter, warning
+    from tools.shared.colors import Colors, ColoredHelpFormatter, warning, error, info
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
@@ -11430,7 +11430,19 @@ async def async_main() -> int:
         args = parse_args(parser)
 
         # Create configuration from arguments
-        config = Config.from_args(args)
+        try:
+            config = Config.from_args(args)
+        except ValueError as e:
+            # Handle path traversal and validation errors gracefully
+            error_msg = str(e)
+            if "Path traversal detected" in error_msg:
+                error(f"Security error: {error_msg}")
+                info(
+                    "Note: You can only access files within your current directory or subdirectories."
+                )
+            else:
+                error(f"Configuration error: {error_msg}")
+            return 1
 
         # Setup logging
         logger_manager = setup_logging(config)
