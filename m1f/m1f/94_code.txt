@@ -18898,7 +18898,12 @@ from typing import List, Tuple, Set, Optional
 import pathspec
 
 from .config import Config, FilterConfig
-from .constants import DEFAULT_EXCLUDED_DIRS, DEFAULT_EXCLUDED_FILES, DEFAULT_EXCLUDED_PATTERNS, MAX_SYMLINK_DEPTH
+from .constants import (
+    DEFAULT_EXCLUDED_DIRS,
+    DEFAULT_EXCLUDED_FILES,
+    DEFAULT_EXCLUDED_PATTERNS,
+    MAX_SYMLINK_DEPTH,
+)
 from .exceptions import FileNotFoundError, ValidationError
 from .logging import LoggerManager
 from .utils import (
@@ -18950,7 +18955,7 @@ class FileProcessor:
         all_exclude_patterns = list(self.config.filter.exclude_patterns)
         if self.global_settings and self.global_settings.exclude_patterns:
             all_exclude_patterns.extend(self.global_settings.exclude_patterns)
-        
+
         # Add default patterns unless disabled
         if not self.config.filter.no_default_excludes:
             all_exclude_patterns.extend(DEFAULT_EXCLUDED_PATTERNS)
@@ -18962,12 +18967,20 @@ class FileProcessor:
                 if self.config.source_directories:
                     # Try to find the pattern in any of the source directories
                     potential_path = self.config.source_directories[0] / pattern
-                    if potential_path.exists():
-                        if potential_path.is_dir():
+                    try:
+                        if potential_path.exists():
+                            if potential_path.is_dir():
+                                self.excluded_dirs.add(pattern.lower())
+                            # If it's a file, it will be handled by gitignore spec
+                        else:
+                            # If not found, assume it's a directory pattern for safety
                             self.excluded_dirs.add(pattern.lower())
-                        # If it's a file, it will be handled by gitignore spec
-                    else:
-                        # If not found, assume it's a directory pattern for safety
+                    except PermissionError:
+                        # If we can't access the path due to permissions, log warning and skip
+                        self.logger.warning(
+                            f"Permission denied accessing '{potential_path}'. Skipping exclusion check for this path."
+                        )
+                        # Add to excluded dirs to avoid further permission issues
                         self.excluded_dirs.add(pattern.lower())
                 else:
                     # No source directory specified, add to dirs for backward compatibility
@@ -19001,21 +19014,25 @@ class FileProcessor:
     def _auto_load_ignore_files(self) -> None:
         """Automatically load .m1fignore and .gitignore files from source directories."""
         # Recursion protection - ensure this is only called once
-        if hasattr(self, '_auto_load_ignore_files_called'):
+        if hasattr(self, "_auto_load_ignore_files_called"):
             self.logger.warning("_auto_load_ignore_files called recursively - skipping")
             return
         self._auto_load_ignore_files_called = True
-        
+
         if not self.config.source_directories:
             return
-        
+
         # Track which files we've already loaded to avoid duplicates
         loaded_files = set()
         if self.config.filter.exclude_paths_file:
             if isinstance(self.config.filter.exclude_paths_file, (str, Path)):
                 # Use strict=False to avoid issues with circular symlinks
                 try:
-                    loaded_files.add(Path(self.config.filter.exclude_paths_file).resolve(strict=False))
+                    loaded_files.add(
+                        Path(self.config.filter.exclude_paths_file).resolve(
+                            strict=False
+                        )
+                    )
                 except Exception as e:
                     self.logger.warning(f"Could not resolve path: {e}")
             else:
@@ -19024,7 +19041,7 @@ class FileProcessor:
                         loaded_files.add(Path(f).resolve(strict=False))
                     except Exception as e:
                         self.logger.warning(f"Could not resolve path: {e}")
-        
+
         # Process each source directory
         for source_dir in self.config.source_directories:
             # Always load .m1fignore if it exists
@@ -19037,13 +19054,16 @@ class FileProcessor:
                     loaded_files.add(m1fignore_resolved)
             except Exception as e:
                 self.logger.warning(f"Error loading .m1fignore: {e}")
-            
+
             # Load .gitignore unless disabled
             if not self.config.filter.no_auto_gitignore:
                 gitignore_path = source_dir / ".gitignore"
                 try:
                     gitignore_resolved = gitignore_path.resolve(strict=False)
-                    if gitignore_path.exists() and gitignore_resolved not in loaded_files:
+                    if (
+                        gitignore_path.exists()
+                        and gitignore_resolved not in loaded_files
+                    ):
                         self.logger.debug(f"Auto-loading .gitignore from {source_dir}")
                         self._load_exclude_patterns_from_file(gitignore_path)
                         loaded_files.add(gitignore_resolved)
@@ -19067,8 +19087,16 @@ class FileProcessor:
         for exclude_file_str in exclude_files:
             exclude_file = Path(exclude_file_str)
 
-            if not exclude_file.exists():
-                self.logger.info(f"Exclude file not found (skipping): {exclude_file}")
+            try:
+                if not exclude_file.exists():
+                    self.logger.info(
+                        f"Exclude file not found (skipping): {exclude_file}"
+                    )
+                    continue
+            except PermissionError:
+                self.logger.warning(
+                    f"Permission denied accessing exclude file '{exclude_file}'. Skipping."
+                )
                 continue
 
             try:
@@ -19131,9 +19159,15 @@ class FileProcessor:
             for include_file_str in include_files:
                 include_file = Path(include_file_str)
 
-                if not include_file.exists():
-                    self.logger.info(
-                        f"Include file not found (skipping): {include_file}"
+                try:
+                    if not include_file.exists():
+                        self.logger.info(
+                            f"Include file not found (skipping): {include_file}"
+                        )
+                        continue
+                except PermissionError:
+                    self.logger.warning(
+                        f"Permission denied accessing include file '{include_file}'. Skipping."
                     )
                     continue
 
@@ -19345,21 +19379,27 @@ class FileProcessor:
         files = []
 
         for path in paths:
-            if not path.exists():
-                self.logger.warning(f"Path not found: {path}")
-                continue
+            try:
+                if not path.exists():
+                    self.logger.warning(f"Path not found: {path}")
+                    continue
 
-            if path.is_file():
-                if await self._should_include_file(path, explicitly_included=True):
-                    rel_path = get_relative_path(
-                        path, self._get_base_dir_for_path(path)
+                if path.is_file():
+                    if await self._should_include_file(path, explicitly_included=True):
+                        rel_path = get_relative_path(
+                            path, self._get_base_dir_for_path(path)
+                        )
+                        files.append((path, rel_path))
+                elif path.is_dir():
+                    dir_files = await self._gather_from_directory(
+                        path, explicitly_included=True
                     )
-                    files.append((path, rel_path))
-            elif path.is_dir():
-                dir_files = await self._gather_from_directory(
-                    path, explicitly_included=True
+                    files.extend(dir_files)
+            except PermissionError:
+                self.logger.error(
+                    f"Permission denied: Cannot access '{path}'. Please check file/directory permissions."
                 )
-                files.extend(dir_files)
+                continue
 
         return files
 
@@ -19494,7 +19534,11 @@ class FileProcessor:
     ) -> bool:
         """Check if a file should be included based on filters."""
         # Check if file exists
-        if not file_path.exists():
+        try:
+            if not file_path.exists():
+                return False
+        except PermissionError:
+            self.logger.warning(f"Permission denied accessing '{file_path}'. Skipping.")
             return False
 
         # Check docs_only filter first (highest priority)
@@ -19636,8 +19680,14 @@ class FileProcessor:
 
             # For file symlinks, we only need to check for cycles if it's a directory symlink
             # File symlinks don't create cycles in the same way directory symlinks do
-            if file_path.is_dir() and self._detect_symlink_cycle(file_path):
-                self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
+            try:
+                if file_path.is_dir() and self._detect_symlink_cycle(file_path):
+                    self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
+                    return False
+            except PermissionError:
+                self.logger.warning(
+                    f"Permission denied checking symlink '{file_path}'. Skipping."
+                )
                 return False
 
             self.logger.debug(f"Including symlink {file_path} (include_symlinks=True)")
@@ -19738,16 +19788,16 @@ class FileProcessor:
 
     def _is_target_within_sources(self, target_path: Path) -> bool:
         """Check if a path is within any of the source directories.
-        
+
         Args:
             target_path: The path to check (should be resolved)
-            
+
         Returns:
             True if the path is within any source directory, False otherwise
         """
         try:
             target_resolved = target_path.resolve()
-            
+
             # Check against all source directories
             for source_dir in self.config.source_directories:
                 try:
@@ -19758,7 +19808,7 @@ class FileProcessor:
                 except ValueError:
                     # Not relative to this source directory
                     continue
-                    
+
             # Also check against any explicitly included paths
             for include_path in self.config.filter.include_paths:
                 try:
@@ -19768,11 +19818,11 @@ class FileProcessor:
                         return True
                     elif target_resolved == include_resolved:
                         return True
-                except ValueError:
+                except (ValueError, PermissionError):
                     continue
-                    
+
             return False
-            
+
         except Exception as e:
             self.logger.debug(f"Error checking if {target_path} is within sources: {e}")
             return False
@@ -19824,14 +19874,24 @@ class FileProcessor:
             self._global_max_file_size = None
 
         # Apply exclude_paths_file from global settings
-        if self.global_settings.exclude_paths_file and not self.config.filter.exclude_paths_file:
+        if (
+            self.global_settings.exclude_paths_file
+            and not self.config.filter.exclude_paths_file
+        ):
             # Only apply if not already set in config (config takes precedence)
-            self.config.filter.exclude_paths_file = self.global_settings.exclude_paths_file
+            self.config.filter.exclude_paths_file = (
+                self.global_settings.exclude_paths_file
+            )
 
-        # Apply include_paths_file from global settings  
-        if self.global_settings.include_paths_file and not self.config.filter.include_paths_file:
+        # Apply include_paths_file from global settings
+        if (
+            self.global_settings.include_paths_file
+            and not self.config.filter.include_paths_file
+        ):
             # Only apply if not already set in config (config takes precedence)
-            self.config.filter.include_paths_file = self.global_settings.include_paths_file
+            self.config.filter.include_paths_file = (
+                self.global_settings.include_paths_file
+            )
 
     def _load_exclude_patterns_from_file(self, exclude_file: Path) -> None:
         """Load exclusion patterns from a file (helper method)."""
