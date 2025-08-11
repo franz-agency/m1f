@@ -68,6 +68,32 @@ try:
 except ImportError:
     from m1f_claude_runner import M1FClaudeRunner
 
+# Import safe file operations
+try:
+    from .m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_is_dir,
+        safe_read_text,
+        safe_write_text,
+        safe_open,
+        safe_mkdir,
+        safe_iterdir,
+        safe_stat,
+    )
+except ImportError:
+    from tools.m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_is_dir,
+        safe_read_text,
+        safe_write_text,
+        safe_open,
+        safe_mkdir,
+        safe_iterdir,
+        safe_stat,
+    )
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(message)s"  # Simple format for user-facing messages
@@ -129,7 +155,7 @@ def find_claude_executable() -> Optional[str]:
                 continue
         else:
             # Check as file path
-            if path.exists() and path.is_file():
+            if safe_exists(path, logger) and safe_is_file(path, logger):
                 try:
                     result = subprocess.run(
                         [str(path), "--version"],
@@ -195,12 +221,14 @@ class M1FClaude:
         self.m1f_docs_direct = self.project_path / "m1f" / "m1f.txt"
 
         # Check if m1f-link has been run or docs exist directly
-        self.has_m1f_docs = self.m1f_docs_link.exists() or self.m1f_docs_direct.exists()
+        self.has_m1f_docs = safe_exists(self.m1f_docs_link, logger) or safe_exists(
+            self.m1f_docs_direct, logger
+        )
 
         # Use whichever path exists
-        if self.m1f_docs_link.exists():
+        if safe_exists(self.m1f_docs_link, logger):
             self.m1f_docs_path = self.m1f_docs_link
-        elif self.m1f_docs_direct.exists():
+        elif safe_exists(self.m1f_docs_direct, logger):
             self.m1f_docs_path = self.m1f_docs_direct
         else:
             self.m1f_docs_path = self.m1f_docs_link  # Default to expected symlink path
@@ -241,7 +269,7 @@ class M1FClaude:
 
             # Check if m1f/ directory exists
             m1f_dir = self.project_path / "m1f"
-            if not m1f_dir.exists():
+            if not safe_exists(m1f_dir, logger):
                 # Call m1f-link to create the symlink
                 logger.info("m1f/ directory not found. Creating with m1f-link...")
                 try:
@@ -284,12 +312,14 @@ class M1FClaude:
                 files_list = []
                 dirs_list = []
 
-                if filelist_path.exists():
-                    files_list = filelist_path.read_text().strip().split("\n")
+                if safe_exists(filelist_path, logger):
+                    content = safe_read_text(filelist_path, logger)
+                    files_list = content.strip().split("\n") if content else []
                     filelist_path.unlink()  # Clean up
 
-                if dirlist_path.exists():
-                    dirs_list = dirlist_path.read_text().strip().split("\n")
+                if safe_exists(dirlist_path, logger):
+                    content = safe_read_text(dirlist_path, logger)
+                    dirs_list = content.strip().split("\n") if content else []
                     dirlist_path.unlink()  # Clean up
 
                 # Clean up temp file
@@ -542,7 +572,7 @@ Start with Task 1: Project Analysis
 
         ai_context_found = []
         for file, desc in ai_files.items():
-            if (self.project_path / file).exists():
+            if safe_exists(self.project_path / file, logger):
                 ai_context_found.append(f"  {desc} - READ THIS FIRST!")
 
         if ai_context_found:
@@ -563,7 +593,7 @@ Start with Task 1: Project Analysis
 
         detected = []
         for file, desc in config_files.items():
-            if (self.project_path / file).exists():
+            if safe_exists(self.project_path / file, logger):
                 detected.append(f"  {desc}")
 
         if detected:
@@ -573,7 +603,7 @@ Start with Task 1: Project Analysis
 
         # Check for m1f bundles
         m1f_dir = self.project_path / "m1f"
-        if m1f_dir.exists() and m1f_dir.is_dir():
+        if safe_exists(m1f_dir, logger) and safe_is_dir(m1f_dir, logger):
             bundles = list(m1f_dir.glob("*.txt"))
             if bundles:
                 context_parts.append(f"\n📦 Existing m1f bundles: {len(bundles)} found")
@@ -590,7 +620,7 @@ Start with Task 1: Project Analysis
 
         # Check if .m1f.config.yml exists
         m1f_config = self.project_path / ".m1f.config.yml"
-        if m1f_config.exists():
+        if safe_exists(m1f_config, logger):
             recommendations.append("  ✅ Auto-bundle config found (.m1f.config.yml)")
             recommendations.append("     Run 'm1f-update' to generate bundles")
         else:
@@ -600,7 +630,7 @@ Start with Task 1: Project Analysis
 
         # Check for m1f directory
         m1f_dir = self.project_path / "m1f"
-        if m1f_dir.exists():
+        if safe_exists(m1f_dir, logger):
             bundle_count = len(list(m1f_dir.glob("*.txt")))
             if bundle_count > 0:
                 recommendations.append(
@@ -610,7 +640,7 @@ Start with Task 1: Project Analysis
             recommendations.append("  📁 'mkdir m1f' to create bundle output directory")
 
         # Suggest project-specific setup
-        if (self.project_path / "package.json").exists():
+        if safe_exists(self.project_path / "package.json", logger):
             recommendations.append("\n  🔧 Node.js project detected:")
             recommendations.append(
                 "     - Bundle source code separately from node_modules"
@@ -622,9 +652,9 @@ Start with Task 1: Project Analysis
                 "     - Use minification presets for production code"
             )
 
-        if (self.project_path / "requirements.txt").exists() or (
-            self.project_path / "setup.py"
-        ).exists():
+        if safe_exists(self.project_path / "requirements.txt", logger) or safe_exists(
+            self.project_path / "setup.py", logger
+        ):
             recommendations.append("\n  🐍 Python project detected:")
             recommendations.append("     - Exclude __pycache__ and .pyc files")
             recommendations.append(
@@ -632,14 +662,17 @@ Start with Task 1: Project Analysis
             )
             recommendations.append("     - Use comment removal for cleaner context")
 
-        if (self.project_path / "composer.json").exists():
+        if safe_exists(self.project_path / "composer.json", logger):
             recommendations.append("\n  🎼 PHP project detected:")
             recommendations.append("     - Exclude vendor/ directory")
             recommendations.append("     - Bundle by MVC structure if applicable")
 
         # Check for WordPress
         wp_indicators = ["wp-content", "wp-config.php", "functions.php", "style.css"]
-        if any((self.project_path / indicator).exists() for indicator in wp_indicators):
+        if any(
+            safe_exists(self.project_path / indicator, logger)
+            for indicator in wp_indicators
+        ):
             recommendations.append("\n  🎨 WordPress project detected:")
             recommendations.append("     - Use --preset wordpress for optimal bundling")
             recommendations.append("     - Separate theme/plugin bundles")
@@ -925,25 +958,25 @@ I'll analyze your project and create an optimal m1f configuration that:
             context["ci_cd"] = "Configure Jenkins pipeline for auto-bundling"
 
         # Check existing project structure for more context
-        if (self.project_path / "package.json").exists():
+        if safe_exists(self.project_path / "package.json", logger):
             if context["type"] == "Not specified":
                 context["type"] = "Node.js/JavaScript Project"
                 context["languages"] = "JavaScript/TypeScript"
-        elif (self.project_path / "requirements.txt").exists() or (
-            self.project_path / "setup.py"
-        ).exists():
+        elif safe_exists(self.project_path / "requirements.txt", logger) or safe_exists(
+            self.project_path / "setup.py", logger
+        ):
             if context["type"] == "Not specified":
                 context["type"] = "Python Project"
                 context["languages"] = "Python"
-        elif (self.project_path / "composer.json").exists():
+        elif safe_exists(self.project_path / "composer.json", logger):
             if context["type"] == "Not specified":
                 context["type"] = "PHP Project"
                 context["languages"] = "PHP"
-        elif (self.project_path / "Cargo.toml").exists():
+        elif safe_exists(self.project_path / "Cargo.toml", logger):
             if context["type"] == "Not specified":
                 context["type"] = "Rust Project"
                 context["languages"] = "Rust"
-        elif (self.project_path / "go.mod").exists():
+        elif safe_exists(self.project_path / "go.mod", logger):
             if context["type"] == "Not specified":
                 context["type"] = "Go Project"
                 context["languages"] = "Go"
@@ -1463,13 +1496,13 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Check if we're in a git repository
         git_root = self.project_path
-        if (self.project_path / ".git").exists():
+        if safe_exists(self.project_path / ".git", logger):
             success(f"Git repository detected: {self.project_path}")
         else:
             # Look for git root in parent directories
             current = self.project_path
             while current != current.parent:
-                if (current / ".git").exists():
+                if safe_exists(current / ".git", logger):
                     git_root = current
                     success(f"Git repository detected: {git_root}")
                     break
@@ -1488,7 +1521,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Check for existing .m1f.config.yml
         config_path = self.project_path / ".m1f.config.yml"
-        if config_path.exists():
+        if safe_exists(config_path, logger):
             success(f"m1f configuration found: {config_path.name}")
         else:
             warning("No m1f configuration found - will help you create one")
@@ -1516,8 +1549,8 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Create m1f directory if it doesn't exist
         m1f_dir = self.project_path / "m1f"
-        if not m1f_dir.exists():
-            m1f_dir.mkdir(parents=True, exist_ok=True)
+        if not safe_exists(m1f_dir, logger):
+            safe_mkdir(m1f_dir, logger, parents=True, exist_ok=True)
 
         # Use a file in the m1f directory for analysis
         analysis_path = m1f_dir / "project_analysis.txt"
@@ -1547,14 +1580,16 @@ I'll analyze your project and create an optimal m1f configuration that:
             files_list = []
             dirs_list = []
 
-            if filelist_path.exists():
-                content = filelist_path.read_text().strip()
+            if safe_exists(filelist_path, logger):
+                content = safe_read_text(filelist_path, logger)
+                content = content.strip() if content else ""
                 if content:
                     files_list = content.split("\n")
                 info(f"📄 Created file list: {filelist_path.name}")
 
-            if dirlist_path.exists():
-                content = dirlist_path.read_text().strip()
+            if safe_exists(dirlist_path, logger):
+                content = safe_read_text(dirlist_path, logger)
+                content = content.strip() if content else ""
                 if content:
                     dirs_list = content.split("\n")
                 info(f"📁 Created directory list: {dirlist_path.name}")
@@ -1596,8 +1631,10 @@ I'll analyze your project and create an optimal m1f configuration that:
         project_name = self.project_path.name
         complete_bundle = m1f_dir / f"{project_name}_complete.txt"
         docs_bundle = m1f_dir / f"{project_name}_docs.txt"
-        
-        if not complete_bundle.exists() and not docs_bundle.exists():
+
+        if not safe_exists(complete_bundle, logger) and not safe_exists(
+            docs_bundle, logger
+        ):
             warning("Basic bundles not found. Please run 'm1f-init' first!")
             info("\nExpected to find at least one of:")
             info(f"  • m1f/{project_name}_complete.txt (for code projects)")
@@ -1776,8 +1813,10 @@ bundles:
 # - etc.
 """
 
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(yaml_content)
+        if safe_write_text(config_path, yaml_content, logger):
+            success(f"Configuration saved to: {config_path}")
+        else:
+            error(f"Failed to write configuration to: {config_path}")
 
     def _load_prompt_template(
         self, template_name: str, variables: Dict[str, str]
@@ -1786,7 +1825,7 @@ bundles:
         prompt_dir = Path(__file__).parent / "m1f" / "prompts"
         template_path = prompt_dir / f"{template_name}.md"
 
-        if not template_path.exists():
+        if not safe_exists(template_path, logger):
             raise FileNotFoundError(f"Prompt template not found: {template_path}")
 
         # Read the template

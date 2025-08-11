@@ -32,6 +32,18 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from tools.shared.colors import success, error, warning, info
 
+# Import safe file operations
+try:
+    from .m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+    )
+except ImportError:
+    from tools.m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+    )
+
 
 class M1FClaudeRunner:
     """Handles Claude CLI execution with streaming output and robust timeout handling."""
@@ -78,7 +90,7 @@ class M1FClaudeRunner:
             pass
 
         for path in claude_paths:
-            if path.exists() and path.is_file():
+            if safe_exists(path) and safe_is_file(path):
                 return str(path)
 
         raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
@@ -124,7 +136,7 @@ class M1FClaudeRunner:
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
-        
+
         # Add new optional parameters
         if permission_mode != "default":
             cmd.extend(["--permission-mode", permission_mode])

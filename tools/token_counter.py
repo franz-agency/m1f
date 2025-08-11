@@ -20,10 +20,12 @@ import sys
 # Use unified colorama module
 try:
     from .shared.colors import Colors, ColoredHelpFormatter, success, error, info
+    from .m1f.file_operations import safe_exists, safe_open
 except ImportError:
     # Try direct import if running as script
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from tools.shared.colors import Colors, ColoredHelpFormatter, success, error, info
+    from tools.m1f.file_operations import safe_exists, safe_open
 
 
 def count_tokens_in_file(file_path: str, encoding_name: str = "cl100k_base") -> int:
@@ -42,15 +44,19 @@ def count_tokens_in_file(file_path: str, encoding_name: str = "cl100k_base") -> 
         FileNotFoundError: If the specified file does not exist.
         Exception: For other issues like encoding errors or tiktoken issues.
     """
-    if not os.path.exists(file_path):
+    if not safe_exists(file_path):
         raise FileNotFoundError(f"Error: File not found at {file_path}")
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with safe_open(file_path, "r", encoding="utf-8") as f:
+            if f is None:
+                raise Exception(f"Permission denied accessing file {file_path}")
             text_content = f.read()
     except UnicodeDecodeError:
         # Fallback to reading as bytes if UTF-8 fails, then decode with replacement
-        with open(file_path, "rb") as f:
+        with safe_open(file_path, "rb") as f:
+            if f is None:
+                raise Exception(f"Permission denied accessing file {file_path}")
             byte_content = f.read()
         text_content = byte_content.decode("utf-8", errors="replace")
     except Exception as e:
