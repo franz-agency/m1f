@@ -25,6 +25,7 @@ from .config import Config
 from .core import FileSplitter
 from .logging import setup_logging
 from .exceptions import ConfigurationError
+from ..m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
 try:
@@ -183,10 +184,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ConfigurationError("Missing required argument: destination_directory")
 
     # Check if input file exists
-    if not args.input_file.exists():
+    if not safe_exists(args.input_file):
         raise ConfigurationError(f"Input file does not exist: {args.input_file}")
 
-    if not args.input_file.is_file():
+    if not safe_is_file(args.input_file):
         raise ConfigurationError(f"Input path is not a file: {args.input_file}")
 
     # Validate encoding options

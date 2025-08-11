@@ -19,6 +19,14 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import logging
 
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_mkdir,
+    safe_read_text,
+    safe_stat,
+)
+
 try:
     import aiofiles
 
@@ -37,7 +45,10 @@ except ImportError:
         from ..shared.colors import info
     except ImportError:
         # Fallback
-        def info(msg): print(msg)
+        def info(msg):
+            print(msg)
+
+
 from .parsers import CombinedFileParser
 from .writers import FileWriter
 from .utils import format_size, is_binary_content
@@ -153,7 +164,16 @@ class FileSplitter:
             self.logger.info(f"Found {len(extracted_files)} file(s) to extract")
 
             # Ensure destination directory exists
-            self.config.destination_directory.mkdir(parents=True, exist_ok=True)
+            if not safe_mkdir(
+                self.config.destination_directory,
+                logger=self.logger,
+                parents=True,
+                exist_ok=True,
+            ):
+                self.logger.error(
+                    f"Failed to create destination directory '{self.config.destination_directory}': Permission denied"
+                )
+                return ExtractionResult(execution_time=time.time() - start_time), 1
 
             # Write the files
             result = await self.writer.write_files(extracted_files)
@@ -191,7 +211,7 @@ class FileSplitter:
 
     async def _read_input_file(self) -> str:
         """Read the input file content."""
-        if not self.config.input_file.exists():
+        if not safe_exists(self.config.input_file, logger=self.logger):
             raise FileParsingError(
                 f"Input file '{self.config.input_file}' does not exist.",
                 str(self.config.input_file),
@@ -201,8 +221,14 @@ class FileSplitter:
             if AIOFILES_AVAILABLE:
                 # Use async I/O
                 # First, try to detect if the file is binary
-                async with aiofiles.open(self.config.input_file, "rb") as f:
-                    sample_bytes = await f.read(8192)
+                try:
+                    async with aiofiles.open(self.config.input_file, "rb") as f:
+                        sample_bytes = await f.read(8192)
+                except PermissionError as e:
+                    raise FileParsingError(
+                        f"Permission denied reading input file '{self.config.input_file}': {e}",
+                        str(self.config.input_file),
+                    )
 
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
@@ -216,20 +242,37 @@ class FileSplitter:
                         self.config.input_file, "r", encoding="utf-8"
                     ) as f:
                         content = await f.read()
-                except UnicodeDecodeError:
+                except (UnicodeDecodeError, PermissionError) as e:
+                    if isinstance(e, PermissionError):
+                        raise FileParsingError(
+                            f"Permission denied reading input file '{self.config.input_file}': {e}",
+                            str(self.config.input_file),
+                        )
                     # Try with latin-1 as fallback (can decode any byte sequence)
                     self.logger.warning(
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    async with aiofiles.open(
-                        self.config.input_file, "r", encoding="latin-1"
-                    ) as f:
-                        content = await f.read()
+                    try:
+                        async with aiofiles.open(
+                            self.config.input_file, "r", encoding="latin-1"
+                        ) as f:
+                            content = await f.read()
+                    except PermissionError as e:
+                        raise FileParsingError(
+                            f"Permission denied reading input file '{self.config.input_file}': {e}",
+                            str(self.config.input_file),
+                        )
             else:
                 # Fallback to sync I/O
                 # First, try to detect if the file is binary
-                sample_bytes = self.config.input_file.read_bytes()[:8192]
+                try:
+                    sample_bytes = self.config.input_file.read_bytes()[:8192]
+                except PermissionError as e:
+                    raise FileParsingError(
+                        f"Permission denied reading input file '{self.config.input_file}': {e}",
+                        str(self.config.input_file),
+                    )
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
                         f"Input file '{self.config.input_file}' appears to be binary.",
@@ -237,15 +280,23 @@ class FileSplitter:
                     )
 
                 # Try to read with UTF-8 first
-                try:
-                    content = self.config.input_file.read_text(encoding="utf-8")
-                except UnicodeDecodeError:
+                content = safe_read_text(
+                    self.config.input_file, logger=self.logger, encoding="utf-8"
+                )
+                if content is None:
                     # Try with latin-1 as fallback (can decode any byte sequence)
                     self.logger.warning(
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    content = self.config.input_file.read_text(encoding="latin-1")
+                    content = safe_read_text(
+                        self.config.input_file, logger=self.logger, encoding="latin-1"
+                    )
+                    if content is None:
+                        raise FileParsingError(
+                            f"Permission denied or failed to read input file '{self.config.input_file}'",
+                            str(self.config.input_file),
+                        )
 
             # Check if the file is empty
             if not content.strip():
@@ -254,7 +305,8 @@ class FileSplitter:
                     str(self.config.input_file),
                 )
 
-            file_size = self.config.input_file.stat().st_size
+            stat_info = safe_stat(self.config.input_file, logger=self.logger)
+            file_size = stat_info.st_size if stat_info else 0
             self.logger.info(
                 f"Read input file '{self.config.input_file}' "
                 f"({format_size(file_size)})"

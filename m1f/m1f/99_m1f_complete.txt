@@ -72817,6 +72817,7 @@ from .config import Config
 from .core import FileSplitter
 from .logging import setup_logging
 from .exceptions import ConfigurationError
+from ..m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
 try:
@@ -72975,10 +72976,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ConfigurationError("Missing required argument: destination_directory")
 
     # Check if input file exists
-    if not args.input_file.exists():
+    if not safe_exists(args.input_file):
         raise ConfigurationError(f"Input file does not exist: {args.input_file}")
 
-    if not args.input_file.is_file():
+    if not safe_is_file(args.input_file):
         raise ConfigurationError(f"Input path is not a file: {args.input_file}")
 
     # Validate encoding options
@@ -73141,6 +73142,14 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import logging
 
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_mkdir,
+    safe_read_text,
+    safe_stat,
+)
+
 try:
     import aiofiles
 
@@ -73159,7 +73168,10 @@ except ImportError:
         from ..shared.colors import info
     except ImportError:
         # Fallback
-        def info(msg): print(msg)
+        def info(msg):
+            print(msg)
+
+
 from .parsers import CombinedFileParser
 from .writers import FileWriter
 from .utils import format_size, is_binary_content
@@ -73275,7 +73287,16 @@ class FileSplitter:
             self.logger.info(f"Found {len(extracted_files)} file(s) to extract")
 
             # Ensure destination directory exists
-            self.config.destination_directory.mkdir(parents=True, exist_ok=True)
+            if not safe_mkdir(
+                self.config.destination_directory,
+                logger=self.logger,
+                parents=True,
+                exist_ok=True,
+            ):
+                self.logger.error(
+                    f"Failed to create destination directory '{self.config.destination_directory}': Permission denied"
+                )
+                return ExtractionResult(execution_time=time.time() - start_time), 1
 
             # Write the files
             result = await self.writer.write_files(extracted_files)
@@ -73313,7 +73334,7 @@ class FileSplitter:
 
     async def _read_input_file(self) -> str:
         """Read the input file content."""
-        if not self.config.input_file.exists():
+        if not safe_exists(self.config.input_file, logger=self.logger):
             raise FileParsingError(
                 f"Input file '{self.config.input_file}' does not exist.",
                 str(self.config.input_file),
@@ -73323,8 +73344,14 @@ class FileSplitter:
             if AIOFILES_AVAILABLE:
                 # Use async I/O
                 # First, try to detect if the file is binary
-                async with aiofiles.open(self.config.input_file, "rb") as f:
-                    sample_bytes = await f.read(8192)
+                try:
+                    async with aiofiles.open(self.config.input_file, "rb") as f:
+                        sample_bytes = await f.read(8192)
+                except PermissionError as e:
+                    raise FileParsingError(
+                        f"Permission denied reading input file '{self.config.input_file}': {e}",
+                        str(self.config.input_file),
+                    )
 
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
@@ -73338,20 +73365,37 @@ class FileSplitter:
                         self.config.input_file, "r", encoding="utf-8"
                     ) as f:
                         content = await f.read()
-                except UnicodeDecodeError:
+                except (UnicodeDecodeError, PermissionError) as e:
+                    if isinstance(e, PermissionError):
+                        raise FileParsingError(
+                            f"Permission denied reading input file '{self.config.input_file}': {e}",
+                            str(self.config.input_file),
+                        )
                     # Try with latin-1 as fallback (can decode any byte sequence)
                     self.logger.warning(
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    async with aiofiles.open(
-                        self.config.input_file, "r", encoding="latin-1"
-                    ) as f:
-                        content = await f.read()
+                    try:
+                        async with aiofiles.open(
+                            self.config.input_file, "r", encoding="latin-1"
+                        ) as f:
+                            content = await f.read()
+                    except PermissionError as e:
+                        raise FileParsingError(
+                            f"Permission denied reading input file '{self.config.input_file}': {e}",
+                            str(self.config.input_file),
+                        )
             else:
                 # Fallback to sync I/O
                 # First, try to detect if the file is binary
-                sample_bytes = self.config.input_file.read_bytes()[:8192]
+                try:
+                    sample_bytes = self.config.input_file.read_bytes()[:8192]
+                except PermissionError as e:
+                    raise FileParsingError(
+                        f"Permission denied reading input file '{self.config.input_file}': {e}",
+                        str(self.config.input_file),
+                    )
                 if is_binary_content(sample_bytes):
                     raise FileParsingError(
                         f"Input file '{self.config.input_file}' appears to be binary.",
@@ -73359,15 +73403,23 @@ class FileSplitter:
                     )
 
                 # Try to read with UTF-8 first
-                try:
-                    content = self.config.input_file.read_text(encoding="utf-8")
-                except UnicodeDecodeError:
+                content = safe_read_text(
+                    self.config.input_file, logger=self.logger, encoding="utf-8"
+                )
+                if content is None:
                     # Try with latin-1 as fallback (can decode any byte sequence)
                     self.logger.warning(
                         f"Failed to decode '{self.config.input_file}' as UTF-8, "
                         f"trying latin-1 encoding..."
                     )
-                    content = self.config.input_file.read_text(encoding="latin-1")
+                    content = safe_read_text(
+                        self.config.input_file, logger=self.logger, encoding="latin-1"
+                    )
+                    if content is None:
+                        raise FileParsingError(
+                            f"Permission denied or failed to read input file '{self.config.input_file}'",
+                            str(self.config.input_file),
+                        )
 
             # Check if the file is empty
             if not content.strip():
@@ -73376,7 +73428,8 @@ class FileSplitter:
                     str(self.config.input_file),
                 )
 
-            file_size = self.config.input_file.stat().st_size
+            stat_info = safe_stat(self.config.input_file, logger=self.logger)
+            file_size = stat_info.st_size if stat_info else 0
             self.logger.info(
                 f"Read input file '{self.config.input_file}' "
                 f"({format_size(file_size)})"
@@ -74564,6 +74617,13 @@ from .utils import (
     normalize_line_endings,
 )
 from .exceptions import FileWriteError, ChecksumMismatchError
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+    safe_open,
+    safe_write_text,
+    safe_read_text,
+)
 
 try:
     import aiofiles
@@ -74633,7 +74693,7 @@ class FileWriter:
                     return
 
                 # Check if file exists
-                is_overwrite = output_path.exists()
+                is_overwrite = safe_exists(output_path, logger=self.logger)
 
                 if is_overwrite and not self.config.force_overwrite:
                     if not await self._confirm_overwrite_async(output_path):
@@ -74648,8 +74708,19 @@ class FileWriter:
                     file_data.content, encoding, file_data.path
                 )
 
-                async with aiofiles.open(output_path, "wb") as f:
-                    await f.write(content_bytes)
+                # Use safe_open for the aiofiles case
+                # Note: We need to handle this differently since safe_open doesn't support async
+                # For now, keep the aiofiles.open but add error handling
+                try:
+                    async with aiofiles.open(output_path, "wb") as f:
+                        await f.write(content_bytes)
+                except PermissionError as e:
+                    self.logger.warning(
+                        f"Permission denied writing to '{output_path}': {e}"
+                    )
+                    async with self._counter_lock:
+                        result.files_failed += 1
+                    return
 
                 # Update result with thread-safe counter increment
                 async with self._counter_lock:
@@ -74687,7 +74758,7 @@ class FileWriter:
                 return
 
             # Check if file exists
-            is_overwrite = output_path.exists()
+            is_overwrite = safe_exists(output_path, logger=self.logger)
 
             if is_overwrite and not self.config.force_overwrite:
                 if not self._confirm_overwrite_sync(output_path):
@@ -74701,7 +74772,16 @@ class FileWriter:
             content_bytes = await self._encode_content(
                 file_data.content, encoding, file_data.path
             )
-            output_path.write_bytes(content_bytes)
+            # Use safe file operations for sync write
+            try:
+                output_path.write_bytes(content_bytes)
+            except PermissionError as e:
+                self.logger.warning(
+                    f"Permission denied writing to '{output_path}': {e}"
+                )
+                async with self._counter_lock:
+                    result.files_failed += 1
+                return
 
             # Update result with thread-safe counter increment
             async with self._counter_lock:
@@ -74738,10 +74818,12 @@ class FileWriter:
         output_path = self.config.destination_directory / relative_path
 
         # Create parent directories
-        try:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            self.logger.error(f"Failed to create directory for '{file_data.path}': {e}")
+        if not safe_mkdir(
+            output_path.parent, logger=self.logger, parents=True, exist_ok=True
+        ):
+            self.logger.error(
+                f"Failed to create directory for '{file_data.path}': Permission denied"
+            )
             return None
 
         self.logger.debug(f"Preparing to write: {output_path}")
@@ -74835,9 +74917,16 @@ class FileWriter:
 
             sha256_hash = hashlib.sha256()
 
-            async with aiofiles.open(path, "rb") as f:
-                while chunk := await f.read(8192):  # Read in 8KB chunks
-                    sha256_hash.update(chunk)
+            # Use aiofiles but add permission error handling
+            try:
+                async with aiofiles.open(path, "rb") as f:
+                    while chunk := await f.read(8192):  # Read in 8KB chunks
+                        sha256_hash.update(chunk)
+            except PermissionError as e:
+                self.logger.warning(
+                    f"Permission denied reading '{path}' for checksum verification: {e}"
+                )
+                return
 
             calculated_checksum = sha256_hash.hexdigest()
             expected_checksum = file_data.metadata.checksum_sha256
@@ -74856,7 +74945,12 @@ class FileWriter:
     def _verify_checksum_sync(self, path: Path, file_data: ExtractedFile):
         """Verify file checksum synchronously."""
         try:
-            content_bytes = path.read_bytes()
+            # Use safe file operations for reading
+            try:
+                content_bytes = path.read_bytes()
+            except PermissionError as e:
+                self.logger.warning(f"Permission denied reading '{path}': {e}")
+                return
             calculated_checksum = calculate_sha256(content_bytes)
             expected_checksum = file_data.metadata.checksum_sha256
 
