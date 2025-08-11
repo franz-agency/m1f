@@ -59,7 +59,7 @@ def handle_claude_convert_improved(args):
     try:
         runner = ClaudeRunner(
             working_dir=str(
-                source_path.parent if source_path.is_file() else source_path
+                source_path.parent if safe_is_file(source_path) else source_path
             )
         )
     except Exception as e:
@@ -91,21 +91,21 @@ def handle_claude_convert_improved(args):
 
     # Prepare output directory
     output_path = args.output
-    if output_path.exists() and output_path.is_file():
+    if safe_exists(output_path) and safe_is_file(output_path):
         error(f"Output path is a file, expected directory: {output_path}")
         sys.exit(1)
 
-    if not output_path.exists():
+    if not safe_exists(output_path):
         output_path.mkdir(parents=True, exist_ok=True)
         info(f"Created output directory: {output_path}")
 
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
-    if not prompt_path.exists():
+    if not safe_exists(prompt_path):
         error(f"Prompt file not found: {prompt_path}")
         sys.exit(1)
 
-    prompt_template = prompt_path.read_text()
+    prompt_template = safe_read_text(prompt_path)
 
     # Process each HTML file
     converted_count = 0
@@ -120,7 +120,9 @@ def handle_claude_convert_improved(args):
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
                 html_file,
-                base_path=source_path if source_path.is_dir() else source_path.parent,
+                base_path=(
+                    source_path if safe_is_dir(source_path) else source_path.parent
+                ),
                 allow_outside=False,
             )
 
@@ -195,7 +197,7 @@ def handle_claude_convert_improved(args):
 
         finally:
             # Clean up temporary file
-            if tmp_html_path and os.path.exists(tmp_html_path):
+            if tmp_html_path and safe_exists(Path(tmp_html_path)):
                 try:
                     os.unlink(tmp_html_path)
                 except Exception:

@@ -20,6 +20,11 @@ from .logging import LoggerManager
 from .security_scanner import SecurityScanner
 from .file_processor import FileProcessor
 
+# Import safe file operations
+from .file_operations import (
+    safe_exists,
+)
+
 
 # Backward compatibility functions for tests
 def _scan_files_for_sensitive_info(files_to_process):
@@ -120,7 +125,7 @@ def main():
     current_dir = Path(__file__).parent
     main_script = current_dir.parent / "m1f.py"
 
-    if main_script.exists():
+    if safe_exists(main_script):
         # Import the main script module
         import importlib.util
 
@@ -159,6 +164,7 @@ def main():
 
     except Exception as e:
         import sys
+
         sys.stderr.write(f"Error running m1f: {e}\n")
         return 1
 

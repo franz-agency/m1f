@@ -29,6 +29,9 @@ from .config import Config
 from .constants import UTF8_PREFERRED_EXTENSIONS
 from .exceptions import EncodingError
 from .logging import LoggerManager
+from .file_operations import (
+    safe_open,
+)
 
 # Try to import chardet for encoding detection
 try:
@@ -94,7 +97,7 @@ class EncodingHandler:
         try:
             # Read file in binary mode with explicit handle cleanup
             raw_data = None
-            with open(file_path, "rb") as f:
+            with safe_open(file_path, "rb", logger=self.logger) as f:
                 raw_data = f.read(65536)  # Read up to 64KB
             # Explicitly ensure file handle is released
             f = None
@@ -212,7 +215,9 @@ class EncodingHandler:
             # Read file with source encoding and explicit handle cleanup
             content = None
             try:
-                with open(file_path, "r", encoding=source_encoding) as f:
+                with safe_open(
+                    file_path, "r", encoding=source_encoding, logger=self.logger
+                ) as f:
                     content = f.read()
             except UnicodeDecodeError as e:
                 # If initial read fails, try with error handling
@@ -220,8 +225,12 @@ class EncodingHandler:
                     f"Initial read failed for {file_path} with {source_encoding}, "
                     f"retrying with error replacement"
                 )
-                with open(
-                    file_path, "r", encoding=source_encoding, errors="replace"
+                with safe_open(
+                    file_path,
+                    "r",
+                    encoding=source_encoding,
+                    errors="replace",
+                    logger=self.logger,
                 ) as f:
                     content = f.read()
                 had_errors = True
@@ -274,7 +283,7 @@ class EncodingHandler:
             # Last resort: read as binary and decode with replacement
             try:
                 binary_data = None
-                with open(file_path, "rb") as f:
+                with safe_open(file_path, "rb", logger=self.logger) as f:
                     binary_data = f.read()
                 # Explicitly ensure file handle is released
                 f = None

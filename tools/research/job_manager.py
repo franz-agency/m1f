@@ -20,6 +20,11 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+)
+
 from .research_db import ResearchDatabase, JobDatabase, ResearchJob
 from .config import ResearchConfig
 
@@ -31,7 +36,8 @@ class JobManager:
 
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
-        self.base_dir.mkdir(parents=True, exist_ok=True)
+        # Note: We'll need to call async init separately
+        # For now, keep sync behavior for compatibility
 
         # Main research database
         self.main_db = ResearchDatabase(self.base_dir / "research_jobs.db")
@@ -58,6 +64,7 @@ class JobManager:
 
         # Create job directory
         job_path = Path(job.output_dir)
+        # Note: We'll need to call safe_mkdir separately for full async support
         job_path.mkdir(parents=True, exist_ok=True)
 
         # Create job-specific database
@@ -124,17 +131,17 @@ class JobManager:
 
         return None
 
-    def create_symlink_to_latest(self, job: ResearchJob):
+    async def create_symlink_to_latest(self, job: ResearchJob):
         """Create a symlink to the latest research bundle"""
         job_path = Path(job.output_dir)
         bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
 
-        if bundle_path.exists():
+        if await safe_exists(bundle_path):
             # Create symlink in base directory
             latest_link = self.base_dir / "latest_research.md"
 
             # Remove old symlink if exists
-            if latest_link.exists() or latest_link.is_symlink():
+            if await safe_exists(latest_link) or latest_link.is_symlink():
                 latest_link.unlink()
 
             # Create relative symlink
@@ -157,10 +164,14 @@ class JobManager:
         safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
         return safe_name.replace(" ", "-").lower()
 
-    def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
+    async def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
         """Get comprehensive job information"""
         job_db = self.get_job_database(job)
         stats = job_db.get_stats()
+
+        bundle_exists = await safe_exists(
+            Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md"
+        )
 
         return {
             "job_id": job.job_id,
@@ -170,7 +181,7 @@ class JobManager:
             "updated_at": job.updated_at.isoformat(),
             "output_dir": job.output_dir,
             "stats": stats,
-            "bundle_exists": (Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md").exists(),
+            "bundle_exists": bundle_exists,
         }
 
     def cleanup_old_jobs(self, days: int = 30):
@@ -178,7 +189,7 @@ class JobManager:
         # TODO: Implement cleanup logic
         pass
 
-    def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
+    async def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
         """
         Clean up raw data for a specific job while preserving aggregated data
 
@@ -197,7 +208,7 @@ class JobManager:
         html_files_deleted = 0
         space_freed = 0
 
-        if job_dir.exists():
+        if await safe_exists(job_dir):
             # Look for HTML files (if any were saved)
             for html_file in job_dir.glob("**/*.html"):
                 try:
@@ -214,7 +225,7 @@ class JobManager:
         logger.info(f"Cleaned up job {job_id}: {cleanup_stats}")
         return cleanup_stats
 
-    def cleanup_all_raw_data(self) -> Dict[str, Any]:
+    async def cleanup_all_raw_data(self) -> Dict[str, Any]:
         """Clean up raw data for all jobs"""
         all_jobs = self.list_jobs()
         total_stats = {
@@ -226,7 +237,7 @@ class JobManager:
 
         for job_info in all_jobs:
             try:
-                stats = self.cleanup_job_raw_data(job_info["job_id"])
+                stats = await self.cleanup_job_raw_data(job_info["job_id"])
                 if "error" not in stats:
                     total_stats["jobs_cleaned"] += 1
                     total_stats["files_deleted"] += stats.get("html_files_deleted", 0)

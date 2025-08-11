@@ -20,6 +20,11 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse, urlunparse
 
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_read_text,
+)
+
 from .research_db import JobDatabase
 
 logger = logging.getLogger(__name__)
@@ -37,31 +42,31 @@ class URLManager:
         """Add URLs from a list (LLM-generated or manual)"""
         return self.job_db.add_urls(urls, added_by=source)
 
-    def add_urls_from_file(self, file_path: Path) -> int:
+    async def add_urls_from_file(self, file_path: Path) -> int:
         """Add URLs from a text file (one URL per line)"""
-        if not file_path.exists():
+        if not await safe_exists(file_path):
             logger.error(f"URL file not found: {file_path}")
             return 0
 
         urls = []
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#"):  # Skip comments
-                        # Support optional title after URL
-                        parts = line.split("\t", 1)
-                        url = parts[0].strip()
-                        title = parts[1].strip() if len(parts) > 1 else ""
+            content = await safe_read_text(file_path)
+            for line in content.splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):  # Skip comments
+                    # Support optional title after URL
+                    parts = line.split("\t", 1)
+                    url = parts[0].strip()
+                    title = parts[1].strip() if len(parts) > 1 else ""
 
-                        if url.startswith(("http://", "https://")):
-                            urls.append(
-                                {
-                                    "url": url,
-                                    "title": title,
-                                    "description": f"From file: {file_path.name}",
-                                }
-                            )
+                    if url.startswith(("http://", "https://")):
+                        urls.append(
+                            {
+                                "url": url,
+                                "title": title,
+                                "description": f"From file: {file_path.name}",
+                            }
+                        )
 
         except Exception as e:
             logger.error(f"Error reading URL file {file_path}: {e}")

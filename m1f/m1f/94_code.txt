@@ -7516,7 +7516,7 @@ class M1FInit:
 
         # Check if already linked
         link_path = m1f_dir / "m1f.txt"
-        if link_path.exists():
+        if self.safe_exists(link_path):
             success("✅ m1f documentation already linked")
             self.created_files.append("m1f/m1f.txt (symlink)")
             return
@@ -7568,13 +7568,13 @@ class M1FInit:
     def _check_git_repository(self) -> Path:
         """Check if we're in a git repository."""
         git_root = self.project_path
-        if (self.project_path / ".git").exists():
+        if self.safe_exists(self.project_path / ".git"):
             success(f"✅ Git repository detected in current directory")
         else:
             # Look for git root in parent directories
             current = self.project_path
             while current != current.parent:
-                if (current / ".git").exists():
+                if self.safe_exists(current / ".git"):
                     git_root = current
                     break
                 current = current.parent
@@ -7587,7 +7587,7 @@ class M1FInit:
     def _check_existing_config(self) -> bool:
         """Check for existing .m1f.config.yml."""
         config_path = self.project_path / ".m1f.config.yml"
-        if config_path.exists():
+        if self.safe_exists(config_path):
             success(f"✅ m1f configuration found: {config_path.name}")
             return True
         else:
@@ -7632,7 +7632,7 @@ class M1FInit:
                 if not self.created_files:
                     # Fallback: list files in m1f directory
                     m1f_dir = self.project_path / "m1f"
-                    if m1f_dir.exists():
+                    if self.safe_exists(m1f_dir):
                         for file in m1f_dir.glob("*.txt"):
                             if file.name != "m1f.txt":  # Don't list the symlink
                                 self.created_files.append(f"m1f/{file.name}")
@@ -7674,7 +7674,7 @@ class M1FInit:
                 ]
 
                 # Only use .gitignore if it exists in current directory
-                if (self.project_path / ".gitignore").exists():
+                if self.safe_exists(self.project_path / ".gitignore"):
                     cmd.extend(["--exclude-paths-file", ".gitignore"])
 
                 result = subprocess.run(cmd, capture_output=True, text=True)
@@ -7970,7 +7970,7 @@ class M1FInit:
             ]
 
             # Only use .gitignore if it exists in current directory
-            if (self.project_path / ".gitignore").exists():
+            if self.safe_exists(self.project_path / ".gitignore"):
                 idx = complete_cmd.index("--excludes")
                 complete_cmd.insert(idx, ".gitignore")
                 complete_cmd.insert(idx, "--exclude-paths-file")
@@ -8008,7 +8008,7 @@ class M1FInit:
         ]
 
         # Only use .gitignore if it exists in current directory
-        if (self.project_path / ".gitignore").exists():
+        if self.safe_exists(self.project_path / ".gitignore"):
             idx = docs_cmd.index("--excludes")
             docs_cmd.insert(idx, ".gitignore")
             docs_cmd.insert(idx, "--exclude-paths-file")
@@ -8250,8 +8250,20 @@ try:
 except ImportError:
     import os
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from tools.shared.colors import warning
+
+# Import safe file operations
+try:
+    from .m1f.file_operations import safe_exists
+except ImportError:
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from tools.m1f.file_operations import safe_exists
+
 import os
 import subprocess
 import sys
@@ -8277,7 +8289,7 @@ BUNDLE_OUTPUT = (
 
 def ensure_dir(directory: Path) -> None:
     """Ensure a directory exists, creating it if necessary."""
-    if not directory.exists():
+    if not safe_exists(directory, logger):
         directory.mkdir(parents=True)
         logger.info(f"Created directory: {directory}")
 
@@ -8307,7 +8319,7 @@ def convert_html_to_markdown() -> bool:
     # Build command for mf1-html2md.py
     html2md_script = BASE_DIR / "tools" / "mf1-html2md.py"
 
-    if not html2md_script.exists():
+    if not safe_exists(html2md_script, logger):
         logger.error(f"HTML to Markdown conversion script not found: {html2md_script}")
         return False
 
@@ -8374,7 +8386,7 @@ def build_documentation_bundle() -> bool:
     logger.info("Creating documentation bundle...")
 
     # Check if Markdown directory exists and has files
-    if not MD_DOCS_DIR.exists():
+    if not safe_exists(MD_DOCS_DIR, logger):
         logger.warning(f"Markdown directory not found: {MD_DOCS_DIR}")
         logger.info("Run with --convert-html first to create Markdown files")
         return False
@@ -8387,7 +8399,7 @@ def build_documentation_bundle() -> bool:
     # Build command for m1f.py
     m1f_script = BASE_DIR / "tools" / "m1f.py"
 
-    if not m1f_script.exists():
+    if not safe_exists(m1f_script, logger):
         logger.error(f"m1f script not found: {m1f_script}")
         return False
 
@@ -8441,6 +8453,8 @@ def build_documentation_bundle() -> bool:
 
 def main() -> None:
     """Main entry point for the script."""
+    global HTML_DOCS_DIR, MD_DOCS_DIR, BUNDLE_OUTPUT
+
     parser = argparse.ArgumentParser(
         description="Documentation preparation tool",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -8481,7 +8495,6 @@ def main() -> None:
     args = parser.parse_args()
 
     # Override directories if specified
-    global HTML_DOCS_DIR, MD_DOCS_DIR, BUNDLE_OUTPUT
     if args.html_dir:
         HTML_DOCS_DIR = Path(args.html_dir)
     if args.markdown_dir:
@@ -8602,9 +8615,18 @@ import os
 import re
 from setuptools import setup, find_packages
 
+# Import safe file operations for consistency
+try:
+    from tools.m1f.file_operations import safe_open
+except ImportError:
+    # Fallback to regular open if safe_open is not available during setup
+    def safe_open(path, mode="r", **kwargs):
+        return open(path, mode, **kwargs)
+
+
 # Read version from _version.py
 version_file = os.path.join(os.path.dirname(__file__), "_version.py")
-with open(version_file, "r", encoding="utf-8") as f:
+with safe_open(version_file, "r", encoding="utf-8") as f:
     version_match = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE
     )
@@ -13169,7 +13191,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     parsed_files = []
     for file_path in html_files:
         try:
-            content = file_path.read_text(encoding="utf-8")
+            content = safe_read_text(file_path, encoding="utf-8")
             soup = BeautifulSoup(content, "html.parser")
             parsed_files.append((file_path, soup))
             # Show relative path from current directory for better identification
@@ -13784,7 +13806,7 @@ def _handle_claude_analysis(
         except (subprocess.CalledProcessError, FileNotFoundError):
             # Try to find claude in known locations
             for path in claude_paths:
-                if path.exists() and path.is_file():
+                if safe_exists(path) and safe_is_file(path):
                     claude_cmd = str(path)
                     break
 
@@ -14074,7 +14096,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             )
 
             # Read HTML content
-            html_content = validated_path.read_text(encoding="utf-8")
+            html_content = safe_read_text(validated_path, encoding="utf-8")
 
             # Determine output file path
             if safe_is_file(source_path):
@@ -14900,7 +14922,7 @@ def handle_claude_convert_improved(args):
     try:
         runner = ClaudeRunner(
             working_dir=str(
-                source_path.parent if source_path.is_file() else source_path
+                source_path.parent if safe_is_file(source_path) else source_path
             )
         )
     except Exception as e:
@@ -14932,21 +14954,21 @@ def handle_claude_convert_improved(args):
 
     # Prepare output directory
     output_path = args.output
-    if output_path.exists() and output_path.is_file():
+    if safe_exists(output_path) and safe_is_file(output_path):
         error(f"Output path is a file, expected directory: {output_path}")
         sys.exit(1)
 
-    if not output_path.exists():
+    if not safe_exists(output_path):
         output_path.mkdir(parents=True, exist_ok=True)
         info(f"Created output directory: {output_path}")
 
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
-    if not prompt_path.exists():
+    if not safe_exists(prompt_path):
         error(f"Prompt file not found: {prompt_path}")
         sys.exit(1)
 
-    prompt_template = prompt_path.read_text()
+    prompt_template = safe_read_text(prompt_path)
 
     # Process each HTML file
     converted_count = 0
@@ -14961,7 +14983,9 @@ def handle_claude_convert_improved(args):
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
                 html_file,
-                base_path=source_path if source_path.is_dir() else source_path.parent,
+                base_path=(
+                    source_path if safe_is_dir(source_path) else source_path.parent
+                ),
                 allow_outside=False,
             )
 
@@ -15036,7 +15060,7 @@ def handle_claude_convert_improved(args):
 
         finally:
             # Clean up temporary file
-            if tmp_html_path and os.path.exists(tmp_html_path):
+            if tmp_html_path and safe_exists(Path(tmp_html_path)):
                 try:
                     os.unlink(tmp_html_path)
                 except Exception:
@@ -16013,6 +16037,11 @@ from .logging import LoggerManager
 from .security_scanner import SecurityScanner
 from .file_processor import FileProcessor
 
+# Import safe file operations
+from .file_operations import (
+    safe_exists,
+)
+
 
 # Backward compatibility functions for tests
 def _scan_files_for_sensitive_info(files_to_process):
@@ -16113,7 +16142,7 @@ def main():
     current_dir = Path(__file__).parent
     main_script = current_dir.parent / "m1f.py"
 
-    if main_script.exists():
+    if safe_exists(main_script):
         # Import the main script module
         import importlib.util
 
@@ -16152,6 +16181,7 @@ def main():
 
     except Exception as e:
         import sys
+
         sys.stderr.write(f"Error running m1f: {e}\n")
         return 1
 
@@ -16220,6 +16250,9 @@ from typing import List, Tuple, Optional
 from .config import Config, ArchiveType
 from .exceptions import ArchiveError
 from .logging import LoggerManager
+from .file_operations import (
+    safe_exists,
+)
 
 
 class ArchiveCreator:
@@ -16278,7 +16311,7 @@ class ArchiveCreator:
                         self.logger.debug(f"Adding to zip: {file_path} as {rel_path}")
 
                     # Skip if file doesn't exist
-                    if not file_path.exists():
+                    if not safe_exists(file_path, logger=self.logger):
                         self.logger.warning(f"File not found, skipping: {file_path}")
                         continue
 
@@ -16307,7 +16340,7 @@ class ArchiveCreator:
                         )
 
                     # Skip if file doesn't exist
-                    if not file_path.exists():
+                    if not safe_exists(file_path, logger=self.logger):
                         self.logger.warning(f"File not found, skipping: {file_path}")
                         continue
 
@@ -16351,6 +16384,10 @@ import subprocess
 import sys
 
 from .config import Config, OutputConfig, FilterConfig, SeparatorStyle, LineEnding
+from .file_operations import (
+    safe_exists,
+    safe_open,
+)
 
 # Use unified colorama module
 from ..shared.colors import Colors, info, success, error, warning
@@ -16369,11 +16406,11 @@ class AutoBundleConfig:
 
     def load(self) -> bool:
         """Load configuration from YAML file."""
-        if not self.config_path.exists():
+        if not safe_exists(self.config_path):
             return False
 
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with safe_open(self.config_path, "r", encoding="utf-8") as f:
                 self.config_data = yaml.safe_load(f) or {}
 
             self.bundles = self.config_data.get("bundles", {})
@@ -16409,7 +16446,7 @@ class AutoBundler:
 
         while True:
             config_path = current / ".m1f.config.yml"
-            if config_path.exists():
+            if safe_exists(config_path):
                 if self.verbose:
                     self.print_info(f"Found config at: {config_path}")
                 return config_path
@@ -16423,7 +16460,7 @@ class AutoBundler:
 
     def check_config_exists(self) -> bool:
         """Check if auto-bundle config exists."""
-        return self.config_file.exists()
+        return safe_exists(self.config_file)
 
     def load_config(self) -> Optional[AutoBundleConfig]:
         """Load auto-bundle configuration."""
@@ -16497,7 +16534,7 @@ class AutoBundler:
                 # Add .py extension if missing
                 if not os.path.splitext(file)[1]:
                     test_path = self.project_root / file
-                    if not test_path.exists():
+                    if not safe_exists(test_path):
                         file += ".py"
                 cmd_parts.extend(["-s", str(self.project_root / file)])
 
@@ -16517,7 +16554,7 @@ class AutoBundler:
                             test_path = self.project_root / path / file
                         else:
                             test_path = self.project_root / file
-                        if not test_path.exists():
+                        if not safe_exists(test_path):
                             file += ".py"
 
                     # Create full path
@@ -16598,9 +16635,12 @@ class AutoBundler:
         exclude_files = None
         if "exclude_paths_file" in bundle_config:
             exclude_files = bundle_config["exclude_paths_file"]
-        elif "global_settings" in global_config and "exclude_paths_file" in global_config["global_settings"]:
+        elif (
+            "global_settings" in global_config
+            and "exclude_paths_file" in global_config["global_settings"]
+        ):
             exclude_files = global_config["global_settings"]["exclude_paths_file"]
-        
+
         if exclude_files:
             if isinstance(exclude_files, str):
                 exclude_files = [exclude_files]
@@ -16612,9 +16652,12 @@ class AutoBundler:
         include_files = None
         if "include_paths_file" in bundle_config:
             include_files = bundle_config["include_paths_file"]
-        elif "global_settings" in global_config and "include_paths_file" in global_config["global_settings"]:
+        elif (
+            "global_settings" in global_config
+            and "include_paths_file" in global_config["global_settings"]
+        ):
             include_files = global_config["global_settings"]["include_paths_file"]
-        
+
         if include_files:
             if isinstance(include_files, str):
                 include_files = [include_files]
@@ -16652,7 +16695,7 @@ class AutoBundler:
 
         # Check conditional enabling
         enabled_if = bundle_config.get("enabled_if_exists", "")
-        if enabled_if and not (self.project_root / enabled_if).exists():
+        if enabled_if and not safe_exists(self.project_root / enabled_if):
             self.print_info(
                 f"Skipping bundle {bundle_name} (condition not met: {enabled_if})"
             )
@@ -17729,6 +17772,12 @@ from pathlib import Path
 from typing import List, Optional
 import os
 import logging
+from .file_operations import (
+    safe_exists,
+    safe_is_dir,
+    safe_write_text,
+    safe_mkdir,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17785,14 +17834,16 @@ class PresetConfigLoader:
         # 1. Global presets (lowest priority)
         if include_global:
             global_preset = cls.get_global_preset_file()
-            if global_preset.exists():
+            if safe_exists(global_preset, logger=logger):
                 preset_files.append(global_preset)
                 logger.debug(f"Found global preset file: {global_preset}")
 
         # 2. User presets
         if include_user:
             user_dir = cls.get_user_presets_dir()
-            if user_dir.exists() and user_dir.is_dir():
+            if safe_exists(user_dir, logger=logger) and safe_is_dir(
+                user_dir, logger=logger
+            ):
                 # Load all .yml and .yaml files
                 for pattern in ["*.yml", "*.yaml"]:
                     for preset_file in sorted(user_dir.glob(pattern)):
@@ -17802,7 +17853,7 @@ class PresetConfigLoader:
         # 3. Project presets (highest priority)
         if project_presets:
             for preset_file in project_presets:
-                if preset_file.exists():
+                if safe_exists(preset_file, logger=logger):
                     preset_files.append(preset_file)
                     logger.debug(f"Found project preset file: {preset_file}")
                 else:
@@ -17817,12 +17868,12 @@ class PresetConfigLoader:
         presets_dir = cls.get_user_presets_dir()
 
         # Create directories
-        user_dir.mkdir(exist_ok=True)
-        presets_dir.mkdir(exist_ok=True)
+        safe_mkdir(user_dir, parents=True, exist_ok=True, logger=logger)
+        safe_mkdir(presets_dir, parents=True, exist_ok=True, logger=logger)
 
         # Create example global preset if it doesn't exist
         global_preset = cls.get_global_preset_file()
-        if not global_preset.exists():
+        if not safe_exists(global_preset, logger=logger):
             example_content = """# Global m1f preset configuration
 # These settings apply to all m1f operations unless overridden
 
@@ -17928,12 +17979,12 @@ personal_projects:
       actions:
         - remove_empty_lines
 """
-            global_preset.write_text(example_content)
+            safe_write_text(global_preset, example_content, logger=logger)
             logger.info(f"Created example global preset: {global_preset}")
 
         # Create README
         readme = user_dir / "README.md"
-        if not readme.exists():
+        if not safe_exists(readme, logger=logger):
             readme_content = """# m1f User Configuration
 
 This directory contains your personal m1f preset configurations.
@@ -17969,7 +18020,7 @@ my_project:
         actions: []  # No processing
 ```
 """
-            readme.write_text(readme_content)
+            safe_write_text(readme, readme_content, logger=logger)
             logger.info(f"Created README: {readme}")
 
 ======= tools/m1f/constants.py ======
@@ -18740,6 +18791,9 @@ from .config import Config
 from .constants import UTF8_PREFERRED_EXTENSIONS
 from .exceptions import EncodingError
 from .logging import LoggerManager
+from .file_operations import (
+    safe_open,
+)
 
 # Try to import chardet for encoding detection
 try:
@@ -18805,7 +18859,7 @@ class EncodingHandler:
         try:
             # Read file in binary mode with explicit handle cleanup
             raw_data = None
-            with open(file_path, "rb") as f:
+            with safe_open(file_path, "rb", logger=self.logger) as f:
                 raw_data = f.read(65536)  # Read up to 64KB
             # Explicitly ensure file handle is released
             f = None
@@ -18923,7 +18977,9 @@ class EncodingHandler:
             # Read file with source encoding and explicit handle cleanup
             content = None
             try:
-                with open(file_path, "r", encoding=source_encoding) as f:
+                with safe_open(
+                    file_path, "r", encoding=source_encoding, logger=self.logger
+                ) as f:
                     content = f.read()
             except UnicodeDecodeError as e:
                 # If initial read fails, try with error handling
@@ -18931,8 +18987,12 @@ class EncodingHandler:
                     f"Initial read failed for {file_path} with {source_encoding}, "
                     f"retrying with error replacement"
                 )
-                with open(
-                    file_path, "r", encoding=source_encoding, errors="replace"
+                with safe_open(
+                    file_path,
+                    "r",
+                    encoding=source_encoding,
+                    errors="replace",
+                    logger=self.logger,
                 ) as f:
                     content = f.read()
                 had_errors = True
@@ -18985,7 +19045,7 @@ class EncodingHandler:
             # Last resort: read as binary and decode with replacement
             try:
                 binary_data = None
-                with open(file_path, "rb") as f:
+                with safe_open(file_path, "rb", logger=self.logger) as f:
                     binary_data = f.read()
                 # Explicitly ensure file handle is released
                 f = None
@@ -19804,7 +19864,10 @@ class FileProcessor:
             m1fignore_path = source_dir / ".m1fignore"
             try:
                 m1fignore_resolved = m1fignore_path.resolve(strict=False)
-                if m1fignore_path.exists() and m1fignore_resolved not in loaded_files:
+                if (
+                    safe_exists(m1fignore_path, self.logger)
+                    and m1fignore_resolved not in loaded_files
+                ):
                     self.logger.debug(f"Auto-loading .m1fignore from {source_dir}")
                     self._load_exclude_patterns_from_file(m1fignore_path)
                     loaded_files.add(m1fignore_resolved)
@@ -19817,7 +19880,7 @@ class FileProcessor:
                 try:
                     gitignore_resolved = gitignore_path.resolve(strict=False)
                     if (
-                        gitignore_path.exists()
+                        safe_exists(gitignore_path, self.logger)
                         and gitignore_resolved not in loaded_files
                     ):
                         self.logger.debug(f"Auto-loading .gitignore from {source_dir}")
@@ -20039,7 +20102,7 @@ class FileProcessor:
         )
 
         try:
-            with open(input_file, "r", encoding="utf-8") as f:
+            with safe_open(input_file, "r", encoding="utf-8") as f:
                 content_lines = f.readlines()
             # Explicitly ensure file handle is released before processing
             f = None
@@ -20532,7 +20595,7 @@ class FileProcessor:
             for include_path in self.config.filter.include_paths:
                 try:
                     include_resolved = Path(include_path).resolve()
-                    if include_resolved.is_dir():
+                    if safe_is_dir(include_resolved, self.logger):
                         target_resolved.relative_to(include_resolved)
                         return True
                     elif target_resolved == include_resolved:
@@ -20615,7 +20678,7 @@ class FileProcessor:
     def _load_exclude_patterns_from_file(self, exclude_file: Path) -> None:
         """Load exclusion patterns from a file (helper method)."""
         try:
-            with open(exclude_file, "r", encoding="utf-8") as f:
+            with safe_open(exclude_file, "r", encoding="utf-8") as f:
                 lines = [
                     line.strip()
                     for line in f
@@ -20891,6 +20954,10 @@ from .logging import LoggerManager
 from .separator_generator import SeparatorGenerator
 from .utils import calculate_checksum
 from .presets import PresetManager
+from .file_operations import (
+    safe_exists,
+    safe_open,
+)
 
 
 class OutputWriter:
@@ -21086,11 +21153,12 @@ class OutputWriter:
             # Open output file
             output_encoding = self.config.encoding.target_charset or "utf-8"
 
-            with open(
+            with safe_open(
                 output_path,
                 "w",
                 encoding=output_encoding,
                 newline=self.config.output.line_ending.value,
+                logger=self.logger,
             ) as outfile:
 
                 files_written = 0
@@ -21165,11 +21233,12 @@ class OutputWriter:
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
 
-            with open(
+            with safe_open(
                 output_path,
                 "w",
                 encoding=output_encoding,
                 newline=self.config.output.line_ending.value,
+                logger=self.logger,
             ) as outfile:
                 files_written = 0
 
@@ -21330,7 +21399,7 @@ class OutputWriter:
             return include_files
 
         for i, include_path in enumerate(self.config.input_include_files):
-            if not include_path.exists():
+            if not safe_exists(include_path, logger=self.logger):
                 self.logger.warning(f"Include file not found: {include_path}")
                 continue
 
@@ -21528,6 +21597,10 @@ import yaml
 import fnmatch
 import logging
 from enum import Enum
+from .file_operations import (
+    safe_open,
+    safe_stat,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21774,15 +21847,16 @@ class PresetManager:
 
         # Check file size limit (10MB max for preset files)
         MAX_PRESET_SIZE = 10 * 1024 * 1024  # 10MB
-        if preset_path.stat().st_size > MAX_PRESET_SIZE:
+        file_stat = safe_stat(preset_path, logger=logger)
+        if file_stat and file_stat.st_size > MAX_PRESET_SIZE:
             raise ValueError(
                 f"Preset file {preset_path} is too large "
-                f"({preset_path.stat().st_size / 1024 / 1024:.1f}MB). "
+                f"({file_stat.st_size / 1024 / 1024:.1f}MB). "
                 f"Maximum size is {MAX_PRESET_SIZE / 1024 / 1024}MB"
             )
 
         try:
-            with open(preset_path, "r", encoding="utf-8") as f:
+            with safe_open(preset_path, "r", encoding="utf-8", logger=logger) as f:
                 data = yaml.safe_load(f)
 
             if not isinstance(data, dict):
@@ -22566,7 +22640,7 @@ def load_presets(
 
     # Load each file
     for path in all_preset_files:
-        if path.exists():
+        if safe_exists(path, logger):
             manager.load_preset_file(path)
             logger.debug(f"Loaded preset file: {path}")
         else:
@@ -22638,6 +22712,9 @@ from typing import List, Tuple, Dict
 
 from .config import Config
 from .logging import LoggerManager
+from .file_operations import (
+    safe_open,
+)
 
 # Try to import detect_secrets
 try:
@@ -22766,7 +22843,9 @@ class SecurityScanner:
         findings = []
 
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with safe_open(
+                file_path, "r", encoding="utf-8", errors="ignore", logger=self.logger
+            ) as f:
                 lines = f.readlines()
 
             for line_num, line in enumerate(lines, 1):
@@ -23264,7 +23343,7 @@ def is_binary_file(file_path: Path) -> bool:
     # Try reading first few bytes
     try:
         chunk = None
-        with open(file_path, "rb") as f:
+        with safe_open(file_path, "rb") as f:
             # Read first 1024 bytes
             chunk = f.read(1024)
         # Explicitly ensure file handle is released
@@ -24735,6 +24814,10 @@ from datetime import datetime
 import json
 from collections import defaultdict, Counter
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .models import AnalyzedContent
 from .config import OutputConfig, ResearchConfig
 from .llm_interface import LLMProvider
@@ -24793,20 +24876,19 @@ class SmartBundleCreator:
 
         # Write bundle file
         bundle_path = output_dir / f"{self.config.bundle_prefix}-bundle.md"
-        with open(bundle_path, "w", encoding="utf-8") as f:
-            f.write(bundle_content)
+        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
 
         # Create supplementary files if enabled
         if self.config.create_index:
             await self._create_index_file(topic_groups, output_dir)
 
         if self.config.include_metadata:
-            self._create_metadata_file(content_list, research_query, output_dir)
+            await self._create_metadata_file(content_list, research_query, output_dir)
 
         # Generate README if we have research config
         if self.research_config:
             readme_gen = ReadmeGenerator(self.research_config)
-            readme_gen.generate_readme(
+            await readme_gen.generate_readme(
                 content_list=content_list,
                 research_query=research_query,
                 output_dir=output_dir,
@@ -24815,7 +24897,9 @@ class SmartBundleCreator:
             )
 
             # Also generate citations file
-            readme_gen.generate_citation_file(content_list, research_query, output_dir)
+            await readme_gen.generate_citation_file(
+                content_list, research_query, output_dir
+            )
 
         logger.info(f"Created smart bundle at: {bundle_path}")
         return bundle_path
@@ -25159,10 +25243,9 @@ class SmartBundleCreator:
         for item in all_items[:20]:  # Top 20
             lines.append(f"- {item.relevance_score}/10: [{item.title}]({item.url})")
 
-        with open(index_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
+        await safe_open(index_path, "w", encoding="utf-8", content="\n".join(lines))
 
-    def _create_metadata_file(
+    async def _create_metadata_file(
         self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path
     ):
         """Create metadata JSON file"""
@@ -25195,8 +25278,9 @@ class SmartBundleCreator:
         }
 
         metadata_path = output_dir / "metadata.json"
-        with open(metadata_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
+        await safe_open(
+            metadata_path, "w", encoding="utf-8", content=json.dumps(metadata, indent=2)
+        )
 
 ======= tools/research/cli.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -25225,6 +25309,10 @@ from typing import Optional, List, Dict, Any
 import asyncio
 import logging
 from datetime import datetime
+
+from ..m1f.file_operations import (
+    safe_exists,
+)
 
 from .config import ResearchConfig
 from .orchestrator import EnhancedResearchOrchestrator
@@ -25498,7 +25586,7 @@ class EnhancedResearchCommand:
 
         return parser
 
-    def _validate_args(self, args) -> Optional[str]:
+    async def _validate_args(self, args) -> Optional[str]:
         """Validate arguments and return error message if invalid"""
         # Check for conflicting options
         if args.resume and args.query:
@@ -25524,7 +25612,7 @@ class EnhancedResearchCommand:
             return "No operation specified. Use --help for usage"
 
         # Validate URLs file if provided
-        if args.urls_file and not args.urls_file.exists():
+        if args.urls_file and not await safe_exists(args.urls_file):
             return f"URLs file not found: {args.urls_file}"
 
         # Validate numeric ranges
@@ -25591,7 +25679,7 @@ class EnhancedResearchCommand:
         )
 
         # Validate arguments
-        error = self._validate_args(args)
+        error = await self._validate_args(args)
         if error:
             self.formatter.error(error)
             return 1
@@ -25834,7 +25922,7 @@ research:
 
     async def _run_research(self, args):
         """Run research with progress tracking"""
-        config = self._create_config(args)
+        config = await self._create_config(args)
         orchestrator = EnhancedResearchOrchestrator(config)
 
         # Show research plan
@@ -25997,7 +26085,7 @@ research:
             self.formatter.error(f"Job not found: {args.status}")
             return 1
 
-        info = job_manager.get_job_info(job)
+        info = await job_manager.get_job_info(job)
 
         if self.formatter.format == "json":
             self.formatter._json_buffer.append(info)
@@ -26019,7 +26107,7 @@ research:
 
         self.formatter.info(f"Cleaning raw data for job {args.clean_raw}...")
 
-        stats = job_manager.cleanup_job_raw_data(args.clean_raw)
+        stats = await job_manager.cleanup_job_raw_data(args.clean_raw)
 
         if "error" in stats:
             self.formatter.error(stats["error"])
@@ -26055,7 +26143,7 @@ research:
 
         for i, job_info in enumerate(all_jobs):
             try:
-                job_stats = job_manager.cleanup_job_raw_data(job_info["job_id"])
+                job_stats = await job_manager.cleanup_job_raw_data(job_info["job_id"])
                 if "error" not in job_stats:
                     stats["jobs_cleaned"] += 1
                     stats["files_deleted"] += job_stats.get("html_files_deleted", 0)
@@ -26086,7 +26174,7 @@ research:
             self.formatter.error(f"Job not found: {args.export}")
             return 1
 
-        info = job_manager.get_job_info(job)
+        info = await job_manager.get_job_info(job)
 
         # Add content if available
         job_db = job_manager.get_job_database(job)
@@ -26117,7 +26205,7 @@ research:
                     self.formatter.error(f"Job not found: {args.watch}")
                     return 1
 
-                info = job_manager.get_job_info(job)
+                info = await job_manager.get_job_info(job)
                 stats = info["stats"]
 
                 # Check if stats changed
@@ -26212,11 +26300,11 @@ Examples:
 """
         info(help_text)
 
-    def _create_config(self, args) -> ResearchConfig:
+    async def _create_config(self, args) -> ResearchConfig:
         """Create configuration from arguments"""
         # Load base config
-        if args.config and args.config.exists():
-            config = ResearchConfig.from_yaml(args.config)
+        if args.config and await safe_exists(args.config):
+            config = await ResearchConfig.from_yaml(args.config)
         else:
             config = ResearchConfig()
 
@@ -26283,6 +26371,10 @@ import yaml
 import os
 from argparse import Namespace
 
+from ..m1f.file_operations import (
+    safe_read_text,
+)
+
 
 @dataclass
 class LLMConfig:
@@ -26305,7 +26397,9 @@ class ScrapingConfig:
     scrape_limit: int = 10  # Maximum URLs to scrape
     timeout_range: str = "1-3"  # seconds
     timeout: int = 30  # Total timeout for requests in seconds
-    delay: List[float] = field(default_factory=lambda: [1.0, 3.0])  # delay range in seconds
+    delay: List[float] = field(
+        default_factory=lambda: [1.0, 3.0]
+    )  # delay range in seconds
     max_concurrent: int = 5
     retry_attempts: int = 2
     retries: int = 2  # Number of retries for failed requests
@@ -26387,10 +26481,10 @@ class ResearchConfig:
     templates: Dict[str, ResearchTemplate] = field(default_factory=dict)
 
     @classmethod
-    def from_yaml(cls, path: Path) -> "ResearchConfig":
+    async def from_yaml(cls, path: Path) -> "ResearchConfig":
         """Load configuration from YAML file"""
-        with open(path, "r") as f:
-            data = yaml.safe_load(f)
+        content = await safe_read_text(path)
+        data = yaml.safe_load(content)
 
         # Extract research section
         research_data = data.get("research", {})
@@ -26503,7 +26597,7 @@ class ResearchConfig:
         )
 
     @classmethod
-    def from_args(cls, args: Namespace) -> "ResearchConfig":
+    async def from_args(cls, args: Namespace) -> "ResearchConfig":
         """Create configuration from command line arguments"""
         config = cls()
 
@@ -26520,7 +26614,7 @@ class ResearchConfig:
 
         # Load from config file if provided
         if args.config:
-            base_config = cls.from_yaml(args.config)
+            base_config = await cls.from_yaml(args.config)
             # Merge with base config
             config.llm = base_config.llm
             config.scraping = base_config.scraping
@@ -27067,6 +27161,11 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+)
+
 from .research_db import ResearchDatabase, JobDatabase, ResearchJob
 from .config import ResearchConfig
 
@@ -27078,7 +27177,8 @@ class JobManager:
 
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
-        self.base_dir.mkdir(parents=True, exist_ok=True)
+        # Note: We'll need to call async init separately
+        # For now, keep sync behavior for compatibility
 
         # Main research database
         self.main_db = ResearchDatabase(self.base_dir / "research_jobs.db")
@@ -27105,6 +27205,7 @@ class JobManager:
 
         # Create job directory
         job_path = Path(job.output_dir)
+        # Note: We'll need to call safe_mkdir separately for full async support
         job_path.mkdir(parents=True, exist_ok=True)
 
         # Create job-specific database
@@ -27171,17 +27272,17 @@ class JobManager:
 
         return None
 
-    def create_symlink_to_latest(self, job: ResearchJob):
+    async def create_symlink_to_latest(self, job: ResearchJob):
         """Create a symlink to the latest research bundle"""
         job_path = Path(job.output_dir)
         bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
 
-        if bundle_path.exists():
+        if await safe_exists(bundle_path):
             # Create symlink in base directory
             latest_link = self.base_dir / "latest_research.md"
 
             # Remove old symlink if exists
-            if latest_link.exists() or latest_link.is_symlink():
+            if await safe_exists(latest_link) or latest_link.is_symlink():
                 latest_link.unlink()
 
             # Create relative symlink
@@ -27204,10 +27305,14 @@ class JobManager:
         safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
         return safe_name.replace(" ", "-").lower()
 
-    def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
+    async def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
         """Get comprehensive job information"""
         job_db = self.get_job_database(job)
         stats = job_db.get_stats()
+
+        bundle_exists = await safe_exists(
+            Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md"
+        )
 
         return {
             "job_id": job.job_id,
@@ -27217,7 +27322,7 @@ class JobManager:
             "updated_at": job.updated_at.isoformat(),
             "output_dir": job.output_dir,
             "stats": stats,
-            "bundle_exists": (Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md").exists(),
+            "bundle_exists": bundle_exists,
         }
 
     def cleanup_old_jobs(self, days: int = 30):
@@ -27225,7 +27330,7 @@ class JobManager:
         # TODO: Implement cleanup logic
         pass
 
-    def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
+    async def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
         """
         Clean up raw data for a specific job while preserving aggregated data
 
@@ -27244,7 +27349,7 @@ class JobManager:
         html_files_deleted = 0
         space_freed = 0
 
-        if job_dir.exists():
+        if await safe_exists(job_dir):
             # Look for HTML files (if any were saved)
             for html_file in job_dir.glob("**/*.html"):
                 try:
@@ -27261,7 +27366,7 @@ class JobManager:
         logger.info(f"Cleaned up job {job_id}: {cleanup_stats}")
         return cleanup_stats
 
-    def cleanup_all_raw_data(self) -> Dict[str, Any]:
+    async def cleanup_all_raw_data(self) -> Dict[str, Any]:
         """Clean up raw data for all jobs"""
         all_jobs = self.list_jobs()
         total_stats = {
@@ -27273,7 +27378,7 @@ class JobManager:
 
         for job_info in all_jobs:
             try:
-                stats = self.cleanup_job_raw_data(job_info["job_id"])
+                stats = await self.cleanup_job_raw_data(job_info["job_id"])
                 if "error" not in stats:
                     total_stats["jobs_cleaned"] += 1
                     total_stats["files_deleted"] += stats.get("html_files_deleted", 0)
@@ -28099,6 +28204,10 @@ from datetime import datetime
 import json
 import logging
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .config import ResearchConfig
 from .llm_interface import get_provider, LLMProvider
 from .models import ResearchResult, ScrapedContent, AnalyzedContent
@@ -28154,7 +28263,11 @@ class EnhancedResearchOrchestrator:
                 if not os.getenv("CLAUDE_CODE", "1") and os.getenv("ANTHROPIC_API_KEY"):
                     provider_name = "claude"
                 # Else fallback to Gemini if key available
-                elif not os.getenv("CLAUDE_CODE", "1") and not os.getenv("ANTHROPIC_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+                elif (
+                    not os.getenv("CLAUDE_CODE", "1")
+                    and not os.getenv("ANTHROPIC_API_KEY")
+                    and os.getenv("GOOGLE_API_KEY")
+                ):
                     provider_name = "gemini"
 
             # If user selected Claude but no API key is present, transparently use Claude Code
@@ -28238,7 +28351,7 @@ class EnhancedResearchOrchestrator:
             self.job_manager.update_job_status(self.current_job.job_id, "completed")
 
             # Create symlink to latest research
-            self.job_manager.create_symlink_to_latest(self.current_job)
+            await self.job_manager.create_symlink_to_latest(self.current_job)
 
             return ResearchResult(
                 query=query,
@@ -28265,7 +28378,7 @@ class EnhancedResearchOrchestrator:
 
         # Add URLs from file if provided
         if urls_file:
-            added = self.url_manager.add_urls_from_file(urls_file)
+            added = await self.url_manager.add_urls_from_file(urls_file)
             logger.info(f"Added {added} URLs from file")
 
         # Get URLs from LLM if not resuming
@@ -28534,8 +28647,7 @@ This research bundle contains {len(content)} carefully selected sources about "{
             bundle_content += "---\n\n"
 
         # Write bundle
-        with open(bundle_path, "w", encoding="utf-8") as f:
-            f.write(bundle_content)
+        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
 
         logger.info(f"Created prominent bundle: {bundle_path}")
 
@@ -28560,8 +28672,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
                 summary_content += f"   - {item.summary[:200]}...\n"
             summary_content += f"   - [Link]({item.url})\n\n"
 
-        with open(summary_path, "w", encoding="utf-8") as f:
-            f.write(summary_content)
+        await safe_open(summary_path, "w", encoding="utf-8", content=summary_content)
 
     def _scraped_to_analyzed(self, scraped: ScrapedContent) -> AnalyzedContent:
         """Convert ScrapedContent to AnalyzedContent"""
@@ -28641,7 +28752,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
         if not job:
             return {"error": f"Job {job_id} not found"}
 
-        return self.job_manager.get_job_info(job)
+        return await self.job_manager.get_job_info(job)
 
     async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all research jobs"""
@@ -29058,6 +29169,10 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import json
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .models import AnalyzedContent
 from .config import ResearchConfig
 
@@ -29077,7 +29192,7 @@ class ReadmeGenerator:
     def __init__(self, config: ResearchConfig):
         self.config = config
 
-    def generate_readme(
+    async def generate_readme(
         self,
         content_list: List[AnalyzedContent],
         research_query: str,
@@ -29290,13 +29405,12 @@ class ReadmeGenerator:
 
         # Write README
         readme_content = "\n".join(lines)
-        with open(readme_path, "w", encoding="utf-8") as f:
-            f.write(readme_content)
+        await safe_open(readme_path, "w", encoding="utf-8", content=readme_content)
 
         logger.info(f"Generated README at: {readme_path}")
         return readme_path
 
-    def generate_citation_file(
+    async def generate_citation_file(
         self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path
     ):
         """Generate a CITATIONS.md file with proper citations for all sources"""
@@ -29331,8 +29445,7 @@ class ReadmeGenerator:
                 lines.append("")
 
         # Write citations file
-        with open(citations_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
+        await safe_open(citations_path, "w", encoding="utf-8", content="\n".join(lines))
 
         logger.info(f"Generated citations at: {citations_path}")
 
@@ -30602,6 +30715,11 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse, urlunparse
 
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_read_text,
+)
+
 from .research_db import JobDatabase
 
 logger = logging.getLogger(__name__)
@@ -30619,31 +30737,31 @@ class URLManager:
         """Add URLs from a list (LLM-generated or manual)"""
         return self.job_db.add_urls(urls, added_by=source)
 
-    def add_urls_from_file(self, file_path: Path) -> int:
+    async def add_urls_from_file(self, file_path: Path) -> int:
         """Add URLs from a text file (one URL per line)"""
-        if not file_path.exists():
+        if not await safe_exists(file_path):
             logger.error(f"URL file not found: {file_path}")
             return 0
 
         urls = []
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#"):  # Skip comments
-                        # Support optional title after URL
-                        parts = line.split("\t", 1)
-                        url = parts[0].strip()
-                        title = parts[1].strip() if len(parts) > 1 else ""
+            content = await safe_read_text(file_path)
+            for line in content.splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):  # Skip comments
+                    # Support optional title after URL
+                    parts = line.split("\t", 1)
+                    url = parts[0].strip()
+                    title = parts[1].strip() if len(parts) > 1 else ""
 
-                        if url.startswith(("http://", "https://")):
-                            urls.append(
-                                {
-                                    "url": url,
-                                    "title": title,
-                                    "description": f"From file: {file_path.name}",
-                                }
-                            )
+                    if url.startswith(("http://", "https://")):
+                        urls.append(
+                            {
+                                "url": url,
+                                "title": title,
+                                "description": f"From file: {file_path.name}",
+                            }
+                        )
 
         except Exception as e:
             logger.error(f"Error reading URL file {file_path}: {e}")
@@ -41334,6 +41452,7 @@ import aiofiles
 from bs4 import BeautifulSoup
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
+from ...m1f.file_operations import safe_mkdir
 
 logger = logging.getLogger(__name__)
 
@@ -41420,7 +41539,7 @@ class PythonMirrorScraper(WebScraperBase):
         file_path = domain_dir / path
 
         # Ensure parent directory exists
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(file_path.parent, parents=True, exist_ok=True, logger=logger)
 
         return file_path
 
@@ -41607,7 +41726,7 @@ class PythonMirrorScraper(WebScraperBase):
             output_dir: Directory to save pages to
         """
         self.output_dir = output_dir
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(self.output_dir, parents=True, exist_ok=True, logger=logger)
 
 ======= tools/scrape_tool/scrapers/selectolax.py ======
 #!/usr/bin/env python3
@@ -42051,6 +42170,12 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union, TypeVar, Type
 import logging
 
+from ...m1f.file_operations import (
+    safe_exists,
+    safe_open,
+    safe_read_text,
+)
+
 logger = logging.getLogger(__name__)
 
 # Type variable for config classes
@@ -42075,20 +42200,20 @@ def load_config_file(path: Union[str, Path]) -> Dict[str, Any]:
     """
     path = Path(path)
 
-    if not path.exists():
+    if not safe_exists(path, logger):
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
     suffix = path.suffix.lower()
 
     try:
         if suffix == ".json":
-            with open(path, "r", encoding="utf-8") as f:
+            with safe_open(path, "r", encoding="utf-8", logger=logger) as f:
                 return json.load(f)
 
         elif suffix in [".yaml", ".yml"]:
             import yaml
 
-            with open(path, "r", encoding="utf-8") as f:
+            with safe_open(path, "r", encoding="utf-8", logger=logger) as f:
                 return yaml.safe_load(f) or {}
 
         elif suffix == ".toml":
@@ -42097,7 +42222,7 @@ def load_config_file(path: Union[str, Path]) -> Dict[str, Any]:
             except ImportError:
                 import tomli as tomllib  # Fallback for older versions
 
-            with open(path, "rb") as f:
+            with safe_open(path, "rb", logger=logger) as f:
                 return tomllib.load(f)
 
         else:
@@ -42139,7 +42264,7 @@ def save_config_file(
 
     try:
         if suffix in [".json"]:
-            with open(path, "w", encoding="utf-8") as f:
+            with safe_open(path, "w", encoding="utf-8", logger=logger) as f:
                 if pretty:
                     json.dump(data, f, indent=2, sort_keys=True)
                 else:
@@ -42148,7 +42273,7 @@ def save_config_file(
         elif suffix in [".yaml", ".yml"]:
             import yaml
 
-            with open(path, "w", encoding="utf-8") as f:
+            with safe_open(path, "w", encoding="utf-8", logger=logger) as f:
                 yaml.dump(data, f, default_flow_style=False, sort_keys=True)
 
         elif suffix in [".toml"]:
@@ -42159,7 +42284,7 @@ def save_config_file(
                     "tomli-w required for TOML output. Install with: pip install tomli-w"
                 )
 
-            with open(path, "wb") as f:
+            with safe_open(path, "wb", logger=logger) as f:
                 tomli_w.dump(data, f)
 
         else:
@@ -42228,7 +42353,7 @@ def load_config_with_defaults(
     config = defaults.copy() if defaults else {}
 
     # Load from file if provided
-    if path and Path(path).exists():
+    if path and safe_exists(Path(path), logger):
         file_config = load_config_file(path)
         config = merge_configs(config, file_config)
 
@@ -42339,6 +42464,12 @@ import logging
 from dataclasses import dataclass
 from functools import lru_cache
 
+from ...m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_read_text,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -42387,8 +42518,10 @@ class PromptLoader:
         # Search in all base directories
         for base_dir in self.base_dirs:
             full_path = base_dir / prompt_path
-            if full_path.exists() and full_path.is_file():
-                content = full_path.read_text(encoding=self.encoding)
+            if safe_exists(full_path, logger) and safe_is_file(full_path, logger):
+                content = safe_read_text(
+                    full_path, encoding=self.encoding, logger=logger
+                )
 
                 # Cache if enabled
                 if self.cache_enabled:
@@ -42575,6 +42708,12 @@ Path utilities for m1f tools
 from pathlib import Path
 from typing import Union, List, Optional, Generator
 import os
+import logging
+
+from ...m1f.file_operations import (
+    safe_exists,
+    safe_is_dir,
+)
 
 
 def ensure_path(path: Union[str, Path], create_parents: bool = False) -> Path:
@@ -42618,9 +42757,11 @@ def get_project_root(start_path: Optional[Union[str, Path]] = None) -> Optional[
 
     current = start_path.absolute()
 
+    logger = logging.getLogger(__name__)
+
     while current != current.parent:
         for marker in markers:
-            if (current / marker).exists():
+            if safe_exists(current / marker, logger):
                 return current
         current = current.parent
 
@@ -42655,9 +42796,11 @@ def find_files(
     # Use rglob for recursive search, glob for non-recursive
     glob_method = root.rglob if recursive else root.glob
 
+    logger = logging.getLogger(__name__)
+
     for path in glob_method(pattern):
         # Skip directories
-        if path.is_dir():
+        if safe_is_dir(path, logger):
             continue
 
         # Skip hidden files if requested

@@ -167,7 +167,7 @@ def is_binary_file(file_path: Path) -> bool:
     # Try reading first few bytes
     try:
         chunk = None
-        with open(file_path, "rb") as f:
+        with safe_open(file_path, "rb") as f:
             # Read first 1024 bytes
             chunk = f.read(1024)
         # Explicitly ensure file handle is released

@@ -24,6 +24,10 @@ from datetime import datetime
 import json
 import logging
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .config import ResearchConfig
 from .llm_interface import get_provider, LLMProvider
 from .models import ResearchResult, ScrapedContent, AnalyzedContent
@@ -79,7 +83,11 @@ class EnhancedResearchOrchestrator:
                 if not os.getenv("CLAUDE_CODE", "1") and os.getenv("ANTHROPIC_API_KEY"):
                     provider_name = "claude"
                 # Else fallback to Gemini if key available
-                elif not os.getenv("CLAUDE_CODE", "1") and not os.getenv("ANTHROPIC_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+                elif (
+                    not os.getenv("CLAUDE_CODE", "1")
+                    and not os.getenv("ANTHROPIC_API_KEY")
+                    and os.getenv("GOOGLE_API_KEY")
+                ):
                     provider_name = "gemini"
 
             # If user selected Claude but no API key is present, transparently use Claude Code
@@ -163,7 +171,7 @@ class EnhancedResearchOrchestrator:
             self.job_manager.update_job_status(self.current_job.job_id, "completed")
 
             # Create symlink to latest research
-            self.job_manager.create_symlink_to_latest(self.current_job)
+            await self.job_manager.create_symlink_to_latest(self.current_job)
 
             return ResearchResult(
                 query=query,
@@ -190,7 +198,7 @@ class EnhancedResearchOrchestrator:
 
         # Add URLs from file if provided
         if urls_file:
-            added = self.url_manager.add_urls_from_file(urls_file)
+            added = await self.url_manager.add_urls_from_file(urls_file)
             logger.info(f"Added {added} URLs from file")
 
         # Get URLs from LLM if not resuming
@@ -459,8 +467,7 @@ This research bundle contains {len(content)} carefully selected sources about "{
             bundle_content += "---\n\n"
 
         # Write bundle
-        with open(bundle_path, "w", encoding="utf-8") as f:
-            f.write(bundle_content)
+        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
 
         logger.info(f"Created prominent bundle: {bundle_path}")
 
@@ -485,8 +492,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
                 summary_content += f"   - {item.summary[:200]}...\n"
             summary_content += f"   - [Link]({item.url})\n\n"
 
-        with open(summary_path, "w", encoding="utf-8") as f:
-            f.write(summary_content)
+        await safe_open(summary_path, "w", encoding="utf-8", content=summary_content)
 
     def _scraped_to_analyzed(self, scraped: ScrapedContent) -> AnalyzedContent:
         """Convert ScrapedContent to AnalyzedContent"""
@@ -566,7 +572,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
         if not job:
             return {"error": f"Job {job_id} not found"}
 
-        return self.job_manager.get_job_info(job)
+        return await self.job_manager.get_job_info(job)
 
     async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all research jobs"""

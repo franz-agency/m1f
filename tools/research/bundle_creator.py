@@ -23,6 +23,10 @@ from datetime import datetime
 import json
 from collections import defaultdict, Counter
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .models import AnalyzedContent
 from .config import OutputConfig, ResearchConfig
 from .llm_interface import LLMProvider
@@ -81,20 +85,19 @@ class SmartBundleCreator:
 
         # Write bundle file
         bundle_path = output_dir / f"{self.config.bundle_prefix}-bundle.md"
-        with open(bundle_path, "w", encoding="utf-8") as f:
-            f.write(bundle_content)
+        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
 
         # Create supplementary files if enabled
         if self.config.create_index:
             await self._create_index_file(topic_groups, output_dir)
 
         if self.config.include_metadata:
-            self._create_metadata_file(content_list, research_query, output_dir)
+            await self._create_metadata_file(content_list, research_query, output_dir)
 
         # Generate README if we have research config
         if self.research_config:
             readme_gen = ReadmeGenerator(self.research_config)
-            readme_gen.generate_readme(
+            await readme_gen.generate_readme(
                 content_list=content_list,
                 research_query=research_query,
                 output_dir=output_dir,
@@ -103,7 +106,9 @@ class SmartBundleCreator:
             )
 
             # Also generate citations file
-            readme_gen.generate_citation_file(content_list, research_query, output_dir)
+            await readme_gen.generate_citation_file(
+                content_list, research_query, output_dir
+            )
 
         logger.info(f"Created smart bundle at: {bundle_path}")
         return bundle_path
@@ -447,10 +452,9 @@ class SmartBundleCreator:
         for item in all_items[:20]:  # Top 20
             lines.append(f"- {item.relevance_score}/10: [{item.title}]({item.url})")
 
-        with open(index_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
+        await safe_open(index_path, "w", encoding="utf-8", content="\n".join(lines))
 
-    def _create_metadata_file(
+    async def _create_metadata_file(
         self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path
     ):
         """Create metadata JSON file"""
@@ -483,5 +487,6 @@ class SmartBundleCreator:
         }
 
         metadata_path = output_dir / "metadata.json"
-        with open(metadata_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
+        await safe_open(
+            metadata_path, "w", encoding="utf-8", content=json.dumps(metadata, indent=2)
+        )

@@ -20,9 +20,18 @@ import os
 import re
 from setuptools import setup, find_packages
 
+# Import safe file operations for consistency
+try:
+    from tools.m1f.file_operations import safe_open
+except ImportError:
+    # Fallback to regular open if safe_open is not available during setup
+    def safe_open(path, mode="r", **kwargs):
+        return open(path, mode, **kwargs)
+
+
 # Read version from _version.py
 version_file = os.path.join(os.path.dirname(__file__), "_version.py")
-with open(version_file, "r", encoding="utf-8") as f:
+with safe_open(version_file, "r", encoding="utf-8") as f:
     version_match = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE
     )

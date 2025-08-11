@@ -152,7 +152,7 @@ class M1FInit:
 
         # Check if already linked
         link_path = m1f_dir / "m1f.txt"
-        if link_path.exists():
+        if self.safe_exists(link_path):
             success("✅ m1f documentation already linked")
             self.created_files.append("m1f/m1f.txt (symlink)")
             return
@@ -204,13 +204,13 @@ class M1FInit:
     def _check_git_repository(self) -> Path:
         """Check if we're in a git repository."""
         git_root = self.project_path
-        if (self.project_path / ".git").exists():
+        if self.safe_exists(self.project_path / ".git"):
             success(f"✅ Git repository detected in current directory")
         else:
             # Look for git root in parent directories
             current = self.project_path
             while current != current.parent:
-                if (current / ".git").exists():
+                if self.safe_exists(current / ".git"):
                     git_root = current
                     break
                 current = current.parent
@@ -223,7 +223,7 @@ class M1FInit:
     def _check_existing_config(self) -> bool:
         """Check for existing .m1f.config.yml."""
         config_path = self.project_path / ".m1f.config.yml"
-        if config_path.exists():
+        if self.safe_exists(config_path):
             success(f"✅ m1f configuration found: {config_path.name}")
             return True
         else:
@@ -268,7 +268,7 @@ class M1FInit:
                 if not self.created_files:
                     # Fallback: list files in m1f directory
                     m1f_dir = self.project_path / "m1f"
-                    if m1f_dir.exists():
+                    if self.safe_exists(m1f_dir):
                         for file in m1f_dir.glob("*.txt"):
                             if file.name != "m1f.txt":  # Don't list the symlink
                                 self.created_files.append(f"m1f/{file.name}")
@@ -310,7 +310,7 @@ class M1FInit:
                 ]
 
                 # Only use .gitignore if it exists in current directory
-                if (self.project_path / ".gitignore").exists():
+                if self.safe_exists(self.project_path / ".gitignore"):
                     cmd.extend(["--exclude-paths-file", ".gitignore"])
 
                 result = subprocess.run(cmd, capture_output=True, text=True)
@@ -606,7 +606,7 @@ class M1FInit:
             ]
 
             # Only use .gitignore if it exists in current directory
-            if (self.project_path / ".gitignore").exists():
+            if self.safe_exists(self.project_path / ".gitignore"):
                 idx = complete_cmd.index("--excludes")
                 complete_cmd.insert(idx, ".gitignore")
                 complete_cmd.insert(idx, "--exclude-paths-file")
@@ -644,7 +644,7 @@ class M1FInit:
         ]
 
         # Only use .gitignore if it exists in current directory
-        if (self.project_path / ".gitignore").exists():
+        if self.safe_exists(self.project_path / ".gitignore"):
             idx = docs_cmd.index("--excludes")
             docs_cmd.insert(idx, ".gitignore")
             docs_cmd.insert(idx, "--exclude-paths-file")

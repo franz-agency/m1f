@@ -23,6 +23,10 @@ import yaml
 import os
 from argparse import Namespace
 
+from ..m1f.file_operations import (
+    safe_read_text,
+)
+
 
 @dataclass
 class LLMConfig:
@@ -45,7 +49,9 @@ class ScrapingConfig:
     scrape_limit: int = 10  # Maximum URLs to scrape
     timeout_range: str = "1-3"  # seconds
     timeout: int = 30  # Total timeout for requests in seconds
-    delay: List[float] = field(default_factory=lambda: [1.0, 3.0])  # delay range in seconds
+    delay: List[float] = field(
+        default_factory=lambda: [1.0, 3.0]
+    )  # delay range in seconds
     max_concurrent: int = 5
     retry_attempts: int = 2
     retries: int = 2  # Number of retries for failed requests
@@ -127,10 +133,10 @@ class ResearchConfig:
     templates: Dict[str, ResearchTemplate] = field(default_factory=dict)
 
     @classmethod
-    def from_yaml(cls, path: Path) -> "ResearchConfig":
+    async def from_yaml(cls, path: Path) -> "ResearchConfig":
         """Load configuration from YAML file"""
-        with open(path, "r") as f:
-            data = yaml.safe_load(f)
+        content = await safe_read_text(path)
+        data = yaml.safe_load(content)
 
         # Extract research section
         research_data = data.get("research", {})
@@ -243,7 +249,7 @@ class ResearchConfig:
         )
 
     @classmethod
-    def from_args(cls, args: Namespace) -> "ResearchConfig":
+    async def from_args(cls, args: Namespace) -> "ResearchConfig":
         """Create configuration from command line arguments"""
         config = cls()
 
@@ -260,7 +266,7 @@ class ResearchConfig:
 
         # Load from config file if provided
         if args.config:
-            base_config = cls.from_yaml(args.config)
+            base_config = await cls.from_yaml(args.config)
             # Merge with base config
             config.llm = base_config.llm
             config.scraping = base_config.scraping

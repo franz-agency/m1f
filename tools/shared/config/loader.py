@@ -23,6 +23,12 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union, TypeVar, Type
 import logging
 
+from ...m1f.file_operations import (
+    safe_exists,
+    safe_open,
+    safe_read_text,
+)
+
 logger = logging.getLogger(__name__)
 
 # Type variable for config classes
@@ -47,20 +53,20 @@ def load_config_file(path: Union[str, Path]) -> Dict[str, Any]:
     """
     path = Path(path)
 
-    if not path.exists():
+    if not safe_exists(path, logger):
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
     suffix = path.suffix.lower()
 
     try:
         if suffix == ".json":
-            with open(path, "r", encoding="utf-8") as f:
+            with safe_open(path, "r", encoding="utf-8", logger=logger) as f:
                 return json.load(f)
 
         elif suffix in [".yaml", ".yml"]:
             import yaml
 
-            with open(path, "r", encoding="utf-8") as f:
+            with safe_open(path, "r", encoding="utf-8", logger=logger) as f:
                 return yaml.safe_load(f) or {}
 
         elif suffix == ".toml":
@@ -69,7 +75,7 @@ def load_config_file(path: Union[str, Path]) -> Dict[str, Any]:
             except ImportError:
                 import tomli as tomllib  # Fallback for older versions
 
-            with open(path, "rb") as f:
+            with safe_open(path, "rb", logger=logger) as f:
                 return tomllib.load(f)
 
         else:
@@ -111,7 +117,7 @@ def save_config_file(
 
     try:
         if suffix in [".json"]:
-            with open(path, "w", encoding="utf-8") as f:
+            with safe_open(path, "w", encoding="utf-8", logger=logger) as f:
                 if pretty:
                     json.dump(data, f, indent=2, sort_keys=True)
                 else:
@@ -120,7 +126,7 @@ def save_config_file(
         elif suffix in [".yaml", ".yml"]:
             import yaml
 
-            with open(path, "w", encoding="utf-8") as f:
+            with safe_open(path, "w", encoding="utf-8", logger=logger) as f:
                 yaml.dump(data, f, default_flow_style=False, sort_keys=True)
 
         elif suffix in [".toml"]:
@@ -131,7 +137,7 @@ def save_config_file(
                     "tomli-w required for TOML output. Install with: pip install tomli-w"
                 )
 
-            with open(path, "wb") as f:
+            with safe_open(path, "wb", logger=logger) as f:
                 tomli_w.dump(data, f)
 
         else:
@@ -200,7 +206,7 @@ def load_config_with_defaults(
     config = defaults.copy() if defaults else {}
 
     # Load from file if provided
-    if path and Path(path).exists():
+    if path and safe_exists(Path(path), logger):
         file_config = load_config_file(path)
         config = merge_configs(config, file_config)
 

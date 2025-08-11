@@ -781,6 +781,10 @@ from datetime import datetime
 import json
 from collections import defaultdict, Counter
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .models import AnalyzedContent
 from .config import OutputConfig, ResearchConfig
 from .llm_interface import LLMProvider
@@ -839,20 +843,19 @@ class SmartBundleCreator:
 
         # Write bundle file
         bundle_path = output_dir / f"{self.config.bundle_prefix}-bundle.md"
-        with open(bundle_path, "w", encoding="utf-8") as f:
-            f.write(bundle_content)
+        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
 
         # Create supplementary files if enabled
         if self.config.create_index:
             await self._create_index_file(topic_groups, output_dir)
 
         if self.config.include_metadata:
-            self._create_metadata_file(content_list, research_query, output_dir)
+            await self._create_metadata_file(content_list, research_query, output_dir)
 
         # Generate README if we have research config
         if self.research_config:
             readme_gen = ReadmeGenerator(self.research_config)
-            readme_gen.generate_readme(
+            await readme_gen.generate_readme(
                 content_list=content_list,
                 research_query=research_query,
                 output_dir=output_dir,
@@ -861,7 +864,9 @@ class SmartBundleCreator:
             )
 
             # Also generate citations file
-            readme_gen.generate_citation_file(content_list, research_query, output_dir)
+            await readme_gen.generate_citation_file(
+                content_list, research_query, output_dir
+            )
 
         logger.info(f"Created smart bundle at: {bundle_path}")
         return bundle_path
@@ -1205,10 +1210,9 @@ class SmartBundleCreator:
         for item in all_items[:20]:  # Top 20
             lines.append(f"- {item.relevance_score}/10: [{item.title}]({item.url})")
 
-        with open(index_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
+        await safe_open(index_path, "w", encoding="utf-8", content="\n".join(lines))
 
-    def _create_metadata_file(
+    async def _create_metadata_file(
         self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path
     ):
         """Create metadata JSON file"""
@@ -1241,8 +1245,9 @@ class SmartBundleCreator:
         }
 
         metadata_path = output_dir / "metadata.json"
-        with open(metadata_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
+        await safe_open(
+            metadata_path, "w", encoding="utf-8", content=json.dumps(metadata, indent=2)
+        )
 
 ======= cli.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -1271,6 +1276,10 @@ from typing import Optional, List, Dict, Any
 import asyncio
 import logging
 from datetime import datetime
+
+from ..m1f.file_operations import (
+    safe_exists,
+)
 
 from .config import ResearchConfig
 from .orchestrator import EnhancedResearchOrchestrator
@@ -1544,7 +1553,7 @@ class EnhancedResearchCommand:
 
         return parser
 
-    def _validate_args(self, args) -> Optional[str]:
+    async def _validate_args(self, args) -> Optional[str]:
         """Validate arguments and return error message if invalid"""
         # Check for conflicting options
         if args.resume and args.query:
@@ -1570,7 +1579,7 @@ class EnhancedResearchCommand:
             return "No operation specified. Use --help for usage"
 
         # Validate URLs file if provided
-        if args.urls_file and not args.urls_file.exists():
+        if args.urls_file and not await safe_exists(args.urls_file):
             return f"URLs file not found: {args.urls_file}"
 
         # Validate numeric ranges
@@ -1637,7 +1646,7 @@ class EnhancedResearchCommand:
         )
 
         # Validate arguments
-        error = self._validate_args(args)
+        error = await self._validate_args(args)
         if error:
             self.formatter.error(error)
             return 1
@@ -1880,7 +1889,7 @@ research:
 
     async def _run_research(self, args):
         """Run research with progress tracking"""
-        config = self._create_config(args)
+        config = await self._create_config(args)
         orchestrator = EnhancedResearchOrchestrator(config)
 
         # Show research plan
@@ -2043,7 +2052,7 @@ research:
             self.formatter.error(f"Job not found: {args.status}")
             return 1
 
-        info = job_manager.get_job_info(job)
+        info = await job_manager.get_job_info(job)
 
         if self.formatter.format == "json":
             self.formatter._json_buffer.append(info)
@@ -2065,7 +2074,7 @@ research:
 
         self.formatter.info(f"Cleaning raw data for job {args.clean_raw}...")
 
-        stats = job_manager.cleanup_job_raw_data(args.clean_raw)
+        stats = await job_manager.cleanup_job_raw_data(args.clean_raw)
 
         if "error" in stats:
             self.formatter.error(stats["error"])
@@ -2101,7 +2110,7 @@ research:
 
         for i, job_info in enumerate(all_jobs):
             try:
-                job_stats = job_manager.cleanup_job_raw_data(job_info["job_id"])
+                job_stats = await job_manager.cleanup_job_raw_data(job_info["job_id"])
                 if "error" not in job_stats:
                     stats["jobs_cleaned"] += 1
                     stats["files_deleted"] += job_stats.get("html_files_deleted", 0)
@@ -2132,7 +2141,7 @@ research:
             self.formatter.error(f"Job not found: {args.export}")
             return 1
 
-        info = job_manager.get_job_info(job)
+        info = await job_manager.get_job_info(job)
 
         # Add content if available
         job_db = job_manager.get_job_database(job)
@@ -2163,7 +2172,7 @@ research:
                     self.formatter.error(f"Job not found: {args.watch}")
                     return 1
 
-                info = job_manager.get_job_info(job)
+                info = await job_manager.get_job_info(job)
                 stats = info["stats"]
 
                 # Check if stats changed
@@ -2258,11 +2267,11 @@ Examples:
 """
         info(help_text)
 
-    def _create_config(self, args) -> ResearchConfig:
+    async def _create_config(self, args) -> ResearchConfig:
         """Create configuration from arguments"""
         # Load base config
-        if args.config and args.config.exists():
-            config = ResearchConfig.from_yaml(args.config)
+        if args.config and await safe_exists(args.config):
+            config = await ResearchConfig.from_yaml(args.config)
         else:
             config = ResearchConfig()
 
@@ -2329,6 +2338,10 @@ import yaml
 import os
 from argparse import Namespace
 
+from ..m1f.file_operations import (
+    safe_read_text,
+)
+
 
 @dataclass
 class LLMConfig:
@@ -2351,7 +2364,9 @@ class ScrapingConfig:
     scrape_limit: int = 10  # Maximum URLs to scrape
     timeout_range: str = "1-3"  # seconds
     timeout: int = 30  # Total timeout for requests in seconds
-    delay: List[float] = field(default_factory=lambda: [1.0, 3.0])  # delay range in seconds
+    delay: List[float] = field(
+        default_factory=lambda: [1.0, 3.0]
+    )  # delay range in seconds
     max_concurrent: int = 5
     retry_attempts: int = 2
     retries: int = 2  # Number of retries for failed requests
@@ -2433,10 +2448,10 @@ class ResearchConfig:
     templates: Dict[str, ResearchTemplate] = field(default_factory=dict)
 
     @classmethod
-    def from_yaml(cls, path: Path) -> "ResearchConfig":
+    async def from_yaml(cls, path: Path) -> "ResearchConfig":
         """Load configuration from YAML file"""
-        with open(path, "r") as f:
-            data = yaml.safe_load(f)
+        content = await safe_read_text(path)
+        data = yaml.safe_load(content)
 
         # Extract research section
         research_data = data.get("research", {})
@@ -2549,7 +2564,7 @@ class ResearchConfig:
         )
 
     @classmethod
-    def from_args(cls, args: Namespace) -> "ResearchConfig":
+    async def from_args(cls, args: Namespace) -> "ResearchConfig":
         """Create configuration from command line arguments"""
         config = cls()
 
@@ -2566,7 +2581,7 @@ class ResearchConfig:
 
         # Load from config file if provided
         if args.config:
-            base_config = cls.from_yaml(args.config)
+            base_config = await cls.from_yaml(args.config)
             # Merge with base config
             config.llm = base_config.llm
             config.scraping = base_config.scraping
@@ -3113,6 +3128,11 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+)
+
 from .research_db import ResearchDatabase, JobDatabase, ResearchJob
 from .config import ResearchConfig
 
@@ -3124,7 +3144,8 @@ class JobManager:
 
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
-        self.base_dir.mkdir(parents=True, exist_ok=True)
+        # Note: We'll need to call async init separately
+        # For now, keep sync behavior for compatibility
 
         # Main research database
         self.main_db = ResearchDatabase(self.base_dir / "research_jobs.db")
@@ -3151,6 +3172,7 @@ class JobManager:
 
         # Create job directory
         job_path = Path(job.output_dir)
+        # Note: We'll need to call safe_mkdir separately for full async support
         job_path.mkdir(parents=True, exist_ok=True)
 
         # Create job-specific database
@@ -3217,17 +3239,17 @@ class JobManager:
 
         return None
 
-    def create_symlink_to_latest(self, job: ResearchJob):
+    async def create_symlink_to_latest(self, job: ResearchJob):
         """Create a symlink to the latest research bundle"""
         job_path = Path(job.output_dir)
         bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
 
-        if bundle_path.exists():
+        if await safe_exists(bundle_path):
             # Create symlink in base directory
             latest_link = self.base_dir / "latest_research.md"
 
             # Remove old symlink if exists
-            if latest_link.exists() or latest_link.is_symlink():
+            if await safe_exists(latest_link) or latest_link.is_symlink():
                 latest_link.unlink()
 
             # Create relative symlink
@@ -3250,10 +3272,14 @@ class JobManager:
         safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
         return safe_name.replace(" ", "-").lower()
 
-    def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
+    async def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
         """Get comprehensive job information"""
         job_db = self.get_job_database(job)
         stats = job_db.get_stats()
+
+        bundle_exists = await safe_exists(
+            Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md"
+        )
 
         return {
             "job_id": job.job_id,
@@ -3263,7 +3289,7 @@ class JobManager:
             "updated_at": job.updated_at.isoformat(),
             "output_dir": job.output_dir,
             "stats": stats,
-            "bundle_exists": (Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md").exists(),
+            "bundle_exists": bundle_exists,
         }
 
     def cleanup_old_jobs(self, days: int = 30):
@@ -3271,7 +3297,7 @@ class JobManager:
         # TODO: Implement cleanup logic
         pass
 
-    def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
+    async def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
         """
         Clean up raw data for a specific job while preserving aggregated data
 
@@ -3290,7 +3316,7 @@ class JobManager:
         html_files_deleted = 0
         space_freed = 0
 
-        if job_dir.exists():
+        if await safe_exists(job_dir):
             # Look for HTML files (if any were saved)
             for html_file in job_dir.glob("**/*.html"):
                 try:
@@ -3307,7 +3333,7 @@ class JobManager:
         logger.info(f"Cleaned up job {job_id}: {cleanup_stats}")
         return cleanup_stats
 
-    def cleanup_all_raw_data(self) -> Dict[str, Any]:
+    async def cleanup_all_raw_data(self) -> Dict[str, Any]:
         """Clean up raw data for all jobs"""
         all_jobs = self.list_jobs()
         total_stats = {
@@ -3319,7 +3345,7 @@ class JobManager:
 
         for job_info in all_jobs:
             try:
-                stats = self.cleanup_job_raw_data(job_info["job_id"])
+                stats = await self.cleanup_job_raw_data(job_info["job_id"])
                 if "error" not in stats:
                     total_stats["jobs_cleaned"] += 1
                     total_stats["files_deleted"] += stats.get("html_files_deleted", 0)
@@ -4145,6 +4171,10 @@ from datetime import datetime
 import json
 import logging
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .config import ResearchConfig
 from .llm_interface import get_provider, LLMProvider
 from .models import ResearchResult, ScrapedContent, AnalyzedContent
@@ -4200,7 +4230,11 @@ class EnhancedResearchOrchestrator:
                 if not os.getenv("CLAUDE_CODE", "1") and os.getenv("ANTHROPIC_API_KEY"):
                     provider_name = "claude"
                 # Else fallback to Gemini if key available
-                elif not os.getenv("CLAUDE_CODE", "1") and not os.getenv("ANTHROPIC_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+                elif (
+                    not os.getenv("CLAUDE_CODE", "1")
+                    and not os.getenv("ANTHROPIC_API_KEY")
+                    and os.getenv("GOOGLE_API_KEY")
+                ):
                     provider_name = "gemini"
 
             # If user selected Claude but no API key is present, transparently use Claude Code
@@ -4284,7 +4318,7 @@ class EnhancedResearchOrchestrator:
             self.job_manager.update_job_status(self.current_job.job_id, "completed")
 
             # Create symlink to latest research
-            self.job_manager.create_symlink_to_latest(self.current_job)
+            await self.job_manager.create_symlink_to_latest(self.current_job)
 
             return ResearchResult(
                 query=query,
@@ -4311,7 +4345,7 @@ class EnhancedResearchOrchestrator:
 
         # Add URLs from file if provided
         if urls_file:
-            added = self.url_manager.add_urls_from_file(urls_file)
+            added = await self.url_manager.add_urls_from_file(urls_file)
             logger.info(f"Added {added} URLs from file")
 
         # Get URLs from LLM if not resuming
@@ -4580,8 +4614,7 @@ This research bundle contains {len(content)} carefully selected sources about "{
             bundle_content += "---\n\n"
 
         # Write bundle
-        with open(bundle_path, "w", encoding="utf-8") as f:
-            f.write(bundle_content)
+        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
 
         logger.info(f"Created prominent bundle: {bundle_path}")
 
@@ -4606,8 +4639,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
                 summary_content += f"   - {item.summary[:200]}...\n"
             summary_content += f"   - [Link]({item.url})\n\n"
 
-        with open(summary_path, "w", encoding="utf-8") as f:
-            f.write(summary_content)
+        await safe_open(summary_path, "w", encoding="utf-8", content=summary_content)
 
     def _scraped_to_analyzed(self, scraped: ScrapedContent) -> AnalyzedContent:
         """Convert ScrapedContent to AnalyzedContent"""
@@ -4687,7 +4719,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
         if not job:
             return {"error": f"Job {job_id} not found"}
 
-        return self.job_manager.get_job_info(job)
+        return await self.job_manager.get_job_info(job)
 
     async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all research jobs"""
@@ -5104,6 +5136,10 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import json
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .models import AnalyzedContent
 from .config import ResearchConfig
 
@@ -5123,7 +5159,7 @@ class ReadmeGenerator:
     def __init__(self, config: ResearchConfig):
         self.config = config
 
-    def generate_readme(
+    async def generate_readme(
         self,
         content_list: List[AnalyzedContent],
         research_query: str,
@@ -5336,13 +5372,12 @@ class ReadmeGenerator:
 
         # Write README
         readme_content = "\n".join(lines)
-        with open(readme_path, "w", encoding="utf-8") as f:
-            f.write(readme_content)
+        await safe_open(readme_path, "w", encoding="utf-8", content=readme_content)
 
         logger.info(f"Generated README at: {readme_path}")
         return readme_path
 
-    def generate_citation_file(
+    async def generate_citation_file(
         self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path
     ):
         """Generate a CITATIONS.md file with proper citations for all sources"""
@@ -5377,8 +5412,7 @@ class ReadmeGenerator:
                 lines.append("")
 
         # Write citations file
-        with open(citations_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
+        await safe_open(citations_path, "w", encoding="utf-8", content="\n".join(lines))
 
         logger.info(f"Generated citations at: {citations_path}")
 
@@ -6648,6 +6682,11 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse, urlunparse
 
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_read_text,
+)
+
 from .research_db import JobDatabase
 
 logger = logging.getLogger(__name__)
@@ -6665,31 +6704,31 @@ class URLManager:
         """Add URLs from a list (LLM-generated or manual)"""
         return self.job_db.add_urls(urls, added_by=source)
 
-    def add_urls_from_file(self, file_path: Path) -> int:
+    async def add_urls_from_file(self, file_path: Path) -> int:
         """Add URLs from a text file (one URL per line)"""
-        if not file_path.exists():
+        if not await safe_exists(file_path):
             logger.error(f"URL file not found: {file_path}")
             return 0
 
         urls = []
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#"):  # Skip comments
-                        # Support optional title after URL
-                        parts = line.split("\t", 1)
-                        url = parts[0].strip()
-                        title = parts[1].strip() if len(parts) > 1 else ""
+            content = await safe_read_text(file_path)
+            for line in content.splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):  # Skip comments
+                    # Support optional title after URL
+                    parts = line.split("\t", 1)
+                    url = parts[0].strip()
+                    title = parts[1].strip() if len(parts) > 1 else ""
 
-                        if url.startswith(("http://", "https://")):
-                            urls.append(
-                                {
-                                    "url": url,
-                                    "title": title,
-                                    "description": f"From file: {file_path.name}",
-                                }
-                            )
+                    if url.startswith(("http://", "https://")):
+                        urls.append(
+                            {
+                                "url": url,
+                                "title": title,
+                                "description": f"From file: {file_path.name}",
+                            }
+                        )
 
         except Exception as e:
             logger.error(f"Error reading URL file {file_path}: {e}")

@@ -21,6 +21,10 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import json
 
+from ..m1f.file_operations import (
+    safe_open,
+)
+
 from .models import AnalyzedContent
 from .config import ResearchConfig
 
@@ -40,7 +44,7 @@ class ReadmeGenerator:
     def __init__(self, config: ResearchConfig):
         self.config = config
 
-    def generate_readme(
+    async def generate_readme(
         self,
         content_list: List[AnalyzedContent],
         research_query: str,
@@ -253,13 +257,12 @@ class ReadmeGenerator:
 
         # Write README
         readme_content = "\n".join(lines)
-        with open(readme_path, "w", encoding="utf-8") as f:
-            f.write(readme_content)
+        await safe_open(readme_path, "w", encoding="utf-8", content=readme_content)
 
         logger.info(f"Generated README at: {readme_path}")
         return readme_path
 
-    def generate_citation_file(
+    async def generate_citation_file(
         self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path
     ):
         """Generate a CITATIONS.md file with proper citations for all sources"""
@@ -294,7 +297,6 @@ class ReadmeGenerator:
                 lines.append("")
 
         # Write citations file
-        with open(citations_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
+        await safe_open(citations_path, "w", encoding="utf-8", content="\n".join(lines))
 
         logger.info(f"Generated citations at: {citations_path}")

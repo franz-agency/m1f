@@ -25,6 +25,9 @@ from typing import List, Tuple, Dict
 
 from .config import Config
 from .logging import LoggerManager
+from .file_operations import (
+    safe_open,
+)
 
 # Try to import detect_secrets
 try:
@@ -153,7 +156,9 @@ class SecurityScanner:
         findings = []
 
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with safe_open(
+                file_path, "r", encoding="utf-8", errors="ignore", logger=self.logger
+            ) as f:
                 lines = f.readlines()
 
             for line_num, line in enumerate(lines, 1):

@@ -28,6 +28,7 @@ import aiofiles
 from bs4 import BeautifulSoup
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
+from ...m1f.file_operations import safe_mkdir
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class PythonMirrorScraper(WebScraperBase):
         file_path = domain_dir / path
 
         # Ensure parent directory exists
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(file_path.parent, parents=True, exist_ok=True, logger=logger)
 
         return file_path
 
@@ -301,4 +302,4 @@ class PythonMirrorScraper(WebScraperBase):
             output_dir: Directory to save pages to
         """
         self.output_dir = output_dir
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(self.output_dir, parents=True, exist_ok=True, logger=logger)

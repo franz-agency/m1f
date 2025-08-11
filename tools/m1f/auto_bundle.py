@@ -26,6 +26,10 @@ import subprocess
 import sys
 
 from .config import Config, OutputConfig, FilterConfig, SeparatorStyle, LineEnding
+from .file_operations import (
+    safe_exists,
+    safe_open,
+)
 
 # Use unified colorama module
 from ..shared.colors import Colors, info, success, error, warning
@@ -44,11 +48,11 @@ class AutoBundleConfig:
 
     def load(self) -> bool:
         """Load configuration from YAML file."""
-        if not self.config_path.exists():
+        if not safe_exists(self.config_path):
             return False
 
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with safe_open(self.config_path, "r", encoding="utf-8") as f:
                 self.config_data = yaml.safe_load(f) or {}
 
             self.bundles = self.config_data.get("bundles", {})
@@ -84,7 +88,7 @@ class AutoBundler:
 
         while True:
             config_path = current / ".m1f.config.yml"
-            if config_path.exists():
+            if safe_exists(config_path):
                 if self.verbose:
                     self.print_info(f"Found config at: {config_path}")
                 return config_path
@@ -98,7 +102,7 @@ class AutoBundler:
 
     def check_config_exists(self) -> bool:
         """Check if auto-bundle config exists."""
-        return self.config_file.exists()
+        return safe_exists(self.config_file)
 
     def load_config(self) -> Optional[AutoBundleConfig]:
         """Load auto-bundle configuration."""
@@ -172,7 +176,7 @@ class AutoBundler:
                 # Add .py extension if missing
                 if not os.path.splitext(file)[1]:
                     test_path = self.project_root / file
-                    if not test_path.exists():
+                    if not safe_exists(test_path):
                         file += ".py"
                 cmd_parts.extend(["-s", str(self.project_root / file)])
 
@@ -192,7 +196,7 @@ class AutoBundler:
                             test_path = self.project_root / path / file
                         else:
                             test_path = self.project_root / file
-                        if not test_path.exists():
+                        if not safe_exists(test_path):
                             file += ".py"
 
                     # Create full path
@@ -273,9 +277,12 @@ class AutoBundler:
         exclude_files = None
         if "exclude_paths_file" in bundle_config:
             exclude_files = bundle_config["exclude_paths_file"]
-        elif "global_settings" in global_config and "exclude_paths_file" in global_config["global_settings"]:
+        elif (
+            "global_settings" in global_config
+            and "exclude_paths_file" in global_config["global_settings"]
+        ):
             exclude_files = global_config["global_settings"]["exclude_paths_file"]
-        
+
         if exclude_files:
             if isinstance(exclude_files, str):
                 exclude_files = [exclude_files]
@@ -287,9 +294,12 @@ class AutoBundler:
         include_files = None
         if "include_paths_file" in bundle_config:
             include_files = bundle_config["include_paths_file"]
-        elif "global_settings" in global_config and "include_paths_file" in global_config["global_settings"]:
+        elif (
+            "global_settings" in global_config
+            and "include_paths_file" in global_config["global_settings"]
+        ):
             include_files = global_config["global_settings"]["include_paths_file"]
-        
+
         if include_files:
             if isinstance(include_files, str):
                 include_files = [include_files]
@@ -327,7 +337,7 @@ class AutoBundler:
 
         # Check conditional enabling
         enabled_if = bundle_config.get("enabled_if_exists", "")
-        if enabled_if and not (self.project_root / enabled_if).exists():
+        if enabled_if and not safe_exists(self.project_root / enabled_if):
             self.print_info(
                 f"Skipping bundle {bundle_name} (condition not met: {enabled_if})"
             )

@@ -29,6 +29,12 @@ import logging
 from dataclasses import dataclass
 from functools import lru_cache
 
+from ...m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_read_text,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,8 +83,10 @@ class PromptLoader:
         # Search in all base directories
         for base_dir in self.base_dirs:
             full_path = base_dir / prompt_path
-            if full_path.exists() and full_path.is_file():
-                content = full_path.read_text(encoding=self.encoding)
+            if safe_exists(full_path, logger) and safe_is_file(full_path, logger):
+                content = safe_read_text(
+                    full_path, encoding=self.encoding, logger=logger
+                )
 
                 # Cache if enabled
                 if self.cache_enabled:

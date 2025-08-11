@@ -458,7 +458,7 @@ def handle_analyze(args: argparse.Namespace) -> None:
     parsed_files = []
     for file_path in html_files:
         try:
-            content = file_path.read_text(encoding="utf-8")
+            content = safe_read_text(file_path, encoding="utf-8")
             soup = BeautifulSoup(content, "html.parser")
             parsed_files.append((file_path, soup))
             # Show relative path from current directory for better identification
@@ -1073,7 +1073,7 @@ def _handle_claude_analysis(
         except (subprocess.CalledProcessError, FileNotFoundError):
             # Try to find claude in known locations
             for path in claude_paths:
-                if path.exists() and path.is_file():
+                if safe_exists(path) and safe_is_file(path):
                     claude_cmd = str(path)
                     break
 
@@ -1363,7 +1363,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             )
 
             # Read HTML content
-            html_content = validated_path.read_text(encoding="utf-8")
+            html_content = safe_read_text(validated_path, encoding="utf-8")
 
             # Determine output file path
             if safe_is_file(source_path):

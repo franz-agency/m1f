@@ -19,6 +19,12 @@ Path utilities for m1f tools
 from pathlib import Path
 from typing import Union, List, Optional, Generator
 import os
+import logging
+
+from ...m1f.file_operations import (
+    safe_exists,
+    safe_is_dir,
+)
 
 
 def ensure_path(path: Union[str, Path], create_parents: bool = False) -> Path:
@@ -62,9 +68,11 @@ def get_project_root(start_path: Optional[Union[str, Path]] = None) -> Optional[
 
     current = start_path.absolute()
 
+    logger = logging.getLogger(__name__)
+
     while current != current.parent:
         for marker in markers:
-            if (current / marker).exists():
+            if safe_exists(current / marker, logger):
                 return current
         current = current.parent
 
@@ -99,9 +107,11 @@ def find_files(
     # Use rglob for recursive search, glob for non-recursive
     glob_method = root.rglob if recursive else root.glob
 
+    logger = logging.getLogger(__name__)
+
     for path in glob_method(pattern):
         # Skip directories
-        if path.is_dir():
+        if safe_is_dir(path, logger):
             continue
 
         # Skip hidden files if requested

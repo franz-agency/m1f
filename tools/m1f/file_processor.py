@@ -179,7 +179,10 @@ class FileProcessor:
             m1fignore_path = source_dir / ".m1fignore"
             try:
                 m1fignore_resolved = m1fignore_path.resolve(strict=False)
-                if m1fignore_path.exists() and m1fignore_resolved not in loaded_files:
+                if (
+                    safe_exists(m1fignore_path, self.logger)
+                    and m1fignore_resolved not in loaded_files
+                ):
                     self.logger.debug(f"Auto-loading .m1fignore from {source_dir}")
                     self._load_exclude_patterns_from_file(m1fignore_path)
                     loaded_files.add(m1fignore_resolved)
@@ -192,7 +195,7 @@ class FileProcessor:
                 try:
                     gitignore_resolved = gitignore_path.resolve(strict=False)
                     if (
-                        gitignore_path.exists()
+                        safe_exists(gitignore_path, self.logger)
                         and gitignore_resolved not in loaded_files
                     ):
                         self.logger.debug(f"Auto-loading .gitignore from {source_dir}")
@@ -414,7 +417,7 @@ class FileProcessor:
         )
 
         try:
-            with open(input_file, "r", encoding="utf-8") as f:
+            with safe_open(input_file, "r", encoding="utf-8") as f:
                 content_lines = f.readlines()
             # Explicitly ensure file handle is released before processing
             f = None
@@ -907,7 +910,7 @@ class FileProcessor:
             for include_path in self.config.filter.include_paths:
                 try:
                     include_resolved = Path(include_path).resolve()
-                    if include_resolved.is_dir():
+                    if safe_is_dir(include_resolved, self.logger):
                         target_resolved.relative_to(include_resolved)
                         return True
                     elif target_resolved == include_resolved:
@@ -990,7 +993,7 @@ class FileProcessor:
     def _load_exclude_patterns_from_file(self, exclude_file: Path) -> None:
         """Load exclusion patterns from a file (helper method)."""
         try:
-            with open(exclude_file, "r", encoding="utf-8") as f:
+            with safe_open(exclude_file, "r", encoding="utf-8") as f:
                 lines = [
                     line.strip()
                     for line in f
