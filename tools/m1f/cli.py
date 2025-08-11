@@ -25,6 +25,7 @@ from . import __version__
 # Use unified colorama module
 try:
     from ..shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
+    from ..shared.cli import CustomArgumentParser
 except ImportError:
     COLORAMA_AVAILABLE = False
 
@@ -32,21 +33,21 @@ except ImportError:
     class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         pass
 
+    # Fallback CustomArgumentParser
+    class CustomArgumentParser(argparse.ArgumentParser):
+        """Custom argument parser with better error messages."""
 
-class CustomArgumentParser(argparse.ArgumentParser):
-    """Custom argument parser with better error messages."""
+        def error(self, message: str) -> NoReturn:
+            """Display error message with colors if available."""
+            error_msg = f"ERROR: {message}"
 
-    def error(self, message: str) -> NoReturn:
-        """Display error message with colors if available."""
-        error_msg = f"ERROR: {message}"
+            if COLORAMA_AVAILABLE:
+                error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
 
-        if COLORAMA_AVAILABLE:
-            error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
-
-        self.print_usage(sys.stderr)
-        print(f"\n{error_msg}", file=sys.stderr)
-        print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
-        self.exit(2)
+            self.print_usage(sys.stderr)
+            print(f"\n{error_msg}", file=sys.stderr)
+            print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
+            self.exit(2)
 
 
 def create_parser() -> CustomArgumentParser:
@@ -384,10 +385,11 @@ def parse_args(
 ) -> argparse.Namespace:
     """Parse command-line arguments."""
     parsed_args = parser.parse_args(args)
-    
+
     # Store the raw command line arguments to detect which were explicitly provided
     # This helps with preset override logic
     import sys
+
     parsed_args._cli_args = args if args is not None else sys.argv[1:]
 
     # Skip validation if presets are being used - they may provide required values

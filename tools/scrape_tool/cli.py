@@ -37,6 +37,7 @@ try:
         COLORAMA_AVAILABLE,
         ColoredHelpFormatter,
     )
+    from ..shared.cli import CustomArgumentParser
 except ImportError:
     COLORAMA_AVAILABLE = False
 
@@ -44,24 +45,24 @@ except ImportError:
     class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         pass
 
+    # Fallback CustomArgumentParser
+    class CustomArgumentParser(argparse.ArgumentParser):
+        """Custom argument parser with better error messages."""
+
+        def error(self, message: str) -> None:
+            """Display error message with colors if available."""
+            error_msg = f"ERROR: {message}"
+            if COLORAMA_AVAILABLE:
+                error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
+            self.print_usage(sys.stderr)
+            print(f"\n{error_msg}", file=sys.stderr)
+            print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
+            self.exit(2)
+
 
 from . import __version__
 from .config import Config, ScraperBackend
 from .crawlers import WebCrawler
-
-
-class CustomArgumentParser(argparse.ArgumentParser):
-    """Custom argument parser with better error messages."""
-
-    def error(self, message: str) -> None:
-        """Display error message with colors if available."""
-        error_msg = f"ERROR: {message}"
-        if COLORAMA_AVAILABLE:
-            error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
-        self.print_usage(sys.stderr)
-        print(f"\n{error_msg}", file=sys.stderr)
-        print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
-        self.exit(2)
 
 
 def cleanup_orphaned_sessions(db_path: Path) -> None:
