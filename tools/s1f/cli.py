@@ -25,7 +25,18 @@ from .config import Config
 from .core import FileSplitter
 from .logging import setup_logging
 from .exceptions import ConfigurationError
-from ..m1f.file_operations import safe_exists, safe_is_file
+
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from ..m1f.file_operations import safe_exists, safe_is_file
+except (ImportError, ValueError):
+    # Fallback for direct script execution or when running as main module
+    import sys
+    from pathlib import Path
+
+    # Add parent directory to path for imports
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from tools.m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
 try:

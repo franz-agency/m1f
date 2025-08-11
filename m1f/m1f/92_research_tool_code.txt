@@ -843,7 +843,9 @@ class SmartBundleCreator:
 
         # Write bundle file
         bundle_path = output_dir / f"{self.config.bundle_prefix}-bundle.md"
-        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
+        with safe_open(bundle_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(bundle_content)
 
         # Create supplementary files if enabled
         if self.config.create_index:
@@ -1210,7 +1212,9 @@ class SmartBundleCreator:
         for item in all_items[:20]:  # Top 20
             lines.append(f"- {item.relevance_score}/10: [{item.title}]({item.url})")
 
-        await safe_open(index_path, "w", encoding="utf-8", content="\n".join(lines))
+        with safe_open(index_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write("\n".join(lines))
 
     async def _create_metadata_file(
         self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path
@@ -1245,9 +1249,9 @@ class SmartBundleCreator:
         }
 
         metadata_path = output_dir / "metadata.json"
-        await safe_open(
-            metadata_path, "w", encoding="utf-8", content=json.dumps(metadata, indent=2)
-        )
+        with safe_open(metadata_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(json.dumps(metadata, indent=2))
 
 ======= cli.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -1553,7 +1557,7 @@ class EnhancedResearchCommand:
 
         return parser
 
-    async def _validate_args(self, args) -> Optional[str]:
+    def _validate_args(self, args) -> Optional[str]:
         """Validate arguments and return error message if invalid"""
         # Check for conflicting options
         if args.resume and args.query:
@@ -1579,7 +1583,7 @@ class EnhancedResearchCommand:
             return "No operation specified. Use --help for usage"
 
         # Validate URLs file if provided
-        if args.urls_file and not await safe_exists(args.urls_file):
+        if args.urls_file and not safe_exists(args.urls_file):
             return f"URLs file not found: {args.urls_file}"
 
         # Validate numeric ranges
@@ -1646,7 +1650,7 @@ class EnhancedResearchCommand:
         )
 
         # Validate arguments
-        error = await self._validate_args(args)
+        error = self._validate_args(args)
         if error:
             self.formatter.error(error)
             return 1
@@ -1889,7 +1893,7 @@ research:
 
     async def _run_research(self, args):
         """Run research with progress tracking"""
-        config = await self._create_config(args)
+        config = self._create_config(args)
         orchestrator = EnhancedResearchOrchestrator(config)
 
         # Show research plan
@@ -2052,7 +2056,7 @@ research:
             self.formatter.error(f"Job not found: {args.status}")
             return 1
 
-        info = await job_manager.get_job_info(job)
+        info = job_manager.get_job_info(job)
 
         if self.formatter.format == "json":
             self.formatter._json_buffer.append(info)
@@ -2141,7 +2145,7 @@ research:
             self.formatter.error(f"Job not found: {args.export}")
             return 1
 
-        info = await job_manager.get_job_info(job)
+        info = job_manager.get_job_info(job)
 
         # Add content if available
         job_db = job_manager.get_job_database(job)
@@ -2172,7 +2176,7 @@ research:
                     self.formatter.error(f"Job not found: {args.watch}")
                     return 1
 
-                info = await job_manager.get_job_info(job)
+                info = job_manager.get_job_info(job)
                 stats = info["stats"]
 
                 # Check if stats changed
@@ -2267,11 +2271,11 @@ Examples:
 """
         info(help_text)
 
-    async def _create_config(self, args) -> ResearchConfig:
+    def _create_config(self, args) -> ResearchConfig:
         """Create configuration from arguments"""
         # Load base config
-        if args.config and await safe_exists(args.config):
-            config = await ResearchConfig.from_yaml(args.config)
+        if args.config and safe_exists(args.config):
+            config = ResearchConfig.from_yaml(args.config)
         else:
             config = ResearchConfig()
 
@@ -2448,9 +2452,9 @@ class ResearchConfig:
     templates: Dict[str, ResearchTemplate] = field(default_factory=dict)
 
     @classmethod
-    async def from_yaml(cls, path: Path) -> "ResearchConfig":
+    def from_yaml(cls, path: Path) -> "ResearchConfig":
         """Load configuration from YAML file"""
-        content = await safe_read_text(path)
+        content = safe_read_text(path)
         data = yaml.safe_load(content)
 
         # Extract research section
@@ -2564,7 +2568,7 @@ class ResearchConfig:
         )
 
     @classmethod
-    async def from_args(cls, args: Namespace) -> "ResearchConfig":
+    def from_args(cls, args: Namespace) -> "ResearchConfig":
         """Create configuration from command line arguments"""
         config = cls()
 
@@ -2581,7 +2585,7 @@ class ResearchConfig:
 
         # Load from config file if provided
         if args.config:
-            base_config = await cls.from_yaml(args.config)
+            base_config = cls.from_yaml(args.config)
             # Merge with base config
             config.llm = base_config.llm
             config.scraping = base_config.scraping
@@ -3244,12 +3248,12 @@ class JobManager:
         job_path = Path(job.output_dir)
         bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
 
-        if await safe_exists(bundle_path):
+        if safe_exists(bundle_path):
             # Create symlink in base directory
             latest_link = self.base_dir / "latest_research.md"
 
             # Remove old symlink if exists
-            if await safe_exists(latest_link) or latest_link.is_symlink():
+            if safe_exists(latest_link) or latest_link.is_symlink():
                 latest_link.unlink()
 
             # Create relative symlink
@@ -3272,14 +3276,12 @@ class JobManager:
         safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
         return safe_name.replace(" ", "-").lower()
 
-    async def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
+    def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
         """Get comprehensive job information"""
         job_db = self.get_job_database(job)
         stats = job_db.get_stats()
 
-        bundle_exists = await safe_exists(
-            Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md"
-        )
+        bundle_exists = safe_exists(Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md")
 
         return {
             "job_id": job.job_id,
@@ -3316,7 +3318,7 @@ class JobManager:
         html_files_deleted = 0
         space_freed = 0
 
-        if await safe_exists(job_dir):
+        if safe_exists(job_dir):
             # Look for HTML files (if any were saved)
             for html_file in job_dir.glob("**/*.html"):
                 try:
@@ -4614,7 +4616,9 @@ This research bundle contains {len(content)} carefully selected sources about "{
             bundle_content += "---\n\n"
 
         # Write bundle
-        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
+        with safe_open(bundle_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(bundle_content)
 
         logger.info(f"Created prominent bundle: {bundle_path}")
 
@@ -4639,7 +4643,9 @@ Research on "{query}" yielded {len(content)} high-quality sources.
                 summary_content += f"   - {item.summary[:200]}...\n"
             summary_content += f"   - [Link]({item.url})\n\n"
 
-        await safe_open(summary_path, "w", encoding="utf-8", content=summary_content)
+        with safe_open(summary_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(summary_content)
 
     def _scraped_to_analyzed(self, scraped: ScrapedContent) -> AnalyzedContent:
         """Convert ScrapedContent to AnalyzedContent"""
@@ -4719,7 +4725,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
         if not job:
             return {"error": f"Job {job_id} not found"}
 
-        return await self.job_manager.get_job_info(job)
+        return self.job_manager.get_job_info(job)
 
     async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all research jobs"""
@@ -5372,7 +5378,9 @@ class ReadmeGenerator:
 
         # Write README
         readme_content = "\n".join(lines)
-        await safe_open(readme_path, "w", encoding="utf-8", content=readme_content)
+        with safe_open(readme_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(readme_content)
 
         logger.info(f"Generated README at: {readme_path}")
         return readme_path
@@ -5412,7 +5420,9 @@ class ReadmeGenerator:
                 lines.append("")
 
         # Write citations file
-        await safe_open(citations_path, "w", encoding="utf-8", content="\n".join(lines))
+        with safe_open(citations_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write("\n".join(lines))
 
         logger.info(f"Generated citations at: {citations_path}")
 
@@ -6706,13 +6716,13 @@ class URLManager:
 
     async def add_urls_from_file(self, file_path: Path) -> int:
         """Add URLs from a text file (one URL per line)"""
-        if not await safe_exists(file_path):
+        if not safe_exists(file_path):
             logger.error(f"URL file not found: {file_path}")
             return 0
 
         urls = []
         try:
-            content = await safe_read_text(file_path)
+            content = safe_read_text(file_path)
             for line in content.splitlines():
                 line = line.strip()
                 if line and not line.startswith("#"):  # Skip comments

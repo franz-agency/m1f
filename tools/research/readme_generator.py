@@ -257,7 +257,9 @@ class ReadmeGenerator:
 
         # Write README
         readme_content = "\n".join(lines)
-        await safe_open(readme_path, "w", encoding="utf-8", content=readme_content)
+        with safe_open(readme_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(readme_content)
 
         logger.info(f"Generated README at: {readme_path}")
         return readme_path
@@ -297,6 +299,8 @@ class ReadmeGenerator:
                 lines.append("")
 
         # Write citations file
-        await safe_open(citations_path, "w", encoding="utf-8", content="\n".join(lines))
+        with safe_open(citations_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write("\n".join(lines))
 
         logger.info(f"Generated citations at: {citations_path}")

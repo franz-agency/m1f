@@ -467,7 +467,9 @@ This research bundle contains {len(content)} carefully selected sources about "{
             bundle_content += "---\n\n"
 
         # Write bundle
-        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
+        with safe_open(bundle_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(bundle_content)
 
         logger.info(f"Created prominent bundle: {bundle_path}")
 
@@ -492,7 +494,9 @@ Research on "{query}" yielded {len(content)} high-quality sources.
                 summary_content += f"   - {item.summary[:200]}...\n"
             summary_content += f"   - [Link]({item.url})\n\n"
 
-        await safe_open(summary_path, "w", encoding="utf-8", content=summary_content)
+        with safe_open(summary_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(summary_content)
 
     def _scraped_to_analyzed(self, scraped: ScrapedContent) -> AnalyzedContent:
         """Convert ScrapedContent to AnalyzedContent"""
@@ -572,7 +576,7 @@ Research on "{query}" yielded {len(content)} high-quality sources.
         if not job:
             return {"error": f"Job {job_id} not found"}
 
-        return await self.job_manager.get_job_info(job)
+        return self.job_manager.get_job_info(job)
 
     async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all research jobs"""

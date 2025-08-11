@@ -44,13 +44,13 @@ class URLManager:
 
     async def add_urls_from_file(self, file_path: Path) -> int:
         """Add URLs from a text file (one URL per line)"""
-        if not await safe_exists(file_path):
+        if not safe_exists(file_path):
             logger.error(f"URL file not found: {file_path}")
             return 0
 
         urls = []
         try:
-            content = await safe_read_text(file_path)
+            content = safe_read_text(file_path)
             for line in content.splitlines():
                 line = line.strip()
                 if line and not line.startswith("#"):  # Skip comments

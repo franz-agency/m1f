@@ -106,7 +106,18 @@ from .config import Config
 from .core import FileSplitter
 from .logging import setup_logging
 from .exceptions import ConfigurationError
-from ..m1f.file_operations import safe_exists, safe_is_file
+
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from ..m1f.file_operations import safe_exists, safe_is_file
+except (ImportError, ValueError):
+    # Fallback for direct script execution or when running as main module
+    import sys
+    from pathlib import Path
+
+    # Add parent directory to path for imports
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from tools.m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
 try:
@@ -431,13 +442,29 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import logging
 
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_is_file,
-    safe_mkdir,
-    safe_read_text,
-    safe_stat,
-)
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from ..m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_mkdir,
+        safe_read_text,
+        safe_stat,
+    )
+except (ImportError, ValueError):
+    # Fallback for direct script execution or when running as main module
+    import sys
+    from pathlib import Path
+
+    # Add parent directory to path for imports
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from tools.m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_mkdir,
+        safe_read_text,
+        safe_stat,
+    )
 
 try:
     import aiofiles
@@ -1906,13 +1933,25 @@ from .utils import (
     normalize_line_endings,
 )
 from .exceptions import FileWriteError, ChecksumMismatchError
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_mkdir,
-    safe_open,
-    safe_write_text,
-    safe_read_text,
-)
+
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from tools.m1f.file_operations import (
+        safe_exists,
+        safe_mkdir,
+        safe_open,
+        safe_write_text,
+        safe_read_text,
+    )
+except ImportError:
+    # Fallback for direct script execution
+    from ..m1f.file_operations import (
+        safe_exists,
+        safe_mkdir,
+        safe_open,
+        safe_write_text,
+        safe_read_text,
+    )
 
 try:
     import aiofiles

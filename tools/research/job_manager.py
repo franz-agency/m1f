@@ -136,12 +136,12 @@ class JobManager:
         job_path = Path(job.output_dir)
         bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
 
-        if await safe_exists(bundle_path):
+        if safe_exists(bundle_path):
             # Create symlink in base directory
             latest_link = self.base_dir / "latest_research.md"
 
             # Remove old symlink if exists
-            if await safe_exists(latest_link) or latest_link.is_symlink():
+            if safe_exists(latest_link) or latest_link.is_symlink():
                 latest_link.unlink()
 
             # Create relative symlink
@@ -164,14 +164,12 @@ class JobManager:
         safe_name = "".join(c if c.isalnum() or c in "- " else "_" for c in query)
         return safe_name.replace(" ", "-").lower()
 
-    async def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
+    def get_job_info(self, job: ResearchJob) -> Dict[str, Any]:
         """Get comprehensive job information"""
         job_db = self.get_job_database(job)
         stats = job_db.get_stats()
 
-        bundle_exists = await safe_exists(
-            Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md"
-        )
+        bundle_exists = safe_exists(Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md")
 
         return {
             "job_id": job.job_id,
@@ -208,7 +206,7 @@ class JobManager:
         html_files_deleted = 0
         space_freed = 0
 
-        if await safe_exists(job_dir):
+        if safe_exists(job_dir):
             # Look for HTML files (if any were saved)
             for html_file in job_dir.glob("**/*.html"):
                 try:

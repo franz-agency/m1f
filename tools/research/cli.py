@@ -301,7 +301,7 @@ class EnhancedResearchCommand:
 
         return parser
 
-    async def _validate_args(self, args) -> Optional[str]:
+    def _validate_args(self, args) -> Optional[str]:
         """Validate arguments and return error message if invalid"""
         # Check for conflicting options
         if args.resume and args.query:
@@ -327,7 +327,7 @@ class EnhancedResearchCommand:
             return "No operation specified. Use --help for usage"
 
         # Validate URLs file if provided
-        if args.urls_file and not await safe_exists(args.urls_file):
+        if args.urls_file and not safe_exists(args.urls_file):
             return f"URLs file not found: {args.urls_file}"
 
         # Validate numeric ranges
@@ -394,7 +394,7 @@ class EnhancedResearchCommand:
         )
 
         # Validate arguments
-        error = await self._validate_args(args)
+        error = self._validate_args(args)
         if error:
             self.formatter.error(error)
             return 1
@@ -637,7 +637,7 @@ research:
 
     async def _run_research(self, args):
         """Run research with progress tracking"""
-        config = await self._create_config(args)
+        config = self._create_config(args)
         orchestrator = EnhancedResearchOrchestrator(config)
 
         # Show research plan
@@ -800,7 +800,7 @@ research:
             self.formatter.error(f"Job not found: {args.status}")
             return 1
 
-        info = await job_manager.get_job_info(job)
+        info = job_manager.get_job_info(job)
 
         if self.formatter.format == "json":
             self.formatter._json_buffer.append(info)
@@ -889,7 +889,7 @@ research:
             self.formatter.error(f"Job not found: {args.export}")
             return 1
 
-        info = await job_manager.get_job_info(job)
+        info = job_manager.get_job_info(job)
 
         # Add content if available
         job_db = job_manager.get_job_database(job)
@@ -920,7 +920,7 @@ research:
                     self.formatter.error(f"Job not found: {args.watch}")
                     return 1
 
-                info = await job_manager.get_job_info(job)
+                info = job_manager.get_job_info(job)
                 stats = info["stats"]
 
                 # Check if stats changed
@@ -1015,11 +1015,11 @@ Examples:
 """
         info(help_text)
 
-    async def _create_config(self, args) -> ResearchConfig:
+    def _create_config(self, args) -> ResearchConfig:
         """Create configuration from arguments"""
         # Load base config
-        if args.config and await safe_exists(args.config):
-            config = await ResearchConfig.from_yaml(args.config)
+        if args.config and safe_exists(args.config):
+            config = ResearchConfig.from_yaml(args.config)
         else:
             config = ResearchConfig()
 

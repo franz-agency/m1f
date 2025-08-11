@@ -85,7 +85,9 @@ class SmartBundleCreator:
 
         # Write bundle file
         bundle_path = output_dir / f"{self.config.bundle_prefix}-bundle.md"
-        await safe_open(bundle_path, "w", encoding="utf-8", content=bundle_content)
+        with safe_open(bundle_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(bundle_content)
 
         # Create supplementary files if enabled
         if self.config.create_index:
@@ -452,7 +454,9 @@ class SmartBundleCreator:
         for item in all_items[:20]:  # Top 20
             lines.append(f"- {item.relevance_score}/10: [{item.title}]({item.url})")
 
-        await safe_open(index_path, "w", encoding="utf-8", content="\n".join(lines))
+        with safe_open(index_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write("\n".join(lines))
 
     async def _create_metadata_file(
         self, content_list: List[AnalyzedContent], research_query: str, output_dir: Path
@@ -487,6 +491,6 @@ class SmartBundleCreator:
         }
 
         metadata_path = output_dir / "metadata.json"
-        await safe_open(
-            metadata_path, "w", encoding="utf-8", content=json.dumps(metadata, indent=2)
-        )
+        with safe_open(metadata_path, "w", encoding="utf-8") as f:
+            if f:
+                f.write(json.dumps(metadata, indent=2))

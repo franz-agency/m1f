@@ -51,6 +51,7 @@ from .file_operations import (
     safe_read_text,
     safe_walk,
     safe_iterdir,
+    safe_open,
 )
 
 

@@ -29,6 +29,7 @@ from enum import Enum
 from .file_operations import (
     safe_open,
     safe_stat,
+    safe_exists,
 )
 
 logger = logging.getLogger(__name__)

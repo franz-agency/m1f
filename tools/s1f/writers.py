@@ -32,13 +32,25 @@ from .utils import (
     normalize_line_endings,
 )
 from .exceptions import FileWriteError, ChecksumMismatchError
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_mkdir,
-    safe_open,
-    safe_write_text,
-    safe_read_text,
-)
+
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from tools.m1f.file_operations import (
+        safe_exists,
+        safe_mkdir,
+        safe_open,
+        safe_write_text,
+        safe_read_text,
+    )
+except ImportError:
+    # Fallback for direct script execution
+    from ..m1f.file_operations import (
+        safe_exists,
+        safe_mkdir,
+        safe_open,
+        safe_write_text,
+        safe_read_text,
+    )
 
 try:
     import aiofiles

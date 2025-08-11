@@ -133,9 +133,9 @@ class ResearchConfig:
     templates: Dict[str, ResearchTemplate] = field(default_factory=dict)
 
     @classmethod
-    async def from_yaml(cls, path: Path) -> "ResearchConfig":
+    def from_yaml(cls, path: Path) -> "ResearchConfig":
         """Load configuration from YAML file"""
-        content = await safe_read_text(path)
+        content = safe_read_text(path)
         data = yaml.safe_load(content)
 
         # Extract research section
@@ -249,7 +249,7 @@ class ResearchConfig:
         )
 
     @classmethod
-    async def from_args(cls, args: Namespace) -> "ResearchConfig":
+    def from_args(cls, args: Namespace) -> "ResearchConfig":
         """Create configuration from command line arguments"""
         config = cls()
 
@@ -266,7 +266,7 @@ class ResearchConfig:
 
         # Load from config file if provided
         if args.config:
-            base_config = await cls.from_yaml(args.config)
+            base_config = cls.from_yaml(args.config)
             # Merge with base config
             config.llm = base_config.llm
             config.scraping = base_config.scraping

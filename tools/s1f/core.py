@@ -19,13 +19,29 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import logging
 
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_is_file,
-    safe_mkdir,
-    safe_read_text,
-    safe_stat,
-)
+# Try absolute imports first (for module execution), fall back to relative
+try:
+    from ..m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_mkdir,
+        safe_read_text,
+        safe_stat,
+    )
+except (ImportError, ValueError):
+    # Fallback for direct script execution or when running as main module
+    import sys
+    from pathlib import Path
+
+    # Add parent directory to path for imports
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from tools.m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_mkdir,
+        safe_read_text,
+        safe_stat,
+    )
 
 try:
     import aiofiles
