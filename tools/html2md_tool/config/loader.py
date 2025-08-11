@@ -23,6 +23,9 @@ from dataclasses import fields
 import yaml
 import sys
 
+# Import safe file operations
+from ...m1f.file_operations import safe_exists, safe_open
+
 # Use unified colorama module
 from ...shared.colors import (
     Colors,
@@ -50,16 +53,16 @@ def load_config(path: Path) -> Config:
         ValueError: If file format is not supported
         FileNotFoundError: If file does not exist
     """
-    if not path.exists():
+    if not safe_exists(path):
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
     suffix = path.suffix.lower()
 
     if suffix in [".json"]:
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = json.load(f)
     elif suffix in [".yaml", ".yml"]:
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = yaml.safe_load(f)
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
@@ -130,10 +133,10 @@ def save_config(config: Config, path: Path) -> None:
     data = _config_to_dict(config)
 
     if suffix in [".json"]:
-        with open(path, "w") as f:
+        with safe_open(path, "w") as f:
             json.dump(data, f, indent=2)
     elif suffix in [".yaml", ".yml"]:
-        with open(path, "w") as f:
+        with safe_open(path, "w") as f:
             yaml.dump(data, f, default_flow_style=False)
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")

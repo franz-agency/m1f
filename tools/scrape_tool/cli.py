@@ -22,6 +22,9 @@ import time
 from pathlib import Path
 from typing import Optional
 
+# Import safe file operations
+from ..m1f.file_operations import safe_exists, safe_is_dir, safe_is_file, safe_open
+
 # Use unified colorama module
 try:
     from ..shared.colors import (
@@ -63,18 +66,18 @@ class CustomArgumentParser(argparse.ArgumentParser):
 
 def cleanup_orphaned_sessions(db_path: Path) -> None:
     """Clean up sessions that were left in 'running' state.
-    
+
     Args:
         db_path: Path to the SQLite database
     """
-    if not db_path.exists():
+    if not safe_exists(db_path):
         warning("No database found.")
         return
-    
+
     try:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
-        
+
         # Check if scraping_sessions table exists
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'"
@@ -83,7 +86,7 @@ def cleanup_orphaned_sessions(db_path: Path) -> None:
             warning("No sessions table found in database")
             conn.close()
             return
-        
+
         # Find all running sessions
         cursor.execute(
             """
@@ -93,20 +96,21 @@ def cleanup_orphaned_sessions(db_path: Path) -> None:
             ORDER BY start_time DESC
             """
         )
-        
+
         running_sessions = cursor.fetchall()
-        
+
         if not running_sessions:
             info("No running sessions found")
             conn.close()
             return
-        
+
         # Check which sessions are truly orphaned (no activity in last hour)
         from datetime import datetime, timedelta
+
         one_hour_ago = datetime.now() - timedelta(hours=1)
         orphaned_sessions = []
         active_sessions = []
-        
+
         header(f"Found {len(running_sessions)} running session(s):")
         for session_id, start_url, start_time in running_sessions:
             # Get last activity time
@@ -117,48 +121,56 @@ def cleanup_orphaned_sessions(db_path: Path) -> None:
                 FROM scraped_urls 
                 WHERE session_id = ?
                 """,
-                (session_id,)
+                (session_id,),
             )
             result = cursor.fetchone()
             last_activity, total, successful = result if result else (None, 0, 0)
-            
+
             # Use start_time if no URLs scraped yet
             last_activity = last_activity or start_time
-            
+
             # Convert string timestamp to datetime if needed
             if isinstance(last_activity, str):
-                last_activity_dt = datetime.fromisoformat(last_activity.replace('Z', '+00:00'))
+                last_activity_dt = datetime.fromisoformat(
+                    last_activity.replace("Z", "+00:00")
+                )
             else:
                 last_activity_dt = last_activity
-            
+
             is_orphaned = last_activity_dt < one_hour_ago
-            
+
             info(f"  Session #{session_id}: {start_url}")
             info(f"    Started: {start_time}")
             info(f"    Last activity: {last_activity}")
             info(f"    Pages scraped: {successful}/{total}")
-            
+
             if is_orphaned:
                 info(f"    Status: ORPHANED (no activity for >1 hour)")
                 orphaned_sessions.append((session_id, start_url, start_time))
             else:
                 info(f"    Status: ACTIVE (recent activity)")
                 active_sessions.append(session_id)
-        
+
         if not orphaned_sessions:
             if active_sessions:
-                info(f"\nAll {len(active_sessions)} session(s) appear to be actively running.")
+                info(
+                    f"\nAll {len(active_sessions)} session(s) appear to be actively running."
+                )
             info("No orphaned sessions found.")
             conn.close()
             return
-        
+
         # Ask for confirmation only for orphaned sessions
-        info(f"\n{len(orphaned_sessions)} session(s) appear to be orphaned (no activity for >1 hour).")
+        info(
+            f"\n{len(orphaned_sessions)} session(s) appear to be orphaned (no activity for >1 hour)."
+        )
         if active_sessions:
-            info(f"{len(active_sessions)} session(s) are still active and will not be touched.")
+            info(
+                f"{len(active_sessions)} session(s) are still active and will not be touched."
+            )
         response = input("Mark orphaned sessions as 'interrupted'? (y/N): ")
-        
-        if response.lower() == 'y':
+
+        if response.lower() == "y":
             for session_id, _, _ in orphaned_sessions:  # Only process orphaned sessions
                 # Get final statistics
                 cursor.execute(
@@ -170,11 +182,11 @@ def cleanup_orphaned_sessions(db_path: Path) -> None:
                     FROM scraped_urls 
                     WHERE session_id = ?
                     """,
-                    (session_id,)
+                    (session_id,),
                 )
                 result = cursor.fetchone()
                 total, successful, failed = result if result else (0, 0, 0)
-                
+
                 # Update session
                 cursor.execute(
                     """
@@ -186,16 +198,18 @@ def cleanup_orphaned_sessions(db_path: Path) -> None:
                         failed_pages = ?
                     WHERE id = ?
                     """,
-                    (datetime.now(), total, successful, failed, session_id)
+                    (datetime.now(), total, successful, failed, session_id),
                 )
-            
+
             conn.commit()
-            success(f"Marked {len(orphaned_sessions)} orphaned session(s) as interrupted")
+            success(
+                f"Marked {len(orphaned_sessions)} orphaned session(s) as interrupted"
+            )
         else:
             info("No changes made")
-        
+
         conn.close()
-        
+
     except sqlite3.Error as e:
         error(f"Database error: {e}")
     except Exception as e:
@@ -204,26 +218,27 @@ def cleanup_orphaned_sessions(db_path: Path) -> None:
 
 def show_scraping_sessions(db_path: Path, detailed: bool = False) -> None:
     """Show all scraping sessions from the database.
-    
+
     Args:
         db_path: Path to the SQLite database
         detailed: If True, show detailed session information
     """
-    if not db_path.exists():
+    if not safe_exists(db_path):
         warning("No database found.")
         return
-    
+
     try:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
-        
+
         # Check if scraping_sessions table exists
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'"
         )
         if not cursor.fetchone():
             # Fall back to old behavior if no sessions table
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT 
                     DATE(scraped_at) as session_date,
                     MIN(TIME(scraped_at)) as start_time,
@@ -234,22 +249,26 @@ def show_scraping_sessions(db_path: Path, detailed: bool = False) -> None:
                 FROM scraped_urls
                 GROUP BY DATE(scraped_at)
                 ORDER BY session_date DESC
-            """)
-            
+            """
+            )
+
             sessions = cursor.fetchall()
-            
+
             if sessions:
                 header("Scraping Sessions (Legacy):")
                 info("Date       | Start    | End      | Total URLs | Success | Failed")
                 info("-" * 70)
                 for session in sessions:
                     date, start, end, total, success_count, failed = session
-                    info(f"{date} | {start[:8] if start else 'N/A'} | {end[:8] if end else 'N/A'} | {total:10} | {success_count:7} | {failed:6}")
+                    info(
+                        f"{date} | {start[:8] if start else 'N/A'} | {end[:8] if end else 'N/A'} | {total:10} | {success_count:7} | {failed:6}"
+                    )
             else:
                 warning("No scraping sessions found in database")
         else:
             # Use new sessions table
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT 
                     id,
                     start_url,
@@ -264,70 +283,106 @@ def show_scraping_sessions(db_path: Path, detailed: bool = False) -> None:
                     max_depth
                 FROM scraping_sessions
                 ORDER BY start_time DESC
-            """)
-            
+            """
+            )
+
             sessions = cursor.fetchall()
-            
+
             if sessions:
                 header("Scraping Sessions:")
                 if detailed:
                     for session in sessions:
-                        (session_id, start_url, start_time, end_time, status,
-                         total, successful, failed, backend, max_pages, max_depth) = session
-                        
+                        (
+                            session_id,
+                            start_url,
+                            start_time,
+                            end_time,
+                            status,
+                            total,
+                            successful,
+                            failed,
+                            backend,
+                            max_pages,
+                            max_depth,
+                        ) = session
+
                         info(f"\nSession #{session_id}:")
                         info(f"  URL: {start_url}")
                         info(f"  Started: {start_time}")
                         info(f"  Ended: {end_time if end_time else 'Still running'}")
                         info(f"  Status: {status}")
                         info(f"  Backend: {backend}")
-                        info(f"  Pages: {successful} success, {failed} failed (total: {total})")
+                        info(
+                            f"  Pages: {successful} success, {failed} failed (total: {total})"
+                        )
                         info(f"  Limits: max_pages={max_pages}, max_depth={max_depth}")
                 else:
-                    info("ID  | Status    | Started             | Pages | Success | Failed | URL")
+                    info(
+                        "ID  | Status    | Started             | Pages | Success | Failed | URL"
+                    )
                     info("-" * 100)
                     for session in sessions:
-                        (session_id, start_url, start_time, end_time, status,
-                         total, successful, failed, backend, _, _) = session
-                        
+                        (
+                            session_id,
+                            start_url,
+                            start_time,
+                            end_time,
+                            status,
+                            total,
+                            successful,
+                            failed,
+                            backend,
+                            _,
+                            _,
+                        ) = session
+
                         # Truncate URL if too long
-                        url_display = start_url[:40] + "..." if len(start_url) > 40 else start_url
-                        
-                        info(f"{session_id:3} | {status:9} | {start_time[:19]} | {total:5} | {successful:7} | {failed:6} | {url_display}")
+                        url_display = (
+                            start_url[:40] + "..." if len(start_url) > 40 else start_url
+                        )
+
+                        info(
+                            f"{session_id:3} | {status:9} | {start_time[:19]} | {total:5} | {successful:7} | {failed:6} | {url_display}"
+                        )
             else:
                 warning("No scraping sessions found in database")
-        
+
         conn.close()
-        
+
     except sqlite3.Error as e:
         error(f"Database error: {e}")
     except Exception as e:
         error(f"Error showing sessions: {e}")
 
 
-def clear_session(db_path: Path, session_id: Optional[int] = None, delete_files: bool = False, auto_delete: bool = False) -> None:
+def clear_session(
+    db_path: Path,
+    session_id: Optional[int] = None,
+    delete_files: bool = False,
+    auto_delete: bool = False,
+) -> None:
     """Clear URLs from a specific scraping session or the last session.
-    
+
     Args:
         db_path: Path to the SQLite database
         session_id: Specific session ID to clear, or None for the last session
         delete_files: Whether to also delete downloaded files
         auto_delete: If True, skip confirmation prompt for file deletion
     """
-    if not db_path.exists():
+    if not safe_exists(db_path):
         warning("No database found.")
         return
-    
+
     try:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
-        
+
         # Check if scraping_sessions table exists
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'"
         )
         has_sessions_table = cursor.fetchone() is not None
-        
+
         if has_sessions_table:
             # Use session-based deletion
             if session_id is None:
@@ -341,45 +396,44 @@ def clear_session(db_path: Path, session_id: Optional[int] = None, delete_files:
                     conn.close()
                     return
                 session_id = result[0]
-            
+
             # Get session info
             cursor.execute(
                 "SELECT start_url, start_time FROM scraping_sessions WHERE id = ?",
-                (session_id,)
+                (session_id,),
             )
             session_info = cursor.fetchone()
             if not session_info:
                 warning(f"Session #{session_id} not found")
                 conn.close()
                 return
-            
+
             start_url, start_time = session_info
-            
+
             # Get file paths from this session
             cursor.execute(
                 """SELECT target_filename 
                    FROM scraped_urls 
                    WHERE session_id = ? AND target_filename IS NOT NULL AND target_filename != ''""",
-                (session_id,)
+                (session_id,),
             )
             file_paths = [row[0] for row in cursor.fetchall()]
-            
+
             # Get checksums of URLs from this session
             cursor.execute(
                 """SELECT content_checksum 
                    FROM scraped_urls 
                    WHERE session_id = ? AND content_checksum IS NOT NULL""",
-                (session_id,)
+                (session_id,),
             )
             checksums = [row[0] for row in cursor.fetchall()]
-            
+
             # Count URLs to be deleted
             cursor.execute(
-                "SELECT COUNT(*) FROM scraped_urls WHERE session_id = ?",
-                (session_id,)
+                "SELECT COUNT(*) FROM scraped_urls WHERE session_id = ?", (session_id,)
             )
             url_count = cursor.fetchone()[0]
-            
+
             # Handle file deletion if requested
             files_deleted = 0
             if delete_files and file_paths:
@@ -388,57 +442,65 @@ def clear_session(db_path: Path, session_id: Optional[int] = None, delete_files:
                 files_to_delete = []
                 for file_path in file_paths:
                     full_path = output_dir / file_path
-                    if full_path.exists():
+                    if safe_exists(full_path):
                         files_to_delete.append(full_path)
                     # Also check for metadata files
-                    meta_path = full_path.with_suffix(full_path.suffix + '.meta.json')
-                    if meta_path.exists():
+                    meta_path = full_path.with_suffix(full_path.suffix + ".meta.json")
+                    if safe_exists(meta_path):
                         files_to_delete.append(meta_path)
-                
+
                 if files_to_delete:
                     # Ask for confirmation if not auto-deleting
                     should_delete = auto_delete
                     if not auto_delete:
-                        info(f"\nFound {len(files_to_delete)} files from session #{session_id}:")
+                        info(
+                            f"\nFound {len(files_to_delete)} files from session #{session_id}:"
+                        )
                         # Show first 10 files as examples
                         for i, file in enumerate(files_to_delete[:10]):
                             info(f"  - {file.relative_to(output_dir)}")
                         if len(files_to_delete) > 10:
                             info(f"  ... and {len(files_to_delete) - 10} more files")
-                        
-                        response = input("\nAlso delete these downloaded files? (y/N): ")
-                        should_delete = response.lower() == 'y'
-                    
+
+                        response = input(
+                            "\nAlso delete these downloaded files? (y/N): "
+                        )
+                        should_delete = response.lower() == "y"
+
                     if should_delete:
                         import shutil
+
                         for file_path in files_to_delete:
                             try:
-                                if file_path.is_dir():
+                                if safe_is_dir(file_path):
                                     shutil.rmtree(file_path)
                                 else:
                                     file_path.unlink()
                                 files_deleted += 1
                             except Exception as e:
                                 warning(f"Failed to delete {file_path}: {e}")
-            
+
             # Delete URLs from session
-            cursor.execute("DELETE FROM scraped_urls WHERE session_id = ?", (session_id,))
-            
+            cursor.execute(
+                "DELETE FROM scraped_urls WHERE session_id = ?", (session_id,)
+            )
+
             # Delete the session record
             cursor.execute("DELETE FROM scraping_sessions WHERE id = ?", (session_id,))
-            
+
             # Delete associated checksums
             checksum_count = 0
             if checksums:
                 for checksum in checksums:
                     cursor.execute(
-                        "DELETE FROM content_checksums WHERE checksum = ?",
-                        (checksum,)
+                        "DELETE FROM content_checksums WHERE checksum = ?", (checksum,)
                     )
                     checksum_count += cursor.rowcount
-            
+
             conn.commit()
-            success(f"Cleared session #{session_id} ({url_count} URLs from {start_url} at {start_time})")
+            success(
+                f"Cleared session #{session_id} ({url_count} URLs from {start_url} at {start_time})"
+            )
             if checksum_count > 0:
                 info(f"Also cleared {checksum_count} associated content checksums")
             if files_deleted > 0:
@@ -453,34 +515,34 @@ def clear_session(db_path: Path, session_id: Optional[int] = None, delete_files:
                 warning("No scraping sessions found in database")
                 conn.close()
                 return
-            
+
             last_date = result[0]
-            
+
             # Get file paths from last session
             cursor.execute(
                 """SELECT target_filename 
                    FROM scraped_urls 
                    WHERE DATE(scraped_at) = ? AND target_filename IS NOT NULL AND target_filename != ''""",
-                (last_date,)
+                (last_date,),
             )
             file_paths = [row[0] for row in cursor.fetchall()]
-            
+
             # Get checksums of URLs from last session
             cursor.execute(
                 """SELECT content_checksum 
                    FROM scraped_urls 
                    WHERE DATE(scraped_at) = ? AND content_checksum IS NOT NULL""",
-                (last_date,)
+                (last_date,),
             )
             checksums = [row[0] for row in cursor.fetchall()]
-            
+
             # Count URLs to be deleted
             cursor.execute(
                 "SELECT COUNT(*) FROM scraped_urls WHERE DATE(scraped_at) = ?",
-                (last_date,)
+                (last_date,),
             )
             url_count = cursor.fetchone()[0]
-            
+
             # Handle file deletion if requested (same logic as above)
             files_deleted = 0
             if delete_files and file_paths:
@@ -488,58 +550,64 @@ def clear_session(db_path: Path, session_id: Optional[int] = None, delete_files:
                 files_to_delete = []
                 for file_path in file_paths:
                     full_path = output_dir / file_path
-                    if full_path.exists():
+                    if safe_exists(full_path):
                         files_to_delete.append(full_path)
-                    meta_path = full_path.with_suffix(full_path.suffix + '.meta.json')
-                    if meta_path.exists():
+                    meta_path = full_path.with_suffix(full_path.suffix + ".meta.json")
+                    if safe_exists(meta_path):
                         files_to_delete.append(meta_path)
-                
+
                 if files_to_delete:
                     should_delete = auto_delete
                     if not auto_delete:
-                        info(f"\nFound {len(files_to_delete)} files from session {last_date}:")
+                        info(
+                            f"\nFound {len(files_to_delete)} files from session {last_date}:"
+                        )
                         for i, file in enumerate(files_to_delete[:10]):
                             info(f"  - {file.relative_to(output_dir)}")
                         if len(files_to_delete) > 10:
                             info(f"  ... and {len(files_to_delete) - 10} more files")
-                        
-                        response = input("\nAlso delete these downloaded files? (y/N): ")
-                        should_delete = response.lower() == 'y'
-                    
+
+                        response = input(
+                            "\nAlso delete these downloaded files? (y/N): "
+                        )
+                        should_delete = response.lower() == "y"
+
                     if should_delete:
                         import shutil
+
                         for file_path in files_to_delete:
                             try:
-                                if file_path.is_dir():
+                                if safe_is_dir(file_path):
                                     shutil.rmtree(file_path)
                                 else:
                                     file_path.unlink()
                                 files_deleted += 1
                             except Exception as e:
                                 warning(f"Failed to delete {file_path}: {e}")
-            
+
             # Delete URLs from last session
-            cursor.execute("DELETE FROM scraped_urls WHERE DATE(scraped_at) = ?", (last_date,))
-            
+            cursor.execute(
+                "DELETE FROM scraped_urls WHERE DATE(scraped_at) = ?", (last_date,)
+            )
+
             # Delete associated checksums
             checksum_count = 0
             if checksums:
                 for checksum in checksums:
                     cursor.execute(
-                        "DELETE FROM content_checksums WHERE checksum = ?",
-                        (checksum,)
+                        "DELETE FROM content_checksums WHERE checksum = ?", (checksum,)
                     )
                     checksum_count += cursor.rowcount
-            
+
             conn.commit()
             success(f"Cleared {url_count} URLs from session {last_date}")
             if checksum_count > 0:
                 info(f"Also cleared {checksum_count} associated content checksums")
             if files_deleted > 0:
                 info(f"Deleted {files_deleted} downloaded files")
-        
+
         conn.close()
-        
+
     except sqlite3.Error as e:
         error(f"Database error: {e}")
     except Exception as e:
@@ -548,62 +616,59 @@ def clear_session(db_path: Path, session_id: Optional[int] = None, delete_files:
 
 def clear_urls_from_database(db_path: Path, pattern: str) -> None:
     """Clear URLs matching a pattern from the database.
-    
+
     Also clears the associated content checksums to ensure pages can be re-scraped.
-    
+
     Args:
         db_path: Path to the SQLite database
         pattern: Pattern to match URLs (uses SQL LIKE)
     """
-    if not db_path.exists():
+    if not safe_exists(db_path):
         warning("No database found. Nothing to clear.")
         return
-    
+
     try:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
-        
+
         # First get the checksums of URLs to be deleted
         cursor.execute(
             "SELECT content_checksum FROM scraped_urls WHERE url LIKE ? AND content_checksum IS NOT NULL",
-            (f"%{pattern}%",)
+            (f"%{pattern}%",),
         )
         checksums = [row[0] for row in cursor.fetchall()]
-        
+
         # Count how many URLs will be deleted
         cursor.execute(
-            "SELECT COUNT(*) FROM scraped_urls WHERE url LIKE ?",
-            (f"%{pattern}%",)
+            "SELECT COUNT(*) FROM scraped_urls WHERE url LIKE ?", (f"%{pattern}%",)
         )
         url_count = cursor.fetchone()[0]
-        
+
         if url_count == 0:
             warning(f"No URLs found matching pattern: {pattern}")
         else:
             # Delete the URLs
             cursor.execute(
-                "DELETE FROM scraped_urls WHERE url LIKE ?",
-                (f"%{pattern}%",)
+                "DELETE FROM scraped_urls WHERE url LIKE ?", (f"%{pattern}%",)
             )
-            
+
             # Delete associated checksums
             checksum_count = 0
             if checksums:
                 # Delete checksums one by one (SQLite doesn't support DELETE with IN and many values well)
                 for checksum in checksums:
                     cursor.execute(
-                        "DELETE FROM content_checksums WHERE checksum = ?",
-                        (checksum,)
+                        "DELETE FROM content_checksums WHERE checksum = ?", (checksum,)
                     )
                     checksum_count += cursor.rowcount
-            
+
             conn.commit()
             success(f"Cleared {url_count} URLs matching pattern: {pattern}")
             if checksum_count > 0:
                 info(f"Also cleared {checksum_count} associated content checksums")
-        
+
         conn.close()
-        
+
     except sqlite3.Error as e:
         error(f"Database error: {e}")
     except Exception as e:
@@ -617,7 +682,7 @@ def show_database_info(db_path: Path, args: argparse.Namespace) -> None:
         db_path: Path to the SQLite database
         args: Command line arguments
     """
-    if not db_path.exists():
+    if not safe_exists(db_path):
         warning("No database found. Have you scraped anything yet?")
         return
 
@@ -780,17 +845,18 @@ For more information, see the documentation."""
         default=10000,
         help="Maximum pages to crawl (default: 10000, use -1 for unlimited)",
     )
-    
+
     # Path restriction options
     # --allowed-path is kept as a hidden alias for backward compatibility
     crawl_group.add_argument(
-        "--allowed-paths", "--allowed-path",
+        "--allowed-paths",
+        "--allowed-path",
         type=str,
         nargs="*",
         metavar="PATH",
         help="Restrict crawling to specified paths and subdirectories (e.g., /docs/ /api/)",
     )
-    
+
     crawl_group.add_argument(
         "--excluded-paths",
         type=str,
@@ -846,7 +912,7 @@ For more information, see the documentation."""
         action="store_true",
         help="Disable content-based deduplication (keeps pages even if their content is identical)",
     )
-    
+
     # Asset download options
     filter_group.add_argument(
         "--download-assets",
@@ -992,7 +1058,7 @@ def main() -> None:
     config.crawler.check_canonical = not args.ignore_canonical
     config.crawler.check_content_duplicates = not args.ignore_duplicates
     config.crawler.force_rescrape = args.force_rescrape
-    
+
     # Asset download configuration
     config.crawler.download_assets = args.download_assets
     if args.asset_types:
@@ -1007,10 +1073,10 @@ def main() -> None:
         import json
 
         if args.scraper_config.suffix == ".json":
-            with open(args.scraper_config) as f:
+            with safe_open(args.scraper_config) as f:
                 config.crawler.scraper_config = json.load(f)
         else:  # Assume YAML
-            with open(args.scraper_config) as f:
+            with safe_open(args.scraper_config) as f:
                 config.crawler.scraper_config = yaml.safe_load(f)
 
     config.verbose = args.verbose
@@ -1032,33 +1098,38 @@ def main() -> None:
         db_path = args.output / "scrape_tracker.db"
         clear_urls_from_database(db_path, args.clear_urls)
         return
-    
+
     # Check if clear-last-session is requested
     if args.clear_last_session:
         db_path = args.output / "scrape_tracker.db"
         # If no --delete-files flag, ask for confirmation
         clear_session(db_path, delete_files=True, auto_delete=args.delete_files)
         return
-    
+
     # Check if clear-session is requested
     if args.clear_session:
         db_path = args.output / "scrape_tracker.db"
         # If no --delete-files flag, ask for confirmation
-        clear_session(db_path, args.clear_session, delete_files=True, auto_delete=args.delete_files)
+        clear_session(
+            db_path,
+            args.clear_session,
+            delete_files=True,
+            auto_delete=args.delete_files,
+        )
         return
-    
+
     # Check if cleanup-sessions is requested
     if args.cleanup_sessions:
         db_path = args.output / "scrape_tracker.db"
         cleanup_orphaned_sessions(db_path)
         return
-    
+
     # Check if show-sessions is requested
     if args.show_sessions or args.show_sessions_detailed:
         db_path = args.output / "scrape_tracker.db"
         show_scraping_sessions(db_path, detailed=args.show_sessions_detailed)
         return
-    
+
     # Check if only database query options are requested
     if args.show_db_stats or args.show_errors or args.show_scraped_urls:
         # Just show database info and exit
@@ -1100,7 +1171,11 @@ def main() -> None:
 
         # Display summary statistics
         header("\n" + "=" * 60)
-        header(f"Scraping Summary (Session #{session_id})" if session_id else "Scraping Summary (Current Session)")
+        header(
+            f"Scraping Summary (Session #{session_id})"
+            if session_id
+            else "Scraping Summary (Current Session)"
+        )
         header("=" * 60)
         success(f"✓ Successfully scraped {successful_urls} pages")
         if errors:
@@ -1113,12 +1188,14 @@ def main() -> None:
         info(f"HTML files saved in this session: {len(session_files)}")
         if session_id:
             info(f"\nSession ID: #{session_id}")
-            info(f"To clear this session: m1f-scrape --clear-session {session_id} -o {args.output}")
+            info(
+                f"To clear this session: m1f-scrape --clear-session {session_id} -o {args.output}"
+            )
 
         # Save URLs to file if requested
         if args.save_urls:
             try:
-                with open(args.save_urls, 'w', encoding='utf-8') as f:
+                with safe_open(args.save_urls, "w", encoding="utf-8") as f:
                     for url in scraped_urls:
                         f.write(f"{url}\n")
                 success(f"Saved {len(scraped_urls)} URLs to {args.save_urls}")
@@ -1128,7 +1205,7 @@ def main() -> None:
         # Save file list if requested (for this session only)
         if args.save_files:
             try:
-                with open(args.save_files, 'w', encoding='utf-8') as f:
+                with safe_open(args.save_files, "w", encoding="utf-8") as f:
                     for html_file in sorted(session_files):
                         f.write(f"{html_file}\n")
                 success(f"Saved {len(session_files)} file paths to {args.save_files}")
@@ -1141,23 +1218,29 @@ def main() -> None:
                 info("\nDownloaded files in this session:")
                 files_to_show = sorted(session_files)
                 max_files_to_show = 30
-                
+
                 if len(files_to_show) > max_files_to_show:
                     # Show first 15 and last 15 files
                     for html_file in files_to_show[:15]:
                         rel_path = html_file.relative_to(site_dir)
                         info(f"  - {rel_path}")
-                    info(f"  ... ({len(files_to_show) - max_files_to_show} more files) ...")
+                    info(
+                        f"  ... ({len(files_to_show) - max_files_to_show} more files) ..."
+                    )
                     for html_file in files_to_show[-15:]:
                         rel_path = html_file.relative_to(site_dir)
                         info(f"  - {rel_path}")
-                    info(f"\nTotal: {len(files_to_show)} files downloaded in this session")
+                    info(
+                        f"\nTotal: {len(files_to_show)} files downloaded in this session"
+                    )
                 else:
                     for html_file in files_to_show:
                         rel_path = html_file.relative_to(site_dir)
                         info(f"  - {rel_path}")
             else:
-                info("\nNo new files downloaded in this session (all URLs were already scraped)")
+                info(
+                    "\nNo new files downloaded in this session (all URLs were already scraped)"
+                )
 
     except KeyboardInterrupt:
         warning("\n⚠️  Scraping interrupted by user")

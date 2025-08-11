@@ -23,6 +23,12 @@ from typing import List, Dict, Set, Tuple
 import json
 import sys
 
+# Import safe file operations
+from ..m1f.file_operations import safe_exists, safe_open
+
+# Import console utilities
+from ..shared.colors import success, error, warning, info
+
 
 class HTMLAnalyzer:
     """Analyze HTML files to identify patterns for preprocessing."""
@@ -44,7 +50,7 @@ class HTMLAnalyzer:
     def analyze_file(self, file_path: Path) -> Dict:
         """Analyze a single HTML file."""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 html = f.read()
         except Exception as e:
             return {"error": str(e)}
@@ -230,7 +236,7 @@ def main():
     info(f"Analyzing {len(args.files)} files...")
     for file_path in args.files:
         path = Path(file_path)
-        if path.exists() and path.suffix.lower() in [".html", ".htm"]:
+        if safe_exists(path) and path.suffix.lower() in [".html", ".htm"]:
             result = analyzer.analyze_file(path)
             if "error" in result:
                 error(f"Error analyzing {path}: {result['error']}")
@@ -250,7 +256,7 @@ def main():
 
     # Save to file if requested
     if args.output:
-        with open(args.output, "w") as f:
+        with safe_open(args.output, "w") as f:
             json.dump(config, f, indent=2)
         success(f"\nConfiguration saved to: {args.output}")
 

@@ -20,6 +20,17 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    safe_write_text,
+)
+
 from rich.progress import Progress
 
 # Use unified colorama module
@@ -323,7 +334,7 @@ class Html2mdConverter:
                     # Check if the linked file exists with .md extension
                     # (it's probably been converted from .html to .md)
                     md_link = link_path.with_suffix(".md")
-                    if md_link.exists() or link_path.suffix in [".html", ".htm"]:
+                    if safe_exists(md_link) or link_path.suffix in [".html", ".htm"]:
                         # Use .md extension for converted files
                         link_path = link_path.with_suffix(".md")
 
@@ -341,7 +352,7 @@ class Html2mdConverter:
                                 test_path = source_dir.parent / link_path.name
                                 if ext:
                                     test_path = test_path.with_suffix(ext)
-                                if test_path.exists():
+                                if safe_exists(test_path):
                                     link_in_source = test_path
                                     break
 
@@ -409,20 +420,20 @@ class Html2mdConverter:
 
         # Read file content
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with safe_open(file_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
         except UnicodeDecodeError:
             # Try with different encodings
             for encoding in ["latin-1", "cp1252"]:
                 try:
-                    with open(file_path, "r", encoding=encoding) as f:
+                    with safe_open(file_path, "r", encoding=encoding) as f:
                         html_content = f.read()
                     break
                 except UnicodeDecodeError:
                     continue
             else:
                 # Last resort - ignore errors
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     html_content = f.read()
 
         # Convert using the convert_html method which includes preprocessing
@@ -466,10 +477,10 @@ class Html2mdConverter:
         # Validate output path to ensure it stays within destination directory
         output_path = self._validate_output_path(output_path, self.config.destination)
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(output_path.parent, parents=True, exist_ok=True)
 
         # Write file
-        output_path.write_text(markdown, encoding=self.config.target_encoding)
+        safe_write_text(output_path, markdown, encoding=self.config.target_encoding)
 
         logger.debug(f"Written to {output_path}")
         return output_path
@@ -550,11 +561,11 @@ class Html2mdConverter:
         if not filename.endswith(".md"):
             filename = filename.replace(".html", "") + ".md"
         output_path = Path(self.config.destination) / filename
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(output_path.parent, parents=True, exist_ok=True)
 
         # Write file
         encoding = getattr(self.config, "target_encoding", "utf-8")
-        output_path.write_text(markdown, encoding=encoding)
+        safe_write_text(output_path, markdown, encoding=encoding)
 
         logger.info(f"Saved to {output_path}")
         return output_path
@@ -646,20 +657,22 @@ class Html2mdConverter:
 
             # Read file content
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
+                with safe_open(file_path, "r", encoding="utf-8") as f:
                     html_content = f.read()
             except UnicodeDecodeError:
                 # Try with different encodings
                 for encoding in ["latin-1", "cp1252"]:
                     try:
-                        with open(file_path, "r", encoding=encoding) as f:
+                        with safe_open(file_path, "r", encoding=encoding) as f:
                             html_content = f.read()
                         break
                     except UnicodeDecodeError:
                         continue
                 else:
                     # Last resort - ignore errors
-                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    with safe_open(
+                        file_path, "r", encoding="utf-8", errors="ignore"
+                    ) as f:
                         html_content = f.read()
 
             # Convert using the convert_html method which includes all preprocessing and CSS selector logic
@@ -705,8 +718,8 @@ class Html2mdConverter:
                 output_path, self.config.destination
             )
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(markdown, encoding=self.config.target_encoding)
+            safe_mkdir(output_path.parent, parents=True, exist_ok=True)
+            safe_write_text(output_path, markdown, encoding=self.config.target_encoding)
 
             return output_path
         except Exception as e:

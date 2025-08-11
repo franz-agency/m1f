@@ -21,8 +21,18 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 
-from ...unified_output.colorama_output import info, error, warning, success, header, Colors
+from ...unified_output.colorama_output import (
+    info,
+    error,
+    warning,
+    success,
+    header,
+    Colors,
+)
 from .claude_runner import ClaudeRunner
+
+# Import safe file operations
+from ..m1f.file_operations import safe_exists, safe_mkdir, safe_open, safe_read_text
 
 
 def handle_claude_analysis_improved(
@@ -114,12 +124,12 @@ def handle_claude_analysis_improved(
     prompt_dir = Path(__file__).parent / "prompts"
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
-    if not select_prompt_path.exists():
+    if not safe_exists(select_prompt_path):
         error(f"❌ Prompt file not found: {select_prompt_path}")
         return
 
     # Load the prompt from external file
-    simple_prompt_template = select_prompt_path.read_text()
+    simple_prompt_template = safe_read_text(select_prompt_path)
 
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
@@ -131,9 +141,7 @@ def handle_claude_analysis_improved(
 
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        warning(
-            f"Only {len(html_files)} files available. Will analyze all of them."
-        )
+        warning(f"Only {len(html_files)} files available. Will analyze all of them.")
 
     # Ask user for project description if not provided
     if not project_description:
@@ -181,12 +189,10 @@ def handle_claude_analysis_improved(
     if project_description:
         simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt}"
 
-    info(
-        f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files..."
-    )
+    info(f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files...")
     info(f"   {Colors.DIM}This may take 10-30 seconds...{Colors.RESET}")
 
-    # Step 3: Use Claude to select representative files    
+    # Step 3: Use Claude to select representative files
     returncode, stdout, stderr = runner.run_claude_streaming(
         prompt=simple_prompt,
         allowed_tools="Read,Task,TodoWrite",  # Allow Read for file access, Task for sub-agents, TodoWrite for task management
@@ -217,7 +223,7 @@ def handle_claude_analysis_improved(
         if len(output_lines) > 20:
             info(f"  ... ({len(output_lines) - 20} more lines)")
         info("-" * 40)
-    
+
     selected_files = stdout.strip().split("\n")
     selected_files = [f.strip() for f in selected_files if f.strip()]
 
@@ -225,24 +231,34 @@ def handle_claude_analysis_improved(
     valid_files = []
     for line in selected_files:
         line = line.strip()
-        
+
         # Skip empty lines and the completion marker
         if not line or "FILE_SELECTION_COMPLETE_OK" in line:
             continue
-            
+
         # Skip lines that look like explanatory text
-        if any(word in line.lower() for word in ["select", "based", "analysis", "representative", "file:", "path:"]):
+        if any(
+            word in line.lower()
+            for word in [
+                "select",
+                "based",
+                "analysis",
+                "representative",
+                "file:",
+                "path:",
+            ]
+        ):
             continue
-            
+
         # Skip lines that are too long to be reasonable file paths
         if len(line) > 300:
             continue
-            
+
         # Accept lines that look like HTML file paths
         if ".html" in line.lower() or ".htm" in line.lower():
             # Clean up the path - remove any leading/trailing whitespace or quotes
             clean_path = line.strip().strip('"').strip("'")
-            
+
             # If the path is in our relative_paths list, it's definitely valid
             if clean_path in relative_paths:
                 valid_files.append(clean_path)
@@ -257,34 +273,38 @@ def handle_claude_analysis_improved(
     info(f"\nClaude selected {len(selected_files)} files:")
     for f in selected_files:
         info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
-    
+
     # Check if Claude returned fewer files than requested
     if len(selected_files) < num_files_to_analyze:
-        warning(f"⚠️  Claude returned only {len(selected_files)} files instead of {num_files_to_analyze} requested")
+        warning(
+            f"⚠️  Claude returned only {len(selected_files)} files instead of {num_files_to_analyze} requested"
+        )
         warning("   Proceeding with the files that were selected...")
     elif len(selected_files) > num_files_to_analyze:
-        info(f"📝 Claude returned {len(selected_files)} files, using first {num_files_to_analyze}")
+        info(
+            f"📝 Claude returned {len(selected_files)} files, using first {num_files_to_analyze}"
+        )
         selected_files = selected_files[:num_files_to_analyze]
 
     # Step 4: Verify the selected files exist
     info("\nVerifying selected HTML files...")
     verified_files = []
-    
+
     for file_path in selected_files:
         file_path = file_path.strip()
-        
+
         # First check if this path is exactly in our relative_paths list
         if file_path in relative_paths:
             # It's a valid path from our list
             full_path = common_parent / file_path
-            if full_path.exists():
+            if safe_exists(full_path):
                 verified_files.append(file_path)
                 success(f"✅ Found: {file_path}")
                 continue
-        
+
         # If not found exactly, try as a path relative to common_parent
         test_path = common_parent / file_path
-        if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
+        if safe_exists(test_path) and test_path.suffix.lower() in [".html", ".htm"]:
             try:
                 rel_path = test_path.relative_to(common_parent)
                 verified_files.append(str(rel_path))
@@ -292,11 +312,11 @@ def handle_claude_analysis_improved(
                 continue
             except ValueError:
                 pass
-        
+
         # If still not found, log it as missing
         warning(f"⚠️  Not found: {file_path}")
         warning(f"   Expected it to be in: {common_parent}")
-        
+
         # Show a few similar paths from our list to help debug
         similar = [p for p in relative_paths if Path(p).name == Path(file_path).name]
         if similar:
@@ -307,16 +327,20 @@ def handle_claude_analysis_improved(
     if not verified_files:
         error("❌ No HTML files could be verified")
         return
-    
+
     # Check if we have fewer verified files than requested
     if len(verified_files) < num_files_to_analyze:
-        warning(f"⚠️  Only {len(verified_files)} files passed verification (requested {num_files_to_analyze})")
+        warning(
+            f"⚠️  Only {len(verified_files)} files passed verification (requested {num_files_to_analyze})"
+        )
         if len(verified_files) < len(selected_files):
-            warning(f"   {len(selected_files) - len(verified_files)} files failed verification")
+            warning(
+                f"   {len(selected_files) - len(verified_files)} files failed verification"
+            )
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
-    with open(selected_files_path, "w") as f:
+    with safe_open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
     success(f"✅ Wrote selected files list to: {selected_files_path}")
@@ -325,9 +349,7 @@ def handle_claude_analysis_improved(
     info(
         f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
     )
-    warning(
-        "⏱️  Expected duration: 3-5 minutes for large HTML files"
-    )
+    warning("⏱️  Expected duration: 3-5 minutes for large HTML files")
     info(
         f"   {Colors.DIM}Claude is analyzing each file's structure in detail...{Colors.RESET}"
     )
@@ -335,13 +357,11 @@ def handle_claude_analysis_improved(
     # Load the individual analysis prompt template
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
-    if not individual_prompt_path.exists():
-        error(
-            f"❌ Prompt file not found: {individual_prompt_path}"
-        )
+    if not safe_exists(individual_prompt_path):
+        error(f"❌ Prompt file not found: {individual_prompt_path}")
         return
 
-    individual_prompt_template = individual_prompt_path.read_text()
+    individual_prompt_template = safe_read_text(individual_prompt_path)
 
     # Prepare tasks for parallel execution
     tasks = []
@@ -397,11 +417,11 @@ def handle_claude_analysis_improved(
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
-    if not synthesis_prompt_path.exists():
+    if not safe_exists(synthesis_prompt_path):
         error(f"❌ Prompt file not found: {synthesis_prompt_path}")
         return
 
-    synthesis_prompt = synthesis_prompt_path.read_text()
+    synthesis_prompt = safe_read_text(synthesis_prompt_path)
 
     # Update the synthesis prompt with the actual number of files analyzed
     synthesis_prompt = synthesis_prompt.replace(
@@ -492,7 +512,7 @@ def handle_claude_analysis_improved(
 
             # Save the config to a file
             config_path = common_parent / "m1f-html2md-config.yaml"
-            with open(config_path, "w") as f:
+            with safe_open(config_path, "w") as f:
                 yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
             success(f"\n✅ Saved configuration to: {config_path}")
@@ -503,18 +523,14 @@ def handle_claude_analysis_improved(
                 f"  {Colors.BLUE}m1f-html2md convert {common_parent} -c {config_path} -o ./output/{Colors.RESET}"
             )
         else:
-            warning(
-                "\n⚠️  Could not extract YAML config from Claude's response"
-            )
+            warning("\n⚠️  Could not extract YAML config from Claude's response")
             warning(
                 "Please review the output above and create the config file manually."
             )
 
     except yaml.YAMLError as e:
         warning(f"\n⚠️  Error parsing YAML config: {e}")
-        warning(
-            "Please review the output above and create the config file manually."
-        )
+        warning("Please review the output above and create the config file manually.")
     except Exception as e:
         warning(f"\n⚠️  Error saving config: {e}")
 

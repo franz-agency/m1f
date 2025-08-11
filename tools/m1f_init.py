@@ -79,6 +79,32 @@ class M1FInit:
         self.m1f_root = Path(__file__).parent.parent
         self.m1f_docs_source = self.m1f_root / "m1f" / "m1f" / "87_m1f_only_docs.txt"
 
+        # Import safe operations locally to avoid module loading issues
+        try:
+            from tools.m1f.file_operations import (
+                safe_open,
+                safe_read_text,
+                safe_write_text,
+                safe_mkdir,
+                safe_exists,
+            )
+            from tools.m1f.utils import validate_path_traversal
+
+            self.safe_open = safe_open
+            self.safe_read_text = safe_read_text
+            self.safe_write_text = safe_write_text
+            self.safe_mkdir = safe_mkdir
+            self.safe_exists = safe_exists
+            self.validate_path_traversal = validate_path_traversal
+        except ImportError:
+            # Fallback to standard operations if safe operations are not available
+            self.safe_open = open
+            self.safe_read_text = lambda p: Path(p).read_text()
+            self.safe_write_text = lambda p, c: Path(p).write_text(c)
+            self.safe_mkdir = lambda p, **k: Path(p).mkdir(**k)
+            self.safe_exists = lambda p: Path(p).exists()
+            self.validate_path_traversal = lambda p, **k: Path(p)
+
     def run(self):
         """Run the initialization process."""
         header("🚀 m1f Project Initialization")
@@ -122,7 +148,7 @@ class M1FInit:
 
         # Create m1f directory if it doesn't exist
         m1f_dir = self.project_path / "m1f"
-        m1f_dir.mkdir(exist_ok=True)
+        self.safe_mkdir(m1f_dir, parents=False, exist_ok=True)
 
         # Check if already linked
         link_path = m1f_dir / "m1f.txt"
@@ -142,15 +168,29 @@ class M1FInit:
                     )
                     self.created_files.append("m1f/m1f.txt (symlink)")
                 except OSError:
-                    # Fall back to copying the file
-                    import shutil
+                    # Fall back to copying the file using safe operations
+                    try:
+                        # Validate paths
+                        validated_source = self.validate_path_traversal(
+                            self.m1f_docs_source, allow_outside=True
+                        )
+                        validated_dest = self.validate_path_traversal(
+                            link_path, allow_outside=False
+                        )
 
-                    shutil.copy2(self.m1f_docs_source, link_path)
-                    success(f"✅ Copied m1f documentation to m1f/m1f.txt")
-                    info(
-                        "   (Symlink creation requires admin rights or developer mode on Windows)"
-                    )
-                    self.created_files.append("m1f/m1f.txt (copy)")
+                        # Read and write safely
+                        content = self.safe_read_text(validated_source)
+                        self.safe_write_text(validated_dest, content)
+                        success(f"✅ Copied m1f documentation to m1f/m1f.txt")
+                        info(
+                            "   (Symlink creation requires admin rights or developer mode on Windows)"
+                        )
+                        self.created_files.append("m1f/m1f.txt (copy)")
+                    except Exception as copy_e:
+                        warning(f"⚠️  Failed to copy m1f documentation: {copy_e}")
+                        info(
+                            f"   You can manually copy {self.m1f_docs_source} to m1f/m1f.txt"
+                        )
             else:
                 # Unix-like systems
                 link_path.symlink_to(self.m1f_docs_source)
@@ -209,7 +249,10 @@ class M1FInit:
                         import yaml
 
                         config_path = self.project_path / ".m1f.config.yml"
-                        with open(config_path, "r") as f:
+                        validated_config_path = self.validate_path_traversal(
+                            config_path, allow_outside=False
+                        )
+                        with self.safe_open(validated_config_path, "r") as f:
                             config = yaml.safe_load(f)
 
                         # Find the bundle output path
@@ -241,7 +284,7 @@ class M1FInit:
 
         # Create m1f directory if needed
         m1f_dir = self.project_path / "m1f"
-        m1f_dir.mkdir(exist_ok=True)
+        self.safe_mkdir(m1f_dir, parents=False, exist_ok=True)
 
         # Create temporary directory for analysis files
         import tempfile
@@ -280,13 +323,13 @@ class M1FInit:
                 files_list = []
                 dirs_list = []
 
-                if filelist_path.exists():
-                    content = filelist_path.read_text().strip()
+                if self.safe_exists(filelist_path):
+                    content = self.safe_read_text(filelist_path).strip()
                     if content:
                         files_list = content.split("\n")
 
-                if dirlist_path.exists():
-                    content = dirlist_path.read_text().strip()
+                if self.safe_exists(dirlist_path):
+                    content = self.safe_read_text(dirlist_path).strip()
                     if content:
                         dirs_list = content.split("\n")
 
@@ -693,8 +736,11 @@ global:
 # Use 'm1f-update' to regenerate bundles after making changes
 """
 
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(yaml_content)
+        # Validate config path and write safely
+        validated_config_path = self.validate_path_traversal(
+            config_path, allow_outside=False
+        )
+        self.safe_write_text(validated_config_path, yaml_content)
 
         success(f"✅ Configuration created: .m1f.config.yml")
         self.created_files.append(".m1f.config.yml")

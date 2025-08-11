@@ -81,8 +81,9 @@ class ConversionOptions:
     def from_config_file(cls, path: Path) -> "ConversionOptions":
         """Load options from a configuration file."""
         import yaml
+        from ...m1f.file_operations import safe_open
 
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = yaml.safe_load(f)
 
         # Handle aliases in config file

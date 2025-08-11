@@ -24,8 +24,19 @@ from typing import List, Tuple, Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
+# Import safe file operations
+from ..m1f.file_operations import safe_exists, safe_is_file
+
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 
 class ClaudeRunner:
@@ -64,7 +75,7 @@ class ClaudeRunner:
         ]
 
         for path in claude_paths:
-            if path.exists() and path.is_file():
+            if safe_exists(path) and safe_is_file(path):
                 return str(path)
 
         raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
@@ -123,13 +134,17 @@ class ClaudeRunner:
                 else:
                     error(f"Claude failed with code {result.returncode}")
                     if result.stderr:
-                        error(f"{Colors.DIM}Error: {result.stderr[:200]}...{Colors.RESET}")
+                        error(
+                            f"{Colors.DIM}Error: {result.stderr[:200]}...{Colors.RESET}"
+                        )
 
             return result.returncode, result.stdout, result.stderr
 
         except subprocess.TimeoutExpired:
             warning(f"⏰ Claude timed out after {actual_timeout}s")
-            info(f"{Colors.BLUE}💡 Try increasing timeout or simplifying the task{Colors.RESET}")
+            info(
+                f"{Colors.BLUE}💡 Try increasing timeout or simplifying the task{Colors.RESET}"
+            )
             return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
             error(f"Error running Claude: {e}")
@@ -299,7 +314,9 @@ class ClaudeRunner:
                     elapsed_time = (
                         time.time() - start_time if "start_time" in locals() else 0
                     )
-                    info(f"{Colors.BLUE}📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]{Colors.RESET}")
+                    info(
+                        f"{Colors.BLUE}📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]{Colors.RESET}"
+                    )
 
                 try:
                     returncode, stdout, stderr = future.result()

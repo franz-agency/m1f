@@ -22,8 +22,25 @@ from pathlib import Path
 from typing import List
 from .claude_runner import ClaudeRunner
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_read_text,
+)
+
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 
 def handle_claude_convert_improved(args):
@@ -37,7 +54,7 @@ def handle_claude_convert_improved(args):
 
     # Get source path first
     source_path = args.source
-    
+
     # Initialize Claude runner
     try:
         runner = ClaudeRunner(
@@ -50,18 +67,18 @@ def handle_claude_convert_improved(args):
         sys.exit(1)
 
     # Find all HTML files in source directory
-    if not source_path.exists():
+    if not safe_exists(source_path):
         error(f"Source path not found: {source_path}")
         sys.exit(1)
 
     html_files = []
-    if source_path.is_file():
+    if safe_is_file(source_path):
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
             error(f"Source file is not HTML: {source_path}")
             sys.exit(1)
-    elif source_path.is_dir():
+    elif safe_is_dir(source_path):
         # Find all HTML files recursively
         html_files = list(source_path.rglob("*.html")) + list(
             source_path.rglob("*.htm")
@@ -111,7 +128,7 @@ def handle_claude_convert_improved(args):
             html_content = validated_path.read_text(encoding="utf-8")
 
             # Determine output file path
-            if source_path.is_file():
+            if safe_is_file(source_path):
                 # Single file conversion
                 output_file = output_path / html_file.with_suffix(".md").name
             else:

@@ -126,19 +126,10 @@ import json
 import sys
 
 # Import safe file operations
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_open,
-    get_logger as get_file_logger,
-)
+from ..m1f.file_operations import safe_exists, safe_open
 
 # Import console utilities
-from ..shared.colors import (
-    success,
-    error,
-    warning,
-    info,
-)
+from ..shared.colors import success, error, warning, info
 
 
 class HTMLAnalyzer:
@@ -416,7 +407,6 @@ from ..m1f.file_operations import (
     safe_open,
     safe_read_text,
     safe_write_text,
-    get_logger as get_file_logger,
 )
 
 from rich.progress import Progress
@@ -1058,7 +1048,9 @@ class Html2mdConverter:
                         continue
                 else:
                     # Last resort - ignore errors
-                    with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    with safe_open(
+                        file_path, "r", encoding="utf-8", errors="ignore"
+                    ) as f:
                         html_content = f.read()
 
             # Convert using the convert_html method which includes all preprocessing and CSS selector logic
@@ -1329,14 +1321,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 # Import safe file operations
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_is_file,
-    get_logger as get_file_logger,
-)
+from ..m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 
 class ClaudeRunner:
@@ -1434,13 +1430,17 @@ class ClaudeRunner:
                 else:
                     error(f"Claude failed with code {result.returncode}")
                     if result.stderr:
-                        error(f"{Colors.DIM}Error: {result.stderr[:200]}...{Colors.RESET}")
+                        error(
+                            f"{Colors.DIM}Error: {result.stderr[:200]}...{Colors.RESET}"
+                        )
 
             return result.returncode, result.stdout, result.stderr
 
         except subprocess.TimeoutExpired:
             warning(f"⏰ Claude timed out after {actual_timeout}s")
-            info(f"{Colors.BLUE}💡 Try increasing timeout or simplifying the task{Colors.RESET}")
+            info(
+                f"{Colors.BLUE}💡 Try increasing timeout or simplifying the task{Colors.RESET}"
+            )
             return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
             error(f"Error running Claude: {e}")
@@ -1610,7 +1610,9 @@ class ClaudeRunner:
                     elapsed_time = (
                         time.time() - start_time if "start_time" in locals() else 0
                     )
-                    info(f"{Colors.BLUE}📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]{Colors.RESET}")
+                    info(
+                        f"{Colors.BLUE}📊 Progress: {completed}/{total} tasks completed [{elapsed_time:.0f}s elapsed]{Colors.RESET}"
+                    )
 
                 try:
                     returncode, stdout, stderr = future.result()
@@ -1670,14 +1672,18 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 # Import safe file operations
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_is_file,
-    get_logger as get_file_logger,
-)
+from ..m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 
 class ClaudeRunnerSimple:
@@ -1735,11 +1741,7 @@ class ClaudeRunnerSimple:
 
         try:
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=working_dir,
+                cmd, capture_output=True, text=True, timeout=timeout, cwd=working_dir
             )
 
             return result.returncode, result.stdout, result.stderr
@@ -1782,7 +1784,6 @@ from ..m1f.file_operations import (
     safe_open,
     safe_read_text,
     safe_write_text,
-    get_logger as get_file_logger,
 )
 
 # Use unified colorama module
@@ -2083,7 +2084,9 @@ def handle_convert(args: argparse.Namespace) -> None:
         # If the config only contains extractor settings (from Claude analysis),
         # create a full config with source and destination from CLI
         if "source" not in config_data and "destination" not in config_data:
-            source_path = args.source.parent if safe_is_file(args.source) else args.source
+            source_path = (
+                args.source.parent if safe_is_file(args.source) else args.source
+            )
             config = Config(source=source_path, destination=args.output)
 
             # Apply extractor settings from the config file
@@ -3107,7 +3110,9 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
                 html_file,
-                base_path=source_path if safe_is_dir(source_path) else source_path.parent,
+                base_path=(
+                    source_path if safe_is_dir(source_path) else source_path.parent
+                ),
                 allow_outside=False,
             )
 
@@ -3361,17 +3366,18 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 
-from ...unified_output.colorama_output import info, error, warning, success, header, Colors
+from ...unified_output.colorama_output import (
+    info,
+    error,
+    warning,
+    success,
+    header,
+    Colors,
+)
 from .claude_runner import ClaudeRunner
 
 # Import safe file operations
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_mkdir,
-    safe_open,
-    safe_read_text,
-    get_logger as get_file_logger,
-)
+from ..m1f.file_operations import safe_exists, safe_mkdir, safe_open, safe_read_text
 
 
 def handle_claude_analysis_improved(
@@ -3480,9 +3486,7 @@ def handle_claude_analysis_improved(
 
     if num_files_to_analyze > len(html_files):
         num_files_to_analyze = len(html_files)
-        warning(
-            f"Only {len(html_files)} files available. Will analyze all of them."
-        )
+        warning(f"Only {len(html_files)} files available. Will analyze all of them.")
 
     # Ask user for project description if not provided
     if not project_description:
@@ -3530,12 +3534,10 @@ def handle_claude_analysis_improved(
     if project_description:
         simple_prompt = f"PROJECT CONTEXT: {project_description}\n\n{simple_prompt}"
 
-    info(
-        f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files..."
-    )
+    info(f"\n🤔 Asking Claude to select {num_files_to_analyze} representative files...")
     info(f"   {Colors.DIM}This may take 10-30 seconds...{Colors.RESET}")
 
-    # Step 3: Use Claude to select representative files    
+    # Step 3: Use Claude to select representative files
     returncode, stdout, stderr = runner.run_claude_streaming(
         prompt=simple_prompt,
         allowed_tools="Read,Task,TodoWrite",  # Allow Read for file access, Task for sub-agents, TodoWrite for task management
@@ -3566,7 +3568,7 @@ def handle_claude_analysis_improved(
         if len(output_lines) > 20:
             info(f"  ... ({len(output_lines) - 20} more lines)")
         info("-" * 40)
-    
+
     selected_files = stdout.strip().split("\n")
     selected_files = [f.strip() for f in selected_files if f.strip()]
 
@@ -3574,24 +3576,34 @@ def handle_claude_analysis_improved(
     valid_files = []
     for line in selected_files:
         line = line.strip()
-        
+
         # Skip empty lines and the completion marker
         if not line or "FILE_SELECTION_COMPLETE_OK" in line:
             continue
-            
+
         # Skip lines that look like explanatory text
-        if any(word in line.lower() for word in ["select", "based", "analysis", "representative", "file:", "path:"]):
+        if any(
+            word in line.lower()
+            for word in [
+                "select",
+                "based",
+                "analysis",
+                "representative",
+                "file:",
+                "path:",
+            ]
+        ):
             continue
-            
+
         # Skip lines that are too long to be reasonable file paths
         if len(line) > 300:
             continue
-            
+
         # Accept lines that look like HTML file paths
         if ".html" in line.lower() or ".htm" in line.lower():
             # Clean up the path - remove any leading/trailing whitespace or quotes
             clean_path = line.strip().strip('"').strip("'")
-            
+
             # If the path is in our relative_paths list, it's definitely valid
             if clean_path in relative_paths:
                 valid_files.append(clean_path)
@@ -3606,22 +3618,26 @@ def handle_claude_analysis_improved(
     info(f"\nClaude selected {len(selected_files)} files:")
     for f in selected_files:
         info(f"  - {Colors.BLUE}{f}{Colors.RESET}")
-    
+
     # Check if Claude returned fewer files than requested
     if len(selected_files) < num_files_to_analyze:
-        warning(f"⚠️  Claude returned only {len(selected_files)} files instead of {num_files_to_analyze} requested")
+        warning(
+            f"⚠️  Claude returned only {len(selected_files)} files instead of {num_files_to_analyze} requested"
+        )
         warning("   Proceeding with the files that were selected...")
     elif len(selected_files) > num_files_to_analyze:
-        info(f"📝 Claude returned {len(selected_files)} files, using first {num_files_to_analyze}")
+        info(
+            f"📝 Claude returned {len(selected_files)} files, using first {num_files_to_analyze}"
+        )
         selected_files = selected_files[:num_files_to_analyze]
 
     # Step 4: Verify the selected files exist
     info("\nVerifying selected HTML files...")
     verified_files = []
-    
+
     for file_path in selected_files:
         file_path = file_path.strip()
-        
+
         # First check if this path is exactly in our relative_paths list
         if file_path in relative_paths:
             # It's a valid path from our list
@@ -3630,7 +3646,7 @@ def handle_claude_analysis_improved(
                 verified_files.append(file_path)
                 success(f"✅ Found: {file_path}")
                 continue
-        
+
         # If not found exactly, try as a path relative to common_parent
         test_path = common_parent / file_path
         if safe_exists(test_path) and test_path.suffix.lower() in [".html", ".htm"]:
@@ -3641,11 +3657,11 @@ def handle_claude_analysis_improved(
                 continue
             except ValueError:
                 pass
-        
+
         # If still not found, log it as missing
         warning(f"⚠️  Not found: {file_path}")
         warning(f"   Expected it to be in: {common_parent}")
-        
+
         # Show a few similar paths from our list to help debug
         similar = [p for p in relative_paths if Path(p).name == Path(file_path).name]
         if similar:
@@ -3656,12 +3672,16 @@ def handle_claude_analysis_improved(
     if not verified_files:
         error("❌ No HTML files could be verified")
         return
-    
+
     # Check if we have fewer verified files than requested
     if len(verified_files) < num_files_to_analyze:
-        warning(f"⚠️  Only {len(verified_files)} files passed verification (requested {num_files_to_analyze})")
+        warning(
+            f"⚠️  Only {len(verified_files)} files passed verification (requested {num_files_to_analyze})"
+        )
         if len(verified_files) < len(selected_files):
-            warning(f"   {len(selected_files) - len(verified_files)} files failed verification")
+            warning(
+                f"   {len(selected_files) - len(verified_files)} files failed verification"
+            )
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
@@ -3674,9 +3694,7 @@ def handle_claude_analysis_improved(
     info(
         f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
     )
-    warning(
-        "⏱️  Expected duration: 3-5 minutes for large HTML files"
-    )
+    warning("⏱️  Expected duration: 3-5 minutes for large HTML files")
     info(
         f"   {Colors.DIM}Claude is analyzing each file's structure in detail...{Colors.RESET}"
     )
@@ -3685,9 +3703,7 @@ def handle_claude_analysis_improved(
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
     if not safe_exists(individual_prompt_path):
-        error(
-            f"❌ Prompt file not found: {individual_prompt_path}"
-        )
+        error(f"❌ Prompt file not found: {individual_prompt_path}")
         return
 
     individual_prompt_template = safe_read_text(individual_prompt_path)
@@ -3852,18 +3868,14 @@ def handle_claude_analysis_improved(
                 f"  {Colors.BLUE}m1f-html2md convert {common_parent} -c {config_path} -o ./output/{Colors.RESET}"
             )
         else:
-            warning(
-                "\n⚠️  Could not extract YAML config from Claude's response"
-            )
+            warning("\n⚠️  Could not extract YAML config from Claude's response")
             warning(
                 "Please review the output above and create the config file manually."
             )
 
     except yaml.YAMLError as e:
         warning(f"\n⚠️  Error parsing YAML config: {e}")
-        warning(
-            "Please review the output above and create the config file manually."
-        )
+        warning("Please review the output above and create the config file manually.")
     except Exception as e:
         warning(f"\n⚠️  Error saving config: {e}")
 
@@ -3901,11 +3913,18 @@ from ..m1f.file_operations import (
     safe_is_dir,
     safe_mkdir,
     safe_read_text,
-    get_logger as get_file_logger,
 )
 
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 
 def handle_claude_convert_improved(args):
@@ -3919,7 +3938,7 @@ def handle_claude_convert_improved(args):
 
     # Get source path first
     source_path = args.source
-    
+
     # Initialize Claude runner
     try:
         runner = ClaudeRunner(
@@ -4099,10 +4118,7 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from markdownify import markdownify
 
 # Import safe file operations
-from ..m1f.file_operations import (
-    safe_open,
-    get_logger as get_file_logger,
-)
+from ..m1f.file_operations import safe_open
 
 from .config.models import ExtractorConfig, ProcessorConfig
 
@@ -4390,10 +4406,7 @@ from bs4 import BeautifulSoup
 from .utils import get_logger
 
 # Import safe file operations
-from ..m1f.file_operations import (
-    safe_exists,
-    get_logger as get_file_logger,
-)
+from ..m1f.file_operations import safe_exists
 
 logger = get_logger(__name__)
 
@@ -5075,11 +5088,7 @@ import yaml
 import sys
 
 # Import safe file operations
-from ...m1f.file_operations import (
-    safe_exists,
-    safe_open,
-    get_logger as get_file_logger,
-)
+from ...m1f.file_operations import safe_exists, safe_open
 
 # Use unified colorama module
 from ...shared.colors import (

@@ -26,6 +26,7 @@ from urllib.parse import urlparse, urljoin
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
 from .python_mirror import PythonMirrorScraper
+from ...m1f.file_operations import safe_exists, safe_is_file, safe_is_dir
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class HTTrackScraper(PythonMirrorScraper):
         await super().__aexit__(*args)
 
         # Clean up temp directory
-        if self.temp_dir and self.temp_dir.exists():
+        if self.temp_dir and safe_exists(self.temp_dir):
             try:
                 shutil.rmtree(self.temp_dir)
                 logger.debug(f"Cleaned up temporary directory: {self.temp_dir}")
@@ -174,14 +175,14 @@ class HTTrackScraper(PythonMirrorScraper):
 
         expected_file = None
         for pf in possible_files:
-            if pf.exists() and pf.is_file():
+            if safe_exists(pf) and safe_is_file(pf):
                 expected_file = pf
                 break
 
         if not expected_file:
             # Try to find any HTML file in the domain directory
             domain_dir = output_dir / parsed_url.netloc
-            if domain_dir.exists():
+            if safe_exists(domain_dir):
                 html_files = list(domain_dir.rglob("*.html"))
                 # Exclude HTTrack's own index files
                 html_files = [f for f in html_files if "hts-cache" not in str(f)]
@@ -325,7 +326,10 @@ class HTTrackScraper(PythonMirrorScraper):
         # Add subdirectory restriction using base class configuration
         if self._allowed_path_configs:
             allowed_domains = set()  # Track domains we're allowing
-            for allowed_domain_config, allowed_path_config in self._allowed_path_configs:
+            for (
+                allowed_domain_config,
+                allowed_path_config,
+            ) in self._allowed_path_configs:
                 if allowed_domain_config:
                     # Full URL specified
                     logger.info(
@@ -342,7 +346,7 @@ class HTTrackScraper(PythonMirrorScraper):
                     # Allow the specified path and everything under it
                     cmd.extend([f"+*{parsed.netloc}{allowed_path_config}/*"])
                     allowed_domains.add(parsed.netloc)
-            
+
             # Exclude everything else on each domain we're allowing from
             for domain in allowed_domains:
                 cmd.extend([f"-*{domain}/*"])
@@ -465,11 +469,14 @@ class HTTrackScraper(PythonMirrorScraper):
 
                                 # Check allowed paths (single or multiple)
                                 allowed_paths_list = []
-                                if hasattr(self.config, 'allowed_paths') and self.config.allowed_paths:
+                                if (
+                                    hasattr(self.config, "allowed_paths")
+                                    and self.config.allowed_paths
+                                ):
                                     allowed_paths_list = self.config.allowed_paths
                                 elif self.config.allowed_path:
                                     allowed_paths_list = [self.config.allowed_path]
-                                
+
                                 if allowed_paths_list:
                                     # Parse URLs to check paths
                                     current_parsed = urlparse(normalized_url)
@@ -485,7 +492,7 @@ class HTTrackScraper(PythonMirrorScraper):
                                         canonical_parsed.path.startswith(allowed_path)
                                         for allowed_path in allowed_paths_list
                                     )
-                                    
+
                                     if current_in_allowed and not canonical_in_allowed:
                                         should_skip = False
                                         logger.info(

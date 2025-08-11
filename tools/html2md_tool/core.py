@@ -21,6 +21,9 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup, NavigableString, Tag
 from markdownify import markdownify
 
+# Import safe file operations
+from ..m1f.file_operations import safe_open
+
 from .config.models import ExtractorConfig, ProcessorConfig
 
 
@@ -71,7 +74,7 @@ class HTMLParser:
 
         for encoding in encodings:
             try:
-                with open(file_path, "r", encoding=encoding) as f:
+                with safe_open(file_path, "r", encoding=encoding) as f:
                     html_content = f.read()
                 break
             except (UnicodeDecodeError, LookupError):
@@ -79,7 +82,7 @@ class HTMLParser:
 
         if html_content is None:
             # Fallback: read as binary and decode with errors='ignore'
-            with open(file_path, "rb") as f:
+            with safe_open(file_path, "rb") as f:
                 html_content = f.read().decode(
                     self.config.encoding, errors=self.config.decode_errors
                 )

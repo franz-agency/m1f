@@ -26,6 +26,7 @@ from urllib.parse import urlparse, urljoin
 
 from .scrapers import create_scraper, ScraperConfig, ScrapedPage
 from .config import CrawlerConfig, ScraperBackend
+from ..m1f.file_operations import safe_exists, safe_mkdir
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ class WebCrawler:
             allowed_paths_list = list(self.config.allowed_paths)
         elif self.config.allowed_path:
             allowed_paths_list = [self.config.allowed_path]
-        
+
         # Create scraper config
         scraper_kwargs = {
             "max_depth": self.config.max_depth,
@@ -112,7 +113,7 @@ class WebCrawler:
 
     def _migrate_database_v2(self, cursor) -> None:
         """Migrate database to v2 with session support.
-        
+
         TODO: Remove this migration after 2025-10 when all users have updated.
         Migration adds:
         - scraping_sessions table
@@ -120,12 +121,14 @@ class WebCrawler:
         - Default session 1 for legacy data
         """
         # Check if migration is needed
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'")
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='scraping_sessions'"
+        )
         if cursor.fetchone() is not None:
             return  # Already migrated
-        
+
         logger.info("Migrating database to v2 (adding session support)")
-        
+
         # Create scraping_sessions table
         cursor.execute(
             """
@@ -155,49 +158,57 @@ class WebCrawler:
             )
         """
         )
-        
+
         # Check if scraped_urls exists and needs session_id column
         cursor.execute("PRAGMA table_info(scraped_urls)")
         columns = [col[1] for col in cursor.fetchall()]
-        
-        if columns and 'session_id' not in columns:
+
+        if columns and "session_id" not in columns:
             # Add session_id column
-            cursor.execute("ALTER TABLE scraped_urls ADD COLUMN session_id INTEGER DEFAULT 1")
-            
+            cursor.execute(
+                "ALTER TABLE scraped_urls ADD COLUMN session_id INTEGER DEFAULT 1"
+            )
+
             # Create default session for existing data
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO scraping_sessions 
                 (id, start_url, start_time, status, total_pages)
                 VALUES (1, 'Legacy data (before session tracking)', 
                         COALESCE((SELECT MIN(scraped_at) FROM scraped_urls), datetime('now')),
                         'completed',
                         (SELECT COUNT(*) FROM scraped_urls WHERE error IS NULL))
-            """)
-            
+            """
+            )
+
             # Update all existing URLs to session 1
-            cursor.execute("UPDATE scraped_urls SET session_id = 1 WHERE session_id IS NULL")
-        
+            cursor.execute(
+                "UPDATE scraped_urls SET session_id = 1 WHERE session_id IS NULL"
+            )
+
         self._db_conn.commit()
         logger.info("Database migration to v2 completed")
 
     def _migrate_database_v3(self, cursor) -> None:
         """Migrate database to v3 with allowed_paths column.
-        
+
         Migration adds:
         - allowed_paths column to scraping_sessions table
         """
         # Check if migration is needed
         cursor.execute("PRAGMA table_info(scraping_sessions)")
         columns = [col[1] for col in cursor.fetchall()]
-        
-        if 'allowed_paths' in columns:
+
+        if "allowed_paths" in columns:
             return  # Already migrated
-        
+
         logger.info("Migrating database to v3 (adding allowed_paths column)")
-        
+
         try:
             # Add allowed_paths column
-            cursor.execute("ALTER TABLE scraping_sessions ADD COLUMN allowed_paths TEXT")
+            cursor.execute(
+                "ALTER TABLE scraping_sessions ADD COLUMN allowed_paths TEXT"
+            )
             self._db_conn.commit()
             logger.info("Database migration to v3 completed")
         except Exception as e:
@@ -206,15 +217,15 @@ class WebCrawler:
 
     def _cleanup_orphaned_sessions(self) -> None:
         """Clean up sessions that were left in 'running' state from crashes or kills.
-        
-        Mark old running sessions as 'interrupted' if no URLs have been scraped 
+
+        Mark old running sessions as 'interrupted' if no URLs have been scraped
         in the last hour (indicating the process died).
         """
         if not self._db_conn:
             return
-            
+
         cursor = self._db_conn.cursor()
-        
+
         # Find sessions that are still marked as running
         cursor.execute(
             """
@@ -223,12 +234,12 @@ class WebCrawler:
             WHERE status = 'running'
             """
         )
-        
+
         running_sessions = cursor.fetchall()
         orphaned_sessions = []
-        
+
         one_hour_ago = datetime.now() - timedelta(hours=1)
-        
+
         # Check each running session to see if it's truly orphaned
         for session_id, start_url, start_time in running_sessions:
             # Get the most recent scraped URL timestamp for this session
@@ -238,20 +249,21 @@ class WebCrawler:
                 FROM scraped_urls 
                 WHERE session_id = ?
                 """,
-                (session_id,)
+                (session_id,),
             )
             result = cursor.fetchone()
             last_activity = result[0] if result and result[0] else start_time
-            
+
             # If no activity in the last hour, consider it orphaned
             # Convert string timestamp to datetime if needed
             if isinstance(last_activity, str):
                 from datetime import datetime as dt
-                last_activity = dt.fromisoformat(last_activity.replace('Z', '+00:00'))
-            
+
+                last_activity = dt.fromisoformat(last_activity.replace("Z", "+00:00"))
+
             if last_activity < one_hour_ago:
                 orphaned_sessions.append((session_id, start_url, start_time))
-        
+
         for session_id, start_url, start_time in orphaned_sessions:
             # Get statistics for the orphaned session
             cursor.execute(
@@ -263,11 +275,11 @@ class WebCrawler:
                 FROM scraped_urls 
                 WHERE session_id = ?
                 """,
-                (session_id,)
+                (session_id,),
             )
             result = cursor.fetchone()
             total, successful, failed = result if result else (0, 0, 0)
-            
+
             # Mark as interrupted and update statistics
             cursor.execute(
                 """
@@ -279,18 +291,18 @@ class WebCrawler:
                     failed_pages = ?
                 WHERE id = ?
                 """,
-                (start_time, total, successful, failed, session_id)
+                (start_time, total, successful, failed, session_id),
             )
-            
+
             logger.warning(
                 f"Cleaned up orphaned session #{session_id} from {start_time} "
                 f"({successful} pages scraped before interruption)"
             )
-        
+
         if orphaned_sessions:
             self._db_conn.commit()
             logger.info(f"Cleaned up {len(orphaned_sessions)} orphaned sessions")
-        
+
         cursor.close()
 
     def _init_database(self, output_dir: Path) -> None:
@@ -304,16 +316,16 @@ class WebCrawler:
 
         # Create table if it doesn't exist
         cursor = self._db_conn.cursor()
-        
+
         # Run migration if needed (TODO: Remove after 2025-10)
         self._migrate_database_v2(cursor)
-        
+
         # Clean up any orphaned sessions from previous crashes
         self._cleanup_orphaned_sessions()
-        
+
         # Run additional migration for allowed_paths column if needed
         self._migrate_database_v3(cursor)
-        
+
         # Create current schema tables (if not created by migration)
         # Create scraping_sessions table
         cursor.execute(
@@ -344,7 +356,7 @@ class WebCrawler:
             )
         """
         )
-        
+
         # Create scraped_urls table with session_id
         cursor.execute(
             """
@@ -380,30 +392,31 @@ class WebCrawler:
 
     def _start_session(self, start_url: str) -> int:
         """Start a new scraping session.
-        
+
         Args:
             start_url: The starting URL for this session
-            
+
         Returns:
             The session ID
         """
         if not self._db_conn:
             return None
-            
+
         cursor = self._db_conn.cursor()
-        
+
         # Convert excluded_paths and allowed_paths to JSON strings if present
         import json
+
         excluded_paths_str = None
         if self.config.excluded_paths:
             excluded_paths_str = json.dumps(list(self.config.excluded_paths))
-        
+
         allowed_paths_str = None
         if self.config.allowed_paths:
             allowed_paths_str = json.dumps(list(self.config.allowed_paths))
         elif self.config.allowed_path:
             allowed_paths_str = json.dumps([self.config.allowed_path])
-        
+
         cursor.execute(
             """
             INSERT INTO scraping_sessions (
@@ -421,7 +434,11 @@ class WebCrawler:
                 self.config.allowed_path,
                 allowed_paths_str,
                 excluded_paths_str,
-                self.config.scraper_backend.value if self.config.scraper_backend else None,
+                (
+                    self.config.scraper_backend.value
+                    if self.config.scraper_backend
+                    else None
+                ),
                 self.config.request_delay,
                 self.config.concurrent_requests,
                 self.config.ignore_get_params,
@@ -430,28 +447,28 @@ class WebCrawler:
                 self.config.force_rescrape,
                 self.config.user_agent,
                 self.config.timeout,
-                'running'
-            )
+                "running",
+            ),
         )
         self._db_conn.commit()
-        
+
         self._session_id = cursor.lastrowid
         cursor.close()
-        
+
         logger.info(f"Started scraping session #{self._session_id}")
         return self._session_id
-    
-    def _end_session(self, status: str = 'completed') -> None:
+
+    def _end_session(self, status: str = "completed") -> None:
         """End the current scraping session.
-        
+
         Args:
             status: The final status of the session (completed, interrupted, failed)
         """
         if not self._db_conn or not self._session_id:
             return
-            
+
         cursor = self._db_conn.cursor()
-        
+
         # Get counts from the current session
         cursor.execute(
             """
@@ -462,14 +479,14 @@ class WebCrawler:
             FROM scraped_urls 
             WHERE session_id = ?
             """,
-            (self._session_id,)
+            (self._session_id,),
         )
         result = cursor.fetchone()
         if result:
             total, successful, failed = result
         else:
             total, successful, failed = 0, 0, 0
-        
+
         cursor.execute(
             """
             UPDATE scraping_sessions 
@@ -477,18 +494,11 @@ class WebCrawler:
                 successful_pages = ?, failed_pages = ?
             WHERE id = ?
             """,
-            (
-                datetime.now(),
-                status,
-                total,
-                successful,
-                failed,
-                self._session_id
-            )
+            (datetime.now(), status, total, successful, failed, self._session_id),
         )
         self._db_conn.commit()
         cursor.close()
-        
+
         logger.info(f"Ended scraping session #{self._session_id} with status: {status}")
 
     def _close_database(self) -> None:
@@ -496,7 +506,7 @@ class WebCrawler:
         if self._db_conn:
             # End session if still running (should not happen in normal flow)
             if self._session_id:
-                self._end_session('completed')
+                self._end_session("completed")
             self._db_conn.close()
             self._db_conn = None
 
@@ -643,7 +653,7 @@ class WebCrawler:
                 error,
             ),
         )
-        
+
         self._db_conn.commit()
         cursor.close()
 
@@ -699,7 +709,7 @@ class WebCrawler:
 
         # Initialize database for tracking
         self._init_database(output_dir)
-        
+
         # Start a new session
         self._start_session(start_url)
 
@@ -741,15 +751,21 @@ class WebCrawler:
                     for page_info in pages_info[:20]:  # Read first 20 pages for links
                         try:
                             file_path = output_dir / page_info["filename"]
-                            if file_path.exists():
+                            if safe_exists(file_path):
                                 # Only read HTML files, skip binary files (images, PDFs, etc.)
-                                if file_path.suffix.lower() in ['.html', '.htm', '.xhtml']:
+                                if file_path.suffix.lower() in [
+                                    ".html",
+                                    ".htm",
+                                    ".xhtml",
+                                ]:
                                     content = file_path.read_text(encoding="utf-8")
                                     resume_info.append(
                                         {"url": page_info["url"], "content": content}
                                     )
                                 else:
-                                    logger.debug(f"Skipping binary file for resume: {page_info['filename']}")
+                                    logger.debug(
+                                        f"Skipping binary file for resume: {page_info['filename']}"
+                                    )
                         except Exception as e:
                             logger.warning(
                                 f"Failed to read {page_info['filename']}: {e}"
@@ -760,7 +776,9 @@ class WebCrawler:
 
                 async for page in scraper.scrape_site(start_url):
                     # Skip if already scraped (unless force_rescrape is enabled)
-                    if not self.config.force_rescrape and self._is_url_scraped(page.url):
+                    if not self.config.force_rescrape and self._is_url_scraped(
+                        page.url
+                    ):
                         logger.info(f"Skipping already scraped URL: {page.url}")
                         continue
 
@@ -791,56 +809,75 @@ class WebCrawler:
                             self._record_content_checksum(
                                 page.content_checksum, page.url
                             )
-                        
+
                         # Extract and download assets if enabled
                         if self.config.download_assets and not page.is_binary:
                             asset_urls = scraper.extract_asset_urls(
                                 page.content, page.url, self.config.asset_types
                             )
-                            
+
                             # Security: Limit assets per page (if configured)
-                            if self.config.max_assets_per_page > 0 and len(asset_urls) > self.config.max_assets_per_page:
+                            if (
+                                self.config.max_assets_per_page > 0
+                                and len(asset_urls) > self.config.max_assets_per_page
+                            ):
                                 logger.warning(
                                     f"Page {page.url} has {len(asset_urls)} assets, "
                                     f"limiting to {self.config.max_assets_per_page}"
                                 )
-                                asset_urls = list(asset_urls)[:self.config.max_assets_per_page]
-                            
+                                asset_urls = list(asset_urls)[
+                                    : self.config.max_assets_per_page
+                                ]
+
                             logger.info(f"Found {len(asset_urls)} assets on {page.url}")
-                            
+
                             # Track total assets downloaded
-                            if not hasattr(self, '_total_assets_downloaded'):
+                            if not hasattr(self, "_total_assets_downloaded"):
                                 self._total_assets_downloaded = 0
-                            
+
                             # Track downloaded assets for this page
                             downloaded_assets = {}
-                            
+
                             # Prepare list of assets to download
                             assets_to_download = []
                             for asset_url in asset_urls:
                                 # Security: Check total assets limit (if configured)
-                                if self.config.total_assets_limit > 0 and self._total_assets_downloaded + len(assets_to_download) >= self.config.total_assets_limit:
+                                if (
+                                    self.config.total_assets_limit > 0
+                                    and self._total_assets_downloaded
+                                    + len(assets_to_download)
+                                    >= self.config.total_assets_limit
+                                ):
                                     logger.warning(
                                         f"Reached total assets limit of {self.config.total_assets_limit}, "
                                         f"skipping remaining assets"
                                     )
                                     break
-                                
+
                                 # Skip if already downloaded
-                                if not self.config.force_rescrape and self._is_url_scraped(asset_url):
-                                    logger.debug(f"Skipping already downloaded asset: {asset_url}")
+                                if (
+                                    not self.config.force_rescrape
+                                    and self._is_url_scraped(asset_url)
+                                ):
+                                    logger.debug(
+                                        f"Skipping already downloaded asset: {asset_url}"
+                                    )
                                     # Still track it for HTML update if we can find its path
                                     asset_info = self._get_scraped_url_info(asset_url)
-                                    if asset_info and asset_info.get('target_filename'):
-                                        downloaded_assets[asset_url] = output_dir / asset_info['target_filename']
+                                    if asset_info and asset_info.get("target_filename"):
+                                        downloaded_assets[asset_url] = (
+                                            output_dir / asset_info["target_filename"]
+                                        )
                                     continue
-                                
+
                                 assets_to_download.append(asset_url)
-                            
+
                             # Download assets concurrently for better performance
                             if assets_to_download:
-                                logger.info(f"Downloading {len(assets_to_download)} assets concurrently")
-                                
+                                logger.info(
+                                    f"Downloading {len(assets_to_download)} assets concurrently"
+                                )
+
                                 async def download_and_save_asset(asset_url):
                                     """Download and save a single asset."""
                                     try:
@@ -848,56 +885,88 @@ class WebCrawler:
                                         asset_page = await scraper.download_binary_file(
                                             asset_url, self.config.max_asset_size
                                         )
-                                        
+
                                         if asset_page:
                                             try:
-                                                asset_path = await self._save_page(asset_page, site_dir)
+                                                asset_path = await self._save_page(
+                                                    asset_page, site_dir
+                                                )
                                                 self._record_scraped_url(
                                                     asset_page.url,
                                                     asset_page.status_code,
-                                                    str(asset_path.relative_to(output_dir)),
+                                                    str(
+                                                        asset_path.relative_to(
+                                                            output_dir
+                                                        )
+                                                    ),
                                                     error=None,
                                                     file_type=asset_page.file_type,
                                                     file_size=asset_page.file_size,
                                                 )
-                                                logger.debug(f"Saved asset {asset_url} to {asset_path}")
+                                                logger.debug(
+                                                    f"Saved asset {asset_url} to {asset_path}"
+                                                )
                                                 return (asset_url, asset_path)
                                             except ValueError as e:
                                                 # Security exception (dangerous file, path traversal, etc.)
-                                                logger.error(f"Security: Blocked asset {asset_url}: {e}")
+                                                logger.error(
+                                                    f"Security: Blocked asset {asset_url}: {e}"
+                                                )
                                             except Exception as e:
-                                                logger.error(f"Failed to save asset {asset_url}: {e}")
+                                                logger.error(
+                                                    f"Failed to save asset {asset_url}: {e}"
+                                                )
                                         else:
-                                            logger.warning(f"Failed to download asset: {asset_url}")
+                                            logger.warning(
+                                                f"Failed to download asset: {asset_url}"
+                                            )
                                         return None
                                     except Exception as e:
-                                        logger.error(f"Error downloading asset {asset_url}: {e}")
+                                        logger.error(
+                                            f"Error downloading asset {asset_url}: {e}"
+                                        )
                                         return None
-                                
+
                                 # Use concurrent requests config to limit parallel downloads
                                 # But cap at a reasonable number for assets (default 5, max 10)
                                 max_concurrent_assets = min(
-                                    self.config.concurrent_requests if hasattr(self.config, 'concurrent_requests') else 5,
-                                    10
+                                    (
+                                        self.config.concurrent_requests
+                                        if hasattr(self.config, "concurrent_requests")
+                                        else 5
+                                    ),
+                                    10,
                                 )
-                                
+
                                 # Download assets in batches to avoid overwhelming the server
-                                for i in range(0, len(assets_to_download), max_concurrent_assets):
-                                    batch = assets_to_download[i:i + max_concurrent_assets]
-                                    download_tasks = [download_and_save_asset(url) for url in batch]
-                                    results = await asyncio.gather(*download_tasks, return_exceptions=True)
-                                    
+                                for i in range(
+                                    0, len(assets_to_download), max_concurrent_assets
+                                ):
+                                    batch = assets_to_download[
+                                        i : i + max_concurrent_assets
+                                    ]
+                                    download_tasks = [
+                                        download_and_save_asset(url) for url in batch
+                                    ]
+                                    results = await asyncio.gather(
+                                        *download_tasks, return_exceptions=True
+                                    )
+
                                     for result in results:
                                         if isinstance(result, tuple) and result:
                                             asset_url, asset_path = result
                                             downloaded_assets[asset_url] = asset_path
                                             self._total_assets_downloaded += 1
                                         elif isinstance(result, Exception):
-                                            logger.error(f"Asset download task failed: {result}")
-                            
+                                            logger.error(
+                                                f"Asset download task failed: {result}"
+                                            )
+
                             # Update HTML file with correct asset paths if we downloaded any
                             if downloaded_assets:
-                                await self._update_html_with_asset_paths(file_path, page, site_dir, downloaded_assets)
+                                await self._update_html_with_asset_paths(
+                                    file_path, page, site_dir, downloaded_assets
+                                )
                     except Exception as e:
                         logger.error(f"Failed to save page {page.url}: {e}")
                         errors.append({"url": page.url, "error": str(e)})
@@ -913,12 +982,12 @@ class WebCrawler:
         except Exception as e:
             logger.error(f"Crawl failed: {e}")
             if self._session_id:
-                self._end_session('failed')
+                self._end_session("failed")
             raise
         finally:
             # End session with completed status if not already ended
             if self._session_id and self._db_conn:
-                self._end_session('completed')
+                self._end_session("completed")
             # Always close database connection
             self._close_database()
 
@@ -936,38 +1005,44 @@ class WebCrawler:
 
     def _get_scraped_url_info(self, url: str) -> Optional[Dict[str, Any]]:
         """Get information about a previously scraped URL.
-        
+
         Args:
             url: The URL to look up
-            
+
         Returns:
             Dictionary with url info or None if not found
         """
         if not self._db_conn:
             return None
-        
+
         try:
             cursor = self._db_conn.cursor()
             cursor.execute(
                 "SELECT target_filename, status_code, error, scraped_at FROM scraped_urls WHERE url = ?",
-                (url,)
+                (url,),
             )
             row = cursor.fetchone()
             if row:
                 return {
-                    'target_filename': row[0],
-                    'status_code': row[1],
-                    'error': row[2],
-                    'scraped_at': row[3]
+                    "target_filename": row[0],
+                    "status_code": row[1],
+                    "error": row[2],
+                    "scraped_at": row[3],
                 }
         except Exception as e:
             logger.error(f"Failed to get scraped URL info: {e}")
-        
+
         return None
-    
-    async def _update_html_with_asset_paths(self, html_path: Path, page: ScrapedPage, site_dir: Path, downloaded_assets: Dict[str, Path]):
+
+    async def _update_html_with_asset_paths(
+        self,
+        html_path: Path,
+        page: ScrapedPage,
+        site_dir: Path,
+        downloaded_assets: Dict[str, Path],
+    ):
         """Update HTML file with correct paths to downloaded assets.
-        
+
         Args:
             html_path: Path to the HTML file to update
             page: The original ScrapedPage object
@@ -977,77 +1052,90 @@ class WebCrawler:
         try:
             # Read the current HTML content
             html_content = html_path.read_text(encoding=page.encoding)
-            
+
             # Adjust links with the downloaded asset paths
             updated_content = self._adjust_html_links(
-                html_content,
-                page.url,
-                html_path,
-                site_dir,
-                downloaded_assets
+                html_content, page.url, html_path, site_dir, downloaded_assets
             )
-            
+
             # Write the updated content back
             html_path.write_text(updated_content, encoding=page.encoding)
-            logger.debug(f"Updated HTML file {html_path} with {len(downloaded_assets)} asset paths")
-            
+            logger.debug(
+                f"Updated HTML file {html_path} with {len(downloaded_assets)} asset paths"
+            )
+
         except Exception as e:
             logger.error(f"Failed to update HTML with asset paths: {e}")
-    
-    def _adjust_html_links(self, html_content: str, original_url: str, saved_path: Path, site_dir: Path, downloaded_assets: Dict[str, Path] = None) -> str:
+
+    def _adjust_html_links(
+        self,
+        html_content: str,
+        original_url: str,
+        saved_path: Path,
+        site_dir: Path,
+        downloaded_assets: Dict[str, Path] = None,
+    ) -> str:
         """Adjust relative links in HTML content to work from the new saved location.
-        
+
         Args:
             html_content: The HTML content to adjust
             original_url: The original URL of the page
             saved_path: Where the file will be saved
             site_dir: The site directory (domain folder)
             downloaded_assets: Optional mapping of asset URLs to their local paths
-            
+
         Returns:
             HTML content with adjusted links
         """
         import os
         from bs4 import BeautifulSoup
         from urllib.parse import urljoin, urlparse
-        
-        soup = BeautifulSoup(html_content, 'html.parser')
+
+        soup = BeautifulSoup(html_content, "html.parser")
         original_parsed = urlparse(original_url)
-        
+
         # Calculate the relative path from saved location to site root
         try:
             rel_to_root = os.path.relpath(site_dir, saved_path.parent)
-            if rel_to_root == '.':
-                rel_to_root = ''
+            if rel_to_root == ".":
+                rel_to_root = ""
             else:
-                rel_to_root = rel_to_root.replace('\\', '/') + '/'
+                rel_to_root = rel_to_root.replace("\\", "/") + "/"
         except ValueError:
             # If on different drives on Windows
-            rel_to_root = ''
-        
+            rel_to_root = ""
+
         # Adjust all links
-        for tag_name, attr_name in [('a', 'href'), ('link', 'href'), ('script', 'src'), ('img', 'src'), 
-                                     ('source', 'srcset'), ('source', 'src'), ('video', 'src'), ('audio', 'src')]:
+        for tag_name, attr_name in [
+            ("a", "href"),
+            ("link", "href"),
+            ("script", "src"),
+            ("img", "src"),
+            ("source", "srcset"),
+            ("source", "src"),
+            ("video", "src"),
+            ("audio", "src"),
+        ]:
             for tag in soup.find_all(tag_name):
                 attr_value = tag.get(attr_name)
                 if not attr_value:
                     continue
-                    
+
                 # Skip anchors and special protocols (but not http/https - we might have downloaded them)
-                if attr_value.startswith(('#', 'mailto:', 'javascript:', 'data:')):
+                if attr_value.startswith(("#", "mailto:", "javascript:", "data:")):
                     continue
-                
+
                 # Check if this is an asset we downloaded
                 if downloaded_assets and self.config.download_assets:
                     # Build the absolute URL for this attribute
-                    if attr_value.startswith(('http://', 'https://', '//')):
+                    if attr_value.startswith(("http://", "https://", "//")):
                         absolute_url = attr_value
-                        if attr_value.startswith('//'):
-                            absolute_url = original_parsed.scheme + ':' + attr_value
+                        if attr_value.startswith("//"):
+                            absolute_url = original_parsed.scheme + ":" + attr_value
                     else:
                         # Relative URL - resolve it against the original page URL
                         absolute_url = urljoin(original_url, attr_value)
-                    
+
                     # Check if we downloaded this asset
                     if absolute_url in downloaded_assets:
                         # Replace with path to downloaded asset
@@ -1055,67 +1143,80 @@ class WebCrawler:
                         # Calculate relative path from HTML file to asset
                         try:
                             rel_path = os.path.relpath(asset_path, saved_path.parent)
-                            rel_path = rel_path.replace('\\', '/')
+                            rel_path = rel_path.replace("\\", "/")
                             tag[attr_name] = rel_path
                             continue  # Skip normal link adjustment for this asset
                         except ValueError:
                             # Different drives on Windows, use the original logic
                             pass
-                
+
                 # Skip absolute URLs after checking for downloaded assets
-                if attr_value.startswith(('http://', 'https://', '//')):
+                if attr_value.startswith(("http://", "https://", "//")):
                     continue
-                
+
                 # Handle relative URLs
-                if attr_value.startswith('/'):
+                if attr_value.startswith("/"):
                     # Absolute path - make it relative to site root
-                    new_path = rel_to_root + attr_value.lstrip('/')
+                    new_path = rel_to_root + attr_value.lstrip("/")
                     tag[attr_name] = new_path
-                elif attr_value.startswith('./'):
+                elif attr_value.startswith("./"):
                     # Relative to current directory - need to adjust based on original URL structure
                     # Get the original directory path
-                    orig_path_parts = original_parsed.path.rstrip('/').split('/')
-                    if orig_path_parts[-1] and ('.' in orig_path_parts[-1] or not orig_path_parts[-1]):
+                    orig_path_parts = original_parsed.path.rstrip("/").split("/")
+                    if orig_path_parts[-1] and (
+                        "." in orig_path_parts[-1] or not orig_path_parts[-1]
+                    ):
                         # Last part is a file, remove it
                         orig_path_parts = orig_path_parts[:-1]
-                    
+
                     # Reconstruct the path
                     relative_part = attr_value[2:]  # Remove ./
                     if orig_path_parts:
                         # The link was relative to /magazin/ or similar
-                        new_path = rel_to_root + '/'.join(orig_path_parts[1:]) + '/' + relative_part
+                        new_path = (
+                            rel_to_root
+                            + "/".join(orig_path_parts[1:])
+                            + "/"
+                            + relative_part
+                        )
                     else:
                         new_path = rel_to_root + relative_part
-                    
+
                     # Clean up the path
-                    new_path = new_path.replace('//', '/')
+                    new_path = new_path.replace("//", "/")
                     tag[attr_name] = new_path
-                elif attr_value.startswith('../'):
+                elif attr_value.startswith("../"):
                     # Handle parent directory references
                     # This is complex, so for now just make it relative to root
                     cleaned = attr_value
                     levels_up = 0
-                    while cleaned.startswith('../'):
+                    while cleaned.startswith("../"):
                         levels_up += 1
                         cleaned = cleaned[3:]
-                    
-                    orig_path_parts = original_parsed.path.rstrip('/').split('/')
-                    if orig_path_parts[-1] and '.' in orig_path_parts[-1]:
+
+                    orig_path_parts = original_parsed.path.rstrip("/").split("/")
+                    if orig_path_parts[-1] and "." in orig_path_parts[-1]:
                         orig_path_parts = orig_path_parts[:-1]
-                    
+
                     # Go up the required number of levels
                     if len(orig_path_parts) > levels_up:
-                        base_parts = orig_path_parts[1:-levels_up] if levels_up > 0 else orig_path_parts[1:]
+                        base_parts = (
+                            orig_path_parts[1:-levels_up]
+                            if levels_up > 0
+                            else orig_path_parts[1:]
+                        )
                         if base_parts:
-                            new_path = rel_to_root + '/'.join(base_parts) + '/' + cleaned
+                            new_path = (
+                                rel_to_root + "/".join(base_parts) + "/" + cleaned
+                            )
                         else:
                             new_path = rel_to_root + cleaned
                     else:
                         new_path = rel_to_root + cleaned
-                    
-                    new_path = new_path.replace('//', '/')
+
+                    new_path = new_path.replace("//", "/")
                     tag[attr_name] = new_path
-        
+
         return str(soup)
 
     async def _save_page(self, page: ScrapedPage, output_dir: Path) -> Path:
@@ -1131,7 +1232,7 @@ class WebCrawler:
         # Handle binary files differently
         if page.is_binary and page.binary_content:
             return await self._save_binary_file(page, output_dir)
-        
+
         # Parse URL to create file path
         parsed = urlparse(page.url)
 
@@ -1181,10 +1282,10 @@ class WebCrawler:
 
         # Adjust links in HTML content before saving
         adjusted_content = self._adjust_html_links(
-            page.content, 
-            page.url, 
+            page.content,
+            page.url,
             file_path,
-            output_dir.parent  # This is the site_dir (domain folder)
+            output_dir.parent,  # This is the site_dir (domain folder)
         )
 
         # Write content
@@ -1229,71 +1330,111 @@ class WebCrawler:
 
     async def _save_binary_file(self, page: ScrapedPage, output_dir: Path) -> Path:
         """Save binary file to disk with security checks.
-        
+
         Args:
             page: ScrapedPage with binary content
             output_dir: Directory to save the file
-            
+
         Returns:
             Path to saved file
-            
+
         Raises:
             ValueError: If file path is unsafe or file type is dangerous
         """
         import hashlib
         import re
         import os
-        
+
         # Security: Define dangerous file extensions that should never be saved
         DANGEROUS_EXTENSIONS = {
-            '.exe', '.dll', '.bat', '.cmd', '.com', '.scr', '.vbs', '.vbe',
-            '.js', '.jse', '.wsf', '.wsh', '.ps1', '.psm1', '.msi', '.jar',
-            '.app', '.deb', '.rpm', '.dmg', '.pkg', '.sh', '.bash', '.zsh',
-            '.fish', '.ksh', '.csh', '.tcsh', '.py', '.pyc', '.pyo', '.pyw',
-            '.rb', '.pl', '.php', '.asp', '.aspx', '.jsp', '.cgi'
+            ".exe",
+            ".dll",
+            ".bat",
+            ".cmd",
+            ".com",
+            ".scr",
+            ".vbs",
+            ".vbe",
+            ".js",
+            ".jse",
+            ".wsf",
+            ".wsh",
+            ".ps1",
+            ".psm1",
+            ".msi",
+            ".jar",
+            ".app",
+            ".deb",
+            ".rpm",
+            ".dmg",
+            ".pkg",
+            ".sh",
+            ".bash",
+            ".zsh",
+            ".fish",
+            ".ksh",
+            ".csh",
+            ".tcsh",
+            ".py",
+            ".pyc",
+            ".pyo",
+            ".pyw",
+            ".rb",
+            ".pl",
+            ".php",
+            ".asp",
+            ".aspx",
+            ".jsp",
+            ".cgi",
         }
-        
+
         # Parse URL to create file path
         parsed = urlparse(page.url)
-        
+
         # Create assets subdirectory if configured
         assets_dir = output_dir / self.config.assets_subdirectory
         assets_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Create file path from URL
         if parsed.path and parsed.path != "/":
             path_parts = parsed.path.lstrip("/").split("/")
             filename = path_parts[-1]
             subdirs = path_parts[:-1] if len(path_parts) > 1 else []
-            
+
             # Security: Check for dangerous extensions
             file_ext = Path(filename).suffix.lower()
             if file_ext in DANGEROUS_EXTENSIONS:
                 logger.warning(f"Blocked dangerous file type {file_ext}: {page.url}")
                 raise ValueError(f"Dangerous file type {file_ext} not allowed")
-            
+
             # Security: Sanitize filename more aggressively
             # Remove any character that could be used for path traversal or command injection
-            safe_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
-            safe_filename = safe_filename.lstrip('.')  # Remove leading dots
-            
+            safe_filename = re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
+            safe_filename = safe_filename.lstrip(".")  # Remove leading dots
+
             if not safe_filename:
-                safe_filename = f"asset_{hashlib.md5(page.url.encode()).hexdigest()[:8]}"
-            
+                safe_filename = (
+                    f"asset_{hashlib.md5(page.url.encode()).hexdigest()[:8]}"
+                )
+
             # Create subdirectories with strict sanitization
             if subdirs:
                 safe_subdirs = []
                 for part in subdirs:
                     # Security: More aggressive sanitization
-                    safe_part = re.sub(r'[^a-zA-Z0-9._-]', '_', part)
-                    safe_part = safe_part.strip('._')  # Remove leading/trailing dots and underscores
+                    safe_part = re.sub(r"[^a-zA-Z0-9._-]", "_", part)
+                    safe_part = safe_part.strip(
+                        "._"
+                    )  # Remove leading/trailing dots and underscores
                     if safe_part and safe_part not in (".", ".."):
                         safe_subdirs.append(safe_part)
-                
+
                 if safe_subdirs:
                     subdir = assets_dir / Path(*safe_subdirs)
                     subdir.mkdir(parents=True, exist_ok=True)
-                    file_path = subdir / safe_filename  # Use safe_filename instead of filename
+                    file_path = (
+                        subdir / safe_filename
+                    )  # Use safe_filename instead of filename
                 else:
                     file_path = assets_dir / safe_filename  # Use safe_filename
             else:
@@ -1317,21 +1458,22 @@ class WebCrawler:
                     extension = ".svg"
             elif page.file_type == "pdf":
                 extension = ".pdf"
-            
+
             # Security: Check extension even for generated filenames
             if extension.lower() in DANGEROUS_EXTENSIONS:
                 logger.warning(f"Blocked dangerous file type {extension}: {page.url}")
                 raise ValueError(f"Dangerous file type {extension} not allowed")
-            
+
             file_path = assets_dir / f"asset_{url_hash}{extension}"
-        
+
         # Security: Final path validation - ensure file_path is within output_dir
         try:
             # Don't use resolve() on non-existent paths - it can cause issues
             # Instead, check the relative path components
             import os
+
             output_dir_abs = output_dir.resolve()
-            
+
             # Get the relative path from output_dir to file_path
             try:
                 rel_path = os.path.relpath(file_path, output_dir)
@@ -1341,19 +1483,21 @@ class WebCrawler:
             except ValueError:
                 # os.path.relpath raises ValueError if on different drives on Windows
                 raise ValueError(f"Invalid file path: {file_path}")
-                
+
         except Exception as e:
             logger.error(f"Path validation failed for {page.url}: {e}")
             raise ValueError(f"Invalid file path: {e}")
-        
+
         # Security: Check file size before writing
         if page.file_size and page.file_size > self.config.max_asset_size:
-            raise ValueError(f"File size {page.file_size} exceeds limit {self.config.max_asset_size}")
-        
+            raise ValueError(
+                f"File size {page.file_size} exceeds limit {self.config.max_asset_size}"
+            )
+
         # Write binary content
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_bytes(page.binary_content)
-        
+
         # Save metadata
         try:
             metadata_path = file_path.with_suffix(file_path.suffix + ".meta.json")
@@ -1365,15 +1509,15 @@ class WebCrawler:
                 "headers": page.headers or {},
                 "checksum": hashlib.sha256(page.binary_content).hexdigest(),
             }
-            
+
             # Add validation results if available
-            if page.metadata and 'validation' in page.metadata:
-                metadata['validation'] = page.metadata['validation']
-            
+            if page.metadata and "validation" in page.metadata:
+                metadata["validation"] = page.metadata["validation"]
+
             metadata_path.write_text(json.dumps(metadata, indent=2, default=str))
         except Exception as e:
             logger.warning(f"Failed to save metadata for binary file {page.url}: {e}")
-        
+
         logger.debug(f"Saved binary file {page.url} to {file_path}")
         return file_path
 
@@ -1386,7 +1530,7 @@ class WebCrawler:
         Returns:
             List of HTML file paths
         """
-        if not site_dir.exists():
+        if not safe_exists(site_dir):
             logger.warning(f"Site directory does not exist: {site_dir}")
             return []
 
@@ -1422,7 +1566,7 @@ class WebCrawler:
             # Mark session as interrupted before re-raising
             if self._session_id:
                 try:
-                    self._end_session('interrupted')
+                    self._end_session("interrupted")
                 except:
                     pass  # Don't let DB errors mask the interrupt
             # Re-raise to let CLI handle it gracefully
@@ -1447,11 +1591,11 @@ class WebCrawler:
         try:
             # Run async crawl using asyncio.run()
             result = asyncio.run(self.crawl(start_url, output_dir))
-            
+
             # Extract URLs from the pages scraped in this session
             pages = result.get("pages", [])
             scraped_urls = [page.url for page in pages]
-            
+
             # Get list of files created in this session
             session_files = []
             for page in pages:
@@ -1459,11 +1603,11 @@ class WebCrawler:
                 parsed = urlparse(page.url)
                 # Note: result["output_dir"] already contains the domain (it's actually site_dir)
                 site_dir = result["output_dir"]
-                
+
                 # Same logic as in _save_page method
                 if parsed.path and parsed.path != "/":
                     path_parts = parsed.path.lstrip("/").split("/")
-                    
+
                     # Handle file extension
                     if path_parts[-1].endswith(".html") or "." in path_parts[-1]:
                         filename = path_parts[-1]
@@ -1472,16 +1616,20 @@ class WebCrawler:
                         # Assume it's a directory, create index.html
                         filename = "index.html"
                         subdirs = path_parts
-                    
+
                     # Build the file path
                     if subdirs:
                         # Sanitize subdirectory names (same as _save_page)
                         safe_subdirs = []
                         for part in subdirs:
-                            safe_part = part.replace("..", "").replace("./", "").replace("\\", "")
+                            safe_part = (
+                                part.replace("..", "")
+                                .replace("./", "")
+                                .replace("\\", "")
+                            )
                             if safe_part and safe_part not in (".", ".."):
                                 safe_subdirs.append(safe_part)
-                        
+
                         if safe_subdirs:
                             file_path = site_dir / Path(*safe_subdirs) / filename
                         else:
@@ -1491,10 +1639,10 @@ class WebCrawler:
                 else:
                     # Root page
                     file_path = site_dir / "index.html"
-                
-                if file_path.exists():
+
+                if safe_exists(file_path):
                     session_files.append(file_path)
-            
+
             return {
                 "site_dir": result["output_dir"],
                 "scraped_urls": scraped_urls,
@@ -1508,7 +1656,7 @@ class WebCrawler:
             # Mark session as interrupted before re-raising
             if self._session_id:
                 try:
-                    self._end_session('interrupted')
+                    self._end_session("interrupted")
                 except:
                     pass  # Don't let DB errors mask the interrupt
             # Re-raise to let CLI handle it gracefully
