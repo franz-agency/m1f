@@ -336,10 +336,12 @@ def handle_convert(args: argparse.Namespace) -> None:
         else:
             # Full config file - load it normally
             config = load_config(args.config)
-            
+
             # IMPORTANT: CLI arguments should always override config file values
             # Only override if CLI args were explicitly provided
-            cli_source_path = args.source.parent if args.source.is_file() else args.source
+            cli_source_path = (
+                args.source.parent if args.source.is_file() else args.source
+            )
             config.source = cli_source_path
             config.destination = args.output
     else:
@@ -358,7 +360,8 @@ def handle_convert(args: argparse.Namespace) -> None:
         config.processor.heading_offset = args.heading_offset
 
     if args.no_frontmatter:
-        config.processor.add_frontmatter = False
+        config.conversion.generate_frontmatter = False
+        config.conversion.add_frontmatter = False
 
     if args.parallel:
         config.parallel = True

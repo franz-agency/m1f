@@ -186,9 +186,9 @@ class Html2mdConverter:
                 if title_tag and title_tag.string:
                     frontmatter["title"] = title_tag.string.strip()
 
-            # Add source file if provided
-            if source_file and "source_file" not in frontmatter:
-                frontmatter["source_file"] = source_file
+            # Don't add source file to frontmatter
+            # if source_file and "source_file" not in frontmatter:
+            #     frontmatter["source_file"] = source_file
 
             if frontmatter:
                 fm_str = yaml.dump(frontmatter, default_flow_style=False)

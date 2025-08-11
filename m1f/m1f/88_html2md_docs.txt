@@ -122,7 +122,7 @@ m1f-html2md convert <source> -o <output> [options]
 | `--content-selector` | CSS selector for main content                                 |
 | `--ignore-selectors` | CSS selectors to ignore (space-separated)                     |
 | `--heading-offset`   | Offset heading levels (default: 0)                            |
-| `--no-frontmatter`   | Don't add YAML frontmatter                                    |
+| `--no-frontmatter`   | Explicitly disable YAML frontmatter generation                |
 | `--parallel`         | Enable parallel processing                                    |
 | `--claude`           | Use Claude AI to convert HTML to Markdown (content only)      |
 | `--model`            | Claude model to use: opus, sonnet (default: sonnet)           |
@@ -420,30 +420,37 @@ codebase.
 
 ### YAML Frontmatter
 
-By default, the converter adds YAML frontmatter to each Markdown file,
-including:
+By default, the converter does NOT add YAML frontmatter to Markdown files.
+The output contains only the converted content without any metadata.
 
-- Title extracted from HTML title tag or first h1 element
-- Source filename
-- Conversion date
-- Original file modification date
+To enable frontmatter generation (which includes title extraction from HTML),
+use the `generate_frontmatter: true` option in your config file:
 
-To disable frontmatter generation, use the `--no-frontmatter` option:
+```yaml
+# config.yaml
+conversion:
+  generate_frontmatter: true  # Enable frontmatter
+
+# Then use:
+m1f-html2md convert ./website -o ./docs -c config.yaml
+```
+
+When enabled, the generated frontmatter contains only the title:
+
+```yaml
+---
+title: Extracted from HTML
+---
+```
+
+To explicitly disable frontmatter (overrides config file), use:
 
 ```bash
 m1f-html2md convert ./website -o ./docs --no-frontmatter
 ```
 
-The generated frontmatter looks like:
-
-```yaml
----
-title: Extracted from HTML
-source_file: original.html
-date_converted: 2023-06-15T14:30:21
-date_modified: 2023-06-12T10:15:33
----
-```
+Note: The `source_file` field has been removed from frontmatter generation to 
+avoid exposing file paths.
 
 ### Heading Level Adjustment
 
