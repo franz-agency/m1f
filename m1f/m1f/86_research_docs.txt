@@ -1087,8 +1087,25 @@ management commands)
 | `--help`          | `-h`  | Show help message and exit             | -       |
 | `--version`       |       | Show program version                   | -       |
 | `--verbose`       | `-v`  | Increase verbosity (use -vv for debug) | Warning |
+| `--quiet`         | `-q`  | Suppress non-error output              | False   |
 | `--dry-run`       |       | Preview without executing              | False   |
+| `--yes`           | `-y`  | Answer yes to all prompts              | False   |
 | `--config CONFIG` | `-c`  | Path to configuration file             | None    |
+
+### Output Options
+
+| Option                  | Short | Description                  | Default |
+| ----------------------- | ----- | ---------------------------- | ------- |
+| `--format {text,json}`  |       | Output format                | text    |
+| `--no-color`            |       | Disable colored output       | False   |
+
+### Extended Help
+
+| Option             | Description                     |
+| ------------------ | ------------------------------- |
+| `--help-examples`  | Show extended usage examples    |
+| `--help-filters`   | Show filtering guide            |
+| `--help-providers` | Show LLM provider setup guide   |
 
 ### LLM Provider Options
 
@@ -1123,23 +1140,26 @@ management commands)
 | `--resume JOB_ID`  | Resume an existing research job            |
 | `--list-jobs`      | List all research jobs                     |
 | `--status JOB_ID`  | Show detailed status of a specific job     |
+| `--watch JOB_ID`   | Watch job progress in real-time            |
 | `--urls-file FILE` | File containing URLs to add (one per line) |
 
 ### List Filtering Options
 
-| Option          | Description                 | Example             |
-| --------------- | --------------------------- | ------------------- |
-| `--limit N`     | Limit number of results     | `--limit 10`        |
-| `--offset N`    | Skip N results (pagination) | `--offset 20`       |
-| `--date DATE`   | Filter by date              | `--date 2025-07-23` |
-| `--search TERM` | Search jobs by query term   | `--search "react"`  |
+| Option                                            | Description                 | Example             |
+| ------------------------------------------------- | --------------------------- | ------------------- |
+| `--limit N`                                       | Limit number of results     | `--limit 10`        |
+| `--offset N`                                      | Skip N results (pagination) | `--offset 20`       |
+| `--date DATE`                                     | Filter by date              | `--date 2025-07-23` |
+| `--search TERM`                                   | Search jobs by query term   | `--search "react"`  |
+| `--status-filter {active,completed,failed}`      | Filter by job status        | `--status-filter completed` |
 
-### Cleanup Options
+### Data Management Options
 
 | Option               | Description                          |
 | -------------------- | ------------------------------------ |
 | `--clean-raw JOB_ID` | Clean raw HTML data for specific job |
 | `--clean-all-raw`    | Clean raw HTML data for all jobs     |
+| `--export JOB_ID`    | Export job data to JSON              |
 
 ## Command Examples
 
