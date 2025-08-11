@@ -40395,6 +40395,20 @@ class TestIntegrationWithCore:
 class TestRealPermissionScenarios:
     """Test with real permission-denied scenarios (requires Unix-like system)."""
 
+    @pytest.fixture
+    def temp_dir(self):
+        """Create a temporary directory for testing."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+
+    @pytest.fixture
+    def mock_logger(self):
+        """Create a mock logger for testing."""
+        logger = Mock()
+        logger.warning = Mock()
+        logger.debug = Mock()
+        return logger
+
     @pytest.mark.skipif(
         sys.platform.startswith("win"), reason="Unix-specific permissions"
     )
@@ -40410,7 +40424,7 @@ class TestRealPermissionScenarios:
                 safe_exists(test_file, mock_logger) is True
             )  # File exists even if not readable
             assert safe_read_text(test_file, mock_logger) is None
-            assert safe_stat(test_file, mock_logger) is None
+            # Note: stat() may still work even with chmod 000 because the owner can read metadata
         finally:
             # Restore permissions for cleanup
             os.chmod(test_file, 0o644)
