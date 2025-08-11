@@ -12,6 +12,17 @@ and this project adheres to
 
 ### Added
 
+- **Shared Claude Utilities Library**: Centralized Claude integration following DRY principle
+  - New `tools/shared/claude_utils.py` module eliminating code duplication across m1f-claude, m1f-html2md, and m1f-research
+  - `ClaudeConfig` dataclass for centralized configuration management with API key validation
+  - `ClaudeBinaryFinder` utility for discovering Claude CLI across different installation methods
+  - `ClaudeSessionManager` for managing Claude Code SDK sessions and conversation continuity
+  - `ClaudeHTTPClient` for direct Anthropic API calls with proper headers and error handling
+  - `ClaudeErrorHandler` for consistent error handling and user-friendly messages
+  - `ClaudeRunner` base class providing common functionality for all Claude runners
+  - Comprehensive documentation at `docs/shared_claude_utils.md` with migration guide
+  - All tools refactored to use shared library (eliminated ~500 lines of duplicate code)
+
 - **Shared CLI Module**: Centralized CLI utilities following DRY principle
   - New `tools/shared/cli.py` module with `CustomArgumentParser` class
   - `ArgumentBuilder` class with helper methods for common arguments (verbose, quiet, version, output, etc.)

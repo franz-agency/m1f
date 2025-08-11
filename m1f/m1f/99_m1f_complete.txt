@@ -836,6 +836,17 @@ and this project adheres to
 
 ### Added
 
+- **Shared Claude Utilities Library**: Centralized Claude integration following DRY principle
+  - New `tools/shared/claude_utils.py` module eliminating code duplication across m1f-claude, m1f-html2md, and m1f-research
+  - `ClaudeConfig` dataclass for centralized configuration management with API key validation
+  - `ClaudeBinaryFinder` utility for discovering Claude CLI across different installation methods
+  - `ClaudeSessionManager` for managing Claude Code SDK sessions and conversation continuity
+  - `ClaudeHTTPClient` for direct Anthropic API calls with proper headers and error handling
+  - `ClaudeErrorHandler` for consistent error handling and user-friendly messages
+  - `ClaudeRunner` base class providing common functionality for all Claude runners
+  - Comprehensive documentation at `docs/shared_claude_utils.md` with migration guide
+  - All tools refactored to use shared library (eliminated ~500 lines of duplicate code)
+
 - **Shared CLI Module**: Centralized CLI utilities following DRY principle
   - New `tools/shared/cli.py` module with `CustomArgumentParser` class
   - `ArgumentBuilder` class with helper methods for common arguments (verbose, quiet, version, output, etc.)
@@ -34210,7 +34221,7 @@ class TestHTTrackIntegration:
             url_path = "/" + str(rel_path).replace("\\", "/")
             if "localhost" in url_path:
                 # Extract path after localhost:port
-                localhost_prefix = f"localhost:{cls.server_port}/"
+                localhost_prefix = f"localhost:{self.server_port}/"
                 if localhost_prefix in url_path:
                     parts = url_path.split(localhost_prefix)
                     if len(parts) > 1:
@@ -34233,7 +34244,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34263,7 +34274,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34291,7 +34302,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34322,7 +34333,7 @@ class TestHTTrackIntegration:
         # Note: HTTrack's allowed_path support is limited
         # It uses URL filters which may not work exactly like other scrapers
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/api/overview.html"
+        start_url = f"{self.server_url}/api/overview.html"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34349,7 +34360,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         # HTTrack should use the custom user agent
         result = await crawler.crawl(start_url, output_dir)
@@ -34372,7 +34383,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -35146,8 +35157,8 @@ class TestMeaningfulScraperFeatures:
         scraper = BeautifulSoupScraper(config)
 
         # URLs with different query params should normalize to same URL
-        url1 = f"{cls.server_url}/page/index?tab=1&view=list"
-        url2 = f"{cls.server_url}/page/index?tab=2&view=grid"
+        url1 = f"{self.server_url}/page/index?tab=1&view=list"
+        url2 = f"{self.server_url}/page/index?tab=2&view=grid"
 
         normalized1 = scraper._normalize_url(url1)
         normalized2 = scraper._normalize_url(url2)
@@ -35187,7 +35198,7 @@ class TestMeaningfulScraperFeatures:
         async with scraper:
             # Test 1: Page in allowed_path with canonical outside should NOT be skipped
             url_in_allowed = (
-                f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/"
+                f"{self.server_url}/page/m1f-documentation?canonical={self.server_url}/"
             )
             page = await scraper.scrape_url(url_in_allowed)
 
@@ -35196,7 +35207,7 @@ class TestMeaningfulScraperFeatures:
             ), "Page in allowed_path should be kept even if canonical points outside"
 
             # Test 2: Page in allowed_path with canonical also in allowed_path but different
-            url_with_canonical_in_path = f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/page/html2md-documentation"
+            url_with_canonical_in_path = f"{self.server_url}/page/m1f-documentation?canonical={self.server_url}/page/html2md-documentation"
             page2 = await scraper.scrape_url(url_with_canonical_in_path)
 
             assert (
@@ -35219,7 +35230,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         # Actually crawl the site
         await crawler.crawl(start_url, output_dir)
@@ -35270,7 +35281,7 @@ class TestMeaningfulScraperFeatures:
 
         async with scraper:
             # Scrape first duplicate page
-            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{self.server_url}/test/duplicate/1")
             assert page1 is not None, "First duplicate page should be scraped"
 
             # Simulate the checksum being stored (normally done by crawler)
@@ -35284,7 +35295,7 @@ class TestMeaningfulScraperFeatures:
                 scraper._checksum_callback = lambda c: c in seen_checksums
 
             # Try to scrape second duplicate page
-            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{self.server_url}/test/duplicate/2")
 
             # This should be None because content is duplicate
             assert page2 is None, "Second page with duplicate content should be skipped"
@@ -35304,7 +35315,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         await crawler.crawl(start_url, output_dir)
 
@@ -35358,7 +35369,7 @@ class TestMeaningfulScraperFeatures:
             start_time = time.time()
 
             try:
-                page = await scraper.scrape_url(f"{cls.server_url}/test/slow?delay=10")
+                page = await scraper.scrape_url(f"{self.server_url}/test/slow?delay=10")
                 # If we get here, timeout didn't work
                 elapsed = time.time() - start_time
                 assert elapsed < 5, f"Request should have timed out but took {elapsed}s"
@@ -36038,7 +36049,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -36063,7 +36074,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Scrape a page - Playwright should render JavaScript
-            page = await scraper.scrape_url(f"{cls.server_url}/")
+            page = await scraper.scrape_url(f"{self.server_url}/")
 
             assert page is not None
             assert page.title is not None
@@ -36090,7 +36101,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
+            page = await scraper.scrape_url(f"{self.server_url}/page/m1f-documentation")
 
             assert page is not None
             # Playwright extracts comprehensive metadata
@@ -36114,7 +36125,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/docs/index.html"
+        start_url = f"{self.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -36143,7 +36154,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Test page with canonical URL - using scrape_site for proper flow
-            start_url = f"{cls.server_url}/page/index?canonical={cls.server_url}/"
+            start_url = f"{self.server_url}/page/index?canonical={self.server_url}/"
 
             pages_scraped = []
             async for page in scraper.scrape_site(start_url):
@@ -36174,7 +36185,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(f"{cls.server_url}/")
+            page = await scraper.scrape_url(f"{self.server_url}/")
 
             assert page is not None
             # The page should have waited for h1 before returning
@@ -36201,7 +36212,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(f"{cls.server_url}/")
+            page = await scraper.scrape_url(f"{self.server_url}/")
 
             assert page is not None
             assert page.metadata["viewport"] == {"width": 1920, "height": 1080}
@@ -36222,7 +36233,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -36537,7 +36548,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -36578,7 +36589,7 @@ class TestScraperParameters:
 
         try:
             crawler = WebCrawler(config.crawler)
-            start_url = f"{cls.server_url}/"
+            start_url = f"{self.server_url}/"
 
             result = await crawler.crawl(start_url, output_dir)
             scraped_files = self.get_scraped_files(output_dir)
@@ -36629,7 +36640,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -36663,10 +36674,10 @@ class TestScraperParameters:
 
         # Insert test data
         test_urls = [
-            (f"{cls.server_url}/", 200, None),
-            (f"{cls.server_url}/docs/", 200, None),
-            (f"{cls.server_url}/api/", 404, "Not found"),
-            (f"{cls.server_url}/broken/", 500, "Server error"),
+            (f"{self.server_url}/", 200, None),
+            (f"{self.server_url}/docs/", 200, None),
+            (f"{self.server_url}/api/", 404, "Not found"),
+            (f"{self.server_url}/broken/", 500, "Server error"),
         ]
 
         cursor.executemany(
@@ -36728,7 +36739,7 @@ class TestScraperParameters:
 
         # With SSRF disabled, localhost should work
         crawler = WebCrawler(config_disabled.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_files = self.get_scraped_files(output_dir)
@@ -37337,7 +37348,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -37362,7 +37373,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape a page with known metadata
-            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
+            page = await scraper.scrape_url(f"{self.server_url}/page/m1f-documentation")
 
             assert page is not None
             assert page.title is not None
@@ -37387,7 +37398,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/docs/index.html"
+        start_url = f"{self.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -37421,7 +37432,7 @@ class TestSelectolaxIntegration:
         async with scraper:
             # Test page with canonical URL
             url_with_canonical = (
-                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
+                f"{self.server_url}/page/index?canonical={self.server_url}/"
             )
             page = await scraper.scrape_url(url_with_canonical)
 
@@ -37455,8 +37466,8 @@ class TestSelectolaxIntegration:
         scraper = SelectolaxScraper(scraper_config)
 
         # Test URL normalization
-        url1 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=1")
-        url2 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=2")
+        url1 = scraper._normalize_url(f"{self.server_url}/page/test?tab=1")
+        url2 = scraper._normalize_url(f"{self.server_url}/page/test?tab=2")
 
         # With ignore_get_params=True, these should be the same
         assert url1 == url2
@@ -37490,7 +37501,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape duplicate content pages
-            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{self.server_url}/test/duplicate/1")
             assert page1 is not None  # First should succeed
 
             # Calculate and store checksum
@@ -37501,7 +37512,7 @@ class TestSelectolaxIntegration:
                 seen_checksums.add(checksum)
 
             # Second should be skipped due to duplicate content
-            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{self.server_url}/test/duplicate/2")
             # Note: This depends on the scraper checking content before returning
 
 
