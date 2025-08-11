@@ -25487,7 +25487,6 @@ m1f-scrape <url> -o <output> [options]
 | `--download-assets`     | Download linked assets (images, CSS, JS, PDFs, etc.)          | False         |
 | `--asset-types`         | Asset file extensions to download (space-separated)           | images css js |
 | `--max-asset-size`      | Maximum size for asset downloads in bytes                     | 50MB          |
-| `--max-assets-per-page` | Maximum assets to download per HTML page (-1 for unlimited)   | -1            |
 | `--assets-subdirectory` | Subdirectory name for storing downloaded assets               | assets        |
 | `--disable-ssrf-check`  | Disable SSRF vulnerability checks (allows private IPs)        | False         |
 | `--clear-urls`          | Clear URLs from database matching pattern                     | None          |
@@ -25495,7 +25494,7 @@ m1f-scrape <url> -o <output> [options]
 | `--list-files`          | List all downloaded files after completion (limited display)  | False         |
 | `--save-urls`           | Save all scraped URLs to a file (one per line)                | None          |
 | `--save-files`          | Save list of all downloaded files to a file (one per line)    | None          |
-| `-v, --verbose`         | Enable verbose output (file listing limited to 30 files)      | False         |
+| `-v, --verbose`         | Enable verbose output                                         | False         |
 | `-q, --quiet`           | Suppress all output except errors                             | False         |
 | `--show-db-stats`       | Show scraping statistics from the database                    | False         |
 | `--show-errors`         | Show URLs that had errors during scraping                     | False         |
@@ -30650,7 +30649,7 @@ from datetime import datetime
 
 # Configuration - all hardcoded for Claude Code
 CLAUDE_DOCS_URL = "https://docs.anthropic.com/en/docs/claude-code"
-SCRAPE_DELAY = 15  # Respectful delay between requests
+SCRAPE_DELAY = 5  # Respectful delay between requests
 CONTENT_SELECTOR = "main"
 IGNORE_SELECTORS = ["nav", "header", "footer"]
 PROJECT_NAME = "Claude Code Documentation"

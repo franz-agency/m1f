@@ -37,7 +37,7 @@ from datetime import datetime
 
 # Configuration - all hardcoded for Claude Code
 CLAUDE_DOCS_URL = "https://docs.anthropic.com/en/docs/claude-code"
-SCRAPE_DELAY = 15  # Respectful delay between requests
+SCRAPE_DELAY = 5  # Respectful delay between requests
 CONTENT_SELECTOR = "main"
 IGNORE_SELECTORS = ["nav", "header", "footer"]
 PROJECT_NAME = "Claude Code Documentation"
