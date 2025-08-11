@@ -15,17 +15,13 @@
 """Utility functions for mf1-html2md."""
 
 import logging
-import sys
 from pathlib import Path
 from typing import Optional
 
-# Use unified colorama module
-try:
-    from ..shared.colors import ColoredFormatter, COLORAMA_AVAILABLE
-except ImportError:
-    # Fallback to standard formatter
-    COLORAMA_AVAILABLE = False
-    ColoredFormatter = logging.Formatter
+from ..shared.logging import (
+    get_logger as shared_get_logger,
+    configure_logging as shared_configure_logging,
+)
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -37,7 +33,7 @@ def get_logger(name: str) -> logging.Logger:
     Returns:
         Logger instance
     """
-    return logging.getLogger(name)
+    return shared_get_logger(name)
 
 
 def configure_logging(
@@ -50,53 +46,10 @@ def configure_logging(
         quiet: Suppress all but error messages
         log_file: Optional log file path
     """
-    # Determine log level
-    if quiet:
-        level = logging.ERROR
-    elif verbose:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
+    # Use the shared configure_logging function
+    shared_configure_logging(verbose=verbose, quiet=quiet, log_file=log_file)
 
-    # Create handlers
-    handlers = []
-
-    # Console handler with colorama formatting if available
-    console_handler = logging.StreamHandler(sys.stderr)
-    console_handler.setLevel(level)
-    
-    # Use colored formatter if available
-    if COLORAMA_AVAILABLE and ColoredFormatter != logging.Formatter:
-        console_handler.setFormatter(ColoredFormatter(
-            "%(levelname)-8s: %(message)s" if not verbose else 
-            "%(asctime)s - %(name)s - %(levelname)-8s: %(message)s"
-        ))
-    else:
-        console_handler.setFormatter(logging.Formatter(
-            "%(levelname)-8s: %(message)s" if not verbose else 
-            "%(asctime)s - %(name)s - %(levelname)-8s: %(message)s"
-        ))
-    
-    handlers.append(console_handler)
-
-    # File handler if specified
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.DEBUG)
-        file_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(file_formatter)
-        handlers.append(file_handler)
-
-    # Configure root logger
-    logging.basicConfig(
-        level=logging.DEBUG,
-        handlers=handlers,
-        force=True,
-    )
-
-    # Suppress some noisy loggers
+    # Suppress some noisy loggers specific to html2md
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -329,10 +282,10 @@ def extract_title_from_html(html_content) -> Optional[str]:
 
 def create_progress_bar():
     """Create a simple text-based progress indicator.
-    
+
     Note: Rich progress bars are no longer used. This returns None
     and calling code should handle progress display differently.
-    
+
     Returns:
         None
     """
