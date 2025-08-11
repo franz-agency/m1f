@@ -11237,7 +11237,15 @@ from typing import Dict, List, Optional, Union
 from rich.progress import Progress
 
 # Use unified colorama module
-from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
+from ..shared.colors import (
+    Colors,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
 
 from .config import (
     Config,
@@ -11411,6 +11419,7 @@ class Html2mdConverter:
 
         # Adjust internal links to convert .html to .md
         from .utils import adjust_internal_links
+
         markdown = adjust_internal_links(markdown)
 
         return markdown
@@ -11849,12 +11858,39 @@ class Html2mdConverter:
             # Validate input path
             file_path = self._validate_path(file_path, self.config.source)
 
-            # Re-initialize parser and converter in worker process
-            parser = HTMLParser(self.config.extractor)
-            converter = MarkdownConverter(self.config.processor)
+            # Read file content
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    html_content = f.read()
+            except UnicodeDecodeError:
+                # Try with different encodings
+                for encoding in ["latin-1", "cp1252"]:
+                    try:
+                        with open(file_path, "r", encoding=encoding) as f:
+                            html_content = f.read()
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    # Last resort - ignore errors
+                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                        html_content = f.read()
 
-            parsed = parser.parse_file(file_path)
-            markdown = converter.convert(parsed)
+            # Convert using the convert_html method which includes all preprocessing and CSS selector logic
+            # Use a relative base URL to avoid exposing absolute paths
+            file_name = (
+                file_path.name
+                if file_path and file_path.name
+                else (Path(file_path).resolve().name if file_path else None)
+            )
+            base_url = file_name
+            markdown = self.convert_html(
+                html_content,
+                base_url=base_url,
+                source_file=str(
+                    file_path
+                ),  # Pass full path for proper relative link calculation
+            )
 
             # Determine output path
             # Resolve both paths to handle cases where source is "."
