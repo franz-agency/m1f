@@ -59641,6 +59641,11 @@ from .utils import (
     sort_files_by_depth_and_name,
     sort_directories_by_depth_and_name,
 )
+from .file_operations import (
+    safe_exists,
+    safe_open,
+    safe_mkdir,
+)
 
 
 @dataclass
@@ -59800,10 +59805,12 @@ class FileCombiner:
 
         if self.config.source_directories:
             for source_dir in self.config.source_directories:
-                if not source_dir.exists():
+                if not safe_exists(source_dir, self.logger):
                     raise FileNotFoundError(f"Source directory not found: {source_dir}")
 
-        if self.config.input_file and not self.config.input_file.exists():
+        if self.config.input_file and not safe_exists(
+            self.config.input_file, self.logger
+        ):
             raise FileNotFoundError(f"Input file not found: {self.config.input_file}")
 
     async def _prepare_output_path(self) -> Path:
@@ -59819,7 +59826,10 @@ class FileCombiner:
             self.logger.debug(f"Output filename with timestamp: {output_path.name}")
 
         # Handle existing file
-        if output_path.exists() and not self.config.output.skip_output_file:
+        if (
+            safe_exists(output_path, self.logger)
+            and not self.config.output.skip_output_file
+        ):
             if self.config.output.force_overwrite:
                 self.logger.warning(f"Overwriting existing file: {output_path}")
                 try:
@@ -59860,10 +59870,10 @@ class FileCombiner:
                     raise ValidationError("Operation cancelled by user")
 
         # Ensure parent directory exists
-        try:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            raise PermissionError(f"Cannot create output directory: {e}")
+        if not safe_mkdir(output_path.parent, self.logger, parents=True, exist_ok=True):
+            raise PermissionError(
+                f"Cannot create output directory: {output_path.parent}"
+            )
 
         return output_path
 
@@ -60021,9 +60031,14 @@ class FileCombiner:
 
             # Write to file
             def write_file():
-                with open(path, "w", encoding="utf-8") as f:
-                    for p in sorted_paths:
-                        f.write(f"{p}\n")
+                with safe_open(path, "w", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        for p in sorted_paths:
+                            f.write(f"{p}\n")
+                    else:
+                        raise PermissionError(
+                            f"Cannot write {list_type} list to {path}"
+                        )
                 # Explicitly ensure file handle is released
                 f = None
 
@@ -60045,8 +60060,13 @@ class FileCombiner:
             content = f"# No files processed from {source}\n"
 
             def write_empty():
-                with open(output_path, "w", encoding="utf-8") as f:
-                    f.write(content)
+                with safe_open(output_path, "w", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        f.write(content)
+                    else:
+                        raise PermissionError(
+                            f"Cannot create output file: {output_path}"
+                        )
                 # Explicitly ensure file handle is released
                 f = None
 
@@ -60068,8 +60088,14 @@ class FileCombiner:
             # Read file content
             def read_file():
                 content = None
-                with open(output_path, "r", encoding="utf-8") as f:
-                    content = f.read()
+                with safe_open(output_path, "r", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        content = f.read()
+                    else:
+                        self.logger.warning(
+                            f"Cannot read output file for token counting: {output_path}"
+                        )
+                        return None
                 # Explicitly ensure file handle is released
                 f = None
                 return content
@@ -60496,6 +60522,522 @@ class ArchiveError(M1FError):
 
     exit_code = 8
 
+======= tools/m1f/file_operations.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Safe file operations module for m1f.
+
+Provides permission-error-safe wrappers for common file operations with consistent
+logging and error handling.
+"""
+
+from __future__ import annotations
+
+import os
+import stat
+from contextlib import contextmanager
+from functools import wraps
+from pathlib import Path
+from typing import Any, Callable, Generator, Optional, Union, TypeVar, Dict
+
+PathLike = Union[str, Path]
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def handle_permission_errors(
+    fallback_return: Any = None, log_message: Optional[str] = None
+) -> Callable[[F], F]:
+    """
+    Decorator to handle permission errors in functions.
+
+    Args:
+        fallback_return: Value to return when PermissionError occurs
+        log_message: Custom log message template. Use {path} and {error} placeholders.
+
+    Returns:
+        Decorated function that handles permission errors gracefully
+    """
+
+    def decorator(func: F) -> F:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except PermissionError as e:
+                # Try to extract path from args for logging
+                path = None
+                if args and hasattr(args[0], "__fspath__"):
+                    path = args[0]
+                elif "path" in kwargs:
+                    path = kwargs["path"]
+                elif args:
+                    path = args[0]
+
+                logger = kwargs.get("logger")
+                if logger and log_message:
+                    message = log_message.format(path=path, error=e)
+                    logger.warning(message)
+                elif logger:
+                    logger.warning(f"Permission denied accessing '{path}': {e}")
+
+                return fallback_return
+            except OSError as e:
+                # Handle other OS errors that might be permission-related
+                if e.errno in (13, 1):  # EACCES, EPERM
+                    path = None
+                    if args and hasattr(args[0], "__fspath__"):
+                        path = args[0]
+                    elif "path" in kwargs:
+                        path = kwargs["path"]
+                    elif args:
+                        path = args[0]
+
+                    logger = kwargs.get("logger")
+                    if logger:
+                        logger.warning(f"Permission denied accessing '{path}': {e}")
+                    return fallback_return
+                raise
+
+        return wrapper
+
+    return decorator
+
+
+def safe_exists(path: PathLike, logger: Optional[Any] = None) -> bool:
+    """
+    Check if a path exists, returning False on permission errors.
+
+    Args:
+        path: Path to check
+        logger: Optional logger for warning messages
+
+    Returns:
+        True if path exists and is accessible, False otherwise
+    """
+    try:
+        return Path(path).exists()
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied checking existence of '{path}': {e}")
+        return False
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied checking existence of '{path}': {e}")
+            return False
+        raise
+
+
+def safe_is_dir(path: PathLike, logger: Optional[Any] = None) -> bool:
+    """
+    Check if a path is a directory, returning False on permission errors.
+
+    Args:
+        path: Path to check
+        logger: Optional logger for warning messages
+
+    Returns:
+        True if path is a directory and accessible, False otherwise
+    """
+    try:
+        return Path(path).is_dir()
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied checking if '{path}' is directory: {e}")
+        return False
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(
+                    f"Permission denied checking if '{path}' is directory: {e}"
+                )
+            return False
+        raise
+
+
+def safe_is_file(path: PathLike, logger: Optional[Any] = None) -> bool:
+    """
+    Check if a path is a file, returning False on permission errors.
+
+    Args:
+        path: Path to check
+        logger: Optional logger for warning messages
+
+    Returns:
+        True if path is a file and accessible, False otherwise
+    """
+    try:
+        return Path(path).is_file()
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied checking if '{path}' is file: {e}")
+        return False
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied checking if '{path}' is file: {e}")
+            return False
+        raise
+
+
+def safe_stat(path: PathLike, logger: Optional[Any] = None) -> Optional[os.stat_result]:
+    """
+    Get path statistics, returning None on permission errors.
+
+    Args:
+        path: Path to stat
+        logger: Optional logger for warning messages
+
+    Returns:
+        os.stat_result if accessible, None otherwise
+    """
+    try:
+        return Path(path).stat()
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied accessing stats for '{path}': {e}")
+        return None
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied accessing stats for '{path}': {e}")
+            return None
+        raise
+
+
+@contextmanager
+def safe_open(
+    path: PathLike, mode: str = "r", logger: Optional[Any] = None, **kwargs
+) -> Generator[Optional[Any], None, None]:
+    """
+    Context manager for safely opening files with permission error handling.
+
+    Args:
+        path: Path to open
+        mode: File mode (same as built-in open)
+        logger: Optional logger for warning messages
+        **kwargs: Additional arguments passed to open()
+
+    Yields:
+        File object if successful, None if permission denied
+    """
+    try:
+        with open(path, mode, **kwargs) as f:
+            yield f
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied opening '{path}' in mode '{mode}': {e}")
+        yield None
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(
+                    f"Permission denied opening '{path}' in mode '{mode}': {e}"
+                )
+            yield None
+        else:
+            raise
+
+
+def safe_mkdir(
+    path: PathLike,
+    logger: Optional[Any] = None,
+    parents: bool = False,
+    exist_ok: bool = False,
+    **kwargs,
+) -> bool:
+    """
+    Create directory safely, returning False on permission errors.
+
+    Args:
+        path: Directory path to create
+        logger: Optional logger for warning messages
+        parents: If True, create parent directories as needed
+        exist_ok: If True, don't raise error if directory exists
+        **kwargs: Additional arguments passed to mkdir()
+
+    Returns:
+        True if directory was created or already exists, False on permission error
+    """
+    try:
+        Path(path).mkdir(parents=parents, exist_ok=exist_ok, **kwargs)
+        return True
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied creating directory '{path}': {e}")
+        return False
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied creating directory '{path}': {e}")
+            return False
+        raise
+
+
+def safe_walk(
+    path: PathLike, logger: Optional[Any] = None, **kwargs
+) -> Generator[tuple[str, list[str], list[str]], None, None]:
+    """
+    Walk directory tree safely, skipping inaccessible directories.
+
+    Args:
+        path: Root directory to walk
+        logger: Optional logger for warning messages
+        **kwargs: Additional arguments passed to os.walk()
+
+    Yields:
+        Tuples of (dirpath, dirnames, filenames) for accessible directories
+    """
+    try:
+        for root, dirs, files in os.walk(path, **kwargs):
+            # Filter out directories we can't access
+            accessible_dirs = []
+            for dirname in dirs:
+                dir_path = Path(root) / dirname
+                if safe_exists(dir_path, logger):
+                    accessible_dirs.append(dirname)
+                elif logger:
+                    logger.debug(f"Skipping inaccessible directory: {dir_path}")
+
+            # Filter out files we can't access
+            accessible_files = []
+            for filename in files:
+                file_path = Path(root) / filename
+                if safe_exists(file_path, logger):
+                    accessible_files.append(filename)
+                elif logger:
+                    logger.debug(f"Skipping inaccessible file: {file_path}")
+
+            yield root, accessible_dirs, accessible_files
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied walking directory '{path}': {e}")
+        return
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied walking directory '{path}': {e}")
+            return
+        raise
+
+
+def safe_read_text(
+    path: PathLike, logger: Optional[Any] = None, encoding: str = "utf-8", **kwargs
+) -> Optional[str]:
+    """
+    Read text file safely, returning None on permission errors.
+
+    Args:
+        path: File path to read
+        logger: Optional logger for warning messages
+        encoding: Text encoding to use
+        **kwargs: Additional arguments passed to Path.read_text()
+
+    Returns:
+        File content as string if successful, None on permission error
+    """
+    try:
+        return Path(path).read_text(encoding=encoding, **kwargs)
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied reading '{path}': {e}")
+        return None
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied reading '{path}': {e}")
+            return None
+        raise
+
+
+def safe_write_text(
+    path: PathLike,
+    content: str,
+    logger: Optional[Any] = None,
+    encoding: str = "utf-8",
+    **kwargs,
+) -> bool:
+    """
+    Write text file safely, returning False on permission errors.
+
+    Args:
+        path: File path to write
+        content: Text content to write
+        logger: Optional logger for warning messages
+        encoding: Text encoding to use
+        **kwargs: Additional arguments passed to Path.write_text()
+
+    Returns:
+        True if write successful, False on permission error
+    """
+    try:
+        Path(path).write_text(content, encoding=encoding, **kwargs)
+        return True
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied writing to '{path}': {e}")
+        return False
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied writing to '{path}': {e}")
+            return False
+        raise
+
+
+def safe_iterdir(
+    path: PathLike, logger: Optional[Any] = None
+) -> Generator[Path, None, None]:
+    """
+    Iterate over directory contents safely, skipping inaccessible items.
+
+    Args:
+        path: Directory path to iterate
+        logger: Optional logger for warning messages
+
+    Yields:
+        Path objects for accessible directory contents
+    """
+    try:
+        path_obj = Path(path)
+        for item in path_obj.iterdir():
+            if safe_exists(item, logger):
+                yield item
+            elif logger:
+                logger.debug(f"Skipping inaccessible item: {item}")
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied iterating directory '{path}': {e}")
+        return
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied iterating directory '{path}': {e}")
+            return
+        raise
+
+
+def safe_glob(
+    pattern: str, root: Optional[PathLike] = None, logger: Optional[Any] = None
+) -> Generator[Path, None, None]:
+    """
+    Glob pattern matching with permission error handling.
+
+    Args:
+        pattern: Glob pattern to match
+        root: Root directory for relative patterns
+        logger: Optional logger for warning messages
+
+    Yields:
+        Path objects matching the pattern that are accessible
+    """
+    try:
+        if root:
+            root_path = Path(root)
+            for match in root_path.glob(pattern):
+                if safe_exists(match, logger):
+                    yield match
+        else:
+            for match in Path().glob(pattern):
+                if safe_exists(match, logger):
+                    yield match
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied during glob pattern '{pattern}': {e}")
+        return
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(
+                    f"Permission denied during glob pattern '{pattern}': {e}"
+                )
+            return
+        raise
+
+
+def safe_is_symlink(path: PathLike, logger: Optional[Any] = None) -> bool:
+    """
+    Check if a path is a symbolic link, returning False on permission errors.
+
+    Args:
+        path: Path to check
+        logger: Optional logger for warning messages
+
+    Returns:
+        True if path is a symlink and accessible, False otherwise
+    """
+    try:
+        return Path(path).is_symlink()
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied checking if '{path}' is symlink: {e}")
+        return False
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(
+                    f"Permission denied checking if '{path}' is symlink: {e}"
+                )
+            return False
+        raise
+
+
+def safe_resolve(path: PathLike, logger: Optional[Any] = None) -> Optional[Path]:
+    """
+    Resolve a path safely, returning None on permission errors.
+
+    Args:
+        path: Path to resolve
+        logger: Optional logger for warning messages
+
+    Returns:
+        Resolved Path if successful, None on permission error
+    """
+    try:
+        return Path(path).resolve()
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied resolving '{path}': {e}")
+        return None
+    except OSError as e:
+        if e.errno in (13, 1):  # EACCES, EPERM
+            if logger:
+                logger.warning(f"Permission denied resolving '{path}': {e}")
+            return None
+        raise
+
+
+# Export commonly used functions for easy importing
+__all__ = [
+    "handle_permission_errors",
+    "safe_exists",
+    "safe_is_dir",
+    "safe_is_file",
+    "safe_stat",
+    "safe_open",
+    "safe_mkdir",
+    "safe_walk",
+    "safe_read_text",
+    "safe_write_text",
+    "safe_iterdir",
+    "safe_glob",
+    "safe_is_symlink",
+    "safe_resolve",
+]
+
 ======= tools/m1f/file_processor.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -60540,6 +61082,16 @@ from .utils import (
     get_relative_path,
     format_file_size,
     validate_path_traversal,
+)
+from .file_operations import (
+    safe_exists,
+    safe_is_dir,
+    safe_is_file,
+    safe_is_symlink,
+    safe_stat,
+    safe_read_text,
+    safe_walk,
+    safe_iterdir,
 )
 
 
@@ -60595,20 +61147,12 @@ class FileProcessor:
                 if self.config.source_directories:
                     # Try to find the pattern in any of the source directories
                     potential_path = self.config.source_directories[0] / pattern
-                    try:
-                        if potential_path.exists():
-                            if potential_path.is_dir():
-                                self.excluded_dirs.add(pattern.lower())
-                            # If it's a file, it will be handled by gitignore spec
-                        else:
-                            # If not found, assume it's a directory pattern for safety
+                    if safe_exists(potential_path, self.logger):
+                        if safe_is_dir(potential_path, self.logger):
                             self.excluded_dirs.add(pattern.lower())
-                    except PermissionError:
-                        # If we can't access the path due to permissions, log warning and skip
-                        self.logger.warning(
-                            f"Permission denied accessing '{potential_path}'. Skipping exclusion check for this path."
-                        )
-                        # Add to excluded dirs to avoid further permission issues
+                        # If it's a file, it will be handled by gitignore spec
+                    else:
+                        # If not found, assume it's a directory pattern for safety
                         self.excluded_dirs.add(pattern.lower())
                 else:
                     # No source directory specified, add to dirs for backward compatibility
@@ -60715,28 +61259,17 @@ class FileProcessor:
         for exclude_file_str in exclude_files:
             exclude_file = Path(exclude_file_str)
 
-            try:
-                if not exclude_file.exists():
-                    self.logger.info(
-                        f"Exclude file not found (skipping): {exclude_file}"
-                    )
-                    continue
-            except PermissionError:
-                self.logger.warning(
-                    f"Permission denied accessing exclude file '{exclude_file}'. Skipping."
-                )
+            if not safe_exists(exclude_file, self.logger):
+                self.logger.info(f"Exclude file not found (skipping): {exclude_file}")
                 continue
 
-            try:
-                with open(exclude_file, "r", encoding="utf-8") as f:
-                    lines = [
-                        line.strip()
-                        for line in f
-                        if line.strip() and not line.strip().startswith("#")
-                    ]
-                # Explicitly close file handle on Windows for immediate cleanup
-                # The context manager should handle this, but ensure it's done
-                f = None
+            content = safe_read_text(exclude_file, self.logger)
+            if content is not None:
+                lines = [
+                    line.strip()
+                    for line in content.splitlines()
+                    if line.strip() and not line.strip().startswith("#")
+                ]
 
                 # Detect if it's gitignore format
                 is_gitignore = exclude_file.name == ".gitignore" or any(
@@ -60761,9 +61294,8 @@ class FileProcessor:
                             self.logger.warning(
                                 f"Skipping invalid exclude path '{line}': {e}"
                             )
-
-            except Exception as e:
-                self.logger.warning(f"Error reading exclude file {exclude_file}: {e}")
+            else:
+                self.logger.warning(f"Could not read exclude file {exclude_file}")
 
         # Build combined gitignore spec from all collected lines
         if all_gitignore_lines:
@@ -60787,27 +61319,19 @@ class FileProcessor:
             for include_file_str in include_files:
                 include_file = Path(include_file_str)
 
-                try:
-                    if not include_file.exists():
-                        self.logger.info(
-                            f"Include file not found (skipping): {include_file}"
-                        )
-                        continue
-                except PermissionError:
-                    self.logger.warning(
-                        f"Permission denied accessing include file '{include_file}'. Skipping."
+                if not safe_exists(include_file, self.logger):
+                    self.logger.info(
+                        f"Include file not found (skipping): {include_file}"
                     )
                     continue
 
-                try:
-                    with open(include_file, "r", encoding="utf-8") as f:
-                        lines = [
-                            line.strip()
-                            for line in f
-                            if line.strip() and not line.strip().startswith("#")
-                        ]
-                    # Explicitly ensure file handle is released
-                    f = None
+                content = safe_read_text(include_file, self.logger)
+                if content is not None:
+                    lines = [
+                        line.strip()
+                        for line in content.splitlines()
+                        if line.strip() and not line.strip().startswith("#")
+                    ]
 
                     # Detect if it's gitignore format
                     is_gitignore = any(
@@ -60839,11 +61363,8 @@ class FileProcessor:
                                 self.logger.warning(
                                     f"Skipping invalid include path '{line}': {e}"
                                 )
-
-                except Exception as e:
-                    self.logger.warning(
-                        f"Error reading include file {include_file}: {e}"
-                    )
+                else:
+                    self.logger.warning(f"Could not read include file {include_file}")
 
         # Add include patterns from config
         if self.config.filter.include_patterns:
@@ -61007,27 +61528,21 @@ class FileProcessor:
         files = []
 
         for path in paths:
-            try:
-                if not path.exists():
-                    self.logger.warning(f"Path not found: {path}")
-                    continue
-
-                if path.is_file():
-                    if await self._should_include_file(path, explicitly_included=True):
-                        rel_path = get_relative_path(
-                            path, self._get_base_dir_for_path(path)
-                        )
-                        files.append((path, rel_path))
-                elif path.is_dir():
-                    dir_files = await self._gather_from_directory(
-                        path, explicitly_included=True
-                    )
-                    files.extend(dir_files)
-            except PermissionError:
-                self.logger.error(
-                    f"Permission denied: Cannot access '{path}'. Please check file/directory permissions."
-                )
+            if not safe_exists(path, self.logger):
+                self.logger.warning(f"Path not found: {path}")
                 continue
+
+            if safe_is_file(path, self.logger):
+                if await self._should_include_file(path, explicitly_included=True):
+                    rel_path = get_relative_path(
+                        path, self._get_base_dir_for_path(path)
+                    )
+                    files.append((path, rel_path))
+            elif safe_is_dir(path, self.logger):
+                dir_files = await self._gather_from_directory(
+                    path, explicitly_included=True
+                )
+                files.extend(dir_files)
 
         return files
 
@@ -61037,9 +61552,9 @@ class FileProcessor:
         """Recursively gather files from a directory."""
         files = []
 
-        # Use os.walk for efficiency
-        for root, dirs, filenames in os.walk(
-            directory, followlinks=self.config.filter.include_symlinks
+        # Use safe_walk for efficiency and permission handling
+        for root, dirs, filenames in safe_walk(
+            directory, self.logger, followlinks=self.config.filter.include_symlinks
         ):
             root_path = Path(root)
 
@@ -61162,11 +61677,7 @@ class FileProcessor:
     ) -> bool:
         """Check if a file should be included based on filters."""
         # Check if file exists
-        try:
-            if not file_path.exists():
-                return False
-        except PermissionError:
-            self.logger.warning(f"Permission denied accessing '{file_path}'. Skipping.")
+        if not safe_exists(file_path, self.logger):
             return False
 
         # Check docs_only filter first (highest priority)
@@ -61308,14 +61819,10 @@ class FileProcessor:
 
             # For file symlinks, we only need to check for cycles if it's a directory symlink
             # File symlinks don't create cycles in the same way directory symlinks do
-            try:
-                if file_path.is_dir() and self._detect_symlink_cycle(file_path):
-                    self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
-                    return False
-            except PermissionError:
-                self.logger.warning(
-                    f"Permission denied checking symlink '{file_path}'. Skipping."
-                )
+            if safe_is_dir(file_path, self.logger) and self._detect_symlink_cycle(
+                file_path
+            ):
+                self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
                 return False
 
             self.logger.debug(f"Including symlink {file_path} (include_symlinks=True)")
@@ -64030,6 +64537,22 @@ from pathlib import Path
 from typing import List, Tuple
 
 from .constants import DOCUMENTATION_EXTENSIONS
+from .file_operations import (
+    handle_permission_errors,
+    safe_exists,
+    safe_is_dir,
+    safe_is_file,
+    safe_stat,
+    safe_open,
+    safe_mkdir,
+    safe_walk,
+    safe_read_text,
+    safe_write_text,
+    safe_iterdir,
+    safe_glob,
+    safe_is_symlink,
+    safe_resolve,
+)
 
 
 def format_duration(seconds: float) -> str:

@@ -42,6 +42,16 @@ from .utils import (
     format_file_size,
     validate_path_traversal,
 )
+from .file_operations import (
+    safe_exists,
+    safe_is_dir,
+    safe_is_file,
+    safe_is_symlink,
+    safe_stat,
+    safe_read_text,
+    safe_walk,
+    safe_iterdir,
+)
 
 
 class FileProcessor:
@@ -96,20 +106,12 @@ class FileProcessor:
                 if self.config.source_directories:
                     # Try to find the pattern in any of the source directories
                     potential_path = self.config.source_directories[0] / pattern
-                    try:
-                        if potential_path.exists():
-                            if potential_path.is_dir():
-                                self.excluded_dirs.add(pattern.lower())
-                            # If it's a file, it will be handled by gitignore spec
-                        else:
-                            # If not found, assume it's a directory pattern for safety
+                    if safe_exists(potential_path, self.logger):
+                        if safe_is_dir(potential_path, self.logger):
                             self.excluded_dirs.add(pattern.lower())
-                    except PermissionError:
-                        # If we can't access the path due to permissions, log warning and skip
-                        self.logger.warning(
-                            f"Permission denied accessing '{potential_path}'. Skipping exclusion check for this path."
-                        )
-                        # Add to excluded dirs to avoid further permission issues
+                        # If it's a file, it will be handled by gitignore spec
+                    else:
+                        # If not found, assume it's a directory pattern for safety
                         self.excluded_dirs.add(pattern.lower())
                 else:
                     # No source directory specified, add to dirs for backward compatibility
@@ -216,28 +218,17 @@ class FileProcessor:
         for exclude_file_str in exclude_files:
             exclude_file = Path(exclude_file_str)
 
-            try:
-                if not exclude_file.exists():
-                    self.logger.info(
-                        f"Exclude file not found (skipping): {exclude_file}"
-                    )
-                    continue
-            except PermissionError:
-                self.logger.warning(
-                    f"Permission denied accessing exclude file '{exclude_file}'. Skipping."
-                )
+            if not safe_exists(exclude_file, self.logger):
+                self.logger.info(f"Exclude file not found (skipping): {exclude_file}")
                 continue
 
-            try:
-                with open(exclude_file, "r", encoding="utf-8") as f:
-                    lines = [
-                        line.strip()
-                        for line in f
-                        if line.strip() and not line.strip().startswith("#")
-                    ]
-                # Explicitly close file handle on Windows for immediate cleanup
-                # The context manager should handle this, but ensure it's done
-                f = None
+            content = safe_read_text(exclude_file, self.logger)
+            if content is not None:
+                lines = [
+                    line.strip()
+                    for line in content.splitlines()
+                    if line.strip() and not line.strip().startswith("#")
+                ]
 
                 # Detect if it's gitignore format
                 is_gitignore = exclude_file.name == ".gitignore" or any(
@@ -262,9 +253,8 @@ class FileProcessor:
                             self.logger.warning(
                                 f"Skipping invalid exclude path '{line}': {e}"
                             )
-
-            except Exception as e:
-                self.logger.warning(f"Error reading exclude file {exclude_file}: {e}")
+            else:
+                self.logger.warning(f"Could not read exclude file {exclude_file}")
 
         # Build combined gitignore spec from all collected lines
         if all_gitignore_lines:
@@ -288,27 +278,19 @@ class FileProcessor:
             for include_file_str in include_files:
                 include_file = Path(include_file_str)
 
-                try:
-                    if not include_file.exists():
-                        self.logger.info(
-                            f"Include file not found (skipping): {include_file}"
-                        )
-                        continue
-                except PermissionError:
-                    self.logger.warning(
-                        f"Permission denied accessing include file '{include_file}'. Skipping."
+                if not safe_exists(include_file, self.logger):
+                    self.logger.info(
+                        f"Include file not found (skipping): {include_file}"
                     )
                     continue
 
-                try:
-                    with open(include_file, "r", encoding="utf-8") as f:
-                        lines = [
-                            line.strip()
-                            for line in f
-                            if line.strip() and not line.strip().startswith("#")
-                        ]
-                    # Explicitly ensure file handle is released
-                    f = None
+                content = safe_read_text(include_file, self.logger)
+                if content is not None:
+                    lines = [
+                        line.strip()
+                        for line in content.splitlines()
+                        if line.strip() and not line.strip().startswith("#")
+                    ]
 
                     # Detect if it's gitignore format
                     is_gitignore = any(
@@ -340,11 +322,8 @@ class FileProcessor:
                                 self.logger.warning(
                                     f"Skipping invalid include path '{line}': {e}"
                                 )
-
-                except Exception as e:
-                    self.logger.warning(
-                        f"Error reading include file {include_file}: {e}"
-                    )
+                else:
+                    self.logger.warning(f"Could not read include file {include_file}")
 
         # Add include patterns from config
         if self.config.filter.include_patterns:
@@ -508,27 +487,21 @@ class FileProcessor:
         files = []
 
         for path in paths:
-            try:
-                if not path.exists():
-                    self.logger.warning(f"Path not found: {path}")
-                    continue
-
-                if path.is_file():
-                    if await self._should_include_file(path, explicitly_included=True):
-                        rel_path = get_relative_path(
-                            path, self._get_base_dir_for_path(path)
-                        )
-                        files.append((path, rel_path))
-                elif path.is_dir():
-                    dir_files = await self._gather_from_directory(
-                        path, explicitly_included=True
-                    )
-                    files.extend(dir_files)
-            except PermissionError:
-                self.logger.error(
-                    f"Permission denied: Cannot access '{path}'. Please check file/directory permissions."
-                )
+            if not safe_exists(path, self.logger):
+                self.logger.warning(f"Path not found: {path}")
                 continue
+
+            if safe_is_file(path, self.logger):
+                if await self._should_include_file(path, explicitly_included=True):
+                    rel_path = get_relative_path(
+                        path, self._get_base_dir_for_path(path)
+                    )
+                    files.append((path, rel_path))
+            elif safe_is_dir(path, self.logger):
+                dir_files = await self._gather_from_directory(
+                    path, explicitly_included=True
+                )
+                files.extend(dir_files)
 
         return files
 
@@ -538,9 +511,9 @@ class FileProcessor:
         """Recursively gather files from a directory."""
         files = []
 
-        # Use os.walk for efficiency
-        for root, dirs, filenames in os.walk(
-            directory, followlinks=self.config.filter.include_symlinks
+        # Use safe_walk for efficiency and permission handling
+        for root, dirs, filenames in safe_walk(
+            directory, self.logger, followlinks=self.config.filter.include_symlinks
         ):
             root_path = Path(root)
 
@@ -663,11 +636,7 @@ class FileProcessor:
     ) -> bool:
         """Check if a file should be included based on filters."""
         # Check if file exists
-        try:
-            if not file_path.exists():
-                return False
-        except PermissionError:
-            self.logger.warning(f"Permission denied accessing '{file_path}'. Skipping.")
+        if not safe_exists(file_path, self.logger):
             return False
 
         # Check docs_only filter first (highest priority)
@@ -809,14 +778,10 @@ class FileProcessor:
 
             # For file symlinks, we only need to check for cycles if it's a directory symlink
             # File symlinks don't create cycles in the same way directory symlinks do
-            try:
-                if file_path.is_dir() and self._detect_symlink_cycle(file_path):
-                    self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
-                    return False
-            except PermissionError:
-                self.logger.warning(
-                    f"Permission denied checking symlink '{file_path}'. Skipping."
-                )
+            if safe_is_dir(file_path, self.logger) and self._detect_symlink_cycle(
+                file_path
+            ):
+                self.logger.debug(f"Excluding symlink {file_path} (cycle detected)")
                 return False
 
             self.logger.debug(f"Including symlink {file_path} (include_symlinks=True)")

@@ -24,6 +24,22 @@ from pathlib import Path
 from typing import List, Tuple
 
 from .constants import DOCUMENTATION_EXTENSIONS
+from .file_operations import (
+    handle_permission_errors,
+    safe_exists,
+    safe_is_dir,
+    safe_is_file,
+    safe_stat,
+    safe_open,
+    safe_mkdir,
+    safe_walk,
+    safe_read_text,
+    safe_write_text,
+    safe_iterdir,
+    safe_glob,
+    safe_is_symlink,
+    safe_resolve,
+)
 
 
 def format_duration(seconds: float) -> str:
