@@ -23247,18 +23247,23 @@ s1f supports both positional and option-style arguments for flexibility:
 s1f <input_file> <destination_directory>
 ```
 
-### Option-Style Arguments (backward compatibility)
+### Command Syntax
 
 ```bash
-s1f -i <input_file> -d <destination_directory>
+m1f-s1f <input_file> [destination_directory] [options]
 ```
 
-### All Options
+### Positional Arguments
+
+| Argument                      | Description                                                                                                                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `input_file`                  | Path to the m1f bundle file (required)                                                                                                                                                                        |
+| `destination_directory`       | Directory where files will be extracted (optional when using --list)                                                                                                                                          |
+
+### Optional Parameters
 
 | Option                        | Description                                                                                                                                                                                                   |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-i, --input-file`            | Path to the combined input file (can also be specified as first positional argument)                                                                                                                          |
-| `-d, --destination-directory` | Directory where extracted files will be saved (can also be specified as second positional argument)                                                                                                           |
 | `-l, --list`                  | List files in the archive without extracting them. When used, destination directory is not required                                                                                                           |
 | `-f, --force`                 | Force overwrite of existing files without prompting                                                                                                                                                           |
 | `-v, --verbose`               | Enable verbose output                                                                                                                                                                                         |
@@ -23273,12 +23278,8 @@ s1f -i <input_file> -d <destination_directory>
 ### Basic Operations
 
 ```bash
-# Basic command (positional arguments)
+# Basic extraction
 m1f-s1f /path/to/combined_output.txt /path/to/output_folder
-
-# Basic command (option-style)
-m1f-s1f --input-file /path/to/combined_output.txt \
-  --destination-directory /path/to/output_folder
 
 # List files in archive without extracting
 m1f-s1f --list ./output/bundle.m1f.txt
