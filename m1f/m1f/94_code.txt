@@ -6930,6 +6930,22 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from tools.shared.colors import success, error, warning, info
 
+# Import shared Claude utilities
+try:
+    from .shared.claude_utils import (
+        ClaudeBinaryFinder,
+        ClaudeErrorHandler,
+        ClaudeRunner,
+        ClaudeConfig,
+    )
+except ImportError:
+    from tools.shared.claude_utils import (
+        ClaudeBinaryFinder,
+        ClaudeErrorHandler,
+        ClaudeRunner,
+        ClaudeConfig,
+    )
+
 # Import safe file operations
 try:
     from .m1f.file_operations import (
@@ -6943,55 +6959,14 @@ except ImportError:
     )
 
 
-class M1FClaudeRunner:
+class M1FClaudeRunner(ClaudeRunner):
     """Handles Claude CLI execution with streaming output and robust timeout handling."""
 
-    def __init__(self, claude_binary: Optional[str] = None):
-        self.claude_binary = claude_binary or self._find_claude_binary()
+    def __init__(
+        self, claude_binary: Optional[str] = None, config: Optional[ClaudeConfig] = None
+    ):
+        super().__init__(config=config, binary_path=claude_binary)
         self.process = None
-
-    def _find_claude_binary(self) -> str:
-        """Find Claude binary in system."""
-        # Check default command first
-        try:
-            subprocess.run(
-                ["claude", "--version"], capture_output=True, check=True, timeout=5
-            )
-            return "claude"
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            pass
-
-        # Check known locations
-        claude_paths = [
-            Path.home() / ".claude" / "local" / "node_modules" / ".bin" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/usr/bin/claude"),
-            Path.home() / ".npm-global" / "bin" / "claude",
-        ]
-
-        # Add npm global bin if available
-        try:
-            npm_prefix = subprocess.run(
-                ["npm", "config", "get", "prefix"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if npm_prefix.returncode == 0:
-                npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
-                claude_paths.append(npm_bin)
-        except:
-            pass
-
-        for path in claude_paths:
-            if safe_exists(path) and safe_is_file(path):
-                return str(path)
-
-        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
     def run_claude_streaming(
         self,
@@ -7026,7 +7001,7 @@ class M1FClaudeRunner:
         """
         # Build command - use --print mode and stdin for prompt
         cmd = [
-            self.claude_binary,
+            self.get_binary(),
             "--print",  # Use print mode for non-interactive output
             "--allowedTools",
             allowed_tools,
@@ -7183,7 +7158,7 @@ class M1FClaudeRunner:
             return -1, "\n".join(stdout_lines), "Cancelled by user"
         except Exception as e:
             if show_output:
-                error(f"\n❌ Error running Claude: {e}")
+                self.error_handler.handle_api_error(e, operation="Claude streaming")
             return -1, "\n".join(stdout_lines), str(e)
         finally:
             # Restore signal handler
@@ -12313,8 +12288,16 @@ from ..shared.colors import (
     COLORAMA_AVAILABLE,
 )
 
+# Import shared Claude utilities
+from ..shared.claude_utils import (
+    ClaudeBinaryFinder,
+    ClaudeErrorHandler,
+    ClaudeConfig,
+    ClaudeRunner as BaseClaudeRunner,
+)
 
-class ClaudeRunner:
+
+class ClaudeRunner(BaseClaudeRunner):
     """Handles Claude CLI execution with reliable subprocess support."""
 
     def __init__(
@@ -12322,38 +12305,11 @@ class ClaudeRunner:
         max_workers: int = 5,
         working_dir: Optional[str] = None,
         claude_binary: Optional[str] = None,
+        config: Optional[ClaudeConfig] = None,
     ):
+        super().__init__(config=config, binary_path=claude_binary)
         self.max_workers = max_workers
         self.working_dir = working_dir or str(Path.cwd())
-        self.claude_binary = claude_binary or self._find_claude_binary()
-
-    def _find_claude_binary(self) -> str:
-        """Find Claude binary in system."""
-        # Try default command first
-        try:
-            subprocess.run(
-                ["claude", "--version"], capture_output=True, check=True, timeout=5
-            )
-            return "claude"
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            pass
-
-        # Check known locations
-        claude_paths = [
-            Path.home() / ".claude" / "local" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/usr/bin/claude"),
-        ]
-
-        for path in claude_paths:
-            if safe_exists(path) and safe_is_file(path):
-                return str(path)
-
-        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
     def run_claude_simple(
         self,
@@ -12369,7 +12325,7 @@ class ClaudeRunner:
         Returns: (returncode, stdout, stderr)
         """
         cmd = [
-            self.claude_binary,
+            self.get_binary(),
             "--print",  # Use print mode for non-interactive output
             "--allowedTools",
             allowed_tools,
@@ -12422,7 +12378,7 @@ class ClaudeRunner:
             )
             return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
-            error(f"Error running Claude: {e}")
+            self.error_handler.handle_api_error(e, operation="Claude simple")
             return -1, "", str(e)
 
     def run_claude_streaming(
@@ -12443,7 +12399,7 @@ class ClaudeRunner:
         work_dir = working_dir if working_dir is not None else self.working_dir
 
         # Build command
-        cmd = [self.claude_binary, "-p", "--allowedTools", allowed_tools]
+        cmd = [self.get_binary(), "-p", "--allowedTools", allowed_tools]
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
@@ -12530,7 +12486,7 @@ class ClaudeRunner:
 
         except Exception as e:
             if show_output:
-                error(f"Error running Claude: {e}")
+                self.error_handler.handle_api_error(e, operation="Claude streaming")
             return -1, "\n".join(stdout_lines), str(e)
 
     def run_claude_parallel(
@@ -27336,6 +27292,14 @@ from claude_code_sdk import (
     ResultMessage,
 )
 
+# Import shared Claude utilities
+from ..shared.claude_utils import (
+    ClaudeConfig,
+    ClaudeHTTPClient,
+    ClaudeSessionManager,
+    ClaudeErrorHandler,
+)
+
 
 @dataclass
 class LLMResponse:
@@ -27409,14 +27373,6 @@ class LLMProvider(ABC):
         """
         pass
 
-    def _validate_api_key(self):
-        """Validate that API key is set"""
-        if not self.api_key:
-            raise ValueError(
-                f"API key not set for {self.__class__.__name__}. "
-                f"Set via environment variable or pass directly."
-            )
-
 
 class ClaudeProvider(LLMProvider):
     """Claude API provider via Anthropic"""
@@ -27424,8 +27380,11 @@ class ClaudeProvider(LLMProvider):
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         super().__init__(api_key, model)
-        self.base_url = "https://api.anthropic.com/v1"
- 
+
+        # Use shared configuration and HTTP client
+        self.config = ClaudeConfig(api_key=api_key, model=self.model)
+        self.client = ClaudeHTTPClient(self.config)
+        self.error_handler = ClaudeErrorHandler()
 
     @property
     def default_model(self) -> str:
@@ -27434,47 +27393,19 @@ class ClaudeProvider(LLMProvider):
     async def query(
         self, prompt: str, system: Optional[str] = None, **kwargs
     ) -> LLMResponse:
-        """Query Claude API"""
-        self._validate_api_key()
-
-        headers = {
-            "x-api-key": self.api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        }
-
-        messages = [{"role": "user", "content": prompt}]
-
-        data = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": kwargs.get("max_tokens", 4096),
-            "temperature": kwargs.get("temperature", 0.7),
-        }
-
-        if system:
-            data["system"] = system
-
+        """Query Claude API using shared HTTP client"""
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.base_url}/messages", headers=headers, json=data
-                ) as response:
-                    result = await response.json()
+            response = await self.client.send_request(
+                prompt=prompt, system=system, **kwargs
+            )
 
-                    if response.status != 200:
-                        return LLMResponse(
-                            content="",
-                            error=f"API error: {result.get('error', {}).get('message', 'Unknown error')}",
-                        )
-
-                    return LLMResponse(
-                        content=result["content"][0]["text"],
-                        raw_response=result,
-                        usage=result.get("usage"),
-                    )
-
+            return LLMResponse(
+                content=response["content"][0]["text"],
+                raw_response=response,
+                usage=response.get("usage"),
+            )
         except Exception as e:
+            self.error_handler.handle_api_error(e, operation="Claude API query")
             return LLMResponse(content="", error=str(e))
 
     async def search_web(
@@ -27687,8 +27618,8 @@ class ClaudeCodeProvider(LLMProvider):
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         # Claude Code doesn't need an API key in the traditional sense
         super().__init__(api_key="claude-code-sdk", model=model)
-        self.session_id = None
-        self.conversation_started = False
+        self.session_manager = ClaudeSessionManager()
+        self.error_handler = ClaudeErrorHandler()
 
     @property
     def default_model(self) -> str:
@@ -27706,16 +27637,10 @@ class ClaudeCodeProvider(LLMProvider):
         try:
             messages: List[Message] = []
 
-            # Configure options - using the same pattern as m1f-claude
-            options = ClaudeCodeOptions(
+            # Use shared session manager for options
+            options = self.session_manager.create_options(
                 max_turns=kwargs.get("max_turns", 1),
-                continue_conversation=not self.conversation_started
-                and self.session_id is not None,
-                resume=(
-                    self.session_id
-                    if not self.conversation_started and self.session_id
-                    else None
-                ),
+                continue_conversation=kwargs.get("continue_conversation", False),
             )
 
             # Collect messages
@@ -27724,11 +27649,8 @@ class ClaudeCodeProvider(LLMProvider):
             async for message in claude_query(prompt=full_prompt, options=options):
                 messages.append(message)
 
-                # Extract session ID from ResultMessage
-                if isinstance(message, ResultMessage):
-                    if hasattr(message, "session_id"):
-                        self.session_id = message.session_id
-                        self.conversation_started = True
+                # Update session state using shared manager
+                self.session_manager.update_from_message(message)
 
                 # Extract text content from different message types
                 if hasattr(message, "content"):
@@ -27754,12 +27676,13 @@ class ClaudeCodeProvider(LLMProvider):
             return LLMResponse(
                 content=content,
                 raw_response={
-                    "session_id": self.session_id,
+                    "session_id": self.session_manager.session_id,
                     "message_count": len(messages),
                 },
             )
 
         except Exception as e:
+            self.error_handler.handle_api_error(e, operation="Claude Code query")
             return LLMResponse(content="", error=str(e))
 
     async def search_web(
@@ -31624,11 +31547,25 @@ import logging
 from typing import Optional
 from pathlib import Path
 
-from ..shared.logging import (
-    LoggerManager as SharedLoggerManager,
-    setup_logging as shared_setup_logging,
-    get_logger as shared_get_logger,
-)
+# Try different import strategies for shared logging
+try:
+    from ..shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
+except ImportError:
+    import os
+    import sys
+
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from tools.shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
 
 # Use unified colorama module for legacy compatibility
 try:
@@ -32699,16 +32636,21 @@ from .exceptions import FileWriteError, ChecksumMismatchError
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
-    from tools.m1f.file_operations import (
+    from ..m1f.file_operations import (
         safe_exists,
         safe_mkdir,
         safe_open,
         safe_write_text,
         safe_read_text,
     )
-except ImportError:
-    # Fallback for direct script execution
-    from ..m1f.file_operations import (
+except (ImportError, ValueError):
+    # Fallback for direct script execution or when running as main module
+    import sys
+    from pathlib import Path
+
+    # Add parent directory to path for imports
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from tools.m1f.file_operations import (
         safe_exists,
         safe_mkdir,
         safe_open,
@@ -37002,8 +36944,8 @@ except ImportError:
 
 # Import colors module
 from .colors import (
-    Colors, 
-    ColoredFormatter, 
+    Colors,
+    ColoredFormatter,
     ColoredHelpFormatter,
     COLORAMA_AVAILABLE,
     success,
@@ -37011,32 +36953,524 @@ from .colors import (
     warning,
     info,
     header,
-    setup_logging
 )
+
+# Import CLI utilities
+try:
+    from .cli import CustomArgumentParser, ArgumentBuilder, BaseCLI, SubcommandCLI
+except ImportError:
+    CustomArgumentParser = None
+    ArgumentBuilder = None
+    BaseCLI = None
+    SubcommandCLI = None
+
+# Import logging utilities
+try:
+    from .logging import (
+        LoggingConfig,
+        LoggerManager,
+        setup_logging,
+        get_logger,
+        configure_logging,
+    )
+except ImportError:
+    LoggingConfig = None
+    LoggerManager = None
+    setup_logging = None
+    get_logger = None
+    configure_logging = None
 
 __all__ = [
     # Colors module exports
-    'Colors',
-    'ColoredFormatter',
-    'ColoredHelpFormatter',
-    'COLORAMA_AVAILABLE',
-    'success',
-    'error',
-    'warning',
-    'info',
-    'header',
-    'setup_logging',
+    "Colors",
+    "ColoredFormatter",
+    "ColoredHelpFormatter",
+    "COLORAMA_AVAILABLE",
+    "success",
+    "error",
+    "warning",
+    "info",
+    "header",
+    # CLI module exports
+    "CustomArgumentParser",
+    "ArgumentBuilder",
+    "BaseCLI",
+    "SubcommandCLI",
+    # Logging module exports
+    "LoggingConfig",
+    "LoggerManager",
+    "setup_logging",
+    "get_logger",
+    "configure_logging",
     # Existing exports (if available)
-    'PromptLoader',
-    'load_prompt',
-    'format_prompt',
-    'load_config_file',
-    'save_config_file',
-    'ensure_path',
-    'get_project_root',
+    "PromptLoader",
+    "load_prompt",
+    "format_prompt",
+    "load_config_file",
+    "save_config_file",
+    "ensure_path",
+    "get_project_root",
 ]
 
 __version__ = "0.1.0"
+
+======= tools/shared/claude_utils.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Shared Claude integration utilities for m1f ecosystem.
+
+This module provides common functionality for Claude integration across
+m1f-claude, m1f-html2md, and m1f-research tools.
+"""
+
+from __future__ import annotations
+
+import os
+import subprocess
+import logging
+from pathlib import Path
+from typing import Optional, Dict, Any, List, Tuple
+from dataclasses import dataclass, field
+from enum import Enum
+
+# Use safe file operations
+from ..m1f.file_operations import safe_exists, safe_is_file
+
+# Use unified colorama module
+from .colors import warning, error, info
+
+# Optional imports for Claude Code SDK
+try:
+    from claude_code_sdk import (
+        ClaudeCodeOptions,
+        Message,
+        ResultMessage,
+        query as claude_query,
+    )
+
+    CLAUDE_CODE_SDK_AVAILABLE = True
+except ImportError:
+    CLAUDE_CODE_SDK_AVAILABLE = False
+    ClaudeCodeOptions = None
+    Message = None
+    ResultMessage = None
+    claude_query = None
+
+# Optional imports for async HTTP
+try:
+    import aiohttp
+
+    AIOHTTP_AVAILABLE = True
+except ImportError:
+    AIOHTTP_AVAILABLE = False
+
+
+class ClaudeModel(Enum):
+    """Available Claude models."""
+
+    OPUS = "claude-3-opus-20240229"
+    SONNET = "claude-3-sonnet-20240229"
+    HAIKU = "claude-3-haiku-20240307"
+    CLAUDE_2_1 = "claude-2.1"
+    CLAUDE_2 = "claude-2.0"
+
+    @classmethod
+    def get_default(cls) -> str:
+        """Get the default model."""
+        return cls.OPUS.value
+
+
+@dataclass
+class ClaudeConfig:
+    """Configuration for Claude integration."""
+
+    api_key: Optional[str] = None
+    model: str = field(default_factory=ClaudeModel.get_default)
+    base_url: str = "https://api.anthropic.com/v1"
+    max_tokens: int = 4096
+    temperature: float = 0.7
+    timeout: int = 300
+    max_retries: int = 3
+
+    def __post_init__(self):
+        """Initialize API key from environment if not provided."""
+        if not self.api_key:
+            self.api_key = os.getenv("ANTHROPIC_API_KEY")
+
+    def validate(self) -> None:
+        """Validate configuration."""
+        if not self.api_key:
+            raise ValueError(
+                "Claude API key not set. Set ANTHROPIC_API_KEY environment variable "
+                "or provide api_key in configuration."
+            )
+
+
+class ClaudeBinaryFinder:
+    """Utility for finding Claude CLI binary."""
+
+    DEFAULT_PATHS = [
+        Path.home() / ".claude" / "local" / "claude",
+        Path("/usr/local/bin/claude"),
+        Path("/usr/bin/claude"),
+        Path("/opt/homebrew/bin/claude"),  # macOS with Homebrew
+        Path.home() / ".local/bin/claude",  # Linux user install
+    ]
+
+    @classmethod
+    def find(cls, custom_path: Optional[str] = None) -> str:
+        """
+        Find Claude binary in system.
+
+        Args:
+            custom_path: Optional custom path to Claude binary
+
+        Returns:
+            Path to Claude binary
+
+        Raises:
+            FileNotFoundError: If Claude binary cannot be found
+        """
+        # Try custom path first
+        if custom_path:
+            if safe_exists(custom_path) and safe_is_file(custom_path):
+                return custom_path
+
+        # Try default command
+        if cls._command_exists("claude"):
+            return "claude"
+
+        # Check known locations
+        for path in cls.DEFAULT_PATHS:
+            if safe_exists(path) and safe_is_file(path):
+                return str(path)
+
+        # Try to find in PATH
+        result = subprocess.run(
+            ["which", "claude"], capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+
+        raise FileNotFoundError(
+            "Claude binary not found. Please install Claude CLI from "
+            "https://docs.anthropic.com/claude/docs/claude-cli"
+        )
+
+    @staticmethod
+    def _command_exists(command: str) -> bool:
+        """Check if a command exists in PATH."""
+        try:
+            subprocess.run(
+                [command, "--version"], capture_output=True, check=True, timeout=5
+            )
+            return True
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
+            return False
+
+
+class ClaudeSessionManager:
+    """Manages Claude Code SDK sessions."""
+
+    def __init__(self):
+        """Initialize session manager."""
+        self.session_id: Optional[str] = None
+        self.conversation_started: bool = False
+        self.messages: List[Message] = []
+
+    def create_options(
+        self, max_turns: int = 1, continue_conversation: bool = False, **kwargs
+    ) -> ClaudeCodeOptions:
+        """
+        Create Claude Code SDK options.
+
+        Args:
+            max_turns: Maximum conversation turns
+            continue_conversation: Whether to continue existing conversation
+            **kwargs: Additional options
+
+        Returns:
+            ClaudeCodeOptions instance
+        """
+        if not CLAUDE_CODE_SDK_AVAILABLE:
+            raise ImportError("Claude Code SDK is not installed")
+
+        return ClaudeCodeOptions(
+            max_turns=max_turns,
+            continue_conversation=continue_conversation and self.session_id is not None,
+            resume=(
+                self.session_id
+                if not self.conversation_started and self.session_id
+                else None
+            ),
+            **kwargs,
+        )
+
+    def update_from_message(self, message: Message) -> None:
+        """
+        Update session state from a message.
+
+        Args:
+            message: Message from Claude Code SDK
+        """
+        self.messages.append(message)
+
+        if isinstance(message, ResultMessage):
+            if hasattr(message, "session_id"):
+                self.session_id = message.session_id
+                self.conversation_started = True
+
+    def reset(self) -> None:
+        """Reset session state."""
+        self.session_id = None
+        self.conversation_started = False
+        self.messages.clear()
+
+
+class ClaudeHTTPClient:
+    """HTTP client for direct Anthropic API calls."""
+
+    def __init__(self, config: ClaudeConfig):
+        """
+        Initialize HTTP client.
+
+        Args:
+            config: Claude configuration
+        """
+        self.config = config
+        self.config.validate()
+
+    def get_headers(self) -> Dict[str, str]:
+        """Get HTTP headers for API requests."""
+        return {
+            "x-api-key": self.config.api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+
+    def create_request_data(
+        self, prompt: str, system: Optional[str] = None, **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Create request data for API call.
+
+        Args:
+            prompt: User prompt
+            system: Optional system prompt
+            **kwargs: Additional parameters
+
+        Returns:
+            Request data dictionary
+        """
+        data = {
+            "model": kwargs.get("model", self.config.model),
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
+            "temperature": kwargs.get("temperature", self.config.temperature),
+        }
+
+        if system:
+            data["system"] = system
+
+        # Add any additional parameters
+        for key, value in kwargs.items():
+            if key not in data:
+                data[key] = value
+
+        return data
+
+    async def send_request(
+        self, prompt: str, system: Optional[str] = None, **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Send async request to Claude API.
+
+        Args:
+            prompt: User prompt
+            system: Optional system prompt
+            **kwargs: Additional parameters
+
+        Returns:
+            API response dictionary
+
+        Raises:
+            ImportError: If aiohttp is not available
+            Exception: For API errors
+        """
+        if not AIOHTTP_AVAILABLE:
+            raise ImportError("aiohttp is required for async requests")
+
+        headers = self.get_headers()
+        data = self.create_request_data(prompt, system, **kwargs)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{self.config.base_url}/messages",
+                headers=headers,
+                json=data,
+                timeout=aiohttp.ClientTimeout(total=self.config.timeout),
+            ) as response:
+                response_data = await response.json()
+
+                if response.status != 200:
+                    raise Exception(f"API error: {response_data}")
+
+                return response_data
+
+
+class ClaudeErrorHandler:
+    """Centralized error handling for Claude operations."""
+
+    @staticmethod
+    def handle_subprocess_error(
+        process: subprocess.CompletedProcess, operation: str = "Claude operation"
+    ) -> Tuple[int, str, str]:
+        """
+        Handle subprocess errors consistently.
+
+        Args:
+            process: Completed process
+            operation: Description of operation
+
+        Returns:
+            Tuple of (exit_code, stdout, stderr)
+        """
+        if process.returncode == 0:
+            return process.returncode, process.stdout, process.stderr
+
+        error_msg = process.stderr or "Unknown error"
+
+        # Common error patterns
+        if "timeout" in error_msg.lower():
+            warning(f"⏰ {operation} timed out")
+        elif "api" in error_msg.lower() and "key" in error_msg.lower():
+            error(f"🔑 API key error in {operation}")
+        elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
+            warning(f"⚠️ Rate limit hit in {operation}")
+        else:
+            error(f"❌ {operation} failed: {error_msg}")
+
+        return process.returncode, process.stdout, process.stderr
+
+    @staticmethod
+    def handle_api_error(
+        exception: Exception, operation: str = "Claude API call"
+    ) -> None:
+        """
+        Handle API errors consistently.
+
+        Args:
+            exception: Exception that occurred
+            operation: Description of operation
+        """
+        error_str = str(exception)
+
+        if "401" in error_str or "authentication" in error_str.lower():
+            error(f"🔑 Authentication failed for {operation}. Check your API key.")
+        elif "429" in error_str or "rate" in error_str.lower():
+            warning(f"⚠️ Rate limit exceeded in {operation}. Please wait and retry.")
+        elif "timeout" in error_str.lower():
+            warning(f"⏰ {operation} timed out")
+        elif "connection" in error_str.lower():
+            error(f"🌐 Connection error in {operation}")
+        else:
+            error(f"❌ {operation} failed: {error_str}")
+
+
+class ClaudeRunner:
+    """Base class for Claude runners."""
+
+    def __init__(
+        self,
+        config: Optional[ClaudeConfig] = None,
+        binary_path: Optional[str] = None,
+        logger: Optional[logging.Logger] = None,
+    ):
+        """
+        Initialize Claude runner.
+
+        Args:
+            config: Claude configuration
+            binary_path: Optional path to Claude binary
+            logger: Optional logger
+        """
+        self.config = config or ClaudeConfig()
+        self.binary_path = binary_path
+        self.logger = logger or logging.getLogger(__name__)
+        self.error_handler = ClaudeErrorHandler()
+
+    def get_binary(self) -> str:
+        """Get Claude binary path."""
+        if not hasattr(self, "_binary"):
+            self._binary = ClaudeBinaryFinder.find(self.binary_path)
+        return self._binary
+
+    def run_command(
+        self,
+        args: List[str],
+        input_text: Optional[str] = None,
+        timeout: Optional[int] = None,
+    ) -> Tuple[int, str, str]:
+        """
+        Run Claude command.
+
+        Args:
+            args: Command arguments
+            input_text: Optional input text
+            timeout: Optional timeout in seconds
+
+        Returns:
+            Tuple of (exit_code, stdout, stderr)
+        """
+        cmd = [self.get_binary()] + args
+
+        try:
+            process = subprocess.run(
+                cmd,
+                input=input_text,
+                capture_output=True,
+                text=True,
+                timeout=timeout or self.config.timeout,
+            )
+            return self.error_handler.handle_subprocess_error(
+                process, operation="Claude CLI"
+            )
+        except subprocess.TimeoutExpired:
+            return -1, "", f"Process timed out after {timeout}s"
+        except Exception as e:
+            self.error_handler.handle_api_error(e, operation="Claude CLI")
+            return -1, "", str(e)
+
+
+# Export commonly used components
+__all__ = [
+    "ClaudeModel",
+    "ClaudeConfig",
+    "ClaudeBinaryFinder",
+    "ClaudeSessionManager",
+    "ClaudeHTTPClient",
+    "ClaudeErrorHandler",
+    "ClaudeRunner",
+    "CLAUDE_CODE_SDK_AVAILABLE",
+    "AIOHTTP_AVAILABLE",
+]
 
 ======= tools/shared/cli.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -37606,12 +38040,14 @@ def header(title: str, subtitle: Optional[str] = None, file=None) -> None:
         print(file=file or sys.stdout)
 
 
-def setup_logging(
+def setup_basic_logging(
     level: int = logging.INFO, fmt: Optional[str] = None, colored: bool = True
 ) -> logging.Logger:
     """
-    Set up logging with optional colored output.
+    Set up basic logging with optional colored output.
     Returns the root logger.
+
+    Note: This is a legacy function. Use tools.shared.logging.setup_logging instead.
     """
     # Remove existing handlers
     root_logger = logging.getLogger()

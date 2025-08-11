@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -42,6 +43,18 @@ def is_httrack_installed():
         return False
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 # Skip all tests if HTTrack is not installed
 pytestmark = pytest.mark.skipif(
     not is_httrack_installed(),
@@ -52,11 +65,19 @@ pytestmark = pytest.mark.skipif(
 class TestHTTrackIntegration:
     """Integration tests for HTTrack scraper."""
 
+    server_port = None
+    server_url = None
+
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -73,7 +94,7 @@ class TestHTTrackIntegration:
         max_attempts = 30
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(cls.server_url)
                 if response.status_code == 200:
                     break
             except requests.ConnectionError:
@@ -112,10 +133,12 @@ class TestHTTrackIntegration:
             # Convert to URL path
             url_path = "/" + str(rel_path).replace("\\", "/")
             if "localhost" in url_path:
-                # Extract path after localhost:8080
-                parts = url_path.split("localhost:8080/")
-                if len(parts) > 1:
-                    url_path = "/" + parts[1]
+                # Extract path after localhost:port
+                localhost_prefix = f"localhost:{cls.server_port}/"
+                if localhost_prefix in url_path:
+                    parts = url_path.split(localhost_prefix)
+                    if len(parts) > 1:
+                        url_path = "/" + parts[1]
             scraped_paths.add(url_path)
         return scraped_paths
 
@@ -134,7 +157,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -164,7 +187,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -192,7 +215,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -223,7 +246,7 @@ class TestHTTrackIntegration:
         # Note: HTTrack's allowed_path support is limited
         # It uses URL filters which may not work exactly like other scrapers
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/api/overview.html"
+        start_url = f"{cls.server_url}/api/overview.html"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -250,7 +273,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         # HTTrack should use the custom user agent
         result = await crawler.crawl(start_url, output_dir)
@@ -273,7 +296,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 

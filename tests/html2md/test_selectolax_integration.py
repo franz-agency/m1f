@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -31,14 +32,34 @@ from tools.scrape_tool.crawlers import WebCrawler
 from tools.scrape_tool.scrapers.selectolax import SelectolaxScraper
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestSelectolaxIntegration:
     """Integration tests for Selectolax scraper."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -56,7 +77,7 @@ class TestSelectolaxIntegration:
         server_started = False
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(f"{cls.server_url}/")
                 if response.status_code == 200:
                     server_started = True
                     break
@@ -120,7 +141,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -145,9 +166,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape a page with known metadata
-            page = await scraper.scrape_url(
-                "http://localhost:8080/page/m1f-documentation"
-            )
+            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
 
             assert page is not None
             assert page.title is not None
@@ -172,7 +191,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/docs/index.html"
+        start_url = f"{cls.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -206,7 +225,7 @@ class TestSelectolaxIntegration:
         async with scraper:
             # Test page with canonical URL
             url_with_canonical = (
-                "http://localhost:8080/page/index?canonical=http://localhost:8080/"
+                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
             )
             page = await scraper.scrape_url(url_with_canonical)
 
@@ -240,8 +259,8 @@ class TestSelectolaxIntegration:
         scraper = SelectolaxScraper(scraper_config)
 
         # Test URL normalization
-        url1 = scraper._normalize_url("http://localhost:8080/page/test?tab=1")
-        url2 = scraper._normalize_url("http://localhost:8080/page/test?tab=2")
+        url1 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=1")
+        url2 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=2")
 
         # With ignore_get_params=True, these should be the same
         assert url1 == url2
@@ -275,7 +294,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape duplicate content pages
-            page1 = await scraper.scrape_url("http://localhost:8080/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
             assert page1 is not None  # First should succeed
 
             # Calculate and store checksum
@@ -286,7 +305,7 @@ class TestSelectolaxIntegration:
                 seen_checksums.add(checksum)
 
             # Second should be skipped due to duplicate content
-            page2 = await scraper.scrape_url("http://localhost:8080/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
             # Note: This depends on the scraper checking content before returning
 
 

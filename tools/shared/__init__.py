@@ -30,8 +30,8 @@ except ImportError:
 
 # Import colors module
 from .colors import (
-    Colors, 
-    ColoredFormatter, 
+    Colors,
+    ColoredFormatter,
     ColoredHelpFormatter,
     COLORAMA_AVAILABLE,
     success,
@@ -39,29 +39,63 @@ from .colors import (
     warning,
     info,
     header,
-    setup_logging
 )
+
+# Import CLI utilities
+try:
+    from .cli import CustomArgumentParser, ArgumentBuilder, BaseCLI, SubcommandCLI
+except ImportError:
+    CustomArgumentParser = None
+    ArgumentBuilder = None
+    BaseCLI = None
+    SubcommandCLI = None
+
+# Import logging utilities
+try:
+    from .logging import (
+        LoggingConfig,
+        LoggerManager,
+        setup_logging,
+        get_logger,
+        configure_logging,
+    )
+except ImportError:
+    LoggingConfig = None
+    LoggerManager = None
+    setup_logging = None
+    get_logger = None
+    configure_logging = None
 
 __all__ = [
     # Colors module exports
-    'Colors',
-    'ColoredFormatter',
-    'ColoredHelpFormatter',
-    'COLORAMA_AVAILABLE',
-    'success',
-    'error',
-    'warning',
-    'info',
-    'header',
-    'setup_logging',
+    "Colors",
+    "ColoredFormatter",
+    "ColoredHelpFormatter",
+    "COLORAMA_AVAILABLE",
+    "success",
+    "error",
+    "warning",
+    "info",
+    "header",
+    # CLI module exports
+    "CustomArgumentParser",
+    "ArgumentBuilder",
+    "BaseCLI",
+    "SubcommandCLI",
+    # Logging module exports
+    "LoggingConfig",
+    "LoggerManager",
+    "setup_logging",
+    "get_logger",
+    "configure_logging",
     # Existing exports (if available)
-    'PromptLoader',
-    'load_prompt',
-    'format_prompt',
-    'load_config_file',
-    'save_config_file',
-    'ensure_path',
-    'get_project_root',
+    "PromptLoader",
+    "load_prompt",
+    "format_prompt",
+    "load_config_file",
+    "save_config_file",
+    "ensure_path",
+    "get_project_root",
 ]
 
 __version__ = "0.1.0"

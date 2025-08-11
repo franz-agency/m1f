@@ -40,6 +40,7 @@ class TestAllowedPathIntegration:
         # Set environment variable to suppress server output
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = "8080"  # Set server to use port 8080
 
         # Start the test server
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"

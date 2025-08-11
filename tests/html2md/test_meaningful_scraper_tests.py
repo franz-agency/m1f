@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -33,14 +34,34 @@ from tools.scrape_tool.scrapers.beautifulsoup import BeautifulSoupScraper
 from tools.scrape_tool.scrapers.base import ScraperConfig
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestMeaningfulScraperFeatures:
     """Tests that verify actual scraper functionality, not just configuration."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
 
@@ -56,7 +77,7 @@ class TestMeaningfulScraperFeatures:
         server_started = False
         for i in range(30):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(cls.server_url)
                 if response.status_code == 200:
                     server_started = True
                     break
@@ -102,8 +123,8 @@ class TestMeaningfulScraperFeatures:
         scraper = BeautifulSoupScraper(config)
 
         # URLs with different query params should normalize to same URL
-        url1 = "http://localhost:8080/page/index?tab=1&view=list"
-        url2 = "http://localhost:8080/page/index?tab=2&view=grid"
+        url1 = f"{cls.server_url}/page/index?tab=1&view=list"
+        url2 = f"{cls.server_url}/page/index?tab=2&view=grid"
 
         normalized1 = scraper._normalize_url(url1)
         normalized2 = scraper._normalize_url(url2)
@@ -142,7 +163,9 @@ class TestMeaningfulScraperFeatures:
 
         async with scraper:
             # Test 1: Page in allowed_path with canonical outside should NOT be skipped
-            url_in_allowed = "http://localhost:8080/page/m1f-documentation?canonical=http://localhost:8080/"
+            url_in_allowed = (
+                f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/"
+            )
             page = await scraper.scrape_url(url_in_allowed)
 
             assert (
@@ -150,7 +173,7 @@ class TestMeaningfulScraperFeatures:
             ), "Page in allowed_path should be kept even if canonical points outside"
 
             # Test 2: Page in allowed_path with canonical also in allowed_path but different
-            url_with_canonical_in_path = "http://localhost:8080/page/m1f-documentation?canonical=http://localhost:8080/page/html2md-documentation"
+            url_with_canonical_in_path = f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/page/html2md-documentation"
             page2 = await scraper.scrape_url(url_with_canonical_in_path)
 
             assert (
@@ -173,7 +196,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         # Actually crawl the site
         await crawler.crawl(start_url, output_dir)
@@ -224,7 +247,7 @@ class TestMeaningfulScraperFeatures:
 
         async with scraper:
             # Scrape first duplicate page
-            page1 = await scraper.scrape_url("http://localhost:8080/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
             assert page1 is not None, "First duplicate page should be scraped"
 
             # Simulate the checksum being stored (normally done by crawler)
@@ -238,7 +261,7 @@ class TestMeaningfulScraperFeatures:
                 scraper._checksum_callback = lambda c: c in seen_checksums
 
             # Try to scrape second duplicate page
-            page2 = await scraper.scrape_url("http://localhost:8080/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
 
             # This should be None because content is duplicate
             assert page2 is None, "Second page with duplicate content should be skipped"
@@ -258,7 +281,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         await crawler.crawl(start_url, output_dir)
 
@@ -270,7 +293,7 @@ class TestMeaningfulScraperFeatures:
         for file in all_files:
             parts = file.relative_to(output_dir).parts
             # If we have paths like localhost/api/endpoints.html, that's depth 2+
-            if len(parts) >= 3:  # localhost:8080/category/page.html
+            if len(parts) >= 3:  # localhost:port/category/page.html
                 has_deep_paths = True
                 break
 
@@ -312,9 +335,7 @@ class TestMeaningfulScraperFeatures:
             start_time = time.time()
 
             try:
-                page = await scraper.scrape_url(
-                    "http://localhost:8080/test/slow?delay=10"
-                )
+                page = await scraper.scrape_url(f"{cls.server_url}/test/slow?delay=10")
                 # If we get here, timeout didn't work
                 elapsed = time.time() - start_time
                 assert elapsed < 5, f"Request should have timed out but took {elapsed}s"

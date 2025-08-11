@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import signal
 import requests
 import sqlite3
@@ -33,15 +34,35 @@ from tools.scrape_tool.config import Config, CrawlerConfig, ScraperBackend
 from tools.scrape_tool.crawlers import WebCrawler
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestScraperParameters:
     """Test all m1f-scrape parameters with local test server."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         # Set environment variable to suppress server output
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -61,7 +82,7 @@ class TestScraperParameters:
         max_attempts = 30
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(f"{cls.server_url}/")
                 if response.status_code == 200:
                     break
             except requests.ConnectionError as e:
@@ -278,7 +299,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -319,7 +340,7 @@ class TestScraperParameters:
 
         try:
             crawler = WebCrawler(config.crawler)
-            start_url = "http://localhost:8080/"
+            start_url = f"{cls.server_url}/"
 
             result = await crawler.crawl(start_url, output_dir)
             scraped_files = self.get_scraped_files(output_dir)
@@ -370,7 +391,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -404,10 +425,10 @@ class TestScraperParameters:
 
         # Insert test data
         test_urls = [
-            ("http://localhost:8080/", 200, None),
-            ("http://localhost:8080/docs/", 200, None),
-            ("http://localhost:8080/api/", 404, "Not found"),
-            ("http://localhost:8080/broken/", 500, "Server error"),
+            (f"{cls.server_url}/", 200, None),
+            (f"{cls.server_url}/docs/", 200, None),
+            (f"{cls.server_url}/api/", 404, "Not found"),
+            (f"{cls.server_url}/broken/", 500, "Server error"),
         ]
 
         cursor.executemany(
@@ -469,7 +490,7 @@ class TestScraperParameters:
 
         # With SSRF disabled, localhost should work
         crawler = WebCrawler(config_disabled.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_files = self.get_scraped_files(output_dir)

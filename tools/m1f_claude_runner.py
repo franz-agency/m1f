@@ -32,6 +32,22 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from tools.shared.colors import success, error, warning, info
 
+# Import shared Claude utilities
+try:
+    from .shared.claude_utils import (
+        ClaudeBinaryFinder,
+        ClaudeErrorHandler,
+        ClaudeRunner,
+        ClaudeConfig,
+    )
+except ImportError:
+    from tools.shared.claude_utils import (
+        ClaudeBinaryFinder,
+        ClaudeErrorHandler,
+        ClaudeRunner,
+        ClaudeConfig,
+    )
+
 # Import safe file operations
 try:
     from .m1f.file_operations import (
@@ -45,55 +61,14 @@ except ImportError:
     )
 
 
-class M1FClaudeRunner:
+class M1FClaudeRunner(ClaudeRunner):
     """Handles Claude CLI execution with streaming output and robust timeout handling."""
 
-    def __init__(self, claude_binary: Optional[str] = None):
-        self.claude_binary = claude_binary or self._find_claude_binary()
+    def __init__(
+        self, claude_binary: Optional[str] = None, config: Optional[ClaudeConfig] = None
+    ):
+        super().__init__(config=config, binary_path=claude_binary)
         self.process = None
-
-    def _find_claude_binary(self) -> str:
-        """Find Claude binary in system."""
-        # Check default command first
-        try:
-            subprocess.run(
-                ["claude", "--version"], capture_output=True, check=True, timeout=5
-            )
-            return "claude"
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            pass
-
-        # Check known locations
-        claude_paths = [
-            Path.home() / ".claude" / "local" / "node_modules" / ".bin" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/usr/bin/claude"),
-            Path.home() / ".npm-global" / "bin" / "claude",
-        ]
-
-        # Add npm global bin if available
-        try:
-            npm_prefix = subprocess.run(
-                ["npm", "config", "get", "prefix"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if npm_prefix.returncode == 0:
-                npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
-                claude_paths.append(npm_bin)
-        except:
-            pass
-
-        for path in claude_paths:
-            if safe_exists(path) and safe_is_file(path):
-                return str(path)
-
-        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
     def run_claude_streaming(
         self,
@@ -128,7 +103,7 @@ class M1FClaudeRunner:
         """
         # Build command - use --print mode and stdin for prompt
         cmd = [
-            self.claude_binary,
+            self.get_binary(),
             "--print",  # Use print mode for non-interactive output
             "--allowedTools",
             allowed_tools,
@@ -285,7 +260,7 @@ class M1FClaudeRunner:
             return -1, "\n".join(stdout_lines), "Cancelled by user"
         except Exception as e:
             if show_output:
-                error(f"\n❌ Error running Claude: {e}")
+                self.error_handler.handle_api_error(e, operation="Claude streaming")
             return -1, "\n".join(stdout_lines), str(e)
         finally:
             # Restore signal handler

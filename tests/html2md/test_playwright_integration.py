@@ -84,17 +84,17 @@ def find_free_port(start_port: int = 8090) -> int:
 
 class TestPlaywrightIntegration:
     """Integration tests for Playwright scraper."""
-    
+
     server_port = None
     server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
-        # Find a free port
+        # Find a free port starting from 8090
         cls.server_port = find_free_port(8090)
-        cls.server_url = f"http://localhost:8090"
-        
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
         env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
@@ -220,9 +220,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(
-                f"{cls.server_url}/page/m1f-documentation"
-            )
+            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
 
             assert page is not None
             # Playwright extracts comprehensive metadata
@@ -275,9 +273,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Test page with canonical URL - using scrape_site for proper flow
-            start_url = (
-                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
-            )
+            start_url = f"{cls.server_url}/page/index?canonical={cls.server_url}/"
 
             pages_scraped = []
             async for page in scraper.scrape_site(start_url):

@@ -26,7 +26,7 @@ Usage:
     python test_local_scraping.py
 
 Requirements:
-    - Local test server running at http://localhost:8080
+    - Local test server running at http://localhost:8090 (or next available port)
     - Start server with: cd tests/html2md_server && python server.py
 
 Features:

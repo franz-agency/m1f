@@ -2922,6 +2922,219 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - Check out example presets in `presets/`
 - Run `m1f --help` to explore options
 
+======= docs/shared_claude_utils.md ======
+# Shared Claude Utilities Library
+
+## Overview
+
+The `tools/shared/claude_utils.py` module provides a centralized, DRY (Don't Repeat Yourself) implementation for Claude integration across the m1f ecosystem. This shared library eliminates code duplication between m1f-claude, m1f-html2md, and m1f-research tools.
+
+## Components
+
+### 1. ClaudeModel (Enum)
+Available Claude models with a default selection:
+- `OPUS` - claude-3-opus-20240229 (default)
+- `SONNET` - claude-3-sonnet-20240229
+- `HAIKU` - claude-3-haiku-20240307
+- `CLAUDE_2_1` - claude-2.1
+- `CLAUDE_2` - claude-2.0
+
+### 2. ClaudeConfig (Dataclass)
+Centralized configuration management:
+```python
+config = ClaudeConfig(
+    api_key="your-api-key",  # Or uses ANTHROPIC_API_KEY env var
+    model=ClaudeModel.OPUS.value,
+    base_url="https://api.anthropic.com/v1",
+    max_tokens=4096,
+    temperature=0.7,
+    timeout=300,
+    max_retries=3
+)
+config.validate()  # Validates configuration
+```
+
+### 3. ClaudeBinaryFinder
+Discovers Claude CLI binary across different installation methods:
+```python
+binary_path = ClaudeBinaryFinder.find()  # Searches standard locations
+binary_path = ClaudeBinaryFinder.find("/custom/path/to/claude")  # Custom path
+```
+
+Search locations:
+- System PATH (default `claude` command)
+- `~/.claude/local/claude`
+- `/usr/local/bin/claude`
+- `/usr/bin/claude`
+- `/opt/homebrew/bin/claude` (macOS)
+- `~/.local/bin/claude` (Linux user install)
+
+### 4. ClaudeSessionManager
+Manages Claude Code SDK sessions for conversation continuity:
+```python
+session_manager = ClaudeSessionManager()
+options = session_manager.create_options(
+    max_turns=1,
+    continue_conversation=True
+)
+# After receiving message
+session_manager.update_from_message(message)
+session_manager.reset()  # Clear session
+```
+
+### 5. ClaudeHTTPClient
+Direct Anthropic API communication:
+```python
+client = ClaudeHTTPClient(config)
+headers = client.get_headers()
+request_data = client.create_request_data(prompt="Hello", system="Be helpful")
+response = await client.send_request(prompt="Hello", system="Be helpful")
+```
+
+### 6. ClaudeErrorHandler
+Consistent error handling across all tools:
+```python
+error_handler = ClaudeErrorHandler()
+# Handle subprocess errors
+exit_code, stdout, stderr = error_handler.handle_subprocess_error(process, "Claude operation")
+# Handle API errors
+error_handler.handle_api_error(exception, "Claude API call")
+```
+
+Error types handled:
+- Authentication errors (401)
+- Rate limiting (429)
+- Timeouts
+- Connection errors
+- Generic errors
+
+### 7. ClaudeRunner (Base Class)
+Base class for Claude runners:
+```python
+class MyRunner(ClaudeRunner):
+    def __init__(self):
+        super().__init__(config=ClaudeConfig())
+    
+    def my_method(self):
+        binary = self.get_binary()  # Gets Claude binary path
+        result = self.run_command(["--help"])  # Run Claude command
+```
+
+## Usage Examples
+
+### Example 1: m1f-claude Integration
+```python
+from tools.shared.claude_utils import ClaudeRunner, ClaudeConfig
+
+class M1FClaudeRunner(ClaudeRunner):
+    def __init__(self, claude_binary=None, config=None):
+        super().__init__(config=config, binary_path=claude_binary)
+    
+    def run_claude_streaming(self, prompt, **kwargs):
+        # Tool-specific implementation using base class methods
+        binary = self.get_binary()
+        # ...
+```
+
+### Example 2: HTML2MD Integration
+```python
+from tools.shared.claude_utils import (
+    ClaudeBinaryFinder,
+    ClaudeErrorHandler,
+    ClaudeConfig,
+    ClaudeRunner as BaseClaudeRunner
+)
+
+class ClaudeRunner(BaseClaudeRunner):
+    def __init__(self, max_workers=5, config=None):
+        super().__init__(config=config)
+        self.max_workers = max_workers
+```
+
+### Example 3: Research LLM Provider
+```python
+from tools.shared.claude_utils import (
+    ClaudeConfig,
+    ClaudeHTTPClient,
+    ClaudeSessionManager
+)
+
+class ClaudeProvider:
+    def __init__(self, api_key=None):
+        self.config = ClaudeConfig(api_key=api_key)
+        self.client = ClaudeHTTPClient(self.config)
+    
+    async def query(self, prompt):
+        response = await self.client.send_request(prompt=prompt)
+        return response
+```
+
+## Migration Guide
+
+### Before (Duplicate Code)
+```python
+# Each tool had its own implementation
+def _find_claude_binary(self):
+    try:
+        subprocess.run(["claude", "--version"], ...)
+        return "claude"
+    except:
+        # Custom search logic...
+        
+def _validate_api_key(self):
+    if not self.api_key:
+        raise ValueError("API key not set")
+```
+
+### After (Using Shared Library)
+```python
+from tools.shared.claude_utils import ClaudeBinaryFinder, ClaudeConfig
+
+# Use shared binary finder
+binary = ClaudeBinaryFinder.find()
+
+# Use shared configuration
+config = ClaudeConfig(api_key=api_key)
+config.validate()
+```
+
+## Benefits
+
+1. **Code Deduplication**: Single implementation for common functionality
+2. **Consistency**: Same error messages and behavior across all tools
+3. **Maintainability**: Single point of maintenance for Claude integration
+4. **Extensibility**: Easy to add new features to all tools
+5. **Type Safety**: Better type hints and validation
+6. **Error Handling**: Consistent, user-friendly error messages
+
+## Testing
+
+The shared library is tested through:
+- Unit tests in each tool's test suite
+- Integration tests verifying cross-tool compatibility
+- Mock tests for API interactions
+
+Run tests:
+```bash
+# Test m1f-claude integration
+pytest tests/test_m1f_claude_improvements.py
+
+# Test html2md integration  
+pytest tests/html2md/test_claude_integration.py
+
+# Test research integration
+pytest tests/research/test_llm_providers.py
+```
+
+## Future Enhancements
+
+Potential improvements:
+- Add retry logic with exponential backoff
+- Implement request/response caching
+- Add metrics and monitoring
+- Support for streaming responses in HTTP client
+- Add support for additional Claude features
+
 ======= examples/research-config.yml ======
 # Example configuration for m1f-research
 # Copy to .m1f.config.yml and customize
@@ -14121,6 +14334,22 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from tools.shared.colors import success, error, warning, info
 
+# Import shared Claude utilities
+try:
+    from .shared.claude_utils import (
+        ClaudeBinaryFinder,
+        ClaudeErrorHandler,
+        ClaudeRunner,
+        ClaudeConfig,
+    )
+except ImportError:
+    from tools.shared.claude_utils import (
+        ClaudeBinaryFinder,
+        ClaudeErrorHandler,
+        ClaudeRunner,
+        ClaudeConfig,
+    )
+
 # Import safe file operations
 try:
     from .m1f.file_operations import (
@@ -14134,55 +14363,14 @@ except ImportError:
     )
 
 
-class M1FClaudeRunner:
+class M1FClaudeRunner(ClaudeRunner):
     """Handles Claude CLI execution with streaming output and robust timeout handling."""
 
-    def __init__(self, claude_binary: Optional[str] = None):
-        self.claude_binary = claude_binary or self._find_claude_binary()
+    def __init__(
+        self, claude_binary: Optional[str] = None, config: Optional[ClaudeConfig] = None
+    ):
+        super().__init__(config=config, binary_path=claude_binary)
         self.process = None
-
-    def _find_claude_binary(self) -> str:
-        """Find Claude binary in system."""
-        # Check default command first
-        try:
-            subprocess.run(
-                ["claude", "--version"], capture_output=True, check=True, timeout=5
-            )
-            return "claude"
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            pass
-
-        # Check known locations
-        claude_paths = [
-            Path.home() / ".claude" / "local" / "node_modules" / ".bin" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/usr/bin/claude"),
-            Path.home() / ".npm-global" / "bin" / "claude",
-        ]
-
-        # Add npm global bin if available
-        try:
-            npm_prefix = subprocess.run(
-                ["npm", "config", "get", "prefix"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if npm_prefix.returncode == 0:
-                npm_bin = Path(npm_prefix.stdout.strip()) / "bin" / "claude"
-                claude_paths.append(npm_bin)
-        except:
-            pass
-
-        for path in claude_paths:
-            if safe_exists(path) and safe_is_file(path):
-                return str(path)
-
-        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
     def run_claude_streaming(
         self,
@@ -14217,7 +14405,7 @@ class M1FClaudeRunner:
         """
         # Build command - use --print mode and stdin for prompt
         cmd = [
-            self.claude_binary,
+            self.get_binary(),
             "--print",  # Use print mode for non-interactive output
             "--allowedTools",
             allowed_tools,
@@ -14374,7 +14562,7 @@ class M1FClaudeRunner:
             return -1, "\n".join(stdout_lines), "Cancelled by user"
         except Exception as e:
             if show_output:
-                error(f"\n❌ Error running Claude: {e}")
+                self.error_handler.handle_api_error(e, operation="Claude streaming")
             return -1, "\n".join(stdout_lines), str(e)
         finally:
             # Restore signal handler
@@ -32604,6 +32792,7 @@ class TestAllowedPathIntegration:
         # Set environment variable to suppress server output
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = "8080"  # Set server to use port 8080
 
         # Start the test server
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
@@ -33494,7 +33683,7 @@ from tools.html2md_tool.claude_runner import ClaudeRunner
 # Skip all tests if Claude is not available
 pytestmark = pytest.mark.skipif(
     not shutil.which("claude") and not os.getenv("ANTHROPIC_API_KEY"),
-    reason="Claude CLI not installed or API key not set"
+    reason="Claude CLI not installed or API key not set",
 )
 
 
@@ -33505,7 +33694,7 @@ class TestClaudeRunner:
         """Test that ClaudeRunner can be initialized."""
         try:
             runner = ClaudeRunner()
-            assert runner.claude_binary is not None
+            assert runner.binary_path is not None or runner.get_binary() is not None
             assert runner.max_workers == 5
         except FileNotFoundError:
             pytest.skip("Claude CLI not installed")
@@ -33604,36 +33793,46 @@ class TestRealClaudeIntegration:
             pytest.skip("Claude CLI not installed")
 
         # Use the test HTML file from test fixtures
-        test_html_file = Path(__file__).parent / "test_claude_files" / "api_documentation.html"
+        test_html_file = (
+            Path(__file__).parent / "test_claude_files" / "api_documentation.html"
+        )
         if not test_html_file.exists():
             pytest.skip(f"Test HTML file not found at {test_html_file}")
-        
+
         # Load the actual prompt template
-        prompt_path = Path(__file__).parent.parent.parent / "tools" / "html2md_tool" / "prompts" / "convert_html_to_md.md"
+        prompt_path = (
+            Path(__file__).parent.parent.parent
+            / "tools"
+            / "html2md_tool"
+            / "prompts"
+            / "convert_html_to_md.md"
+        )
         if not prompt_path.exists():
             pytest.skip(f"Prompt template not found at {prompt_path}")
-            
+
         prompt_template = prompt_path.read_text()
-        
+
         # Replace the placeholder with the test HTML file path
         prompt = prompt_template.replace("{html_content}", f"@{test_html_file}")
-        
+
         # Create output file path
         output_file = tmp_path / "converted.md"
-        
+
         # Modify prompt to save output to a specific file
-        prompt_with_output = prompt + f"\n\nPlease save the converted markdown to: {output_file}"
-        
+        prompt_with_output = (
+            prompt + f"\n\nPlease save the converted markdown to: {output_file}"
+        )
+
         # Run Claude with the actual prompt
         returncode, stdout, stderr = runner.run_claude_streaming(
             prompt=prompt_with_output,
             allowed_tools="Read,Write",  # Only allow file operations
             timeout=90,
-            show_output=False
+            show_output=False,
         )
-        
+
         assert returncode == 0, f"Claude command failed: {stderr}"
-        
+
         # Check if output file was created
         if output_file.exists():
             output = output_file.read_text()
@@ -33641,26 +33840,28 @@ class TestRealClaudeIntegration:
             # Fallback to stdout if no file was created
             output = stdout.strip()
             assert output != "", "No output received"
-        
+
         # Should include main content
         assert "API Reference" in output
         assert "Getting Started" in output
         assert "npm install test-api" in output
         assert "Authentication" in output
         assert "`GET /api/v1/users`" in output or "GET /api/v1/users" in output
-        
+
         # Should NOT include navigation/footer elements
-        assert "Test Framework" not in output or "API Reference" in output  # Title OK, nav not
+        assert (
+            "Test Framework" not in output or "API Reference" in output
+        )  # Title OK, nav not
         assert "Home > Docs" not in output  # Breadcrumb
         assert "Edit this page" not in output
         assert "Subscribe to our newsletter" not in output
         assert "This site uses cookies" not in output
-        
+
         # Should have proper markdown formatting
         assert "#" in output  # Headers
         assert "```" in output or "    " in output  # Code blocks
         assert "|" in output  # Table formatting
-        
+
         # Cleanup: Remove the output file if it was created
         if output_file.exists():
             output_file.unlink()
@@ -33897,6 +34098,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -33917,6 +34119,18 @@ def is_httrack_installed():
         return False
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 # Skip all tests if HTTrack is not installed
 pytestmark = pytest.mark.skipif(
     not is_httrack_installed(),
@@ -33927,11 +34141,19 @@ pytestmark = pytest.mark.skipif(
 class TestHTTrackIntegration:
     """Integration tests for HTTrack scraper."""
 
+    server_port = None
+    server_url = None
+
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -33948,7 +34170,7 @@ class TestHTTrackIntegration:
         max_attempts = 30
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(cls.server_url)
                 if response.status_code == 200:
                     break
             except requests.ConnectionError:
@@ -33987,10 +34209,12 @@ class TestHTTrackIntegration:
             # Convert to URL path
             url_path = "/" + str(rel_path).replace("\\", "/")
             if "localhost" in url_path:
-                # Extract path after localhost:8080
-                parts = url_path.split("localhost:8080/")
-                if len(parts) > 1:
-                    url_path = "/" + parts[1]
+                # Extract path after localhost:port
+                localhost_prefix = f"localhost:{cls.server_port}/"
+                if localhost_prefix in url_path:
+                    parts = url_path.split(localhost_prefix)
+                    if len(parts) > 1:
+                        url_path = "/" + parts[1]
             scraped_paths.add(url_path)
         return scraped_paths
 
@@ -34009,7 +34233,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34039,7 +34263,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34067,7 +34291,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34098,7 +34322,7 @@ class TestHTTrackIntegration:
         # Note: HTTrack's allowed_path support is limited
         # It uses URL filters which may not work exactly like other scrapers
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/api/overview.html"
+        start_url = f"{cls.server_url}/api/overview.html"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34125,7 +34349,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         # HTTrack should use the custom user agent
         result = await crawler.crawl(start_url, output_dir)
@@ -34148,7 +34372,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -34435,7 +34659,7 @@ Usage:
     python test_local_scraping.py
 
 Requirements:
-    - Local test server running at http://localhost:8080
+    - Local test server running at http://localhost:8090 (or next available port)
     - Start server with: cd tests/html2md_server && python server.py
 
 Features:
@@ -34821,6 +35045,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -34832,14 +35057,34 @@ from tools.scrape_tool.scrapers.beautifulsoup import BeautifulSoupScraper
 from tools.scrape_tool.scrapers.base import ScraperConfig
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestMeaningfulScraperFeatures:
     """Tests that verify actual scraper functionality, not just configuration."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
 
@@ -34855,7 +35100,7 @@ class TestMeaningfulScraperFeatures:
         server_started = False
         for i in range(30):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(cls.server_url)
                 if response.status_code == 200:
                     server_started = True
                     break
@@ -34901,8 +35146,8 @@ class TestMeaningfulScraperFeatures:
         scraper = BeautifulSoupScraper(config)
 
         # URLs with different query params should normalize to same URL
-        url1 = "http://localhost:8080/page/index?tab=1&view=list"
-        url2 = "http://localhost:8080/page/index?tab=2&view=grid"
+        url1 = f"{cls.server_url}/page/index?tab=1&view=list"
+        url2 = f"{cls.server_url}/page/index?tab=2&view=grid"
 
         normalized1 = scraper._normalize_url(url1)
         normalized2 = scraper._normalize_url(url2)
@@ -34941,7 +35186,9 @@ class TestMeaningfulScraperFeatures:
 
         async with scraper:
             # Test 1: Page in allowed_path with canonical outside should NOT be skipped
-            url_in_allowed = "http://localhost:8080/page/m1f-documentation?canonical=http://localhost:8080/"
+            url_in_allowed = (
+                f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/"
+            )
             page = await scraper.scrape_url(url_in_allowed)
 
             assert (
@@ -34949,7 +35196,7 @@ class TestMeaningfulScraperFeatures:
             ), "Page in allowed_path should be kept even if canonical points outside"
 
             # Test 2: Page in allowed_path with canonical also in allowed_path but different
-            url_with_canonical_in_path = "http://localhost:8080/page/m1f-documentation?canonical=http://localhost:8080/page/html2md-documentation"
+            url_with_canonical_in_path = f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/page/html2md-documentation"
             page2 = await scraper.scrape_url(url_with_canonical_in_path)
 
             assert (
@@ -34972,7 +35219,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         # Actually crawl the site
         await crawler.crawl(start_url, output_dir)
@@ -35023,7 +35270,7 @@ class TestMeaningfulScraperFeatures:
 
         async with scraper:
             # Scrape first duplicate page
-            page1 = await scraper.scrape_url("http://localhost:8080/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
             assert page1 is not None, "First duplicate page should be scraped"
 
             # Simulate the checksum being stored (normally done by crawler)
@@ -35037,7 +35284,7 @@ class TestMeaningfulScraperFeatures:
                 scraper._checksum_callback = lambda c: c in seen_checksums
 
             # Try to scrape second duplicate page
-            page2 = await scraper.scrape_url("http://localhost:8080/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
 
             # This should be None because content is duplicate
             assert page2 is None, "Second page with duplicate content should be skipped"
@@ -35057,7 +35304,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         await crawler.crawl(start_url, output_dir)
 
@@ -35069,7 +35316,7 @@ class TestMeaningfulScraperFeatures:
         for file in all_files:
             parts = file.relative_to(output_dir).parts
             # If we have paths like localhost/api/endpoints.html, that's depth 2+
-            if len(parts) >= 3:  # localhost:8080/category/page.html
+            if len(parts) >= 3:  # localhost:port/category/page.html
                 has_deep_paths = True
                 break
 
@@ -35111,9 +35358,7 @@ class TestMeaningfulScraperFeatures:
             start_time = time.time()
 
             try:
-                page = await scraper.scrape_url(
-                    "http://localhost:8080/test/slow?delay=10"
-                )
+                page = await scraper.scrape_url(f"{cls.server_url}/test/slow?delay=10")
                 # If we get here, timeout didn't work
                 elapsed = time.time() - start_time
                 assert elapsed < 5, f"Request should have timed out but took {elapsed}s"
@@ -35709,17 +35954,17 @@ def find_free_port(start_port: int = 8090) -> int:
 
 class TestPlaywrightIntegration:
     """Integration tests for Playwright scraper."""
-    
+
     server_port = None
     server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
-        # Find a free port
+        # Find a free port starting from 8090
         cls.server_port = find_free_port(8090)
-        cls.server_url = f"http://localhost:8090"
-        
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
         env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
@@ -35845,9 +36090,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(
-                f"{cls.server_url}/page/m1f-documentation"
-            )
+            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
 
             assert page is not None
             # Playwright extracts comprehensive metadata
@@ -35900,9 +36143,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Test page with canonical URL - using scrape_site for proper flow
-            start_url = (
-                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
-            )
+            start_url = f"{cls.server_url}/page/index?canonical={cls.server_url}/"
 
             pages_scraped = []
             async for page in scraper.scrape_site(start_url):
@@ -36019,6 +36260,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import signal
 import requests
 import sqlite3
@@ -36030,15 +36272,35 @@ from tools.scrape_tool.config import Config, CrawlerConfig, ScraperBackend
 from tools.scrape_tool.crawlers import WebCrawler
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestScraperParameters:
     """Test all m1f-scrape parameters with local test server."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         # Set environment variable to suppress server output
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -36058,7 +36320,7 @@ class TestScraperParameters:
         max_attempts = 30
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(f"{cls.server_url}/")
                 if response.status_code == 200:
                     break
             except requests.ConnectionError as e:
@@ -36275,7 +36537,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -36316,7 +36578,7 @@ class TestScraperParameters:
 
         try:
             crawler = WebCrawler(config.crawler)
-            start_url = "http://localhost:8080/"
+            start_url = f"{cls.server_url}/"
 
             result = await crawler.crawl(start_url, output_dir)
             scraped_files = self.get_scraped_files(output_dir)
@@ -36367,7 +36629,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -36401,10 +36663,10 @@ class TestScraperParameters:
 
         # Insert test data
         test_urls = [
-            ("http://localhost:8080/", 200, None),
-            ("http://localhost:8080/docs/", 200, None),
-            ("http://localhost:8080/api/", 404, "Not found"),
-            ("http://localhost:8080/broken/", 500, "Server error"),
+            (f"{cls.server_url}/", 200, None),
+            (f"{cls.server_url}/docs/", 200, None),
+            (f"{cls.server_url}/api/", 404, "Not found"),
+            (f"{cls.server_url}/broken/", 500, "Server error"),
         ]
 
         cursor.executemany(
@@ -36466,7 +36728,7 @@ class TestScraperParameters:
 
         # With SSRF disabled, localhost should work
         crawler = WebCrawler(config_disabled.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_files = self.get_scraped_files(output_dir)
@@ -36956,6 +37218,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -36965,14 +37228,34 @@ from tools.scrape_tool.crawlers import WebCrawler
 from tools.scrape_tool.scrapers.selectolax import SelectolaxScraper
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestSelectolaxIntegration:
     """Integration tests for Selectolax scraper."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -36990,7 +37273,7 @@ class TestSelectolaxIntegration:
         server_started = False
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(f"{cls.server_url}/")
                 if response.status_code == 200:
                     server_started = True
                     break
@@ -37054,7 +37337,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -37079,9 +37362,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape a page with known metadata
-            page = await scraper.scrape_url(
-                "http://localhost:8080/page/m1f-documentation"
-            )
+            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
 
             assert page is not None
             assert page.title is not None
@@ -37106,7 +37387,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/docs/index.html"
+        start_url = f"{cls.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -37140,7 +37421,7 @@ class TestSelectolaxIntegration:
         async with scraper:
             # Test page with canonical URL
             url_with_canonical = (
-                "http://localhost:8080/page/index?canonical=http://localhost:8080/"
+                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
             )
             page = await scraper.scrape_url(url_with_canonical)
 
@@ -37174,8 +37455,8 @@ class TestSelectolaxIntegration:
         scraper = SelectolaxScraper(scraper_config)
 
         # Test URL normalization
-        url1 = scraper._normalize_url("http://localhost:8080/page/test?tab=1")
-        url2 = scraper._normalize_url("http://localhost:8080/page/test?tab=2")
+        url1 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=1")
+        url2 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=2")
 
         # With ignore_get_params=True, these should be the same
         assert url1 == url2
@@ -37209,7 +37490,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape duplicate content pages
-            page1 = await scraper.scrape_url("http://localhost:8080/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
             assert page1 is not None  # First should succeed
 
             # Calculate and store checksum
@@ -37220,7 +37501,7 @@ class TestSelectolaxIntegration:
                 seen_checksums.add(checksum)
 
             # Second should be skipped due to duplicate content
-            page2 = await scraper.scrape_url("http://localhost:8080/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
             # Note: This depends on the scraper checking content before returning
 
 
@@ -48250,7 +48531,7 @@ class TestClaudeProvider:
 
         # Mock aiohttp.ClientSession
         with (
-            patch.object(claude_provider, "_validate_api_key"),
+            patch.object(claude_provider.config, "validate"),
             patch("aiohttp.ClientSession") as mock_session_class,
         ):
             mock_resp = MockResponse(200, mock_response)
@@ -48306,7 +48587,7 @@ class TestClaudeProvider:
                 return None
 
         with (
-            patch.object(claude_provider, "_validate_api_key"),
+            patch.object(claude_provider.config, "validate"),
             patch("aiohttp.ClientSession") as mock_session_class,
         ):
             mock_resp = MockResponse(400, {"error": {"message": "Bad request"}})
@@ -48363,9 +48644,9 @@ class TestClaudeProvider:
 
     def test_claude_validate_api_key(self, claude_provider):
         """Test API key validation"""
-        claude_provider.api_key = None
+        claude_provider.config.api_key = None
         with pytest.raises(ValueError):
-            claude_provider._validate_api_key()
+            claude_provider.config.validate()
 
 
 class TestGeminiProvider:
@@ -54535,8 +54816,16 @@ from ..shared.colors import (
     COLORAMA_AVAILABLE,
 )
 
+# Import shared Claude utilities
+from ..shared.claude_utils import (
+    ClaudeBinaryFinder,
+    ClaudeErrorHandler,
+    ClaudeConfig,
+    ClaudeRunner as BaseClaudeRunner,
+)
 
-class ClaudeRunner:
+
+class ClaudeRunner(BaseClaudeRunner):
     """Handles Claude CLI execution with reliable subprocess support."""
 
     def __init__(
@@ -54544,38 +54833,11 @@ class ClaudeRunner:
         max_workers: int = 5,
         working_dir: Optional[str] = None,
         claude_binary: Optional[str] = None,
+        config: Optional[ClaudeConfig] = None,
     ):
+        super().__init__(config=config, binary_path=claude_binary)
         self.max_workers = max_workers
         self.working_dir = working_dir or str(Path.cwd())
-        self.claude_binary = claude_binary or self._find_claude_binary()
-
-    def _find_claude_binary(self) -> str:
-        """Find Claude binary in system."""
-        # Try default command first
-        try:
-            subprocess.run(
-                ["claude", "--version"], capture_output=True, check=True, timeout=5
-            )
-            return "claude"
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            pass
-
-        # Check known locations
-        claude_paths = [
-            Path.home() / ".claude" / "local" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/usr/bin/claude"),
-        ]
-
-        for path in claude_paths:
-            if safe_exists(path) and safe_is_file(path):
-                return str(path)
-
-        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
     def run_claude_simple(
         self,
@@ -54591,7 +54853,7 @@ class ClaudeRunner:
         Returns: (returncode, stdout, stderr)
         """
         cmd = [
-            self.claude_binary,
+            self.get_binary(),
             "--print",  # Use print mode for non-interactive output
             "--allowedTools",
             allowed_tools,
@@ -54644,7 +54906,7 @@ class ClaudeRunner:
             )
             return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
-            error(f"Error running Claude: {e}")
+            self.error_handler.handle_api_error(e, operation="Claude simple")
             return -1, "", str(e)
 
     def run_claude_streaming(
@@ -54665,7 +54927,7 @@ class ClaudeRunner:
         work_dir = working_dir if working_dir is not None else self.working_dir
 
         # Build command
-        cmd = [self.claude_binary, "-p", "--allowedTools", allowed_tools]
+        cmd = [self.get_binary(), "-p", "--allowedTools", allowed_tools]
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
@@ -54752,7 +55014,7 @@ class ClaudeRunner:
 
         except Exception as e:
             if show_output:
-                error(f"Error running Claude: {e}")
+                self.error_handler.handle_api_error(e, operation="Claude streaming")
             return -1, "\n".join(stdout_lines), str(e)
 
     def run_claude_parallel(
@@ -69558,6 +69820,14 @@ from claude_code_sdk import (
     ResultMessage,
 )
 
+# Import shared Claude utilities
+from ..shared.claude_utils import (
+    ClaudeConfig,
+    ClaudeHTTPClient,
+    ClaudeSessionManager,
+    ClaudeErrorHandler,
+)
+
 
 @dataclass
 class LLMResponse:
@@ -69631,14 +69901,6 @@ class LLMProvider(ABC):
         """
         pass
 
-    def _validate_api_key(self):
-        """Validate that API key is set"""
-        if not self.api_key:
-            raise ValueError(
-                f"API key not set for {self.__class__.__name__}. "
-                f"Set via environment variable or pass directly."
-            )
-
 
 class ClaudeProvider(LLMProvider):
     """Claude API provider via Anthropic"""
@@ -69646,8 +69908,11 @@ class ClaudeProvider(LLMProvider):
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         super().__init__(api_key, model)
-        self.base_url = "https://api.anthropic.com/v1"
- 
+
+        # Use shared configuration and HTTP client
+        self.config = ClaudeConfig(api_key=api_key, model=self.model)
+        self.client = ClaudeHTTPClient(self.config)
+        self.error_handler = ClaudeErrorHandler()
 
     @property
     def default_model(self) -> str:
@@ -69656,47 +69921,19 @@ class ClaudeProvider(LLMProvider):
     async def query(
         self, prompt: str, system: Optional[str] = None, **kwargs
     ) -> LLMResponse:
-        """Query Claude API"""
-        self._validate_api_key()
-
-        headers = {
-            "x-api-key": self.api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        }
-
-        messages = [{"role": "user", "content": prompt}]
-
-        data = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": kwargs.get("max_tokens", 4096),
-            "temperature": kwargs.get("temperature", 0.7),
-        }
-
-        if system:
-            data["system"] = system
-
+        """Query Claude API using shared HTTP client"""
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.base_url}/messages", headers=headers, json=data
-                ) as response:
-                    result = await response.json()
+            response = await self.client.send_request(
+                prompt=prompt, system=system, **kwargs
+            )
 
-                    if response.status != 200:
-                        return LLMResponse(
-                            content="",
-                            error=f"API error: {result.get('error', {}).get('message', 'Unknown error')}",
-                        )
-
-                    return LLMResponse(
-                        content=result["content"][0]["text"],
-                        raw_response=result,
-                        usage=result.get("usage"),
-                    )
-
+            return LLMResponse(
+                content=response["content"][0]["text"],
+                raw_response=response,
+                usage=response.get("usage"),
+            )
         except Exception as e:
+            self.error_handler.handle_api_error(e, operation="Claude API query")
             return LLMResponse(content="", error=str(e))
 
     async def search_web(
@@ -69909,8 +70146,8 @@ class ClaudeCodeProvider(LLMProvider):
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         # Claude Code doesn't need an API key in the traditional sense
         super().__init__(api_key="claude-code-sdk", model=model)
-        self.session_id = None
-        self.conversation_started = False
+        self.session_manager = ClaudeSessionManager()
+        self.error_handler = ClaudeErrorHandler()
 
     @property
     def default_model(self) -> str:
@@ -69928,16 +70165,10 @@ class ClaudeCodeProvider(LLMProvider):
         try:
             messages: List[Message] = []
 
-            # Configure options - using the same pattern as m1f-claude
-            options = ClaudeCodeOptions(
+            # Use shared session manager for options
+            options = self.session_manager.create_options(
                 max_turns=kwargs.get("max_turns", 1),
-                continue_conversation=not self.conversation_started
-                and self.session_id is not None,
-                resume=(
-                    self.session_id
-                    if not self.conversation_started and self.session_id
-                    else None
-                ),
+                continue_conversation=kwargs.get("continue_conversation", False),
             )
 
             # Collect messages
@@ -69946,11 +70177,8 @@ class ClaudeCodeProvider(LLMProvider):
             async for message in claude_query(prompt=full_prompt, options=options):
                 messages.append(message)
 
-                # Extract session ID from ResultMessage
-                if isinstance(message, ResultMessage):
-                    if hasattr(message, "session_id"):
-                        self.session_id = message.session_id
-                        self.conversation_started = True
+                # Update session state using shared manager
+                self.session_manager.update_from_message(message)
 
                 # Extract text content from different message types
                 if hasattr(message, "content"):
@@ -69976,12 +70204,13 @@ class ClaudeCodeProvider(LLMProvider):
             return LLMResponse(
                 content=content,
                 raw_response={
-                    "session_id": self.session_id,
+                    "session_id": self.session_manager.session_id,
                     "message_count": len(messages),
                 },
             )
 
         except Exception as e:
+            self.error_handler.handle_api_error(e, operation="Claude Code query")
             return LLMResponse(content="", error=str(e))
 
     async def search_web(
@@ -73846,11 +74075,25 @@ import logging
 from typing import Optional
 from pathlib import Path
 
-from ..shared.logging import (
-    LoggerManager as SharedLoggerManager,
-    setup_logging as shared_setup_logging,
-    get_logger as shared_get_logger,
-)
+# Try different import strategies for shared logging
+try:
+    from ..shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
+except ImportError:
+    import os
+    import sys
+
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from tools.shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
 
 # Use unified colorama module for legacy compatibility
 try:
@@ -74921,16 +75164,21 @@ from .exceptions import FileWriteError, ChecksumMismatchError
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
-    from tools.m1f.file_operations import (
+    from ..m1f.file_operations import (
         safe_exists,
         safe_mkdir,
         safe_open,
         safe_write_text,
         safe_read_text,
     )
-except ImportError:
-    # Fallback for direct script execution
-    from ..m1f.file_operations import (
+except (ImportError, ValueError):
+    # Fallback for direct script execution or when running as main module
+    import sys
+    from pathlib import Path
+
+    # Add parent directory to path for imports
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from tools.m1f.file_operations import (
         safe_exists,
         safe_mkdir,
         safe_open,
@@ -79224,8 +79472,8 @@ except ImportError:
 
 # Import colors module
 from .colors import (
-    Colors, 
-    ColoredFormatter, 
+    Colors,
+    ColoredFormatter,
     ColoredHelpFormatter,
     COLORAMA_AVAILABLE,
     success,
@@ -79233,32 +79481,524 @@ from .colors import (
     warning,
     info,
     header,
-    setup_logging
 )
+
+# Import CLI utilities
+try:
+    from .cli import CustomArgumentParser, ArgumentBuilder, BaseCLI, SubcommandCLI
+except ImportError:
+    CustomArgumentParser = None
+    ArgumentBuilder = None
+    BaseCLI = None
+    SubcommandCLI = None
+
+# Import logging utilities
+try:
+    from .logging import (
+        LoggingConfig,
+        LoggerManager,
+        setup_logging,
+        get_logger,
+        configure_logging,
+    )
+except ImportError:
+    LoggingConfig = None
+    LoggerManager = None
+    setup_logging = None
+    get_logger = None
+    configure_logging = None
 
 __all__ = [
     # Colors module exports
-    'Colors',
-    'ColoredFormatter',
-    'ColoredHelpFormatter',
-    'COLORAMA_AVAILABLE',
-    'success',
-    'error',
-    'warning',
-    'info',
-    'header',
-    'setup_logging',
+    "Colors",
+    "ColoredFormatter",
+    "ColoredHelpFormatter",
+    "COLORAMA_AVAILABLE",
+    "success",
+    "error",
+    "warning",
+    "info",
+    "header",
+    # CLI module exports
+    "CustomArgumentParser",
+    "ArgumentBuilder",
+    "BaseCLI",
+    "SubcommandCLI",
+    # Logging module exports
+    "LoggingConfig",
+    "LoggerManager",
+    "setup_logging",
+    "get_logger",
+    "configure_logging",
     # Existing exports (if available)
-    'PromptLoader',
-    'load_prompt',
-    'format_prompt',
-    'load_config_file',
-    'save_config_file',
-    'ensure_path',
-    'get_project_root',
+    "PromptLoader",
+    "load_prompt",
+    "format_prompt",
+    "load_config_file",
+    "save_config_file",
+    "ensure_path",
+    "get_project_root",
 ]
 
 __version__ = "0.1.0"
+
+======= tools/shared/claude_utils.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Shared Claude integration utilities for m1f ecosystem.
+
+This module provides common functionality for Claude integration across
+m1f-claude, m1f-html2md, and m1f-research tools.
+"""
+
+from __future__ import annotations
+
+import os
+import subprocess
+import logging
+from pathlib import Path
+from typing import Optional, Dict, Any, List, Tuple
+from dataclasses import dataclass, field
+from enum import Enum
+
+# Use safe file operations
+from ..m1f.file_operations import safe_exists, safe_is_file
+
+# Use unified colorama module
+from .colors import warning, error, info
+
+# Optional imports for Claude Code SDK
+try:
+    from claude_code_sdk import (
+        ClaudeCodeOptions,
+        Message,
+        ResultMessage,
+        query as claude_query,
+    )
+
+    CLAUDE_CODE_SDK_AVAILABLE = True
+except ImportError:
+    CLAUDE_CODE_SDK_AVAILABLE = False
+    ClaudeCodeOptions = None
+    Message = None
+    ResultMessage = None
+    claude_query = None
+
+# Optional imports for async HTTP
+try:
+    import aiohttp
+
+    AIOHTTP_AVAILABLE = True
+except ImportError:
+    AIOHTTP_AVAILABLE = False
+
+
+class ClaudeModel(Enum):
+    """Available Claude models."""
+
+    OPUS = "claude-3-opus-20240229"
+    SONNET = "claude-3-sonnet-20240229"
+    HAIKU = "claude-3-haiku-20240307"
+    CLAUDE_2_1 = "claude-2.1"
+    CLAUDE_2 = "claude-2.0"
+
+    @classmethod
+    def get_default(cls) -> str:
+        """Get the default model."""
+        return cls.OPUS.value
+
+
+@dataclass
+class ClaudeConfig:
+    """Configuration for Claude integration."""
+
+    api_key: Optional[str] = None
+    model: str = field(default_factory=ClaudeModel.get_default)
+    base_url: str = "https://api.anthropic.com/v1"
+    max_tokens: int = 4096
+    temperature: float = 0.7
+    timeout: int = 300
+    max_retries: int = 3
+
+    def __post_init__(self):
+        """Initialize API key from environment if not provided."""
+        if not self.api_key:
+            self.api_key = os.getenv("ANTHROPIC_API_KEY")
+
+    def validate(self) -> None:
+        """Validate configuration."""
+        if not self.api_key:
+            raise ValueError(
+                "Claude API key not set. Set ANTHROPIC_API_KEY environment variable "
+                "or provide api_key in configuration."
+            )
+
+
+class ClaudeBinaryFinder:
+    """Utility for finding Claude CLI binary."""
+
+    DEFAULT_PATHS = [
+        Path.home() / ".claude" / "local" / "claude",
+        Path("/usr/local/bin/claude"),
+        Path("/usr/bin/claude"),
+        Path("/opt/homebrew/bin/claude"),  # macOS with Homebrew
+        Path.home() / ".local/bin/claude",  # Linux user install
+    ]
+
+    @classmethod
+    def find(cls, custom_path: Optional[str] = None) -> str:
+        """
+        Find Claude binary in system.
+
+        Args:
+            custom_path: Optional custom path to Claude binary
+
+        Returns:
+            Path to Claude binary
+
+        Raises:
+            FileNotFoundError: If Claude binary cannot be found
+        """
+        # Try custom path first
+        if custom_path:
+            if safe_exists(custom_path) and safe_is_file(custom_path):
+                return custom_path
+
+        # Try default command
+        if cls._command_exists("claude"):
+            return "claude"
+
+        # Check known locations
+        for path in cls.DEFAULT_PATHS:
+            if safe_exists(path) and safe_is_file(path):
+                return str(path)
+
+        # Try to find in PATH
+        result = subprocess.run(
+            ["which", "claude"], capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+
+        raise FileNotFoundError(
+            "Claude binary not found. Please install Claude CLI from "
+            "https://docs.anthropic.com/claude/docs/claude-cli"
+        )
+
+    @staticmethod
+    def _command_exists(command: str) -> bool:
+        """Check if a command exists in PATH."""
+        try:
+            subprocess.run(
+                [command, "--version"], capture_output=True, check=True, timeout=5
+            )
+            return True
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
+            return False
+
+
+class ClaudeSessionManager:
+    """Manages Claude Code SDK sessions."""
+
+    def __init__(self):
+        """Initialize session manager."""
+        self.session_id: Optional[str] = None
+        self.conversation_started: bool = False
+        self.messages: List[Message] = []
+
+    def create_options(
+        self, max_turns: int = 1, continue_conversation: bool = False, **kwargs
+    ) -> ClaudeCodeOptions:
+        """
+        Create Claude Code SDK options.
+
+        Args:
+            max_turns: Maximum conversation turns
+            continue_conversation: Whether to continue existing conversation
+            **kwargs: Additional options
+
+        Returns:
+            ClaudeCodeOptions instance
+        """
+        if not CLAUDE_CODE_SDK_AVAILABLE:
+            raise ImportError("Claude Code SDK is not installed")
+
+        return ClaudeCodeOptions(
+            max_turns=max_turns,
+            continue_conversation=continue_conversation and self.session_id is not None,
+            resume=(
+                self.session_id
+                if not self.conversation_started and self.session_id
+                else None
+            ),
+            **kwargs,
+        )
+
+    def update_from_message(self, message: Message) -> None:
+        """
+        Update session state from a message.
+
+        Args:
+            message: Message from Claude Code SDK
+        """
+        self.messages.append(message)
+
+        if isinstance(message, ResultMessage):
+            if hasattr(message, "session_id"):
+                self.session_id = message.session_id
+                self.conversation_started = True
+
+    def reset(self) -> None:
+        """Reset session state."""
+        self.session_id = None
+        self.conversation_started = False
+        self.messages.clear()
+
+
+class ClaudeHTTPClient:
+    """HTTP client for direct Anthropic API calls."""
+
+    def __init__(self, config: ClaudeConfig):
+        """
+        Initialize HTTP client.
+
+        Args:
+            config: Claude configuration
+        """
+        self.config = config
+        self.config.validate()
+
+    def get_headers(self) -> Dict[str, str]:
+        """Get HTTP headers for API requests."""
+        return {
+            "x-api-key": self.config.api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+
+    def create_request_data(
+        self, prompt: str, system: Optional[str] = None, **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Create request data for API call.
+
+        Args:
+            prompt: User prompt
+            system: Optional system prompt
+            **kwargs: Additional parameters
+
+        Returns:
+            Request data dictionary
+        """
+        data = {
+            "model": kwargs.get("model", self.config.model),
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
+            "temperature": kwargs.get("temperature", self.config.temperature),
+        }
+
+        if system:
+            data["system"] = system
+
+        # Add any additional parameters
+        for key, value in kwargs.items():
+            if key not in data:
+                data[key] = value
+
+        return data
+
+    async def send_request(
+        self, prompt: str, system: Optional[str] = None, **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Send async request to Claude API.
+
+        Args:
+            prompt: User prompt
+            system: Optional system prompt
+            **kwargs: Additional parameters
+
+        Returns:
+            API response dictionary
+
+        Raises:
+            ImportError: If aiohttp is not available
+            Exception: For API errors
+        """
+        if not AIOHTTP_AVAILABLE:
+            raise ImportError("aiohttp is required for async requests")
+
+        headers = self.get_headers()
+        data = self.create_request_data(prompt, system, **kwargs)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{self.config.base_url}/messages",
+                headers=headers,
+                json=data,
+                timeout=aiohttp.ClientTimeout(total=self.config.timeout),
+            ) as response:
+                response_data = await response.json()
+
+                if response.status != 200:
+                    raise Exception(f"API error: {response_data}")
+
+                return response_data
+
+
+class ClaudeErrorHandler:
+    """Centralized error handling for Claude operations."""
+
+    @staticmethod
+    def handle_subprocess_error(
+        process: subprocess.CompletedProcess, operation: str = "Claude operation"
+    ) -> Tuple[int, str, str]:
+        """
+        Handle subprocess errors consistently.
+
+        Args:
+            process: Completed process
+            operation: Description of operation
+
+        Returns:
+            Tuple of (exit_code, stdout, stderr)
+        """
+        if process.returncode == 0:
+            return process.returncode, process.stdout, process.stderr
+
+        error_msg = process.stderr or "Unknown error"
+
+        # Common error patterns
+        if "timeout" in error_msg.lower():
+            warning(f"⏰ {operation} timed out")
+        elif "api" in error_msg.lower() and "key" in error_msg.lower():
+            error(f"🔑 API key error in {operation}")
+        elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
+            warning(f"⚠️ Rate limit hit in {operation}")
+        else:
+            error(f"❌ {operation} failed: {error_msg}")
+
+        return process.returncode, process.stdout, process.stderr
+
+    @staticmethod
+    def handle_api_error(
+        exception: Exception, operation: str = "Claude API call"
+    ) -> None:
+        """
+        Handle API errors consistently.
+
+        Args:
+            exception: Exception that occurred
+            operation: Description of operation
+        """
+        error_str = str(exception)
+
+        if "401" in error_str or "authentication" in error_str.lower():
+            error(f"🔑 Authentication failed for {operation}. Check your API key.")
+        elif "429" in error_str or "rate" in error_str.lower():
+            warning(f"⚠️ Rate limit exceeded in {operation}. Please wait and retry.")
+        elif "timeout" in error_str.lower():
+            warning(f"⏰ {operation} timed out")
+        elif "connection" in error_str.lower():
+            error(f"🌐 Connection error in {operation}")
+        else:
+            error(f"❌ {operation} failed: {error_str}")
+
+
+class ClaudeRunner:
+    """Base class for Claude runners."""
+
+    def __init__(
+        self,
+        config: Optional[ClaudeConfig] = None,
+        binary_path: Optional[str] = None,
+        logger: Optional[logging.Logger] = None,
+    ):
+        """
+        Initialize Claude runner.
+
+        Args:
+            config: Claude configuration
+            binary_path: Optional path to Claude binary
+            logger: Optional logger
+        """
+        self.config = config or ClaudeConfig()
+        self.binary_path = binary_path
+        self.logger = logger or logging.getLogger(__name__)
+        self.error_handler = ClaudeErrorHandler()
+
+    def get_binary(self) -> str:
+        """Get Claude binary path."""
+        if not hasattr(self, "_binary"):
+            self._binary = ClaudeBinaryFinder.find(self.binary_path)
+        return self._binary
+
+    def run_command(
+        self,
+        args: List[str],
+        input_text: Optional[str] = None,
+        timeout: Optional[int] = None,
+    ) -> Tuple[int, str, str]:
+        """
+        Run Claude command.
+
+        Args:
+            args: Command arguments
+            input_text: Optional input text
+            timeout: Optional timeout in seconds
+
+        Returns:
+            Tuple of (exit_code, stdout, stderr)
+        """
+        cmd = [self.get_binary()] + args
+
+        try:
+            process = subprocess.run(
+                cmd,
+                input=input_text,
+                capture_output=True,
+                text=True,
+                timeout=timeout or self.config.timeout,
+            )
+            return self.error_handler.handle_subprocess_error(
+                process, operation="Claude CLI"
+            )
+        except subprocess.TimeoutExpired:
+            return -1, "", f"Process timed out after {timeout}s"
+        except Exception as e:
+            self.error_handler.handle_api_error(e, operation="Claude CLI")
+            return -1, "", str(e)
+
+
+# Export commonly used components
+__all__ = [
+    "ClaudeModel",
+    "ClaudeConfig",
+    "ClaudeBinaryFinder",
+    "ClaudeSessionManager",
+    "ClaudeHTTPClient",
+    "ClaudeErrorHandler",
+    "ClaudeRunner",
+    "CLAUDE_CODE_SDK_AVAILABLE",
+    "AIOHTTP_AVAILABLE",
+]
 
 ======= tools/shared/cli.py ======
 # Copyright 2025 Franz und Franz GmbH
@@ -79828,12 +80568,14 @@ def header(title: str, subtitle: Optional[str] = None, file=None) -> None:
         print(file=file or sys.stdout)
 
 
-def setup_logging(
+def setup_basic_logging(
     level: int = logging.INFO, fmt: Optional[str] = None, colored: bool = True
 ) -> logging.Logger:
     """
-    Set up logging with optional colored output.
+    Set up basic logging with optional colored output.
     Returns the root logger.
+
+    Note: This is a legacy function. Use tools.shared.logging.setup_logging instead.
     """
     # Remove existing handlers
     root_logger = logging.getLogger()

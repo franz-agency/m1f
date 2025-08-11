@@ -137,7 +137,7 @@ class TestClaudeProvider:
 
         # Mock aiohttp.ClientSession
         with (
-            patch.object(claude_provider, "_validate_api_key"),
+            patch.object(claude_provider.config, "validate"),
             patch("aiohttp.ClientSession") as mock_session_class,
         ):
             mock_resp = MockResponse(200, mock_response)
@@ -193,7 +193,7 @@ class TestClaudeProvider:
                 return None
 
         with (
-            patch.object(claude_provider, "_validate_api_key"),
+            patch.object(claude_provider.config, "validate"),
             patch("aiohttp.ClientSession") as mock_session_class,
         ):
             mock_resp = MockResponse(400, {"error": {"message": "Bad request"}})
@@ -250,9 +250,9 @@ class TestClaudeProvider:
 
     def test_claude_validate_api_key(self, claude_provider):
         """Test API key validation"""
-        claude_provider.api_key = None
+        claude_provider.config.api_key = None
         with pytest.raises(ValueError):
-            claude_provider._validate_api_key()
+            claude_provider.config.validate()
 
 
 class TestGeminiProvider:

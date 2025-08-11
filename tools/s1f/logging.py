@@ -18,11 +18,25 @@ import logging
 from typing import Optional
 from pathlib import Path
 
-from ..shared.logging import (
-    LoggerManager as SharedLoggerManager,
-    setup_logging as shared_setup_logging,
-    get_logger as shared_get_logger,
-)
+# Try different import strategies for shared logging
+try:
+    from ..shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
+except ImportError:
+    import os
+    import sys
+
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from tools.shared.logging import (
+        LoggerManager as SharedLoggerManager,
+        setup_logging as shared_setup_logging,
+        get_logger as shared_get_logger,
+    )
 
 # Use unified colorama module for legacy compatibility
 try:

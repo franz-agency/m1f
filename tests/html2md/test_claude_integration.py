@@ -28,7 +28,7 @@ from tools.html2md_tool.claude_runner import ClaudeRunner
 # Skip all tests if Claude is not available
 pytestmark = pytest.mark.skipif(
     not shutil.which("claude") and not os.getenv("ANTHROPIC_API_KEY"),
-    reason="Claude CLI not installed or API key not set"
+    reason="Claude CLI not installed or API key not set",
 )
 
 
@@ -39,7 +39,7 @@ class TestClaudeRunner:
         """Test that ClaudeRunner can be initialized."""
         try:
             runner = ClaudeRunner()
-            assert runner.claude_binary is not None
+            assert runner.binary_path is not None or runner.get_binary() is not None
             assert runner.max_workers == 5
         except FileNotFoundError:
             pytest.skip("Claude CLI not installed")
@@ -138,36 +138,46 @@ class TestRealClaudeIntegration:
             pytest.skip("Claude CLI not installed")
 
         # Use the test HTML file from test fixtures
-        test_html_file = Path(__file__).parent / "test_claude_files" / "api_documentation.html"
+        test_html_file = (
+            Path(__file__).parent / "test_claude_files" / "api_documentation.html"
+        )
         if not test_html_file.exists():
             pytest.skip(f"Test HTML file not found at {test_html_file}")
-        
+
         # Load the actual prompt template
-        prompt_path = Path(__file__).parent.parent.parent / "tools" / "html2md_tool" / "prompts" / "convert_html_to_md.md"
+        prompt_path = (
+            Path(__file__).parent.parent.parent
+            / "tools"
+            / "html2md_tool"
+            / "prompts"
+            / "convert_html_to_md.md"
+        )
         if not prompt_path.exists():
             pytest.skip(f"Prompt template not found at {prompt_path}")
-            
+
         prompt_template = prompt_path.read_text()
-        
+
         # Replace the placeholder with the test HTML file path
         prompt = prompt_template.replace("{html_content}", f"@{test_html_file}")
-        
+
         # Create output file path
         output_file = tmp_path / "converted.md"
-        
+
         # Modify prompt to save output to a specific file
-        prompt_with_output = prompt + f"\n\nPlease save the converted markdown to: {output_file}"
-        
+        prompt_with_output = (
+            prompt + f"\n\nPlease save the converted markdown to: {output_file}"
+        )
+
         # Run Claude with the actual prompt
         returncode, stdout, stderr = runner.run_claude_streaming(
             prompt=prompt_with_output,
             allowed_tools="Read,Write",  # Only allow file operations
             timeout=90,
-            show_output=False
+            show_output=False,
         )
-        
+
         assert returncode == 0, f"Claude command failed: {stderr}"
-        
+
         # Check if output file was created
         if output_file.exists():
             output = output_file.read_text()
@@ -175,26 +185,28 @@ class TestRealClaudeIntegration:
             # Fallback to stdout if no file was created
             output = stdout.strip()
             assert output != "", "No output received"
-        
+
         # Should include main content
         assert "API Reference" in output
         assert "Getting Started" in output
         assert "npm install test-api" in output
         assert "Authentication" in output
         assert "`GET /api/v1/users`" in output or "GET /api/v1/users" in output
-        
+
         # Should NOT include navigation/footer elements
-        assert "Test Framework" not in output or "API Reference" in output  # Title OK, nav not
+        assert (
+            "Test Framework" not in output or "API Reference" in output
+        )  # Title OK, nav not
         assert "Home > Docs" not in output  # Breadcrumb
         assert "Edit this page" not in output
         assert "Subscribe to our newsletter" not in output
         assert "This site uses cookies" not in output
-        
+
         # Should have proper markdown formatting
         assert "#" in output  # Headers
         assert "```" in output or "    " in output  # Code blocks
         assert "|" in output  # Table formatting
-        
+
         # Cleanup: Remove the output file if it was created
         if output_file.exists():
             output_file.unlink()

@@ -240,12 +240,14 @@ def header(title: str, subtitle: Optional[str] = None, file=None) -> None:
         print(file=file or sys.stdout)
 
 
-def setup_logging(
+def setup_basic_logging(
     level: int = logging.INFO, fmt: Optional[str] = None, colored: bool = True
 ) -> logging.Logger:
     """
-    Set up logging with optional colored output.
+    Set up basic logging with optional colored output.
     Returns the root logger.
+
+    Note: This is a legacy function. Use tools.shared.logging.setup_logging instead.
     """
     # Remove existing handlers
     root_logger = logging.getLogger()

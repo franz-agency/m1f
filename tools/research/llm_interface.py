@@ -32,6 +32,14 @@ from claude_code_sdk import (
     ResultMessage,
 )
 
+# Import shared Claude utilities
+from ..shared.claude_utils import (
+    ClaudeConfig,
+    ClaudeHTTPClient,
+    ClaudeSessionManager,
+    ClaudeErrorHandler,
+)
+
 
 @dataclass
 class LLMResponse:
@@ -105,14 +113,6 @@ class LLMProvider(ABC):
         """
         pass
 
-    def _validate_api_key(self):
-        """Validate that API key is set"""
-        if not self.api_key:
-            raise ValueError(
-                f"API key not set for {self.__class__.__name__}. "
-                f"Set via environment variable or pass directly."
-            )
-
 
 class ClaudeProvider(LLMProvider):
     """Claude API provider via Anthropic"""
@@ -120,8 +120,11 @@ class ClaudeProvider(LLMProvider):
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         super().__init__(api_key, model)
-        self.base_url = "https://api.anthropic.com/v1"
- 
+
+        # Use shared configuration and HTTP client
+        self.config = ClaudeConfig(api_key=api_key, model=self.model)
+        self.client = ClaudeHTTPClient(self.config)
+        self.error_handler = ClaudeErrorHandler()
 
     @property
     def default_model(self) -> str:
@@ -130,47 +133,19 @@ class ClaudeProvider(LLMProvider):
     async def query(
         self, prompt: str, system: Optional[str] = None, **kwargs
     ) -> LLMResponse:
-        """Query Claude API"""
-        self._validate_api_key()
-
-        headers = {
-            "x-api-key": self.api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        }
-
-        messages = [{"role": "user", "content": prompt}]
-
-        data = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": kwargs.get("max_tokens", 4096),
-            "temperature": kwargs.get("temperature", 0.7),
-        }
-
-        if system:
-            data["system"] = system
-
+        """Query Claude API using shared HTTP client"""
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.base_url}/messages", headers=headers, json=data
-                ) as response:
-                    result = await response.json()
+            response = await self.client.send_request(
+                prompt=prompt, system=system, **kwargs
+            )
 
-                    if response.status != 200:
-                        return LLMResponse(
-                            content="",
-                            error=f"API error: {result.get('error', {}).get('message', 'Unknown error')}",
-                        )
-
-                    return LLMResponse(
-                        content=result["content"][0]["text"],
-                        raw_response=result,
-                        usage=result.get("usage"),
-                    )
-
+            return LLMResponse(
+                content=response["content"][0]["text"],
+                raw_response=response,
+                usage=response.get("usage"),
+            )
         except Exception as e:
+            self.error_handler.handle_api_error(e, operation="Claude API query")
             return LLMResponse(content="", error=str(e))
 
     async def search_web(
@@ -383,8 +358,8 @@ class ClaudeCodeProvider(LLMProvider):
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         # Claude Code doesn't need an API key in the traditional sense
         super().__init__(api_key="claude-code-sdk", model=model)
-        self.session_id = None
-        self.conversation_started = False
+        self.session_manager = ClaudeSessionManager()
+        self.error_handler = ClaudeErrorHandler()
 
     @property
     def default_model(self) -> str:
@@ -402,16 +377,10 @@ class ClaudeCodeProvider(LLMProvider):
         try:
             messages: List[Message] = []
 
-            # Configure options - using the same pattern as m1f-claude
-            options = ClaudeCodeOptions(
+            # Use shared session manager for options
+            options = self.session_manager.create_options(
                 max_turns=kwargs.get("max_turns", 1),
-                continue_conversation=not self.conversation_started
-                and self.session_id is not None,
-                resume=(
-                    self.session_id
-                    if not self.conversation_started and self.session_id
-                    else None
-                ),
+                continue_conversation=kwargs.get("continue_conversation", False),
             )
 
             # Collect messages
@@ -420,11 +389,8 @@ class ClaudeCodeProvider(LLMProvider):
             async for message in claude_query(prompt=full_prompt, options=options):
                 messages.append(message)
 
-                # Extract session ID from ResultMessage
-                if isinstance(message, ResultMessage):
-                    if hasattr(message, "session_id"):
-                        self.session_id = message.session_id
-                        self.conversation_started = True
+                # Update session state using shared manager
+                self.session_manager.update_from_message(message)
 
                 # Extract text content from different message types
                 if hasattr(message, "content"):
@@ -450,12 +416,13 @@ class ClaudeCodeProvider(LLMProvider):
             return LLMResponse(
                 content=content,
                 raw_response={
-                    "session_id": self.session_id,
+                    "session_id": self.session_manager.session_id,
                     "message_count": len(messages),
                 },
             )
 
         except Exception as e:
+            self.error_handler.handle_api_error(e, operation="Claude Code query")
             return LLMResponse(content="", error=str(e))
 
     async def search_web(

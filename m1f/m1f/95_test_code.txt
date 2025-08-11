@@ -3014,6 +3014,7 @@ class TestAllowedPathIntegration:
         # Set environment variable to suppress server output
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = "8080"  # Set server to use port 8080
 
         # Start the test server
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
@@ -3904,7 +3905,7 @@ from tools.html2md_tool.claude_runner import ClaudeRunner
 # Skip all tests if Claude is not available
 pytestmark = pytest.mark.skipif(
     not shutil.which("claude") and not os.getenv("ANTHROPIC_API_KEY"),
-    reason="Claude CLI not installed or API key not set"
+    reason="Claude CLI not installed or API key not set",
 )
 
 
@@ -3915,7 +3916,7 @@ class TestClaudeRunner:
         """Test that ClaudeRunner can be initialized."""
         try:
             runner = ClaudeRunner()
-            assert runner.claude_binary is not None
+            assert runner.binary_path is not None or runner.get_binary() is not None
             assert runner.max_workers == 5
         except FileNotFoundError:
             pytest.skip("Claude CLI not installed")
@@ -4014,36 +4015,46 @@ class TestRealClaudeIntegration:
             pytest.skip("Claude CLI not installed")
 
         # Use the test HTML file from test fixtures
-        test_html_file = Path(__file__).parent / "test_claude_files" / "api_documentation.html"
+        test_html_file = (
+            Path(__file__).parent / "test_claude_files" / "api_documentation.html"
+        )
         if not test_html_file.exists():
             pytest.skip(f"Test HTML file not found at {test_html_file}")
-        
+
         # Load the actual prompt template
-        prompt_path = Path(__file__).parent.parent.parent / "tools" / "html2md_tool" / "prompts" / "convert_html_to_md.md"
+        prompt_path = (
+            Path(__file__).parent.parent.parent
+            / "tools"
+            / "html2md_tool"
+            / "prompts"
+            / "convert_html_to_md.md"
+        )
         if not prompt_path.exists():
             pytest.skip(f"Prompt template not found at {prompt_path}")
-            
+
         prompt_template = prompt_path.read_text()
-        
+
         # Replace the placeholder with the test HTML file path
         prompt = prompt_template.replace("{html_content}", f"@{test_html_file}")
-        
+
         # Create output file path
         output_file = tmp_path / "converted.md"
-        
+
         # Modify prompt to save output to a specific file
-        prompt_with_output = prompt + f"\n\nPlease save the converted markdown to: {output_file}"
-        
+        prompt_with_output = (
+            prompt + f"\n\nPlease save the converted markdown to: {output_file}"
+        )
+
         # Run Claude with the actual prompt
         returncode, stdout, stderr = runner.run_claude_streaming(
             prompt=prompt_with_output,
             allowed_tools="Read,Write",  # Only allow file operations
             timeout=90,
-            show_output=False
+            show_output=False,
         )
-        
+
         assert returncode == 0, f"Claude command failed: {stderr}"
-        
+
         # Check if output file was created
         if output_file.exists():
             output = output_file.read_text()
@@ -4051,26 +4062,28 @@ class TestRealClaudeIntegration:
             # Fallback to stdout if no file was created
             output = stdout.strip()
             assert output != "", "No output received"
-        
+
         # Should include main content
         assert "API Reference" in output
         assert "Getting Started" in output
         assert "npm install test-api" in output
         assert "Authentication" in output
         assert "`GET /api/v1/users`" in output or "GET /api/v1/users" in output
-        
+
         # Should NOT include navigation/footer elements
-        assert "Test Framework" not in output or "API Reference" in output  # Title OK, nav not
+        assert (
+            "Test Framework" not in output or "API Reference" in output
+        )  # Title OK, nav not
         assert "Home > Docs" not in output  # Breadcrumb
         assert "Edit this page" not in output
         assert "Subscribe to our newsletter" not in output
         assert "This site uses cookies" not in output
-        
+
         # Should have proper markdown formatting
         assert "#" in output  # Headers
         assert "```" in output or "    " in output  # Code blocks
         assert "|" in output  # Table formatting
-        
+
         # Cleanup: Remove the output file if it was created
         if output_file.exists():
             output_file.unlink()
@@ -4307,6 +4320,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -4327,6 +4341,18 @@ def is_httrack_installed():
         return False
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 # Skip all tests if HTTrack is not installed
 pytestmark = pytest.mark.skipif(
     not is_httrack_installed(),
@@ -4337,11 +4363,19 @@ pytestmark = pytest.mark.skipif(
 class TestHTTrackIntegration:
     """Integration tests for HTTrack scraper."""
 
+    server_port = None
+    server_url = None
+
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -4358,7 +4392,7 @@ class TestHTTrackIntegration:
         max_attempts = 30
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(cls.server_url)
                 if response.status_code == 200:
                     break
             except requests.ConnectionError:
@@ -4397,10 +4431,12 @@ class TestHTTrackIntegration:
             # Convert to URL path
             url_path = "/" + str(rel_path).replace("\\", "/")
             if "localhost" in url_path:
-                # Extract path after localhost:8080
-                parts = url_path.split("localhost:8080/")
-                if len(parts) > 1:
-                    url_path = "/" + parts[1]
+                # Extract path after localhost:port
+                localhost_prefix = f"localhost:{cls.server_port}/"
+                if localhost_prefix in url_path:
+                    parts = url_path.split(localhost_prefix)
+                    if len(parts) > 1:
+                        url_path = "/" + parts[1]
             scraped_paths.add(url_path)
         return scraped_paths
 
@@ -4419,7 +4455,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -4449,7 +4485,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -4477,7 +4513,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -4508,7 +4544,7 @@ class TestHTTrackIntegration:
         # Note: HTTrack's allowed_path support is limited
         # It uses URL filters which may not work exactly like other scrapers
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/api/overview.html"
+        start_url = f"{cls.server_url}/api/overview.html"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -4535,7 +4571,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         # HTTrack should use the custom user agent
         result = await crawler.crawl(start_url, output_dir)
@@ -4558,7 +4594,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -4845,7 +4881,7 @@ Usage:
     python test_local_scraping.py
 
 Requirements:
-    - Local test server running at http://localhost:8080
+    - Local test server running at http://localhost:8090 (or next available port)
     - Start server with: cd tests/html2md_server && python server.py
 
 Features:
@@ -5231,6 +5267,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -5242,14 +5279,34 @@ from tools.scrape_tool.scrapers.beautifulsoup import BeautifulSoupScraper
 from tools.scrape_tool.scrapers.base import ScraperConfig
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestMeaningfulScraperFeatures:
     """Tests that verify actual scraper functionality, not just configuration."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
 
@@ -5265,7 +5322,7 @@ class TestMeaningfulScraperFeatures:
         server_started = False
         for i in range(30):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(cls.server_url)
                 if response.status_code == 200:
                     server_started = True
                     break
@@ -5311,8 +5368,8 @@ class TestMeaningfulScraperFeatures:
         scraper = BeautifulSoupScraper(config)
 
         # URLs with different query params should normalize to same URL
-        url1 = "http://localhost:8080/page/index?tab=1&view=list"
-        url2 = "http://localhost:8080/page/index?tab=2&view=grid"
+        url1 = f"{cls.server_url}/page/index?tab=1&view=list"
+        url2 = f"{cls.server_url}/page/index?tab=2&view=grid"
 
         normalized1 = scraper._normalize_url(url1)
         normalized2 = scraper._normalize_url(url2)
@@ -5351,7 +5408,9 @@ class TestMeaningfulScraperFeatures:
 
         async with scraper:
             # Test 1: Page in allowed_path with canonical outside should NOT be skipped
-            url_in_allowed = "http://localhost:8080/page/m1f-documentation?canonical=http://localhost:8080/"
+            url_in_allowed = (
+                f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/"
+            )
             page = await scraper.scrape_url(url_in_allowed)
 
             assert (
@@ -5359,7 +5418,7 @@ class TestMeaningfulScraperFeatures:
             ), "Page in allowed_path should be kept even if canonical points outside"
 
             # Test 2: Page in allowed_path with canonical also in allowed_path but different
-            url_with_canonical_in_path = "http://localhost:8080/page/m1f-documentation?canonical=http://localhost:8080/page/html2md-documentation"
+            url_with_canonical_in_path = f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/page/html2md-documentation"
             page2 = await scraper.scrape_url(url_with_canonical_in_path)
 
             assert (
@@ -5382,7 +5441,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         # Actually crawl the site
         await crawler.crawl(start_url, output_dir)
@@ -5433,7 +5492,7 @@ class TestMeaningfulScraperFeatures:
 
         async with scraper:
             # Scrape first duplicate page
-            page1 = await scraper.scrape_url("http://localhost:8080/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
             assert page1 is not None, "First duplicate page should be scraped"
 
             # Simulate the checksum being stored (normally done by crawler)
@@ -5447,7 +5506,7 @@ class TestMeaningfulScraperFeatures:
                 scraper._checksum_callback = lambda c: c in seen_checksums
 
             # Try to scrape second duplicate page
-            page2 = await scraper.scrape_url("http://localhost:8080/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
 
             # This should be None because content is duplicate
             assert page2 is None, "Second page with duplicate content should be skipped"
@@ -5467,7 +5526,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         await crawler.crawl(start_url, output_dir)
 
@@ -5479,7 +5538,7 @@ class TestMeaningfulScraperFeatures:
         for file in all_files:
             parts = file.relative_to(output_dir).parts
             # If we have paths like localhost/api/endpoints.html, that's depth 2+
-            if len(parts) >= 3:  # localhost:8080/category/page.html
+            if len(parts) >= 3:  # localhost:port/category/page.html
                 has_deep_paths = True
                 break
 
@@ -5521,9 +5580,7 @@ class TestMeaningfulScraperFeatures:
             start_time = time.time()
 
             try:
-                page = await scraper.scrape_url(
-                    "http://localhost:8080/test/slow?delay=10"
-                )
+                page = await scraper.scrape_url(f"{cls.server_url}/test/slow?delay=10")
                 # If we get here, timeout didn't work
                 elapsed = time.time() - start_time
                 assert elapsed < 5, f"Request should have timed out but took {elapsed}s"
@@ -6119,17 +6176,17 @@ def find_free_port(start_port: int = 8090) -> int:
 
 class TestPlaywrightIntegration:
     """Integration tests for Playwright scraper."""
-    
+
     server_port = None
     server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
-        # Find a free port
+        # Find a free port starting from 8090
         cls.server_port = find_free_port(8090)
-        cls.server_url = f"http://localhost:8090"
-        
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
         env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
@@ -6255,9 +6312,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(
-                f"{cls.server_url}/page/m1f-documentation"
-            )
+            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
 
             assert page is not None
             # Playwright extracts comprehensive metadata
@@ -6310,9 +6365,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Test page with canonical URL - using scrape_site for proper flow
-            start_url = (
-                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
-            )
+            start_url = f"{cls.server_url}/page/index?canonical={cls.server_url}/"
 
             pages_scraped = []
             async for page in scraper.scrape_site(start_url):
@@ -6429,6 +6482,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import signal
 import requests
 import sqlite3
@@ -6440,15 +6494,35 @@ from tools.scrape_tool.config import Config, CrawlerConfig, ScraperBackend
 from tools.scrape_tool.crawlers import WebCrawler
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestScraperParameters:
     """Test all m1f-scrape parameters with local test server."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         # Set environment variable to suppress server output
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -6468,7 +6542,7 @@ class TestScraperParameters:
         max_attempts = 30
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(f"{cls.server_url}/")
                 if response.status_code == 200:
                     break
             except requests.ConnectionError as e:
@@ -6685,7 +6759,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -6726,7 +6800,7 @@ class TestScraperParameters:
 
         try:
             crawler = WebCrawler(config.crawler)
-            start_url = "http://localhost:8080/"
+            start_url = f"{cls.server_url}/"
 
             result = await crawler.crawl(start_url, output_dir)
             scraped_files = self.get_scraped_files(output_dir)
@@ -6777,7 +6851,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -6811,10 +6885,10 @@ class TestScraperParameters:
 
         # Insert test data
         test_urls = [
-            ("http://localhost:8080/", 200, None),
-            ("http://localhost:8080/docs/", 200, None),
-            ("http://localhost:8080/api/", 404, "Not found"),
-            ("http://localhost:8080/broken/", 500, "Server error"),
+            (f"{cls.server_url}/", 200, None),
+            (f"{cls.server_url}/docs/", 200, None),
+            (f"{cls.server_url}/api/", 404, "Not found"),
+            (f"{cls.server_url}/broken/", 500, "Server error"),
         ]
 
         cursor.executemany(
@@ -6876,7 +6950,7 @@ class TestScraperParameters:
 
         # With SSRF disabled, localhost should work
         crawler = WebCrawler(config_disabled.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_files = self.get_scraped_files(output_dir)
@@ -7366,6 +7440,7 @@ import shutil
 import subprocess
 import time
 import os
+import socket
 import requests
 from pathlib import Path
 from typing import Set
@@ -7375,14 +7450,34 @@ from tools.scrape_tool.crawlers import WebCrawler
 from tools.scrape_tool.scrapers.selectolax import SelectolaxScraper
 
 
+def find_free_port(start_port: int = 8090) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find a free port starting from {start_port}")
+
+
 class TestSelectolaxIntegration:
     """Integration tests for Selectolax scraper."""
+
+    server_port = None
+    server_url = None
 
     @classmethod
     def setup_class(cls):
         """Start the test server before running tests."""
+        # Find a free port starting from 8090
+        cls.server_port = find_free_port(8090)
+        cls.server_url = f"http://localhost:{cls.server_port}"
+
         env = os.environ.copy()
         env["FLASK_ENV"] = "testing"
+        env["HTML2MD_SERVER_PORT"] = str(cls.server_port)
         # Remove WERKZEUG environment variables that might interfere
         env.pop("WERKZEUG_RUN_MAIN", None)
         env.pop("WERKZEUG_SERVER_FD", None)
@@ -7400,7 +7495,7 @@ class TestSelectolaxIntegration:
         server_started = False
         for i in range(max_attempts):
             try:
-                response = requests.get("http://localhost:8080/")
+                response = requests.get(f"{cls.server_url}/")
                 if response.status_code == 200:
                     server_started = True
                     break
@@ -7464,7 +7559,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/"
+        start_url = f"{cls.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -7489,9 +7584,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape a page with known metadata
-            page = await scraper.scrape_url(
-                "http://localhost:8080/page/m1f-documentation"
-            )
+            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
 
             assert page is not None
             assert page.title is not None
@@ -7516,7 +7609,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = "http://localhost:8080/docs/index.html"
+        start_url = f"{cls.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -7550,7 +7643,7 @@ class TestSelectolaxIntegration:
         async with scraper:
             # Test page with canonical URL
             url_with_canonical = (
-                "http://localhost:8080/page/index?canonical=http://localhost:8080/"
+                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
             )
             page = await scraper.scrape_url(url_with_canonical)
 
@@ -7584,8 +7677,8 @@ class TestSelectolaxIntegration:
         scraper = SelectolaxScraper(scraper_config)
 
         # Test URL normalization
-        url1 = scraper._normalize_url("http://localhost:8080/page/test?tab=1")
-        url2 = scraper._normalize_url("http://localhost:8080/page/test?tab=2")
+        url1 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=1")
+        url2 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=2")
 
         # With ignore_get_params=True, these should be the same
         assert url1 == url2
@@ -7619,7 +7712,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape duplicate content pages
-            page1 = await scraper.scrape_url("http://localhost:8080/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
             assert page1 is not None  # First should succeed
 
             # Calculate and store checksum
@@ -7630,7 +7723,7 @@ class TestSelectolaxIntegration:
                 seen_checksums.add(checksum)
 
             # Second should be skipped due to duplicate content
-            page2 = await scraper.scrape_url("http://localhost:8080/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
             # Note: This depends on the scraper checking content before returning
 
 
@@ -10219,7 +10312,7 @@ class TestClaudeProvider:
 
         # Mock aiohttp.ClientSession
         with (
-            patch.object(claude_provider, "_validate_api_key"),
+            patch.object(claude_provider.config, "validate"),
             patch("aiohttp.ClientSession") as mock_session_class,
         ):
             mock_resp = MockResponse(200, mock_response)
@@ -10275,7 +10368,7 @@ class TestClaudeProvider:
                 return None
 
         with (
-            patch.object(claude_provider, "_validate_api_key"),
+            patch.object(claude_provider.config, "validate"),
             patch("aiohttp.ClientSession") as mock_session_class,
         ):
             mock_resp = MockResponse(400, {"error": {"message": "Bad request"}})
@@ -10332,9 +10425,9 @@ class TestClaudeProvider:
 
     def test_claude_validate_api_key(self, claude_provider):
         """Test API key validation"""
-        claude_provider.api_key = None
+        claude_provider.config.api_key = None
         with pytest.raises(ValueError):
-            claude_provider._validate_api_key()
+            claude_provider.config.validate()
 
 
 class TestGeminiProvider:

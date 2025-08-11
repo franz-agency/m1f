@@ -38,8 +38,16 @@ from ..shared.colors import (
     COLORAMA_AVAILABLE,
 )
 
+# Import shared Claude utilities
+from ..shared.claude_utils import (
+    ClaudeBinaryFinder,
+    ClaudeErrorHandler,
+    ClaudeConfig,
+    ClaudeRunner as BaseClaudeRunner,
+)
 
-class ClaudeRunner:
+
+class ClaudeRunner(BaseClaudeRunner):
     """Handles Claude CLI execution with reliable subprocess support."""
 
     def __init__(
@@ -47,38 +55,11 @@ class ClaudeRunner:
         max_workers: int = 5,
         working_dir: Optional[str] = None,
         claude_binary: Optional[str] = None,
+        config: Optional[ClaudeConfig] = None,
     ):
+        super().__init__(config=config, binary_path=claude_binary)
         self.max_workers = max_workers
         self.working_dir = working_dir or str(Path.cwd())
-        self.claude_binary = claude_binary or self._find_claude_binary()
-
-    def _find_claude_binary(self) -> str:
-        """Find Claude binary in system."""
-        # Try default command first
-        try:
-            subprocess.run(
-                ["claude", "--version"], capture_output=True, check=True, timeout=5
-            )
-            return "claude"
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            pass
-
-        # Check known locations
-        claude_paths = [
-            Path.home() / ".claude" / "local" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/usr/bin/claude"),
-        ]
-
-        for path in claude_paths:
-            if safe_exists(path) and safe_is_file(path):
-                return str(path)
-
-        raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
 
     def run_claude_simple(
         self,
@@ -94,7 +75,7 @@ class ClaudeRunner:
         Returns: (returncode, stdout, stderr)
         """
         cmd = [
-            self.claude_binary,
+            self.get_binary(),
             "--print",  # Use print mode for non-interactive output
             "--allowedTools",
             allowed_tools,
@@ -147,7 +128,7 @@ class ClaudeRunner:
             )
             return -1, "", f"Process timed out after {actual_timeout}s"
         except Exception as e:
-            error(f"Error running Claude: {e}")
+            self.error_handler.handle_api_error(e, operation="Claude simple")
             return -1, "", str(e)
 
     def run_claude_streaming(
@@ -168,7 +149,7 @@ class ClaudeRunner:
         work_dir = working_dir if working_dir is not None else self.working_dir
 
         # Build command
-        cmd = [self.claude_binary, "-p", "--allowedTools", allowed_tools]
+        cmd = [self.get_binary(), "-p", "--allowedTools", allowed_tools]
 
         if add_dir:
             cmd.extend(["--add-dir", add_dir])
@@ -255,7 +236,7 @@ class ClaudeRunner:
 
         except Exception as e:
             if show_output:
-                error(f"Error running Claude: {e}")
+                self.error_handler.handle_api_error(e, operation="Claude streaming")
             return -1, "\n".join(stdout_lines), str(e)
 
     def run_claude_parallel(
