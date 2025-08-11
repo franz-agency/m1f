@@ -19448,13 +19448,19 @@ def safe_walk(
     try:
         for root, dirs, files in os.walk(path, **kwargs):
             # Filter out directories we can't access
-            accessible_dirs = []
+            # IMPORTANT: We must modify dirs in-place so os.walk sees the changes
+            # and doesn't traverse into excluded directories
+            dirs_to_remove = []
             for dirname in dirs:
                 dir_path = Path(root) / dirname
-                if safe_exists(dir_path, logger):
-                    accessible_dirs.append(dirname)
-                elif logger:
-                    logger.debug(f"Skipping inaccessible directory: {dir_path}")
+                if not safe_exists(dir_path, logger):
+                    dirs_to_remove.append(dirname)
+                    if logger:
+                        logger.debug(f"Skipping inaccessible directory: {dir_path}")
+
+            # Remove inaccessible directories from the original list
+            for dirname in dirs_to_remove:
+                dirs.remove(dirname)
 
             # Filter out files we can't access
             accessible_files = []
@@ -19465,7 +19471,8 @@ def safe_walk(
                 elif logger:
                     logger.debug(f"Skipping inaccessible file: {file_path}")
 
-            yield root, accessible_dirs, accessible_files
+            # Return the original dirs list (now filtered) so modifications propagate
+            yield root, dirs, accessible_files
     except PermissionError as e:
         if logger:
             logger.warning(f"Permission denied walking directory '{path}': {e}")
