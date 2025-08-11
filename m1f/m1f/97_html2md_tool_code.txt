@@ -125,6 +125,21 @@ from typing import List, Dict, Set, Tuple
 import json
 import sys
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_open,
+    get_logger as get_file_logger,
+)
+
+# Import console utilities
+from ..shared.colors import (
+    success,
+    error,
+    warning,
+    info,
+)
+
 
 class HTMLAnalyzer:
     """Analyze HTML files to identify patterns for preprocessing."""
@@ -146,7 +161,7 @@ class HTMLAnalyzer:
     def analyze_file(self, file_path: Path) -> Dict:
         """Analyze a single HTML file."""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 html = f.read()
         except Exception as e:
             return {"error": str(e)}
@@ -332,7 +347,7 @@ def main():
     info(f"Analyzing {len(args.files)} files...")
     for file_path in args.files:
         path = Path(file_path)
-        if path.exists() and path.suffix.lower() in [".html", ".htm"]:
+        if safe_exists(path) and path.suffix.lower() in [".html", ".htm"]:
             result = analyzer.analyze_file(path)
             if "error" in result:
                 error(f"Error analyzing {path}: {result['error']}")
@@ -352,7 +367,7 @@ def main():
 
     # Save to file if requested
     if args.output:
-        with open(args.output, "w") as f:
+        with safe_open(args.output, "w") as f:
             json.dump(config, f, indent=2)
         success(f"\nConfiguration saved to: {args.output}")
 
@@ -391,6 +406,18 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Optional, Union
+
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    safe_write_text,
+    get_logger as get_file_logger,
+)
 
 from rich.progress import Progress
 
@@ -695,7 +722,7 @@ class Html2mdConverter:
                     # Check if the linked file exists with .md extension
                     # (it's probably been converted from .html to .md)
                     md_link = link_path.with_suffix(".md")
-                    if md_link.exists() or link_path.suffix in [".html", ".htm"]:
+                    if safe_exists(md_link) or link_path.suffix in [".html", ".htm"]:
                         # Use .md extension for converted files
                         link_path = link_path.with_suffix(".md")
 
@@ -713,7 +740,7 @@ class Html2mdConverter:
                                 test_path = source_dir.parent / link_path.name
                                 if ext:
                                     test_path = test_path.with_suffix(ext)
-                                if test_path.exists():
+                                if safe_exists(test_path):
                                     link_in_source = test_path
                                     break
 
@@ -781,20 +808,20 @@ class Html2mdConverter:
 
         # Read file content
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with safe_open(file_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
         except UnicodeDecodeError:
             # Try with different encodings
             for encoding in ["latin-1", "cp1252"]:
                 try:
-                    with open(file_path, "r", encoding=encoding) as f:
+                    with safe_open(file_path, "r", encoding=encoding) as f:
                         html_content = f.read()
                     break
                 except UnicodeDecodeError:
                     continue
             else:
                 # Last resort - ignore errors
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     html_content = f.read()
 
         # Convert using the convert_html method which includes preprocessing
@@ -838,10 +865,10 @@ class Html2mdConverter:
         # Validate output path to ensure it stays within destination directory
         output_path = self._validate_output_path(output_path, self.config.destination)
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(output_path.parent, parents=True, exist_ok=True)
 
         # Write file
-        output_path.write_text(markdown, encoding=self.config.target_encoding)
+        safe_write_text(output_path, markdown, encoding=self.config.target_encoding)
 
         logger.debug(f"Written to {output_path}")
         return output_path
@@ -922,11 +949,11 @@ class Html2mdConverter:
         if not filename.endswith(".md"):
             filename = filename.replace(".html", "") + ".md"
         output_path = Path(self.config.destination) / filename
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_mkdir(output_path.parent, parents=True, exist_ok=True)
 
         # Write file
         encoding = getattr(self.config, "target_encoding", "utf-8")
-        output_path.write_text(markdown, encoding=encoding)
+        safe_write_text(output_path, markdown, encoding=encoding)
 
         logger.info(f"Saved to {output_path}")
         return output_path
@@ -1018,20 +1045,20 @@ class Html2mdConverter:
 
             # Read file content
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
+                with safe_open(file_path, "r", encoding="utf-8") as f:
                     html_content = f.read()
             except UnicodeDecodeError:
                 # Try with different encodings
                 for encoding in ["latin-1", "cp1252"]:
                     try:
-                        with open(file_path, "r", encoding=encoding) as f:
+                        with safe_open(file_path, "r", encoding=encoding) as f:
                             html_content = f.read()
                         break
                     except UnicodeDecodeError:
                         continue
                 else:
                     # Last resort - ignore errors
-                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         html_content = f.read()
 
             # Convert using the convert_html method which includes all preprocessing and CSS selector logic
@@ -1077,8 +1104,8 @@ class Html2mdConverter:
                 output_path, self.config.destination
             )
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(markdown, encoding=self.config.target_encoding)
+            safe_mkdir(output_path.parent, parents=True, exist_ok=True)
+            safe_write_text(output_path, markdown, encoding=self.config.target_encoding)
 
             return output_path
         except Exception as e:
@@ -1301,6 +1328,13 @@ from typing import List, Tuple, Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    get_logger as get_file_logger,
+)
+
 # Use unified colorama module
 from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
@@ -1341,7 +1375,7 @@ class ClaudeRunner:
         ]
 
         for path in claude_paths:
-            if path.exists() and path.is_file():
+            if safe_exists(path) and safe_is_file(path):
                 return str(path)
 
         raise FileNotFoundError("Claude binary not found. Please install Claude CLI.")
@@ -1635,6 +1669,13 @@ import sys
 from pathlib import Path
 from typing import Tuple, Optional
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    get_logger as get_file_logger,
+)
+
 # Use unified colorama module
 from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
@@ -1655,7 +1696,7 @@ class ClaudeRunnerSimple:
         ]
 
         for path in claude_paths:
-            if path.exists() and path.is_file():
+            if safe_exists(path) and safe_is_file(path):
                 return str(path)
 
         # Try default command
@@ -1731,6 +1772,18 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 from collections import Counter
+
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    safe_write_text,
+    get_logger as get_file_logger,
+)
 
 # Use unified colorama module
 from ..shared.colors import (
@@ -2024,13 +2077,13 @@ def handle_convert(args: argparse.Namespace) -> None:
         import yaml
 
         # Load the config file to check its contents
-        with open(args.config, "r") as f:
+        with safe_open(args.config, "r") as f:
             config_data = yaml.safe_load(f)
 
         # If the config only contains extractor settings (from Claude analysis),
         # create a full config with source and destination from CLI
         if "source" not in config_data and "destination" not in config_data:
-            source_path = args.source.parent if args.source.is_file() else args.source
+            source_path = args.source.parent if safe_is_file(args.source) else args.source
             config = Config(source=source_path, destination=args.output)
 
             # Apply extractor settings from the config file
@@ -2051,13 +2104,13 @@ def handle_convert(args: argparse.Namespace) -> None:
             # IMPORTANT: CLI arguments should always override config file values
             # Only override if CLI args were explicitly provided
             cli_source_path = (
-                args.source.parent if args.source.is_file() else args.source
+                args.source.parent if safe_is_file(args.source) else args.source
             )
             config.source = cli_source_path
             config.destination = args.output
     else:
         # When source is a file, use its parent directory as the source
-        source_path = args.source.parent if args.source.is_file() else args.source
+        source_path = args.source.parent if safe_is_file(args.source) else args.source
         config = Config(source=source_path, destination=args.output)
 
     # Update config with CLI arguments
@@ -2089,12 +2142,12 @@ def handle_convert(args: argparse.Namespace) -> None:
     converter = Html2mdConverter(config, extractor=extractor)
 
     # Convert based on source type
-    if args.source.is_file():
+    if safe_is_file(args.source):
         info(f"Converting file: {args.source}")
         output = converter.convert_file(args.source)
         success(f"Converted to: {output}")
 
-    elif args.source.is_dir():
+    elif safe_is_dir(args.source):
         info(f"Converting directory: {args.source}")
         outputs = converter.convert_directory()
         success(f"Converted {len(outputs)} files")
@@ -2113,17 +2166,17 @@ def handle_analyze(args: argparse.Namespace) -> None:
     # Collect all HTML files from provided paths
     html_files = []
     for path in args.paths:
-        if not path.exists():
+        if not safe_exists(path):
             error(f"Path not found: {path}")
             continue
 
-        if path.is_file():
+        if safe_is_file(path):
             # Single file
             if path.suffix.lower() in [".html", ".htm"]:
                 html_files.append(path)
             else:
                 warning(f"Skipping non-HTML file: {path}")
-        elif path.is_dir():
+        elif safe_is_dir(path):
             # Directory - find all HTML files recursively
             found_files = list(path.rglob("*.html")) + list(path.rglob("*.htm"))
             if found_files:
@@ -2321,9 +2374,9 @@ def _handle_claude_analysis(
 
     # Step 1: Create m1f and analysis directories if they don't exist
     m1f_dir = common_parent / "m1f"
-    m1f_dir.mkdir(exist_ok=True)
+    safe_mkdir(m1f_dir, exist_ok=True)
     analysis_dir = m1f_dir / "analysis"
-    analysis_dir.mkdir(exist_ok=True)
+    safe_mkdir(analysis_dir, exist_ok=True)
 
     # Clean old analysis files
     for old_file in analysis_dir.glob("*.txt"):
@@ -2359,7 +2412,7 @@ def _handle_claude_analysis(
 
         # The filelist will be created with this name
         html_filelist = m1f_dir / "all_html_files_filelist.txt"
-        if not html_filelist.exists():
+        if not safe_exists(html_filelist):
             error("m1f filelist not created")
             return
 
@@ -2382,12 +2435,12 @@ def _handle_claude_analysis(
     prompt_dir = Path(__file__).parent / "prompts"
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
-    if not select_prompt_path.exists():
+    if not safe_exists(select_prompt_path):
         error(f"Prompt file not found: {select_prompt_path}")
         return
 
     # Load the prompt from external file
-    simple_prompt_template = select_prompt_path.read_text()
+    simple_prompt_template = safe_read_text(select_prompt_path)
 
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
@@ -2508,7 +2561,7 @@ def _handle_claude_analysis(
 
         claude_found = False
         for claude_path in claude_paths:
-            if claude_path.exists() and claude_path.is_file():
+            if safe_exists(claude_path) and safe_is_file(claude_path):
                 warning(f"Found claude at: {claude_path}")
                 # Update the command to use the full path
                 cmd[0] = str(claude_path)
@@ -2580,7 +2633,7 @@ def _handle_claude_analysis(
 
         # Check if file exists (relative to common_parent)
         full_path = common_parent / file_path
-        if full_path.exists():
+        if safe_exists(full_path):
             verified_files.append(file_path)
             success(f"Found: {file_path}")
         else:
@@ -2592,7 +2645,7 @@ def _handle_claude_analysis(
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
-    with open(selected_files_path, "w") as f:
+    with safe_open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
     success(f"Wrote selected files list to: {selected_files_path}")
@@ -2603,11 +2656,11 @@ def _handle_claude_analysis(
     # Load the individual analysis prompt template
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
-    if not individual_prompt_path.exists():
+    if not safe_exists(individual_prompt_path):
         error(f"Prompt file not found: {individual_prompt_path}")
         return
 
-    individual_prompt_template = individual_prompt_path.read_text()
+    individual_prompt_template = safe_read_text(individual_prompt_path)
 
     # Analyze each of the selected files
     for i, file_path in enumerate(verified_files, 1):
@@ -2640,7 +2693,7 @@ def _handle_claude_analysis(
             except (subprocess.CalledProcessError, FileNotFoundError):
                 # Try to find claude in known locations
                 for path in claude_paths:
-                    if path.exists() and path.is_file():
+                    if safe_exists(path) and safe_is_file(path):
                         claude_cmd = str(path)
                         break
 
@@ -2690,11 +2743,11 @@ def _handle_claude_analysis(
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
-    if not synthesis_prompt_path.exists():
+    if not safe_exists(synthesis_prompt_path):
         error(f"Prompt file not found: {synthesis_prompt_path}")
         return
 
-    synthesis_prompt = synthesis_prompt_path.read_text()
+    synthesis_prompt = safe_read_text(synthesis_prompt_path)
 
     # Update the synthesis prompt with the actual number of files analyzed
     synthesis_prompt = synthesis_prompt.replace(
@@ -2828,7 +2881,7 @@ def _handle_claude_analysis(
 
                 # Save the config to a file with consistent name
                 config_file = common_parent / "html2md_config.yaml"
-                with open(config_file, "w") as f:
+                with safe_open(config_file, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
                 success(f"Configuration saved to: {config_file}")
@@ -2898,7 +2951,7 @@ def _handle_claude_analysis(
         deleted_count = 0
         for i in range(1, num_files_to_analyze + 1):
             analysis_file = analysis_dir / f"html_analysis_{i}.txt"
-            if analysis_file.exists():
+            if safe_exists(analysis_file):
                 try:
                     analysis_file.unlink()
                     deleted_count += 1
@@ -3001,18 +3054,18 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
     # Find all HTML files in source directory
     source_path = args.source
-    if not source_path.exists():
+    if not safe_exists(source_path):
         error(f"Source path not found: {source_path}")
         sys.exit(1)
 
     html_files = []
-    if source_path.is_file():
+    if safe_is_file(source_path):
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
             error(f"Source file is not HTML: {source_path}")
             sys.exit(1)
-    elif source_path.is_dir():
+    elif safe_is_dir(source_path):
         # Find all HTML files recursively
         html_files = list(source_path.rglob("*.html")) + list(
             source_path.rglob("*.htm")
@@ -3025,21 +3078,21 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
     # Prepare output directory
     output_path = args.output
-    if output_path.exists() and output_path.is_file():
+    if safe_exists(output_path) and safe_is_file(output_path):
         error(f"Output path is a file, expected directory: {output_path}")
         sys.exit(1)
 
-    if not output_path.exists():
-        output_path.mkdir(parents=True, exist_ok=True)
+    if not safe_exists(output_path):
+        safe_mkdir(output_path, parents=True, exist_ok=True)
         info(f"Created output directory: {output_path}")
 
     # Load conversion prompt
     prompt_path = Path(__file__).parent / "prompts" / "convert_html_to_md.md"
-    if not prompt_path.exists():
+    if not safe_exists(prompt_path):
         error(f"Prompt file not found: {prompt_path}")
         sys.exit(1)
 
-    prompt_template = prompt_path.read_text()
+    prompt_template = safe_read_text(prompt_path)
 
     # Model parameter for Claude CLI (just use the short names)
     model_param = args.model
@@ -3054,7 +3107,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
                 html_file,
-                base_path=source_path if source_path.is_dir() else source_path.parent,
+                base_path=source_path if safe_is_dir(source_path) else source_path.parent,
                 allow_outside=False,
             )
 
@@ -3062,7 +3115,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             html_content = validated_path.read_text(encoding="utf-8")
 
             # Determine output file path
-            if source_path.is_file():
+            if safe_is_file(source_path):
                 # Single file conversion
                 output_file = output_path / html_file.with_suffix(".md").name
             else:
@@ -3102,7 +3155,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
             except (subprocess.CalledProcessError, FileNotFoundError):
                 # Try to find claude in known locations
                 for path in claude_paths:
-                    if path.exists() and path.is_file():
+                    if safe_exists(path) and safe_is_file(path):
                         claude_cmd = str(path)
                         break
 
@@ -3311,6 +3364,15 @@ from datetime import datetime
 from ...unified_output.colorama_output import info, error, warning, success, header, Colors
 from .claude_runner import ClaudeRunner
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    get_logger as get_file_logger,
+)
+
 
 def handle_claude_analysis_improved(
     html_files: List[Path],
@@ -3401,12 +3463,12 @@ def handle_claude_analysis_improved(
     prompt_dir = Path(__file__).parent / "prompts"
     select_prompt_path = prompt_dir / "select_files_from_project.md"
 
-    if not select_prompt_path.exists():
+    if not safe_exists(select_prompt_path):
         error(f"❌ Prompt file not found: {select_prompt_path}")
         return
 
     # Load the prompt from external file
-    simple_prompt_template = select_prompt_path.read_text()
+    simple_prompt_template = safe_read_text(select_prompt_path)
 
     # Validate and adjust number of files to analyze
     if num_files_to_analyze < 1:
@@ -3564,14 +3626,14 @@ def handle_claude_analysis_improved(
         if file_path in relative_paths:
             # It's a valid path from our list
             full_path = common_parent / file_path
-            if full_path.exists():
+            if safe_exists(full_path):
                 verified_files.append(file_path)
                 success(f"✅ Found: {file_path}")
                 continue
         
         # If not found exactly, try as a path relative to common_parent
         test_path = common_parent / file_path
-        if test_path.exists() and test_path.suffix.lower() in [".html", ".htm"]:
+        if safe_exists(test_path) and test_path.suffix.lower() in [".html", ".htm"]:
             try:
                 rel_path = test_path.relative_to(common_parent)
                 verified_files.append(str(rel_path))
@@ -3603,7 +3665,7 @@ def handle_claude_analysis_improved(
 
     # Write the verified files to a reference list
     selected_files_path = m1f_dir / "selected_html_files.txt"
-    with open(selected_files_path, "w") as f:
+    with safe_open(selected_files_path, "w") as f:
         for file_path in verified_files:
             f.write(f"{file_path}\n")
     success(f"✅ Wrote selected files list to: {selected_files_path}")
@@ -3622,13 +3684,13 @@ def handle_claude_analysis_improved(
     # Load the individual analysis prompt template
     individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
-    if not individual_prompt_path.exists():
+    if not safe_exists(individual_prompt_path):
         error(
             f"❌ Prompt file not found: {individual_prompt_path}"
         )
         return
 
-    individual_prompt_template = individual_prompt_path.read_text()
+    individual_prompt_template = safe_read_text(individual_prompt_path)
 
     # Prepare tasks for parallel execution
     tasks = []
@@ -3684,11 +3746,11 @@ def handle_claude_analysis_improved(
     # Load the synthesis prompt
     synthesis_prompt_path = prompt_dir / "synthesize_config.md"
 
-    if not synthesis_prompt_path.exists():
+    if not safe_exists(synthesis_prompt_path):
         error(f"❌ Prompt file not found: {synthesis_prompt_path}")
         return
 
-    synthesis_prompt = synthesis_prompt_path.read_text()
+    synthesis_prompt = safe_read_text(synthesis_prompt_path)
 
     # Update the synthesis prompt with the actual number of files analyzed
     synthesis_prompt = synthesis_prompt.replace(
@@ -3779,7 +3841,7 @@ def handle_claude_analysis_improved(
 
             # Save the config to a file
             config_path = common_parent / "m1f-html2md-config.yaml"
-            with open(config_path, "w") as f:
+            with safe_open(config_path, "w") as f:
                 yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
             success(f"\n✅ Saved configuration to: {config_path}")
@@ -3832,6 +3894,16 @@ from pathlib import Path
 from typing import List
 from .claude_runner import ClaudeRunner
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_read_text,
+    get_logger as get_file_logger,
+)
+
 # Use unified colorama module
 from ..shared.colors import Colors, success, error, warning, info, header, COLORAMA_AVAILABLE
 
@@ -3860,18 +3932,18 @@ def handle_claude_convert_improved(args):
         sys.exit(1)
 
     # Find all HTML files in source directory
-    if not source_path.exists():
+    if not safe_exists(source_path):
         error(f"Source path not found: {source_path}")
         sys.exit(1)
 
     html_files = []
-    if source_path.is_file():
+    if safe_is_file(source_path):
         if source_path.suffix.lower() in [".html", ".htm"]:
             html_files.append(source_path)
         else:
             error(f"Source file is not HTML: {source_path}")
             sys.exit(1)
-    elif source_path.is_dir():
+    elif safe_is_dir(source_path):
         # Find all HTML files recursively
         html_files = list(source_path.rglob("*.html")) + list(
             source_path.rglob("*.htm")
@@ -3921,7 +3993,7 @@ def handle_claude_convert_improved(args):
             html_content = validated_path.read_text(encoding="utf-8")
 
             # Determine output file path
-            if source_path.is_file():
+            if safe_is_file(source_path):
                 # Single file conversion
                 output_file = output_path / html_file.with_suffix(".md").name
             else:
@@ -4026,6 +4098,12 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup, NavigableString, Tag
 from markdownify import markdownify
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_open,
+    get_logger as get_file_logger,
+)
+
 from .config.models import ExtractorConfig, ProcessorConfig
 
 
@@ -4076,7 +4154,7 @@ class HTMLParser:
 
         for encoding in encodings:
             try:
-                with open(file_path, "r", encoding=encoding) as f:
+                with safe_open(file_path, "r", encoding=encoding) as f:
                     html_content = f.read()
                 break
             except (UnicodeDecodeError, LookupError):
@@ -4084,7 +4162,7 @@ class HTMLParser:
 
         if html_content is None:
             # Fallback: read as binary and decode with errors='ignore'
-            with open(file_path, "rb") as f:
+            with safe_open(file_path, "rb") as f:
                 html_content = f.read().decode(
                     self.config.encoding, errors=self.config.decode_errors
                 )
@@ -4311,6 +4389,12 @@ from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
 from .utils import get_logger
 
+# Import safe file operations
+from ..m1f.file_operations import (
+    safe_exists,
+    get_logger as get_file_logger,
+)
+
 logger = get_logger(__name__)
 
 
@@ -4370,7 +4454,7 @@ def load_extractor(extractor_path: Path) -> BaseExtractor:
     Raises:
         ValueError: If extractor cannot be loaded
     """
-    if not extractor_path.exists():
+    if not safe_exists(extractor_path):
         raise ValueError(f"Extractor file not found: {extractor_path}")
 
     # Load the module dynamically
@@ -4990,6 +5074,13 @@ from dataclasses import fields
 import yaml
 import sys
 
+# Import safe file operations
+from ...m1f.file_operations import (
+    safe_exists,
+    safe_open,
+    get_logger as get_file_logger,
+)
+
 # Use unified colorama module
 from ...shared.colors import (
     Colors,
@@ -5017,16 +5108,16 @@ def load_config(path: Path) -> Config:
         ValueError: If file format is not supported
         FileNotFoundError: If file does not exist
     """
-    if not path.exists():
+    if not safe_exists(path):
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
     suffix = path.suffix.lower()
 
     if suffix in [".json"]:
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = json.load(f)
     elif suffix in [".yaml", ".yml"]:
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = yaml.safe_load(f)
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
@@ -5097,10 +5188,10 @@ def save_config(config: Config, path: Path) -> None:
     data = _config_to_dict(config)
 
     if suffix in [".json"]:
-        with open(path, "w") as f:
+        with safe_open(path, "w") as f:
             json.dump(data, f, indent=2)
     elif suffix in [".yaml", ".yml"]:
-        with open(path, "w") as f:
+        with safe_open(path, "w") as f:
             yaml.dump(data, f, default_flow_style=False)
     else:
         raise ValueError(f"Unsupported configuration format: {suffix}")
@@ -5216,8 +5307,9 @@ class ConversionOptions:
     def from_config_file(cls, path: Path) -> "ConversionOptions":
         """Load options from a configuration file."""
         import yaml
+        from ...m1f.file_operations import safe_open
 
-        with open(path, "r") as f:
+        with safe_open(path, "r") as f:
             data = yaml.safe_load(f)
 
         # Handle aliases in config file

@@ -421,7 +421,7 @@ AI-powered research tool for automatic information gathering and bundling.
 
 #### Utility Tools
 
-- [**Token Counter**](99_misc/98_token_counter.md) - Estimate token usage for
+- [**Token Counter**](98_misc/98_token_counter.md) - Estimate token usage for
   LLM context planning
 
 ### 🎯 Advanced Features
@@ -17872,7 +17872,7 @@ finds, scrapes, and bundles information on any topic.
 - [Scraper Documentation](../04_scrape/) - Web scraping tools
 - [Development Documentation](../05_development/) - Development guides and tools
 
-======= docs/99_development/unified_colorama_guide.md ======
+======= docs/97_development/unified_colorama_guide.md ======
 # Unified Colorama Guide
 
 This document describes the unified colorama approach used across all m1f tools.
@@ -18067,7 +18067,7 @@ info(f"Reading from: {Colors.CYAN}{file_path}{Colors.RESET}")
 - `COLORAMA_AVAILABLE` - Boolean indicating if colorama is installed
 - Respects `NO_COLOR` and `FORCE_COLOR` environment variables
 
-======= docs/99_misc/98_token_counter.md ======
+======= docs/98_misc/98_token_counter.md ======
 # token_counter - Token Estimation Tool
 
 The token_counter tool (v2.0.0) estimates token usage for LLM context planning,

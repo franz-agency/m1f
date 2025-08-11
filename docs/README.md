@@ -66,7 +66,7 @@ AI-powered research tool for automatic information gathering and bundling.
 
 #### Utility Tools
 
-- [**Token Counter**](99_misc/98_token_counter.md) - Estimate token usage for
+- [**Token Counter**](98_misc/98_token_counter.md) - Estimate token usage for
   LLM context planning
 
 ### 🎯 Advanced Features
