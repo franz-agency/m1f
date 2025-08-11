@@ -12,6 +12,19 @@ and this project adheres to
 
 ### Added
 
+- **Shared CLI Module**: Centralized CLI utilities following DRY principle
+  - New `tools/shared/cli.py` module with `CustomArgumentParser` class
+  - `ArgumentBuilder` class with helper methods for common arguments (verbose, quiet, version, output, etc.)
+  - `BaseCLI` and `SubcommandCLI` base classes for consistent CLI structure
+  - Eliminates code duplication across all m1f tools (saved ~60 lines)
+
+- **Safe File Operations**: Comprehensive permission error handling system  
+  - New `tools/m1f/file_operations.py` module with safe wrappers for all file operations
+  - Graceful handling of permission errors with informative messages
+  - Consistent error reporting across all tools
+  - Operations: safe_exists, safe_is_file, safe_is_dir, safe_read_text, safe_write_text, safe_open, safe_mkdir, safe_listdir, safe_walk, safe_stat, safe_unlink, safe_rmdir
+  - All tools migrated to use safe operations (m1f, s1f, html2md_tool, scrape_tool, research, m1f-claude, m1f-token-counter)
+
 - **m1f Auto-loading of .gitignore and .m1fignore**: Automatic exclusion of ignored files
   - Automatically loads `.gitignore` files from source directories (disable with `--no-auto-gitignore`)
   - Automatically loads `.m1fignore` files from source directories (always enabled)
@@ -26,6 +39,20 @@ and this project adheres to
   - Database schema migration (v3) to support multiple paths storage
   - Comprehensive test coverage for all path configurations
   - Backward compatible (--allowed-path is a hidden alias)
+
+### Changed
+
+- **Documentation Structure**: Reorganized docs directory for better organization
+  - Renamed `docs/99_development/` to `docs/97_development/`  
+  - Renamed `docs/99_misc/` to `docs/98_misc/`
+  - Reserved `99` prefix exclusively for changelog (`99_CHANGELOG.md`)
+  - Updated all references to new directory structure
+
+- **CLI Architecture**: Refactored to use shared components
+  - All tools now import `CustomArgumentParser` from `tools.shared.cli`
+  - Removed duplicated CustomArgumentParser implementations from m1f, s1f, html2md_tool, scrape_tool
+  - Consistent error handling and formatting across all tools
+  - Improved maintainability with single source of truth
 
 ### Improved
 
@@ -86,6 +113,15 @@ and this project adheres to
 
 ### Fixed
 
+- **m1f Directory Exclusion**: Fixed performance issue in safe_walk function
+  - Directory exclusions from .gitignore now properly applied at traversal level
+  - Significant performance improvement for large projects with many excluded directories
+
+- **Test Suite**: Resolved all test failures after safe operations migration
+  - Fixed import issues and async handling
+  - Added missing fixtures for permission tests
+  - All tests now passing with new safe operations
+
 - **m1f .gitignore Auto-loading Bug**: Fixed issue where files listed in .gitignore were included in bundles
   - Root cause: .gitignore files were not being automatically loaded from source directories
   - Now automatically loads .gitignore and .m1fignore files without requiring explicit --exclude-paths-file
@@ -96,6 +132,13 @@ and this project adheres to
   - Simplified test infrastructure for better maintainability
   - Fixed async context manager mocking issues
   - All asset download and security tests now passing
+
+### Security
+
+- **Permission Error Handling**: Enhanced security through graceful error handling
+  - No more crashes from permission denied errors
+  - Clear user feedback when encountering restricted files/directories
+  - Prevents information leakage through error messages
 
 ### Improved
 
