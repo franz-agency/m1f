@@ -529,15 +529,13 @@ class Html2mdConverter:
         # Parse HTML
         parsed = self._parser.parse(html_content, base_url)
 
-        # Apply custom extractor
-        parsed = self._extractor.extract(parsed, self.config.__dict__)
-
-        # First, extract all H1 tags and title before applying selectors
-        h1_tags = parsed.find_all("h1")
+        # IMPORTANT: Extract all H1 tags and title BEFORE any extraction or selector filtering
+        # This ensures we capture H1s from header, nav, or any other area
+        original_h1_tags = parsed.find_all("h1")
         h1_contents = []
 
-        # Store all H1 contents
-        for h1 in h1_tags:
+        # Store all H1 contents from the original document
+        for h1 in original_h1_tags:
             h1_text = h1.get_text(strip=True)
             if h1_text and h1_text not in h1_contents:  # Remove duplicates
                 h1_contents.append(h1_text)
@@ -547,6 +545,9 @@ class Html2mdConverter:
         title_tag = parsed.find("title")
         if title_tag and title_tag.string:
             title_content = title_tag.string.strip()
+
+        # Apply custom extractor AFTER we've saved H1s
+        parsed = self._extractor.extract(parsed, self.config.__dict__)
 
         # Handle CSS selectors if specified (after extraction)
         if self.config.conversion.outermost_selector:
@@ -573,21 +574,31 @@ class Html2mdConverter:
                     h1.get_text(strip=True) for h1 in existing_h1s_after
                 ]
 
-                # If we had H1s before but they're gone now, restore them
-                if h1_contents and not existing_h1s_after:
-                    # Add the first H1 content as H1
-                    new_h1 = parsed.new_tag("h1")
-                    new_h1.string = h1_contents[0]
-                    parsed.insert(0, new_h1)
+                # Always ensure we have at least one H1
+                if h1_contents:
+                    # We had H1s in the original document
+                    if not existing_h1s_after:
+                        # All H1s were removed, restore them
+                        new_h1 = parsed.new_tag("h1")
+                        new_h1.string = h1_contents[0]
+                        parsed.insert(0, new_h1)
 
-                    # Add remaining H1s as H2
-                    for h1_text in h1_contents[1:]:
-                        new_h2 = parsed.new_tag("h2")
-                        new_h2.string = h1_text
-                        parsed.insert(1, new_h2)
-
-                elif not h1_contents and not existing_h1s_after and title_content:
-                    # No H1 at all, create one from title
+                        # Add remaining H1s as H2
+                        for h1_text in h1_contents[1:]:
+                            new_h2 = parsed.new_tag("h2")
+                            new_h2.string = h1_text
+                            parsed.insert(1, new_h2)
+                    else:
+                        # Some H1s still exist, check if we need to add missing ones
+                        for h1_text in h1_contents:
+                            if h1_text not in existing_h1_texts:
+                                # This H1 was removed, add it back as first element
+                                new_h1 = parsed.new_tag("h1")
+                                new_h1.string = h1_text
+                                parsed.insert(0, new_h1)
+                                break  # Only add the first missing H1
+                elif not existing_h1s_after and title_content:
+                    # No H1 at all in original, create one from title
                     new_h1 = parsed.new_tag("h1")
                     new_h1.string = title_content
                     parsed.insert(0, new_h1)
