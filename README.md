@@ -54,6 +54,23 @@ m1f-init
 # 💥 Boom! Your AI just became a project expert.
 ```
 
+### 🔄 Updating an Existing Installation
+
+Already have m1f installed? Just pull and reinstall:
+
+```bash
+cd m1f
+git pull
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows
+
+# The installer automatically:
+# - Detects existing installations
+# - Migrates from old bash scripts to new Python entry points
+# - Updates your PATH configuration
+# - Cleans up old symlinks
+```
+
 ## Why This Changes Everything
 
 ### The Problem We All Face

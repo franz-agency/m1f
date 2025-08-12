@@ -55,6 +55,23 @@ m1f-init
 # 💥 Boom! Your AI just became a project expert.
 ```
 
+### 🔄 Updating an Existing Installation
+
+Already have m1f installed? Just pull and reinstall:
+
+```bash
+cd m1f
+git pull
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows
+
+# The installer automatically:
+# - Detects existing installations
+# - Migrates from old bash scripts to new Python entry points
+# - Updates your PATH configuration
+# - Cleans up old symlinks
+```
+
 ## Why This Changes Everything
 
 ### The Problem We All Face
@@ -1763,11 +1780,18 @@ function Write-ColorOutput {
 # Get script and project paths
 $scriptPath = $PSScriptRoot
 $projectRoot = Split-Path $scriptPath -Parent
-$binDir = Join-Path $projectRoot "bin"
+$venvBinDir = Join-Path $projectRoot ".venv\Scripts"
+$oldBinDir = Join-Path $projectRoot "bin"
 
 Write-ColorOutput "m1f Installation" -Color $colors.Blue
 Write-ColorOutput "================" -Color $colors.Blue
 Write-Host
+
+# Check if this is an upgrade from an old installation
+if ((Test-Path ".venv") -and (Test-Path "bin") -and (Test-Path "bin\m1f")) {
+    Write-ColorOutput "📦 Upgrade detected: Migrating to Python entry points system" -Color $colors.Yellow
+    Write-Host
+}
 
 # Check execution policy
 $executionPolicy = Get-ExecutionPolicy -Scope CurrentUser
@@ -1864,6 +1888,11 @@ if (Test-Path "requirements.txt") {
     exit 1
 }
 
+# Install m1f package in editable mode (creates all entry points)
+Write-ColorOutput "Installing m1f package with all tools..." -Color $colors.Green
+pip install -e tools\ --quiet
+Write-ColorOutput "✓ m1f package installed with all entry points" -Color $colors.Green
+
 # Step 3: Test m1f installation
 Write-Host
 Write-ColorOutput "Step 3: Testing m1f installation..." -Color $colors.Green
@@ -1896,17 +1925,26 @@ if (!(Test-Path $PROFILE)) {
 # Check if functions already exist
 $profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
 if ($profileContent -match "# m1f tools functions") {
-    Write-ColorOutput "m1f functions already exist in profile" -Color $colors.Yellow
+    # Check if we need to update from old bin path to new venv path
+    if ($profileContent -match [regex]::Escape($oldBinDir)) {
+        Write-ColorOutput "🔄 Updating PowerShell profile from old paths to new entry points..." -Color $colors.Yellow
+        $profileContent = $profileContent -replace [regex]::Escape($oldBinDir), $venvBinDir
+        Set-Content $PROFILE $profileContent
+        Write-ColorOutput "✓ Updated PowerShell profile to use Python entry points" -Color $colors.Green
+    } else {
+        Write-ColorOutput "m1f functions already exist in profile" -Color $colors.Yellow
+    }
 } else {
     # Add functions to profile
     $functionsContent = @"
 
 # m1f tools functions (added by m1f setup script)
-# Dot-source the m1f aliases file
+# Add m1f entry points to PATH
+`$env:PATH = "$venvBinDir;`$env:PATH"
+
+# Dot-source the m1f aliases file if it exists (for backward compatibility)
 if (Test-Path "$projectRoot\scripts\m1f_aliases.ps1") {
     . "$projectRoot\scripts\m1f_aliases.ps1"
-} else {
-    Write-Warning "m1f aliases file not found at: $projectRoot\scripts\m1f_aliases.ps1 (check your PowerShell profile at: `$PROFILE)"
 }
 
 "@
@@ -1924,17 +1962,18 @@ if (!(Test-Path $batchDir)) {
     New-Item -ItemType Directory -Path $batchDir | Out-Null
 }
 
-# Create batch files
+# Create batch files (now using Python entry points)
 $commands = @{
     "m1f.bat" = "m1f"
-    "m1f-s1f.bat" = "m1f-s1f"
+    "s1f.bat" = "s1f"
+    "m1f-s1f.bat" = "m1f-s1f"  # Alias for backward compatibility
     "m1f-html2md.bat" = "m1f-html2md"
     "m1f-scrape.bat" = "m1f-scrape"
     "m1f-research.bat" = "m1f-research"
     "m1f-token-counter.bat" = "m1f-token-counter"
-    "m1f-update.bat" = "m1f auto-bundle"
-    "m1f-init.bat" = "python `"%~dp0..\tools\m1f_init.py`" %*"
-    "m1f-claude.bat" = "python `"%~dp0..\tools\m1f_claude.py`" %*"
+    "m1f-update.bat" = "m1f-update"
+    "m1f-init.bat" = "m1f-init"
+    "m1f-claude.bat" = "m1f-claude"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files
@@ -2097,11 +2136,20 @@ done
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+# Use .venv/bin for entry points instead of bin/
+VENV_BIN_DIR="$PROJECT_ROOT/.venv/bin"
+# Keep old bin dir reference for backwards compatibility
 BIN_DIR="$PROJECT_ROOT/bin"
 
 echo -e "${BLUE}m1f Installation${NC}"
 echo -e "${BLUE}================${NC}"
 echo
+
+# Check if this is an upgrade from an old installation
+if [ -d ".venv" ] && [ -d "bin" ] && [ -f "bin/m1f" ]; then
+    echo -e "${YELLOW}📦 Upgrade detected: Migrating to Python entry points system${NC}"
+    echo
+fi
 
 # Check if running in virtual environment already
 if [ -n "$VIRTUAL_ENV" ]; then
@@ -2166,6 +2214,11 @@ else
     exit 1
 fi
 
+# Install m1f package in editable mode (creates all entry points)
+echo -e "${GREEN}Installing m1f package with all tools...${NC}"
+pip install -e tools/ --quiet
+echo -e "${GREEN}✓ m1f package installed with all entry points${NC}"
+
 # Step 3: Test m1f installation
 echo
 echo -e "${GREEN}Step 3: Testing m1f installation...${NC}"
@@ -2197,12 +2250,34 @@ else
     SHELL_CONFIG="$HOME/.bashrc"
 fi
 
-# PATH line to add
-PATH_LINE="export PATH=\"$BIN_DIR:\$PATH\"  # m1f tools"
+# PATH line to add (use venv bin for entry points)
+PATH_LINE="export PATH=\"$VENV_BIN_DIR:\$PATH\"  # m1f tools"
 
 # Check if already in PATH
 if grep -q "# m1f tools" "$SHELL_CONFIG" 2>/dev/null; then
-    echo -e "${YELLOW}m1f tools already in PATH${NC}"
+    # Update existing PATH entry if it points to old bin/ directory
+    if grep -q "$BIN_DIR" "$SHELL_CONFIG" 2>/dev/null; then
+        echo -e "${YELLOW}🔄 Detected old installation - upgrading to new entry point system${NC}"
+        sed -i.bak "s|$BIN_DIR|$VENV_BIN_DIR|g" "$SHELL_CONFIG"
+        echo -e "${GREEN}✓ Updated PATH from bin/ to .venv/bin/${NC}"
+        echo -e "${GREEN}✓ Your tools will now use Python entry points${NC}"
+        
+        # Clean up old symlinks if they exist
+        if [ -d "$HOME/.local/bin" ]; then
+            echo -e "${YELLOW}Cleaning up old symlinks...${NC}"
+            for old_link in "$HOME/.local/bin"/m1f*; do
+                if [ -L "$old_link" ] && readlink "$old_link" | grep -q "$BIN_DIR"; then
+                    rm -f "$old_link"
+                fi
+            done
+            if [ -L "$HOME/.local/bin/s1f" ] && readlink "$HOME/.local/bin/s1f" | grep -q "$BIN_DIR"; then
+                rm -f "$HOME/.local/bin/s1f"
+            fi
+            echo -e "${GREEN}✓ Old symlinks removed${NC}"
+        fi
+    else
+        echo -e "${YELLOW}m1f tools already in PATH${NC}"
+    fi
 else
     # Backup shell config
     cp "$SHELL_CONFIG" "$SHELL_CONFIG.m1f-backup-$(date +%Y%m%d%H%M%S)"
@@ -2213,20 +2288,35 @@ else
     echo -e "${GREEN}✓ Added m1f to PATH in $SHELL_CONFIG${NC}"
 fi
 
-# Step 5: Create symlinks (optional)
+# Step 5: Create symlinks (optional) - now using entry points from venv
 if [ -d "$HOME/.local/bin" ] || mkdir -p "$HOME/.local/bin" 2>/dev/null; then
     # Check if any m1f symlinks already exist
     if [ -L "$HOME/.local/bin/m1f" ]; then
-        echo -e "${YELLOW}Symlinks already exist in ~/.local/bin${NC}"
-    else
-        echo
-        echo -e "${YELLOW}Creating symlinks in ~/.local/bin for system-wide access...${NC}"
-        for cmd in "$BIN_DIR"/*; do
-            if [ -x "$cmd" ]; then
+        # Update existing symlinks to point to venv entry points
+        echo -e "${YELLOW}Updating symlinks in ~/.local/bin to use entry points...${NC}"
+        # Remove old symlinks
+        rm -f "$HOME/.local/bin"/m1f*
+        # Create new symlinks to venv entry points
+        for cmd in "$VENV_BIN_DIR"/m1f*; do
+            if [ -f "$cmd" ]; then
                 cmd_name=$(basename "$cmd")
                 ln -sf "$cmd" "$HOME/.local/bin/$cmd_name"
             fi
         done
+        echo -e "${GREEN}✓ Symlinks updated to use Python entry points${NC}"
+    else
+        echo
+        echo -e "${YELLOW}Creating symlinks in ~/.local/bin for system-wide access...${NC}"
+        for cmd in "$VENV_BIN_DIR"/m1f*; do
+            if [ -f "$cmd" ]; then
+                cmd_name=$(basename "$cmd")
+                ln -sf "$cmd" "$HOME/.local/bin/$cmd_name"
+            fi
+        done
+        # Also create symlinks for s1f
+        if [ -f "$VENV_BIN_DIR/s1f" ]; then
+            ln -sf "$VENV_BIN_DIR/s1f" "$HOME/.local/bin/s1f"
+        fi
         echo -e "${GREEN}✓ Symlinks created${NC}"
         
         # Check if ~/.local/bin is in PATH
@@ -2258,7 +2348,7 @@ echo
 # Try to make commands available immediately
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     # Script is being sourced, we can update the current shell
-    export PATH="$BIN_DIR:$PATH"
+    export PATH="$VENV_BIN_DIR:$PATH"
     echo -e "${GREEN}✓ Commands are available immediately in this shell${NC}"
     echo
     echo -e "${YELLOW}Test installation:${NC}"
@@ -8171,6 +8261,38 @@ def main():
 if __name__ == "__main__":
     main()
 
+======= tools/m1f_update.py ======
+#!/usr/bin/env python3
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Wrapper for m1f-update command that calls m1f auto-bundle."""
+
+import sys
+from m1f.cli import main as m1f_main
+
+
+def main():
+    """Run m1f auto-bundle command."""
+    # Insert 'auto-bundle' as the first argument
+    sys.argv = [sys.argv[0], "auto-bundle"] + sys.argv[1:]
+    return m1f_main()
+
+
+if __name__ == "__main__":
+    main()
+
 ======= tools/path_utils.py ======
 # Copyright 2025 Franz und Franz GmbH
 # SPDX-License-Identifier: Apache-2.0
@@ -8620,7 +8742,20 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
+            # Core tools
             "m1f=m1f:main",
+            "s1f=s1f.cli:main",
+            "m1f-html2md=html2md_tool.cli:main",
+            "m1f-scrape=scrape_tool.cli:main",
+            "m1f-research=research.cli:main",
+            # Utility tools
+            "m1f-claude=m1f_claude:main",
+            "m1f-help=m1f_help:main",
+            "m1f-init=m1f_init:main",
+            "m1f-token-counter=token_counter:main",
+            "m1f-update=m1f_update:main",
+            # Alias for backwards compatibility
+            "m1f-s1f=s1f.cli:main",
         ],
     },
     python_requires=">=3.10",
@@ -11012,19 +11147,27 @@ A powerful, modular tool for converting HTML content to Markdown format,
 optimized for processing entire websites and integration with m1f.
 """
 
+# Get version from package metadata
 try:
-    from .._version import __version__, __version_info__
-except ImportError:
-    # Fallback when running as standalone script
-    __version__ = "3.3.0"
-    __version_info__ = (3, 3, 0)
+    from importlib.metadata import version
+
+    __version__ = version("m1f")
+    __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
+except Exception:
+    # During development, version might not be available
+    __version__ = "dev"
+    __version_info__ = (0, 0, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 
-from .api import Html2mdConverter
-from .config import Config, ConversionOptions
-from .core import HTMLParser, MarkdownConverter
-from .utils import convert_html, adjust_internal_links, extract_title_from_html
+from html2md_tool.api import Html2mdConverter
+from html2md_tool.config import Config, ConversionOptions
+from html2md_tool.core import HTMLParser, MarkdownConverter
+from html2md_tool.utils import (
+    convert_html,
+    adjust_internal_links,
+    extract_title_from_html,
+)
 
 # Alias for backward compatibility
 HTML2MDConverter = Html2mdConverter
@@ -11048,7 +11191,7 @@ __all__ = [
 
 """Module execution entry point for mf1-html2md."""
 
-from .cli import main
+from html2md_tool.cli import main
 
 if __name__ == "__main__":
     main()
@@ -11079,20 +11222,8 @@ from typing import List, Dict, Set, Tuple
 import json
 import sys
 
-# Handle imports for both module and script execution
-try:
-    # Try relative imports first (when run as module)
-    from ..m1f.file_operations import safe_exists, safe_open
-    from ..shared.colors import success, error, warning, info
-except ImportError:
-    # Fall back to absolute imports (when run as script)
-    import os
-
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
-    from tools.m1f.file_operations import safe_exists, safe_open
-    from tools.shared.colors import success, error, warning, info
+from m1f.file_operations import safe_exists, safe_open
+from shared.colors import success, error, warning, info
 
 
 class HTMLAnalyzer:
@@ -11362,7 +11493,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 # Import safe file operations
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_is_file,
     safe_is_dir,
@@ -11375,7 +11506,7 @@ from ..m1f.file_operations import (
 from rich.progress import Progress
 
 # Use unified colorama module
-from ..shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -11385,16 +11516,16 @@ from ..shared.colors import (
     COLORAMA_AVAILABLE,
 )
 
-from .config import (
+from html2md_tool.config import (
     Config,
     ConversionOptions,
     OutputFormat,
     ExtractorConfig,
     ProcessorConfig,
 )
-from .core import HTMLParser, MarkdownConverter
-from .extractors import BaseExtractor, DefaultExtractor, load_extractor
-from .utils import configure_logging, get_logger
+from html2md_tool.core import HTMLParser, MarkdownConverter
+from html2md_tool.extractors import BaseExtractor, DefaultExtractor, load_extractor
+from html2md_tool.utils import configure_logging, get_logger
 
 logger = get_logger(__name__)
 
@@ -11429,7 +11560,7 @@ class Html2mdConverter:
         elif isinstance(config, dict):
             self.config = Config(**config)
         elif isinstance(config, (Path, str)):
-            from .config import load_config
+            from html2md_tool.config import load_config
 
             self.config = load_config(Path(config))
         else:
@@ -11480,7 +11611,7 @@ class Html2mdConverter:
 
         # Apply preprocessing if configured
         if hasattr(self.config, "preprocessing") and self.config.preprocessing:
-            from .preprocessors import preprocess_html
+            from html2md_tool.preprocessors import preprocess_html
 
             html_content = preprocess_html(html_content, self.config.preprocessing)
 
@@ -11556,7 +11687,7 @@ class Html2mdConverter:
             )
 
         # Adjust internal links to convert .html to .md
-        from .utils import adjust_internal_links
+        from html2md_tool.utils import adjust_internal_links
 
         markdown = adjust_internal_links(markdown)
 
@@ -12079,7 +12210,7 @@ class Html2mdConverter:
         logger.info("Generating m1f bundle...")
 
         # Import m1f integration
-        from .processors.m1f_integration import M1FBundler
+        from html2md_tool.processors.m1f_integration import M1FBundler
 
         bundler = M1FBundler(self.config.m1f)
         bundle_path = bundler.create_bundle(
@@ -12239,7 +12370,7 @@ def convert_html(html_content: str, **kwargs) -> str:
         Markdown content
     """
     from pathlib import Path
-    from .config.models import ConversionOptions, Config
+    from html2md_tool.config.models import ConversionOptions, Config
 
     # Create minimal config
     config = Config(
@@ -12284,10 +12415,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 # Import safe file operations
-from ..m1f.file_operations import safe_exists, safe_is_file
+from m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
-from ..shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -12298,7 +12429,7 @@ from ..shared.colors import (
 )
 
 # Import shared Claude utilities
-from ..shared.claude_utils import (
+from shared.claude_utils import (
     ClaudeBinaryFinder,
     ClaudeErrorHandler,
     ClaudeConfig,
@@ -12616,10 +12747,10 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 # Import safe file operations
-from ..m1f.file_operations import safe_exists, safe_is_file
+from m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
-from ..shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -12719,63 +12850,31 @@ from pathlib import Path
 from typing import List, Optional
 from collections import Counter
 
-# Handle imports for both module and script execution
-try:
-    # Try relative imports first (when run as module)
-    from ..m1f.file_operations import (
-        safe_exists,
-        safe_is_file,
-        safe_is_dir,
-        safe_mkdir,
-        safe_open,
-        safe_read_text,
-        safe_write_text,
-    )
-    from ..shared.colors import (
-        Colors,
-        ColoredHelpFormatter,
-        success,
-        error,
-        warning,
-        info,
-        header,
-        COLORAMA_AVAILABLE,
-    )
-    from ..shared.cli import CustomArgumentParser
-    from . import __version__
-    from .api import Html2mdConverter
-    from .config import Config, OutputFormat
-except ImportError:
-    # Fall back to absolute imports (when run as script)
-    import os
-
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
-    from tools.m1f.file_operations import (
-        safe_exists,
-        safe_is_file,
-        safe_is_dir,
-        safe_mkdir,
-        safe_open,
-        safe_read_text,
-        safe_write_text,
-    )
-    from tools.shared.colors import (
-        Colors,
-        ColoredHelpFormatter,
-        success,
-        error,
-        warning,
-        info,
-        header,
-        COLORAMA_AVAILABLE,
-    )
-    from tools.shared.cli import CustomArgumentParser
-    from tools.html2md_tool import __version__
-    from tools.html2md_tool.api import Html2mdConverter
-    from tools.html2md_tool.config import Config, OutputFormat
-from .claude_runner import ClaudeRunner
+# Import statements using absolute imports
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    safe_write_text,
+)
+from shared.colors import (
+    Colors,
+    ColoredHelpFormatter,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+from shared.cli import CustomArgumentParser
+from html2md_tool import __version__
+from html2md_tool.api import Html2mdConverter
+from html2md_tool.config import Config, OutputFormat
+from html2md_tool.claude_runner import ClaudeRunner
 
 
 def create_parser() -> CustomArgumentParser:
@@ -13029,10 +13128,10 @@ def handle_convert(args: argparse.Namespace) -> None:
         return
 
     # Load configuration
-    from .config import Config
+    from html2md_tool.config import Config
 
     if args.config:
-        from .config import load_config
+        from html2md_tool.config import load_config
         import yaml
 
         # Load the config file to check its contents
@@ -13302,15 +13401,11 @@ def _handle_claude_analysis(
     import sys
 
     # Import validate_path_traversal
-    try:
-        from ..m1f.utils import validate_path_traversal
-    except ImportError:
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from m1f.utils import validate_path_traversal
+    from m1f.utils import validate_path_traversal
 
     # Try to use improved runner if available
     try:
-        from .cli_claude import handle_claude_analysis_improved
+        from html2md_tool.cli_claude import handle_claude_analysis_improved
 
         return handle_claude_analysis_improved(
             html_files, num_files_to_analyze, parallel_workers, project_description
@@ -14004,12 +14099,11 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     from pathlib import Path
     import sys
 
-    sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
 
     # Try to use improved converter if available
     try:
-        from .convert_claude import handle_claude_convert_improved
+        from html2md_tool.convert_claude import handle_claude_convert_improved
 
         return handle_claude_convert_improved(args)
     except ImportError:
@@ -14172,7 +14266,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
 def handle_config(args: argparse.Namespace) -> None:
     """Handle config command."""
-    from .config import Config
+    from html2md_tool.config import Config
 
     # Create default configuration
     config = Config(source=Path("./html"), destination=Path("./markdown"))
@@ -14231,7 +14325,7 @@ def main() -> None:
 
         if args.source_dir and args.destination_dir:
             # Simple conversion mode
-            from .config import ConversionOptions
+            from html2md_tool.config import ConversionOptions
 
             options = ConversionOptions(
                 source_dir=args.source_dir,
@@ -14330,29 +14424,9 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 
-# Handle imports for both module and script execution
-try:
-    # Try relative imports first (when run as module)
-    from ..shared.colors import info, error, warning, success, header, Colors
-    from .claude_runner import (
-        ClaudeRunner,
-    )  # Use local ClaudeRunner which extends the base
-    from ..m1f.file_operations import safe_exists, safe_mkdir, safe_open, safe_read_text
-except ImportError:
-    # Fall back to absolute imports (when run as script)
-    import sys
-
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
-    from tools.shared.colors import info, error, warning, success, header, Colors
-    from tools.html2md_tool.claude_runner import ClaudeRunner
-    from tools.m1f.file_operations import (
-        safe_exists,
-        safe_mkdir,
-        safe_open,
-        safe_read_text,
-    )
+from shared.colors import info, error, warning, success, header, Colors
+from html2md_tool.claude_runner import ClaudeRunner
+from m1f.file_operations import safe_exists, safe_mkdir, safe_open, safe_read_text
 
 
 def handle_claude_analysis_improved(
@@ -14879,10 +14953,10 @@ import time
 import tempfile
 from pathlib import Path
 from typing import List
-from .claude_runner import ClaudeRunner
+from html2md_tool.claude_runner import ClaudeRunner
 
 # Import safe file operations
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_is_file,
     safe_is_dir,
@@ -14891,7 +14965,7 @@ from ..m1f.file_operations import (
 )
 
 # Use unified colorama module
-from ..shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -14974,7 +15048,7 @@ def handle_claude_convert_improved(args):
         tmp_html_path = None
         try:
             # Import validate_path_traversal from m1f tool
-            from ..m1f.utils import validate_path_traversal
+            from m1f.utils import validate_path_traversal
 
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(
@@ -15095,9 +15169,9 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from markdownify import markdownify
 
 # Import safe file operations
-from ..m1f.file_operations import safe_open
+from m1f.file_operations import safe_open
 
-from .config.models import ExtractorConfig, ProcessorConfig
+from html2md_tool.config.models import ExtractorConfig, ProcessorConfig
 
 
 class HTMLParser:
@@ -15380,10 +15454,10 @@ import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
-from .utils import get_logger
+from html2md_tool.utils import get_logger
 
 # Import safe file operations
-from ..m1f.file_operations import safe_exists
+from m1f.file_operations import safe_exists
 
 logger = get_logger(__name__)
 
@@ -15690,7 +15764,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from ..shared.logging import (
+from shared.logging import (
     get_logger as shared_get_logger,
     configure_logging as shared_configure_logging,
 )
@@ -15805,8 +15879,8 @@ def convert_html(
     Returns:
         Markdown content
     """
-    from .config.models import ExtractorConfig, ProcessorConfig
-    from .core import HTMLParser, MarkdownConverter
+    from html2md_tool.config.models import ExtractorConfig, ProcessorConfig
+    from html2md_tool.core import HTMLParser, MarkdownConverter
 
     # Create default configs
     extractor_config = ExtractorConfig()
@@ -15970,12 +16044,16 @@ m1f - Make One File
 A modern Python tool to combine multiple text files into a single output file.
 """
 
+# Get version from package metadata
 try:
-    from .._version import __version__, __version_info__
-except ImportError:
-    # Fallback when running as standalone script
-    __version__ = "3.3.0"
-    __version_info__ = (3, 3, 0)
+    from importlib.metadata import version
+
+    __version__ = version("m1f")
+    __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
+except Exception:
+    # During development, version might not be available
+    __version__ = "dev"
+    __version_info__ = (0, 0, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
@@ -16339,7 +16417,7 @@ from .file_operations import (
 )
 
 # Use unified colorama module
-from ..shared.colors import Colors, info, success, error, warning
+from shared.colors import Colors, info, success, error, warning
 
 logger = logging.getLogger(__name__)
 
@@ -16836,8 +16914,8 @@ from . import __version__
 
 # Use unified colorama module
 try:
-    from ..shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
-    from ..shared.cli import CustomArgumentParser
+    from shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
+    from shared.cli import CustomArgumentParser
 except ImportError:
     COLORAMA_AVAILABLE = False
 
@@ -20695,7 +20773,7 @@ from typing import Optional
 from contextlib import asynccontextmanager
 
 from .config import Config, LoggingConfig
-from ..shared.logging import (
+from shared.logging import (
     LoggerManager as SharedLoggerManager,
     setup_logging as shared_setup_logging,
     get_logger as shared_get_logger,
@@ -20703,7 +20781,7 @@ from ..shared.logging import (
 
 # Use unified colorama module for warnings
 try:
-    from ..shared.colors import warning
+    from shared.colors import warning
 except ImportError:
     import os
     import sys
@@ -31172,29 +31250,13 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import logging
 
-# Try absolute imports first (for module execution), fall back to relative
-try:
-    from ..m1f.file_operations import (
-        safe_exists,
-        safe_is_file,
-        safe_mkdir,
-        safe_read_text,
-        safe_stat,
-    )
-except (ImportError, ValueError):
-    # Fallback for direct script execution or when running as main module
-    import sys
-    from pathlib import Path
-
-    # Add parent directory to path for imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from tools.m1f.file_operations import (
-        safe_exists,
-        safe_is_file,
-        safe_mkdir,
-        safe_read_text,
-        safe_stat,
-    )
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_mkdir,
+    safe_read_text,
+    safe_stat,
+)
 
 try:
     import aiofiles
@@ -31206,16 +31268,7 @@ except ImportError:
 from .config import Config
 from .models import ExtractedFile, ExtractionResult
 
-# Use unified colorama module for direct prints
-try:
-    from tools.shared.colors import info
-except ImportError:
-    try:
-        from ..shared.colors import info
-    except ImportError:
-        # Fallback
-        def info(msg):
-            print(msg)
+from shared.colors import info
 
 
 from .parsers import CombinedFileParser
@@ -32689,29 +32742,13 @@ from .utils import (
 )
 from .exceptions import FileWriteError, ChecksumMismatchError
 
-# Try absolute imports first (for module execution), fall back to relative
-try:
-    from ..m1f.file_operations import (
-        safe_exists,
-        safe_mkdir,
-        safe_open,
-        safe_write_text,
-        safe_read_text,
-    )
-except (ImportError, ValueError):
-    # Fallback for direct script execution or when running as main module
-    import sys
-    from pathlib import Path
-
-    # Add parent directory to path for imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from tools.m1f.file_operations import (
-        safe_exists,
-        safe_mkdir,
-        safe_open,
-        safe_write_text,
-        safe_read_text,
-    )
+from m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+    safe_open,
+    safe_write_text,
+    safe_read_text,
+)
 
 try:
     import aiofiles
@@ -37102,10 +37139,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 # Use safe file operations
-from ..m1f.file_operations import safe_exists, safe_is_file
+from m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
-from .colors import warning, error, info
+from shared.colors import warning, error, info
 
 # Optional imports for Claude Code SDK
 try:
@@ -38425,8 +38462,8 @@ CRITICAL = logging.CRITICAL
 ======= tools/html2md_tool/config/__init__.py ======
 """Configuration system for mf1-html2md."""
 
-from .loader import load_config, save_config
-from .models import (
+from html2md_tool.config.loader import load_config, save_config
+from html2md_tool.config.models import (
     AssetConfig,
     Config,
     ConversionOptions,
@@ -38477,10 +38514,10 @@ import yaml
 import sys
 
 # Import safe file operations
-from ...m1f.file_operations import safe_exists, safe_open
+from m1f.file_operations import safe_exists, safe_open
 
 # Use unified colorama module
-from ...shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -38490,7 +38527,7 @@ from ...shared.colors import (
     COLORAMA_AVAILABLE,
 )
 
-from .models import Config
+from html2md_tool.config.models import Config
 
 
 def load_config(path: Path) -> Config:
@@ -38521,7 +38558,7 @@ def load_config(path: Path) -> Config:
         raise ValueError(f"Unsupported configuration format: {suffix}")
 
     # Import nested config models
-    from .models import (
+    from html2md_tool.config.models import (
         ConversionOptions,
         ExtractorConfig,
         ProcessorConfig,
@@ -38705,7 +38742,7 @@ class ConversionOptions:
     def from_config_file(cls, path: Path) -> "ConversionOptions":
         """Load options from a configuration file."""
         import yaml
-        from ...m1f.file_operations import safe_open
+        from m1f.file_operations import safe_open
 
         with safe_open(path, "r") as f:
             data = yaml.safe_load(f)
@@ -38834,7 +38871,7 @@ class Config:
     def __post_init__(self):
         """Initialize preprocessing with defaults if not provided."""
         if self.preprocessing is None:
-            from ..preprocessors import PreprocessingConfig
+            from html2md_tool.preprocessors import PreprocessingConfig
 
             self.preprocessing = PreprocessingConfig(
                 remove_elements=["script", "style", "noscript"],

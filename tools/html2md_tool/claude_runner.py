@@ -25,10 +25,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 # Import safe file operations
-from ..m1f.file_operations import safe_exists, safe_is_file
+from m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
-from ..shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -39,7 +39,7 @@ from ..shared.colors import (
 )
 
 # Import shared Claude utilities
-from ..shared.claude_utils import (
+from shared.claude_utils import (
     ClaudeBinaryFinder,
     ClaudeErrorHandler,
     ClaudeConfig,

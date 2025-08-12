@@ -80,11 +80,18 @@ function Write-ColorOutput {
 # Get script and project paths
 $scriptPath = $PSScriptRoot
 $projectRoot = Split-Path $scriptPath -Parent
-$binDir = Join-Path $projectRoot "bin"
+$venvBinDir = Join-Path $projectRoot ".venv\Scripts"
+$oldBinDir = Join-Path $projectRoot "bin"
 
 Write-ColorOutput "m1f Installation" -Color $colors.Blue
 Write-ColorOutput "================" -Color $colors.Blue
 Write-Host
+
+# Check if this is an upgrade from an old installation
+if ((Test-Path ".venv") -and (Test-Path "bin") -and (Test-Path "bin\m1f")) {
+    Write-ColorOutput "📦 Upgrade detected: Migrating to Python entry points system" -Color $colors.Yellow
+    Write-Host
+}
 
 # Check execution policy
 $executionPolicy = Get-ExecutionPolicy -Scope CurrentUser
@@ -181,6 +188,11 @@ if (Test-Path "requirements.txt") {
     exit 1
 }
 
+# Install m1f package in editable mode (creates all entry points)
+Write-ColorOutput "Installing m1f package with all tools..." -Color $colors.Green
+pip install -e tools\ --quiet
+Write-ColorOutput "✓ m1f package installed with all entry points" -Color $colors.Green
+
 # Step 3: Test m1f installation
 Write-Host
 Write-ColorOutput "Step 3: Testing m1f installation..." -Color $colors.Green
@@ -213,17 +225,26 @@ if (!(Test-Path $PROFILE)) {
 # Check if functions already exist
 $profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
 if ($profileContent -match "# m1f tools functions") {
-    Write-ColorOutput "m1f functions already exist in profile" -Color $colors.Yellow
+    # Check if we need to update from old bin path to new venv path
+    if ($profileContent -match [regex]::Escape($oldBinDir)) {
+        Write-ColorOutput "🔄 Updating PowerShell profile from old paths to new entry points..." -Color $colors.Yellow
+        $profileContent = $profileContent -replace [regex]::Escape($oldBinDir), $venvBinDir
+        Set-Content $PROFILE $profileContent
+        Write-ColorOutput "✓ Updated PowerShell profile to use Python entry points" -Color $colors.Green
+    } else {
+        Write-ColorOutput "m1f functions already exist in profile" -Color $colors.Yellow
+    }
 } else {
     # Add functions to profile
     $functionsContent = @"
 
 # m1f tools functions (added by m1f setup script)
-# Dot-source the m1f aliases file
+# Add m1f entry points to PATH
+`$env:PATH = "$venvBinDir;`$env:PATH"
+
+# Dot-source the m1f aliases file if it exists (for backward compatibility)
 if (Test-Path "$projectRoot\scripts\m1f_aliases.ps1") {
     . "$projectRoot\scripts\m1f_aliases.ps1"
-} else {
-    Write-Warning "m1f aliases file not found at: $projectRoot\scripts\m1f_aliases.ps1 (check your PowerShell profile at: `$PROFILE)"
 }
 
 "@
@@ -241,17 +262,18 @@ if (!(Test-Path $batchDir)) {
     New-Item -ItemType Directory -Path $batchDir | Out-Null
 }
 
-# Create batch files
+# Create batch files (now using Python entry points)
 $commands = @{
     "m1f.bat" = "m1f"
-    "m1f-s1f.bat" = "m1f-s1f"
+    "s1f.bat" = "s1f"
+    "m1f-s1f.bat" = "m1f-s1f"  # Alias for backward compatibility
     "m1f-html2md.bat" = "m1f-html2md"
     "m1f-scrape.bat" = "m1f-scrape"
     "m1f-research.bat" = "m1f-research"
     "m1f-token-counter.bat" = "m1f-token-counter"
-    "m1f-update.bat" = "m1f auto-bundle"
-    "m1f-init.bat" = "python `"%~dp0..\tools\m1f_init.py`" %*"
-    "m1f-claude.bat" = "python `"%~dp0..\tools\m1f_claude.py`" %*"
+    "m1f-update.bat" = "m1f-update"
+    "m1f-init.bat" = "m1f-init"
+    "m1f-claude.bat" = "m1f-claude"
     "m1f-help.bat" = '@echo off
 echo m1f Tools - Available Commands:
 echo   m1f               - Main m1f tool for combining files

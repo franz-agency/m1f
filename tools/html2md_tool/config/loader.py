@@ -24,10 +24,10 @@ import yaml
 import sys
 
 # Import safe file operations
-from ...m1f.file_operations import safe_exists, safe_open
+from m1f.file_operations import safe_exists, safe_open
 
 # Use unified colorama module
-from ...shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -37,7 +37,7 @@ from ...shared.colors import (
     COLORAMA_AVAILABLE,
 )
 
-from .models import Config
+from html2md_tool.config.models import Config
 
 
 def load_config(path: Path) -> Config:
@@ -68,7 +68,7 @@ def load_config(path: Path) -> Config:
         raise ValueError(f"Unsupported configuration format: {suffix}")
 
     # Import nested config models
-    from .models import (
+    from html2md_tool.config.models import (
         ConversionOptions,
         ExtractorConfig,
         ProcessorConfig,

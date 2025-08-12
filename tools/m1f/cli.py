@@ -24,8 +24,8 @@ from . import __version__
 
 # Use unified colorama module
 try:
-    from ..shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
-    from ..shared.cli import CustomArgumentParser
+    from shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
+    from shared.cli import CustomArgumentParser
 except ImportError:
     COLORAMA_AVAILABLE = False
 

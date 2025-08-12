@@ -19,10 +19,10 @@ import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
-from .utils import get_logger
+from html2md_tool.utils import get_logger
 
 # Import safe file operations
-from ..m1f.file_operations import safe_exists
+from m1f.file_operations import safe_exists
 
 logger = get_logger(__name__)
 

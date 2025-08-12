@@ -20,10 +20,10 @@ import time
 import tempfile
 from pathlib import Path
 from typing import List
-from .claude_runner import ClaudeRunner
+from html2md_tool.claude_runner import ClaudeRunner
 
 # Import safe file operations
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_is_file,
     safe_is_dir,
@@ -32,7 +32,7 @@ from ..m1f.file_operations import (
 )
 
 # Use unified colorama module
-from ..shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -115,7 +115,7 @@ def handle_claude_convert_improved(args):
         tmp_html_path = None
         try:
             # Import validate_path_traversal from m1f tool
-            from ..m1f.utils import validate_path_traversal
+            from m1f.utils import validate_path_traversal
 
             # Validate path to prevent traversal attacks
             validated_path = validate_path_traversal(

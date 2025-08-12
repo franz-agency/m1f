@@ -32,7 +32,7 @@ from .file_operations import (
 )
 
 # Use unified colorama module
-from ..shared.colors import Colors, info, success, error, warning
+from shared.colors import Colors, info, success, error, warning
 
 logger = logging.getLogger(__name__)
 

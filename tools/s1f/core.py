@@ -19,29 +19,13 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import logging
 
-# Try absolute imports first (for module execution), fall back to relative
-try:
-    from ..m1f.file_operations import (
-        safe_exists,
-        safe_is_file,
-        safe_mkdir,
-        safe_read_text,
-        safe_stat,
-    )
-except (ImportError, ValueError):
-    # Fallback for direct script execution or when running as main module
-    import sys
-    from pathlib import Path
-
-    # Add parent directory to path for imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from tools.m1f.file_operations import (
-        safe_exists,
-        safe_is_file,
-        safe_mkdir,
-        safe_read_text,
-        safe_stat,
-    )
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_mkdir,
+    safe_read_text,
+    safe_stat,
+)
 
 try:
     import aiofiles
@@ -53,16 +37,7 @@ except ImportError:
 from .config import Config
 from .models import ExtractedFile, ExtractionResult
 
-# Use unified colorama module for direct prints
-try:
-    from tools.shared.colors import info
-except ImportError:
-    try:
-        from ..shared.colors import info
-    except ImportError:
-        # Fallback
-        def info(msg):
-            print(msg)
+from shared.colors import info
 
 
 from .parsers import CombinedFileParser

@@ -24,7 +24,7 @@ from typing import Optional
 from contextlib import asynccontextmanager
 
 from .config import Config, LoggingConfig
-from ..shared.logging import (
+from shared.logging import (
     LoggerManager as SharedLoggerManager,
     setup_logging as shared_setup_logging,
     get_logger as shared_get_logger,
@@ -32,7 +32,7 @@ from ..shared.logging import (
 
 # Use unified colorama module for warnings
 try:
-    from ..shared.colors import warning
+    from shared.colors import warning
 except ImportError:
     import os
     import sys

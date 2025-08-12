@@ -30,10 +30,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 # Use safe file operations
-from ..m1f.file_operations import safe_exists, safe_is_file
+from m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
-from .colors import warning, error, info
+from shared.colors import warning, error, info
 
 # Optional imports for Claude Code SDK
 try:

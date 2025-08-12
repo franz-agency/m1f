@@ -50,7 +50,20 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
+            # Core tools
             "m1f=m1f:main",
+            "s1f=s1f.cli:main",
+            "m1f-html2md=html2md_tool.cli:main",
+            "m1f-scrape=scrape_tool.cli:main",
+            "m1f-research=research.cli:main",
+            # Utility tools
+            "m1f-claude=m1f_claude:main",
+            "m1f-help=m1f_help:main",
+            "m1f-init=m1f_init:main",
+            "m1f-token-counter=token_counter:main",
+            "m1f-update=m1f_update:main",
+            # Alias for backwards compatibility
+            "m1f-s1f=s1f.cli:main",
         ],
     },
     python_requires=">=3.10",

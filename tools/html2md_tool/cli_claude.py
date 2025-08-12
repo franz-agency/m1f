@@ -21,29 +21,9 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 
-# Handle imports for both module and script execution
-try:
-    # Try relative imports first (when run as module)
-    from ..shared.colors import info, error, warning, success, header, Colors
-    from .claude_runner import (
-        ClaudeRunner,
-    )  # Use local ClaudeRunner which extends the base
-    from ..m1f.file_operations import safe_exists, safe_mkdir, safe_open, safe_read_text
-except ImportError:
-    # Fall back to absolute imports (when run as script)
-    import sys
-
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
-    from tools.shared.colors import info, error, warning, success, header, Colors
-    from tools.html2md_tool.claude_runner import ClaudeRunner
-    from tools.m1f.file_operations import (
-        safe_exists,
-        safe_mkdir,
-        safe_open,
-        safe_read_text,
-    )
+from shared.colors import info, error, warning, success, header, Colors
+from html2md_tool.claude_runner import ClaudeRunner
+from m1f.file_operations import safe_exists, safe_mkdir, safe_open, safe_read_text
 
 
 def handle_claude_analysis_improved(

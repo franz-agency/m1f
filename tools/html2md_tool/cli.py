@@ -21,63 +21,31 @@ from pathlib import Path
 from typing import List, Optional
 from collections import Counter
 
-# Handle imports for both module and script execution
-try:
-    # Try relative imports first (when run as module)
-    from ..m1f.file_operations import (
-        safe_exists,
-        safe_is_file,
-        safe_is_dir,
-        safe_mkdir,
-        safe_open,
-        safe_read_text,
-        safe_write_text,
-    )
-    from ..shared.colors import (
-        Colors,
-        ColoredHelpFormatter,
-        success,
-        error,
-        warning,
-        info,
-        header,
-        COLORAMA_AVAILABLE,
-    )
-    from ..shared.cli import CustomArgumentParser
-    from . import __version__
-    from .api import Html2mdConverter
-    from .config import Config, OutputFormat
-except ImportError:
-    # Fall back to absolute imports (when run as script)
-    import os
-
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
-    from tools.m1f.file_operations import (
-        safe_exists,
-        safe_is_file,
-        safe_is_dir,
-        safe_mkdir,
-        safe_open,
-        safe_read_text,
-        safe_write_text,
-    )
-    from tools.shared.colors import (
-        Colors,
-        ColoredHelpFormatter,
-        success,
-        error,
-        warning,
-        info,
-        header,
-        COLORAMA_AVAILABLE,
-    )
-    from tools.shared.cli import CustomArgumentParser
-    from tools.html2md_tool import __version__
-    from tools.html2md_tool.api import Html2mdConverter
-    from tools.html2md_tool.config import Config, OutputFormat
-from .claude_runner import ClaudeRunner
+# Import statements using absolute imports
+from m1f.file_operations import (
+    safe_exists,
+    safe_is_file,
+    safe_is_dir,
+    safe_mkdir,
+    safe_open,
+    safe_read_text,
+    safe_write_text,
+)
+from shared.colors import (
+    Colors,
+    ColoredHelpFormatter,
+    success,
+    error,
+    warning,
+    info,
+    header,
+    COLORAMA_AVAILABLE,
+)
+from shared.cli import CustomArgumentParser
+from html2md_tool import __version__
+from html2md_tool.api import Html2mdConverter
+from html2md_tool.config import Config, OutputFormat
+from html2md_tool.claude_runner import ClaudeRunner
 
 
 def create_parser() -> CustomArgumentParser:
@@ -331,10 +299,10 @@ def handle_convert(args: argparse.Namespace) -> None:
         return
 
     # Load configuration
-    from .config import Config
+    from html2md_tool.config import Config
 
     if args.config:
-        from .config import load_config
+        from html2md_tool.config import load_config
         import yaml
 
         # Load the config file to check its contents
@@ -604,15 +572,11 @@ def _handle_claude_analysis(
     import sys
 
     # Import validate_path_traversal
-    try:
-        from ..m1f.utils import validate_path_traversal
-    except ImportError:
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from m1f.utils import validate_path_traversal
+    from m1f.utils import validate_path_traversal
 
     # Try to use improved runner if available
     try:
-        from .cli_claude import handle_claude_analysis_improved
+        from html2md_tool.cli_claude import handle_claude_analysis_improved
 
         return handle_claude_analysis_improved(
             html_files, num_files_to_analyze, parallel_workers, project_description
@@ -1306,12 +1270,11 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
     from pathlib import Path
     import sys
 
-    sys.path.insert(0, str(Path(__file__).parent.parent))
     from m1f.utils import validate_path_traversal
 
     # Try to use improved converter if available
     try:
-        from .convert_claude import handle_claude_convert_improved
+        from html2md_tool.convert_claude import handle_claude_convert_improved
 
         return handle_claude_convert_improved(args)
     except ImportError:
@@ -1474,7 +1437,7 @@ def _handle_claude_convert(args: argparse.Namespace) -> None:
 
 def handle_config(args: argparse.Namespace) -> None:
     """Handle config command."""
-    from .config import Config
+    from html2md_tool.config import Config
 
     # Create default configuration
     config = Config(source=Path("./html"), destination=Path("./markdown"))
@@ -1533,7 +1496,7 @@ def main() -> None:
 
         if args.source_dir and args.destination_dir:
             # Simple conversion mode
-            from .config import ConversionOptions
+            from html2md_tool.config import ConversionOptions
 
             options = ConversionOptions(
                 source_dir=args.source_dir,

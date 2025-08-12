@@ -55,6 +55,23 @@ m1f-init
 # 💥 Boom! Your AI just became a project expert.
 ```
 
+### 🔄 Updating an Existing Installation
+
+Already have m1f installed? Just pull and reinstall:
+
+```bash
+cd m1f
+git pull
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows
+
+# The installer automatically:
+# - Detects existing installations
+# - Migrates from old bash scripts to new Python entry points
+# - Updates your PATH configuration
+# - Cleans up old symlinks
+```
+
 ## Why This Changes Everything
 
 ### The Problem We All Face
@@ -601,7 +618,28 @@ and this project adheres to
   - Comprehensive test coverage for all path configurations
   - Backward compatible (--allowed-path is a hidden alias)
 
+- **Python Entry Points**: Migrated from bash wrapper scripts to proper Python entry points
+  - All CLI tools now use Python entry points defined in `setup.py`
+  - Automatic import resolution - no more relative import issues
+  - Follows Python packaging best practices
+  - Installation via `pip install -e tools/` creates all command-line tools
+  - Commands available: `m1f`, `s1f`, `m1f-html2md`, `m1f-scrape`, `m1f-research`, `m1f-claude`, `m1f-help`, `m1f-init`, `m1f-token-counter`, `m1f-update`
+  - Backward compatible - old bash scripts still work as fallback
+
 ### Changed
+
+- **Installation Process**: Enhanced `scripts/install.sh` for seamless upgrades
+  - Automatically detects and migrates old installations
+  - Updates PATH from `bin/` to `.venv/bin/` for entry points
+  - Cleans up old symlinks and creates new ones
+  - Shows clear upgrade messages and progress
+  - Handles both fresh installations and upgrades transparently
+
+- **Import Structure**: Converted all relative imports to absolute imports
+  - All modules now use absolute imports (e.g., `from m1f.file_operations import`)
+  - Removed import fallback try/except blocks - no longer needed
+  - Version information loaded via `importlib.metadata`
+  - Cleaner, more maintainable code structure
 
 - **Documentation Structure**: Reorganized docs directory for better organization
   - Renamed `docs/99_development/` to `docs/97_development/`  

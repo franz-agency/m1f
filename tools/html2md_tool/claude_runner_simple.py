@@ -23,10 +23,10 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 # Import safe file operations
-from ..m1f.file_operations import safe_exists, safe_is_file
+from m1f.file_operations import safe_exists, safe_is_file
 
 # Use unified colorama module
-from ..shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,

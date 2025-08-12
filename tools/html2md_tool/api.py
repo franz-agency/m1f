@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 # Import safe file operations
-from ..m1f.file_operations import (
+from m1f.file_operations import (
     safe_exists,
     safe_is_file,
     safe_is_dir,
@@ -34,7 +34,7 @@ from ..m1f.file_operations import (
 from rich.progress import Progress
 
 # Use unified colorama module
-from ..shared.colors import (
+from shared.colors import (
     Colors,
     success,
     error,
@@ -44,16 +44,16 @@ from ..shared.colors import (
     COLORAMA_AVAILABLE,
 )
 
-from .config import (
+from html2md_tool.config import (
     Config,
     ConversionOptions,
     OutputFormat,
     ExtractorConfig,
     ProcessorConfig,
 )
-from .core import HTMLParser, MarkdownConverter
-from .extractors import BaseExtractor, DefaultExtractor, load_extractor
-from .utils import configure_logging, get_logger
+from html2md_tool.core import HTMLParser, MarkdownConverter
+from html2md_tool.extractors import BaseExtractor, DefaultExtractor, load_extractor
+from html2md_tool.utils import configure_logging, get_logger
 
 logger = get_logger(__name__)
 
@@ -88,7 +88,7 @@ class Html2mdConverter:
         elif isinstance(config, dict):
             self.config = Config(**config)
         elif isinstance(config, (Path, str)):
-            from .config import load_config
+            from html2md_tool.config import load_config
 
             self.config = load_config(Path(config))
         else:
@@ -139,7 +139,7 @@ class Html2mdConverter:
 
         # Apply preprocessing if configured
         if hasattr(self.config, "preprocessing") and self.config.preprocessing:
-            from .preprocessors import preprocess_html
+            from html2md_tool.preprocessors import preprocess_html
 
             html_content = preprocess_html(html_content, self.config.preprocessing)
 
@@ -215,7 +215,7 @@ class Html2mdConverter:
             )
 
         # Adjust internal links to convert .html to .md
-        from .utils import adjust_internal_links
+        from html2md_tool.utils import adjust_internal_links
 
         markdown = adjust_internal_links(markdown)
 
@@ -738,7 +738,7 @@ class Html2mdConverter:
         logger.info("Generating m1f bundle...")
 
         # Import m1f integration
-        from .processors.m1f_integration import M1FBundler
+        from html2md_tool.processors.m1f_integration import M1FBundler
 
         bundler = M1FBundler(self.config.m1f)
         bundle_path = bundler.create_bundle(
@@ -898,7 +898,7 @@ def convert_html(html_content: str, **kwargs) -> str:
         Markdown content
     """
     from pathlib import Path
-    from .config.models import ConversionOptions, Config
+    from html2md_tool.config.models import ConversionOptions, Config
 
     # Create minimal config
     config = Config(

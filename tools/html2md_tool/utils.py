@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from ..shared.logging import (
+from shared.logging import (
     get_logger as shared_get_logger,
     configure_logging as shared_configure_logging,
 )
@@ -133,8 +133,8 @@ def convert_html(
     Returns:
         Markdown content
     """
-    from .config.models import ExtractorConfig, ProcessorConfig
-    from .core import HTMLParser, MarkdownConverter
+    from html2md_tool.config.models import ExtractorConfig, ProcessorConfig
+    from html2md_tool.core import HTMLParser, MarkdownConverter
 
     # Create default configs
     extractor_config = ExtractorConfig()

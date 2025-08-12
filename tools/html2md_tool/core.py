@@ -22,9 +22,9 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from markdownify import markdownify
 
 # Import safe file operations
-from ..m1f.file_operations import safe_open
+from m1f.file_operations import safe_open
 
-from .config.models import ExtractorConfig, ProcessorConfig
+from html2md_tool.config.models import ExtractorConfig, ProcessorConfig
 
 
 class HTMLParser:

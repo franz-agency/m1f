@@ -33,29 +33,13 @@ from .utils import (
 )
 from .exceptions import FileWriteError, ChecksumMismatchError
 
-# Try absolute imports first (for module execution), fall back to relative
-try:
-    from ..m1f.file_operations import (
-        safe_exists,
-        safe_mkdir,
-        safe_open,
-        safe_write_text,
-        safe_read_text,
-    )
-except (ImportError, ValueError):
-    # Fallback for direct script execution or when running as main module
-    import sys
-    from pathlib import Path
-
-    # Add parent directory to path for imports
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from tools.m1f.file_operations import (
-        safe_exists,
-        safe_mkdir,
-        safe_open,
-        safe_write_text,
-        safe_read_text,
-    )
+from m1f.file_operations import (
+    safe_exists,
+    safe_mkdir,
+    safe_open,
+    safe_write_text,
+    safe_read_text,
+)
 
 try:
     import aiofiles
