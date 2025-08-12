@@ -583,6 +583,15 @@ and this project adheres to
 
 ### Added
 
+- **m1f-html2md Subagent-Based Parallel Analysis**: Faster HTML analysis using Claude subagents
+  - New `coordinate_parallel_analysis.md` prompt for Task tool delegation  
+  - Single Claude session coordinates multiple parallel subagents
+  - Each subagent analyzes one HTML file independently with separate context
+  - Reduces analysis time from 3-5 minutes to 2-3 minutes
+  - Better progress tracking with TodoWrite integration
+  - Automatic fallback to traditional parallel approach if new prompt missing
+  - Cleaner separation of concerns with dedicated subagent contexts
+
 - **Shared Claude Utilities Library**: Centralized Claude integration following DRY principle
   - New `tools/shared/claude_utils.py` module eliminating code duplication across m1f-claude, m1f-html2md, and m1f-research
   - `ClaudeConfig` dataclass for centralized configuration management with API key validation
