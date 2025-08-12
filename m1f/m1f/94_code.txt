@@ -3,6 +3,8 @@
 
 **Because your AI assistant deserves the full story, not just fragments.**
 
+> **📦 Quick Update:** Already using m1f? Update with: `cd m1f && git pull && source ./scripts/install.sh`
+
 ## You know that moment when...
 
 ...you're trying to get Claude, ChatGPT, or Gemini to help with your codebase,
@@ -57,20 +59,22 @@ m1f-init
 
 ### 🔄 Updating an Existing Installation
 
-Already have m1f installed? Just pull and reinstall:
+**Already have m1f installed? Updating is simple:**
 
 ```bash
+# Navigate to your m1f directory and update:
 cd m1f
-git pull
-source ./scripts/install.sh    # Linux/macOS
-.\scripts\install.ps1          # Windows
+git pull && source ./scripts/install.sh    # Linux/macOS
+git pull; .\scripts\install.ps1            # Windows
 
-# The installer automatically:
-# - Detects existing installations
-# - Migrates from old bash scripts to new Python entry points
-# - Updates your PATH configuration
-# - Cleans up old symlinks
+# That's it! The installer automatically:
+# ✓ Detects your existing installation
+# ✓ Migrates to the latest version
+# ✓ Updates your PATH configuration
+# ✓ Cleans up old files
 ```
+
+**One command, zero hassle.** Your settings and configurations remain intact.
 
 ## Why This Changes Everything
 
