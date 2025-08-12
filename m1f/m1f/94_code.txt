@@ -14773,6 +14773,7 @@ def handle_claude_analysis_improved(
         ".html",
         ".htm",
         "--include-dot-paths",  # Include hidden paths
+        "-v",  # Verbose mode to show progress
     ]
 
     try:
@@ -14785,11 +14786,12 @@ def handle_claude_analysis_improved(
         else:
             env["PYTHONPATH"] = str(m1f_tools_path)
 
+        info(f"   {Colors.DIM}Running: {' '.join(m1f_cmd[:5])}...{Colors.RESET}")
+
+        # Don't capture output - let m1f show its own progress
         result = subprocess.run(
             m1f_cmd,
             check=True,
-            capture_output=True,
-            text=True,
             timeout=300,  # 5 minutes for large projects
             cwd=str(common_parent),  # Change working directory for m1f
             env=env,  # Use modified environment with PYTHONPATH
@@ -14797,8 +14799,7 @@ def handle_claude_analysis_improved(
         success("✅ Created HTML file list")
     except subprocess.CalledProcessError as e:
         error(f"❌ Failed to create file list: {e}")
-        if e.stderr:
-            error(f"   Error details: {e.stderr}")
+        error(f"   m1f exit code: {e.returncode}")
         return
     except subprocess.TimeoutExpired:
         error("❌ Timeout creating file list after 5 minutes")
