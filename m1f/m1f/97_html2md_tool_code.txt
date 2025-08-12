@@ -3409,6 +3409,14 @@ def handle_claude_analysis_improved(
 
     try:
         # Run m1f from the common_parent directory
+        # Add tools directory to PYTHONPATH to ensure m1f can be imported
+        env = os.environ.copy()
+        m1f_tools_path = Path(__file__).parent.parent  # Path to tools directory
+        if "PYTHONPATH" in env:
+            env["PYTHONPATH"] = f"{m1f_tools_path}:{env['PYTHONPATH']}"
+        else:
+            env["PYTHONPATH"] = str(m1f_tools_path)
+
         result = subprocess.run(
             m1f_cmd,
             check=True,
@@ -3416,6 +3424,7 @@ def handle_claude_analysis_improved(
             text=True,
             timeout=60,
             cwd=str(common_parent),  # Change working directory for m1f
+            env=env,  # Use modified environment with PYTHONPATH
         )
         success("✅ Created HTML file list")
     except subprocess.CalledProcessError as e:
