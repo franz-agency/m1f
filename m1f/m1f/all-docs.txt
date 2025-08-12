@@ -583,6 +583,14 @@ and this project adheres to
 
 ### Added
 
+- **m1f-html2md Real-Time Progress Display**: Live streaming of Claude's actions and progress
+  - New `run_claude_streaming_json` method with JSON output parsing
+  - Real-time display of tool usage with friendly emojis and timestamps
+  - Shows when Claude is reading files, editing, searching, launching subagents, etc.
+  - Based on proven implementation from ezclaude/claude_php_reviewer.py
+  - Eliminates "black box" feeling - users can see exactly what Claude is doing
+  - Applied to all Claude interactions (file selection, analysis, synthesis)
+
 - **m1f-html2md Subagent-Based Parallel Analysis**: Faster HTML analysis using Claude subagents
   - New `coordinate_parallel_analysis.md` prompt for Task tool delegation  
   - Single Claude session coordinates multiple parallel subagents
