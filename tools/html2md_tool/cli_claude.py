@@ -209,12 +209,13 @@ def handle_claude_analysis_improved(
     info(f"   {Colors.DIM}This may take 10-30 seconds...{Colors.RESET}")
 
     # Step 3: Use Claude to select representative files
-    returncode, stdout, stderr = runner.run_claude_streaming(
+    returncode, stdout, stderr = runner.run_claude_streaming_json(
         prompt=simple_prompt,
         allowed_tools="Read,Task,TodoWrite",  # Allow Read for file access, Task for sub-agents, TodoWrite for task management
         add_dir=str(common_parent),  # Set working directory for file resolution
         timeout=180,  # 3 minutes for file selection
-        show_output=False,  # Capture output instead of showing it
+        working_dir=str(common_parent),
+        show_progress=True,  # Show progress for file selection too
     )
 
     if returncode != 0:
@@ -508,13 +509,14 @@ def handle_claude_analysis_improved(
             f"   Managing {len(verified_files)} parallel analyses through Task delegation"
         )
 
-        # Run the coordinated analysis
-        returncode, stdout, stderr = runner.run_claude_streaming(
+        # Run the coordinated analysis with real-time JSON streaming
+        returncode, stdout, stderr = runner.run_claude_streaming_json(
             prompt=coordinate_prompt,
             allowed_tools="Task,TodoWrite,Read,Write,LS,Grep",  # Task for subagents, TodoWrite for tracking
             add_dir=str(common_parent),
             timeout=600,  # 10 minutes for coordination
-            show_output=True,  # Show progress
+            working_dir=str(common_parent),
+            show_progress=True,  # Show real-time progress
         )
 
         if returncode != 0:
@@ -597,13 +599,14 @@ def handle_claude_analysis_improved(
             f"PROJECT CONTEXT: {project_description}\n\n{synthesis_prompt}"
         )
 
-    # Run synthesis with streaming output
+    # Run synthesis with real-time streaming output
     info("\nRunning synthesis with Claude...")
-    returncode, stdout, stderr = runner.run_claude_streaming(
+    returncode, stdout, stderr = runner.run_claude_streaming_json(
         prompt=synthesis_prompt,
         add_dir=str(common_parent),
         timeout=300,  # 5 minutes for synthesis
-        show_output=True,
+        working_dir=str(common_parent),
+        show_progress=True,
     )
 
     if returncode != 0:
