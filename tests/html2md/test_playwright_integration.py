@@ -168,7 +168,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -193,7 +193,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Scrape a page - Playwright should render JavaScript
-            page = await scraper.scrape_url(f"{cls.server_url}/")
+            page = await scraper.scrape_url(f"{self.server_url}/")
 
             assert page is not None
             assert page.title is not None
@@ -220,7 +220,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
+            page = await scraper.scrape_url(f"{self.server_url}/page/m1f-documentation")
 
             assert page is not None
             # Playwright extracts comprehensive metadata
@@ -244,7 +244,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/docs/index.html"
+        start_url = f"{self.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -273,7 +273,7 @@ class TestPlaywrightIntegration:
 
         async with scraper:
             # Test page with canonical URL - using scrape_site for proper flow
-            start_url = f"{cls.server_url}/page/index?canonical={cls.server_url}/"
+            start_url = f"{self.server_url}/page/index?canonical={self.server_url}/"
 
             pages_scraped = []
             async for page in scraper.scrape_site(start_url):
@@ -304,7 +304,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(f"{cls.server_url}/")
+            page = await scraper.scrape_url(f"{self.server_url}/")
 
             assert page is not None
             # The page should have waited for h1 before returning
@@ -331,7 +331,7 @@ class TestPlaywrightIntegration:
         scraper = PlaywrightScraper(config)
 
         async with scraper:
-            page = await scraper.scrape_url(f"{cls.server_url}/")
+            page = await scraper.scrape_url(f"{self.server_url}/")
 
             assert page is not None
             assert page.metadata["viewport"] == {"width": 1920, "height": 1080}
@@ -352,7 +352,7 @@ class TestPlaywrightIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)

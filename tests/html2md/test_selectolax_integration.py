@@ -141,7 +141,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -166,7 +166,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape a page with known metadata
-            page = await scraper.scrape_url(f"{cls.server_url}/page/m1f-documentation")
+            page = await scraper.scrape_url(f"{self.server_url}/page/m1f-documentation")
 
             assert page is not None
             assert page.title is not None
@@ -191,7 +191,7 @@ class TestSelectolaxIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/docs/index.html"
+        start_url = f"{self.server_url}/docs/index.html"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -225,7 +225,7 @@ class TestSelectolaxIntegration:
         async with scraper:
             # Test page with canonical URL
             url_with_canonical = (
-                f"{cls.server_url}/page/index?canonical={cls.server_url}/"
+                f"{self.server_url}/page/index?canonical={self.server_url}/"
             )
             page = await scraper.scrape_url(url_with_canonical)
 
@@ -259,8 +259,8 @@ class TestSelectolaxIntegration:
         scraper = SelectolaxScraper(scraper_config)
 
         # Test URL normalization
-        url1 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=1")
-        url2 = scraper._normalize_url(f"{cls.server_url}/page/test?tab=2")
+        url1 = scraper._normalize_url(f"{self.server_url}/page/test?tab=1")
+        url2 = scraper._normalize_url(f"{self.server_url}/page/test?tab=2")
 
         # With ignore_get_params=True, these should be the same
         assert url1 == url2
@@ -294,7 +294,7 @@ class TestSelectolaxIntegration:
 
         async with scraper:
             # Scrape duplicate content pages
-            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{self.server_url}/test/duplicate/1")
             assert page1 is not None  # First should succeed
 
             # Calculate and store checksum
@@ -305,7 +305,7 @@ class TestSelectolaxIntegration:
                 seen_checksums.add(checksum)
 
             # Second should be skipped due to duplicate content
-            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{self.server_url}/test/duplicate/2")
             # Note: This depends on the scraper checking content before returning
 
 

@@ -123,8 +123,8 @@ class TestMeaningfulScraperFeatures:
         scraper = BeautifulSoupScraper(config)
 
         # URLs with different query params should normalize to same URL
-        url1 = f"{cls.server_url}/page/index?tab=1&view=list"
-        url2 = f"{cls.server_url}/page/index?tab=2&view=grid"
+        url1 = f"{self.server_url}/page/index?tab=1&view=list"
+        url2 = f"{self.server_url}/page/index?tab=2&view=grid"
 
         normalized1 = scraper._normalize_url(url1)
         normalized2 = scraper._normalize_url(url2)
@@ -164,7 +164,7 @@ class TestMeaningfulScraperFeatures:
         async with scraper:
             # Test 1: Page in allowed_path with canonical outside should NOT be skipped
             url_in_allowed = (
-                f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/"
+                f"{self.server_url}/page/m1f-documentation?canonical={self.server_url}/"
             )
             page = await scraper.scrape_url(url_in_allowed)
 
@@ -173,7 +173,7 @@ class TestMeaningfulScraperFeatures:
             ), "Page in allowed_path should be kept even if canonical points outside"
 
             # Test 2: Page in allowed_path with canonical also in allowed_path but different
-            url_with_canonical_in_path = f"{cls.server_url}/page/m1f-documentation?canonical={cls.server_url}/page/html2md-documentation"
+            url_with_canonical_in_path = f"{self.server_url}/page/m1f-documentation?canonical={self.server_url}/page/html2md-documentation"
             page2 = await scraper.scrape_url(url_with_canonical_in_path)
 
             assert (
@@ -196,7 +196,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         # Actually crawl the site
         await crawler.crawl(start_url, output_dir)
@@ -247,7 +247,7 @@ class TestMeaningfulScraperFeatures:
 
         async with scraper:
             # Scrape first duplicate page
-            page1 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/1")
+            page1 = await scraper.scrape_url(f"{self.server_url}/test/duplicate/1")
             assert page1 is not None, "First duplicate page should be scraped"
 
             # Simulate the checksum being stored (normally done by crawler)
@@ -261,7 +261,7 @@ class TestMeaningfulScraperFeatures:
                 scraper._checksum_callback = lambda c: c in seen_checksums
 
             # Try to scrape second duplicate page
-            page2 = await scraper.scrape_url(f"{cls.server_url}/test/duplicate/2")
+            page2 = await scraper.scrape_url(f"{self.server_url}/test/duplicate/2")
 
             # This should be None because content is duplicate
             assert page2 is None, "Second page with duplicate content should be skipped"
@@ -281,7 +281,7 @@ class TestMeaningfulScraperFeatures:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         await crawler.crawl(start_url, output_dir)
 
@@ -335,7 +335,7 @@ class TestMeaningfulScraperFeatures:
             start_time = time.time()
 
             try:
-                page = await scraper.scrape_url(f"{cls.server_url}/test/slow?delay=10")
+                page = await scraper.scrape_url(f"{self.server_url}/test/slow?delay=10")
                 # If we get here, timeout didn't work
                 elapsed = time.time() - start_time
                 assert elapsed < 5, f"Request should have timed out but took {elapsed}s"

@@ -23,11 +23,20 @@ from typing import List, Dict, Set, Tuple
 import json
 import sys
 
-# Import safe file operations
-from ..m1f.file_operations import safe_exists, safe_open
+# Handle imports for both module and script execution
+try:
+    # Try relative imports first (when run as module)
+    from ..m1f.file_operations import safe_exists, safe_open
+    from ..shared.colors import success, error, warning, info
+except ImportError:
+    # Fall back to absolute imports (when run as script)
+    import os
 
-# Import console utilities
-from ..shared.colors import success, error, warning, info
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from tools.m1f.file_operations import safe_exists, safe_open
+    from tools.shared.colors import success, error, warning, info
 
 
 class HTMLAnalyzer:

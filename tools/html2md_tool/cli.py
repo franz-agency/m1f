@@ -21,33 +21,62 @@ from pathlib import Path
 from typing import List, Optional
 from collections import Counter
 
-# Import safe file operations
-from ..m1f.file_operations import (
-    safe_exists,
-    safe_is_file,
-    safe_is_dir,
-    safe_mkdir,
-    safe_open,
-    safe_read_text,
-    safe_write_text,
-)
+# Handle imports for both module and script execution
+try:
+    # Try relative imports first (when run as module)
+    from ..m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_is_dir,
+        safe_mkdir,
+        safe_open,
+        safe_read_text,
+        safe_write_text,
+    )
+    from ..shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+    )
+    from ..shared.cli import CustomArgumentParser
+    from . import __version__
+    from .api import Html2mdConverter
+    from .config import Config, OutputFormat
+except ImportError:
+    # Fall back to absolute imports (when run as script)
+    import os
 
-# Use unified colorama module
-from ..shared.colors import (
-    Colors,
-    ColoredHelpFormatter,
-    success,
-    error,
-    warning,
-    info,
-    header,
-    COLORAMA_AVAILABLE,
-)
-from ..shared.cli import CustomArgumentParser
-
-from . import __version__
-from .api import Html2mdConverter
-from .config import Config, OutputFormat
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from tools.m1f.file_operations import (
+        safe_exists,
+        safe_is_file,
+        safe_is_dir,
+        safe_mkdir,
+        safe_open,
+        safe_read_text,
+        safe_write_text,
+    )
+    from tools.shared.colors import (
+        Colors,
+        ColoredHelpFormatter,
+        success,
+        error,
+        warning,
+        info,
+        header,
+        COLORAMA_AVAILABLE,
+    )
+    from tools.shared.cli import CustomArgumentParser
+    from tools.html2md_tool import __version__
+    from tools.html2md_tool.api import Html2mdConverter
+    from tools.html2md_tool.config import Config, OutputFormat
 from .claude_runner import ClaudeRunner
 
 
@@ -574,8 +603,12 @@ def _handle_claude_analysis(
     from pathlib import Path
     import sys
 
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from m1f.utils import validate_path_traversal
+    # Import validate_path_traversal
+    try:
+        from ..m1f.utils import validate_path_traversal
+    except ImportError:
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from m1f.utils import validate_path_traversal
 
     # Try to use improved runner if available
     try:
@@ -584,7 +617,9 @@ def _handle_claude_analysis(
         return handle_claude_analysis_improved(
             html_files, num_files_to_analyze, parallel_workers, project_description
         )
-    except ImportError:
+    except ImportError as e:
+        # Print the actual error for debugging
+        error(f"Error: {e}")
         pass
 
     header("Using Claude AI for intelligent analysis...")

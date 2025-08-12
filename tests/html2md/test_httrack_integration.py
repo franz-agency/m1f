@@ -134,7 +134,7 @@ class TestHTTrackIntegration:
             url_path = "/" + str(rel_path).replace("\\", "/")
             if "localhost" in url_path:
                 # Extract path after localhost:port
-                localhost_prefix = f"localhost:{cls.server_port}/"
+                localhost_prefix = f"localhost:{self.server_port}/"
                 if localhost_prefix in url_path:
                     parts = url_path.split(localhost_prefix)
                     if len(parts) > 1:
@@ -157,7 +157,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -187,7 +187,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -215,7 +215,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -246,7 +246,7 @@ class TestHTTrackIntegration:
         # Note: HTTrack's allowed_path support is limited
         # It uses URL filters which may not work exactly like other scrapers
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/api/overview.html"
+        start_url = f"{self.server_url}/api/overview.html"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -273,7 +273,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         # HTTrack should use the custom user agent
         result = await crawler.crawl(start_url, output_dir)
@@ -296,7 +296,7 @@ class TestHTTrackIntegration:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 

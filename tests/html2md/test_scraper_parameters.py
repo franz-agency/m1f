@@ -299,7 +299,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_paths = self.get_scraped_paths(output_dir)
@@ -340,7 +340,7 @@ class TestScraperParameters:
 
         try:
             crawler = WebCrawler(config.crawler)
-            start_url = f"{cls.server_url}/"
+            start_url = f"{self.server_url}/"
 
             result = await crawler.crawl(start_url, output_dir)
             scraped_files = self.get_scraped_files(output_dir)
@@ -391,7 +391,7 @@ class TestScraperParameters:
         )
 
         crawler = WebCrawler(config.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
 
@@ -425,10 +425,10 @@ class TestScraperParameters:
 
         # Insert test data
         test_urls = [
-            (f"{cls.server_url}/", 200, None),
-            (f"{cls.server_url}/docs/", 200, None),
-            (f"{cls.server_url}/api/", 404, "Not found"),
-            (f"{cls.server_url}/broken/", 500, "Server error"),
+            (f"{self.server_url}/", 200, None),
+            (f"{self.server_url}/docs/", 200, None),
+            (f"{self.server_url}/api/", 404, "Not found"),
+            (f"{self.server_url}/broken/", 500, "Server error"),
         ]
 
         cursor.executemany(
@@ -490,7 +490,7 @@ class TestScraperParameters:
 
         # With SSRF disabled, localhost should work
         crawler = WebCrawler(config_disabled.crawler)
-        start_url = f"{cls.server_url}/"
+        start_url = f"{self.server_url}/"
 
         result = await crawler.crawl(start_url, output_dir)
         scraped_files = self.get_scraped_files(output_dir)
