@@ -80,10 +80,11 @@ def handle_claude_analysis_improved(
     info(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
+    # Run from the target directory to avoid path traversal issues
     m1f_cmd = [
         "m1f",
         "-s",
-        str(common_parent),
+        ".",  # Use current directory
         "-o",
         str(m1f_dir / "all_html_files.txt"),
         "--include-extensions",
@@ -93,10 +94,20 @@ def handle_claude_analysis_improved(
     ]
 
     try:
-        subprocess.run(m1f_cmd, check=True, capture_output=True, text=True, timeout=60)
+        # Run m1f from the common_parent directory
+        result = subprocess.run(
+            m1f_cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=str(common_parent),  # Change working directory for m1f
+        )
         success("✅ Created HTML file list")
     except subprocess.CalledProcessError as e:
         error(f"❌ Failed to create file list: {e}")
+        if e.stderr:
+            error(f"   Error details: {e.stderr}")
         return
     except subprocess.TimeoutExpired:
         error("❌ Timeout creating file list")
