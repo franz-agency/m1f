@@ -57378,7 +57378,6 @@ def handle_claude_analysis_improved(
         ".htm",
         "--include-dot-paths",  # Include hidden paths
         "--skip-output-file",  # ONLY create filelist, not the content file
-        "-v",  # Verbose mode to show progress
     ]
 
     try:
@@ -57513,7 +57512,44 @@ def handle_claude_analysis_improved(
             info(f"  ... ({len(output_lines) - 20} more lines)")
         info("-" * 40)
 
-    selected_files = stdout.strip().split("\n")
+    # Parse JSON output to extract Claude's actual text responses
+    import json
+
+    claude_text_output = []
+
+    for line in stdout.strip().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            json_obj = json.loads(line)
+            # Extract text from assistant messages
+            if json_obj.get("type") == "assistant":
+                message = json_obj.get("message", {})
+                if isinstance(message, dict):
+                    content_parts = message.get("content", [])
+                    if isinstance(content_parts, list):
+                        for part in content_parts:
+                            if isinstance(part, dict) and part.get("type") == "text":
+                                text = part.get("text", "")
+                                if text:
+                                    claude_text_output.append(text)
+        except json.JSONDecodeError:
+            # If it's not JSON, it might be plain text (backwards compatibility)
+            claude_text_output.append(line)
+
+    # Join all text outputs and split by newlines to get individual lines
+    full_text = "\n".join(claude_text_output)
+
+    # Debug output to see what Claude actually said
+    if full_text:
+        info("\n📝 Claude's extracted text response:")
+        info("-" * 40)
+        for line in full_text.split("\n")[:20]:
+            if line.strip():
+                info(f"  {line[:100]}{'...' if len(line) > 100 else ''}")
+        info("-" * 40)
+
+    selected_files = full_text.strip().split("\n")
     selected_files = [f.strip() for f in selected_files if f.strip()]
 
     # Filter out any lines that are not file paths
