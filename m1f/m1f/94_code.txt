@@ -14771,69 +14771,181 @@ def handle_claude_analysis_improved(
             f.write(f"{file_path}\n")
     success(f"✅ Wrote selected files list to: {selected_files_path}")
 
-    # Step 5: Analyze each file individually with Claude (in parallel)
+    # Step 5: Analyze each file individually with Claude using subagents
+    info(f"\n🚀 Analyzing {len(verified_files)} files using parallel subagents...")
+    warning("⏱️  Expected duration: 2-3 minutes with parallel execution")
     info(
-        f"\n🚀 Analyzing {len(verified_files)} files with up to {parallel_workers} parallel Claude sessions..."
-    )
-    warning("⏱️  Expected duration: 3-5 minutes for large HTML files")
-    info(
-        f"   {Colors.DIM}Claude is analyzing each file's structure in detail...{Colors.RESET}"
+        f"   {Colors.DIM}Claude is coordinating subagents to analyze each file...{Colors.RESET}"
     )
 
-    # Load the individual analysis prompt template
-    individual_prompt_path = prompt_dir / "analyze_individual_file.md"
+    # Load the coordinated analysis prompt template
+    coordinate_prompt_path = prompt_dir / "coordinate_parallel_analysis.md"
 
-    if not safe_exists(individual_prompt_path):
-        error(f"❌ Prompt file not found: {individual_prompt_path}")
-        return
-
-    individual_prompt_template = safe_read_text(individual_prompt_path)
-
-    # Prepare tasks for parallel execution
-    tasks = []
-    for i, file_path in enumerate(verified_files, 1):
-        # Construct paths - use absolute path to ensure correct location
-        # Analysis files go into the m1f/analysis directory
-        output_path = str(analysis_dir / f"html_analysis_{i}.txt")
-
-        # Customize prompt for this specific file
-        individual_prompt = individual_prompt_template.replace("{filename}", file_path)
-        individual_prompt = individual_prompt.replace("{output_path}", output_path)
-        individual_prompt = individual_prompt.replace("{file_number}", str(i))
-
-        # Add project context if provided
-        if project_description:
-            individual_prompt = (
-                f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
-            )
-
-        tasks.append(
-            {
-                "name": f"Analysis {i}: {file_path}",
-                "prompt": individual_prompt,
-                "add_dir": str(common_parent),
-                "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write,Bash,Task",  # Include Bash for ls, grep etc., and Task for sub-agents
-                "timeout": 300,  # 5 minutes per file
-                "working_dir": str(common_parent),  # Set working directory
-            }
+    if not safe_exists(coordinate_prompt_path):
+        # Fall back to old approach if new prompt doesn't exist
+        warning(
+            "⚠️  Coordinated analysis prompt not found, using traditional parallel approach..."
         )
 
-    # Removed debug output for cleaner interface
+        # Load the individual analysis prompt template
+        individual_prompt_path = prompt_dir / "analyze_individual_file.md"
 
-    # Run analyses in parallel
-    results = runner.run_claude_parallel(tasks, show_progress=True)
+        if not safe_exists(individual_prompt_path):
+            error(f"❌ Prompt file not found: {individual_prompt_path}")
+            return
 
-    # Check results
-    successful_analyses = sum(1 for r in results if r["success"])
-    success(
-        f"\n✅ Successfully analyzed {successful_analyses}/{len(verified_files)} files"
-    )
+        individual_prompt_template = safe_read_text(individual_prompt_path)
 
-    # Show any errors
-    for result in results:
-        if not result["success"]:
-            error(
-                f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}"
+        # Prepare tasks for parallel execution
+        tasks = []
+        for i, file_path in enumerate(verified_files, 1):
+            # Construct paths - use absolute path to ensure correct location
+            # Analysis files go into the m1f/analysis directory
+            output_path = str(analysis_dir / f"html_analysis_{i}.txt")
+
+            # Customize prompt for this specific file
+            individual_prompt = individual_prompt_template.replace(
+                "{filename}", file_path
+            )
+            individual_prompt = individual_prompt.replace("{output_path}", output_path)
+            individual_prompt = individual_prompt.replace("{file_number}", str(i))
+
+            # Add project context if provided
+            if project_description:
+                individual_prompt = (
+                    f"PROJECT CONTEXT: {project_description}\n\n{individual_prompt}"
+                )
+
+            tasks.append(
+                {
+                    "name": f"Analysis {i}: {file_path}",
+                    "prompt": individual_prompt,
+                    "add_dir": str(common_parent),
+                    "allowed_tools": "Agent,Edit,Glob,Grep,LS,MultiEdit,Read,TodoRead,TodoWrite,WebFetch,WebSearch,Write,Bash,Task",
+                    "timeout": 300,  # 5 minutes per file
+                    "working_dir": str(common_parent),  # Set working directory
+                }
+            )
+
+        # Run analyses in parallel
+        results = runner.run_claude_parallel(tasks, show_progress=True)
+
+        # Check results
+        successful_analyses = sum(1 for r in results if r["success"])
+        success(
+            f"\n✅ Successfully analyzed {successful_analyses}/{len(verified_files)} files"
+        )
+
+        # Show any errors
+        for result in results:
+            if not result["success"]:
+                error(
+                    f"❌ Failed: {result['name']} - {result.get('error') or result.get('stderr')}"
+                )
+    else:
+        # Use new coordinated subagent approach
+        coordinate_prompt_template = safe_read_text(coordinate_prompt_path)
+
+        # Load individual analysis template for subagent instructions
+        individual_prompt_path = prompt_dir / "analyze_individual_file.md"
+        if not safe_exists(individual_prompt_path):
+            error(f"❌ Individual analysis prompt not found: {individual_prompt_path}")
+            return
+
+        individual_prompt_template = safe_read_text(individual_prompt_path)
+
+        # Build file list for the coordination prompt
+        file_list = []
+        for i, file_path in enumerate(verified_files, 1):
+            file_list.append(f"- File {i}: {file_path}")
+
+        # Prepare the coordination prompt
+        coordinate_prompt = coordinate_prompt_template.replace(
+            "{num_files}", str(len(verified_files))
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{project_description}", project_description or ""
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{file_list}", "\n".join(file_list)
+        )
+        coordinate_prompt = coordinate_prompt.replace(
+            "{analysis_dir}", str(analysis_dir)
+        )
+
+        # Build the subagent instructions for each file
+        subagent_instructions = []
+        for i, file_path in enumerate(verified_files, 1):
+            output_path = str(analysis_dir / f"html_analysis_{i}.txt")
+
+            # Prepare individual analysis instructions
+            individual_instructions = individual_prompt_template.replace(
+                "{filename}", file_path
+            )
+            individual_instructions = individual_instructions.replace(
+                "{output_path}", output_path
+            )
+            individual_instructions = individual_instructions.replace(
+                "{file_number}", str(i)
+            )
+
+            subagent_instructions.append(
+                {
+                    "file_num": i,
+                    "file_path": file_path,
+                    "output_path": output_path,
+                    "instructions": individual_instructions,
+                }
+            )
+
+        # Add the detailed instructions to the coordination prompt
+        detailed_instructions = "\n\n".join(
+            [
+                f"### File {inst['file_num']}: {inst['file_path']}\n"
+                f"Output: {inst['output_path']}\n"
+                f"Instructions:\n{inst['instructions']}"
+                for inst in subagent_instructions
+            ]
+        )
+
+        # Replace placeholder with actual detailed instructions
+        coordinate_prompt = coordinate_prompt.replace(
+            "{detailed_instructions}", detailed_instructions
+        )
+
+        info("\n📊 Launching coordinated analysis with subagents...")
+        info(
+            f"   Managing {len(verified_files)} parallel analyses through Task delegation"
+        )
+
+        # Run the coordinated analysis
+        returncode, stdout, stderr = runner.run_claude_streaming(
+            prompt=coordinate_prompt,
+            allowed_tools="Task,TodoWrite,Read,Write,LS,Grep",  # Task for subagents, TodoWrite for tracking
+            add_dir=str(common_parent),
+            timeout=600,  # 10 minutes for coordination
+            show_output=True,  # Show progress
+        )
+
+        if returncode != 0:
+            error(f"❌ Coordinated analysis failed: {stderr}")
+            return
+
+        # Verify all analysis files were created
+        successful_analyses = 0
+        for i in range(1, len(verified_files) + 1):
+            analysis_file = analysis_dir / f"html_analysis_{i}.txt"
+            if safe_exists(analysis_file):
+                successful_analyses += 1
+
+        if successful_analyses == len(verified_files):
+            success(
+                f"\n✅ Successfully analyzed all {successful_analyses} files using subagents"
+            )
+        else:
+            warning(f"\n⚠️  Analyzed {successful_analyses}/{len(verified_files)} files")
+            warning(
+                "   Some files may have failed - check the output above for details"
             )
 
     # Step 6: Synthesize all analyses into final config
@@ -39328,6 +39440,62 @@ Use `backticks` for inline code, commands, or file names
 - ✓ Logical content flow preserved
 
 {html_content}
+
+======= tools/html2md_tool/prompts/coordinate_parallel_analysis.md ======
+# Coordinated Parallel HTML Analysis with Subagents
+
+You will coordinate the parallel analysis of multiple HTML files using the Task tool to delegate work to subagents for maximum efficiency.
+
+## Context
+
+Analyzing {num_files} HTML files to understand their structure for optimal content extraction.
+{project_description}
+
+## Files to Analyze
+
+{file_list}
+
+## Your Task
+
+1. **Setup tracking**: Use TodoWrite to create a task list for all {num_files} files
+2. **Launch parallel subagents**: Use the Task tool to analyze ALL files simultaneously
+3. **Track completion**: Update todo items as subagents complete
+4. **Verify results**: Ensure all analysis files are created in {analysis_dir}
+
+## CRITICAL: Parallel Execution
+
+**You MUST launch ALL {num_files} Task tool calls in a SINGLE message for true parallel execution.**
+
+For each file, create a Task with:
+- `subagent_type`: "general-purpose"  
+- `description`: "Analyze HTML file N"
+- `prompt`: The specific analysis instructions for that file
+
+## Subagent Instructions Template
+
+Each subagent should receive instructions to:
+1. Read their assigned HTML file
+2. Analyze the structure following the criteria
+3. Write findings to the specified output path
+4. Confirm completion with "ANALYSIS_COMPLETE_OK"
+
+{detailed_instructions}
+
+## Expected Workflow
+
+1. Create todo list with all {num_files} files
+2. Launch ALL {num_files} Task tool calls simultaneously (in one message)
+3. Monitor completion and update todos
+4. Verify all analysis files exist
+5. Report final status
+
+## Success Criteria
+
+- All {num_files} analysis files created in {analysis_dir}
+- Each file contains proper structural analysis
+- Clear summary of results
+
+Remember: The key to speed is launching ALL tasks at once, not sequentially!
 
 ======= tools/html2md_tool/prompts/select_files_from_project.md ======
 # Strategic HTML File Selection for CSS Selector Analysis
