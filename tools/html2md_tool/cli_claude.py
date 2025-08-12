@@ -89,7 +89,7 @@ def handle_claude_analysis_improved(
         str(m1f_dir / "all_html_files.txt"),
         "--include-extensions",
         ".html",
-        "-t",  # Text only
+        ".htm",
         "--include-dot-paths",  # Include hidden paths
     ]
 
@@ -121,6 +121,9 @@ def handle_claude_analysis_improved(
     except subprocess.TimeoutExpired:
         error("❌ Timeout creating file list")
         return
+
+    # Define path to the file list that was just created
+    file_list_path = m1f_dir / "all_html_files.txt"
 
     # Get relative paths for all HTML files
     relative_paths = []

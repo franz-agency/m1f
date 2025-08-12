@@ -643,8 +643,13 @@ def _handle_claude_analysis(
     try:
         result = subprocess.run(m1f_cmd, capture_output=True, text=True, check=True)
 
-        # The filelist will be created with this name
-        html_filelist = m1f_dir / "all_html_files_filelist.txt"
+        # Find the generated filelist (m1f creates *_filelist.txt)
+        filelist_files = list(m1f_dir.glob("*_filelist.txt"))
+        if not filelist_files:
+            error("m1f filelist not created")
+            return
+        # Use the most recent filelist if multiple exist
+        html_filelist = max(filelist_files, key=lambda p: p.stat().st_mtime)
         if not safe_exists(html_filelist):
             error("m1f filelist not created")
             return
