@@ -226,24 +226,11 @@ def handle_claude_analysis_improved(
         error(f"❌ Claude command failed: {stderr}")
         return
 
-    # Debug: Show what Claude returned
+    # Check if Claude returned output
     if not stdout.strip():
         warning("⚠️  Claude returned empty output")
-        info(f"Debug - stdout length: {len(stdout)}")
-        info(f"Debug - stderr length: {len(stderr)}")
         if stderr:
-            warning(f"Debug - stderr: {stderr[:500]}")
-    else:
-        # Show Claude's raw output for debugging
-        info("\n🔍 Claude's raw output:")
-        info("-" * 40)
-        # Show first 20 lines or 2000 chars, whichever is shorter
-        output_lines = stdout.strip().split("\n")
-        for i, line in enumerate(output_lines[:20]):
-            info(f"  Line {i+1}: {line[:100]}{'...' if len(line) > 100 else ''}")
-        if len(output_lines) > 20:
-            info(f"  ... ({len(output_lines) - 20} more lines)")
-        info("-" * 40)
+            warning(f"Error details: {stderr[:500]}")
 
     # Parse JSON output to extract Claude's actual text responses
     import json
@@ -272,15 +259,6 @@ def handle_claude_analysis_improved(
 
     # Join all text outputs and split by newlines to get individual lines
     full_text = "\n".join(claude_text_output)
-
-    # Debug output to see what Claude actually said
-    if full_text:
-        info("\n📝 Claude's extracted text response:")
-        info("-" * 40)
-        for line in full_text.split("\n")[:20]:
-            if line.strip():
-                info(f"  {line[:100]}{'...' if len(line) > 100 else ''}")
-        info("-" * 40)
 
     selected_files = full_text.strip().split("\n")
     selected_files = [f.strip() for f in selected_files if f.strip()]
@@ -374,13 +352,6 @@ def handle_claude_analysis_improved(
         # If still not found, log it as missing
         warning(f"⚠️  Not found: {file_path}")
         warning(f"   Expected it to be in: {common_parent}")
-
-        # Show a few similar paths from our list to help debug
-        similar = [p for p in relative_paths if Path(p).name == Path(file_path).name]
-        if similar:
-            info(f"   Did you mean one of these?")
-            for s in similar[:3]:
-                info(f"     - {s}")
 
     if not verified_files:
         error("❌ No HTML files could be verified")
@@ -654,15 +625,45 @@ def handle_claude_analysis_improved(
         error(f"❌ Synthesis failed: {stderr}")
         return
 
+    # Parse JSON output to extract Claude's actual text response (for synthesis)
+    synthesis_text_output = []
+
+    for line in stdout.strip().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            json_obj = json.loads(line)
+            # Extract text from assistant messages
+            if json_obj.get("type") == "assistant":
+                message = json_obj.get("message", {})
+                if isinstance(message, dict):
+                    content_parts = message.get("content", [])
+                    if isinstance(content_parts, list):
+                        for part in content_parts:
+                            if isinstance(part, dict) and part.get("type") == "text":
+                                text = part.get("text", "")
+                                if text:
+                                    synthesis_text_output.append(text)
+        except json.JSONDecodeError:
+            # If it's not JSON, might be plain text (backwards compatibility)
+            synthesis_text_output.append(line)
+
+    # Join all text outputs
+    full_synthesis_text = "\n".join(synthesis_text_output)
+
     header("\n✨ Claude's Final Configuration:")
-    info(stdout)
+    info(
+        full_synthesis_text[:2000] + "..."
+        if len(full_synthesis_text) > 2000
+        else full_synthesis_text
+    )
 
     # Try to parse the YAML config from Claude's output
     import yaml
 
     try:
         # Extract YAML from the output (between ```yaml and ```)
-        output = stdout
+        output = full_synthesis_text
         yaml_start = output.find("```yaml")
         yaml_end = output.find("```", yaml_start + 6)
 
@@ -696,14 +697,30 @@ def handle_claude_analysis_improved(
             )
         else:
             warning("\n⚠️  Could not extract YAML config from Claude's response")
-            warning(
-                "Please review the output above and create the config file manually."
-            )
+            # Save the full response for manual review
+            full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+            with safe_open(full_response_path, "w") as f:
+                f.write(full_synthesis_text)
+            warning(f"  Saved Claude's full response to: {full_response_path}")
+            warning("  Please review the response and create the config file manually.")
 
     except yaml.YAMLError as e:
         warning(f"\n⚠️  Error parsing YAML config: {e}")
-        warning("Please review the output above and create the config file manually.")
+        # Save the full response for manual review
+        full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+        with safe_open(full_response_path, "w") as f:
+            f.write(full_synthesis_text)
+        warning(f"  Saved Claude's full response to: {full_response_path}")
+        warning("  Please review the response and create the config file manually.")
     except Exception as e:
         warning(f"\n⚠️  Error saving config: {e}")
+        # Try to save the full response at least
+        try:
+            full_response_path = common_parent / "m1f-html2md-claude-response.txt"
+            with safe_open(full_response_path, "w") as f:
+                f.write(full_synthesis_text)
+            warning(f"  Saved Claude's full response to: {full_response_path}")
+        except:
+            pass
 
     success(f"\n✅ {Colors.BOLD}Analysis complete!{Colors.RESET}")

@@ -19,6 +19,9 @@ and this project adheres to
   - Based on proven implementation from ezclaude/claude_php_reviewer.py
   - Eliminates "black box" feeling - users can see exactly what Claude is doing
   - Applied to all Claude interactions (file selection, analysis, synthesis)
+  - Fixed YAML extraction from JSON streaming output - properly parses JSON first
+  - Saves Claude's full response to file if YAML extraction fails for manual review
+  - Removed debug output for cleaner user experience
 
 - **m1f-html2md Subagent-Based Parallel Analysis**: Faster HTML analysis using Claude subagents
   - New `coordinate_parallel_analysis.md` prompt for Task tool delegation  
