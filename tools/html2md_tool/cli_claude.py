@@ -108,7 +108,7 @@ def handle_claude_analysis_improved(
             check=True,
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=300,  # 5 minutes for large projects
             cwd=str(common_parent),  # Change working directory for m1f
             env=env,  # Use modified environment with PYTHONPATH
         )
@@ -119,7 +119,9 @@ def handle_claude_analysis_improved(
             error(f"   Error details: {e.stderr}")
         return
     except subprocess.TimeoutExpired:
-        error("❌ Timeout creating file list")
+        error("❌ Timeout creating file list after 5 minutes")
+        error("   For very large projects, consider using a more specific path")
+        error("   or reducing the scope with --exclude patterns")
         return
 
     # Define path to the file list that was just created
