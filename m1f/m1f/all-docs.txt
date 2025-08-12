@@ -716,6 +716,12 @@ and this project adheres to
 
 ### Fixed
 
+- **m1f-html2md Claude Integration**: Fixed m1f output filename handling
+  - Removed timestamp flag (-t) that was adding timestamps to m1f output files
+  - Added support for .htm extension alongside .html
+  - Fixed undefined file_list_path variable in cli_claude.py
+  - Updated cli.py to use glob pattern for finding generated filelist
+
 - **m1f Directory Exclusion**: Fixed performance issue in safe_walk function
   - Directory exclusions from .gitignore now properly applied at traversal level
   - Significant performance improvement for large projects with many excluded directories
