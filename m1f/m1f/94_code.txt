@@ -14757,8 +14757,27 @@ def handle_claude_analysis_improved(
     log_file = analysis_dir / "log.txt"
     log_file.write_text(f"Analysis started: {datetime.now().isoformat()}\n")
 
+    # Ask user for project description FIRST, before m1f runs
+    if not project_description:
+        header("\nProject Context:")
+        info(
+            "Please briefly describe what this HTML project contains so Claude can better understand"
+        )
+        info(
+            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
+        )
+        info(
+            f"\n{Colors.DIM}Tip: If there are particularly important files to analyze, mention them in your description{Colors.RESET}"
+        )
+        info(
+            f"{Colors.DIM}     so Claude will prioritize those files in the analysis.{Colors.RESET}"
+        )
+        project_description = input("\nProject description: ").strip()
+    else:
+        info(f"\n📋 {Colors.BOLD}Project Context:{Colors.RESET} {project_description}")
+
     # Create a filelist with all HTML files using m1f
-    info("\n🔧 Creating HTML file list using m1f...")
+    info("\n🔧 Creating HTML file list using m1f (only filelist, not content)...")
     info(f"Working with HTML directory: {common_parent}")
 
     # Run m1f to create only the filelist (not the content)
@@ -14768,11 +14787,12 @@ def handle_claude_analysis_improved(
         "-s",
         ".",  # Use current directory
         "-o",
-        str(m1f_dir / "all_html_files.txt"),
+        str(m1f_dir / "all_html_files"),  # Base name - m1f will add _filelist.txt
         "--include-extensions",
         ".html",
         ".htm",
         "--include-dot-paths",  # Include hidden paths
+        "--skip-output-file",  # ONLY create filelist, not the content file
         "-v",  # Verbose mode to show progress
     ]
 
@@ -14808,7 +14828,8 @@ def handle_claude_analysis_improved(
         return
 
     # Define path to the file list that was just created
-    file_list_path = m1f_dir / "all_html_files.txt"
+    # m1f creates filename_filelist.txt when using --skip-output-file
+    file_list_path = m1f_dir / "all_html_files_filelist.txt"
 
     # Get relative paths for all HTML files
     relative_paths = []
@@ -14842,24 +14863,7 @@ def handle_claude_analysis_improved(
         num_files_to_analyze = len(html_files)
         warning(f"Only {len(html_files)} files available. Will analyze all of them.")
 
-    # Ask user for project description if not provided
-    if not project_description:
-        header("\nProject Context:")
-        info(
-            "Please briefly describe what this HTML project contains so Claude can better understand"
-        )
-        info(
-            "what should be converted to Markdown. Example: 'Documentation for XY software - API section'"
-        )
-        info(
-            f"\n{Colors.DIM}Tip: If there are particularly important files to analyze, mention them in your description{Colors.RESET}"
-        )
-        info(
-            f"{Colors.DIM}     so Claude will prioritize those files in the analysis.{Colors.RESET}"
-        )
-        project_description = input("\nProject description: ").strip()
-    else:
-        info(f"\n📋 {Colors.BOLD}Project Context:{Colors.RESET} {project_description}")
+    # Project description was already collected earlier
 
     # Update the prompt with the number of files
     simple_prompt_template = simple_prompt_template.replace(
