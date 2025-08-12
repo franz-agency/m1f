@@ -532,19 +532,61 @@ class Html2mdConverter:
         # Apply custom extractor
         parsed = self._extractor.extract(parsed, self.config.__dict__)
 
+        # First, extract H1 and title before applying selectors
+        h1_content = None
+        title_content = None
+
+        # Try to find H1 anywhere in the document
+        h1_tag = parsed.find("h1")
+        if h1_tag:
+            h1_content = str(h1_tag)
+
+        # Get title as fallback
+        title_tag = parsed.find("title")
+        if title_tag and title_tag.string:
+            title_content = title_tag.string.strip()
+
         # Handle CSS selectors if specified (after extraction)
         if self.config.conversion.outermost_selector:
             from bs4 import BeautifulSoup
 
             selected = parsed.select_one(self.config.conversion.outermost_selector)
             if selected:
-                # Remove ignored elements
+                # Remove ignored elements (but preserve H1)
                 if self.config.conversion.ignore_selectors:
                     for selector in self.config.conversion.ignore_selectors:
+                        # Skip H1 selector to preserve headings
+                        if selector.lower() in ["h1", "h1.*", "*h1*"]:
+                            continue
                         for elem in selected.select(selector):
-                            elem.decompose()
+                            # Double-check: don't remove H1 tags
+                            if elem.name != "h1":
+                                elem.decompose()
                 # Create new soup from selected element
                 parsed = BeautifulSoup(str(selected), "html.parser")
+
+                # Check if H1 is still present after selection
+                if not parsed.find("h1") and h1_content:
+                    # H1 was removed by selector, prepend it
+                    h1_soup = BeautifulSoup(h1_content, "html.parser")
+                    parsed.insert(0, h1_soup.h1)
+                elif not parsed.find("h1") and title_content:
+                    # No H1 at all, create one from title
+                    new_h1 = parsed.new_tag("h1")
+                    new_h1.string = title_content
+                    parsed.insert(0, new_h1)
+        else:
+            # No outermost_selector, but still ensure H1 exists
+            if not parsed.find("h1") and title_content:
+                # No H1 in document, create one from title
+                new_h1 = parsed.new_tag("h1")
+                new_h1.string = title_content
+                # Try to insert at the beginning of body, or just at the beginning
+                body = parsed.find("body")
+                if body:
+                    body.insert(0, new_h1)
+                else:
+                    parsed.insert(0, new_h1)
 
         # Remove script and style tags that may have been missed
         for tag in parsed.find_all(["script", "style", "noscript"]):
