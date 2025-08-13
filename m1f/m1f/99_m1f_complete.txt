@@ -86065,6 +86065,10 @@ Remember: The goal is bundles that are **modular**, **focused**, and
 The basic bundles (complete.txt and docs.txt) have already been created. Now
 create additional topic-specific bundles following BEST PRACTICES.
 
+⚠️ IMPORTANT: You should ONLY create or edit the .m1f.config.yml file!
+DO NOT create any shell scripts, markdown files, or other helper files.
+Users will run 'm1f-update' themselves to generate the bundles.
+
 📚 REQUIRED READING (IN THIS ORDER):
 
 1. READ: @m1f/m1f.txt for m1f documentation and bundle configuration syntax
@@ -86224,6 +86228,7 @@ common-errors:
 6. Create essential bundles (quick-ref, errors, best-practices)
 7. Keep focused task bundles under 180KB for Claude Code when practical
 8. Add all bundles with MultiEdit in one operation
+9. ONLY create/edit .m1f.config.yml - DO NOT create any scripts or other files!
 
 ⚠️ COMMON MISTAKES TO AVOID:
 
@@ -86232,9 +86237,19 @@ common-errors:
 - Don't forget to check if files actually exist in the paths
 - Don't use absolute paths like "/home/user/project"
 - Don't create bundles smaller than 10KB (they likely have path errors)
+- Don't create ANY scripts (generate_bundles.sh, etc.) - users run m1f-update
+- Don't create ANY documentation files - just edit .m1f.config.yml
 
 Remember: Each bundle should answer "What would I need to understand this
 module?" - size appropriately based on the use case!
+
+🚫 FILES YOU MUST NOT CREATE:
+- generate_bundles.sh
+- generate_all_bundles.sh
+- m1f_config_fixes.md
+- Any .sh scripts
+- Any .md documentation files
+- ONLY edit .m1f.config.yml - nothing else!
 
 ======= tools/m1f/prompts/verification_prompt.md ======
 # 🔍 VERIFY AND IMPROVE M1F CONFIGURATION
