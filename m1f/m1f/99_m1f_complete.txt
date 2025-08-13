@@ -12115,7 +12115,8 @@ class M1FClaude:
         cwd: Path = None,
     ):
         """Initialize m1f-claude with project context."""
-        self.project_path = project_path or Path.cwd()
+        # Always use current working directory - no searching for project roots!
+        self.project_path = Path.cwd()
         self.m1f_root = Path(__file__).parent.parent
         self.session_id = None  # Store session ID for conversation continuity
         self.conversation_started = False  # Track if conversation has started
@@ -12132,11 +12133,11 @@ class M1FClaude:
         self.output_format = output_format  # Output format (text, json, stream-json)
         self.input_format = input_format  # Input format
         self.mcp_config = mcp_config  # MCP configuration file
-        self.cwd = cwd or self.project_path  # Working directory
+        self.cwd = Path.cwd()  # Always use current working directory
 
         # Check for m1f documentation in various locations
-        self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"
-        self.m1f_docs_direct = self.project_path / "m1f" / "m1f.txt"
+        self.m1f_docs_link = Path.cwd() / "m1f" / "m1f.txt"
+        self.m1f_docs_direct = Path.cwd() / "m1f" / "m1f.txt"
 
         # Check if m1f-link has been run or docs exist directly
         self.has_m1f_docs = safe_exists(self.m1f_docs_link, logger) or safe_exists(
@@ -12186,12 +12187,12 @@ class M1FClaude:
             import tempfile
 
             # Check if m1f/ directory exists
-            m1f_dir = self.project_path / "m1f"
+            m1f_dir = Path.cwd() / "m1f"
             if not safe_exists(m1f_dir, logger):
                 # Call m1f-link to create the symlink
                 logger.info("m1f/ directory not found. Creating with m1f-link...")
                 try:
-                    subprocess.run(["m1f-link"], cwd=self.project_path, check=True)
+                    subprocess.run(["m1f-link"], cwd=Path.cwd(), check=True)
                 except subprocess.CalledProcessError:
                     logger.warning(
                         "Failed to run m1f-link. Continuing without m1f/ directory."
@@ -12213,7 +12214,7 @@ class M1FClaude:
                 cmd = [
                     "m1f",
                     "-s",
-                    str(self.project_path),
+                    str(Path.cwd()),
                     "-o",
                     tmp_path,
                     "--skip-output-file",
@@ -13414,22 +13415,7 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         # Store the actual working directory for analysis
         working_dir = Path.cwd()
-
-        # Check if we're in a git repository
-        git_root = self.project_path
-        if safe_exists(self.project_path / ".git", logger):
-            success(f"Git repository detected: {self.project_path}")
-        else:
-            # Look for git root in parent directories
-            current = self.project_path
-            while current != current.parent:
-                if safe_exists(current / ".git", logger):
-                    git_root = current
-                    success(f"Git repository detected: {git_root}")
-                    break
-                current = current.parent
-            else:
-                warning(f"No git repository found - working in: {working_dir}")
+        info(f"Working in: {working_dir}")
 
         # Check if m1f documentation is available
         if not self.has_m1f_docs:
