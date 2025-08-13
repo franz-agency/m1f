@@ -744,6 +744,11 @@ and this project adheres to
 
 ### Fixed
 
+- **m1f-claude**: Fixed import errors that prevented script execution
+- **m1f-claude**: Removed sub-agent complexity that wasn't working properly  
+- **m1f-claude**: Fixed setup to use current working directory instead of git root
+- **All tools**: Verified working directory handling - all tools correctly use current directory (Path.cwd()) rather than git root, allowing global usage from any location
+
 - **m1f-html2md Claude Integration**: Fixed m1f output filename handling
   - Removed timestamp flag (-t) that was adding timestamps to m1f output files
   - Added support for .htm extension alongside .html

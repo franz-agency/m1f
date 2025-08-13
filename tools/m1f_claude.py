@@ -1494,6 +1494,9 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             info("")
 
+        # Store the actual working directory for analysis
+        working_dir = Path.cwd()
+
         # Check if we're in a git repository
         git_root = self.project_path
         if safe_exists(self.project_path / ".git", logger):
@@ -1508,9 +1511,7 @@ I'll analyze your project and create an optimal m1f configuration that:
                     break
                 current = current.parent
             else:
-                warning(
-                    f"No git repository found - initializing in current directory: {self.project_path}"
-                )
+                warning(f"No git repository found - working in: {working_dir}")
 
         # Check if m1f documentation is available
         if not self.has_m1f_docs:
@@ -1519,8 +1520,8 @@ I'll analyze your project and create an optimal m1f configuration that:
         else:
             success("m1f documentation available")
 
-        # Check for existing .m1f.config.yml
-        config_path = self.project_path / ".m1f.config.yml"
+        # Check for existing .m1f.config.yml in current directory
+        config_path = working_dir / ".m1f.config.yml"
         if safe_exists(config_path, logger):
             success(f"m1f configuration found: {config_path.name}")
         else:
@@ -1545,10 +1546,10 @@ I'll analyze your project and create an optimal m1f configuration that:
         # Run m1f to generate file and directory lists using intelligent filtering
         import tempfile
 
-        info("Analyzing project structure...")
+        info(f"Analyzing project structure in: {working_dir}")
 
-        # Create m1f directory if it doesn't exist
-        m1f_dir = self.project_path / "m1f"
+        # Create m1f directory if it doesn't exist (in current working directory)
+        m1f_dir = working_dir / "m1f"
         if not safe_exists(m1f_dir, logger):
             safe_mkdir(m1f_dir, logger, parents=True, exist_ok=True)
 
@@ -1557,10 +1558,11 @@ I'll analyze your project and create an optimal m1f configuration that:
 
         try:
             # Run m1f with --skip-output-file to generate only auxiliary files
+            # IMPORTANT: Analyze the current working directory, not the git root
             cmd = [
                 "m1f",
                 "-s",
-                str(self.project_path),
+                str(working_dir),  # Use working directory instead of project_path
                 "-o",
                 str(analysis_path),
                 "--skip-output-file",
@@ -1628,7 +1630,8 @@ I'll analyze your project and create an optimal m1f configuration that:
             info(context)
 
         # Check if basic bundles exist - either complete or docs
-        project_name = self.project_path.name
+        # Use the current directory name, not the git root
+        project_name = working_dir.name
         complete_bundle = m1f_dir / f"{project_name}_complete.txt"
         docs_bundle = m1f_dir / f"{project_name}_docs.txt"
 
@@ -1673,9 +1676,11 @@ I'll analyze your project and create an optimal m1f configuration that:
             # Build kwargs for JSON streaming
             run_kwargs = {
                 "prompt": segmentation_prompt,
-                "working_dir": str(self.project_path),
+                "working_dir": str(working_dir),  # Use current working directory
                 "allowed_tools": setup_allowed_tools,
-                "add_dir": str(self.project_path),
+                "add_dir": str(
+                    working_dir
+                ),  # Add current directory to Claude's context
                 "timeout": 300,  # 5 minutes timeout
                 "show_progress": True,
             }
@@ -1709,9 +1714,9 @@ I'll analyze your project and create an optimal m1f configuration that:
             info("\n🔄 Phase 2: Generating bundles and verifying configuration...")
             info("⏳ Running m1f-update to generate bundles...")
 
-            # Run m1f-update to generate the bundles
+            # Run m1f-update to generate the bundles in current directory
             update_result = subprocess.run(
-                ["m1f-update"], cwd=self.project_path, capture_output=True, text=True
+                ["m1f-update"], cwd=working_dir, capture_output=True, text=True
             )
 
             if update_result.returncode != 0:
