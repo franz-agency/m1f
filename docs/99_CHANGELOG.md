@@ -14,17 +14,11 @@ and this project adheres to
 
 - **m1f-claude Real-Time Progress Display for Setup**: Live streaming of Claude's actions during setup
   - Added `run_claude_streaming_json` method to M1FClaudeRunner with JSON output parsing
-  - Shows when Claude is launching subagents, reading files, editing configurations
+  - Shows when Claude is reading files, editing configurations, creating bundles
   - Real-time display of tool usage with friendly progress messages and timestamps
   - Based on successful implementation from m1f-html2md
   - Users can now see exactly what Claude is doing instead of waiting silently
-
-- **m1f-claude Parallel Processing with Subagents**: --setup now uses Task tool for faster analysis
-  - New `setup_coordinator.md` prompt template for orchestrating parallel setup
-  - Delegates work to multiple subagents for concurrent processing
-  - Reduces setup time from 3-5 minutes to 1-2 minutes
-  - TodoWrite integration for task tracking and progress visibility
-  - Enhanced project analysis through structured parallel delegation
+  - Fixed relative import errors for better compatibility when running as script
 
 - **m1f-html2md Real-Time Progress Display**: Live streaming of Claude's actions and progress
   - New `run_claude_streaming_json` method with JSON output parsing

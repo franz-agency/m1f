@@ -330,7 +330,11 @@ class M1FClaudeRunner(ClaudeRunner):
         env["PYTHONUNBUFFERED"] = "1"
 
         if show_progress:
-            from .shared.colors import Colors
+            try:
+                from .shared.colors import Colors
+            except ImportError:
+                # Fallback for when running as script
+                from tools.shared.colors import Colors
 
             info(
                 f"{Colors.BLUE}🤖 Starting Claude with real-time streaming...{Colors.RESET}"
@@ -395,7 +399,10 @@ class M1FClaudeRunner(ClaudeRunner):
                         except json.JSONDecodeError:
                             # Not a JSON line, might be other output
                             if line and not line.startswith("Running command:"):
-                                from .shared.colors import Colors
+                                try:
+                                    from .shared.colors import Colors
+                                except ImportError:
+                                    from tools.shared.colors import Colors
 
                                 info(
                                     f"{Colors.DIM}Raw: {line[:100]}{'...' if len(line) > 100 else ''}{Colors.RESET}"
@@ -425,7 +432,10 @@ class M1FClaudeRunner(ClaudeRunner):
                 else:
                     error(f"❌ Claude failed with code {process.returncode}")
                     if stderr:
-                        from .shared.colors import Colors
+                        try:
+                            from .shared.colors import Colors
+                        except ImportError:
+                            from tools.shared.colors import Colors
 
                         error(f"{Colors.DIM}Error: {stderr[:200]}...{Colors.RESET}")
 
@@ -438,7 +448,10 @@ class M1FClaudeRunner(ClaudeRunner):
 
     def _display_claude_progress(self, json_obj: Dict[str, Any], start_time: float):
         """Display friendly progress messages based on Claude's JSON output."""
-        from .shared.colors import Colors
+        try:
+            from .shared.colors import Colors
+        except ImportError:
+            from tools.shared.colors import Colors
 
         msg_type = json_obj.get("type", "unknown")
         elapsed = time.time() - start_time
