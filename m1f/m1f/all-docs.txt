@@ -747,6 +747,8 @@ and this project adheres to
 - **m1f-claude**: Fixed import errors that prevented script execution
 - **m1f-claude**: Removed sub-agent complexity that wasn't working properly  
 - **m1f-claude**: Fixed setup to use current working directory instead of git root
+- **m1f-claude**: Removed unnecessary git repository detection - tool now works in any directory
+- **m1f-claude**: Fixed "0 files in 0 directories" issue when running in subdirectories
 - **All tools**: Verified working directory handling - all tools correctly use current directory (Path.cwd()) rather than git root, allowing global usage from any location
 
 - **m1f-html2md Claude Integration**: Fixed m1f output filename handling
