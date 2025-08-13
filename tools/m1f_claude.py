@@ -1646,40 +1646,38 @@ I'll analyze your project and create an optimal m1f configuration that:
         info("─" * 50)
         info("Claude will analyze your project and create focused bundles.")
 
-        # Create segmentation prompt focused on advanced bundling
-        segmentation_prompt = self._create_segmentation_prompt(context)
+        # Create coordinator prompt for parallel processing
+        segmentation_prompt = self._create_coordinator_prompt(context)
 
         # Show prompt in verbose mode
         if self.verbose:
-            header("📝 PHASE 1 PROMPT (Segmentation):")
+            header("📝 PHASE 1 PROMPT (Coordinator with Subagents):")
             info("=" * 80)
             info(segmentation_prompt)
             info("=" * 80)
             info("")
 
-        # Execute Claude directly with the prompt
-        info("\n🤖 Sending to Claude Code...")
-        info(
-            "⏳ Claude will now analyze your project and create topic-specific bundles..."
-        )
-        warning("IMPORTANT: This process may take 1-3 minutes as Claude:")
-        info("   • Reads and analyzes all project files")
-        info("   • Understands your project structure")
-        info("   • Creates intelligent bundle configurations")
-        info("\n🔄 Please wait while Claude works...\n")
+        # Execute Claude with JSON streaming for real-time progress
+        info("\n🤖 Starting Claude with parallel processing...")
+        info("─" * 50)
+        warning("⚡ Using subagents for faster analysis (1-2 minutes)")
+        info("")
 
         try:
-            # PHASE 1: Run Claude with streaming output
+            # PHASE 1: Run Claude with JSON streaming and subagents
             runner = M1FClaudeRunner(claude_binary=claude_path)
 
-            # Build kwargs with new parameters
+            # Use extended allowed tools for setup including Task and TodoWrite
+            setup_allowed_tools = "Task,TodoWrite,Agent,Edit,Glob,Grep,LS,MultiEdit,Read,WebFetch,WebSearch,Write"
+
+            # Build kwargs for JSON streaming
             run_kwargs = {
                 "prompt": segmentation_prompt,
                 "working_dir": str(self.project_path),
-                "allowed_tools": self.allowed_tools,
+                "allowed_tools": setup_allowed_tools,
                 "add_dir": str(self.project_path),
                 "timeout": 300,  # 5 minutes timeout
-                "show_output": True,
+                "show_progress": True,
             }
 
             # Add optional parameters
@@ -1689,9 +1687,13 @@ I'll analyze your project and create an optimal m1f configuration that:
                 run_kwargs["append_system_prompt"] = self.append_system_prompt
             if self.mcp_config:
                 run_kwargs["mcp_config"] = self.mcp_config
+            if self.disallowed_tools:
+                run_kwargs["disallowed_tools"] = self.disallowed_tools
+            if self.cwd:
+                run_kwargs["cwd"] = str(self.cwd)
 
-            # Execute with streaming and timeout handling
-            returncode, stdout, stderr = runner.run_claude_streaming(**run_kwargs)
+            # Execute with JSON streaming for real-time progress
+            returncode, stdout, stderr = runner.run_claude_streaming_json(**run_kwargs)
 
             result = type("Result", (), {"returncode": returncode})
 
@@ -1735,12 +1737,14 @@ I'll analyze your project and create an optimal m1f configuration that:
             )
             info("⏳ This includes checking bundle quality and fixing any issues...\n")
 
-            # Run Claude again to verify and improve
+            # Run Claude again to verify and improve with JSON streaming
             run_kwargs["prompt"] = verification_prompt
-            run_kwargs["allowed_tools"] = self.allowed_tools  # Use configured tools
+            run_kwargs["allowed_tools"] = (
+                setup_allowed_tools  # Keep using extended tools
+            )
 
             returncode_verify, stdout_verify, stderr_verify = (
-                runner.run_claude_streaming(**run_kwargs)
+                runner.run_claude_streaming_json(**run_kwargs)
             )
 
             verify_result = type("Result", (), {"returncode": returncode_verify})
@@ -1837,6 +1841,21 @@ bundles:
             template_content = template_content.replace(placeholder, str(value))
 
         return template_content
+
+    def _create_coordinator_prompt(self, project_context: Dict) -> str:
+        """Create a prompt for coordinating setup with subagents."""
+        # Prepare variables for template
+        variables = {
+            "PROJECT_TYPE": project_context.get("type", "Unknown"),
+            "LANGUAGES": project_context.get("languages", "Unknown"),
+            "TOTAL_FILES": project_context.get("total_files", "Unknown"),
+            "TOTAL_DIRS": project_context.get("total_dirs", "Unknown"),
+            "PROJECT_DESCRIPTION": self.project_description or "Not provided",
+            "PROJECT_PRIORITIES": self.project_priorities or "Not provided",
+        }
+
+        # Load and return the coordinator template
+        return self._load_prompt_template("setup_coordinator", variables)
 
     def _create_segmentation_prompt(self, project_context: Dict) -> str:
         """Create a prompt for advanced project segmentation."""
