@@ -480,9 +480,18 @@ class ClaudeCodeProvider(LLMProvider):
 
             def run_claude():
                 import time
-                import logging
+                import sys
 
-                logger = logging.getLogger(__name__)
+                # Try to import colors for better output
+                try:
+                    from ..shared.colors import info, dim
+                except ImportError:
+                    # Fallback if colors not available
+                    def info(msg):
+                        print(f"  {msg}", flush=True)
+
+                    def dim(msg):
+                        return msg
 
                 # Use Popen for streaming like m1f_claude_runner
                 process = subprocess.Popen(
@@ -503,6 +512,13 @@ class ClaudeCodeProvider(LLMProvider):
                 stdout_lines = []
                 result_content = []
                 start_time = time.time()
+                last_progress_time = 0
+                spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+                spinner_idx = 0
+
+                # Show initial message
+                if show_progress:
+                    info("  🤖 Claude is processing your request...")
 
                 # Read stdout line by line for real-time feedback
                 while True:
@@ -514,12 +530,30 @@ class ClaudeCodeProvider(LLMProvider):
                         line = line.rstrip()  # Keep internal spacing
                         stdout_lines.append(line)
 
-                        # Show progress in real-time
-                        if show_progress and line:
-                            elapsed = time.time() - start_time
-                            # Only show first part of each line for progress
-                            preview = line[:100] + "..." if len(line) > 100 else line
-                            logger.debug(f"[{elapsed:.1f}s] {preview}")
+                        # Show spinner periodically while processing
+                        if show_progress:
+                            current_time = time.time()
+                            elapsed = current_time - start_time
+
+                            # Update spinner every 0.3 seconds
+                            if current_time - last_progress_time > 0.3:
+                                # Clear the line and show spinner
+                                sys.stdout.write("\r")
+                                sys.stdout.write(
+                                    f"  {spinner_chars[spinner_idx]} Processing... [{elapsed:.1f}s]"
+                                )
+                                sys.stdout.flush()
+                                spinner_idx = (spinner_idx + 1) % len(spinner_chars)
+                                last_progress_time = current_time
+
+                # Clear the spinner line
+                if show_progress:
+                    sys.stdout.write("\r")
+                    sys.stdout.write(" " * 50)  # Clear the line
+                    sys.stdout.write("\r")
+                    sys.stdout.flush()
+                    elapsed = time.time() - start_time
+                    info(f"  ✅ Claude completed in {elapsed:.1f}s")
 
                 # Get any stderr
                 stderr = process.stderr.read()
