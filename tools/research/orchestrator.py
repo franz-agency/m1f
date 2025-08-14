@@ -76,10 +76,10 @@ class EnhancedResearchOrchestrator:
             # Determine effective provider with sensible defaults
             provider_name = (self.config.llm.provider or "claude").lower()
 
-            # If user selected Claude but no API key is present, use Claude CLI
+            # If user selected Claude but no API key is present, use Claude Code
             if provider_name == "claude" and not os.getenv("ANTHROPIC_API_KEY"):
-                provider_name = "claude-cli"
-                logger.info("No ANTHROPIC_API_KEY found, using claude-cli provider")
+                provider_name = "claude-code"
+                logger.info("No ANTHROPIC_API_KEY found, using claude-code provider")
 
             return get_provider(
                 provider_name,

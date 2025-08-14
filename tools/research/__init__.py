@@ -12,7 +12,7 @@ from .cli import EnhancedResearchCommand, main
 from .llm_interface import (
     LLMProvider,
     ClaudeProvider,
-    ClaudeCLIProvider,
+    ClaudeCodeProvider,
     GeminiProvider,
     CLIProvider,
     get_provider,
