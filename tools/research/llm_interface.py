@@ -465,8 +465,8 @@ class ClaudeCodeProvider(LLMProvider):
             full_prompt = f"{system}\n\n{prompt}"
 
         try:
-            # Build command - simple mode for research (no tools needed)
-            cmd = [self.binary_path, "-p"]
+            # Build command with WebSearch tool enabled for URL discovery
+            cmd = [self.binary_path, "-p", "--allowedTools", "WebSearch"]
 
             # Add model if specified and not None
             if self.model and self.model not in [None, "default"]:

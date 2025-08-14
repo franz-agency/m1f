@@ -12,6 +12,10 @@ and this project adheres to
 
 ### Fixed
 
+- **research**: Fixed Html2mdConverter method call - was calling non-existent `convert()` instead of `convert_html()`
+- **research**: Added missing `filter_content()` method to ContentFilter that returns (bool, str) tuple
+- **research**: Both issues were preventing the research tool from working properly after scraping
+
 - **Test Suite Fixes**: Resolved 6 failing tests across multiple modules
   - Fixed LLM provider tests by properly mocking API keys for Claude and Gemini
   - Added missing `_validate_api_key` method to GeminiProvider
