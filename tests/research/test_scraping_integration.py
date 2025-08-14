@@ -159,12 +159,10 @@ class TestScrapingIntegration:
             response.url = url
             response.headers = {"Content-Type": "text/html"}
 
-            async def _text():
-                if url in mock_html_responses:
-                    return mock_html_responses[url]
-                raise aiohttp.ClientError("Not found")
-
-            response.text = _text
+            if url in mock_html_responses:
+                response.text = AsyncMock(return_value=mock_html_responses[url])
+            else:
+                response.text = AsyncMock(side_effect=aiohttp.ClientError("Not found"))
             return response
 
         # Create mock session and patch
@@ -235,11 +233,7 @@ class TestScrapingIntegration:
             response = AsyncMock()
             response.status = 200
             response.url = url
-
-            async def _text():
-                return "<html><body>Test</body></html>"
-
-            response.text = _text
+            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
             return response
 
         # Create many URLs to test concurrency
@@ -282,10 +276,9 @@ class TestScrapingIntegration:
             response.status = 200
             response.url = url
 
-            async def _text():
-                return "<html><body>Success after retries</body></html>"
-
-            response.text = _text
+            response.text = AsyncMock(
+                return_value="<html><body>Success after retries</body></html>"
+            )
             return response
 
         urls = [{"url": "https://example.com/retry-test", "title": "Retry Test"}]
@@ -316,11 +309,7 @@ class TestScrapingIntegration:
             response = AsyncMock()
             response.status = 200
             response.url = url
-
-            async def _text():
-                return "<html><body>Test</body></html>"
-
-            response.text = _text
+            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
             return response
 
         urls = [
@@ -355,30 +344,25 @@ class TestScrapingIntegration:
             if url.endswith("/robots.txt"):
                 response.status = 200
 
-                async def _text():
-                    return """
+                response.text = AsyncMock(
+                    return_value="""
                     User-agent: *
                     Disallow: /private/
                     Disallow: /admin/
                     Allow: /public/
                 """
-
-                response.text = _text
+                )
             elif "/private/" in url or "/admin/" in url:
                 # Should not reach here if robots.txt is respected
                 response.status = 403
 
-                async def _text():
-                    return "Forbidden"
-
-                response.text = _text
+                response.text = AsyncMock(return_value="Forbidden")
             else:
                 response.status = 200
 
-                async def _text():
-                    return "<html><body>Allowed content</body></html>"
-
-                response.text = _text
+                response.text = AsyncMock(
+                    return_value="<html><body>Allowed content</body></html>"
+                )
 
             response.url = url
             return response
@@ -438,10 +422,7 @@ class TestScrapingIntegration:
             response.status = 200
             response.url = url
 
-            async def _text():
-                return test_html
-
-            response.text = _text
+            response.text = AsyncMock(return_value=test_html)
             return response
 
         urls = [{"url": "https://example.com/test", "title": "Test"}]
@@ -496,20 +477,18 @@ class TestScrapingIntegration:
                 response.status = 200
                 response.url = url
 
-                async def _text():
-                    raise UnicodeDecodeError("utf-8", b"", 0, 1, "invalid")
-
-                response.text = _text
+                response.text = AsyncMock(
+                    side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "invalid")
+                )
                 return response
             else:
                 response = AsyncMock()
                 response.status = 200
                 response.url = url
 
-                async def _text():
-                    return "<html><body>Success</body></html>"
-
-                response.text = _text
+                response.text = AsyncMock(
+                    return_value="<html><body>Success</body></html>"
+                )
                 return response
 
         urls = [
@@ -547,11 +526,7 @@ class TestScrapingIntegration:
             response = AsyncMock()
             response.status = 200
             response.url = url
-
-            async def _text():
-                return "<html><body>Test</body></html>"
-
-            response.text = _text
+            response.text = AsyncMock(return_value="<html><body>Test</body></html>")
             return response
 
         def progress_callback(completed, total):
@@ -605,8 +580,7 @@ class TestScrapingIntegration:
                 "Last-Modified": "Wed, 21 Oct 2015 07:28:00 GMT",
             }
 
-            async def _text():
-                return """
+            html_content = """
                 <html>
                     <head>
                         <title>Test Page with Metadata</title>
@@ -619,8 +593,7 @@ class TestScrapingIntegration:
                     </body>
                 </html>
             """
-
-            response.text = _text
+            response.text = AsyncMock(return_value=html_content)
             return response
 
         urls = [

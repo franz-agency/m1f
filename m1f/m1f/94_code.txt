@@ -35725,14 +35725,17 @@ from ..m1f.file_operations import safe_exists, safe_mkdir
 
 logger = logging.getLogger(__name__)
 
+
 # Register datetime adapters for SQLite (Python 3.12+ compatibility)
 def adapt_datetime(dt):
     """Convert datetime to ISO 8601 string for SQLite storage."""
     return dt.isoformat()
 
+
 def convert_datetime(s):
     """Convert ISO 8601 string back to datetime."""
     return datetime.fromisoformat(s.decode())
+
 
 # Register the adapters and converters
 sqlite3.register_adapter(datetime, adapt_datetime)
