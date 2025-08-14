@@ -43,9 +43,9 @@ from .readme_generator import ReadmeGenerator
 logger = logging.getLogger(__name__)
 
 try:
-    from ..scrape_tool.scrapers.base import WebScraper
+    from ..scrape_tool.scrapers.base import WebScraperBase as WebScraper
 except ImportError:
-    logger.warning("Could not import WebScraper from scrape_tool")
+    logger.warning("Could not import WebScraperBase from scrape_tool")
     WebScraper = None
 
 try:
