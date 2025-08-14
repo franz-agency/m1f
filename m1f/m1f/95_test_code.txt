@@ -2416,7 +2416,8 @@ class TestScrapeImprovements:
                 "site_dir": site_dir,
                 "scraped_urls": ["https://example.com"],
                 "errors": [],
-                "total_pages": 1
+                "total_pages": 1,
+                "session_files": test_files  # Add session_files to return value
             }
             
             with patch.object(WebCrawler, 'find_downloaded_files') as mock_find:
@@ -10211,15 +10212,17 @@ class TestLLMProviders:
 
     def test_get_provider_factory(self):
         """Test provider factory function"""
-        # Test Claude provider
-        provider = get_provider("claude", model="claude-3-opus")
-        assert isinstance(provider, ClaudeProvider)
-        assert provider.model == "claude-3-opus"
+        # Test Claude provider with mocked API key
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-key"}):
+            provider = get_provider("claude", model="claude-3-opus")
+            assert isinstance(provider, ClaudeProvider)
+            assert provider.model == "claude-3-opus"
 
-        # Test Gemini provider
-        provider = get_provider("gemini")
-        assert isinstance(provider, GeminiProvider)
-        assert provider.model == "gemini-pro"
+        # Test Gemini provider with mocked API key
+        with patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
+            provider = get_provider("gemini")
+            assert isinstance(provider, GeminiProvider)
+            assert provider.model == "gemini-pro"
 
         # Test CLI provider
         provider = get_provider("gemini-cli")
