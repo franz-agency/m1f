@@ -430,14 +430,30 @@ Return JSON with: key_points (array), technical_level""",
             }
 
 
-class ClaudeCodeProvider(LLMProvider):
-    """Claude Code SDK provider for proper integration"""
+class ClaudeDirectProvider(LLMProvider):
+    """Direct Claude CLI provider using subprocess for better control"""
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        # Claude Code doesn't need an API key in the traditional sense
-        super().__init__(api_key="claude-code-sdk", model=model)
-        self.session_manager = ClaudeSessionManager()
+        super().__init__(api_key="claude-direct", model=model)
         self.error_handler = ClaudeErrorHandler()
+        self.binary_path = self._find_claude_binary()
+
+    def _find_claude_binary(self) -> str:
+        """Find Claude binary in system"""
+        # Try default command first
+        try:
+            result = subprocess.run(
+                ["claude", "--version"], capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                return "claude"
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+
+        # Try known paths
+        from ..shared.claude_utils import ClaudeBinaryFinder
+
+        return ClaudeBinaryFinder.find()
 
     @property
     def default_model(self) -> str:
@@ -507,25 +523,13 @@ class ClaudeCodeProvider(LLMProvider):
         self, query: str, num_results: int = 20
     ) -> List[Dict[str, str]]:
         """Use Claude Code to generate search URLs"""
-        prompt = f"""As a research assistant, help me find {num_results} relevant web resources about: "{query}"
+        prompt = f"""List {num_results} URLs of authoritative websites about: {query}
 
-Please suggest real, existing websites and resources that would be helpful for researching this topic. Return your suggestions as a JSON array where each entry has:
-- url: A real website URL that likely contains information on this topic
-- title: The expected page/site title
-- description: What kind of information this resource likely contains
+Return as JSON array with url, title, description. No comments, no explanation, just the JSON:
 
-Focus on well-known, authoritative sources in this domain such as:
-- Official documentation and guides
-- Industry-leading blogs and publications  
-- Educational resources and tutorials
-- Professional forums and communities
-
-Example format:
 [
-  {{"url": "https://example.com/article", "title": "Article Title", "description": "Brief description"}}
-]
-
-Return ONLY the JSON array, no other text."""
+  {{"url": "https://example.com", "title": "Site Title", "description": "Brief description"}}
+]"""
 
         response = await self.query(prompt)
 

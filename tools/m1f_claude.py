@@ -215,7 +215,9 @@ class M1FClaude:
         self.output_format = output_format  # Output format (text, json, stream-json)
         self.input_format = input_format  # Input format
         self.mcp_config = mcp_config  # MCP configuration file
-        self.cwd = Path.cwd()  # Always use current working directory
+        self.cwd = (
+            cwd if cwd is not None else Path.cwd()
+        )  # Use provided cwd or current working directory
 
         # Check for m1f documentation in various locations
         self.m1f_docs_link = Path.cwd() / "m1f" / "m1f.txt"

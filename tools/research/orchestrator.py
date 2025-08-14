@@ -221,6 +221,19 @@ class EnhancedResearchOrchestrator:
             except Exception as e:
                 logger.error(f"Error searching for URLs: {e}")
                 if not urls_file:  # If no manual URLs, this is fatal
+                    # Provide helpful error message for common issues
+                    if "Failed to parse" in str(e) and "JSON" in str(e):
+                        error_msg = (
+                            "LLM failed to generate URLs. This can happen when:\n"
+                            "1. Using Claude without API key (falls back to Claude Code which may refuse URL generation)\n"
+                            "2. Query contains sensitive topics\n\n"
+                            "Solutions:\n"
+                            "- Set ANTHROPIC_API_KEY environment variable to use Claude API\n"
+                            "- Use --provider gemini with GOOGLE_API_KEY set\n"
+                            "- Provide URLs manually with --urls-file\n"
+                            "- Try rephrasing your query"
+                        )
+                        raise Exception(error_msg) from e
                     raise
 
         # Get unscraped URLs

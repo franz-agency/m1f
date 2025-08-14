@@ -589,7 +589,7 @@ and this project adheres to
   - Fixed HTML2MD frontmatter generation to include source_file when provided
   - Fixed m1f-claude to respect provided cwd parameter instead of always using current directory
   - Fixed scrape test to include session_files in mock return value
-  - Updated test expectations to match actual scraping statistics output
+  - Rewrote statistics test to use real local server scraping instead of mocks for authentic testing
 
 ### Added
 
