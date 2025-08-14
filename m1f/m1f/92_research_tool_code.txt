@@ -2222,11 +2222,12 @@ research:
                 if parts[0] == "research":
                     # New research
                     query = " ".join(parts[1:])
-                    await self._run_research(
-                        argparse.Namespace(
-                            query=query, resume=None, urls_file=None, **vars(args)
-                        )
-                    )
+                    # Create new args with the query, avoiding duplicate 'query' key
+                    research_args = vars(args).copy()
+                    research_args["query"] = query
+                    research_args["resume"] = None
+                    research_args["urls_file"] = None
+                    await self._run_research(argparse.Namespace(**research_args))
                 elif parts[0] == "list":
                     # List jobs
                     await self._list_jobs(args)
