@@ -14,7 +14,9 @@ and this project adheres to
 
 - **research**: Fixed Html2mdConverter method call - was calling non-existent `convert()` instead of `convert_html()`
 - **research**: Added missing `filter_content()` method to ContentFilter that returns (bool, str) tuple
-- **research**: Both issues were preventing the research tool from working properly after scraping
+- **research**: Enabled WebSearch tool for Claude Code provider - now finds real URLs instead of generating hypothetical ones
+- **research**: Created missing `default_analysis.md` prompt file for content analysis
+- **research**: Research tool now works end-to-end with Claude Code provider using web search
 
 - **Test Suite Fixes**: Resolved 6 failing tests across multiple modules
   - Fixed LLM provider tests by properly mocking API keys for Claude and Gemini
