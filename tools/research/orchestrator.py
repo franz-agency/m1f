@@ -76,23 +76,10 @@ class EnhancedResearchOrchestrator:
             # Determine effective provider with sensible defaults
             provider_name = (self.config.llm.provider or "claude").lower()
 
-            if provider_name == "auto":
-                # Prefer Claude Code subscription (no API key needed)
-                provider_name = "claude-code"
-                # If Claude Code is not desired, fallback to Claude API if key is present
-                if not os.getenv("CLAUDE_CODE", "1") and os.getenv("ANTHROPIC_API_KEY"):
-                    provider_name = "claude"
-                # Else fallback to Gemini if key available
-                elif (
-                    not os.getenv("CLAUDE_CODE", "1")
-                    and not os.getenv("ANTHROPIC_API_KEY")
-                    and os.getenv("GOOGLE_API_KEY")
-                ):
-                    provider_name = "gemini"
-
-            # If user selected Claude but no API key is present, transparently use Claude Code
+            # If user selected Claude but no API key is present, use Claude CLI
             if provider_name == "claude" and not os.getenv("ANTHROPIC_API_KEY"):
-                provider_name = "claude-code"
+                provider_name = "claude-cli"
+                logger.info("No ANTHROPIC_API_KEY found, using claude-cli provider")
 
             return get_provider(
                 provider_name,

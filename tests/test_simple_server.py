@@ -62,7 +62,7 @@ def find_free_port(start_port: int = 8090, max_attempts: int = 10) -> int:
 def test_server():
     """Start the test server before running tests."""
     global TEST_SERVER_URL, TEST_SERVER_PORT
-    
+
     # Find a free port starting from 8090
     server_port = find_free_port(8090)
     server_path = Path(__file__).parent / "html2md_server" / "server.py"
@@ -74,7 +74,7 @@ def test_server():
     # Set global variables for tests to use
     TEST_SERVER_PORT = server_port
     TEST_SERVER_URL = f"http://localhost:{server_port}"
-    
+
     # Check if port is already in use (shouldn't be since we found a free one)
     if is_port_in_use(server_port):
         logger.warning(
@@ -300,7 +300,7 @@ class TestHTML2MDServer:
 
         # Should mention various programming languages
         content = response.text.lower()
-        languages = ["python", "javascript", "html", "css"]
+        languages = [sys.executable, "javascript", "html", "css"]
         found_languages = [lang for lang in languages if lang in content]
         assert len(found_languages) > 0  # At least one language should be mentioned
 
@@ -323,7 +323,11 @@ class TestHTML2MDServer:
 
         # Should contain helpful 404 content - check case-insensitively
         response_lower = response.text.lower()
-        assert "404" in response.text or "not found" in response_lower or "page not found" in response_lower
+        assert (
+            "404" in response.text
+            or "not found" in response_lower
+            or "page not found" in response_lower
+        )
 
     def test_page_structure_for_conversion(self):
         """Test that pages have structure suitable for HTML to Markdown conversion."""

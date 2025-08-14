@@ -195,7 +195,7 @@ class TestContentAnalysisIntegration:
                             ],
                             "summary": "A thorough tutorial on Python testing covering unit tests, best practices, and practical examples.",
                             "content_type": "tutorial",
-                            "topics": ["python", "testing", "unittest", "tdd"],
+                            "topics": [sys.executable, "testing", "unittest", "tdd"],
                             "code_quality": "high",
                             "technical_depth": "intermediate",
                         }
@@ -374,7 +374,10 @@ class TestContentAnalysisIntegration:
         # Check Python tutorial analysis
         tutorial = next(a for a in analyzed if "python-tutorial" in a.url)
         # Accept fallback score when prompts are missing
-        assert tutorial.relevance_score in [5.0, 9.0]  # 5.0 is fallback, 9.0 is with LLM
+        assert tutorial.relevance_score in [
+            5.0,
+            9.0,
+        ]  # 5.0 is fallback, 9.0 is with LLM
         # In fallback mode, key_points may be empty
         assert len(tutorial.key_points) in [0, 4]
         if tutorial.key_points:
@@ -385,11 +388,18 @@ class TestContentAnalysisIntegration:
         # Check design patterns analysis
         patterns = next(a for a in analyzed if "quality-content" in a.url)
         # Accept fallback score when prompts are missing
-        assert patterns.relevance_score in [5.0, 8.5]  # 5.0 is fallback, 8.5 is with LLM
+        assert patterns.relevance_score in [
+            5.0,
+            8.5,
+        ]  # 5.0 is fallback, 8.5 is with LLM
         # Summary should still contain content
         assert patterns.summary
         # Content type detection still works in fallback
-        assert patterns.content_type in ["general", "technical", "code"]  # Can be detected as code in fallback
+        assert patterns.content_type in [
+            "general",
+            "technical",
+            "code",
+        ]  # Can be detected as code in fallback
 
     @pytest.mark.asyncio
     async def test_template_based_scoring(self, analysis_config, mock_llm_provider):
@@ -456,7 +466,9 @@ class TestContentAnalysisIntegration:
                 assert (
                     hasattr(result.analysis_metadata, "template_score")
                     or "template_score" in result.analysis_metadata
-                    or result.analysis_metadata.get("fallback", False)  # Accept fallback mode
+                    or result.analysis_metadata.get(
+                        "fallback", False
+                    )  # Accept fallback mode
                 )
 
     def test_duplicate_detection(self, analysis_config):

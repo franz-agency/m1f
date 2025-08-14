@@ -237,7 +237,7 @@ class EnhancedResearchCommand:
         research_group.add_argument(
             "--provider",
             "-p",
-            choices=["claude", "claude-cli", "gemini", "gemini-cli", "openai"],
+            choices=["claude", "claude-cli", "gemini", "gemini-cli"],
             default="claude",
             help="LLM provider to use",
         )

@@ -25,12 +25,8 @@ import asyncio
 from dataclasses import dataclass
 from .prompt_utils import get_web_search_prompt
 import anyio
-from claude_code_sdk import (
-    query as claude_query,
-    ClaudeCodeOptions,
-    Message,
-    ResultMessage,
-)
+
+# Claude SDK removed - using direct subprocess instead
 
 # Import shared Claude utilities
 from ..shared.claude_utils import (
@@ -430,11 +426,11 @@ Return JSON with: key_points (array), technical_level""",
             }
 
 
-class ClaudeDirectProvider(LLMProvider):
-    """Direct Claude CLI provider using subprocess for better control"""
+class ClaudeCodeProvider(LLMProvider):
+    """Claude Code provider using subprocess for direct CLI control"""
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        super().__init__(api_key="claude-direct", model=model)
+        super().__init__(api_key="claude-code", model=model)
         self.error_handler = ClaudeErrorHandler()
         self.binary_path = self._find_claude_binary()
 
@@ -462,67 +458,53 @@ class ClaudeDirectProvider(LLMProvider):
     async def query(
         self, prompt: str, system: Optional[str] = None, **kwargs
     ) -> LLMResponse:
-        """Query Claude Code using SDK"""
+        """Query Claude using direct subprocess call"""
         # Combine system and user prompts
         full_prompt = prompt
         if system:
             full_prompt = f"{system}\n\n{prompt}"
 
         try:
-            messages: List[Message] = []
+            # Build command similar to html2md approach
+            cmd = [self.binary_path, "-p", full_prompt]
 
-            # Use shared session manager for options
-            options = self.session_manager.create_options(
-                max_turns=kwargs.get("max_turns", 1),
-                continue_conversation=kwargs.get("continue_conversation", False),
+            # Add model if specified
+            if self.model and self.model != "default":
+                cmd.extend(["--model", self.model])
+
+            # Run with timeout
+            result = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.DEVNULL,
             )
 
-            # Collect messages
-            response_parts = []
+            stdout, stderr = await asyncio.wait_for(
+                result.communicate(), timeout=kwargs.get("timeout", 60)
+            )
 
-            async for message in claude_query(prompt=full_prompt, options=options):
-                messages.append(message)
+            content = stdout.decode("utf-8").strip()
 
-                # Update session state using shared manager
-                self.session_manager.update_from_message(message)
-
-                # Extract text content from different message types
-                if hasattr(message, "content"):
-                    if isinstance(message.content, str):
-                        response_parts.append(message.content)
-                    elif isinstance(message.content, list):
-                        # Handle structured content
-                        for content_item in message.content:
-                            if (
-                                isinstance(content_item, dict)
-                                and "text" in content_item
-                            ):
-                                response_parts.append(content_item["text"])
-                            elif hasattr(content_item, "text"):
-                                response_parts.append(content_item.text)
-                elif hasattr(message, "text"):
-                    # Some messages might have text directly
-                    response_parts.append(message.text)
-
-            # Combine response parts
-            content = "\n".join(response_parts) if response_parts else ""
+            if result.returncode != 0:
+                error_msg = stderr.decode("utf-8") if stderr else "Unknown error"
+                return LLMResponse(content="", error=f"Claude error: {error_msg}")
 
             return LLMResponse(
                 content=content,
-                raw_response={
-                    "session_id": self.session_manager.session_id,
-                    "message_count": len(messages),
-                },
+                raw_response={"command": cmd, "returncode": result.returncode},
             )
 
+        except asyncio.TimeoutError:
+            return LLMResponse(content="", error="Claude request timed out")
         except Exception as e:
-            self.error_handler.handle_api_error(e, operation="Claude Code query")
+            self.error_handler.handle_api_error(e, operation="Claude CLI query")
             return LLMResponse(content="", error=str(e))
 
     async def search_web(
         self, query: str, num_results: int = 20
     ) -> List[Dict[str, str]]:
-        """Use Claude Code to generate search URLs"""
+        """Use Claude direct to generate search URLs"""
         prompt = f"""List {num_results} URLs of authoritative websites about: {query}
 
 Return as JSON array with url, title, description. No comments, no explanation, just the JSON:
@@ -534,7 +516,7 @@ Return as JSON array with url, title, description. No comments, no explanation, 
         response = await self.query(prompt)
 
         if response.error:
-            raise Exception(f"Claude Code error: {response.error}")
+            raise Exception(f"Claude error: {response.error}")
 
         try:
             # Extract JSON from response
@@ -544,7 +526,7 @@ Return as JSON array with url, title, description. No comments, no explanation, 
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.debug(f"Raw Claude Code response: {content[:500]}...")
+            logger.debug(f"Raw Claude response: {content[:500]}...")
 
             # Try to find JSON array in the content
             # Handle various formats Claude might return
@@ -595,7 +577,7 @@ Return as JSON array with url, title, description. No comments, no explanation, 
 
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to parse JSON. Response content: {response.content}")
-            raise Exception(f"Failed to parse Claude Code response as JSON: {str(e)}")
+            raise Exception(f"Failed to parse Claude response as JSON: {str(e)}")
 
     async def analyze_content(
         self, content: str, analysis_type: str = "relevance"
@@ -810,9 +792,8 @@ Return ONLY the JSON array."""
 def get_provider(provider_name: str, **kwargs) -> LLMProvider:
     """Factory function to get LLM provider instance"""
     providers = {
-        "claude": ClaudeProvider,
-        "claude-cli": ClaudeCodeProvider,  # Use proper SDK instead of CLI
-        "claude-code": ClaudeCodeProvider,  # Additional alias
+        "claude": ClaudeProvider,  # Anthropic API
+        "claude-code": ClaudeCodeProvider,  # Direct Claude CLI
         "gemini": GeminiProvider,
         "gemini-cli": lambda **kw: CLIProvider(command="gemini", model=kw.get("model")),
     }

@@ -9,8 +9,21 @@ This module provides functionality to research any topic by:
 """
 
 from .cli import EnhancedResearchCommand, main
-from .llm_interface import LLMProvider, ClaudeProvider, GeminiProvider, CLIProvider, get_provider
-from .config import ResearchConfig, LLMConfig, ScrapingConfig, OutputConfig, AnalysisConfig
+from .llm_interface import (
+    LLMProvider,
+    ClaudeProvider,
+    ClaudeCLIProvider,
+    GeminiProvider,
+    CLIProvider,
+    get_provider,
+)
+from .config import (
+    ResearchConfig,
+    LLMConfig,
+    ScrapingConfig,
+    OutputConfig,
+    AnalysisConfig,
+)
 from .orchestrator import EnhancedResearchOrchestrator
 from .models import ResearchResult, ScrapedContent, AnalyzedContent, ResearchSource
 from .scraper import SmartScraper
@@ -34,25 +47,21 @@ __all__ = [
     # Version
     "__version__",
     "__version_info__",
-    
     # CLI
     "EnhancedResearchCommand",
     "main",
-    
     # LLM
     "LLMProvider",
-    "ClaudeProvider", 
+    "ClaudeProvider",
     "GeminiProvider",
     "CLIProvider",
     "get_provider",
-    
     # Config
     "ResearchConfig",
     "LLMConfig",
-    "ScrapingConfig", 
+    "ScrapingConfig",
     "OutputConfig",
     "AnalysisConfig",
-    
     # Core
     "EnhancedResearchOrchestrator",
     "SmartScraper",
@@ -61,20 +70,17 @@ __all__ = [
     "ContentAnalyzer",
     "SmartBundleCreator",
     "ReadmeGenerator",
-    
     # Job Management
     "JobManager",
     "ResearchDatabase",
     "JobDatabase",
     "ResearchJob",
     "URLManager",
-    
     # Models
     "ResearchResult",
     "ScrapedContent",
     "AnalyzedContent",
     "ResearchSource",
-    
     # Templates
     "TEMPLATES",
     "get_template",

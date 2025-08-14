@@ -65,8 +65,10 @@ class TestSelectolaxIntegration:
         env.pop("WERKZEUG_SERVER_FD", None)
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
+        import sys
+
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

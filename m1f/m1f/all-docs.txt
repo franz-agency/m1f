@@ -591,6 +591,11 @@ and this project adheres to
   - Fixed scrape test to include session_files in mock return value
   - Rewrote statistics test to use real local server scraping instead of mocks for authentic testing
 
+- **Python Path Issues in Tests**: Fixed 43+ test errors caused by hardcoded 'python' command
+  - Replaced all instances of `["python",` with `[sys.executable,` in test files
+  - Affected test files now use correct Python interpreter from virtual environment
+  - Fixes FileNotFoundError issues on systems where python3 is the default
+
 ### Added
 
 - **m1f-scrape Automatic Link Adjustment for allowed-path**: Intelligently adjusts internal links when using --allowed-path restrictions

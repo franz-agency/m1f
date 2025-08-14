@@ -20,6 +20,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import socket
@@ -67,7 +68,7 @@ class TestMeaningfulScraperFeatures:
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

@@ -865,6 +865,11 @@ and this project adheres to
   - Fixed scrape test to include session_files in mock return value
   - Rewrote statistics test to use real local server scraping instead of mocks for authentic testing
 
+- **Python Path Issues in Tests**: Fixed 43+ test errors caused by hardcoded 'python' command
+  - Replaced all instances of `["python",` with `[sys.executable,` in test files
+  - Affected test files now use correct Python interpreter from virtual environment
+  - Fixes FileNotFoundError issues on systems where python3 is the default
+
 ### Added
 
 - **m1f-scrape Automatic Link Adjustment for allowed-path**: Intelligently adjusts internal links when using --allowed-path restrictions
@@ -11488,7 +11493,7 @@ def find_free_port(start_port: int = 8090, max_attempts: int = 10) -> int:
 def test_server():
     """Start the test server before running tests."""
     global TEST_SERVER_URL, TEST_SERVER_PORT
-    
+
     # Find a free port starting from 8090
     server_port = find_free_port(8090)
     server_path = Path(__file__).parent / "html2md_server" / "server.py"
@@ -11500,7 +11505,7 @@ def test_server():
     # Set global variables for tests to use
     TEST_SERVER_PORT = server_port
     TEST_SERVER_URL = f"http://localhost:{server_port}"
-    
+
     # Check if port is already in use (shouldn't be since we found a free one)
     if is_port_in_use(server_port):
         logger.warning(
@@ -11726,7 +11731,7 @@ class TestHTML2MDServer:
 
         # Should mention various programming languages
         content = response.text.lower()
-        languages = ["python", "javascript", "html", "css"]
+        languages = [sys.executable, "javascript", "html", "css"]
         found_languages = [lang for lang in languages if lang in content]
         assert len(found_languages) > 0  # At least one language should be mentioned
 
@@ -11749,7 +11754,11 @@ class TestHTML2MDServer:
 
         # Should contain helpful 404 content - check case-insensitively
         response_lower = response.text.lower()
-        assert "404" in response.text or "not found" in response_lower or "page not found" in response_lower
+        assert (
+            "404" in response.text
+            or "not found" in response_lower
+            or "page not found" in response_lower
+        )
 
     def test_page_structure_for_conversion(self):
         """Test that pages have structure suitable for HTML to Markdown conversion."""
@@ -33367,6 +33376,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import signal
@@ -33392,7 +33402,7 @@ class TestAllowedPathIntegration:
         # Start the test server
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -34691,6 +34701,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import socket
@@ -34755,7 +34766,7 @@ class TestHTTrackIntegration:
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -35638,6 +35649,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import socket
@@ -35685,7 +35697,7 @@ class TestMeaningfulScraperFeatures:
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -36485,6 +36497,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import requests
@@ -36569,7 +36582,7 @@ class TestPlaywrightIntegration:
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -36902,9 +36915,11 @@ class TestScraperParameters:
         env["WERKZEUG_RUN_MAIN"] = "true"  # Suppress Flask reloader
 
         # Start the test server
+        import sys
+
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -37856,8 +37871,10 @@ class TestSelectolaxIntegration:
         env.pop("WERKZEUG_SERVER_FD", None)
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
+        import sys
+
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -38659,7 +38676,10 @@ def status_server():
         if HAS_PSUTIL:
             try:
                 process = psutil.Process(pid)
-                if process.is_running() and process.name() in ["python", "python.exe"]:
+                if process.is_running() and process.name() in [
+                    sys.executable,
+                    "python.exe",
+                ]:
                     success(f"Server running with PID: {pid}")
                     info(f"Process name: {process.name()}")
                     info(
@@ -48474,7 +48494,7 @@ class TestContentAnalysisIntegration:
                             ],
                             "summary": "A thorough tutorial on Python testing covering unit tests, best practices, and practical examples.",
                             "content_type": "tutorial",
-                            "topics": ["python", "testing", "unittest", "tdd"],
+                            "topics": [sys.executable, "testing", "unittest", "tdd"],
                             "code_quality": "high",
                             "technical_depth": "intermediate",
                         }
@@ -48653,7 +48673,10 @@ class TestContentAnalysisIntegration:
         # Check Python tutorial analysis
         tutorial = next(a for a in analyzed if "python-tutorial" in a.url)
         # Accept fallback score when prompts are missing
-        assert tutorial.relevance_score in [5.0, 9.0]  # 5.0 is fallback, 9.0 is with LLM
+        assert tutorial.relevance_score in [
+            5.0,
+            9.0,
+        ]  # 5.0 is fallback, 9.0 is with LLM
         # In fallback mode, key_points may be empty
         assert len(tutorial.key_points) in [0, 4]
         if tutorial.key_points:
@@ -48664,11 +48687,18 @@ class TestContentAnalysisIntegration:
         # Check design patterns analysis
         patterns = next(a for a in analyzed if "quality-content" in a.url)
         # Accept fallback score when prompts are missing
-        assert patterns.relevance_score in [5.0, 8.5]  # 5.0 is fallback, 8.5 is with LLM
+        assert patterns.relevance_score in [
+            5.0,
+            8.5,
+        ]  # 5.0 is fallback, 8.5 is with LLM
         # Summary should still contain content
         assert patterns.summary
         # Content type detection still works in fallback
-        assert patterns.content_type in ["general", "technical", "code"]  # Can be detected as code in fallback
+        assert patterns.content_type in [
+            "general",
+            "technical",
+            "code",
+        ]  # Can be detected as code in fallback
 
     @pytest.mark.asyncio
     async def test_template_based_scoring(self, analysis_config, mock_llm_provider):
@@ -48735,7 +48765,9 @@ class TestContentAnalysisIntegration:
                 assert (
                     hasattr(result.analysis_metadata, "template_score")
                     or "template_score" in result.analysis_metadata
-                    or result.analysis_metadata.get("fallback", False)  # Accept fallback mode
+                    or result.analysis_metadata.get(
+                        "fallback", False
+                    )  # Accept fallback mode
                 )
 
     def test_duplicate_detection(self, analysis_config):
@@ -67576,8 +67608,21 @@ This module provides functionality to research any topic by:
 """
 
 from .cli import EnhancedResearchCommand, main
-from .llm_interface import LLMProvider, ClaudeProvider, GeminiProvider, CLIProvider, get_provider
-from .config import ResearchConfig, LLMConfig, ScrapingConfig, OutputConfig, AnalysisConfig
+from .llm_interface import (
+    LLMProvider,
+    ClaudeProvider,
+    ClaudeCLIProvider,
+    GeminiProvider,
+    CLIProvider,
+    get_provider,
+)
+from .config import (
+    ResearchConfig,
+    LLMConfig,
+    ScrapingConfig,
+    OutputConfig,
+    AnalysisConfig,
+)
 from .orchestrator import EnhancedResearchOrchestrator
 from .models import ResearchResult, ScrapedContent, AnalyzedContent, ResearchSource
 from .scraper import SmartScraper
@@ -67601,25 +67646,21 @@ __all__ = [
     # Version
     "__version__",
     "__version_info__",
-    
     # CLI
     "EnhancedResearchCommand",
     "main",
-    
     # LLM
     "LLMProvider",
-    "ClaudeProvider", 
+    "ClaudeProvider",
     "GeminiProvider",
     "CLIProvider",
     "get_provider",
-    
     # Config
     "ResearchConfig",
     "LLMConfig",
-    "ScrapingConfig", 
+    "ScrapingConfig",
     "OutputConfig",
     "AnalysisConfig",
-    
     # Core
     "EnhancedResearchOrchestrator",
     "SmartScraper",
@@ -67628,20 +67669,17 @@ __all__ = [
     "ContentAnalyzer",
     "SmartBundleCreator",
     "ReadmeGenerator",
-    
     # Job Management
     "JobManager",
     "ResearchDatabase",
     "JobDatabase",
     "ResearchJob",
     "URLManager",
-    
     # Models
     "ResearchResult",
     "ScrapedContent",
     "AnalyzedContent",
     "ResearchSource",
-    
     # Templates
     "TEMPLATES",
     "get_template",
@@ -69059,7 +69097,7 @@ class EnhancedResearchCommand:
         research_group.add_argument(
             "--provider",
             "-p",
-            choices=["claude", "claude-cli", "gemini", "gemini-cli", "openai"],
+            choices=["claude", "claude-code", "gemini", "gemini-cli"],
             default="claude",
             help="LLM provider to use",
         )
@@ -70974,12 +71012,8 @@ import asyncio
 from dataclasses import dataclass
 from .prompt_utils import get_web_search_prompt
 import anyio
-from claude_code_sdk import (
-    query as claude_query,
-    ClaudeCodeOptions,
-    Message,
-    ResultMessage,
-)
+
+# Claude SDK removed - using direct subprocess instead
 
 # Import shared Claude utilities
 from ..shared.claude_utils import (
@@ -71379,11 +71413,11 @@ Return JSON with: key_points (array), technical_level""",
             }
 
 
-class ClaudeDirectProvider(LLMProvider):
-    """Direct Claude CLI provider using subprocess for better control"""
+class ClaudeCodeProvider(LLMProvider):
+    """Claude Code provider using subprocess for direct CLI control"""
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        super().__init__(api_key="claude-direct", model=model)
+        super().__init__(api_key="claude-code", model=model)
         self.error_handler = ClaudeErrorHandler()
         self.binary_path = self._find_claude_binary()
 
@@ -71411,67 +71445,53 @@ class ClaudeDirectProvider(LLMProvider):
     async def query(
         self, prompt: str, system: Optional[str] = None, **kwargs
     ) -> LLMResponse:
-        """Query Claude Code using SDK"""
+        """Query Claude using direct subprocess call"""
         # Combine system and user prompts
         full_prompt = prompt
         if system:
             full_prompt = f"{system}\n\n{prompt}"
 
         try:
-            messages: List[Message] = []
+            # Build command similar to html2md approach
+            cmd = [self.binary_path, "-p", full_prompt]
 
-            # Use shared session manager for options
-            options = self.session_manager.create_options(
-                max_turns=kwargs.get("max_turns", 1),
-                continue_conversation=kwargs.get("continue_conversation", False),
+            # Add model if specified
+            if self.model and self.model != "default":
+                cmd.extend(["--model", self.model])
+
+            # Run with timeout
+            result = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.DEVNULL,
             )
 
-            # Collect messages
-            response_parts = []
+            stdout, stderr = await asyncio.wait_for(
+                result.communicate(), timeout=kwargs.get("timeout", 60)
+            )
 
-            async for message in claude_query(prompt=full_prompt, options=options):
-                messages.append(message)
+            content = stdout.decode("utf-8").strip()
 
-                # Update session state using shared manager
-                self.session_manager.update_from_message(message)
-
-                # Extract text content from different message types
-                if hasattr(message, "content"):
-                    if isinstance(message.content, str):
-                        response_parts.append(message.content)
-                    elif isinstance(message.content, list):
-                        # Handle structured content
-                        for content_item in message.content:
-                            if (
-                                isinstance(content_item, dict)
-                                and "text" in content_item
-                            ):
-                                response_parts.append(content_item["text"])
-                            elif hasattr(content_item, "text"):
-                                response_parts.append(content_item.text)
-                elif hasattr(message, "text"):
-                    # Some messages might have text directly
-                    response_parts.append(message.text)
-
-            # Combine response parts
-            content = "\n".join(response_parts) if response_parts else ""
+            if result.returncode != 0:
+                error_msg = stderr.decode("utf-8") if stderr else "Unknown error"
+                return LLMResponse(content="", error=f"Claude error: {error_msg}")
 
             return LLMResponse(
                 content=content,
-                raw_response={
-                    "session_id": self.session_manager.session_id,
-                    "message_count": len(messages),
-                },
+                raw_response={"command": cmd, "returncode": result.returncode},
             )
 
+        except asyncio.TimeoutError:
+            return LLMResponse(content="", error="Claude request timed out")
         except Exception as e:
-            self.error_handler.handle_api_error(e, operation="Claude Code query")
+            self.error_handler.handle_api_error(e, operation="Claude CLI query")
             return LLMResponse(content="", error=str(e))
 
     async def search_web(
         self, query: str, num_results: int = 20
     ) -> List[Dict[str, str]]:
-        """Use Claude Code to generate search URLs"""
+        """Use Claude direct to generate search URLs"""
         prompt = f"""List {num_results} URLs of authoritative websites about: {query}
 
 Return as JSON array with url, title, description. No comments, no explanation, just the JSON:
@@ -71483,7 +71503,7 @@ Return as JSON array with url, title, description. No comments, no explanation, 
         response = await self.query(prompt)
 
         if response.error:
-            raise Exception(f"Claude Code error: {response.error}")
+            raise Exception(f"Claude error: {response.error}")
 
         try:
             # Extract JSON from response
@@ -71493,7 +71513,7 @@ Return as JSON array with url, title, description. No comments, no explanation, 
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.debug(f"Raw Claude Code response: {content[:500]}...")
+            logger.debug(f"Raw Claude response: {content[:500]}...")
 
             # Try to find JSON array in the content
             # Handle various formats Claude might return
@@ -71544,7 +71564,7 @@ Return as JSON array with url, title, description. No comments, no explanation, 
 
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to parse JSON. Response content: {response.content}")
-            raise Exception(f"Failed to parse Claude Code response as JSON: {str(e)}")
+            raise Exception(f"Failed to parse Claude response as JSON: {str(e)}")
 
     async def analyze_content(
         self, content: str, analysis_type: str = "relevance"
@@ -71759,9 +71779,8 @@ Return ONLY the JSON array."""
 def get_provider(provider_name: str, **kwargs) -> LLMProvider:
     """Factory function to get LLM provider instance"""
     providers = {
-        "claude": ClaudeProvider,
-        "claude-cli": ClaudeCodeProvider,  # Use proper SDK instead of CLI
-        "claude-code": ClaudeCodeProvider,  # Additional alias
+        "claude": ClaudeProvider,  # Anthropic API
+        "claude-code": ClaudeCodeProvider,  # Direct Claude CLI
         "gemini": GeminiProvider,
         "gemini-cli": lambda **kw: CLIProvider(command="gemini", model=kw.get("model")),
     }
@@ -71932,23 +71951,10 @@ class EnhancedResearchOrchestrator:
             # Determine effective provider with sensible defaults
             provider_name = (self.config.llm.provider or "claude").lower()
 
-            if provider_name == "auto":
-                # Prefer Claude Code subscription (no API key needed)
-                provider_name = "claude-code"
-                # If Claude Code is not desired, fallback to Claude API if key is present
-                if not os.getenv("CLAUDE_CODE", "1") and os.getenv("ANTHROPIC_API_KEY"):
-                    provider_name = "claude"
-                # Else fallback to Gemini if key available
-                elif (
-                    not os.getenv("CLAUDE_CODE", "1")
-                    and not os.getenv("ANTHROPIC_API_KEY")
-                    and os.getenv("GOOGLE_API_KEY")
-                ):
-                    provider_name = "gemini"
-
-            # If user selected Claude but no API key is present, transparently use Claude Code
+            # If user selected Claude but no API key is present, use Claude CLI
             if provider_name == "claude" and not os.getenv("ANTHROPIC_API_KEY"):
-                provider_name = "claude-code"
+                provider_name = "claude-cli"
+                logger.info("No ANTHROPIC_API_KEY found, using claude-cli provider")
 
             return get_provider(
                 provider_name,

@@ -175,7 +175,10 @@ def status_server():
         if HAS_PSUTIL:
             try:
                 process = psutil.Process(pid)
-                if process.is_running() and process.name() in ["python", "python.exe"]:
+                if process.is_running() and process.name() in [
+                    sys.executable,
+                    "python.exe",
+                ]:
                     success(f"Server running with PID: {pid}")
                     info(f"Process name: {process.name()}")
                     info(

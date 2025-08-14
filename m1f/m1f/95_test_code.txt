@@ -2700,7 +2700,7 @@ def find_free_port(start_port: int = 8090, max_attempts: int = 10) -> int:
 def test_server():
     """Start the test server before running tests."""
     global TEST_SERVER_URL, TEST_SERVER_PORT
-    
+
     # Find a free port starting from 8090
     server_port = find_free_port(8090)
     server_path = Path(__file__).parent / "html2md_server" / "server.py"
@@ -2712,7 +2712,7 @@ def test_server():
     # Set global variables for tests to use
     TEST_SERVER_PORT = server_port
     TEST_SERVER_URL = f"http://localhost:{server_port}"
-    
+
     # Check if port is already in use (shouldn't be since we found a free one)
     if is_port_in_use(server_port):
         logger.warning(
@@ -2938,7 +2938,7 @@ class TestHTML2MDServer:
 
         # Should mention various programming languages
         content = response.text.lower()
-        languages = ["python", "javascript", "html", "css"]
+        languages = [sys.executable, "javascript", "html", "css"]
         found_languages = [lang for lang in languages if lang in content]
         assert len(found_languages) > 0  # At least one language should be mentioned
 
@@ -2961,7 +2961,11 @@ class TestHTML2MDServer:
 
         # Should contain helpful 404 content - check case-insensitively
         response_lower = response.text.lower()
-        assert "404" in response.text or "not found" in response_lower or "page not found" in response_lower
+        assert (
+            "404" in response.text
+            or "not found" in response_lower
+            or "page not found" in response_lower
+        )
 
     def test_page_structure_for_conversion(self):
         """Test that pages have structure suitable for HTML to Markdown conversion."""
@@ -3091,6 +3095,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import signal
@@ -3116,7 +3121,7 @@ class TestAllowedPathIntegration:
         # Start the test server
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -4415,6 +4420,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import socket
@@ -4479,7 +4485,7 @@ class TestHTTrackIntegration:
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -5362,6 +5368,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import socket
@@ -5409,7 +5416,7 @@ class TestMeaningfulScraperFeatures:
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -6209,6 +6216,7 @@ import pytest
 import tempfile
 import shutil
 import subprocess
+import sys
 import time
 import os
 import requests
@@ -6293,7 +6301,7 @@ class TestPlaywrightIntegration:
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -6626,9 +6634,11 @@ class TestScraperParameters:
         env["WERKZEUG_RUN_MAIN"] = "true"  # Suppress Flask reloader
 
         # Start the test server
+        import sys
+
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -7580,8 +7590,10 @@ class TestSelectolaxIntegration:
         env.pop("WERKZEUG_SERVER_FD", None)
 
         server_path = Path(__file__).parent.parent / "html2md_server" / "server.py"
+        import sys
+
         cls.server_process = subprocess.Popen(
-            ["python", str(server_path)],
+            [sys.executable, str(server_path)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -8383,7 +8395,10 @@ def status_server():
         if HAS_PSUTIL:
             try:
                 process = psutil.Process(pid)
-                if process.is_running() and process.name() in ["python", "python.exe"]:
+                if process.is_running() and process.name() in [
+                    sys.executable,
+                    "python.exe",
+                ]:
                     success(f"Server running with PID: {pid}")
                     info(f"Process name: {process.name()}")
                     info(
@@ -9757,7 +9772,7 @@ class TestContentAnalysisIntegration:
                             ],
                             "summary": "A thorough tutorial on Python testing covering unit tests, best practices, and practical examples.",
                             "content_type": "tutorial",
-                            "topics": ["python", "testing", "unittest", "tdd"],
+                            "topics": [sys.executable, "testing", "unittest", "tdd"],
                             "code_quality": "high",
                             "technical_depth": "intermediate",
                         }
@@ -9936,7 +9951,10 @@ class TestContentAnalysisIntegration:
         # Check Python tutorial analysis
         tutorial = next(a for a in analyzed if "python-tutorial" in a.url)
         # Accept fallback score when prompts are missing
-        assert tutorial.relevance_score in [5.0, 9.0]  # 5.0 is fallback, 9.0 is with LLM
+        assert tutorial.relevance_score in [
+            5.0,
+            9.0,
+        ]  # 5.0 is fallback, 9.0 is with LLM
         # In fallback mode, key_points may be empty
         assert len(tutorial.key_points) in [0, 4]
         if tutorial.key_points:
@@ -9947,11 +9965,18 @@ class TestContentAnalysisIntegration:
         # Check design patterns analysis
         patterns = next(a for a in analyzed if "quality-content" in a.url)
         # Accept fallback score when prompts are missing
-        assert patterns.relevance_score in [5.0, 8.5]  # 5.0 is fallback, 8.5 is with LLM
+        assert patterns.relevance_score in [
+            5.0,
+            8.5,
+        ]  # 5.0 is fallback, 8.5 is with LLM
         # Summary should still contain content
         assert patterns.summary
         # Content type detection still works in fallback
-        assert patterns.content_type in ["general", "technical", "code"]  # Can be detected as code in fallback
+        assert patterns.content_type in [
+            "general",
+            "technical",
+            "code",
+        ]  # Can be detected as code in fallback
 
     @pytest.mark.asyncio
     async def test_template_based_scoring(self, analysis_config, mock_llm_provider):
@@ -10018,7 +10043,9 @@ class TestContentAnalysisIntegration:
                 assert (
                     hasattr(result.analysis_metadata, "template_score")
                     or "template_score" in result.analysis_metadata
-                    or result.analysis_metadata.get("fallback", False)  # Accept fallback mode
+                    or result.analysis_metadata.get(
+                        "fallback", False
+                    )  # Accept fallback mode
                 )
 
     def test_duplicate_detection(self, analysis_config):
