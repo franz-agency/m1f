@@ -20,3 +20,4 @@ package-lock.json
 pyproject.toml
 pytest.ini
 requirements.txt
+GEMINI.md
