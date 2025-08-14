@@ -26424,7 +26424,8 @@ class EnhancedResearchCommand:
                 args.interactive,
             ]
         ):
-            return "No operation specified. Use --help for usage"
+            # Default to interactive mode when no operation specified
+            args.interactive = True
 
         # Validate URLs file if provided
         if args.urls_file and not safe_exists(args.urls_file):
