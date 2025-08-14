@@ -3535,17 +3535,25 @@ class ClaudeProvider(LLMProvider):
         self, query: str, num_results: int = 20
     ) -> List[Dict[str, str]]:
         """Use Claude to generate search URLs"""
-        prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
+        prompt = f"""As a research assistant, help me find {num_results} relevant web resources about: "{query}"
 
-Return a JSON array with objects containing:
-- url: The full URL
-- title: Page title
-- description: Brief description
+Please suggest real, existing websites and resources that would be helpful for researching this topic. Return your suggestions as a JSON array where each entry has:
+- url: A real website URL that likely contains information on this topic
+- title: The expected page/site title
+- description: What kind of information this resource likely contains
 
-Focus on high-quality, authoritative sources like documentation, tutorials, and reputable blogs.
-Mix different types of content: tutorials, references, discussions, and examples.
+Focus on well-known, authoritative sources in this domain such as:
+- Official documentation and guides
+- Industry-leading blogs and publications
+- Educational resources and tutorials
+- Professional forums and communities
 
-Return ONLY valid JSON array, no other text."""
+Example format:
+[
+  {{"url": "https://example.com/article", "title": "Article Title", "description": "Brief description"}}
+]
+
+Return ONLY the JSON array, no other text."""
 
         response = await self.query(prompt)
 
@@ -3702,16 +3710,21 @@ class GeminiProvider(LLMProvider):
         self, query: str, num_results: int = 20
     ) -> List[Dict[str, str]]:
         """Use Gemini to generate search URLs"""
-        # Similar implementation to Claude
-        prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
+        prompt = f"""As a research assistant, help me find {num_results} relevant web resources about: "{query}"
 
-Return a JSON array with objects containing:
-- url: The full URL
-- title: Page title  
-- description: Brief description
+Please suggest real, existing websites and resources that would be helpful for researching this topic. Return your suggestions as a JSON array where each entry has:
+- url: A real website URL that likely contains information on this topic
+- title: The expected page/site title
+- description: What kind of information this resource likely contains
 
-Focus on high-quality, authoritative sources.
-Return ONLY valid JSON array."""
+Focus on well-known, authoritative sources.
+
+Example format:
+[
+  {{"url": "https://example.com/article", "title": "Article Title", "description": "Brief description"}}
+]
+
+Return ONLY the JSON array."""
 
         response = await self.query(prompt)
 
@@ -3877,17 +3890,25 @@ class ClaudeCodeProvider(LLMProvider):
         self, query: str, num_results: int = 20
     ) -> List[Dict[str, str]]:
         """Use Claude Code to generate search URLs"""
-        prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
+        prompt = f"""As a research assistant, help me find {num_results} relevant web resources about: "{query}"
 
-Return a JSON array with objects containing:
-- url: The full URL
-- title: Page title
-- description: Brief description
+Please suggest real, existing websites and resources that would be helpful for researching this topic. Return your suggestions as a JSON array where each entry has:
+- url: A real website URL that likely contains information on this topic
+- title: The expected page/site title
+- description: What kind of information this resource likely contains
 
-Focus on high-quality, authoritative sources like documentation, tutorials, and reputable blogs.
-Mix different types of content: tutorials, references, discussions, and examples.
+Focus on well-known, authoritative sources in this domain such as:
+- Official documentation and guides
+- Industry-leading blogs and publications  
+- Educational resources and tutorials
+- Professional forums and communities
 
-Return ONLY valid JSON array, no other text."""
+Example format:
+[
+  {{"url": "https://example.com/article", "title": "Article Title", "description": "Brief description"}}
+]
+
+Return ONLY the JSON array, no other text."""
 
         response = await self.query(prompt)
 
@@ -4063,14 +4084,19 @@ class CLIProvider(LLMProvider):
             provider = ClaudeCodeProvider(model=self.model)
             return await provider.search_web(query, num_results)
 
-        prompt = f"""Generate {num_results} relevant URLs for researching: "{query}"
+        prompt = f"""As a research assistant, help me find {num_results} relevant web resources about: "{query}"
 
-Return a JSON array with objects containing:
-- url: The full URL
-- title: Page title
-- description: Brief description
+Please suggest real, existing websites and resources that would be helpful for researching this topic. Return your suggestions as a JSON array where each entry has:
+- url: A real website URL that likely contains information on this topic
+- title: The expected page/site title
+- description: What kind of information this resource likely contains
 
-Return ONLY valid JSON array."""
+Example format:
+[
+  {{"url": "https://example.com/article", "title": "Article Title", "description": "Brief description"}}
+]
+
+Return ONLY the JSON array."""
 
         response = await self.query(prompt)
 

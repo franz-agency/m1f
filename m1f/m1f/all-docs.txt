@@ -581,6 +581,16 @@ and this project adheres to
 
 ## [3.8.0] - Unreleased
 
+### Fixed
+
+- **Test Suite Fixes**: Resolved 6 failing tests across multiple modules
+  - Fixed LLM provider tests by properly mocking API keys for Claude and Gemini
+  - Added missing `_validate_api_key` method to GeminiProvider
+  - Fixed HTML2MD frontmatter generation to include source_file when provided
+  - Fixed m1f-claude to respect provided cwd parameter instead of always using current directory
+  - Fixed scrape test to include session_files in mock return value
+  - Updated test expectations to match actual scraping statistics output
+
 ### Added
 
 - **m1f-scrape Automatic Link Adjustment for allowed-path**: Intelligently adjusts internal links when using --allowed-path restrictions
