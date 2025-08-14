@@ -2783,6 +2783,38 @@ class ContentFilter:
 
         return filtered
 
+    def filter_content(self, content: str) -> Tuple[bool, str]:
+        """
+        Filter a single content item and return pass/fail with reason.
+
+        Args:
+            content: Content string to check
+
+        Returns:
+            Tuple of (passed: bool, reason: str)
+        """
+        # Check content length
+        if not self._check_content_length(content):
+            return (
+                False,
+                f"Content too short (min: {self.config.min_content_length} chars)",
+            )
+
+        # Check for spam/ads
+        if self._is_spam(content):
+            return False, "Spam/advertising content detected"
+
+        # Check quality score
+        quality_score = self._calculate_quality_score(content)
+        if quality_score < 0.3:  # Minimum quality threshold
+            return False, f"Low quality content (score: {quality_score:.2f})"
+
+        # Check for duplicates
+        if self._is_duplicate(content):
+            return False, "Duplicate content"
+
+        return True, "Passed all filters"
+
     def _passes_filters(self, content: ScrapedContent) -> bool:
         """Check if content passes all quality filters"""
         # Check content length
@@ -4637,7 +4669,7 @@ class EnhancedResearchOrchestrator:
                     # Use html2md tool if available
                     if HTMLToMarkdownConverter:
                         converter = HTMLToMarkdownConverter()
-                        markdown = converter.convert(scraped.content)
+                        markdown = converter.convert_html(scraped.content)
                     else:
                         # Fallback to basic conversion
                         markdown = self._basic_html_to_markdown(scraped.content)

@@ -277,7 +277,7 @@ class EnhancedResearchOrchestrator:
                     # Use html2md tool if available
                     if HTMLToMarkdownConverter:
                         converter = HTMLToMarkdownConverter()
-                        markdown = converter.convert(scraped.content)
+                        markdown = converter.convert_html(scraped.content)
                     else:
                         # Fallback to basic conversion
                         markdown = self._basic_html_to_markdown(scraped.content)
