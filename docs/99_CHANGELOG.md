@@ -12,6 +12,13 @@ and this project adheres to
 
 ### Added
 
+- **m1f-scrape Automatic Link Adjustment for allowed-path**: Intelligently adjusts internal links when using --allowed-path restrictions
+  - Automatically strips redundant parent directory from links while preserving subdirectory structure
+  - Links like `/parent/subdir/file.html` become `subdir/file.html` when scraping with `--allowed-path /parent/subdir/`
+  - Works generically for all path structures without hardcoding specific directory names
+  - Ensures HTML and Markdown files have correct relative links after conversion
+  - Fixes issue where links had incorrect paths after scraping with restricted allowed-path
+
 - **m1f-claude Real-Time Progress Display for Setup**: Live streaming of Claude's actions during setup
   - Added `run_claude_streaming_json` method to M1FClaudeRunner with JSON output parsing
   - Shows when Claude is reading files, editing configurations, creating bundles

@@ -17,7 +17,8 @@
 
 import hashlib
 import re
-from typing import Optional
+from typing import Optional, List
+from pathlib import Path
 
 
 def extract_text_from_html(html_content: str) -> str:
@@ -69,3 +70,76 @@ def calculate_content_checksum(html_content: str) -> str:
     """
     text = extract_text_from_html(html_content)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def find_common_parent(paths: List[str]) -> str:
+    """Find the common parent directory of multiple paths.
+
+    Args:
+        paths: List of paths (can be strings or Path objects)
+
+    Returns:
+        Common parent directory as a string with trailing slash
+
+    Examples:
+        >>> find_common_parent(["/a/b/c/", "/a/b/d/"])
+        '/a/b/'
+        >>> find_common_parent(["/my/path/a/", "/my/path/b/"])
+        '/my/path/'
+        >>> find_common_parent(["/a/", "/b/"])
+        '/'
+    """
+    if not paths:
+        return "/"
+
+    if len(paths) == 1:
+        # Single path - ensure it ends with /
+        path = str(paths[0])
+        if not path.endswith("/"):
+            path = path + "/"
+        return path
+
+    # Convert all paths to Path objects and normalize
+    path_objects = []
+    for p in paths:
+        p_str = str(p)
+        # Remove trailing slash for Path object creation
+        if p_str.endswith("/") and p_str != "/":
+            p_str = p_str[:-1]
+        path_objects.append(Path(p_str))
+
+    # Find common parent
+    try:
+        # Get all parts of each path
+        all_parts = [p.parts for p in path_objects]
+
+        # Find common prefix
+        common_parts = []
+        for parts in zip(*all_parts):
+            if len(set(parts)) == 1:
+                common_parts.append(parts[0])
+            else:
+                break
+
+        if not common_parts:
+            return "/"
+
+        # Reconstruct path with trailing slash
+        if common_parts == ["/"] or common_parts == ["/"]:
+            return "/"
+
+        # Join parts and ensure trailing slash
+        result = "/".join(common_parts)
+        # Don't add extra slash if it already starts with one
+        if result and not result.startswith("/"):
+            result = "/" + result
+        elif result.startswith("//"):
+            # Fix double slash issue
+            result = result[1:]
+        if not result.endswith("/"):
+            result = result + "/"
+
+        return result
+    except Exception:
+        # Fallback to root on any error
+        return "/"

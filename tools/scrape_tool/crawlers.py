@@ -1053,9 +1053,15 @@ class WebCrawler:
             # Read the current HTML content
             html_content = html_path.read_text(encoding=page.encoding)
 
+            # Get allowed paths for link adjustment
+            allowed_paths = getattr(self.config, "allowed_paths", None) or []
+            if not allowed_paths and getattr(self.config, "allowed_path", None):
+                allowed_paths = [self.config.allowed_path]
+            allowed_paths = allowed_paths if allowed_paths else None
+
             # Adjust links with the downloaded asset paths
             updated_content = self._adjust_html_links(
-                html_content, page.url, html_path, site_dir, downloaded_assets
+                html_content, page.url, allowed_paths, downloaded_assets
             )
 
             # Write the updated content back
@@ -1069,41 +1075,57 @@ class WebCrawler:
 
     def _adjust_html_links(
         self,
-        html_content: str,
-        original_url: str,
-        saved_path: Path,
-        site_dir: Path,
+        content,  # Can be str or BeautifulSoup object
+        base_url: str,
+        allowed_path_or_paths=None,  # str, list of str, or None
         downloaded_assets: Dict[str, Path] = None,
     ) -> str:
-        """Adjust relative links in HTML content to work from the new saved location.
+        """Adjust links in HTML content to work with allowed-path restrictions.
+
+        When using --allowed-path, treats that path as the project root and adjusts
+        all internal links to be relative to it.
 
         Args:
-            html_content: The HTML content to adjust
-            original_url: The original URL of the page
-            saved_path: Where the file will be saved
-            site_dir: The site directory (domain folder)
+            content: HTML content (string) or BeautifulSoup object to adjust
+            base_url: Base URL domain (e.g., "https://example.com")
+            allowed_path_or_paths: Single allowed path string, list of paths, or None
             downloaded_assets: Optional mapping of asset URLs to their local paths
 
         Returns:
-            HTML content with adjusted links
+            HTML content as string with adjusted links
         """
         import os
         from bs4 import BeautifulSoup
-        from urllib.parse import urljoin, urlparse
+        from urllib.parse import urljoin, urlparse, urlunparse
+        from tools.scrape_tool.utils import find_common_parent
 
-        soup = BeautifulSoup(html_content, "html.parser")
-        original_parsed = urlparse(original_url)
+        # Handle both string and BeautifulSoup inputs
+        if isinstance(content, str):
+            soup = BeautifulSoup(content, "html.parser")
+        else:
+            soup = content  # Assume it's already a BeautifulSoup object
 
-        # Calculate the relative path from saved location to site root
-        try:
-            rel_to_root = os.path.relpath(site_dir, saved_path.parent)
-            if rel_to_root == ".":
-                rel_to_root = ""
-            else:
-                rel_to_root = rel_to_root.replace("\\", "/") + "/"
-        except ValueError:
-            # If on different drives on Windows
-            rel_to_root = ""
+        base_parsed = urlparse(base_url)
+
+        # Determine allowed paths and project root
+        allowed_paths = []
+        if allowed_path_or_paths:
+            if isinstance(allowed_path_or_paths, str):
+                allowed_paths = [allowed_path_or_paths]
+            elif isinstance(allowed_path_or_paths, list):
+                allowed_paths = allowed_path_or_paths
+
+        # Find the common parent of all allowed paths - this becomes our project root
+        project_root = None
+        if allowed_paths:
+            # Normalize paths to ensure they have trailing slashes
+            normalized_paths = []
+            for p in allowed_paths:
+                p = str(p)
+                if not p.endswith("/"):
+                    p = p + "/"
+                normalized_paths.append(p)
+            project_root = find_common_parent(normalized_paths)
 
         # Adjust all links
         for tag_name, attr_name in [
@@ -1121,101 +1143,102 @@ class WebCrawler:
                 if not attr_value:
                     continue
 
-                # Skip anchors and special protocols (but not http/https - we might have downloaded them)
-                if attr_value.startswith(("#", "mailto:", "javascript:", "data:")):
+                # Skip special protocols and empty/anchor-only links
+                if (
+                    attr_value.startswith(
+                        ("#", "mailto:", "tel:", "javascript:", "data:")
+                    )
+                    or attr_value == ""
+                ):
                     continue
 
                 # Check if this is an asset we downloaded
-                if downloaded_assets and self.config.download_assets:
+                if downloaded_assets:
                     # Build the absolute URL for this attribute
                     if attr_value.startswith(("http://", "https://", "//")):
                         absolute_url = attr_value
                         if attr_value.startswith("//"):
-                            absolute_url = original_parsed.scheme + ":" + attr_value
+                            absolute_url = base_parsed.scheme + ":" + attr_value
                     else:
-                        # Relative URL - resolve it against the original page URL
-                        absolute_url = urljoin(original_url, attr_value)
+                        # Relative URL - resolve it against the base URL
+                        absolute_url = urljoin(base_url, attr_value)
 
                     # Check if we downloaded this asset
                     if absolute_url in downloaded_assets:
-                        # Replace with path to downloaded asset
-                        asset_path = downloaded_assets[absolute_url]
-                        # Calculate relative path from HTML file to asset
-                        try:
-                            rel_path = os.path.relpath(asset_path, saved_path.parent)
-                            rel_path = rel_path.replace("\\", "/")
-                            tag[attr_name] = rel_path
-                            continue  # Skip normal link adjustment for this asset
-                        except ValueError:
-                            # Different drives on Windows, use the original logic
-                            pass
+                        # This is handled elsewhere - skip for now
+                        continue
 
-                # Skip absolute URLs after checking for downloaded assets
-                if attr_value.startswith(("http://", "https://", "//")):
-                    continue
+                # Process links based on whether we have allowed paths
+                if project_root:
+                    # We have allowed path restrictions - adjust accordingly
 
-                # Handle relative URLs
-                if attr_value.startswith("/"):
-                    # Absolute path - make it relative to site root
-                    new_path = rel_to_root + attr_value.lstrip("/")
-                    tag[attr_name] = new_path
-                elif attr_value.startswith("./"):
-                    # Relative to current directory - need to adjust based on original URL structure
-                    # Get the original directory path
-                    orig_path_parts = original_parsed.path.rstrip("/").split("/")
-                    if orig_path_parts[-1] and (
-                        "." in orig_path_parts[-1] or not orig_path_parts[-1]
-                    ):
-                        # Last part is a file, remove it
-                        orig_path_parts = orig_path_parts[:-1]
-
-                    # Reconstruct the path
-                    relative_part = attr_value[2:]  # Remove ./
-                    if orig_path_parts:
-                        # The link was relative to /magazin/ or similar
-                        new_path = (
-                            rel_to_root
-                            + "/".join(orig_path_parts[1:])
-                            + "/"
-                            + relative_part
-                        )
-                    else:
-                        new_path = rel_to_root + relative_part
-
-                    # Clean up the path
-                    new_path = new_path.replace("//", "/")
-                    tag[attr_name] = new_path
-                elif attr_value.startswith("../"):
-                    # Handle parent directory references
-                    # This is complex, so for now just make it relative to root
-                    cleaned = attr_value
-                    levels_up = 0
-                    while cleaned.startswith("../"):
-                        levels_up += 1
-                        cleaned = cleaned[3:]
-
-                    orig_path_parts = original_parsed.path.rstrip("/").split("/")
-                    if orig_path_parts[-1] and "." in orig_path_parts[-1]:
-                        orig_path_parts = orig_path_parts[:-1]
-
-                    # Go up the required number of levels
-                    if len(orig_path_parts) > levels_up:
-                        base_parts = (
-                            orig_path_parts[1:-levels_up]
-                            if levels_up > 0
-                            else orig_path_parts[1:]
-                        )
-                        if base_parts:
-                            new_path = (
-                                rel_to_root + "/".join(base_parts) + "/" + cleaned
+                    # Skip external URLs (different domains)
+                    if attr_value.startswith(("http://", "https://", "//")):
+                        parsed_link = urlparse(attr_value)
+                        if attr_value.startswith("//"):
+                            parsed_link = urlparse(
+                                base_parsed.scheme + ":" + attr_value
                             )
-                        else:
-                            new_path = rel_to_root + cleaned
+                        # Skip if it's a different domain
+                        if parsed_link.netloc != base_parsed.netloc:
+                            continue
+                        # Same domain - process the path
+                        target_path = parsed_link.path
                     else:
-                        new_path = rel_to_root + cleaned
+                        # Resolve relative URL to get the target path
+                        absolute_url = urljoin(base_url, attr_value)
+                        parsed_absolute = urlparse(absolute_url)
+                        target_path = parsed_absolute.path
 
-                    new_path = new_path.replace("//", "/")
-                    tag[attr_name] = new_path
+                        # Preserve query and fragment
+                        query = parsed_absolute.query
+                        fragment = parsed_absolute.fragment
+
+                    # Extract query and fragment from original attr_value if needed
+                    parsed_original = (
+                        urlparse(attr_value)
+                        if not attr_value.startswith(("http://", "https://", "//"))
+                        else urlparse(urljoin(base_url, attr_value))
+                    )
+                    query = parsed_original.query
+                    fragment = parsed_original.fragment
+
+                    # Check if this path starts with our project root
+                    if target_path.startswith(project_root):
+                        # Strip the project root prefix to make it relative
+                        relative_path = target_path[len(project_root) :]
+
+                        # Add ./ prefix to make it explicitly relative
+                        if not relative_path:
+                            relative_path = "./"
+                        elif not relative_path.startswith("./"):
+                            relative_path = "./" + relative_path
+
+                        # Preserve query and fragment if present
+                        if query:
+                            relative_path += "?" + query
+                        if fragment:
+                            relative_path += "#" + fragment
+
+                        tag[attr_name] = relative_path
+                    elif target_path.startswith("/"):
+                        # Path is outside our project root - make it relative going up
+                        # Remove leading slash and add ../ to go up from project root
+                        relative_path = "../" + target_path.lstrip("/")
+
+                        # Preserve query and fragment if present
+                        if query:
+                            relative_path += "?" + query
+                        if fragment:
+                            relative_path += "#" + fragment
+
+                        tag[attr_name] = relative_path
+                    else:
+                        # Already relative path - ensure it has ./ prefix if needed
+                        if not attr_value.startswith(("./", "../")):
+                            tag[attr_name] = "./" + attr_value
+                # No allowed paths - leave links as-is for now
+                # (This could be extended later for general link fixing)
 
         return str(soup)
 
@@ -1280,12 +1303,15 @@ class WebCrawler:
         elif file_path.suffix not in (".html", ".htm"):
             file_path = file_path.with_name(f"{file_path.name}.html")
 
+        # Get allowed paths for link adjustment
+        allowed_paths = getattr(self.config, "allowed_paths", None) or []
+        if not allowed_paths and getattr(self.config, "allowed_path", None):
+            allowed_paths = [self.config.allowed_path]
+        allowed_paths = allowed_paths if allowed_paths else None
+
         # Adjust links in HTML content before saving
         adjusted_content = self._adjust_html_links(
-            page.content,
-            page.url,
-            file_path,
-            output_dir.parent,  # This is the site_dir (domain folder)
+            page.content, page.url, allowed_paths
         )
 
         # Write content
