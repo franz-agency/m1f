@@ -26870,6 +26870,27 @@ class EnhancedResearchCommand:
             help="Analysis template",
         )
 
+        # Query control options
+        query_group = parser.add_argument_group("query options")
+        query_group.add_argument(
+            "--max-queries",
+            type=int,
+            default=5,
+            help="Maximum number of query variations (1 = original only, default: 5)",
+        )
+
+        query_group.add_argument(
+            "--custom-queries",
+            nargs="+",
+            help="Provide custom query variations (overrides auto-expansion)",
+        )
+
+        query_group.add_argument(
+            "--interactive-queries",
+            action="store_true",
+            help="Interactively enter custom query variations",
+        )
+
         # Behavior options
         behavior_group = parser.add_argument_group("behavior options")
         behavior_group.add_argument(
@@ -27100,6 +27121,25 @@ EOF
 
 # Use in research
 m1f-research "python async" --urls-file urls.txt
+
+## Query Control
+
+# Use only the original query (no expansion)
+m1f-research "Python dictionaries" --max-queries 1
+
+# Limit expansion to 3 variations
+m1f-research "machine learning" --max-queries 3
+
+# Provide custom query variations
+m1f-research "python" --custom-queries "Python tutorials" "Python best practices" "Python examples"
+
+# Interactive query input
+m1f-research "python" --interactive-queries
+# Then enter queries line by line:
+# 1> Python list comprehensions
+# 2> Python dictionary methods
+# 3> Python string formatting
+# 4> [press Enter to finish]
 
 ## Job Management
 
@@ -27963,6 +28003,10 @@ class ResearchConfig:
     url_count: int = 20
     scrape_count: int = 10
 
+    # Query control
+    custom_queries: Optional[List[str]] = None
+    interactive_queries: bool = False
+
     # Component configs
     llm: LLMConfig = field(default_factory=LLMConfig)
     scraping: ScrapingConfig = field(default_factory=ScrapingConfig)
@@ -28130,6 +28174,14 @@ class ResearchConfig:
         config.verbose = args.verbose
         config.template = args.template
 
+        # Query control settings
+        config.custom_queries = (
+            args.custom_queries if hasattr(args, "custom_queries") else None
+        )
+        config.interactive_queries = (
+            args.interactive_queries if hasattr(args, "interactive_queries") else False
+        )
+
         # Load from config file if provided
         if args.config:
             base_config = cls.from_yaml(args.config)
@@ -28145,6 +28197,10 @@ class ResearchConfig:
         config.llm.provider = args.provider
         if args.model:
             config.llm.model = args.model
+
+        # Override workflow settings from command line
+        if hasattr(args, "max_queries"):
+            config.workflow.max_queries = args.max_queries
 
         # Output settings
         config.output.directory = args.output
@@ -31160,6 +31216,31 @@ class EnhancedResearchOrchestrator:
 
     async def _expand_queries(self, query: str) -> List[str]:
         """Expand query into multiple search variations"""
+
+        # Check for custom queries first
+        if self.config.custom_queries:
+            # Validate custom queries
+            valid_queries = [q for q in self.config.custom_queries if q and q.strip()]
+            if not valid_queries:
+                logger.warning("No valid custom queries provided, using original")
+                return [query]
+            logger.info(f"Using {len(valid_queries)} custom queries")
+            return valid_queries
+
+        # Check for interactive query mode
+        if self.config.interactive_queries:
+            logger.info("Entering interactive query mode...")
+            return await self._prompt_for_queries(query)
+
+        # Check if expansion should be skipped (max_queries=1)
+        if (
+            hasattr(self.config.workflow, "max_queries")
+            and self.config.workflow.max_queries == 1
+        ):
+            logger.info("Query expansion disabled (max_queries=1)")
+            return [query]
+
+        # Normal expansion
         logger.info("Expanding search query...")
 
         try:
@@ -31177,6 +31258,44 @@ class EnhancedResearchOrchestrator:
         except Exception as e:
             logger.error(f"Query expansion failed: {e}")
             return [query]  # Fallback to original query
+
+    async def _prompt_for_queries(self, original_query: str) -> List[str]:
+        """Interactively prompt for custom query variations"""
+        from ..shared.colors import info, success, dim
+
+        queries = []
+        info(f"\nOriginal query: {original_query}")
+        info("Enter custom query variations (one per line, empty line to finish):")
+
+        try:
+            import sys
+
+            line_num = 1
+            while True:
+                # Show prompt
+                sys.stdout.write(f"{dim(f'{line_num}>')} ")
+                sys.stdout.flush()
+
+                # Read input
+                line = input().strip()
+
+                if not line:
+                    # Empty line means done
+                    break
+
+                queries.append(line)
+                line_num += 1
+
+            if not queries:
+                info("No custom queries entered, using original query")
+                return [original_query]
+
+            success(f"Using {len(queries)} custom queries")
+            return queries
+
+        except (EOFError, KeyboardInterrupt):
+            info("\nInput cancelled, using original query")
+            return [original_query]
 
     async def _collect_urls_phased(
         self, queries: List[str], urls_file: Optional[Path]

@@ -269,6 +269,27 @@ class EnhancedResearchCommand:
             help="Analysis template",
         )
 
+        # Query control options
+        query_group = parser.add_argument_group("query options")
+        query_group.add_argument(
+            "--max-queries",
+            type=int,
+            default=5,
+            help="Maximum number of query variations (1 = original only, default: 5)",
+        )
+
+        query_group.add_argument(
+            "--custom-queries",
+            nargs="+",
+            help="Provide custom query variations (overrides auto-expansion)",
+        )
+
+        query_group.add_argument(
+            "--interactive-queries",
+            action="store_true",
+            help="Interactively enter custom query variations",
+        )
+
         # Behavior options
         behavior_group = parser.add_argument_group("behavior options")
         behavior_group.add_argument(
@@ -499,6 +520,25 @@ EOF
 
 # Use in research
 m1f-research "python async" --urls-file urls.txt
+
+## Query Control
+
+# Use only the original query (no expansion)
+m1f-research "Python dictionaries" --max-queries 1
+
+# Limit expansion to 3 variations
+m1f-research "machine learning" --max-queries 3
+
+# Provide custom query variations
+m1f-research "python" --custom-queries "Python tutorials" "Python best practices" "Python examples"
+
+# Interactive query input
+m1f-research "python" --interactive-queries
+# Then enter queries line by line:
+# 1> Python list comprehensions
+# 2> Python dictionary methods
+# 3> Python string formatting
+# 4> [press Enter to finish]
 
 ## Job Management
 

@@ -126,6 +126,10 @@ class ResearchConfig:
     url_count: int = 20
     scrape_count: int = 10
 
+    # Query control
+    custom_queries: Optional[List[str]] = None
+    interactive_queries: bool = False
+
     # Component configs
     llm: LLMConfig = field(default_factory=LLMConfig)
     scraping: ScrapingConfig = field(default_factory=ScrapingConfig)
@@ -293,6 +297,14 @@ class ResearchConfig:
         config.verbose = args.verbose
         config.template = args.template
 
+        # Query control settings
+        config.custom_queries = (
+            args.custom_queries if hasattr(args, "custom_queries") else None
+        )
+        config.interactive_queries = (
+            args.interactive_queries if hasattr(args, "interactive_queries") else False
+        )
+
         # Load from config file if provided
         if args.config:
             base_config = cls.from_yaml(args.config)
@@ -308,6 +320,10 @@ class ResearchConfig:
         config.llm.provider = args.provider
         if args.model:
             config.llm.model = args.model
+
+        # Override workflow settings from command line
+        if hasattr(args, "max_queries"):
+            config.workflow.max_queries = args.max_queries
 
         # Output settings
         config.output.directory = args.output

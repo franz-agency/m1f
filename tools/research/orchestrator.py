@@ -554,6 +554,31 @@ class EnhancedResearchOrchestrator:
 
     async def _expand_queries(self, query: str) -> List[str]:
         """Expand query into multiple search variations"""
+
+        # Check for custom queries first
+        if self.config.custom_queries:
+            # Validate custom queries
+            valid_queries = [q for q in self.config.custom_queries if q and q.strip()]
+            if not valid_queries:
+                logger.warning("No valid custom queries provided, using original")
+                return [query]
+            logger.info(f"Using {len(valid_queries)} custom queries")
+            return valid_queries
+
+        # Check for interactive query mode
+        if self.config.interactive_queries:
+            logger.info("Entering interactive query mode...")
+            return await self._prompt_for_queries(query)
+
+        # Check if expansion should be skipped (max_queries=1)
+        if (
+            hasattr(self.config.workflow, "max_queries")
+            and self.config.workflow.max_queries == 1
+        ):
+            logger.info("Query expansion disabled (max_queries=1)")
+            return [query]
+
+        # Normal expansion
         logger.info("Expanding search query...")
 
         try:
@@ -571,6 +596,44 @@ class EnhancedResearchOrchestrator:
         except Exception as e:
             logger.error(f"Query expansion failed: {e}")
             return [query]  # Fallback to original query
+
+    async def _prompt_for_queries(self, original_query: str) -> List[str]:
+        """Interactively prompt for custom query variations"""
+        from ..shared.colors import info, success, dim
+
+        queries = []
+        info(f"\nOriginal query: {original_query}")
+        info("Enter custom query variations (one per line, empty line to finish):")
+
+        try:
+            import sys
+
+            line_num = 1
+            while True:
+                # Show prompt
+                sys.stdout.write(f"{dim(f'{line_num}>')} ")
+                sys.stdout.flush()
+
+                # Read input
+                line = input().strip()
+
+                if not line:
+                    # Empty line means done
+                    break
+
+                queries.append(line)
+                line_num += 1
+
+            if not queries:
+                info("No custom queries entered, using original query")
+                return [original_query]
+
+            success(f"Using {len(queries)} custom queries")
+            return queries
+
+        except (EOFError, KeyboardInterrupt):
+            info("\nInput cancelled, using original query")
+            return [original_query]
 
     async def _collect_urls_phased(
         self, queries: List[str], urls_file: Optional[Path]
