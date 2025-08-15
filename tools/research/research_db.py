@@ -76,7 +76,10 @@ class ResearchDatabase:
                     updated_at TIMESTAMP NOT NULL,
                     status TEXT NOT NULL,
                     config TEXT NOT NULL,
-                    output_dir TEXT NOT NULL
+                    output_dir TEXT NOT NULL,
+                    phase TEXT DEFAULT 'initialization',
+                    phase_data TEXT DEFAULT '{}',
+                    expanded_queries TEXT DEFAULT '[]'
                 )
             """
             )
@@ -149,6 +152,34 @@ class ResearchDatabase:
                 (status, datetime.now().isoformat(), job_id),
             )
             conn.commit()
+
+    def update_job_phase(
+        self, job_id: str, phase: str, phase_data: Optional[Dict] = None
+    ):
+        """Update job phase and optional phase-specific data"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            if phase_data:
+                conn.execute(
+                    "UPDATE jobs SET phase = ?, phase_data = ?, updated_at = ? WHERE job_id = ?",
+                    (phase, json.dumps(phase_data), datetime.now().isoformat(), job_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE jobs SET phase = ?, updated_at = ? WHERE job_id = ?",
+                    (phase, datetime.now().isoformat(), job_id),
+                )
+            conn.commit()
+            logger.info(f"Updated job {job_id} to phase: {phase}")
+
+    def update_expanded_queries(self, job_id: str, queries: List[str]):
+        """Update expanded queries for a job"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                "UPDATE jobs SET expanded_queries = ?, updated_at = ? WHERE job_id = ?",
+                (json.dumps(queries), datetime.now().isoformat(), job_id),
+            )
+            conn.commit()
+            logger.info(f"Updated job {job_id} with {len(queries)} expanded queries")
 
     def update_job_stats(self, job_id: str, **stats):
         """Update job statistics"""
@@ -334,7 +365,10 @@ class JobDatabase:
                     scraped_at TIMESTAMP,
                     status_code INTEGER,
                     content_checksum TEXT,
-                    error_message TEXT
+                    error_message TEXT,
+                    depth INTEGER DEFAULT 0,
+                    parent_url TEXT,
+                    review_status TEXT DEFAULT 'pending'
                 )
             """
             )

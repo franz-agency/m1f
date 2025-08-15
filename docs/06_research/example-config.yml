@@ -2,6 +2,16 @@
 # Copy to .m1f.config.yml and customize
 
 research:
+  # Workflow settings
+  workflow:
+    expand_queries: true        # Generate search query variations
+    max_queries: 5             # Maximum expanded queries to generate
+    skip_review: false         # Skip URL review interface
+    crawl_depth: 0            # How many levels deep to crawl (0 = target only)
+    max_pages_per_site: 10    # Maximum pages to crawl per domain
+    follow_external: false    # Follow links to external domains
+    generate_analysis: true   # Generate AI analysis of bundle
+  
   # LLM Configuration
   llm:
     provider: claude  # claude, gemini, gemini-cli

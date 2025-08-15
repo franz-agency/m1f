@@ -31424,6 +31424,145 @@ Job deletion is a powerful feature for managing your research workspace. Use it 
 - ⚠️ Keep backups of important research
 - ⚠️ Use `--yes` only in trusted automation
 
+======= docs/06_research/example-config.yml ======
+# Example configuration for m1f-research
+# Copy to .m1f.config.yml and customize
+
+research:
+  # Workflow settings
+  workflow:
+    expand_queries: true        # Generate search query variations
+    max_queries: 5             # Maximum expanded queries to generate
+    skip_review: false         # Skip URL review interface
+    crawl_depth: 0            # How many levels deep to crawl (0 = target only)
+    max_pages_per_site: 10    # Maximum pages to crawl per domain
+    follow_external: false    # Follow links to external domains
+    generate_analysis: true   # Generate AI analysis of bundle
+  
+  # LLM Configuration
+  llm:
+    provider: claude  # claude, gemini, gemini-cli
+    model: claude-3-opus-20240229
+    api_key_env: ANTHROPIC_API_KEY
+    temperature: 0.7
+    max_tokens: 4096
+  
+  # For CLI tools like gemini-cli
+  cli_tools:
+    gemini_cli:
+      command: gemini
+      args: ["--model", "gemini-pro"]
+  
+  # Default research parameters
+  defaults:
+    url_count: 30
+    scrape_count: 15
+    timeout_range: "1-3"
+    output_format: markdown
+  
+  # Output configuration
+  output:
+    directory: "./m1f/research"
+    create_summary: true
+    create_index: true
+    bundle_prefix: "research"
+    include_metadata: true
+  
+  # Web scraping settings
+  scraping:
+    timeout_range: "1-3"  # Random delay between requests (seconds)
+    max_concurrent: 5
+    retry_attempts: 2
+    user_agents:
+      - "Mozilla/5.0 (m1f-research/0.1.0) AppleWebKit/537.36"
+      - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    respect_robots_txt: true
+    headers:
+      Accept: "text/html,application/xhtml+xml"
+      Accept-Language: "en-US,en;q=0.9"
+  
+  # Content analysis settings
+  analysis:
+    relevance_threshold: 7.0    # Minimum relevance score (0-10)
+    duplicate_threshold: 0.8    # Similarity threshold for duplicates
+    min_content_length: 100     # Minimum content length in characters
+    max_content_length: 50000   # Maximum content length
+    prefer_code_examples: false # Prioritize content with code
+    prioritize_recent: true     # Prefer newer content
+    language: "en"              # Content language preference
+  
+  # Research templates for different use cases
+  templates:
+    # Technical documentation and implementation
+    technical:
+      description: "Focused on implementation details and code examples"
+      sources: ["web", "github"]
+      analysis_focus: "implementation"
+      url_count: 40
+      scrape_count: 20
+      analysis:
+        prefer_code_examples: true
+        relevance_threshold: 6.5
+        min_content_length: 200
+    
+    # Academic and theoretical content
+    academic:
+      description: "Academic papers, theory, and research"
+      sources: ["web", "arxiv"]
+      analysis_focus: "theory"
+      url_count: 25
+      scrape_count: 12
+      analysis:
+        prefer_code_examples: false
+        prioritize_recent: false
+        relevance_threshold: 8.0
+    
+    # Step-by-step tutorials
+    tutorial:
+      description: "Tutorials, guides, and how-tos"
+      sources: ["web", "youtube"]
+      analysis_focus: "practical"
+      url_count: 30
+      scrape_count: 15
+      analysis:
+        prefer_code_examples: true
+        min_content_length: 500
+        relevance_threshold: 7.0
+    
+    # Quick overview
+    quick:
+      description: "Fast research with fewer sources"
+      sources: ["web"]
+      url_count: 10
+      scrape_count: 5
+      analysis:
+        relevance_threshold: 8.0
+
+# Example source configurations (for future multi-source support)
+sources:
+  web:
+    enabled: true
+    weight: 0.4
+    search_engines: ["google", "bing", "duckduckgo"]
+  
+  github:
+    enabled: false
+    weight: 0.3
+    token_env: GITHUB_TOKEN
+    include_issues: true
+    include_discussions: true
+  
+  arxiv:
+    enabled: false
+    weight: 0.2
+    categories: ["cs.AI", "cs.LG", "cs.SE"]
+  
+  youtube:
+    enabled: false
+    weight: 0.1
+    min_duration: 300  # 5 minutes
+    include_transcripts: true
+
 ======= docs/06_research/index.md ======
 # Research Tool Documentation
 
@@ -73914,6 +74053,256 @@ def get_topic_summary_prompt(topic: str, summaries: str) -> str:
     """Get formatted topic summary prompt."""
     return _loader.format("bundle/topic_summary.md", topic=topic, summaries=summaries)
 
+======= tools/research/query_expander.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Query expansion for comprehensive research coverage
+"""
+
+import json
+import logging
+from typing import List, Optional, Dict, Any
+from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ExpandedQuery:
+    """Represents an expanded search query"""
+
+    original_query: str
+    expanded_queries: List[str]
+    expansion_metadata: Dict[str, Any]
+
+
+class QueryExpander:
+    """Expands research queries into multiple search variations"""
+
+    def __init__(self, llm_provider=None, max_queries: int = 5):
+        """
+        Initialize the query expander
+
+        Args:
+            llm_provider: LLM provider instance for query expansion
+            max_queries: Maximum number of expanded queries to generate
+        """
+        self.llm_provider = llm_provider
+        self.max_queries = max_queries
+
+    async def expand_query(
+        self, query: str, context: Optional[str] = None
+    ) -> ExpandedQuery:
+        """
+        Expand a single query into multiple search variations
+
+        Args:
+            query: The original research query
+            context: Optional context about the research goals
+
+        Returns:
+            ExpandedQuery object with original and expanded queries
+        """
+        logger.info(f"Expanding query: {query}")
+
+        # If no LLM provider, return original query only
+        if not self.llm_provider:
+            logger.warning("No LLM provider configured, returning original query only")
+            return ExpandedQuery(
+                original_query=query,
+                expanded_queries=[query],
+                expansion_metadata={"method": "no_expansion"},
+            )
+
+        try:
+            # Create expansion prompt
+            prompt = self._create_expansion_prompt(query, context)
+
+            # Call LLM for expansion
+            response = await self.llm_provider.query(prompt)
+
+            if response.error:
+                logger.error(f"LLM error during query expansion: {response.error}")
+                return self._fallback_expansion(query)
+
+            # Parse expanded queries
+            expanded_queries = self._parse_expansion_response(response.content, query)
+
+            # Ensure we don't exceed max_queries
+            if len(expanded_queries) > self.max_queries:
+                expanded_queries = expanded_queries[: self.max_queries]
+
+            # Always include original query if not already present
+            if query not in expanded_queries:
+                expanded_queries.insert(0, query)
+
+            logger.info(f"Generated {len(expanded_queries)} query variations")
+
+            return ExpandedQuery(
+                original_query=query,
+                expanded_queries=expanded_queries,
+                expansion_metadata={
+                    "method": "llm_expansion",
+                    "provider": self.llm_provider.__class__.__name__,
+                    "query_count": len(expanded_queries),
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error during query expansion: {e}")
+            return self._fallback_expansion(query)
+
+    def _create_expansion_prompt(
+        self, query: str, context: Optional[str] = None
+    ) -> str:
+        """Create the prompt for query expansion"""
+        context_str = f"\nResearch context: {context}" if context else ""
+
+        prompt = f"""Generate {self.max_queries} different search queries related to: "{query}"{context_str}
+
+Create variations that will help find comprehensive information about this topic. Include:
+- Different phrasings of the same concept
+- Related subtopics and aspects
+- Technical and non-technical variations
+- Specific and broad versions
+
+Return ONLY a JSON array of search queries, no explanation:
+["query 1", "query 2", "query 3", ...]
+
+Important:
+- Each query should be a complete search phrase
+- Avoid duplicates
+- Keep queries relevant to the original topic
+- Make queries that would work well in web search"""
+
+        return prompt
+
+    def _parse_expansion_response(
+        self, response: str, original_query: str
+    ) -> List[str]:
+        """Parse the LLM response to extract expanded queries"""
+        try:
+            # Try to extract JSON array from response
+            response = response.strip()
+
+            # Handle various response formats
+            if response.startswith("```json"):
+                response = response[7:]
+                if response.endswith("```"):
+                    response = response[:-3]
+            elif response.startswith("```"):
+                response = response[3:]
+                if response.endswith("```"):
+                    response = response[:-3]
+
+            # Find JSON array in response
+            start_idx = response.find("[")
+            end_idx = response.rfind("]") + 1
+
+            if start_idx != -1 and end_idx > start_idx:
+                response = response[start_idx:end_idx]
+
+            # Parse JSON
+            queries = json.loads(response)
+
+            if not isinstance(queries, list):
+                raise ValueError("Response is not a JSON array")
+
+            # Validate and clean queries
+            valid_queries = []
+            seen = set()
+
+            for q in queries:
+                if isinstance(q, str) and q.strip():
+                    clean_q = q.strip()
+                    # Avoid duplicates (case-insensitive)
+                    if clean_q.lower() not in seen:
+                        valid_queries.append(clean_q)
+                        seen.add(clean_q.lower())
+
+            return valid_queries
+
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Failed to parse expansion response: {e}")
+            # Try to extract queries as lines if JSON parsing fails
+            lines = response.split("\n")
+            queries = []
+            for line in lines:
+                line = line.strip()
+                if line and not line.startswith("#") and not line.startswith("//"):
+                    # Remove common prefixes like "1.", "- ", etc.
+                    import re
+
+                    line = re.sub(r"^[\d\-\*\•\.]+\s*", "", line)
+                    if line and line != original_query:
+                        queries.append(line)
+
+            return queries[: self.max_queries] if queries else []
+
+    def _fallback_expansion(self, query: str) -> ExpandedQuery:
+        """Fallback expansion when LLM is unavailable or fails"""
+        # Simple rule-based expansion
+        expanded = [query]
+
+        # Add some basic variations
+        if "how to" in query.lower():
+            expanded.append(query.replace("how to", "guide to", 1))
+            expanded.append(query.replace("how to", "tutorial", 1))
+
+        if "best" in query.lower():
+            expanded.append(query.replace("best", "top", 1))
+            expanded.append(query.replace("best", "recommended", 1))
+
+        # Add year if not present
+        import datetime
+
+        current_year = datetime.datetime.now().year
+        if str(current_year) not in query and str(current_year - 1) not in query:
+            expanded.append(f"{query} {current_year}")
+
+        # Remove duplicates
+        expanded = list(dict.fromkeys(expanded))[: self.max_queries]
+
+        return ExpandedQuery(
+            original_query=query,
+            expanded_queries=expanded,
+            expansion_metadata={"method": "fallback_expansion"},
+        )
+
+    def combine_results(self, expanded_queries: List[ExpandedQuery]) -> List[str]:
+        """
+        Combine multiple expanded query results into a single list
+
+        Args:
+            expanded_queries: List of ExpandedQuery objects
+
+        Returns:
+            Deduplicated list of all queries
+        """
+        all_queries = []
+        seen = set()
+
+        for eq in expanded_queries:
+            for q in eq.expanded_queries:
+                if q.lower() not in seen:
+                    all_queries.append(q)
+                    seen.add(q.lower())
+
+        return all_queries
+
 ======= tools/research/readme_generator.py ======
 # Copyright 2025 Franz und Franz GmbH
 #
@@ -74301,7 +74690,10 @@ class ResearchDatabase:
                     updated_at TIMESTAMP NOT NULL,
                     status TEXT NOT NULL,
                     config TEXT NOT NULL,
-                    output_dir TEXT NOT NULL
+                    output_dir TEXT NOT NULL,
+                    phase TEXT DEFAULT 'initialization',
+                    phase_data TEXT DEFAULT '{}',
+                    expanded_queries TEXT DEFAULT '[]'
                 )
             """
             )
@@ -74374,6 +74766,34 @@ class ResearchDatabase:
                 (status, datetime.now().isoformat(), job_id),
             )
             conn.commit()
+
+    def update_job_phase(
+        self, job_id: str, phase: str, phase_data: Optional[Dict] = None
+    ):
+        """Update job phase and optional phase-specific data"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            if phase_data:
+                conn.execute(
+                    "UPDATE jobs SET phase = ?, phase_data = ?, updated_at = ? WHERE job_id = ?",
+                    (phase, json.dumps(phase_data), datetime.now().isoformat(), job_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE jobs SET phase = ?, updated_at = ? WHERE job_id = ?",
+                    (phase, datetime.now().isoformat(), job_id),
+                )
+            conn.commit()
+            logger.info(f"Updated job {job_id} to phase: {phase}")
+
+    def update_expanded_queries(self, job_id: str, queries: List[str]):
+        """Update expanded queries for a job"""
+        with sqlite3.connect(str(self.db_path)) as conn:
+            conn.execute(
+                "UPDATE jobs SET expanded_queries = ?, updated_at = ? WHERE job_id = ?",
+                (json.dumps(queries), datetime.now().isoformat(), job_id),
+            )
+            conn.commit()
+            logger.info(f"Updated job {job_id} with {len(queries)} expanded queries")
 
     def update_job_stats(self, job_id: str, **stats):
         """Update job statistics"""
@@ -74559,7 +74979,10 @@ class JobDatabase:
                     scraped_at TIMESTAMP,
                     status_code INTEGER,
                     content_checksum TEXT,
-                    error_message TEXT
+                    error_message TEXT,
+                    depth INTEGER DEFAULT 0,
+                    parent_url TEXT,
+                    review_status TEXT DEFAULT 'pending'
                 )
             """
             )
@@ -75679,6 +76102,471 @@ class URLManager:
     def get_stats(self) -> Dict[str, int]:
         """Get URL statistics"""
         return self.job_db.get_stats()
+
+======= tools/research/url_reviewer.py ======
+# Copyright 2025 Franz und Franz GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Interactive URL review interface for research curation
+"""
+
+import logging
+from typing import List, Dict, Optional, Tuple
+from dataclasses import dataclass
+import re
+
+try:
+    from ..shared.colors import Colors, info, success, warning, error
+except ImportError:
+    # Fallback if colors not available
+    class Colors:
+        CYAN = ""
+        GREEN = ""
+        YELLOW = ""
+        RED = ""
+        BOLD = ""
+        DIM = ""
+        RESET = ""
+
+    def info(msg):
+        print(msg)
+
+    def success(msg):
+        print(msg)
+
+    def warning(msg):
+        print(msg)
+
+    def error(msg):
+        print(msg)
+
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class URLItem:
+    """Represents a URL for review"""
+
+    url: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    source: Optional[str] = None
+    status: str = "pending"
+    index: Optional[int] = None
+
+
+class URLReviewer:
+    """Interactive interface for reviewing and curating URLs"""
+
+    def __init__(self, url_manager=None):
+        """
+        Initialize the URL reviewer
+
+        Args:
+            url_manager: URLManager instance for database operations
+        """
+        self.url_manager = url_manager
+        self.urls: List[URLItem] = []
+        self.deleted_urls: List[URLItem] = []
+        self.filter_term: Optional[str] = None
+
+    def load_urls(self, urls: List[Dict]) -> None:
+        """
+        Load URLs for review
+
+        Args:
+            urls: List of URL dictionaries with url, title, description
+        """
+        self.urls = []
+        for i, url_data in enumerate(urls):
+            if isinstance(url_data, dict):
+                item = URLItem(
+                    url=url_data.get("url", ""),
+                    title=url_data.get("title"),
+                    description=url_data.get("description"),
+                    source=url_data.get("source", "search"),
+                    status=url_data.get("status", "pending"),
+                    index=i + 1,
+                )
+            else:
+                # Handle plain URL strings
+                item = URLItem(url=str(url_data), index=i + 1)
+
+            self.urls.append(item)
+
+        logger.info(f"Loaded {len(self.urls)} URLs for review")
+
+    async def interactive_review(self) -> Tuple[List[Dict], bool]:
+        """
+        Run interactive review session
+
+        Returns:
+            Tuple of (reviewed URLs list, confirm to proceed)
+        """
+        if not self.urls:
+            warning("No URLs to review")
+            return [], False
+
+        info(f"\n{Colors.BOLD}=== URL Review Interface ==={Colors.RESET}")
+        info(f"Total URLs: {len(self.urls)}")
+        info("Type 'help' for commands\n")
+
+        while True:
+            # Display current URLs
+            self._display_urls()
+
+            # Get user command
+            try:
+                command = input(f"\n{Colors.CYAN}review> {Colors.RESET}").strip()
+            except (EOFError, KeyboardInterrupt):
+                info("\nReview cancelled")
+                return [], False
+
+            if not command:
+                continue
+
+            # Process command
+            result = self._process_command(command)
+
+            if result == "confirm":
+                # User confirmed, return filtered URLs
+                final_urls = [
+                    {
+                        "url": item.url,
+                        "title": item.title,
+                        "description": item.description,
+                        "source": item.source,
+                    }
+                    for item in self.urls
+                    if item.status != "deleted"
+                ]
+
+                success(f"\n✓ Proceeding with {len(final_urls)} URLs")
+                return final_urls, True
+
+            elif result == "cancel":
+                warning("\nReview cancelled")
+                return [], False
+
+    def _display_urls(self, page_size: int = 20) -> None:
+        """Display URLs in a formatted table"""
+        # Apply filter if set
+        display_urls = self._get_filtered_urls()
+
+        if not display_urls:
+            warning("No URLs to display (all filtered/deleted)")
+            return
+
+        # Table header
+        print(
+            f"\n{Colors.BOLD}{'ID':<4} {'Status':<10} {'Title/URL':<60} {'Source':<10}{Colors.RESET}"
+        )
+        print("─" * 85)
+
+        # Display URLs
+        for item in display_urls[:page_size]:
+            # Status color
+            if item.status == "deleted":
+                status_color = Colors.RED
+                status_symbol = "✗"
+            elif item.status == "reviewed":
+                status_color = Colors.GREEN
+                status_symbol = "✓"
+            else:
+                status_color = Colors.YELLOW
+                status_symbol = "?"
+
+            # Display title or URL
+            display_text = (
+                item.title[:57] + "..."
+                if item.title and len(item.title) > 60
+                else (item.title or item.url[:60])
+            )
+
+            print(
+                f"{item.index:<4} {status_color}{status_symbol} {item.status:<8}{Colors.RESET} {display_text:<60} {item.source or 'unknown':<10}"
+            )
+
+        if len(display_urls) > page_size:
+            info(
+                f"\n... and {len(display_urls) - page_size} more. Use 'show all' to see all URLs"
+            )
+
+        # Summary
+        total = len(self.urls)
+        deleted = len([u for u in self.urls if u.status == "deleted"])
+        reviewed = len([u for u in self.urls if u.status == "reviewed"])
+        pending = total - deleted - reviewed
+
+        print(
+            f"\n{Colors.DIM}Total: {total} | Pending: {pending} | Reviewed: {reviewed} | Deleted: {deleted}{Colors.RESET}"
+        )
+
+    def _get_filtered_urls(self) -> List[URLItem]:
+        """Get URLs based on current filter"""
+        if not self.filter_term:
+            return [u for u in self.urls if u.status != "deleted"]
+
+        term = self.filter_term.lower()
+        filtered = []
+
+        for item in self.urls:
+            if item.status == "deleted":
+                continue
+
+            # Search in URL, title, and description
+            if (
+                term in item.url.lower()
+                or (item.title and term in item.title.lower())
+                or (item.description and term in item.description.lower())
+            ):
+                filtered.append(item)
+
+        return filtered
+
+    def _process_command(self, command: str) -> Optional[str]:
+        """Process user command"""
+        parts = command.split()
+        if not parts:
+            return None
+
+        cmd = parts[0].lower()
+
+        if cmd == "help" or cmd == "h":
+            self._show_help()
+
+        elif cmd == "delete" or cmd == "d":
+            if len(parts) > 1:
+                self._delete_urls(parts[1])
+            else:
+                error("Usage: delete <id> or delete <id1,id2,id3>")
+
+        elif cmd == "keep" or cmd == "k":
+            if len(parts) > 1:
+                self._keep_urls(parts[1])
+            else:
+                error("Usage: keep <id> or keep <id1,id2,id3>")
+
+        elif cmd == "search" or cmd == "s":
+            if len(parts) > 1:
+                search_term = " ".join(parts[1:])
+                self.filter_term = search_term
+                info(f"Filtering URLs containing: {search_term}")
+            else:
+                error("Usage: search <term>")
+
+        elif cmd == "clear":
+            self.filter_term = None
+            info("Filter cleared")
+
+        elif cmd == "show":
+            if len(parts) > 1 and parts[1] == "all":
+                self._display_urls(page_size=1000)
+            elif len(parts) > 1 and parts[1] == "deleted":
+                self._show_deleted()
+            else:
+                self._display_urls()
+
+        elif cmd == "restore":
+            if len(parts) > 1:
+                self._restore_urls(parts[1])
+            else:
+                error("Usage: restore <id> or restore <id1,id2,id3>")
+
+        elif cmd == "confirm" or cmd == "c":
+            remaining = len([u for u in self.urls if u.status != "deleted"])
+            if remaining == 0:
+                error("No URLs remaining. Add URLs or restore deleted ones.")
+            else:
+                response = (
+                    input(f"Proceed with {remaining} URLs? [y/N]: ").strip().lower()
+                )
+                if response == "y":
+                    return "confirm"
+
+        elif cmd == "cancel" or cmd == "quit" or cmd == "q":
+            return "cancel"
+
+        elif cmd == "stats":
+            self._show_stats()
+
+        else:
+            warning(f"Unknown command: {cmd}. Type 'help' for commands")
+
+        return None
+
+    def _show_help(self) -> None:
+        """Show help message"""
+        help_text = f"""
+{Colors.BOLD}Available Commands:{Colors.RESET}
+  {Colors.CYAN}delete <id>{Colors.RESET}    - Delete URL(s). Examples: delete 1  delete 1,2,3  delete 1-5
+  {Colors.CYAN}keep <id>{Colors.RESET}      - Mark URL(s) as reviewed/kept
+  {Colors.CYAN}search <term>{Colors.RESET}  - Filter URLs containing term
+  {Colors.CYAN}clear{Colors.RESET}          - Clear current filter
+  {Colors.CYAN}show all{Colors.RESET}       - Show all URLs (no pagination)
+  {Colors.CYAN}show deleted{Colors.RESET}   - Show deleted URLs
+  {Colors.CYAN}restore <id>{Colors.RESET}   - Restore deleted URL(s)
+  {Colors.CYAN}stats{Colors.RESET}          - Show review statistics
+  {Colors.CYAN}confirm{Colors.RESET}        - Confirm and proceed with remaining URLs
+  {Colors.CYAN}cancel{Colors.RESET}         - Cancel review and exit
+  {Colors.CYAN}help{Colors.RESET}           - Show this help
+
+{Colors.DIM}Shortcuts: d=delete, k=keep, s=search, c=confirm, q=quit{Colors.RESET}
+"""
+        print(help_text)
+
+    def _delete_urls(self, id_spec: str) -> None:
+        """Delete specified URLs"""
+        ids = self._parse_id_spec(id_spec)
+        deleted_count = 0
+
+        for url_id in ids:
+            for item in self.urls:
+                if item.index == url_id and item.status != "deleted":
+                    item.status = "deleted"
+                    deleted_count += 1
+                    break
+
+        if deleted_count > 0:
+            success(f"Deleted {deleted_count} URL(s)")
+        else:
+            warning("No matching URLs found to delete")
+
+    def _keep_urls(self, id_spec: str) -> None:
+        """Mark URLs as reviewed/kept"""
+        ids = self._parse_id_spec(id_spec)
+        kept_count = 0
+
+        for url_id in ids:
+            for item in self.urls:
+                if item.index == url_id and item.status != "deleted":
+                    item.status = "reviewed"
+                    kept_count += 1
+                    break
+
+        if kept_count > 0:
+            success(f"Marked {kept_count} URL(s) as reviewed")
+        else:
+            warning("No matching URLs found")
+
+    def _restore_urls(self, id_spec: str) -> None:
+        """Restore deleted URLs"""
+        ids = self._parse_id_spec(id_spec)
+        restored_count = 0
+
+        for url_id in ids:
+            for item in self.urls:
+                if item.index == url_id and item.status == "deleted":
+                    item.status = "pending"
+                    restored_count += 1
+                    break
+
+        if restored_count > 0:
+            success(f"Restored {restored_count} URL(s)")
+        else:
+            warning("No deleted URLs found to restore")
+
+    def _parse_id_spec(self, id_spec: str) -> List[int]:
+        """Parse ID specification (e.g., "1", "1,2,3", "1-5")"""
+        ids = []
+
+        # Handle comma-separated IDs
+        if "," in id_spec:
+            for part in id_spec.split(","):
+                part = part.strip()
+                if "-" in part:
+                    # Range within comma-separated list
+                    ids.extend(self._parse_range(part))
+                else:
+                    try:
+                        ids.append(int(part))
+                    except ValueError:
+                        pass
+
+        # Handle range
+        elif "-" in id_spec:
+            ids = self._parse_range(id_spec)
+
+        # Single ID
+        else:
+            try:
+                ids.append(int(id_spec))
+            except ValueError:
+                pass
+
+        return ids
+
+    def _parse_range(self, range_spec: str) -> List[int]:
+        """Parse range specification (e.g., "1-5")"""
+        try:
+            parts = range_spec.split("-")
+            if len(parts) == 2:
+                start = int(parts[0])
+                end = int(parts[1])
+                return list(range(start, end + 1))
+        except ValueError:
+            pass
+        return []
+
+    def _show_deleted(self) -> None:
+        """Show deleted URLs"""
+        deleted = [u for u in self.urls if u.status == "deleted"]
+
+        if not deleted:
+            info("No deleted URLs")
+            return
+
+        print(f"\n{Colors.BOLD}Deleted URLs:{Colors.RESET}")
+        print("─" * 60)
+
+        for item in deleted:
+            display_text = item.title or item.url[:50]
+            print(f"{Colors.DIM}{item.index:<4} {display_text}{Colors.RESET}")
+
+        info(f"\nTotal deleted: {len(deleted)}")
+        info("Use 'restore <id>' to restore URLs")
+
+    def _show_stats(self) -> None:
+        """Show review statistics"""
+        total = len(self.urls)
+        deleted = len([u for u in self.urls if u.status == "deleted"])
+        reviewed = len([u for u in self.urls if u.status == "reviewed"])
+        pending = total - deleted - reviewed
+
+        # Count by source
+        sources = {}
+        for item in self.urls:
+            if item.status != "deleted":
+                source = item.source or "unknown"
+                sources[source] = sources.get(source, 0) + 1
+
+        print(f"\n{Colors.BOLD}Review Statistics:{Colors.RESET}")
+        print("─" * 40)
+        print(f"Total URLs:     {total}")
+        print(f"Pending:        {pending}")
+        print(f"Reviewed:       {reviewed}")
+        print(f"Deleted:        {deleted}")
+        print(f"Remaining:      {total - deleted}")
+
+        if sources:
+            print(f"\n{Colors.BOLD}Sources:{Colors.RESET}")
+            for source, count in sorted(
+                sources.items(), key=lambda x: x[1], reverse=True
+            ):
+                print(f"  {source:<15} {count}")
 
 ======= tools/s1f/__init__.py ======
 """
