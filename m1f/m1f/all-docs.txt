@@ -495,7 +495,7 @@ and this project adheres to
   - Added workflow examples showing different configuration scenarios
   - Included Python script examples demonstrating workflow-aware research
 
-## [3.8.0] - Unreleased
+## [3.8.0] - 2025-08-15
 
 ### Fixed
 
