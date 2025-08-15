@@ -287,6 +287,30 @@ class ResearchDatabase:
             cursor = conn.execute(query, params)
             return cursor.fetchone()[0]
 
+    def delete_job(self, job_id: str) -> bool:
+        """Delete a job from the database"""
+        try:
+            with sqlite3.connect(str(self.db_path)) as conn:
+                # Delete from job_stats first (foreign key constraint)
+                conn.execute("DELETE FROM job_stats WHERE job_id = ?", (job_id,))
+
+                # Delete from jobs table
+                cursor = conn.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
+
+                conn.commit()
+
+                # Return True if a job was actually deleted
+                deleted = cursor.rowcount > 0
+                if deleted:
+                    logger.info(f"Deleted job {job_id} from database")
+                else:
+                    logger.warning(f"Job {job_id} not found in database")
+                return deleted
+
+        except Exception as e:
+            logger.error(f"Error deleting job {job_id}: {e}")
+            return False
+
     def close_all_connections(self):
         """Close all database connections"""
         try:

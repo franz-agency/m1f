@@ -97,6 +97,8 @@ management commands)
 | `--clean-raw JOB_ID` | Clean raw HTML data for specific job |
 | `--clean-all-raw`    | Clean raw HTML data for all jobs     |
 | `--export JOB_ID`    | Export job data to JSON              |
+| `--delete JOB_ID`    | Delete a research job completely     |
+| `--delete-bulk`      | Delete multiple jobs based on filters |
 
 ## Command Examples
 
@@ -172,6 +174,31 @@ m1f-research --clean-raw abc123
 m1f-research --clean-all-raw
 ```
 
+### Job Deletion
+
+```bash
+# Delete specific job (with confirmation)
+m1f-research --delete abc123
+
+# Delete without confirmation
+m1f-research --delete abc123 --yes
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from specific month
+m1f-research --delete-bulk --date 2025-06
+
+# Delete jobs matching search term
+m1f-research --delete-bulk --search "test"
+
+# Combine filters for targeted deletion
+m1f-research --delete-bulk --status-filter failed --date 2025-07
+
+# Force deletion without confirmation (use carefully!)
+m1f-research --delete-bulk --status-filter failed --yes
+```
+
 ### Advanced Workflows
 
 ```bash
@@ -239,3 +266,6 @@ research:
 3. **Pagination**: Use limit/offset for large job lists
 4. **Cleanup**: Regularly clean raw data to save space
 5. **Manual URLs**: Supplement with your own curated links
+6. **Delete Failed Jobs**: Remove failed jobs regularly to keep workspace clean
+7. **Confirm Deletions**: Always review job details before deleting
+8. **Use --yes Carefully**: Only skip confirmations in trusted scripts

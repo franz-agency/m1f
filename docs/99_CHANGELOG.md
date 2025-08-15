@@ -17,6 +17,7 @@ and this project adheres to
 - **research**: Enabled WebSearch tool for Claude Code provider - now finds real URLs instead of generating hypothetical ones
 - **research**: Created missing `default_analysis.md` prompt file for content analysis
 - **research**: Research tool now works end-to-end with Claude Code provider using web search
+- **research**: Removed emojis from bundle filenames (RESEARCH_BUNDLE.md, EXECUTIVE_SUMMARY.md) for better compatibility
 
 - **Test Suite Fixes**: Resolved 6 failing tests across multiple modules
   - Fixed LLM provider tests by properly mocking API keys for Claude and Gemini
@@ -32,6 +33,15 @@ and this project adheres to
   - Fixes FileNotFoundError issues on systems where python3 is the default
 
 ### Added
+
+- **m1f-research Job Deletion**: Complete job management with deletion capabilities
+  - Added `--delete JOB_ID` command to delete a single research job
+  - Added `--delete-bulk` command to delete multiple jobs based on filters
+  - Supports filtering by status, date, and search terms for bulk deletion
+  - Confirmation prompts showing job details before deletion (bypass with `--yes`)
+  - Complete cleanup of both database entries and filesystem data
+  - Progress tracking for bulk deletion operations
+  - Detailed error reporting for failed deletions
 
 - **m1f-scrape Automatic Link Adjustment for allowed-path**: Intelligently adjusts internal links when using --allowed-path restrictions
   - Automatically strips redundant parent directory from links while preserving subdirectory structure

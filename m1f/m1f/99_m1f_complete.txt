@@ -862,6 +862,7 @@ and this project adheres to
 - **research**: Enabled WebSearch tool for Claude Code provider - now finds real URLs instead of generating hypothetical ones
 - **research**: Created missing `default_analysis.md` prompt file for content analysis
 - **research**: Research tool now works end-to-end with Claude Code provider using web search
+- **research**: Removed emojis from bundle filenames (RESEARCH_BUNDLE.md, EXECUTIVE_SUMMARY.md) for better compatibility
 
 - **Test Suite Fixes**: Resolved 6 failing tests across multiple modules
   - Fixed LLM provider tests by properly mocking API keys for Claude and Gemini
@@ -877,6 +878,15 @@ and this project adheres to
   - Fixes FileNotFoundError issues on systems where python3 is the default
 
 ### Added
+
+- **m1f-research Job Deletion**: Complete job management with deletion capabilities
+  - Added `--delete JOB_ID` command to delete a single research job
+  - Added `--delete-bulk` command to delete multiple jobs based on filters
+  - Supports filtering by status, date, and search terms for bulk deletion
+  - Confirmation prompts showing job details before deletion (bypass with `--yes`)
+  - Complete cleanup of both database entries and filesystem data
+  - Progress tracking for bulk deletion operations
+  - Detailed error reporting for failed deletions
 
 - **m1f-scrape Automatic Link Adjustment for allowed-path**: Intelligently adjusts internal links when using --allowed-path restrictions
   - Automatically strips redundant parent directory from links while preserving subdirectory structure
@@ -28926,6 +28936,7 @@ capabilities.
 - [66_examples.md](66_examples.md) - Real-world usage examples
 - [67_cli_improvements.md](67_cli_improvements.md) - Enhanced CLI features and
   UX
+- [68_job_deletion_guide.md](68_job_deletion_guide.md) - Complete guide to job deletion
 
 ## Quick Start
 
@@ -29323,8 +29334,8 @@ research-data/
         └── 23/
             └── abc123_query-name/
                 ├── research.db           # Job-specific database
-                ├── 📚_RESEARCH_BUNDLE.md # Main research bundle
-                ├── 📊_EXECUTIVE_SUMMARY.md # Executive summary
+                ├── RESEARCH_BUNDLE.md    # Main research bundle
+                ├── EXECUTIVE_SUMMARY.md  # Executive summary
                 └── metadata.json         # Job metadata
 ```
 
@@ -29472,6 +29483,112 @@ m1f-research --clean-all-raw
 
 **Warning**: This action cannot be undone. You'll be prompted to confirm.
 
+## Job Deletion
+
+### Deleting Individual Jobs
+
+Completely remove a job including all data:
+
+```bash
+# Delete specific job (with confirmation)
+m1f-research --delete abc123
+
+# Delete without confirmation prompt
+m1f-research --delete abc123 --yes
+```
+
+When deleting a job, the system will:
+
+1. Show job details (query, status, creation date, output path)
+2. Request confirmation (unless `--yes` is used)
+3. Remove the job from the database
+4. Delete the entire job directory and all its contents
+5. Report success or any errors encountered
+
+**What gets deleted:**
+
+- Database entry in `research_jobs.db`
+- Job statistics in the database
+- Entire job directory including:
+  - Job-specific database (`research.db`)
+  - Research bundle (`RESEARCH_BUNDLE.md`)
+  - Executive summary (`EXECUTIVE_SUMMARY.md`)
+  - All scraped content and analysis
+  - Any metadata files
+
+### Bulk Job Deletion
+
+Delete multiple jobs based on filters:
+
+```bash
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from a specific month
+m1f-research --delete-bulk --date 2025-01
+
+# Delete jobs matching a search term
+m1f-research --delete-bulk --search "test"
+
+# Combine filters
+m1f-research --delete-bulk --status-filter failed --date 2025-01
+
+# Skip confirmation (use with caution!)
+m1f-research --delete-bulk --status-filter failed --yes
+```
+
+**Bulk deletion process:**
+
+1. Lists all jobs matching the filters
+2. Shows a preview of jobs to be deleted (first 10)
+3. Requests confirmation with total count
+4. Deletes each job with progress tracking
+5. Reports success/failure statistics
+
+### Safety Features
+
+#### Confirmation Prompts
+
+By default, all deletion operations require confirmation:
+
+```
+Job to delete: abc123
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Query: python async best practices
+Status: completed
+Created: 2025-07-23 14:30:22
+Output: research-data/2025/07/23/abc123_python-async-best-practices
+
+⚠️  Delete job abc123 and all its data? [y/N]:
+```
+
+#### Error Handling
+
+The deletion system handles errors gracefully:
+
+- **Partial failures**: If filesystem deletion fails but database deletion succeeds, both are reported
+- **Permission errors**: Attempts recovery with fallback methods
+- **Missing jobs**: Clear error messages for non-existent job IDs
+- **Failed deletions**: Detailed error reporting for troubleshooting
+
+### Deletion vs Cleanup
+
+| Operation | Database Entry | Job Directory | Research Bundle | Raw HTML | Recovery |
+|-----------|---------------|---------------|-----------------|----------|----------|
+| Clean Raw | ✓ Kept | ✓ Kept | ✓ Kept | ✗ Deleted | Can resume |
+| Delete Job | ✗ Deleted | ✗ Deleted | ✗ Deleted | ✗ Deleted | Not recoverable |
+
+**When to use cleanup:**
+- Free disk space while keeping research results
+- Job is complete but you want to keep the analysis
+- Temporary space management
+
+**When to use deletion:**
+- Remove failed or test jobs
+- Clean up old research no longer needed
+- Complete removal of sensitive or outdated data
+- Permanent space recovery
+
 ## Job Status
 
 Jobs can have the following statuses:
@@ -29534,6 +29651,9 @@ m1f-research --list-jobs --search "python"
 
 # 5. Clean up old data
 m1f-research --clean-raw abc123
+
+# 6. Delete old or failed jobs
+m1f-research --delete old-job-id
 ```
 
 ### Monthly Research Review
@@ -29556,11 +29676,39 @@ m1f-research --list-jobs --date 2025-07 --search "react hooks"
 # Check job sizes (future feature)
 # m1f-research --list-jobs --show-size
 
-# Clean specific old job
+# Clean raw data from specific job
 m1f-research --clean-raw old-job-id
 
-# Bulk cleanup
+# Bulk cleanup of raw data
 m1f-research --clean-all-raw
+
+# Delete specific job completely
+m1f-research --delete old-job-id
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete old jobs from previous month
+m1f-research --delete-bulk --date 2025-06
+```
+
+### Job Maintenance Workflow
+
+```bash
+# 1. List all jobs to review
+m1f-research --list-jobs
+
+# 2. Check failed jobs
+m1f-research --list-jobs --status-filter failed
+
+# 3. Delete all failed jobs after review
+m1f-research --delete-bulk --status-filter failed
+
+# 4. Clean raw data from completed jobs
+m1f-research --clean-all-raw
+
+# 5. Delete old test jobs
+m1f-research --delete-bulk --search "test" --yes
 ```
 
 ## Tips
@@ -29570,6 +29718,10 @@ m1f-research --clean-all-raw
 3. **Combine filters**: Use multiple filters for precise searches
 4. **Manual URLs**: Supplement LLM search with your own URLs
 5. **Check status**: Monitor long-running jobs with --status
+6. **Review before deletion**: Always check job details before deleting
+7. **Use --yes carefully**: Only use automatic confirmation in scripts you trust
+8. **Delete failed jobs**: Regularly remove failed jobs to keep workspace clean
+9. **Backup important research**: Export important jobs before deletion
 
 ## Future Enhancements
 
@@ -29579,6 +29731,9 @@ m1f-research --clean-all-raw
 - Job tagging system
 - Cross-job deduplication
 - Job templates
+- Scheduled deletion policies
+- Job archiving before deletion
+- Undo/recovery for recently deleted jobs
 
 ======= docs/06_research/63_cli_reference.md ======
 # m1f-research CLI Reference
@@ -29680,6 +29835,8 @@ management commands)
 | `--clean-raw JOB_ID` | Clean raw HTML data for specific job |
 | `--clean-all-raw`    | Clean raw HTML data for all jobs     |
 | `--export JOB_ID`    | Export job data to JSON              |
+| `--delete JOB_ID`    | Delete a research job completely     |
+| `--delete-bulk`      | Delete multiple jobs based on filters |
 
 ## Command Examples
 
@@ -29755,6 +29912,31 @@ m1f-research --clean-raw abc123
 m1f-research --clean-all-raw
 ```
 
+### Job Deletion
+
+```bash
+# Delete specific job (with confirmation)
+m1f-research --delete abc123
+
+# Delete without confirmation
+m1f-research --delete abc123 --yes
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from specific month
+m1f-research --delete-bulk --date 2025-06
+
+# Delete jobs matching search term
+m1f-research --delete-bulk --search "test"
+
+# Combine filters for targeted deletion
+m1f-research --delete-bulk --status-filter failed --date 2025-07
+
+# Force deletion without confirmation (use carefully!)
+m1f-research --delete-bulk --status-filter failed --yes
+```
+
 ### Advanced Workflows
 
 ```bash
@@ -29822,6 +30004,9 @@ research:
 3. **Pagination**: Use limit/offset for large job lists
 4. **Cleanup**: Regularly clean raw data to save space
 5. **Manual URLs**: Supplement with your own curated links
+6. **Delete Failed Jobs**: Remove failed jobs regularly to keep workspace clean
+7. **Confirm Deletions**: Always review job details before deleting
+8. **Use --yes Carefully**: Only skip confirmations in trusted scripts
 
 ======= docs/06_research/64_api_reference.md ======
 # m1f-research API Reference
@@ -30996,6 +31181,327 @@ m1f-research --clean-all-raw --yes
    - Timing information per phase
    - Resource usage tracking
    - Success rate statistics
+
+======= docs/06_research/68_job_deletion_guide.md ======
+# Job Deletion Guide for m1f-research
+
+This guide covers the job deletion functionality in m1f-research, including best practices, safety features, and common workflows.
+
+## Overview
+
+Job deletion provides complete removal of research jobs from both the database and filesystem. Unlike cleanup operations that only remove raw data, deletion permanently removes all traces of a job.
+
+## Why Delete Jobs?
+
+- **Failed Jobs**: Remove jobs that encountered errors and cannot be resumed
+- **Test Jobs**: Clean up experimental or test research runs
+- **Outdated Research**: Remove old research that is no longer relevant
+- **Space Management**: Recover disk space completely
+- **Privacy**: Remove sensitive or confidential research data
+- **Organization**: Keep your research workspace clean and manageable
+
+## Deletion Commands
+
+### Single Job Deletion
+
+Delete a specific job by its ID:
+
+```bash
+m1f-research --delete JOB_ID
+```
+
+**Example:**
+```bash
+# Delete job with confirmation
+m1f-research --delete abc123
+
+# Skip confirmation (automation-friendly)
+m1f-research --delete abc123 --yes
+```
+
+### Bulk Deletion
+
+Delete multiple jobs based on filters:
+
+```bash
+m1f-research --delete-bulk [FILTERS]
+```
+
+**Available Filters:**
+- `--status-filter {active,completed,failed}` - Filter by job status
+- `--date DATE` - Filter by creation date (Y-M-D, Y-M, or Y format)
+- `--search TERM` - Filter by search term in query
+- `--yes` - Skip confirmation prompt
+
+**Examples:**
+```bash
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from January 2025
+m1f-research --delete-bulk --date 2025-01
+
+# Delete test jobs
+m1f-research --delete-bulk --search "test"
+
+# Combine filters
+m1f-research --delete-bulk --status-filter failed --date 2025-07
+
+# Automated deletion (no confirmation)
+m1f-research --delete-bulk --status-filter failed --yes
+```
+
+## What Gets Deleted?
+
+When you delete a job, the following items are permanently removed:
+
+### Database Entries
+- Main job record in `research_jobs.db`
+- Job statistics in the database
+- All references and foreign key relationships
+
+### Filesystem Data
+- Entire job directory at `research-data/YYYY/MM/DD/job_id_query/`
+- Job-specific database (`research.db`)
+- Research bundle (`RESEARCH_BUNDLE.md`)
+- Executive summary (`EXECUTIVE_SUMMARY.md`)
+- All scraped HTML content
+- All converted Markdown content
+- Analysis results and metadata
+- Any temporary or cache files
+
+## Safety Features
+
+### Confirmation Prompts
+
+By default, all deletion operations show job details and require confirmation:
+
+```
+Job to delete: abc123
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Query: python async best practices
+Status: completed
+Created: 2025-07-23 14:30:22
+Output: research-data/2025/07/23/abc123_python-async-best-practices
+
+⚠️  Delete job abc123 and all its data? [y/N]:
+```
+
+For bulk deletion, you'll see a preview:
+
+```
+Jobs to delete (15 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. [abc123] test query 1 (failed)
+2. [def456] test query 2 (failed)
+3. [ghi789] test query 3 (failed)
+... and 12 more
+
+⚠️  Delete 15 jobs with filters: status=failed? [y/N]:
+```
+
+### Error Handling
+
+The deletion system handles various error scenarios:
+
+- **Non-existent jobs**: Clear error message if job ID not found
+- **Permission errors**: Attempts recovery with fallback methods
+- **Partial failures**: Reports both successful and failed operations
+- **Database integrity**: Uses transactions to prevent corruption
+
+### Progress Tracking
+
+Bulk deletions show real-time progress:
+
+```
+Deleting 25 jobs...
+[████████████████████████████████████████] 100.0% Deletion complete
+✅ Successfully deleted 23 jobs
+❌ Failed to delete 2 jobs
+  - job123: Permission denied
+  - job456: Directory not found
+```
+
+## Deletion vs Cleanup Comparison
+
+| Aspect | Clean Raw (`--clean-raw`) | Delete Job (`--delete`) |
+|--------|---------------------------|-------------------------|
+| **Database entry** | ✅ Preserved | ❌ Deleted |
+| **Job directory** | ✅ Preserved | ❌ Deleted |
+| **Research bundle** | ✅ Preserved | ❌ Deleted |
+| **Analysis results** | ✅ Preserved | ❌ Deleted |
+| **Raw HTML** | ❌ Deleted | ❌ Deleted |
+| **Can resume** | ✅ Yes | ❌ No |
+| **Recoverable** | ✅ Partially | ❌ No |
+| **Space saved** | 🟡 Moderate | 🟢 Maximum |
+
+## Common Workflows
+
+### Regular Maintenance
+
+Clean up failed jobs weekly:
+
+```bash
+# Review failed jobs
+m1f-research --list-jobs --status-filter failed
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+```
+
+### Monthly Cleanup
+
+Remove old research monthly:
+
+```bash
+# List jobs from 2 months ago
+m1f-research --list-jobs --date 2025-05
+
+# Review and delete old jobs
+m1f-research --delete-bulk --date 2025-05
+```
+
+### Project Cleanup
+
+Clean up after a project:
+
+```bash
+# Find all project-related jobs
+m1f-research --list-jobs --search "project-name"
+
+# Delete project jobs
+m1f-research --delete-bulk --search "project-name"
+```
+
+### Automated Cleanup Script
+
+```bash
+#!/bin/bash
+# cleanup-research.sh
+
+# Delete failed jobs older than 7 days
+m1f-research --delete-bulk --status-filter failed --yes
+
+# Clean raw data from completed jobs
+m1f-research --clean-all-raw --yes
+
+echo "Cleanup complete!"
+```
+
+## Best Practices
+
+### Before Deleting
+
+1. **Review job details**: Always check what you're about to delete
+2. **Export important data**: Use `--export` to save job data if needed
+3. **Check research bundles**: Ensure you have copies of important results
+4. **Consider cleanup first**: Try `--clean-raw` if you only need space
+
+### Safe Deletion
+
+1. **Use filters carefully**: Test filters with `--list-jobs` first
+2. **Start small**: Delete individual jobs before bulk operations
+3. **Keep confirmations**: Only use `--yes` in trusted scripts
+4. **Document deletions**: Keep a log of what was deleted and why
+
+### Recovery Planning
+
+Since deletion is permanent:
+
+1. **Regular exports**: Export important jobs to JSON regularly
+2. **Backup bundles**: Copy research bundles to a backup location
+3. **Version control**: Consider committing important research to git
+4. **Archive first**: Move old jobs to archive storage before deleting
+
+## Troubleshooting
+
+### Common Issues
+
+**"Job not found" error:**
+- Verify job ID with `--list-jobs`
+- Check you're in the correct directory
+- Ensure the job hasn't already been deleted
+
+**"Permission denied" errors:**
+- Check file ownership and permissions
+- Run with appropriate user privileges
+- Consider using `sudo` if appropriate
+
+**Partial deletion failures:**
+- Check disk space and permissions
+- Review error messages for specific issues
+- Manually remove remaining files if needed
+
+### Recovery from Mistakes
+
+Unfortunately, deletion is permanent. To minimize risk:
+
+1. Always review before confirming
+2. Test with dry runs when possible
+3. Keep backups of important research
+4. Use cleanup instead of deletion when unsure
+
+## FAQ
+
+**Q: Can I undo a deletion?**
+A: No, deletion is permanent. Always confirm before deleting.
+
+**Q: What's the difference between cleanup and deletion?**
+A: Cleanup removes only raw HTML data. Deletion removes everything.
+
+**Q: Can I delete active jobs?**
+A: Yes, but it's not recommended. Stop the job first if possible.
+
+**Q: How do I delete jobs older than X days?**
+A: Use date filters, e.g., `--delete-bulk --date 2025-06` for June 2025.
+
+**Q: Is there a way to archive before deleting?**
+A: Use `--export` to save job data, then manually archive files before deletion.
+
+**Q: Can I recover a deleted job from the database?**
+A: No, deletion removes all database entries permanently.
+
+## Command Reference
+
+### Options
+- `--delete JOB_ID` - Delete a specific job
+- `--delete-bulk` - Delete multiple jobs with filters
+- `--yes` - Skip confirmation prompts
+- `--status-filter` - Filter by job status
+- `--date` - Filter by creation date
+- `--search` - Filter by query content
+
+### Examples
+```bash
+# Delete specific job
+m1f-research --delete abc123
+
+# Delete with auto-confirmation
+m1f-research --delete abc123 --yes
+
+# Delete failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete old jobs
+m1f-research --delete-bulk --date 2025-01
+
+# Delete test jobs
+m1f-research --delete-bulk --search "test"
+
+# Combined filters
+m1f-research --delete-bulk --status-filter failed --date 2025-07 --yes
+```
+
+## Summary
+
+Job deletion is a powerful feature for managing your research workspace. Use it wisely:
+
+- ✅ Delete failed and test jobs regularly
+- ✅ Review before confirming deletions
+- ✅ Use filters to target specific jobs
+- ⚠️ Remember deletion is permanent
+- ⚠️ Keep backups of important research
+- ⚠️ Use `--yes` only in trusted automation
 
 ======= docs/06_research/index.md ======
 # Research Tool Documentation
@@ -69189,6 +69695,13 @@ class EnhancedResearchCommand:
   
   {Colors.CYAN}# Clean up old data{Colors.RESET}
   m1f-research --clean-raw abc123
+  
+  {Colors.CYAN}# Delete a specific job{Colors.RESET}
+  m1f-research --delete abc123
+  
+  {Colors.CYAN}# Delete multiple jobs{Colors.RESET}
+  m1f-research --delete-bulk --status-filter failed
+  m1f-research --delete-bulk --date 2025-01 --yes
 
 {Colors.BOLD}For more help:{Colors.RESET}
   m1f-research --help-examples    # More usage examples
@@ -69299,6 +69812,16 @@ class EnhancedResearchCommand:
             "--export", metavar="JOB_ID", help="Export job data to JSON"
         )
 
+        data_group.add_argument(
+            "--delete", metavar="JOB_ID", help="Delete a research job completely"
+        )
+
+        data_group.add_argument(
+            "--delete-bulk",
+            action="store_true",
+            help="Delete multiple jobs based on filters",
+        )
+
         # Research options
         research_group = parser.add_argument_group("research options")
         research_group.add_argument(
@@ -69399,6 +69922,8 @@ class EnhancedResearchCommand:
                 args.clean_all_raw,
                 args.export,
                 args.watch,
+                args.delete,
+                args.delete_bulk,
                 args.help_examples,
                 args.help_filters,
                 args.help_providers,
@@ -69498,6 +70023,10 @@ class EnhancedResearchCommand:
                 return await self._clean_all_raw(args)
             elif args.export:
                 return await self._export_job(args)
+            elif args.delete:
+                return await self._delete_job(args)
+            elif args.delete_bulk:
+                return await self._delete_bulk(args)
             elif args.interactive:
                 return await self._interactive_mode(args)
             else:
@@ -69584,6 +70113,23 @@ m1f-research --list-jobs --status-filter completed --format json
 for topic in "react hooks" "vue composition" "angular signals"; do
   m1f-research "$topic" --quiet
 done
+
+## Data Management
+
+# Delete specific job
+m1f-research --delete abc123
+
+# Delete all failed jobs
+m1f-research --delete-bulk --status-filter failed
+
+# Delete jobs from specific month
+m1f-research --delete-bulk --date 2025-01
+
+# Delete jobs matching search term (with confirmation)
+m1f-research --delete-bulk --search "test"
+
+# Force delete without confirmation
+m1f-research --delete abc123 --yes
 
 ## Interactive Research
 m1f-research --interactive
@@ -70023,6 +70569,137 @@ research:
                 break
 
         return 0
+
+    async def _delete_job(self, args):
+        """Delete a specific job with confirmation"""
+        from .job_manager import JobManager
+
+        job_manager = JobManager(args.output)
+
+        # Get job details for confirmation
+        job = job_manager.get_job(args.delete)
+        if not job:
+            self.formatter.error(f"Job not found: {args.delete}")
+            return 1
+
+        # Show job details and confirm
+        if not args.yes:
+            self.formatter.header(f"Job to delete: {args.delete}")
+            self.formatter.info(f"Query: {job.query}")
+            self.formatter.info(f"Status: {job.status}")
+            self.formatter.info(f"Created: {job.created_at}")
+            self.formatter.info(f"Output: {job.output_dir}")
+
+            if not self.formatter.confirm(
+                f"\n⚠️  Delete job {args.delete} and all its data?", default=False
+            ):
+                self.formatter.info("Cancelled")
+                return 0
+
+        # Delete the job
+        self.formatter.info(f"Deleting job {args.delete}...")
+
+        result = await job_manager.delete_job(args.delete)
+
+        if result.get("error"):
+            self.formatter.error(result["error"])
+            return 1
+
+        if result.get("deleted"):
+            self.formatter.success(
+                f"Successfully deleted job {args.delete} ({result.get('query', 'Unknown query')})"
+            )
+            if result.get("errors"):
+                for error in result["errors"]:
+                    self.formatter.warning(f"Warning: {error}")
+        else:
+            self.formatter.error(f"Failed to delete job {args.delete}")
+            if result.get("errors"):
+                for error in result["errors"]:
+                    self.formatter.error(f"Error: {error}")
+            return 1
+
+        return 0
+
+    async def _delete_bulk(self, args):
+        """Delete multiple jobs with confirmation"""
+        from .job_manager import JobManager
+
+        job_manager = JobManager(args.output)
+
+        # Get jobs that match the filters
+        jobs_to_delete = job_manager.list_jobs(
+            status=args.status_filter, date_filter=args.date, search_term=args.search
+        )
+
+        if not jobs_to_delete:
+            self.formatter.info("No jobs found matching the criteria")
+            return 0
+
+        # Show jobs and confirm
+        if not args.yes:
+            self.formatter.header(f"Jobs to delete ({len(jobs_to_delete)} total)")
+
+            # Show first 10 jobs as preview
+            preview_count = min(10, len(jobs_to_delete))
+            for i, job in enumerate(jobs_to_delete[:preview_count], 1):
+                self.formatter.info(
+                    f"{i}. [{job['job_id']}] {job['query'][:50]} ({job['status']})"
+                )
+
+            if len(jobs_to_delete) > preview_count:
+                self.formatter.info(
+                    f"... and {len(jobs_to_delete) - preview_count} more"
+                )
+
+            # Build filter description
+            filters = []
+            if args.search:
+                filters.append(f"search='{args.search}'")
+            if args.date:
+                filters.append(f"date={args.date}")
+            if args.status_filter:
+                filters.append(f"status={args.status_filter}")
+
+            filter_desc = f" with filters: {', '.join(filters)}" if filters else ""
+
+            if not self.formatter.confirm(
+                f"\n⚠️  Delete {len(jobs_to_delete)} jobs{filter_desc}?", default=False
+            ):
+                self.formatter.info("Cancelled")
+                return 0
+
+        # Delete the jobs with progress tracking
+        self.formatter.info(f"Deleting {len(jobs_to_delete)} jobs...")
+
+        # Show progress
+        progress = ProgressTracker(self.formatter, len(jobs_to_delete), "Deleting jobs")
+
+        # Perform deletion
+        result = await job_manager.delete_jobs(
+            status=args.status_filter, date_filter=args.date, search_term=args.search
+        )
+
+        progress.complete("Deletion complete")
+
+        # Show results
+        if result["successfully_deleted"] > 0:
+            self.formatter.success(
+                f"Successfully deleted {result['successfully_deleted']} jobs"
+            )
+
+        if result["failed_deletions"] > 0:
+            self.formatter.error(f"Failed to delete {result['failed_deletions']} jobs")
+            for failed_job in result["failed_jobs"]:
+                self.formatter.error(
+                    f"  - {failed_job['job_id']}: {', '.join(failed_job.get('errors', ['Unknown error']))}"
+                )
+
+        if result.get("errors"):
+            for error in result["errors"]:
+                self.formatter.warning(f"Warning: {error}")
+
+        return 0 if result["failed_deletions"] == 0 else 1
 
     async def _interactive_mode(self, args):
         """Run in interactive mode"""
@@ -71157,6 +71834,145 @@ class JobManager:
         """Clean up jobs older than specified days"""
         # TODO: Implement cleanup logic
         pass
+
+    async def delete_job(self, job_id: str) -> Dict[str, Any]:
+        """
+        Delete a specific job completely (database + filesystem)
+
+        Returns:
+            Dict with deletion results and any errors
+        """
+        import shutil
+
+        # Get job details first
+        job = self.get_job(job_id)
+        if not job:
+            return {"error": f"Job {job_id} not found", "deleted": False}
+
+        results = {
+            "job_id": job_id,
+            "query": job.query,
+            "deleted": False,
+            "database_deleted": False,
+            "filesystem_deleted": False,
+            "errors": [],
+        }
+
+        try:
+            # Delete from database
+            db_deleted = self.main_db.delete_job(job_id)
+            results["database_deleted"] = db_deleted
+
+            if not db_deleted:
+                results["errors"].append("Failed to delete from database")
+
+            # Delete filesystem data
+            job_path = Path(job.output_dir)
+            if safe_exists(job_path):
+                try:
+                    # Remove the entire job directory
+                    shutil.rmtree(job_path, ignore_errors=False)
+                    results["filesystem_deleted"] = True
+                    logger.info(f"Deleted job directory: {job_path}")
+                except Exception as e:
+                    # Try with ignore_errors if permission issues
+                    try:
+                        shutil.rmtree(job_path, ignore_errors=True)
+                        results["filesystem_deleted"] = True
+                        results["errors"].append(f"Partial filesystem deletion: {e}")
+                    except Exception as e2:
+                        results["filesystem_deleted"] = False
+                        results["errors"].append(f"Filesystem deletion failed: {e2}")
+            else:
+                results["filesystem_deleted"] = True  # Already gone
+
+            results["deleted"] = (
+                results["database_deleted"] and results["filesystem_deleted"]
+            )
+
+        except Exception as e:
+            logger.error(f"Error deleting job {job_id}: {e}")
+            results["errors"].append(str(e))
+
+        return results
+
+    async def delete_jobs(
+        self,
+        status: Optional[str] = None,
+        date_filter: Optional[str] = None,
+        search_term: Optional[str] = None,
+        job_ids: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Delete multiple jobs based on filters or explicit IDs
+
+        Args:
+            status: Filter by job status
+            date_filter: Filter by date
+            search_term: Filter by search term
+            job_ids: Explicit list of job IDs to delete
+
+        Returns:
+            Dict with deletion statistics and any errors
+        """
+        results = {
+            "total_processed": 0,
+            "successfully_deleted": 0,
+            "failed_deletions": 0,
+            "deleted_jobs": [],
+            "failed_jobs": [],
+            "errors": [],
+        }
+
+        try:
+            # Get jobs to delete
+            if job_ids:
+                # Use explicit job IDs
+                jobs_to_delete = []
+                for job_id in job_ids:
+                    job = self.get_job(job_id)
+                    if job:
+                        jobs_to_delete.append(
+                            {
+                                "job_id": job.job_id,
+                                "query": job.query,
+                                "status": job.status,
+                                "output_dir": job.output_dir,
+                            }
+                        )
+            else:
+                # Use filters to find jobs
+                jobs_to_delete = self.list_jobs(
+                    status=status, date_filter=date_filter, search_term=search_term
+                )
+
+            results["total_processed"] = len(jobs_to_delete)
+
+            # Delete each job
+            for job_info in jobs_to_delete:
+                job_id = job_info["job_id"]
+                deletion_result = await self.delete_job(job_id)
+
+                if deletion_result.get("deleted"):
+                    results["successfully_deleted"] += 1
+                    results["deleted_jobs"].append(
+                        {"job_id": job_id, "query": job_info.get("query", "Unknown")}
+                    )
+                else:
+                    results["failed_deletions"] += 1
+                    results["failed_jobs"].append(
+                        {
+                            "job_id": job_id,
+                            "query": job_info.get("query", "Unknown"),
+                            "errors": deletion_result.get("errors", []),
+                        }
+                    )
+
+        except Exception as e:
+            logger.error(f"Error in bulk deletion: {e}")
+            results["errors"].append(str(e))
+
+        return results
 
     async def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
         """
@@ -73933,6 +74749,30 @@ class ResearchDatabase:
 
             cursor = conn.execute(query, params)
             return cursor.fetchone()[0]
+
+    def delete_job(self, job_id: str) -> bool:
+        """Delete a job from the database"""
+        try:
+            with sqlite3.connect(str(self.db_path)) as conn:
+                # Delete from job_stats first (foreign key constraint)
+                conn.execute("DELETE FROM job_stats WHERE job_id = ?", (job_id,))
+
+                # Delete from jobs table
+                cursor = conn.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
+
+                conn.commit()
+
+                # Return True if a job was actually deleted
+                deleted = cursor.rowcount > 0
+                if deleted:
+                    logger.info(f"Deleted job {job_id} from database")
+                else:
+                    logger.warning(f"Job {job_id} not found in database")
+                return deleted
+
+        except Exception as e:
+            logger.error(f"Error deleting job {job_id}: {e}")
+            return False
 
     def close_all_connections(self):
         """Close all database connections"""

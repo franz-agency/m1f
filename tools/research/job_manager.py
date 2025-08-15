@@ -187,6 +187,145 @@ class JobManager:
         # TODO: Implement cleanup logic
         pass
 
+    async def delete_job(self, job_id: str) -> Dict[str, Any]:
+        """
+        Delete a specific job completely (database + filesystem)
+
+        Returns:
+            Dict with deletion results and any errors
+        """
+        import shutil
+
+        # Get job details first
+        job = self.get_job(job_id)
+        if not job:
+            return {"error": f"Job {job_id} not found", "deleted": False}
+
+        results = {
+            "job_id": job_id,
+            "query": job.query,
+            "deleted": False,
+            "database_deleted": False,
+            "filesystem_deleted": False,
+            "errors": [],
+        }
+
+        try:
+            # Delete from database
+            db_deleted = self.main_db.delete_job(job_id)
+            results["database_deleted"] = db_deleted
+
+            if not db_deleted:
+                results["errors"].append("Failed to delete from database")
+
+            # Delete filesystem data
+            job_path = Path(job.output_dir)
+            if safe_exists(job_path):
+                try:
+                    # Remove the entire job directory
+                    shutil.rmtree(job_path, ignore_errors=False)
+                    results["filesystem_deleted"] = True
+                    logger.info(f"Deleted job directory: {job_path}")
+                except Exception as e:
+                    # Try with ignore_errors if permission issues
+                    try:
+                        shutil.rmtree(job_path, ignore_errors=True)
+                        results["filesystem_deleted"] = True
+                        results["errors"].append(f"Partial filesystem deletion: {e}")
+                    except Exception as e2:
+                        results["filesystem_deleted"] = False
+                        results["errors"].append(f"Filesystem deletion failed: {e2}")
+            else:
+                results["filesystem_deleted"] = True  # Already gone
+
+            results["deleted"] = (
+                results["database_deleted"] and results["filesystem_deleted"]
+            )
+
+        except Exception as e:
+            logger.error(f"Error deleting job {job_id}: {e}")
+            results["errors"].append(str(e))
+
+        return results
+
+    async def delete_jobs(
+        self,
+        status: Optional[str] = None,
+        date_filter: Optional[str] = None,
+        search_term: Optional[str] = None,
+        job_ids: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Delete multiple jobs based on filters or explicit IDs
+
+        Args:
+            status: Filter by job status
+            date_filter: Filter by date
+            search_term: Filter by search term
+            job_ids: Explicit list of job IDs to delete
+
+        Returns:
+            Dict with deletion statistics and any errors
+        """
+        results = {
+            "total_processed": 0,
+            "successfully_deleted": 0,
+            "failed_deletions": 0,
+            "deleted_jobs": [],
+            "failed_jobs": [],
+            "errors": [],
+        }
+
+        try:
+            # Get jobs to delete
+            if job_ids:
+                # Use explicit job IDs
+                jobs_to_delete = []
+                for job_id in job_ids:
+                    job = self.get_job(job_id)
+                    if job:
+                        jobs_to_delete.append(
+                            {
+                                "job_id": job.job_id,
+                                "query": job.query,
+                                "status": job.status,
+                                "output_dir": job.output_dir,
+                            }
+                        )
+            else:
+                # Use filters to find jobs
+                jobs_to_delete = self.list_jobs(
+                    status=status, date_filter=date_filter, search_term=search_term
+                )
+
+            results["total_processed"] = len(jobs_to_delete)
+
+            # Delete each job
+            for job_info in jobs_to_delete:
+                job_id = job_info["job_id"]
+                deletion_result = await self.delete_job(job_id)
+
+                if deletion_result.get("deleted"):
+                    results["successfully_deleted"] += 1
+                    results["deleted_jobs"].append(
+                        {"job_id": job_id, "query": job_info.get("query", "Unknown")}
+                    )
+                else:
+                    results["failed_deletions"] += 1
+                    results["failed_jobs"].append(
+                        {
+                            "job_id": job_id,
+                            "query": job_info.get("query", "Unknown"),
+                            "errors": deletion_result.get("errors", []),
+                        }
+                    )
+
+        except Exception as e:
+            logger.error(f"Error in bulk deletion: {e}")
+            results["errors"].append(str(e))
+
+        return results
+
     async def cleanup_job_raw_data(self, job_id: str) -> Dict[str, Any]:
         """
         Clean up raw data for a specific job while preserving aggregated data
