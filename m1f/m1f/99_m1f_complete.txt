@@ -760,6 +760,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.9.0] - Unreleased
+
+### Added
+
+### Changed
+
+### Fixed
+
+## [3.8.0] - 2025-08-15
+
 ### Added
 
 - **research**: Updated documentation for 7-phase workflow system
@@ -768,8 +778,6 @@ and this project adheres to
   - Updated architecture documentation with new components (QueryExpander, URLReviewer, DeepCrawler, AnalysisGenerator)
   - Added workflow examples showing different configuration scenarios
   - Included Python script examples demonstrating workflow-aware research
-
-## [3.8.0] - 2025-08-15
 
 ### Fixed
 
@@ -12210,7 +12218,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.8.0"
+__version__ = "3.9.0"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -69244,8 +69252,8 @@ try:
     from .._version import __version__, __version_info__
 except ImportError:
     # Fallback for when running as a script
-    __version__ = "3.8.0"
-    __version_info__ = (3, 8, 0)
+    __version__ = "3.9.0"
+    __version_info__ = (3, 9, 0)
 __all__ = [
     # Version
     "__version__",
@@ -79147,8 +79155,8 @@ except ImportError:
         from .._version import __version__, __version_info__
     except ImportError:
         # Fallback when running as standalone script
-        __version__ = "3.8.0"
-        __version_info__ = (3, 8, 0)
+        __version__ = "3.9.0"
+        __version_info__ = (3, 9, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"

@@ -12,8 +12,8 @@ except ImportError:
         from .._version import __version__, __version_info__
     except ImportError:
         # Fallback when running as standalone script
-        __version__ = "3.8.0"
-        __version_info__ = (3, 8, 0)
+        __version__ = "3.9.0"
+        __version_info__ = (3, 9, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"

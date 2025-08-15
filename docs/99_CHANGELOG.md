@@ -8,6 +8,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.9.0] - Unreleased
+
+### Added
+
+### Changed
+
+### Fixed
+
+## [3.8.0] - 2025-08-15
+
 ### Added
 
 - **research**: Updated documentation for 7-phase workflow system
@@ -16,8 +26,6 @@ and this project adheres to
   - Updated architecture documentation with new components (QueryExpander, URLReviewer, DeepCrawler, AnalysisGenerator)
   - Added workflow examples showing different configuration scenarios
   - Included Python script examples demonstrating workflow-aware research
-
-## [3.8.0] - 2025-08-15
 
 ### Fixed
 
