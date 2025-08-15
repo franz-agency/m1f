@@ -41,10 +41,22 @@ The installation script automatically:
 
 - ✅ Checks Python version (3.10+ required)
 - ✅ Creates virtual environment
-- ✅ Installs all dependencies
+- ✅ Installs all dependencies (including Playwright)
 - ✅ Adds commands to your PATH
 - ✅ Creates global command shortcuts
 - ✅ Sets up symlinks
+
+### Optional: Playwright Browser Installation
+
+If you want to use the Playwright scraper backend for JavaScript-heavy websites:
+
+```bash
+# After running the install script, install browser binaries:
+playwright install
+```
+
+This downloads Chromium, Firefox, and WebKit browsers (~300MB) for web scraping.
+On Windows, browsers are installed to `%LOCALAPPDATA%\ms-playwright\`.
 
 ## Test Your Installation
 

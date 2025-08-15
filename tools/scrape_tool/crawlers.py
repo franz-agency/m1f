@@ -27,6 +27,7 @@ from urllib.parse import urlparse, urljoin
 from .scrapers import create_scraper, ScraperConfig, ScrapedPage
 from .config import CrawlerConfig, ScraperBackend
 from ..m1f.file_operations import safe_exists, safe_mkdir
+from ..html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -720,7 +721,9 @@ class WebCrawler:
         # Parse URL to get domain for output structure
         parsed_url = urlparse(start_url)
         domain = parsed_url.netloc
-        site_dir = output_dir / domain
+        # Sanitize domain name for Windows compatibility (remove colons, etc.)
+        sanitized_domain = sanitize_filename(domain)
+        site_dir = output_dir / sanitized_domain
         site_dir.mkdir(exist_ok=True)
 
         # Initialize database for tracking

@@ -29,6 +29,7 @@ from bs4 import BeautifulSoup
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
 from ...m1f.file_operations import safe_mkdir
+from ...html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,9 @@ class PythonMirrorScraper(WebScraperBase):
         parsed = urlparse(url)
 
         # Create domain directory
-        domain_dir = output_dir / parsed.netloc
+        # Sanitize domain name for Windows compatibility (remove colons, etc.)
+        sanitized_domain = sanitize_filename(parsed.netloc)
+        domain_dir = output_dir / sanitized_domain
 
         # Handle path
         path = parsed.path.strip("/")

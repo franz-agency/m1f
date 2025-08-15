@@ -20,6 +20,9 @@ from pathlib import Path
 import tempfile
 import shutil
 import asyncio
+import time
+import gc
+import sys
 from unittest.mock import AsyncMock, MagicMock
 import json
 
@@ -30,10 +33,62 @@ from tools.research.llm_interface import LLMProvider, LLMResponse
 
 @pytest.fixture
 def temp_dir():
-    """Create a temporary directory for test files"""
+    """Create a temporary directory for test files with proper cleanup"""
     temp_dir = tempfile.mkdtemp()
-    yield Path(temp_dir)
-    shutil.rmtree(temp_dir)
+    temp_path = Path(temp_dir)
+    yield temp_path
+    
+    # Windows-specific cleanup to handle SQLite file locking
+    _cleanup_temp_dir_with_retry(temp_path)
+
+
+def _cleanup_temp_dir_with_retry(temp_path: Path, max_retries: int = 3):
+    """Clean up temporary directory with retry logic for Windows SQLite issues"""
+    
+    # Force garbage collection to close any remaining database connections
+    gc.collect()
+    
+    for attempt in range(max_retries):
+        try:
+            # First, try to find and cleanup any SQLite databases
+            for db_file in temp_path.rglob("*.db"):
+                try:
+                    # Force close any connections by attempting to connect and immediately close
+                    import sqlite3
+                    conn = sqlite3.connect(str(db_file))
+                    conn.close()
+                    
+                    # On Windows, sometimes we need a brief delay
+                    if sys.platform == "win32":
+                        time.sleep(0.1)
+                        
+                except Exception:
+                    pass  # Ignore errors here
+            
+            # Now try to remove the directory
+            shutil.rmtree(temp_path)
+            return  # Success!
+            
+        except (OSError, PermissionError) as e:
+            if attempt < max_retries - 1:
+                # Wait a bit and try again
+                time.sleep(0.5 * (attempt + 1))
+                gc.collect()  # Force garbage collection again
+            else:
+                # Last attempt failed, log the error but don't fail the test
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to cleanup temp directory after {max_retries} attempts: {e}")
+                # Try to at least remove files one by one
+                try:
+                    for file_path in temp_path.rglob("*"):
+                        if file_path.is_file():
+                            try:
+                                file_path.unlink()
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
 
 
 @pytest.fixture
@@ -194,3 +249,49 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture
+def research_temp_dir():
+    """
+    Specialized temporary directory fixture for research tests that need database cleanup
+    This ensures proper cleanup of SQLite databases before directory removal
+    """
+    temp_dir = tempfile.mkdtemp()
+    temp_path = Path(temp_dir)
+    
+    # Store references to cleanup functions
+    orchestrators = []
+    
+    class TempDirManager:
+        def __init__(self, path):
+            self.path = path
+            self.orchestrators = []
+        
+        def register_orchestrator(self, orchestrator):
+            """Register an orchestrator for cleanup"""
+            self.orchestrators.append(orchestrator)
+        
+        def cleanup_orchestrators(self):
+            """Clean up all registered orchestrators"""
+            for orchestrator in self.orchestrators:
+                try:
+                    if hasattr(orchestrator, 'cleanup_databases'):
+                        orchestrator.cleanup_databases()
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.debug(f"Error cleaning up orchestrator: {e}")
+            self.orchestrators.clear()
+    
+    manager = TempDirManager(temp_path)
+    yield manager
+    
+    # Cleanup orchestrators first
+    manager.cleanup_orchestrators()
+    
+    # Force garbage collection
+    gc.collect()
+    
+    # Then cleanup the directory
+    _cleanup_temp_dir_with_retry(temp_path)

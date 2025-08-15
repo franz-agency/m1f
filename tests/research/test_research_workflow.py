@@ -40,7 +40,7 @@ class TestResearchWorkflow:
             yield Path(tmpdir)
 
     @pytest.fixture
-    def mock_config(self, temp_dir):
+    def mock_config(self, research_temp_dir):
         """Create a test configuration"""
         config = ResearchConfig(
             query="test query",
@@ -53,7 +53,7 @@ class TestResearchWorkflow:
         )
         # Set the search limit explicitly
         config.scraping.search_limit = 5
-        config.output.directory = temp_dir
+        config.output.directory = research_temp_dir.path
         # Adjust minimum content length for test content
         config.analysis.min_content_length = 20
         return config
@@ -108,12 +108,15 @@ class TestResearchWorkflow:
 
     @pytest.mark.asyncio
     async def test_basic_research_workflow(
-        self, mock_config, mock_llm_provider, temp_dir
+        self, mock_config, mock_llm_provider, research_temp_dir
     ):
         """Test basic research workflow end-to-end"""
         # Create orchestrator with mocked LLM
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Mock scraping to avoid actual web requests
         async def mock_scrape_urls(urls):
@@ -196,14 +199,20 @@ Total sources: {len(content)}
         mock_llm_provider.search_web.assert_called_once_with("test query", 5)
         # Analysis is now mocked directly, so query won't be called
         # Just verify the workflow completed successfully
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_dry_run_mode(self, mock_config, mock_llm_provider, temp_dir):
+    async def test_dry_run_mode(self, mock_config, mock_llm_provider, research_temp_dir):
         """Test dry run mode doesn't perform actual operations"""
         mock_config.dry_run = True
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Run in dry mode
         result = await orchestrator.research("test query")
@@ -216,14 +225,20 @@ Total sources: {len(content)}
         assert result.bundle_path is not None
         assert result.bundle_path.is_dir()  # It's the output directory, not a file
         assert not result.bundle_created  # Bundle was not actually created
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_no_analysis_mode(self, mock_config, mock_llm_provider, temp_dir):
+    async def test_no_analysis_mode(self, mock_config, mock_llm_provider, research_temp_dir):
         """Test running without analysis"""
         mock_config.no_analysis = True
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
         orchestrator.llm = mock_llm_provider
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Mock scraping
         async def mock_scrape_urls(urls):
@@ -247,14 +262,20 @@ Total sources: {len(content)}
 
         # But search should still happen
         mock_llm_provider.search_web.assert_called_once()
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     @pytest.mark.asyncio
-    async def test_content_filtering(self, mock_config, temp_dir):
+    async def test_content_filtering(self, mock_config, research_temp_dir):
         """Test content filtering based on relevance"""
         mock_config.analysis.relevance_threshold = 7.0
         mock_config.analysis.min_content_length = 50  # Lower threshold for test
 
         orchestrator = EnhancedResearchOrchestrator(mock_config)
+        
+        # Register orchestrator for cleanup
+        research_temp_dir.register_orchestrator(orchestrator)
 
         # Create test content with different relevance scores
         content = [
@@ -297,6 +318,9 @@ Total sources: {len(content)}
         assert len(filtered) == 2
         assert all(item.relevance_score >= 7.0 for item in filtered)
         assert filtered[0].relevance_score == 9.0  # Should be sorted by relevance
+        
+        # Explicit cleanup for Windows
+        orchestrator.cleanup_databases()
 
     def test_cli_argument_parsing(self):
         """Test CLI argument parsing"""
@@ -320,7 +344,7 @@ Total sources: {len(content)}
         assert args.query is None  # Query not required in interactive mode
 
     @pytest.mark.asyncio
-    async def test_config_from_yaml(self, temp_dir):
+    async def test_config_from_yaml(self, research_temp_dir):
         """Test loading configuration from YAML"""
         # Create test YAML config
         yaml_content = """
@@ -340,7 +364,7 @@ research:
       analysis_focus: implementation
       url_count: 30
 """
-        config_path = temp_dir / "test_config.yml"
+        config_path = research_temp_dir.path / "test_config.yml"
         config_path.write_text(yaml_content)
 
         # Load config

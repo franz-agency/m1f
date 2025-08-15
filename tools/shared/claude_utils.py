@@ -24,6 +24,8 @@ from __future__ import annotations
 import os
 import subprocess
 import logging
+import platform
+import shutil
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field
@@ -105,13 +107,31 @@ class ClaudeConfig:
 class ClaudeBinaryFinder:
     """Utility for finding Claude CLI binary."""
 
-    DEFAULT_PATHS = [
-        Path.home() / ".claude" / "local" / "claude",
-        Path("/usr/local/bin/claude"),
-        Path("/usr/bin/claude"),
-        Path("/opt/homebrew/bin/claude"),  # macOS with Homebrew
-        Path.home() / ".local/bin/claude",  # Linux user install
-    ]
+    @classmethod
+    def get_default_paths(cls) -> List[Path]:
+        """Get default paths for Claude binary based on platform."""
+        paths = []
+        
+        if platform.system() == "Windows":
+            # Windows-specific paths
+            paths.extend([
+                Path.home() / ".claude" / "local" / "claude.exe",
+                Path.home() / "AppData" / "Local" / "claude" / "claude.exe",
+                Path.home() / "AppData" / "Roaming" / "claude" / "claude.exe",
+                Path("C:") / "Program Files" / "Claude" / "claude.exe",
+                Path("C:") / "Program Files (x86)" / "Claude" / "claude.exe",
+            ])
+        else:
+            # Unix-like systems (Linux, macOS)
+            paths.extend([
+                Path.home() / ".claude" / "local" / "claude",
+                Path("/usr/local/bin/claude"),
+                Path("/usr/bin/claude"),
+                Path("/opt/homebrew/bin/claude"),  # macOS with Homebrew
+                Path.home() / ".local/bin/claude",  # Linux user install
+            ])
+        
+        return paths
 
     @classmethod
     def find(cls, custom_path: Optional[str] = None) -> str:
@@ -132,21 +152,15 @@ class ClaudeBinaryFinder:
             if safe_exists(custom_path) and safe_is_file(custom_path):
                 return custom_path
 
-        # Try default command
-        if cls._command_exists("claude"):
-            return "claude"
+        # Try to find claude in PATH using shutil.which (cross-platform)
+        claude_path = shutil.which("claude")
+        if claude_path:
+            return claude_path
 
         # Check known locations
-        for path in cls.DEFAULT_PATHS:
+        for path in cls.get_default_paths():
             if safe_exists(path) and safe_is_file(path):
                 return str(path)
-
-        # Try to find in PATH
-        result = subprocess.run(
-            ["which", "claude"], capture_output=True, text=True, timeout=5
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip()
 
         raise FileNotFoundError(
             "Claude binary not found. Please install Claude CLI from "
@@ -156,17 +170,7 @@ class ClaudeBinaryFinder:
     @staticmethod
     def _command_exists(command: str) -> bool:
         """Check if a command exists in PATH."""
-        try:
-            subprocess.run(
-                [command, "--version"], capture_output=True, check=True, timeout=5
-            )
-            return True
-        except (
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            subprocess.TimeoutExpired,
-        ):
-            return False
+        return shutil.which(command) is not None
 
 
 class ClaudeSessionManager:
