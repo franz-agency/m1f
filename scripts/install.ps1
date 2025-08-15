@@ -78,7 +78,25 @@ function Write-ColorOutput {
 }
 
 # Get script and project paths
-$scriptPath = $PSScriptRoot
+# Handle both dot-sourced and executed cases
+if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") {
+    # Script is being dot-sourced or run in an unusual way
+    # Try to detect based on current location
+    if ((Test-Path ".\scripts\install.ps1") -and (Test-Path ".\requirements.txt")) {
+        # Being run from project root as '. .\scripts\install.ps1'
+        $scriptPath = Join-Path (Get-Location) "scripts"
+    } elseif ((Test-Path "..\scripts\install.ps1") -and (Test-Path "..\requirements.txt")) {
+        # Being run from scripts directory as '. .\install.ps1'
+        $scriptPath = Get-Location
+    } else {
+        Write-ColorOutput "Error: Cannot determine script location when dot-sourced." -Color Red
+        Write-ColorOutput "Please run from project root as: . .\scripts\install.ps1" -Color Yellow
+        return
+    }
+} else {
+    # Script is being executed normally
+    $scriptPath = $PSScriptRoot
+}
 $projectRoot = Split-Path $scriptPath -Parent
 $venvBinDir = Join-Path $projectRoot ".venv\Scripts"
 $oldBinDir = Join-Path $projectRoot "bin"
@@ -105,7 +123,7 @@ if ($executionPolicy -eq "Restricted") {
         Write-ColorOutput "Error: Could not update execution policy. Please run as administrator or run:" -Color $colors.Red
         Write-ColorOutput "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -Color $colors.Blue
         Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
-        exit 1
+        if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") { return } else { exit 1 }
     }
 }
 
@@ -131,7 +149,7 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
     Write-ColorOutput "Error: Python is not installed. Please install Python 3.10 or higher." -Color $colors.Red
     Write-ColorOutput "Download from: https://www.python.org/downloads/" -Color $colors.Yellow
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
-    exit 1
+    if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") { return } else { exit 1 }
 }
 
 # Check Python version is 3.10+
@@ -144,7 +162,7 @@ try {
     if ($major -lt 3 -or ($major -eq 3 -and $minor -lt 10)) {
         Write-ColorOutput "Error: Python 3.10 or higher is required. Found Python $versionOutput" -Color $colors.Red
         Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
-        exit 1
+        if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") { return } else { exit 1 }
     }
     
     Write-ColorOutput "[OK] Python $versionOutput found" -Color $colors.Green
@@ -183,9 +201,11 @@ if (Test-Path "requirements.txt") {
     pip install -r requirements.txt --quiet
     Write-ColorOutput "[OK] Dependencies installed" -Color $colors.Green
 } else {
-    Write-ColorOutput "Error: requirements.txt not found" -Color $colors.Red
+    Write-ColorOutput "Error: requirements.txt not found at $projectRoot\requirements.txt" -Color $colors.Red
+    Write-ColorOutput "PROJECT_ROOT is set to: $projectRoot" -Color $colors.Yellow
+    Write-ColorOutput "Current directory is: $(Get-Location)" -Color $colors.Yellow
     Write-ColorOutput "Run '.\install.ps1 -Help' for more information." -Color $colors.Yellow
-    exit 1
+    if ($null -eq $PSScriptRoot -or $PSScriptRoot -eq "") { return } else { exit 1 }
 }
 
 # Install m1f package in editable mode (creates all entry points)
