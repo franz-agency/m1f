@@ -69559,7 +69559,7 @@ research:
             self.formatter.list_item(f"Pages analyzed: {len(result.analyzed_content)}")
 
             if result.bundle_created:
-                bundle_path = result.output_dir / "📚_RESEARCH_BUNDLE.md"
+                bundle_path = result.output_dir / "RESEARCH_BUNDLE.md"
                 self.formatter.success(f"Research bundle: {bundle_path}")
 
         return 0
@@ -70895,7 +70895,7 @@ class JobManager:
     async def create_symlink_to_latest(self, job: ResearchJob):
         """Create a symlink to the latest research bundle"""
         job_path = Path(job.output_dir)
-        bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
+        bundle_path = job_path / "RESEARCH_BUNDLE.md"
 
         if safe_exists(bundle_path):
             # Create symlink in base directory
@@ -70930,7 +70930,7 @@ class JobManager:
         job_db = self.get_job_database(job)
         stats = job_db.get_stats()
 
-        bundle_exists = safe_exists(Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md")
+        bundle_exists = safe_exists(Path(job.output_dir) / "RESEARCH_BUNDLE.md")
 
         return {
             "job_id": job.job_id,
@@ -72549,10 +72549,10 @@ class EnhancedResearchOrchestrator:
         self, output_dir: Path, content: List[AnalyzedContent], query: str
     ):
         """Create the prominent RESEARCH_BUNDLE.md file"""
-        bundle_path = output_dir / "📚_RESEARCH_BUNDLE.md"
+        bundle_path = output_dir / "RESEARCH_BUNDLE.md"
 
         # Create header
-        bundle_content = f"""# 📚 Research Bundle: {query}
+        bundle_content = f"""# Research Bundle: {query}
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
 **Job ID**: {self.current_job.job_id}  
@@ -72560,14 +72560,14 @@ class EnhancedResearchOrchestrator:
 
 ---
 
-## 📊 Executive Summary
+## Executive Summary
 
 This research bundle contains {len(content)} carefully selected sources about "{query}".
 
 """
 
         # Add table of contents
-        bundle_content += "## 📑 Table of Contents\n\n"
+        bundle_content += "## Table of Contents\n\n"
         for i, item in enumerate(content, 1):
             title = item.title or f"Source {i}"
             bundle_content += f"{i}. [{title}](#{i}-{self._slugify(title)})\n"
@@ -72599,8 +72599,8 @@ This research bundle contains {len(content)} carefully selected sources about "{
         logger.info(f"Created prominent bundle: {bundle_path}")
 
         # Also create executive summary
-        summary_path = output_dir / "📊_EXECUTIVE_SUMMARY.md"
-        summary_content = f"""# 📊 Executive Summary: {query}
+        summary_path = output_dir / "EXECUTIVE_SUMMARY.md"
+        summary_content = f"""# Executive Summary: {query}
 
 **Job ID**: {self.current_job.job_id}  
 **Date**: {datetime.now().strftime('%Y-%m-%d')}
