@@ -164,18 +164,18 @@ This is not a real file separator
     @pytest.mark.unit
     def test_symlinks(self, run_m1f, create_test_file, temp_dir, is_windows):
         """Test handling of symbolic links."""
-        if is_windows:
-            pytest.skip("Symlink test requires Unix-like system")
-
         source_dir = temp_dir / "symlink_test"
         source_dir.mkdir()
 
         # Create regular file
         target_file = create_test_file("symlink_test/target.txt", "Target content")
 
-        # Create symlink
+        # Try to create symlink - skip if not supported
         symlink = source_dir / "link.txt"
-        symlink.symlink_to(target_file)
+        try:
+            symlink.symlink_to(target_file)
+        except OSError:
+            pytest.skip("Cannot create symbolic links on this system (requires admin privileges or developer mode on Windows)")
 
         output_file = temp_dir / "symlink_output.txt"
 
@@ -412,9 +412,6 @@ test_*.py
         self, run_m1f, create_test_file, temp_dir, is_windows
     ):
         """Test handling of circular directory references (symlinks)."""
-        if is_windows:
-            pytest.skip("Circular symlink test requires Unix-like system")
-
         source_dir = temp_dir / "circular_test"
         source_dir.mkdir()
 
@@ -422,9 +419,12 @@ test_*.py
         subdir = source_dir / "subdir"
         subdir.mkdir()
 
-        # Create circular symlink
+        # Try to create circular symlink - skip if not supported
         circular_link = subdir / "circular"
-        circular_link.symlink_to(source_dir)
+        try:
+            circular_link.symlink_to(source_dir)
+        except OSError:
+            pytest.skip("Cannot create symbolic links on this system (requires admin privileges or developer mode on Windows)")
 
         # Create a test file
         create_test_file("circular_test/test.txt", "Test content")

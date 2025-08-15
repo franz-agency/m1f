@@ -348,7 +348,7 @@ Write-ColorOutput "  Add $batchDir to your PATH environment variable" -Color $co
 Write-Host
 
 Write-ColorOutput "Next step:" -Color $colors.Yellow
-Write-ColorOutput "  Restart PowerShell or run: . `$PROFILE" -Color $colors.Blue
+Write-ColorOutput "  Restart PowerShell or run: . `"`$PROFILE`"" -Color $colors.Blue
 Write-Host
 
 Write-ColorOutput "Test installation:" -Color $colors.Yellow
