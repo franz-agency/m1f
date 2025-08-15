@@ -398,7 +398,7 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run m1f
-cd "$ORIGINAL_DIR" && exec python -m tools.m1f "$@"
+cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/m1f.py" "$@"
 
 ======= bin/m1f-claude ======
 #!/usr/bin/env bash
@@ -434,7 +434,7 @@ M1F_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 export PYTHONPATH="$M1F_ROOT:$PYTHONPATH"
 
 # Run the Python help script
-exec python3 -m tools.m1f_help "$@"
+exec python3 "$M1F_ROOT/tools/m1f_help.py" "$@"
 
 ======= bin/m1f-html2md ======
 #!/usr/bin/env bash
@@ -455,7 +455,7 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run mf1-html2md
-cd "$ORIGINAL_DIR" && exec python -m tools.html2md_tool "$@"
+cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/html2md_tool/__main__.py" "$@"
 
 ======= bin/m1f-init ======
 #!/usr/bin/env bash
@@ -549,7 +549,7 @@ export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 cd "$ORIGINAL_DIR"
 
 # Run the research module
-exec python -m tools.research "$@"
+exec python "$PROJECT_ROOT/tools/research/__main__.py" "$@"
 
 ======= bin/m1f-s1f ======
 #!/usr/bin/env bash
@@ -570,7 +570,7 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run s1f
-cd "$ORIGINAL_DIR" && exec python -m tools.s1f "$@"
+cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/s1f/__main__.py" "$@"
 
 ======= bin/m1f-scrape ======
 #!/usr/bin/env bash
@@ -591,7 +591,7 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run m1f-scrape
-cd "$ORIGINAL_DIR" && exec python -m tools.scrape_tool "$@"
+cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/scrape_tool/__main__.py" "$@"
 
 ======= bin/m1f-token-counter ======
 #!/usr/bin/env bash
@@ -633,7 +633,7 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Go back to original directory and run auto-bundle
-cd "$ORIGINAL_DIR" && exec python -m tools.m1f auto-bundle "$@"
+cd "$ORIGINAL_DIR" && exec python "$PROJECT_ROOT/tools/m1f_update.py" "$@"
 
 ======= docs/README.md ======
 # m1f Documentation
@@ -62338,7 +62338,9 @@ class AutoBundler:
         global_config: Dict[str, Any],
     ) -> List[str]:
         """Build m1f command from bundle configuration."""
-        cmd_parts = [sys.executable, "-m", "tools.m1f"]
+        # Use direct path to m1f.py script
+        m1f_script = self.project_root / "tools" / "m1f.py"
+        cmd_parts = [sys.executable, str(m1f_script)]
 
         # Handle bundle-level include_files
         if "include_files" in bundle_config:
