@@ -16,6 +16,20 @@ and this project adheres to
 
 ### Fixed
 
+- **install.sh**: Improved path resolution for sourced execution (PR #37)
+  - Script now correctly detects its location when sourced with `source ./scripts/install.sh`
+  - Added fallback logic for unreliable BASH_SOURCE[0] when sourced
+  - Changed error handling to use `return` instead of `exit` to prevent terminal closure
+  - Enhanced error messages with PROJECT_ROOT and current directory diagnostics
+  - Supports sourcing from both project root and scripts directory
+
+- **install.ps1**: Added same robust path resolution to PowerShell installer
+  - Handle both dot-sourced and executed script cases
+  - Detect script location when $PSScriptRoot is empty or null
+  - Use `return` instead of `exit` to prevent PowerShell closure when dot-sourced
+  - Enhanced error messages with PROJECT_ROOT and current directory diagnostics
+  - Supports dot-sourcing from both project root and scripts directory
+
 ## [3.8.0] - 2025-08-15
 
 ### Added
