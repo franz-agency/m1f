@@ -239,8 +239,11 @@ class M1FInit:
     def _run_m1f_update(self):
         """Run m1f-update to create bundles from existing config."""
         try:
-            # Run m1f-update
-            cmd = [sys.executable, "-m", "tools.m1f.auto_bundle"]
+            # Find the auto_bundle.py script relative to this module
+            auto_bundle_script = self.m1f_root / "tools" / "m1f" / "auto_bundle.py"
+
+            # Run m1f-update using direct file path
+            cmd = [sys.executable, str(auto_bundle_script)]
             if self.verbose:
                 cmd.append("--verbose")
 
@@ -301,10 +304,12 @@ class M1FInit:
             analysis_path = Path(temp_dir) / f"{project_name}_analysis.txt"
 
             try:
+                # Find the m1f.py script relative to this module
+                m1f_script = self.m1f_root / "tools" / "m1f.py"
+
                 cmd = [
                     sys.executable,
-                    "-m",
-                    "tools.m1f",
+                    str(m1f_script),
                     "-s",
                     str(self.project_path),
                     "-o",
@@ -594,10 +599,12 @@ class M1FInit:
         # Create complete bundle only if not all files are docs
         if not only_docs:
             info(f"Creating complete project bundle...")
+            # Find the m1f.py script relative to this module
+            m1f_script = self.m1f_root / "tools" / "m1f.py"
+
             complete_cmd = [
                 sys.executable,
-                "-m",
-                "tools.m1f",
+                str(m1f_script),
                 "-s",
                 str(self.project_path),
                 "-o",
@@ -631,10 +638,12 @@ class M1FInit:
 
         # Create docs bundle
         info(f"Creating documentation bundle...")
+        # Find the m1f.py script relative to this module
+        m1f_script = self.m1f_root / "tools" / "m1f.py"
+
         docs_cmd = [
             sys.executable,
-            "-m",
-            "tools.m1f",
+            str(m1f_script),
             "-s",
             str(self.project_path),
             "-o",
@@ -819,9 +828,9 @@ def main():
         "--version",
         action="version",
         version=f"m1f-init {__version__}",
-        help="Show version information"
+        help="Show version information",
     )
-    
+
     parser.add_argument(
         "--verbose",
         "-v",

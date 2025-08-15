@@ -197,9 +197,9 @@ class M1FClaude:
         cwd: Path = None,
     ):
         """Initialize m1f-claude with project context."""
-        # Always use current working directory - no searching for project roots!
-        self.project_path = Path.cwd()
-        self.m1f_root = Path(__file__).parent.parent
+        # Distinguish between user's project path and m1f installation path
+        self.project_path = Path.cwd()  # User's current working directory
+        self.m1f_root = Path(__file__).parent.parent  # m1f installation directory
         self.session_id = None  # Store session ID for conversation continuity
         self.conversation_started = False  # Track if conversation has started
         self.allowed_tools = allowed_tools  # Tools to allow in Claude Code
@@ -219,20 +219,22 @@ class M1FClaude:
             cwd if cwd is not None else Path.cwd()
         )  # Use provided cwd or current working directory
 
-        # Check for m1f documentation in various locations
-        self.m1f_docs_link = Path.cwd() / "m1f" / "m1f.txt"
-        self.m1f_docs_direct = Path.cwd() / "m1f" / "m1f.txt"
+        # Check for m1f documentation in user's project first, then in installation
+        self.m1f_docs_link = self.project_path / "m1f" / "m1f.txt"  # User's project
+        self.m1f_docs_install = (
+            self.m1f_root / "m1f" / "m1f" / "87_m1f_only_docs.txt"
+        )  # Installation directory
 
-        # Check if m1f-link has been run or docs exist directly
+        # Check if m1f-link has been run in user's project or use installation docs
         self.has_m1f_docs = safe_exists(self.m1f_docs_link, logger) or safe_exists(
-            self.m1f_docs_direct, logger
+            self.m1f_docs_install, logger
         )
 
-        # Use whichever path exists
+        # Use whichever path exists - prefer user's project docs, fallback to installation
         if safe_exists(self.m1f_docs_link, logger):
             self.m1f_docs_path = self.m1f_docs_link
-        elif safe_exists(self.m1f_docs_direct, logger):
-            self.m1f_docs_path = self.m1f_docs_direct
+        elif safe_exists(self.m1f_docs_install, logger):
+            self.m1f_docs_path = self.m1f_docs_install
         else:
             self.m1f_docs_path = self.m1f_docs_link  # Default to expected symlink path
 
@@ -270,13 +272,13 @@ class M1FClaude:
             # First, check if m1f/ directory exists and create file/directory lists
             import tempfile
 
-            # Check if m1f/ directory exists
-            m1f_dir = Path.cwd() / "m1f"
+            # Check if m1f/ directory exists in user's project
+            m1f_dir = self.project_path / "m1f"
             if not safe_exists(m1f_dir, logger):
                 # Call m1f-link to create the symlink
                 logger.info("m1f/ directory not found. Creating with m1f-link...")
                 try:
-                    subprocess.run(["m1f-link"], cwd=Path.cwd(), check=True)
+                    subprocess.run(["m1f-link"], cwd=self.project_path, check=True)
                 except subprocess.CalledProcessError:
                     logger.warning(
                         "Failed to run m1f-link. Continuing without m1f/ directory."
@@ -298,7 +300,7 @@ class M1FClaude:
                 cmd = [
                     "m1f",
                     "-s",
-                    str(Path.cwd()),
+                    str(self.project_path),
                     "-o",
                     tmp_path,
                     "--skip-output-file",
@@ -609,7 +611,9 @@ Start with Task 1: Project Analysis
         if safe_exists(m1f_dir, logger) and safe_is_dir(m1f_dir, logger):
             bundles = list(m1f_dir.glob("*.txt"))
             if bundles:
-                context_parts.append(f"\n[INFO] Existing m1f bundles: {len(bundles)} found")
+                context_parts.append(
+                    f"\n[INFO] Existing m1f bundles: {len(bundles)} found"
+                )
                 for bundle in bundles[:3]:  # Show first 3
                     context_parts.append(f"  • {bundle.name}")
                 if len(bundles) > 3:
@@ -1692,7 +1696,9 @@ I'll analyze your project and create an optimal m1f configuration that:
 
             if result.returncode == 0:
                 success("Phase 1 complete: Topic-specific bundles added!")
-                info("[INFO] Claude has analyzed your project and updated .m1f.config.yml")
+                info(
+                    "[INFO] Claude has analyzed your project and updated .m1f.config.yml"
+                )
             else:
                 warning(f"Claude exited with code {result.returncode}")
                 info("Please check your .m1f.config.yml manually.")
@@ -2292,7 +2298,7 @@ Tips:
 
 def main():
     """Main entry point for m1f-claude."""
-    
+
     # Import version
     try:
         from _version import __version__
@@ -2356,7 +2362,7 @@ def main():
         "--version",
         action="version",
         version=f"m1f-claude {__version__}",
-        help="Show version information"
+        help="Show version information",
     )
 
     parser.add_argument(

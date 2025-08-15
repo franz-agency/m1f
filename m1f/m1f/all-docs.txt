@@ -486,6 +486,31 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.8.4] - 2025-01-15
+
+### Added
+- Comprehensive test script for global tool verification (`test_global_tools.sh`)
+- 2025 Python best practices documentation for module imports
+
+### Fixed  
+- **CRITICAL PATH RESOLUTION**: Fixed installation vs working directory confusion
+  - `m1f_claude.py` now correctly distinguishes between user's project and m1f installation paths
+  - `m1f_init.py` uses direct file paths instead of module imports for all subprocess calls
+  - `auto_bundle.py` finds m1f.py relative to its module location, not current working directory
+  - All tools now properly resolve resources from installation directory while operating on working directory
+- **Global Execution**: All m1f tools now work correctly from any directory after `pip install -e .`
+- **Module Imports**: Fixed "No module named 'tools'" errors when running from outside m1f directory
+
+### Changed
+- Transitioned to pip-installable package with proper console script entry points
+- Enhanced setup.py with complete entry point definitions for all CLI tools
+- Improved error messages when configuration files are missing
+
+### Technical
+- Added comprehensive pyproject.toml for modern Python packaging standards
+- Verified editable installation (`pip install -e .`) works correctly
+- All tools tested and verified to work from /tmp and other arbitrary directories
+
 ## [3.8.3] - 2025-08-15
 
 ### Fixed
