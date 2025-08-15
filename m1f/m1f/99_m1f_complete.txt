@@ -6131,7 +6131,30 @@ for arg in "$@"; do
 done
 
 # Get the script directory and project root
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Handle both sourced and executed cases
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Script is being sourced
+    if [[ -n "${BASH_SOURCE[0]}" && "${BASH_SOURCE[0]}" != "bash" ]]; then
+        # BASH_SOURCE[0] is available and valid
+        SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    else
+        # BASH_SOURCE[0] is empty or unreliable when sourced
+        # Detect if we're being called from project root as 'source ./scripts/install.sh'
+        if [[ -f "./scripts/install.sh" && -f "./requirements.txt" ]]; then
+            SCRIPT_DIR="$(pwd)/scripts"
+        elif [[ -f "../scripts/install.sh" && -f "../requirements.txt" ]]; then
+            # Called from scripts directory as 'source ./install.sh'
+            SCRIPT_DIR="$(pwd)"
+        else
+            echo -e "${RED}Error: Cannot determine script location when sourced.${NC}"
+            echo -e "${YELLOW}Please run from project root as: source ./scripts/install.sh${NC}"
+            return 1 2>/dev/null || exit 1
+        fi
+    fi
+else
+    # Script is being executed normally
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+fi
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 # Use .venv/bin for entry points instead of bin/
 VENV_BIN_DIR="$PROJECT_ROOT/.venv/bin"
@@ -6164,7 +6187,7 @@ elif command -v python &> /dev/null; then
 else
     echo -e "${RED}Error: Python is not installed. Please install Python 3.10 or higher.${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
 
 # Check Python version is 3.10+
@@ -6175,7 +6198,7 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)")
 if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
     echo -e "${RED}Error: Python 3.10 or higher is required. Found Python $PYTHON_VERSION${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
 
 echo -e "${GREEN}✓ Python $PYTHON_VERSION found${NC}"
@@ -6206,9 +6229,11 @@ if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt --quiet
     echo -e "${GREEN}✓ Dependencies installed${NC}"
 else
-    echo -e "${RED}Error: requirements.txt not found${NC}"
+    echo -e "${RED}Error: requirements.txt not found at $PROJECT_ROOT/requirements.txt${NC}"
+    echo -e "${YELLOW}PROJECT_ROOT is set to: $PROJECT_ROOT${NC}"
+    echo -e "${YELLOW}Current directory is: $(pwd)${NC}"
     echo -e "${YELLOW}Run './install.sh --help' for more information.${NC}"
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
 
 # Install m1f package in editable mode (creates all entry points)
