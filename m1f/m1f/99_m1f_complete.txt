@@ -760,14 +760,23 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Added
+## [3.8.1] - 2025-08-15
 
-- **research**: Updated documentation for 7-phase workflow system
-  - Added comprehensive workflow overview in research_overview.md
-  - Documented new workflow configuration options in CLI reference
-  - Updated architecture documentation with new components (QueryExpander, URLReviewer, DeepCrawler, AnalysisGenerator)
-  - Added workflow examples showing different configuration scenarios
-  - Included Python script examples demonstrating workflow-aware research
+### Fixed
+
+- **install.sh**: Improved path resolution for sourced execution
+  - Script now correctly detects its location when sourced with `source ./scripts/install.sh`
+  - Added fallback logic for unreliable BASH_SOURCE[0] when sourced
+  - Changed error handling to use `return` instead of `exit` to prevent terminal closure
+  - Enhanced error messages with PROJECT_ROOT and current directory diagnostics
+  - Supports sourcing from both project root and scripts directory
+
+- **install.ps1**: Added same robust path resolution to PowerShell installer
+  - Handle both dot-sourced and executed script cases
+  - Detect script location when $PSScriptRoot is empty or null
+  - Use `return` instead of `exit` to prevent PowerShell closure when dot-sourced
+  - Enhanced error messages with PROJECT_ROOT and current directory diagnostics
+  - Supports dot-sourcing from both project root and scripts directory
 
 ## [3.8.0] - 2025-08-15
 
@@ -12255,7 +12264,7 @@ This file is the only place where the version number should be updated.
 All other files should import from here.
 """
 
-__version__ = "3.8.0"
+__version__ = "3.8.1"
 __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
 
 ======= tools/html2md.py ======
@@ -69289,8 +69298,8 @@ try:
     from .._version import __version__, __version_info__
 except ImportError:
     # Fallback for when running as a script
-    __version__ = "3.8.0"
-    __version_info__ = (3, 8, 0)
+    __version__ = "3.8.1"
+    __version_info__ = (3, 8, 1)
 __all__ = [
     # Version
     "__version__",
@@ -79192,8 +79201,8 @@ except ImportError:
         from .._version import __version__, __version_info__
     except ImportError:
         # Fallback when running as standalone script
-        __version__ = "3.8.0"
-        __version_info__ = (3, 8, 0)
+        __version__ = "3.8.1"
+        __version_info__ = (3, 8, 1)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
