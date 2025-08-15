@@ -1950,7 +1950,7 @@ research:
             self.formatter.list_item(f"Pages analyzed: {len(result.analyzed_content)}")
 
             if result.bundle_created:
-                bundle_path = result.output_dir / "📚_RESEARCH_BUNDLE.md"
+                bundle_path = result.output_dir / "RESEARCH_BUNDLE.md"
                 self.formatter.success(f"Research bundle: {bundle_path}")
 
         return 0
@@ -3286,7 +3286,7 @@ class JobManager:
     async def create_symlink_to_latest(self, job: ResearchJob):
         """Create a symlink to the latest research bundle"""
         job_path = Path(job.output_dir)
-        bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
+        bundle_path = job_path / "RESEARCH_BUNDLE.md"
 
         if safe_exists(bundle_path):
             # Create symlink in base directory
@@ -3321,7 +3321,7 @@ class JobManager:
         job_db = self.get_job_database(job)
         stats = job_db.get_stats()
 
-        bundle_exists = safe_exists(Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md")
+        bundle_exists = safe_exists(Path(job.output_dir) / "RESEARCH_BUNDLE.md")
 
         return {
             "job_id": job.job_id,
@@ -3887,7 +3887,7 @@ class ClaudeCodeProvider(LLMProvider):
 
         try:
             # Build command with WebSearch tool enabled for URL discovery
-            # Use verbose and stream-json for real-time feedback
+            # Use stream-json format for real-time feedback
             cmd = [
                 self.binary_path,
                 "-p",
@@ -3972,43 +3972,92 @@ class ClaudeCodeProvider(LLMProvider):
                                 msg_type = json_obj.get("type", "")
 
                                 # Show progress based on message type
-                                if (
-                                    msg_type == "tool_use"
-                                    and json_obj.get("name") == "WebSearch"
-                                ):
-                                    query_info = json_obj.get("input", {}).get(
-                                        "query", ""
-                                    )
-                                    sys.stdout.write(
-                                        "\r" + " " * 80 + "\r"
-                                    )  # Clear line
-                                    info(
-                                        f"  🔍 Searching web for: {query_info[:60]}..."
-                                    )
-                                elif (
-                                    msg_type == "tool_response"
-                                    and "search_results" in line
-                                ):
-                                    sys.stdout.write(
-                                        "\r" + " " * 80 + "\r"
-                                    )  # Clear line
-                                    info(f"  ✅ Found search results")
-                                elif msg_type == "assistant":
-                                    # Check for content mentioning URLs
+                                if msg_type == "assistant":
+                                    # Check for tool_use and text in assistant message
+                                    message = json_obj.get("message", {})
+                                    if isinstance(message, dict):
+                                        content_parts = message.get("content", [])
+                                        for part in content_parts:
+                                            if isinstance(part, dict):
+                                                if (
+                                                    part.get("type") == "tool_use"
+                                                    and part.get("name") == "WebSearch"
+                                                ):
+                                                    query_info = part.get(
+                                                        "input", {}
+                                                    ).get("query", "")
+                                                    sys.stdout.write(
+                                                        "\r" + " " * 80 + "\r"
+                                                    )
+                                                    info(
+                                                        f'  🔍 WebSearch: "{query_info}"'
+                                                    )
+                                                elif part.get("type") == "text":
+                                                    text = part.get("text", "")
+                                                    # Check if this is the final JSON output
+                                                    if "```json" in text:
+                                                        sys.stdout.write(
+                                                            "\r" + " " * 80 + "\r"
+                                                        )
+                                                        # Try to count URLs in the JSON
+                                                        try:
+                                                            import re
+
+                                                            urls_found = len(
+                                                                re.findall(
+                                                                    r'"url":', text
+                                                                )
+                                                            )
+                                                            if urls_found > 0:
+                                                                info(
+                                                                    f"  📝 Formatting {urls_found} URLs as JSON..."
+                                                                )
+                                                        except:
+                                                            info(
+                                                                f"  📝 Formatting results as JSON..."
+                                                            )
+                                elif msg_type == "user":
+                                    # Check for tool_result in user message (WebSearch response)
                                     message = json_obj.get("message", {})
                                     if isinstance(message, dict):
                                         content_parts = message.get("content", [])
                                         for part in content_parts:
                                             if (
                                                 isinstance(part, dict)
-                                                and part.get("type") == "text"
+                                                and part.get("type") == "tool_result"
                                             ):
-                                                text = part.get("text", "")
-                                                if "http" in text.lower():
+                                                content = part.get("content", "")
+                                                if "Web search results" in content:
                                                     sys.stdout.write(
                                                         "\r" + " " * 80 + "\r"
                                                     )
-                                                    info(f"  📝 Processing URLs...")
+                                                    # Try to count links in the response
+                                                    try:
+                                                        import re
+
+                                                        links_match = re.search(
+                                                            r"Links: \[(.*?)\]", content
+                                                        )
+                                                        if links_match:
+                                                            links_str = (
+                                                                links_match.group(1)
+                                                            )
+                                                            links_count = (
+                                                                links_str.count(
+                                                                    '"url":'
+                                                                )
+                                                            )
+                                                            info(
+                                                                f"  ✅ WebSearch returned {links_count} results"
+                                                            )
+                                                        else:
+                                                            info(
+                                                                f"  ✅ WebSearch results received"
+                                                            )
+                                                    except:
+                                                        info(
+                                                            f"  ✅ WebSearch results received"
+                                                        )
                             except json.JSONDecodeError:
                                 # Not JSON, show spinner for regular output
                                 if current_time - last_progress_time > 0.3:
@@ -4891,10 +4940,10 @@ class EnhancedResearchOrchestrator:
         self, output_dir: Path, content: List[AnalyzedContent], query: str
     ):
         """Create the prominent RESEARCH_BUNDLE.md file"""
-        bundle_path = output_dir / "📚_RESEARCH_BUNDLE.md"
+        bundle_path = output_dir / "RESEARCH_BUNDLE.md"
 
         # Create header
-        bundle_content = f"""# 📚 Research Bundle: {query}
+        bundle_content = f"""# Research Bundle: {query}
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
 **Job ID**: {self.current_job.job_id}  
@@ -4902,14 +4951,14 @@ class EnhancedResearchOrchestrator:
 
 ---
 
-## 📊 Executive Summary
+## Executive Summary
 
 This research bundle contains {len(content)} carefully selected sources about "{query}".
 
 """
 
         # Add table of contents
-        bundle_content += "## 📑 Table of Contents\n\n"
+        bundle_content += "## Table of Contents\n\n"
         for i, item in enumerate(content, 1):
             title = item.title or f"Source {i}"
             bundle_content += f"{i}. [{title}](#{i}-{self._slugify(title)})\n"
@@ -4941,8 +4990,8 @@ This research bundle contains {len(content)} carefully selected sources about "{
         logger.info(f"Created prominent bundle: {bundle_path}")
 
         # Also create executive summary
-        summary_path = output_dir / "📊_EXECUTIVE_SUMMARY.md"
-        summary_content = f"""# 📊 Executive Summary: {query}
+        summary_path = output_dir / "EXECUTIVE_SUMMARY.md"
+        summary_content = f"""# Executive Summary: {query}
 
 **Job ID**: {self.current_job.job_id}  
 **Date**: {datetime.now().strftime('%Y-%m-%d')}
@@ -5417,7 +5466,11 @@ def get_analysis_prompt(
             + analysis_template.split("Content:")[1].strip()
         )
 
-    return format_prompt(base_prompt, query=query, url=url, content=content)
+    # Only pass url if the template contains {url}
+    if "{url}" in base_prompt:
+        return format_prompt(base_prompt, query=query, url=url, content=content)
+    else:
+        return format_prompt(base_prompt, query=query, content=content)
 
 
 def get_synthesis_prompt(query: str, summaries: str) -> str:

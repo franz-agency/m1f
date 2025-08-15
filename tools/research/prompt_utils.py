@@ -58,7 +58,11 @@ def get_analysis_prompt(
             + analysis_template.split("Content:")[1].strip()
         )
 
-    return format_prompt(base_prompt, query=query, url=url, content=content)
+    # Only pass url if the template contains {url}
+    if "{url}" in base_prompt:
+        return format_prompt(base_prompt, query=query, url=url, content=content)
+    else:
+        return format_prompt(base_prompt, query=query, content=content)
 
 
 def get_synthesis_prompt(query: str, summaries: str) -> str:

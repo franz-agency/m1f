@@ -134,7 +134,7 @@ class JobManager:
     async def create_symlink_to_latest(self, job: ResearchJob):
         """Create a symlink to the latest research bundle"""
         job_path = Path(job.output_dir)
-        bundle_path = job_path / "📚_RESEARCH_BUNDLE.md"
+        bundle_path = job_path / "RESEARCH_BUNDLE.md"
 
         if safe_exists(bundle_path):
             # Create symlink in base directory
@@ -169,7 +169,7 @@ class JobManager:
         job_db = self.get_job_database(job)
         stats = job_db.get_stats()
 
-        bundle_exists = safe_exists(Path(job.output_dir) / "📚_RESEARCH_BUNDLE.md")
+        bundle_exists = safe_exists(Path(job.output_dir) / "RESEARCH_BUNDLE.md")
 
         return {
             "job_id": job.job_id,

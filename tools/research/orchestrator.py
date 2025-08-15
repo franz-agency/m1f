@@ -427,10 +427,10 @@ class EnhancedResearchOrchestrator:
         self, output_dir: Path, content: List[AnalyzedContent], query: str
     ):
         """Create the prominent RESEARCH_BUNDLE.md file"""
-        bundle_path = output_dir / "📚_RESEARCH_BUNDLE.md"
+        bundle_path = output_dir / "RESEARCH_BUNDLE.md"
 
         # Create header
-        bundle_content = f"""# 📚 Research Bundle: {query}
+        bundle_content = f"""# Research Bundle: {query}
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
 **Job ID**: {self.current_job.job_id}  
@@ -438,14 +438,14 @@ class EnhancedResearchOrchestrator:
 
 ---
 
-## 📊 Executive Summary
+## Executive Summary
 
 This research bundle contains {len(content)} carefully selected sources about "{query}".
 
 """
 
         # Add table of contents
-        bundle_content += "## 📑 Table of Contents\n\n"
+        bundle_content += "## Table of Contents\n\n"
         for i, item in enumerate(content, 1):
             title = item.title or f"Source {i}"
             bundle_content += f"{i}. [{title}](#{i}-{self._slugify(title)})\n"
@@ -477,8 +477,8 @@ This research bundle contains {len(content)} carefully selected sources about "{
         logger.info(f"Created prominent bundle: {bundle_path}")
 
         # Also create executive summary
-        summary_path = output_dir / "📊_EXECUTIVE_SUMMARY.md"
-        summary_content = f"""# 📊 Executive Summary: {query}
+        summary_path = output_dir / "EXECUTIVE_SUMMARY.md"
+        summary_content = f"""# Executive Summary: {query}
 
 **Job ID**: {self.current_job.job_id}  
 **Date**: {datetime.now().strftime('%Y-%m-%d')}

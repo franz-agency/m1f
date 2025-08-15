@@ -688,7 +688,7 @@ research:
             self.formatter.list_item(f"Pages analyzed: {len(result.analyzed_content)}")
 
             if result.bundle_created:
-                bundle_path = result.output_dir / "📚_RESEARCH_BUNDLE.md"
+                bundle_path = result.output_dir / "RESEARCH_BUNDLE.md"
                 self.formatter.success(f"Research bundle: {bundle_path}")
 
         return 0
