@@ -486,6 +486,23 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.8.3] - 2025-08-15
+
+### Fixed
+
+- **Global Tool Execution**: Fixed module import errors when running m1f tools from any directory
+  - Replaced `python -m tools.*` module imports with direct file paths in all bin scripts
+  - Updated bin/m1f to run tools/m1f.py directly
+  - Updated bin/m1f-update to run tools/m1f_update.py directly
+  - Updated bin/m1f-s1f to run tools/s1f/__main__.py directly
+  - Updated bin/m1f-html2md to run tools/html2md_tool/__main__.py directly
+  - Updated bin/m1f-scrape to run tools/scrape_tool/__main__.py directly
+  - Updated bin/m1f-research to run tools/research/__main__.py directly
+  - Updated bin/m1f-help to run tools/m1f_help.py directly
+  - Fixed auto_bundle.py to use direct path to m1f.py instead of `-m tools.m1f`
+  - Resolves "ModuleNotFoundError: No module named 'tools'" when running from outside project root
+  - All m1f tools now work globally from any directory
+
 ## [3.8.2] - 2025-08-15
 
 ### Fixed
