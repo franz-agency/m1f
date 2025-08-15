@@ -1611,6 +1611,10 @@ class WebCrawler:
                             )
                             value = {}
                     setattr(scraper_config, key, value)
+                else:
+                    # Store non-attribute configs in __dict__ for backend-specific use
+                    # (e.g., browser_config for Playwright)
+                    scraper_config.__dict__[key] = value
 
         return scraper_config
 
@@ -5821,6 +5825,9 @@ class PlaywrightScraper(WebScraperBase):
 
         # Browser configuration from scraper config
         self._browser_config = config.__dict__.get("browser_config", {})
+        if not isinstance(self._browser_config, dict):
+            self._browser_config = {}
+        
         self._browser_type = self._browser_config.get("browser", "chromium")
         self._headless = self._browser_config.get("headless", True)
         self._viewport = self._browser_config.get(

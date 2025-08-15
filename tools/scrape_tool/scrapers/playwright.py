@@ -78,6 +78,9 @@ class PlaywrightScraper(WebScraperBase):
 
         # Browser configuration from scraper config
         self._browser_config = config.__dict__.get("browser_config", {})
+        if not isinstance(self._browser_config, dict):
+            self._browser_config = {}
+        
         self._browser_type = self._browser_config.get("browser", "chromium")
         self._headless = self._browser_config.get("headless", True)
         self._viewport = self._browser_config.get(

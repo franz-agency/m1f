@@ -125,6 +125,10 @@ class WebCrawler:
                             )
                             value = {}
                     setattr(scraper_config, key, value)
+                else:
+                    # Store non-attribute configs in __dict__ for backend-specific use
+                    # (e.g., browser_config for Playwright)
+                    scraper_config.__dict__[key] = value
 
         return scraper_config
 
