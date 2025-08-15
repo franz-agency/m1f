@@ -708,7 +708,7 @@ class EnhancedResearchOrchestrator:
                 return None
 
             # Save analysis
-            analysis_path = Path(self.current_job.output_dir) / "RESEARCH_ANALYSIS.md"
+            analysis_path = Path(self.current_job.output_dir) / "research_analysis.md"
             with open(analysis_path, "w", encoding="utf-8") as f:
                 f.write(result.content)
 
@@ -747,8 +747,8 @@ class EnhancedResearchOrchestrator:
     async def _create_prominent_bundle(
         self, output_dir: Path, content: List[AnalyzedContent], query: str
     ):
-        """Create the prominent RESEARCH_BUNDLE.md file"""
-        bundle_path = output_dir / "RESEARCH_BUNDLE.md"
+        """Create the prominent research_bundle.md file"""
+        bundle_path = output_dir / "research_bundle.md"
 
         # Create header
         bundle_content = f"""# Research Bundle: {query}
@@ -759,7 +759,7 @@ class EnhancedResearchOrchestrator:
 
 ---
 
-## Executive Summary
+## Research Summary
 
 This research bundle contains {len(content)} carefully selected sources about "{query}".
 
@@ -797,9 +797,9 @@ This research bundle contains {len(content)} carefully selected sources about "{
 
         logger.info(f"Created prominent bundle: {bundle_path}")
 
-        # Also create executive summary
-        summary_path = output_dir / "EXECUTIVE_SUMMARY.md"
-        summary_content = f"""# Executive Summary: {query}
+        # Also create research summary
+        summary_path = output_dir / "research_summary.md"
+        summary_content = f"""# Research Summary: {query}
 
 **Job ID**: {self.current_job.job_id}  
 **Date**: {datetime.now().strftime('%Y-%m-%d')}
@@ -912,15 +912,16 @@ Research on "{query}" yielded {len(content)} high-quality sources.
             if self.job_db:
                 self.job_db.cleanup()
                 logger.debug("Cleaned up job database connections")
-            
-            if self.job_manager and hasattr(self.job_manager, 'main_db'):
+
+            if self.job_manager and hasattr(self.job_manager, "main_db"):
                 self.job_manager.main_db.cleanup()
                 logger.debug("Cleaned up main database connections")
-                
+
             # Force garbage collection to ensure connections are closed
             import gc
+
             gc.collect()
-            
+
         except Exception as e:
             logger.warning(f"Error during database cleanup: {e}")
 

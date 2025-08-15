@@ -492,6 +492,12 @@ and this project adheres to
 
 ### Changed
 
+- **m1f-research**: Renamed output files to consistent lowercase with prefix
+  - `RESEARCH_BUNDLE.md` → `research_bundle.md`
+  - `EXECUTIVE_SUMMARY.md` → `research_summary.md`
+  - `RESEARCH_ANALYSIS.md` → `research_analysis.md`
+  - Consistent with m1f's lowercase naming convention for output files
+
 ### Fixed
 
 - **install.sh**: Improved path resolution for sourced execution (PR #37)
@@ -16322,7 +16328,7 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 📦 Organized Output
 
 - **Hierarchical structure**: YYYY/MM/DD/job_id/
-- Prominent bundle files (📚_RESEARCH_BUNDLE.md)
+- Prominent bundle files (research_bundle.md)
 - Clean Markdown output
 - Symlink to latest research
 - Phase-specific output organization
@@ -16486,8 +16492,8 @@ Research data uses hierarchical date-based organization:
         └── 23/
             └── abc123_topic-name/
                 ├── research.db           # Job-specific database
-                ├── 📚_RESEARCH_BUNDLE.md # Main bundle
-                ├── 📊_EXECUTIVE_SUMMARY.md # Summary
+                ├── research_bundle.md     # Main bundle
+                ├── research_summary.md    # Summary
                 ├── metadata.json         # Job metadata
                 └── search_results.json   # Found URLs
 ```
@@ -16635,8 +16641,8 @@ research-data/
         └── 23/
             └── abc123_query-name/
                 ├── research.db           # Job-specific database
-                ├── RESEARCH_BUNDLE.md    # Main research bundle
-                ├── EXECUTIVE_SUMMARY.md  # Executive summary
+                ├── research_bundle.md    # Main research bundle
+                ├── research_summary.md   # Research summary
                 └── metadata.json         # Job metadata
 ```
 
@@ -16812,8 +16818,8 @@ When deleting a job, the system will:
 - Job statistics in the database
 - Entire job directory including:
   - Job-specific database (`research.db`)
-  - Research bundle (`RESEARCH_BUNDLE.md`)
-  - Executive summary (`EXECUTIVE_SUMMARY.md`)
+  - Research bundle (`research_bundle.md`)
+  - Research summary (`research_summary.md`)
   - All scraped content and analysis
   - Any metadata files
 
@@ -18848,8 +18854,8 @@ When you delete a job, the following items are permanently removed:
 ### Filesystem Data
 - Entire job directory at `research-data/YYYY/MM/DD/job_id_query/`
 - Job-specific database (`research.db`)
-- Research bundle (`RESEARCH_BUNDLE.md`)
-- Executive summary (`EXECUTIVE_SUMMARY.md`)
+- Research bundle (`research_bundle.md`)
+- Research summary (`research_summary.md`)
 - All scraped HTML content
 - All converted Markdown content
 - Analysis results and metadata

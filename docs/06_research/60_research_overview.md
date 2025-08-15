@@ -102,7 +102,7 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 📦 Organized Output
 
 - **Hierarchical structure**: YYYY/MM/DD/job_id/
-- Prominent bundle files (📚_RESEARCH_BUNDLE.md)
+- Prominent bundle files (research_bundle.md)
 - Clean Markdown output
 - Symlink to latest research
 - Phase-specific output organization
@@ -266,8 +266,8 @@ Research data uses hierarchical date-based organization:
         └── 23/
             └── abc123_topic-name/
                 ├── research.db           # Job-specific database
-                ├── 📚_RESEARCH_BUNDLE.md # Main bundle
-                ├── 📊_EXECUTIVE_SUMMARY.md # Summary
+                ├── research_bundle.md     # Main bundle
+                ├── research_summary.md    # Summary
                 ├── metadata.json         # Job metadata
                 └── search_results.json   # Found URLs
 ```

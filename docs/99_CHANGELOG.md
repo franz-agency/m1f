@@ -14,6 +14,12 @@ and this project adheres to
 
 ### Changed
 
+- **m1f-research**: Renamed output files to consistent lowercase with prefix
+  - `RESEARCH_BUNDLE.md` → `research_bundle.md`
+  - `EXECUTIVE_SUMMARY.md` → `research_summary.md`
+  - `RESEARCH_ANALYSIS.md` → `research_analysis.md`
+  - Consistent with m1f's lowercase naming convention for output files
+
 ### Fixed
 
 - **install.sh**: Improved path resolution for sourced execution (PR #37)
