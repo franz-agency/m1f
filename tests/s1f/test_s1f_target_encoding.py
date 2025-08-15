@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
 # Copyright 2025 Franz und Franz GmbH
-# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Test script for s1f.py's new --target-encoding parameter.
@@ -17,6 +28,9 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 # Import the tools modules
 from tools import m1f, s1f
+
+# Add colorama imports
+from tools.shared.colors import success
 
 
 def test_target_encoding():
@@ -51,9 +65,7 @@ def test_target_encoding():
             [
                 sys.executable,
                 str(Path(__file__).parent.parent.parent / "tools" / "s1f.py"),
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(extract_dir_default),
                 "--force",
             ],
@@ -91,9 +103,7 @@ def test_target_encoding():
             [
                 sys.executable,
                 str(Path(__file__).parent.parent.parent / "tools" / "s1f.py"),
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(extract_dir_respect),
                 "--force",
                 "--respect-encoding",
@@ -139,9 +149,7 @@ def test_target_encoding():
             [
                 sys.executable,
                 str(Path(__file__).parent.parent.parent / "tools" / "s1f.py"),
-                "--input-file",
                 str(combined_file),
-                "--destination-directory",
                 str(extract_dir_target),
                 "--force",
                 "--target-encoding",
@@ -178,7 +186,7 @@ def test_target_encoding():
     except Exception as e:
         assert False, f"Target-encoding extraction failed: {e}"
 
-    print("\nAll tests passed! The --target-encoding parameter works correctly.")
+    success("\nAll tests passed! The --target-encoding parameter works correctly.")
 
 
 if __name__ == "__main__":

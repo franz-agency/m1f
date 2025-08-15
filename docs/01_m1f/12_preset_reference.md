@@ -35,10 +35,10 @@ Use it with:
 
 ```bash
 # Module invocation (recommended)
-python -m tools.m1f -s ./src -o bundle.txt --preset my-preset.yml
+m1f -s ./src -o bundle.txt --preset my-preset.yml
 
-# Direct script invocation (alternative)
-python tools/m1f.py -s ./src -o bundle.txt --preset my-preset.yml
+# Direct command invocation (if installed)
+m1f -s ./src -o bundle.txt --preset my-preset.yml
 ```
 
 ## Preset File Format
@@ -51,7 +51,6 @@ group_name:
   description: "Optional description of this preset group"
   enabled: true # Can disable entire group
   priority: 10 # Higher numbers are processed first (default: 0)
-  base_path: "src" # Optional base path for all patterns in this group
 
   presets:
     # Preset name (for internal reference)
@@ -120,13 +119,11 @@ globals:
 
 ### Group-Level Settings
 
-| Setting             | Type    | Default | Description                     |
-| ------------------- | ------- | ------- | ------------------------------- |
-| `description`       | string  | none    | Human-readable description      |
-| `enabled`           | boolean | true    | Enable/disable this group       |
-| `priority`          | integer | 0       | Processing order (higher first) |
-| `base_path`         | string  | none    | Base path for pattern matching  |
-| `enabled_if_exists` | string  | none    | Only enable if this path exists |
+| Setting       | Type    | Default | Description                     |
+| ------------- | ------- | ------- | ------------------------------- |
+| `description` | string  | none    | Human-readable description      |
+| `enabled`     | boolean | true    | Enable/disable this group       |
+| `priority`    | integer | 0       | Processing order (higher first) |
 
 ### Global Settings (NEW in v3.2.0)
 
@@ -294,16 +291,6 @@ illustrative and would need to be implemented.
    patterns: ["src/**/*"]
    ```
 
-### Base Path Behavior
-
-```yaml
-group_name:
-  base_path: "src"
-  presets:
-    example:
-      patterns: ["components/*.js"] # Actually matches: src/components/*.js
-```
-
 ## Processing Order
 
 1. **Group Priority** - Higher priority groups are checked first
@@ -338,7 +325,7 @@ exclude files:
 
 2. **Use CLI Arguments**:
    ```bash
-   python tools/m1f.py -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
+   m1f -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
    ```
 
 ### Settings Hierarchy
@@ -394,22 +381,27 @@ Understanding where settings can be applied:
 
 ## Advanced Features
 
-### Conditional Presets
+### Conditional Enabling
+
+To conditionally enable/disable preset groups:
 
 ```yaml
 production:
-  enabled_if_exists: ".env.production" # Only active in production
+  enabled: false # Manually disable this group
   presets:
     minify_all:
       extensions: [".js", ".css", ".html"]
-      actions: ["minify", "strip_comments"]
+      actions: ["minify"]
 ```
+
+**Note**: The `enabled_if_exists` feature is only available in auto-bundle
+configurations (`.m1f.config.yml`), not in preset files.
 
 ### Multiple Preset Files
 
 ```bash
 # Files are merged in order (later files override earlier ones)
-python tools/m1f.py -s . -o out.txt \
+m1f -s . -o out.txt \
   --preset base.yml \
   --preset project.yml \
   --preset overrides.yml
@@ -458,7 +450,7 @@ Usage comparison:
 **Before v3.2.0** (long command):
 
 ```bash
-python -m tools.m1f -s ./src -o dist/bundle.txt \
+m1f -s ./src -o dist/bundle.txt \
   --input-include-files README.md LICENSE \
   --add-timestamp --create-archive --archive-type tar.gz \
   --force --minimal-output --quiet \
@@ -469,7 +461,7 @@ python -m tools.m1f -s ./src -o dist/bundle.txt \
 **After v3.2.0** (simple command):
 
 ```bash
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
+m1f --preset production.m1f-presets.yml -o output.txt
 ```
 
 ## Examples
@@ -561,10 +553,10 @@ Use with `--preset-group`:
 
 ```bash
 # Development build
-python -m tools.m1f --preset environments.yml --preset-group development
+m1f --preset environments.yml --preset-group development
 
 # Production build
-python -m tools.m1f --preset environments.yml --preset-group production
+m1f --preset environments.yml --preset-group production
 ```
 
 ## Debugging and Best Practices
@@ -574,7 +566,7 @@ python -m tools.m1f --preset environments.yml --preset-group production
 1. **Verbose Mode**
 
    ```bash
-   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
+   m1f -s . -o out.txt --preset my.yml --verbose
    ```
 
    Shows which preset is applied to each file and processing details.
@@ -582,7 +574,7 @@ python -m tools.m1f --preset environments.yml --preset-group production
 2. **Check What's Applied**
 
    ```bash
-   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
+   m1f -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
    ```
 
 3. **Validate YAML**

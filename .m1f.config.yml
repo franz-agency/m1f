@@ -4,16 +4,13 @@
 global:
   # Exclusions that apply to all bundles
   global_excludes:
-    - "/m1f/**"
+    - "m1f/**"  # Exclude the m1f output directory
     - "**/*.pyc"
-    - "**/*.log"
     - "**/tmp/**"
+    - "tmp/**"  # Exclude project root tmp directory
     - "**/dev/**"
-    - "**/tests/**/source/**"  # Test input data
-    - "**/tests/**/output/**"  # Test output data
-    - "**/tests/**/expected/**"  # Expected test results
-    - "**/tests/**/scraped_examples/**"  # Scraped test examples
-
+    # Note: Don't exclude test directories globally - handle test data files via bundle-specific excludes
+        
   global_settings:
     # Default security setting for all files
     security_check: "warn"  # Strict by default
@@ -21,11 +18,7 @@ global:
     exclude_paths_file:
       - ".gitignore"
       - ".m1fignore"
-    # Example of multiple exclude files:
-    # exclude_paths_file:
-    #   - ".gitignore"
-    #   - ".m1fignore"
-
+    
     # Per-extension overrides
     extensions:
       .py:
@@ -35,19 +28,7 @@ global:
   defaults:
     force_overwrite: true
     max_file_size: "1MB"
-    minimal_output: false
-    
-  # File watcher settings
-  watcher:
-    enabled: true
-    debounce_seconds: 2
-    ignored_paths:
-      - "/m1f"
-      - ".git/"
-      - ".venv/"
-      - "tmp/"
-      - ".scrapes/"
-      # Note: global_excludes are automatically added to ignored_paths
+    minimal_output: true
 
 # Bundle definitions
 bundles:
@@ -58,6 +39,7 @@ bundles:
     output: "m1f/m1f/87_m1f_only_docs.txt"
     sources:
       - path: "docs/01_m1f"
+    docs_only: true
 
   html2md-docs:
     description: "html2md docs"
@@ -65,6 +47,7 @@ bundles:
     output: "m1f/m1f/88_html2md_docs.txt"
     sources:
       - path: "docs/03_html2md"
+    docs_only: true
 
   scraper-docs:
     description: "m1f-scrape docs"
@@ -73,16 +56,32 @@ bundles:
     sources:
       - path: "docs/04_scrape"
       - path: "tools/scrape_tool"
-        include_extensions: [".md", ".txt", ".json", ".yml", ".yaml"]
+    docs_only: true
+    
+  research-docs:
+    description: "m1f-research docs"
+    group: "documentation"
+    output: "m1f/m1f/86_research_docs.txt"
+    sources:
+      - path: "docs/06_research"
+      - path: "tools/research"
+    docs_only: true  
 
   all-docs:
     description: "m1f documentation"
     group: "documentation"
-    output: "m1f/m1f-docs.txt"
+    output: "m1f/m1f/all-docs.txt"
     sources:
       - path: "."
-        include_extensions: [".md", ".txt", ".json", ".yml", ".yaml"]
-        excludes: ["tests/**"]
+        excludes:
+          # Exclude test data files but keep test documentation (README.md)
+          - "**/tests/**/source/**"
+          - "**/tests/**/extracted/**"
+          - "**/tests/**/output/**"
+          - "**/tests/**/expected/**"
+          - "**/tests/**/scraped_examples/**"
+          - "**/test_pages/**"
+    docs_only: true
 
   # Source code bundles
   m1f-code:
@@ -103,42 +102,50 @@ bundles:
       - path: "tests/"
         excludes: ["**/tests/**/source/**", "**/tests/**/extracted/**", "**/tests/**/output/**", "**/tests/**/expected/**", "**/tests/**/scraped_examples/**"]
 
-  mf1-tool-code:
-    description: "mf1 complete code"
+  m1f-tool-code:
+    description: "m1f tool code only"
     group: "source"
-    output: "m1f/m1f/95_mf1_code.txt"
+    output: "m1f/m1f/93_m1f_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
-        includes: ["m1f/**", "m1f.py", "path_utils.py", "__init__.py"]
+        includes: ["m1f/**", "m1f.py", "path_utils.py"]
 
   s1f-code:
-    description: "s1f complete code"
+    description: "s1f tool code only"
     group: "source"
-    output: "m1f/m1f/96_s1f_code.txt"
+    output: "m1f/m1f/96_s1f_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
-        includes: ["s1f/**", "s1f.py", "path_utils.py", "__init__.py"]
+        includes: ["s1f/**", "s1f.py", "path_utils.py"]
 
   html2md-code:
-    description: "html2md complete code"
+    description: "html2md tool code only"
     group: "source"
-    output: "m1f/m1f/97_html2md_code.txt"
+    output: "m1f/m1f/97_html2md_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
-        includes: ["html2md_tool/**", "html2md.py", "path_utils.py", "__init__.py"]
+        includes: ["html2md_tool/**", "html2md.py", "path_utils.py"]
 
   scraper-code:
-    description: "m1f-scrape complete code"
+    description: "m1f-scrape tool code only"
     group: "source"
-    output: "m1f/m1f/98_scraper_code.txt"
+    output: "m1f/m1f/98_scraper_tool_code.txt"
     sources:
       - path: "tools/"
         include_extensions: [".py"]
-        includes: ["scrape_tool/**", "scrape.py", "path_utils.py", "__init__.py"]
+        includes: ["scrape_tool/**", "scrape.py", "path_utils.py"]
         
+  research-code:
+    description: "m1f-research code only"
+    group: "source"
+    output: "m1f/m1f/92_research_tool_code.txt"
+    sources:
+      - path: "tools/research"
+        include_extensions: [".py"]
+
   # Complete project bundle
   all:
     description: "All 1 One"
@@ -146,4 +153,10 @@ bundles:
     output: "m1f/m1f/99_m1f_complete.txt"
     sources:
       - path: "."
-        
+        excludes: 
+          # Exclude test data files but keep test Python files
+          - "**/tests/**/source/**"
+          - "**/tests/**/extracted/**"
+          - "**/tests/**/output/**"
+          - "**/tests/**/expected/**"
+          - "**/tests/**/scraped_examples/**"

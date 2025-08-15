@@ -1,7 +1,7 @@
 """Configuration system for mf1-html2md."""
 
-from .loader import load_config, save_config
-from .models import (
+from html2md_tool.config.loader import load_config, save_config
+from html2md_tool.config.models import (
     AssetConfig,
     Config,
     ConversionOptions,

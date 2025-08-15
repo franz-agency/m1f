@@ -33,6 +33,14 @@ import asyncio
 import sys
 from pathlib import Path
 from typing import NoReturn
+import os
+
+# Use unified colorama module
+try:
+    from tools.shared.colors import Colors, ColoredHelpFormatter, warning, error, info
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from tools.shared.colors import Colors, ColoredHelpFormatter, warning, error, info
 
 # Try absolute imports first (for module execution), fall back to relative
 try:
@@ -56,8 +64,8 @@ try:
     from _version import __version__, __version_info__
 except ImportError:
     # Fallback for when running as a script
-    __version__ = "3.2.0"
-    __version_info__ = (3, 2, 0)
+    __version__ = "3.3.0"
+    __version_info__ = (3, 3, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
@@ -72,7 +80,9 @@ async def async_main() -> int:
             import argparse
 
             parser = argparse.ArgumentParser(
-                prog="m1f auto-bundle", description="Auto-bundle functionality for m1f"
+                prog="m1f auto-bundle",
+                description="Auto-bundle functionality for m1f",
+                formatter_class=ColoredHelpFormatter,
             )
             parser.add_argument(
                 "bundle_name", nargs="?", help="Name of specific bundle to create"
@@ -111,7 +121,19 @@ async def async_main() -> int:
         args = parse_args(parser)
 
         # Create configuration from arguments
-        config = Config.from_args(args)
+        try:
+            config = Config.from_args(args)
+        except ValueError as e:
+            # Handle path traversal and validation errors gracefully
+            error_msg = str(e)
+            if "Path traversal detected" in error_msg:
+                error(f"Security error: {error_msg}")
+                info(
+                    "Note: You can only access files within your current directory or subdirectories."
+                )
+            else:
+                error(f"Configuration error: {error_msg}")
+            return 1
 
         # Setup logging
         logger_manager = setup_logging(config)
@@ -133,7 +155,7 @@ async def async_main() -> int:
             await logger_manager.cleanup()
 
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user.", file=sys.stderr)
+        warning("\nOperation cancelled by user.")
         return 130  # Standard exit code for Ctrl+C
 
     except M1FError as e:
@@ -151,6 +173,11 @@ async def async_main() -> int:
 
 def main() -> NoReturn:
     """Entry point for the application."""
+    # Set Windows-specific event loop policy to avoid debug messages
+    if sys.platform.startswith("win"):
+        # This prevents "RuntimeError: Event loop is closed" messages on Windows
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
     exit_code = asyncio.run(async_main())
     sys.exit(exit_code)
 

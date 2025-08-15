@@ -1,23 +1,23 @@
 # Documentation bundle preset group
+# Uses built-in docs_only feature to include all 62 documentation extensions automatically
 # Claude prefers valid markdown. However, there are LLMs that only read the first 200 lines of a file and then
 # decide whether to continue. This means you need to fit a lot of information into those first 200 lines.
 docs_bundle:
   name: "Documentation Bundle"
-  description: "Optimizes markdown files by joining paragraphs into single lines for better LLM processing"
+  description: "Includes all documentation files using built-in docs_only filter and optimizes for LLM processing"
   priority: 10
   enabled: true
   
   # Global settings for documentation bundles
   global_settings:
-    encoding: "utf-8"
-    separator_style: "Standard"
+    # encoding and separator_style use defaults (best for AI)
     security_check: null  # Docs rarely have secrets
     remove_scraped_metadata: true  # Clean up scraped docs
+    docs_only: true  # Include all 62 documentation extensions
     
-    # Exclude build outputs
+    # Exclude documentation build outputs (only what's not already excluded by default)
     exclude_patterns:
       - "_build/**"
-      - "build/**"
       - "site/**"
       - "public/**"
   
@@ -30,5 +30,5 @@ docs_bundle:
       actions:
         - "join_paragraphs"  # Compress paragraphs to single lines
         - "remove_empty_lines"
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
       max_file_size: "2MB"

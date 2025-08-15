@@ -49,6 +49,17 @@ DEFAULT_EXCLUDED_FILES: Set[str] = {
     "yarn.lock",
 }
 
+# Default file patterns to exclude
+DEFAULT_EXCLUDED_PATTERNS: Set[str] = {
+    "*.tmp",
+    "*.bak",
+    "*.swp",
+    "*.swo",
+    "*~",
+    ".DS_Store",
+    "Thumbs.db",
+}
+
 # Maximum symlink depth to prevent infinite loops
 MAX_SYMLINK_DEPTH: int = 40
 
@@ -60,6 +71,125 @@ MACHINE_READABLE_BOUNDARY_PREFIX: str = "PYMK1F"
 
 # Token encoding name for tiktoken
 TOKEN_ENCODING_NAME: str = "cl100k_base"
+
+# Documentation file extensions
+DOCUMENTATION_EXTENSIONS: Set[str] = {
+    # Man pages
+    ".1",
+    ".1st",
+    ".2",
+    ".3",
+    ".4",
+    ".5",
+    ".6",
+    ".7",
+    ".8",
+    # Documentation formats
+    ".adoc",
+    ".asciidoc",
+    ".changelog",
+    ".changes",
+    ".creole",
+    ".faq",
+    ".feature",
+    ".help",
+    ".history",
+    ".info",
+    ".lhs",
+    ".litcoffee",
+    ".ltx",
+    ".man",
+    ".markdown",
+    ".markdown2",
+    ".md",
+    ".mdown",
+    ".mdtxt",
+    ".mdtext",
+    ".mdwn",
+    ".mdx",
+    ".me",
+    ".mkd",
+    ".mkdn",
+    ".mkdown",
+    ".ms",
+    ".news",
+    ".nfo",
+    ".notes",
+    ".org",
+    ".pod",
+    ".pod6",
+    ".qmd",
+    ".rd",
+    ".rdoc",
+    ".readme",
+    ".release",
+    ".rmd",
+    ".roff",
+    ".rst",
+    ".rtf",
+    ".story",
+    ".t",
+    ".tex",
+    ".texi",
+    ".texinfo",
+    ".text",
+    ".textile",
+    ".todo",
+    ".tr",
+    ".txt",
+    ".wiki",
+}
+
+# Documentation extensions that are typically UTF-8 encoded
+UTF8_PREFERRED_EXTENSIONS: Set[str] = {
+    # Markdown variants
+    ".md",
+    ".markdown",
+    ".markdown2",
+    ".mdown",
+    ".mdtxt",
+    ".mdtext",
+    ".mdwn",
+    ".mdx",
+    ".mkd",
+    ".mkdn",
+    ".mkdown",
+    ".rmd",
+    ".qmd",
+    # Plain text
+    ".txt",
+    ".text",
+    ".readme",
+    ".changelog",
+    ".changes",
+    ".todo",
+    ".notes",
+    ".history",
+    ".news",
+    ".release",
+    # Structured text formats
+    ".rst",
+    ".asciidoc",
+    ".adoc",
+    ".org",
+    ".textile",
+    ".creole",
+    ".wiki",
+    # Developer documentation
+    ".pod",
+    ".pod6",
+    ".rdoc",
+    ".rd",
+    # Code documentation
+    ".lhs",
+    ".litcoffee",
+    # Other UTF-8 common formats
+    ".faq",
+    ".help",
+    ".info",
+    ".feature",
+    ".story",
+}
 
 # ANSI color codes
 ANSI_COLORS = {

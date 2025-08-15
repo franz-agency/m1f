@@ -6,11 +6,14 @@ A modern Python tool to split a combined file (created by m1f) back into individ
 """
 
 try:
-    from .._version import __version__, __version_info__
+    from tools._version import __version__, __version_info__
 except ImportError:
-    # Fallback when running as standalone script
-    __version__ = "3.1.0"
-    __version_info__ = (3, 1, 0)
+    try:
+        from .._version import __version__, __version_info__
+    except ImportError:
+        # Fallback when running as standalone script
+        __version__ = "3.8.0"
+        __version_info__ = (3, 8, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"

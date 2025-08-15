@@ -19,7 +19,9 @@ Core functionality for m1f - the main FileCombiner class.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,6 +44,11 @@ from .utils import (
     format_duration,
     sort_files_by_depth_and_name,
     sort_directories_by_depth_and_name,
+)
+from .file_operations import (
+    safe_exists,
+    safe_open,
+    safe_mkdir,
 )
 
 
@@ -190,18 +197,24 @@ class FileCombiner:
             execution_time = format_duration(time.time() - start_time)
             self.logger.error(f"Processing failed after {execution_time}: {e}")
             raise
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     def _validate_config(self) -> None:
         """Validate the configuration."""
-        if not self.config.source_directory and not self.config.input_file:
+        if not self.config.source_directories and not self.config.input_file:
             raise ValidationError("No source directory or input file specified")
 
-        if self.config.source_directory and not self.config.source_directory.exists():
-            raise FileNotFoundError(
-                f"Source directory not found: {self.config.source_directory}"
-            )
+        if self.config.source_directories:
+            for source_dir in self.config.source_directories:
+                if not safe_exists(source_dir, self.logger):
+                    raise FileNotFoundError(f"Source directory not found: {source_dir}")
 
-        if self.config.input_file and not self.config.input_file.exists():
+        if self.config.input_file and not safe_exists(
+            self.config.input_file, self.logger
+        ):
             raise FileNotFoundError(f"Input file not found: {self.config.input_file}")
 
     async def _prepare_output_path(self) -> Path:
@@ -217,7 +230,10 @@ class FileCombiner:
             self.logger.debug(f"Output filename with timestamp: {output_path.name}")
 
         # Handle existing file
-        if output_path.exists() and not self.config.output.skip_output_file:
+        if (
+            safe_exists(output_path, self.logger)
+            and not self.config.output.skip_output_file
+        ):
             if self.config.output.force_overwrite:
                 self.logger.warning(f"Overwriting existing file: {output_path}")
                 try:
@@ -258,17 +274,24 @@ class FileCombiner:
                     raise ValidationError("Operation cancelled by user")
 
         # Ensure parent directory exists
-        try:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            raise PermissionError(f"Cannot create output directory: {e}")
+        if not safe_mkdir(output_path.parent, self.logger, parents=True, exist_ok=True):
+            raise PermissionError(
+                f"Cannot create output directory: {output_path.parent}"
+            )
 
         return output_path
 
     def _log_start_info(self) -> None:
         """Log initial information about the processing."""
-        if self.config.source_directory:
-            self.logger.info(f"Source directory: {self.config.source_directory}")
+        if self.config.source_directories:
+            if len(self.config.source_directories) == 1:
+                self.logger.info(
+                    f"Source directory: {self.config.source_directories[0]}"
+                )
+            else:
+                self.logger.info(
+                    f"Source directories: {', '.join(str(d) for d in self.config.source_directories)}"
+                )
 
         if self.config.input_file:
             self.logger.info(f"Input file: {self.config.input_file}")
@@ -406,11 +429,22 @@ class FileCombiner:
                 # Sort directories by depth and name
                 sorted_paths = sort_directories_by_depth_and_name(list(unique_dirs))
 
+            # Only write if there's content to write
+            if not sorted_paths:
+                return
+
             # Write to file
             def write_file():
-                with open(path, "w", encoding="utf-8") as f:
-                    for p in sorted_paths:
-                        f.write(f"{p}\n")
+                with safe_open(path, "w", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        for p in sorted_paths:
+                            f.write(f"{p}\n")
+                    else:
+                        raise PermissionError(
+                            f"Cannot write {list_type} list to {path}"
+                        )
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_file)
 
@@ -422,12 +456,23 @@ class FileCombiner:
     async def _create_empty_output(self, output_path: Path) -> None:
         """Create an empty output file with a note."""
         try:
-            source = self.config.source_directory or "input file"
+            source = (
+                ", ".join(str(d) for d in self.config.source_directories)
+                if self.config.source_directories
+                else "input file"
+            )
             content = f"# No files processed from {source}\n"
 
             def write_empty():
-                with open(output_path, "w", encoding="utf-8") as f:
-                    f.write(content)
+                with safe_open(output_path, "w", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        f.write(content)
+                    else:
+                        raise PermissionError(
+                            f"Cannot create output file: {output_path}"
+                        )
+                # Explicitly ensure file handle is released
+                f = None
 
             await asyncio.to_thread(write_empty)
 
@@ -446,8 +491,18 @@ class FileCombiner:
 
             # Read file content
             def read_file():
-                with open(output_path, "r", encoding="utf-8") as f:
-                    return f.read()
+                content = None
+                with safe_open(output_path, "r", self.logger, encoding="utf-8") as f:
+                    if f is not None:
+                        content = f.read()
+                    else:
+                        self.logger.warning(
+                            f"Cannot read output file for token counting: {output_path}"
+                        )
+                        return None
+                # Explicitly ensure file handle is released
+                f = None
+                return content
 
             content = await asyncio.to_thread(read_file)
 

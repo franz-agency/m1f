@@ -56,9 +56,7 @@ s1f_script = tools_dir / "s1f.py"
 cmd1 = [
     sys.executable,
     str(s1f_script),
-    "--input-file",
     str(input_file),
-    "--destination-directory",
     str(extracted_dir / "utf8"),
     "--force",
     "--verbose",
@@ -119,9 +117,7 @@ print("----------------------------------------")
 cmd2 = [
     sys.executable,
     str(s1f_script),
-    "--input-file",
     str(input_file),
-    "--destination-directory",
     str(extracted_dir / "original"),
     "--respect-encoding",
     "--force",

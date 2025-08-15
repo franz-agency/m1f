@@ -5,12 +5,12 @@ extractors, async I/O, and parallel processing capabilities.
 
 ## Overview
 
-The html2md tool (v3.1.0) provides a robust solution for converting HTML content
+The html2md tool (v3.4.0) provides a robust solution for converting HTML content
 to Markdown format, with fine-grained control over the conversion process. Built
 with Python 3.10+ and modern async architecture, it focuses on intelligent
 content extraction and conversion.
 
-**New in v3.1.0:** Custom extractor plugin system for site-specific content
+**New in v3.4.0:** Custom extractor plugin system for site-specific content
 extraction.
 
 **Note:** Web scraping functionality has been moved to the separate `webscraper`
@@ -44,28 +44,37 @@ tool for better modularity. Use `webscraper` to download websites, then
 
 ```bash
 # Basic conversion of all HTML files in a directory
-python -m tools.html2md convert ./website -o ./docs
+m1f-html2md convert ./website -o ./docs
 
 # Use a custom extractor for site-specific conversion
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --extractor ./extractors/custom_extractor.py
 
 # Extract only main content from HTML files
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "main.content" --ignore-selectors nav .sidebar footer
 
 # Skip YAML frontmatter and adjust heading levels
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --no-frontmatter --heading-offset 1
 
 # Analyze HTML structure to find best selectors
-python -m tools.html2md analyze ./html/*.html --suggest-selectors
+m1f-html2md analyze ./html/*.html --suggest-selectors
 
 # Analyze with detailed structure output
-python -m tools.html2md analyze ./html/*.html --show-structure --common-patterns
+m1f-html2md analyze ./html/*.html --show-structure --common-patterns
+
+# Use Claude AI to intelligently analyze HTML structure
+m1f-html2md analyze ./html/ --claude
+
+# Analyze with Claude and specify number of files to analyze (1-20)
+m1f-html2md analyze ./html/ --claude --analyze-files 10
+
+# Convert HTML to Markdown using Claude AI (clean content extraction)
+m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus --sleep 2
 
 # Generate a configuration file
-python -m tools.html2md config -o config.yaml
+m1f-html2md config -o config.yaml
 ```
 
 ### Complete Workflow Example with .scrapes Directory
@@ -75,10 +84,10 @@ python -m tools.html2md config -o config.yaml
 mkdir -p .scrapes/my-project/{html,md,extractors}
 
 # Step 2: Download website using webscraper
-python -m tools.scrape_tool https://example.com -o .scrapes/my-project/html
+m1f-scrape https://example.com -o .scrapes/my-project/html
 
 # Step 3: Analyze HTML structure (optional)
-python -m tools.html2md analyze .scrapes/my-project/html/*.html --suggest-selectors
+m1f-html2md analyze .scrapes/my-project/html/ --suggest-selectors
 
 # Step 4: Create custom extractor (optional)
 # Use Claude to analyze and create site-specific extractor:
@@ -86,7 +95,7 @@ claude -p "Analyze these HTML files and create a custom extractor for html2md" \
   --files .scrapes/my-project/html/*.html
 
 # Step 5: Convert with custom extractor
-python -m tools.html2md convert .scrapes/my-project/html -o .scrapes/my-project/md \
+m1f-html2md convert .scrapes/my-project/html -o .scrapes/my-project/md \
   --extractor .scrapes/my-project/extractors/custom_extractor.py
 ```
 
@@ -99,7 +108,7 @@ The html2md tool uses subcommands for different operations:
 Convert local HTML files to Markdown:
 
 ```bash
-python -m tools.html2md convert <source> -o <output> [options]
+m1f-html2md convert <source> -o <output> [options]
 ```
 
 | Option               | Description                                                   |
@@ -112,37 +121,39 @@ python -m tools.html2md convert <source> -o <output> [options]
 | `--content-selector` | CSS selector for main content                                 |
 | `--ignore-selectors` | CSS selectors to ignore (space-separated)                     |
 | `--heading-offset`   | Offset heading levels (default: 0)                            |
-| `--no-frontmatter`   | Don't add YAML frontmatter                                    |
+| `--no-frontmatter`   | Explicitly disable YAML frontmatter generation                |
 | `--parallel`         | Enable parallel processing                                    |
-| `--log-file`         | Log to file                                                   |
+| `--claude`           | Use Claude AI to convert HTML to Markdown (content only)      |
+| `--model`            | Claude model to use: opus, sonnet (default: sonnet)           |
+| `--sleep`            | Sleep time in seconds between Claude API calls (default: 1.0) |
 | `-v, --verbose`      | Enable verbose output                                         |
 | `-q, --quiet`        | Suppress all output except errors                             |
-| `--version`          | Show version information and exit                             |
 
 ### Analyze Command
 
 Analyze HTML structure for optimal content extraction:
 
 ```bash
-python -m tools.html2md analyze <files> [options]
+m1f-html2md analyze <paths> [options]
 ```
 
 | Option                | Description                                                          |
 | --------------------- | -------------------------------------------------------------------- |
-| `files`               | HTML files to analyze (2-3 files recommended)                        |
+| `paths`               | HTML files or directories to analyze                                 |
 | `--show-structure`    | Show detailed HTML structure                                         |
 | `--common-patterns`   | Find common patterns across files                                    |
 | `--suggest-selectors` | Suggest CSS selectors for content extraction (default if no options) |
+| `--claude`            | Use Claude AI to intelligently select files and suggest selectors    |
+| `--analyze-files`     | Number of files to analyze with Claude (1-20, default: 5)            |
 | `-v, --verbose`       | Enable verbose output                                                |
 | `-q, --quiet`         | Suppress all output except errors                                    |
-| `--log-file`          | Log to file                                                          |
 
 ### Config Command
 
 Generate a configuration file template:
 
 ```bash
-python -m tools.html2md config [options]
+m1f-html2md config [options]
 ```
 
 | Option         | Description                                            |
@@ -150,33 +161,106 @@ python -m tools.html2md config [options]
 | `-o, --output` | Output configuration file (default: config.yaml)       |
 | `--format`     | Configuration format: yaml, toml, json (default: yaml) |
 
+## Claude AI Integration
+
+html2md offers optional Claude AI integration for intelligent HTML analysis and
+conversion:
+
+### Claude Command Detection
+
+The tool automatically detects Claude Code installations in various locations:
+
+- Standard PATH locations
+- `~/.claude/local/claude` (common for local installations)
+- `/usr/local/bin/claude` and `/usr/bin/claude`
+
+If you have Claude Code installed but get a "command not found" error, the tool
+will automatically find and use your Claude binary.
+
+### AI-Powered Analysis
+
+Use Claude to automatically select representative HTML files and suggest optimal
+CSS selectors:
+
+```bash
+# Analyze a directory of HTML files with Claude
+m1f-html2md analyze ./scraped-site/ --claude
+
+# Analyze more files for better coverage (up to 20)
+m1f-html2md analyze ./scraped-site/ --claude --analyze-files 10
+
+# Claude will:
+# 1. Prompt for project description and important files (if applicable)
+# 2. Select representative files from the directory (default: 5)
+# 3. Analyze each file's structure individually
+# 4. Synthesize findings to suggest optimal selectors
+# 5. Generate a YAML configuration (html2md_extract_config.yaml)
+```
+
+**Features of Claude Analysis:**
+
+- **Project Context**: Provides project description to help Claude understand
+  the content
+- **Important File Priority**: Can specify important files for Claude to
+  prioritize
+- **Multi-phase Analysis**: Individual file analysis followed by synthesis
+- **Transparent Process**: Creates temporary analysis files in m1f/ directory
+- **Smart Subprocess Handling**: Uses subprocess.run() for reliable Claude CLI
+  integration
+- **Streaming Output**: Real-time progress display during Claude analysis
+  (v3.4.0)
+- **Robust Config Loading**: Handles Claude-generated configs with unknown
+  fields gracefully (v3.4.0)
+
+### AI-Powered Conversion
+
+Use Claude to convert HTML to clean Markdown, extracting only the main content:
+
+```bash
+# Convert all HTML files using Claude AI
+m1f-html2md convert ./html/ -o ./markdown/ --claude
+
+# Use Opus model for higher quality (default is Sonnet)
+m1f-html2md convert ./html/ -o ./markdown/ --claude --model opus
+
+# Add delay between API calls to avoid rate limits
+m1f-html2md convert ./html/ -o ./markdown/ --claude --sleep 3
+```
+
+The Claude conversion:
+
+- Extracts only the main content (no navigation, ads, etc.)
+- Preserves document structure and formatting
+- Handles complex HTML layouts intelligently
+- Generates clean, readable Markdown
+
 ## Usage Examples
 
 ### Basic Conversion
 
 ```bash
 # Simple conversion of all HTML files in a directory
-python -m tools.html2md convert ./website -o ./docs
+m1f-html2md convert ./website -o ./docs
 
 # Convert files with verbose logging
-python -m tools.html2md convert ./website -o ./docs --verbose
+m1f-html2md convert ./website -o ./docs --verbose
 
 # Convert to m1f bundle format
-python -m tools.html2md convert ./website -o ./docs.m1f --format m1f_bundle
+m1f-html2md convert ./website -o ./docs.m1f --format m1f_bundle
 
 # Convert to JSON format for processing
-python -m tools.html2md convert ./website -o ./data.json --format json
+m1f-html2md convert ./website -o ./data.json --format json
 ```
 
 ### Content Selection
 
 ```bash
 # Extract only the main content and ignore navigation elements
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "main" --ignore-selectors nav .sidebar footer
 
 # Extract article content from specific selectors
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --content-selector "article.content" \
   --ignore-selectors .author-bio .share-buttons .related-articles
 ```
@@ -185,16 +269,16 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Analyze HTML files to find optimal selectors
-python -m tools.html2md analyze ./html/*.html
+m1f-html2md analyze ./html/ --suggest-selectors
 
 # Show detailed structure of HTML files
-python -m tools.html2md analyze ./html/*.html --show-structure
+m1f-html2md analyze ./html/ --show-structure
 
 # Find common patterns across multiple files
-python -m tools.html2md analyze ./html/*.html --common-patterns
+m1f-html2md analyze ./html/ --common-patterns
 
 # Get all analysis options
-python -m tools.html2md analyze ./html/*.html \
+m1f-html2md analyze ./html/ \
   --show-structure --common-patterns --suggest-selectors
 ```
 
@@ -202,7 +286,7 @@ python -m tools.html2md analyze ./html/*.html \
 
 ```bash
 # Process only specific file types
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   -c config.yaml  # Use a configuration file for file filtering
 ```
 
@@ -210,18 +294,18 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Adjust heading levels (e.g., h1 → h2, h2 → h3)
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --heading-offset 1
 
 # Skip frontmatter generation
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --no-frontmatter
 
 # Use configuration file for advanced formatting options
-python -m tools.html2md convert ./website -o ./docs -c config.yaml
+m1f-html2md convert ./website -o ./docs -c config.yaml
 
 # Log conversion process to file
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --log-file conversion.log
 ```
 
@@ -229,7 +313,7 @@ python -m tools.html2md convert ./website -o ./docs \
 
 ```bash
 # Use parallel processing for faster conversion of large sites
-python -m tools.html2md convert ./website -o ./docs \
+m1f-html2md convert ./website -o ./docs \
   --parallel
 ```
 
@@ -301,7 +385,7 @@ class Extractor(BaseExtractor):
 
 ```bash
 # Use with CLI
-python -m tools.html2md convert ./html -o ./markdown \
+m1f-html2md convert ./html -o ./markdown \
   --extractor ./extractors/my_extractor.py
 
 # Use with API
@@ -335,30 +419,37 @@ codebase.
 
 ### YAML Frontmatter
 
-By default, the converter adds YAML frontmatter to each Markdown file,
-including:
+By default, the converter does NOT add YAML frontmatter to Markdown files.
+The output contains only the converted content without any metadata.
 
-- Title extracted from HTML title tag or first h1 element
-- Source filename
-- Conversion date
-- Original file modification date
+To enable frontmatter generation (which includes title extraction from HTML),
+use the `generate_frontmatter: true` option in your config file:
 
-To disable frontmatter generation, use the `--no-frontmatter` option:
+```yaml
+# config.yaml
+conversion:
+  generate_frontmatter: true  # Enable frontmatter
 
-```bash
-python -m tools.html2md convert ./website -o ./docs --no-frontmatter
+# Then use:
+m1f-html2md convert ./website -o ./docs -c config.yaml
 ```
 
-The generated frontmatter looks like:
+When enabled, the generated frontmatter contains only the title:
 
 ```yaml
 ---
 title: Extracted from HTML
-source_file: original.html
-date_converted: 2023-06-15T14:30:21
-date_modified: 2023-06-12T10:15:33
 ---
 ```
+
+To explicitly disable frontmatter (overrides config file), use:
+
+```bash
+m1f-html2md convert ./website -o ./docs --no-frontmatter
+```
+
+Note: The `source_file` field has been removed from frontmatter generation to 
+avoid exposing file paths.
 
 ### Heading Level Adjustment
 
@@ -405,7 +496,7 @@ The converter provides robust character encoding detection and conversion:
 
 ## Architecture
 
-HTML2MD v3.1.0 features a modern, modular architecture:
+HTML2MD v3.4.0 features a modern, modular architecture:
 
 ```
 tools/html2md/
@@ -447,12 +538,12 @@ documentation handling:
 1. First convert HTML files to Markdown:
 
    ```bash
-   python -m tools.html2md convert ./html-docs -o ./markdown-docs
+   m1f-html2md convert ./html-docs -o ./markdown-docs
    ```
 
 2. Then use m1f to combine the Markdown files:
    ```bash
-   python -m tools.m1f -s ./markdown-docs -o ./combined-docs.m1f.txt \
+   m1f -s ./markdown-docs -o ./combined-docs.m1f.txt \
      --separator-style Markdown
    ```
 
@@ -478,6 +569,7 @@ Use html2md in your Python projects:
 from tools.html2md.api import Html2mdConverter
 from tools.html2md.config import Config
 from tools.html2md.extractors import BaseExtractor
+from tools.shared.colors import info, success
 from pathlib import Path
 
 # Create converter with configuration
@@ -503,11 +595,11 @@ converter = Html2mdConverter(config, extractor=MyExtractor())
 
 # Convert a single file
 output_path = converter.convert_file(Path("page.html"))
-print(f"Converted to: {output_path}")
+success(f"Converted to: {output_path}")
 
 # Convert entire directory
 results = converter.convert_directory()
-print(f"Converted {len(results)} files")
+info(f"Converted {len(results)} files")
 ```
 
 ## Requirements and Dependencies

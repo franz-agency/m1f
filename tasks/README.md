@@ -11,8 +11,8 @@ context for AI interactions. The system includes:
 3. **Preset System** - Apply file-specific processing rules
 4. **Watch Mode** - Automatically regenerate bundles when files change
 
-Using the `m1f.py` tool and auto-bundling scripts, you can create optimized
-context files for AI assistants.
+Using the `m1f` tool and auto-bundling scripts, you can create optimized context
+files for AI assistants.
 
 ## VS Code Setup
 
@@ -208,7 +208,7 @@ m1f-update all
 m1f-update focus wordpress
 
 # Use specific preset with group
-python -m tools.m1f auto-bundle preset web-project frontend
+m1f auto-bundle preset web-project frontend
 ```
 
 Available presets:
@@ -254,7 +254,7 @@ You can customize the tasks by editing `m1f.json` for your specific needs:
 
 ## Additional Options
 
-Consider these advanced options from `m1f.py` for specific needs:
+Consider these advanced options from `m1f` for specific needs:
 
 - `--include-dot-paths`: Useful for including WordPress-specific configuration
   files like `.htaccess` or other dot files and directories (e.g., `.config/`,
@@ -271,7 +271,7 @@ For a complete list of all available options and their detailed descriptions,
 run:
 
 ```
-python tools/m1f.py --help
+m1f --help
 ```
 
 ## Machine-Readable Format
@@ -322,7 +322,6 @@ files that represent the functionality or problem area you're focusing on.
 Consider these categories:
 
 - **Core Theme Files**:
-
   - `style.css` (for theme identity and metadata)
   - `functions.php` (critical for theme logic, hooks, and filters)
   - `index.php`, `header.php`, `footer.php`, `sidebar.php` (main template
@@ -336,7 +335,6 @@ Consider these categories:
   - Key JavaScript (e.g., `assets/js/custom.js`) and CSS files.
 
 - **Core Plugin Files**:
-
   - The main plugin file (e.g., `your-plugin-name/your-plugin-name.php`) which
     includes the plugin header.
   - Files containing main classes, action/filter hooks, shortcodes, and admin
@@ -348,7 +346,6 @@ Consider these categories:
 
 - **Feature-Specific Files**: If you are working on a particular feature (e.g.,
   WooCommerce integration, a custom contact form, a specific admin page):
-
   - Include all files directly related to that feature from both your theme and
     any relevant plugins.
   - For example, for WooCommerce: relevant template overrides in
@@ -418,11 +415,11 @@ wp-content/plugins/UtilityPlugin/includes/cpt-slides.php
 
 ### 3. Generate the Combined Context File
 
-Run `m1f.py` from your terminal, pointing to your input file list and specifying
-an output file. It's recommended to use the `MachineReadable` separator style.
+Run `m1f` from your terminal, pointing to your input file list and specifying an
+output file. It's recommended to use the `MachineReadable` separator style.
 
 ```bash
-python tools/m1f.py \
+m1f \
   --input-file my_wp_context_files.txt \
   --output-file .gen/wordpress_context.m1f.txt \
   --separator-style MachineReadable \
@@ -447,7 +444,7 @@ You can also generate only the auxiliary files (file list and directory list)
 without creating the combined file:
 
 ```bash
-python tools/m1f.py \
+m1f \
   --input-file my_wp_context_files.txt \
   --output-file .gen/wordpress_auxiliary_only.m1f.txt \
   --skip-output-file \
@@ -535,9 +532,8 @@ development tasks.
 
 When dealing with a project that contains hundreds or thousands of files, start
 by generating a complete file and directory listing without creating the merged
-context file. Run the **Project Review: Generate Lists** task. It calls
-`tools/m1f.py` with `--skip-output-file` and saves two inventory files to the
-`m1f` directory:
+context file. Run the **Project Review: Generate Lists** task. It calls `m1f`
+with `--skip-output-file` and saves two inventory files to the `m1f` directory:
 
 - `m1f/project_review_filelist.txt`
 - `m1f/project_review_dirlist.txt`

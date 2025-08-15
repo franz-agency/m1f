@@ -4,7 +4,7 @@
 
 """Module execution entry point for mf1-html2md."""
 
-from .cli import main
+from html2md_tool.cli import main
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,7 @@
 # m1f exclude file - additional files to exclude from bundles which are not in .gitignore
 /m1f
 /dev
+/tmp
 
 # License and notice files
 LICENSE
@@ -18,5 +19,5 @@ package-lock.json
 
 pyproject.toml
 pytest.ini
-wp-cli.example.yml
 requirements.txt
+GEMINI.md

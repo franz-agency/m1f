@@ -1,110 +1,193 @@
 # m1f Documentation
 
-This directory contains detailed documentation for the m1f project v3.2.0.
+Welcome to the m1f project documentation. This directory contains comprehensive
+guides, references, and examples for all tools in the m1f toolkit.
 
-## Contents
+**Current Version: 3.8.0** | [Changelog](99_CHANGELOG.md)
 
-### Core Tools
+## Table of Contents
 
-- [m1f (Make One File)](01_m1f/00_m1f.md) - Documentation for the main tool that
-  combines multiple files into a single file with content deduplication and
-  async I/O
-- [s1f (Split One File)](02_s1f/20_s1f.md) - Documentation for the tool that
-  extracts individual files from a combined file with modern Python architecture
-- [token_counter](99_misc/98_token_counter.md) - Documentation for the token
-  estimation tool
+### 📚 Core Tool Documentation
 
-### Web Scraping and HTML Conversion
+#### m1f (Make One File)
 
-- [webscraper](04_scrape/40_webscraper.md) - Download websites for offline
+The main tool that combines multiple files into a single reference file with
+content deduplication.
+
+- [**Getting Started**](01_m1f/05_getting_started.md) - Installation and first
+  steps with real examples
+- [**m1f Overview**](01_m1f/00_m1f.md) - Complete guide with features, usage
+  examples, and architecture
+- [**Quick Reference**](01_m1f/01_quick_reference.md) - Common commands and
+  patterns for quick lookup
+- [**CLI Reference**](01_m1f/02_cli_reference.md) - Complete command-line
+  parameter reference
+- [**Troubleshooting Guide**](01_m1f/03_troubleshooting.md) - Common issues and
+  their solutions
+- [**Security Best Practices**](01_m1f/40_security_best_practices.md) - Security
+  guidelines and protective measures
+
+#### s1f (Split One File)
+
+Extracts individual files from a combined file with preserved structure.
+
+- [**s1f Documentation**](02_s1f/20_s1f.md) - Complete guide for file extraction
+  tool
+
+#### Web Tools
+
+Professional web scraping and conversion tools.
+
+- [**Webscraper**](04_scrape/40_webscraper.md) - Download websites for offline
   viewing and processing
-- [html2md Overview](03_html2md/30_html2md.md) - Comprehensive guide to the HTML
-  to Markdown converter
-- [html2md Guide](03_html2md/31_html2md_guide.md) - Detailed usage guide with
-  examples
-- [html2md Test Suite](03_html2md/33_html2md_test_suite.md) - Documentation for
-  the comprehensive test suite
+- [**HTML to Markdown Converter**](03_html2md/30_html2md.md) - Comprehensive
+  HTML to Markdown conversion guide
+- [**HTML2MD Usage Guide**](03_html2md/31_html2md_guide.md) - Detailed usage
+  examples and patterns
+- [**HTML2MD Workflow Guide**](03_html2md/32_html2md_workflow_guide.md) -
+  Advanced workflows and automation
+- [**HTML2MD Test Suite**](03_html2md/33_html2md_test_suite.md) - Testing
+  documentation and examples
+- [**Scraper Backends**](04_scrape/41_html2md_scraper_backends.md) - Backend
+  options for web scraping
 
-### Advanced Features
+#### Research Tool
 
-- [Auto Bundle Guide](01_m1f/20_auto_bundle_guide.md) - Automatic project
-  bundling for AI/LLM consumption
-- [Claude + m1f Workflows](01_m1f/30_claude_workflows.md) - Turn Claude into
-  your personal m1f expert with smart prompt enhancement
-- [Claude Code Integration](01_m1f/31_claude_code_integration.md) - Optional
+AI-powered research tool for automatic information gathering and bundling.
+
+- [**Research Tool Overview**](06_research/) - Comprehensive research tool
+  documentation
+- [**Research README**](06_research/README.md) - Quick start and feature
+  overview
+- [**Architecture**](06_research/architecture.md) - Technical architecture
+  details
+- [**API Reference**](06_research/api-reference.md) - Complete API documentation
+- [**Examples**](06_research/examples.md) - Usage examples and recipes
+
+#### Utility Tools
+
+- [**Token Counter**](98_misc/98_token_counter.md) - Estimate token usage for
+  LLM context planning
+
+### 🎯 Advanced Features
+
+#### Preset System
+
+File-specific processing rules and configurations.
+
+- [**Preset System Guide**](01_m1f/10_m1f_presets.md) - Complete preset system
+  documentation
+- [**Per-File Type Settings**](01_m1f/11_preset_per_file_settings.md) -
+  Fine-grained file processing control
+- [**Preset Reference**](01_m1f/12_preset_reference.md) - Complete reference
+  with all settings and features
+
+#### Auto-Bundle & Configuration
+
+Automated project bundling for AI/LLM consumption.
+
+- [**Auto Bundle Guide**](01_m1f/20_auto_bundle_guide.md) - Automatic bundling
+  with configuration files
+- [**Configuration Examples**](01_m1f/25_m1f_config_examples.md) - Real-world
+  configuration examples
+- [**Default Excludes Guide**](01_m1f/26_default_excludes_guide.md) -
+  Understanding default exclusion patterns
+
+#### AI Integration
+
+Work efficiently with Claude and other LLMs.
+
+- [**Claude + m1f Workflows**](01_m1f/30_claude_workflows.md) - Turn Claude into
+  your personal m1f expert
+- [**Claude Code Integration**](01_m1f/31_claude_code_integration.md) - Optional
   AI-powered tool automation
-- [Preset System Guide](01_m1f/10_m1f_presets.md) - File-specific processing
-  rules and configurations
-- [Per-File-Type Settings](01_m1f/11_preset_per_file_settings.md) - Fine-grained
-  control over file processing
 
-### Development
+### 🔧 Development
 
-- [Version Management](05_development/55_version_management.md) - Version
-  management and release process
-- [Git Hooks Setup](05_development/56_git_hooks_setup.md) - Git hooks for
-  automated bundling
+- [**Development Workflow**](01_m1f/21_development_workflow.md) - Best practices
+  for development with m1f
+- [**Git Hooks Setup**](05_development/56_git_hooks_setup.md) - Automated
+  bundling with git hooks
+- [**Version 3.2 Features**](01_m1f/41_version_3_2_features.md) - Feature
+  documentation and migration guide
 
-## Quick Navigation
+### 📖 Additional Resources
 
-### Common Workflows
+- [**m1f Section Overview**](01_m1f/README.md) - Overview of m1f documentation
+  section
+- [**Development Section Overview**](05_development/README.md) - Overview of
+  development documentation
+- [**Full Changelog**](99_CHANGELOG.md) - Complete project history and version
+  details
 
-- **First-time setup**: Install Python 3.10+ and requirements:
-  ```bash
-  python -m venv .venv
-  source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-  pip install -r requirements.txt
-  ```
-- **Basic file combination**: Use
-  `python -m tools.m1f -s ./your_project -o ./combined.txt`
-- **File extraction**: Use
-  `python -m tools.s1f -i ./combined.txt -d ./extracted_files`
-- **Check token count**: Use `python tools/token_counter.py ./combined.txt`
-- **Download website**: Use
-  `python -m tools.webscraper https://example.com -o ./html`
-- **Convert HTML to Markdown**: Use
-  `python -m tools.html2md convert ./html ./markdown`
-- **Auto-bundle project**: Use `./scripts/auto_bundle.sh` or configure with
-  `.m1f.config.yml`
+## Quick Start
 
-### Key Concepts
+### Installation
 
-- **Separator Styles**: Different formats for separating files in the combined
-  output ([details](01_m1f/00_m1f.md#separator-styles))
-- **File Filtering**: Include/exclude specific files using patterns
-  ([details](01_m1f/00_m1f.md#command-line-options))
-- **Security**: Scan for secrets before combining files
-  ([details](01_m1f/00_m1f.md#security-check))
-- **Content Selection**: Extract specific content using CSS selectors
-  ([details](03_html2md/30_html2md.md#content-selection))
+```bash
+# Clone the repository
+git clone https://github.com/Karrtii/m1f.git
+cd m1f
+
+# Install tools
+./scripts/install.sh  # On Windows: ./scripts/install.ps1
+```
+
+### Basic Usage
+
+```bash
+# Combine files
+m1f -s ./your_project -o ./combined.txt
+
+# Extract files
+m1f-s1f -i ./combined.txt -d ./extracted_files
+
+# Check token count
+m1f-token-counter ./combined.txt
+
+# Download website
+m1f-scrape https://example.com -o ./html
+
+# Convert HTML to Markdown
+m1f-html2md convert ./html ./markdown
+```
+
+### Using Auto-Bundle
+
+```bash
+# Create all configured bundles
+m1f auto-bundle
+
+# List available bundles
+m1f auto-bundle --list
+
+# Create specific bundle
+m1f auto-bundle documentation
+```
+
+## Navigation Tips
+
+- **New to m1f?** Start with the
+  [Getting Started Guide](01_m1f/05_getting_started.md)
+- **Setting up automation?** Check the
+  [Auto Bundle Guide](01_m1f/20_auto_bundle_guide.md) and
+  [Configuration Examples](01_m1f/25_m1f_config_examples.md)
+- **Working with AI?** See [Claude Workflows](01_m1f/30_claude_workflows.md) for
+  optimal LLM integration
+- **Need help?** Visit the [Troubleshooting Guide](01_m1f/03_troubleshooting.md)
 
 ## Project Overview
 
-m1f v2.0.0 is a comprehensive toolkit designed to help you work more efficiently
-with Large Language Models (LLMs) by managing context. Built with modern Python
-3.10+ architecture, these tools solve core challenges when working with AI
-assistants.
+m1f is a comprehensive toolkit designed to help you work more efficiently with
+Large Language Models (LLMs) by managing context. Built with modern Python 3.10+
+architecture, it features:
 
-### Key Features
+- **Async I/O** for high performance
+- **Type hints** throughout the codebase
+- **Modular design** for easy extension
+- **Security-first** approach with built-in protections
+- **Cross-platform** compatibility (Windows, macOS, Linux)
 
-- **Modern Architecture**: Complete modular rewrite with async I/O, type hints,
-  and clean architecture
-- **Content Deduplication**: Automatically detect and skip duplicate files based
-  on SHA256 checksums
-- **Performance**: Async operations and parallel processing for large projects
-- **Type Safety**: Full type annotations for better IDE support and fewer
-  runtime errors
-- **Professional Tools**: HTTrack integration for website scraping, CSS
-  selectors for content extraction
-
-### What You Can Do
-
-- Combine multiple project files into a single reference file with automatic
-  deduplication
-- Extract individual files from a combined file with preserved structure and
-  metadata
-- Convert entire websites to clean Markdown format with HTTrack integration
-- Filter files by size, type, or custom patterns
-- Detect and handle symlinks with cycle prevention
-- Remove scraped metadata for clean documentation bundles
-- Estimate token usage for optimal LLM context planning
+Whether you're bundling code for AI analysis, creating documentation packages,
+or managing large codebases, m1f provides the tools you need to work
+efficiently.

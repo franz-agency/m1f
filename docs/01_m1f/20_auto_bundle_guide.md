@@ -46,12 +46,16 @@ bundles:
 
 ```bash
 m1f auto-bundle
+# Or use the convenient alias:
+m1f-update
 ```
 
 ### Create Specific Bundle
 
 ```bash
 m1f auto-bundle docs
+# Or use the convenient alias:
+m1f-update docs
 ```
 
 ### List Available Bundles
@@ -64,7 +68,12 @@ m1f auto-bundle --list
 
 ```bash
 m1f auto-bundle --group documentation
+# Or use the convenient alias:
+m1f-update --group documentation
 ```
+
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle`
+that provides a simpler way to regenerate bundles.
 
 ## Bundle Groups
 
@@ -117,7 +126,7 @@ for config in $(find /home/projects -name ".m1f.config.yml" -type f); do
     echo "Updating bundles in: $project_dir"
 
     cd "$project_dir"
-    m1f auto-bundle --quiet
+    m1f-update --quiet
 done
 ```
 
@@ -140,7 +149,7 @@ Then update only specific projects:
 
 ```bash
 cd /path/to/project-a
-m1f auto-bundle --group project-a
+m1f-update --group project-a
 ```
 
 ### Automated Bundle Updates
@@ -152,18 +161,28 @@ Set up a cron job for automatic updates:
 0 2 * * * /usr/local/bin/update-all-bundles.sh
 ```
 
-### Centralized Bundle Storage
+### Organized Bundle Output
 
-Configure bundles to output to a central location:
+Keep bundles organized within your project:
 
 ```yaml
 bundles:
   project-bundle:
-    description: "Project bundle for central storage"
-    output: "/var/m1f-bundles/myproject/latest.txt"
+    description: "Main project bundle"
+    output: "bundles/latest/project.txt" # Relative to project root
+    sources:
+      - path: "src"
+
+  archived-bundle:
+    description: "Archived version with timestamp"
+    output: "bundles/archive/project-{timestamp}.txt"
+    add_timestamp: true
     sources:
       - path: "."
 ```
+
+**Note**: For security reasons, m1f only allows output paths within the project
+directory. Use relative paths for portability.
 
 ## Advanced Features
 
@@ -199,6 +218,15 @@ bundles:
         excludes: ["**/test_*.py"]
       - path: "."
         include_files: ["README.md", "CHANGELOG.md"]
+
+  # New in v3.4.0: Using includes patterns
+  tool-specific:
+    description: "Specific tool code only"
+    output: "m1f/tool-code.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
+        includes: ["m1f/**", "s1f/**", "!**/test_*.py"]
 ```
 
 ### Using Presets
@@ -230,7 +258,7 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 
 The hook will:
 
-- Run `m1f auto-bundle` before each commit
+- Run `m1f-update` before each commit
 - Add generated bundles to the commit automatically
 - Block commits if bundle generation fails
 
@@ -261,7 +289,7 @@ config file searching from the current directory up to the root. Create a
 Check the verbose output:
 
 ```bash
-m1f auto-bundle --verbose
+m1f-update --verbose
 ```
 
 Common issues:
@@ -325,6 +353,25 @@ bundles:
     sources:
       - path: "."
         include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
+```
+
+### Combining Multiple Directories (v3.4.0+)
+
+When you need to combine files from completely different directories:
+
+```yaml
+bundles:
+  # Combine documentation from multiple locations
+  all-docs:
+    description: "All project documentation"
+    output: "m1f/all-docs.txt"
+    sources:
+      - path: "docs"
+      - path: "src"
+        include_extensions: [".md"]
+      - path: "../shared-docs"
+      - path: "/absolute/path/to/external/docs"
+        includes: ["api/**", "guides/**"]
 ```
 
 ### WordPress Plugin Bundle

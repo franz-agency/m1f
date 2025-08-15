@@ -315,6 +315,9 @@ class PlaywrightScraper(WebScraperBase):
         parsed_start = urlparse(start_url)
         base_domain = parsed_start.netloc
 
+        # Initialize allowed paths configuration
+        self._initialize_allowed_paths(start_url)
+
         # Initialize queue
         queue = asyncio.Queue()
         await queue.put((start_url, 0))  # (url, depth)
@@ -366,6 +369,40 @@ class PlaywrightScraper(WebScraperBase):
                     title = await page.title()
                     metadata = await self._extract_metadata(page)
 
+                    # Check canonical URL if enabled
+                    if self.config.check_canonical and metadata.get("canonical"):
+                        canonical_url = metadata["canonical"]
+                        normalized_current = self._normalize_url(page.url)
+                        normalized_canonical = self._normalize_url(canonical_url)
+
+                        if normalized_current != normalized_canonical:
+                            # Check if we should respect the canonical URL
+                            should_skip = True
+
+                            # Check allowed paths using configured paths
+                            if self._allowed_path_configs:
+                                # Parse URLs to check paths
+                                current_parsed = urlparse(normalized_current)
+                                canonical_parsed = urlparse(normalized_canonical)
+
+                                # If current URL is within any allowed_path but canonical is outside all,
+                                # don't skip - the user explicitly wants content from allowed_path
+                                current_in_allowed = self._is_path_allowed(normalized_current, start_url)
+                                canonical_in_allowed = self._is_path_allowed(normalized_canonical, start_url)
+                                
+                                if current_in_allowed and not canonical_in_allowed:
+                                    should_skip = False
+                                    logger.info(
+                                        f"Not skipping {url} - canonical URL {canonical_url} is outside allowed_paths {self._allowed_path_configs}"
+                                    )
+
+                            if should_skip:
+                                logger.info(
+                                    f"Skipping {url} - canonical URL differs: {canonical_url}"
+                                )
+                                visited.add(url)
+                                return None  # Skip this page
+
                     # Create scraped page
                     scraped_page = ScrapedPage(
                         url=page.url,
@@ -378,7 +415,7 @@ class PlaywrightScraper(WebScraperBase):
                     )
 
                     # Extract links if not at max depth
-                    if depth < self.config.max_depth:
+                    if self.config.max_depth == -1 or depth < self.config.max_depth:
                         # Get all links using JavaScript
                         links = await page.evaluate(
                             """
@@ -401,13 +438,16 @@ class PlaywrightScraper(WebScraperBase):
                             elif parsed_url.netloc != base_domain:
                                 continue
 
-                            # Skip if matches exclude pattern
-                            if self.config.exclude_patterns:
-                                if any(
-                                    re.match(pattern, link)
-                                    for pattern in self.config.exclude_patterns
-                                ):
-                                    continue
+                            # Check path restriction using base class method
+                            if not self._is_path_allowed(link, start_url):
+                                logger.debug(
+                                    f"Skipping {link} - outside allowed paths {self._allowed_path_configs}"
+                                )
+                                continue
+
+                            # Skip if URL should be excluded
+                            if self._should_exclude_url(link):
+                                continue
 
                             # Skip if already visited
                             if link in self._visited_urls:
@@ -433,8 +473,11 @@ class PlaywrightScraper(WebScraperBase):
                 try:
                     url, depth = queue.get_nowait()
 
-                    # Check max pages limit
-                    if pages_scraped >= self.config.max_pages:
+                    # Check max pages limit (skip if -1 for unlimited)
+                    if (
+                        self.config.max_pages != -1
+                        and pages_scraped >= self.config.max_pages
+                    ):
                         break
 
                     # Create task
@@ -457,8 +500,11 @@ class PlaywrightScraper(WebScraperBase):
                         pages_scraped += 1
                         yield page
 
-                        # Check if we've hit the page limit
-                        if pages_scraped >= self.config.max_pages:
+                        # Check if we've hit the page limit (skip if -1 for unlimited)
+                        if (
+                            self.config.max_pages != -1
+                            and pages_scraped >= self.config.max_pages
+                        ):
                             # Cancel remaining tasks
                             for t in tasks:
                                 t.cancel()

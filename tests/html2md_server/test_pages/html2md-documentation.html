@@ -103,10 +103,10 @@
 pip install beautifulsoup4 markdownify chardet pyyaml
 
 # Basic conversion
-python tools/html2md.py --source-dir ./website --destination-dir ./markdown
+m1f-html2md --source-dir ./website --destination-dir ./markdown
 
 # Extract main content only
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./website \
     --destination-dir ./markdown \
     --outermost-selector "main" \
@@ -135,11 +135,11 @@ pip install pyyaml         # YAML frontmatter support</code></pre>
 
                 <h3>Verify Installation</h3>
                 <pre><code class="language-bash"># Check if html2md is working
-python tools/html2md.py --help
+m1f-html2md --help
 
 # Test with a simple conversion
 echo '&lt;h1&gt;Test&lt;/h1&gt;&lt;p&gt;Hello World&lt;/p&gt;' &gt; test.html
-python tools/html2md.py --source-dir . --destination-dir output</code></pre>
+m1f-html2md --source-dir . --destination-dir output</code></pre>
             </section>
 
             <section id="usage">
@@ -214,7 +214,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
                 
                 <div class="example-box">
                     <h4>Example 1: Documentation Site Conversion</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./docs-site \
     --destination-dir ./markdown-docs \
     --outermost-selector "article.documentation" \
@@ -226,7 +226,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
 
                 <div class="example-box">
                     <h4>Example 2: Blog Migration</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./wordpress-export \
     --destination-dir ./blog-markdown \
     --outermost-selector "div.post-content" \
@@ -239,7 +239,7 @@ python tools/html2md.py --source-dir . --destination-dir output</code></pre>
 
                 <div class="example-box">
                     <h4>Example 3: Knowledge Base Extraction</h4>
-                    <pre><code class="language-bash">python tools/html2md.py \
+                    <pre><code class="language-bash">m1f-html2md \
     --source-dir ./kb-site \
     --destination-dir ./kb-markdown \
     --outermost-selector "main#content" \
@@ -420,7 +420,7 @@ converter.on("conversion_complete", on_complete)</code></pre>
 
                 <h3>Debug Mode</h3>
                 <pre><code class="language-bash"># Enable debug output
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./website \
     --destination-dir ./output \
     --verbose \

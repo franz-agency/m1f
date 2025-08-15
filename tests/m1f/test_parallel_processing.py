@@ -16,10 +16,36 @@
 """Tests for parallel file processing in m1f."""
 
 import asyncio
+import gc
+import sys
 import time
 from pathlib import Path
 import tempfile
 import pytest
+
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info
+
+
+def cleanup_windows_file_handles():
+    """Clean up file handles on Windows to prevent WinError 32."""
+    if sys.platform.startswith("win"):
+        # Close any logging handlers that might be holding file handles
+        import logging
+
+        for logger_name in ["m1f", "s1f", ""]:
+            logger = logging.getLogger(logger_name)
+            for handler in logger.handlers[:]:
+                if hasattr(handler, "close"):
+                    handler.close()
+                logger.removeHandler(handler)
+
+        # Force garbage collection
+        gc.collect()
+        # Give Windows time to release handles
+        time.sleep(0.01)
+
 
 from tools.m1f.config import (
     Config,
@@ -41,11 +67,8 @@ from tools.m1f.logging import LoggerManager
 class TestParallelProcessing:
     """Test suite for parallel file processing functionality."""
 
-    @pytest.fixture
-    def temp_dir(self):
-        """Create a temporary directory for tests."""
-        with tempfile.TemporaryDirectory() as td:
-            yield Path(td)
+    # Remove the custom temp_dir fixture to use the one from conftest.py
+    # which has better Windows file handle cleanup
 
     @pytest.fixture
     def create_test_files(self, temp_dir):
@@ -66,7 +89,7 @@ class TestParallelProcessing:
     def config_parallel(self, temp_dir):
         """Create a config with parallel processing enabled."""
         return Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(
@@ -112,6 +135,9 @@ class TestParallelProcessing:
         # Run the combiner
         result = await combiner.run()
 
+        # Clean up file handles to prevent WinError 32 on Windows
+        cleanup_windows_file_handles()
+
         # Verify parallel processing was used
         assert parallel_called, "Parallel processing was not used"
         # Should be 20 test files (output.log is excluded)
@@ -138,6 +164,9 @@ class TestParallelProcessing:
 
         # Run the combiner
         await combiner.run()
+
+        # Clean up file handles to prevent WinError 32 on Windows
+        cleanup_windows_file_handles()
 
         # Read output and verify all test files are present
         output_content = config_parallel.output.output_file.read_text()
@@ -174,7 +203,7 @@ class TestParallelProcessing:
 
         # Test with parallel disabled (sequential)
         config_seq = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(
@@ -206,7 +235,7 @@ class TestParallelProcessing:
 
         # Test with parallel enabled
         config_par = Config(
-            source_directory=temp_dir,
+            source_directories=[temp_dir],
             input_file=None,
             input_include_files=[],
             output=OutputConfig(output_file=temp_dir / "output_par.txt", parallel=True),
@@ -229,7 +258,7 @@ class TestParallelProcessing:
 
         # Parallel should be faster (or at least not significantly slower)
         # We can't guarantee it's always faster due to overhead, but it shouldn't be much slower
-        print(f"Sequential time: {time_seq:.3f}s, Parallel time: {time_par:.3f}s")
+        info(f"Sequential time: {time_seq:.3f}s, Parallel time: {time_par:.3f}s")
 
         # Both files should have approximately the same size (small differences due to timestamps/processing)
         seq_size = config_seq.output.output_file.stat().st_size
@@ -256,6 +285,9 @@ class TestParallelProcessing:
 
         # Run the combiner
         result = await combiner.run()
+
+        # Clean up file handles to prevent WinError 32 on Windows
+        cleanup_windows_file_handles()
 
         # With deduplication, only one file with duplicate content should be included
         output_content = config_parallel.output.output_file.read_text()
@@ -295,6 +327,9 @@ class TestParallelProcessing:
 
             # Run should complete despite the error
             result = await combiner.run()
+
+            # Clean up file handles to prevent WinError 32 on Windows
+            cleanup_windows_file_handles()
 
             # Should process the good files
             assert result.files_processed >= 5
@@ -338,6 +373,9 @@ class TestParallelProcessing:
         await output_writer.write_combined_file(
             config_parallel.output.output_file, files
         )
+
+        # Clean up file handles to prevent WinError 32 on Windows
+        cleanup_windows_file_handles()
 
         # With only one file, it should use sequential mode
         assert sequential_called, "Sequential processing was not used for single file"

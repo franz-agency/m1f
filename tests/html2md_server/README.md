@@ -56,7 +56,7 @@ pip install flask flask-cors beautifulsoup4 markdownify pytest pytest-asyncio ai
 # Start the test server
 python tests/html2md_server/server.py
 
-# Server will run at http://localhost:8080
+# Server will run at http://localhost:8090
 ```
 
 ### Running Tests
@@ -106,20 +106,20 @@ tests/html2md_server/
 
    ```bash
    # Basic conversion
-   python tools/mf1-html2md.py \
-     --source-dir http://localhost:8080/page \
+   m1f-html2md \
+     --source-dir http://localhost:8090/page \
      --destination-dir ./output
 
    # With content selection
-   python tools/mf1-html2md.py \
-     --source-dir http://localhost:8080/page \
+   m1f-html2md \
+     --source-dir http://localhost:8090/page \
      --destination-dir ./output \
      --outermost-selector "article" \
      --ignore-selectors "nav" ".sidebar" "footer"
 
    # Specific page with options
-   python tools/mf1-html2md.py \
-     --source-dir http://localhost:8080/page/code-examples \
+   m1f-html2md \
+     --source-dir http://localhost:8090/page/code-examples \
      --destination-dir ./output \
      --add-frontmatter \
      --heading-offset 1

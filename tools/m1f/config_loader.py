@@ -21,6 +21,12 @@ from pathlib import Path
 from typing import List, Optional
 import os
 import logging
+from .file_operations import (
+    safe_exists,
+    safe_is_dir,
+    safe_write_text,
+    safe_mkdir,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,14 +83,16 @@ class PresetConfigLoader:
         # 1. Global presets (lowest priority)
         if include_global:
             global_preset = cls.get_global_preset_file()
-            if global_preset.exists():
+            if safe_exists(global_preset, logger=logger):
                 preset_files.append(global_preset)
                 logger.debug(f"Found global preset file: {global_preset}")
 
         # 2. User presets
         if include_user:
             user_dir = cls.get_user_presets_dir()
-            if user_dir.exists() and user_dir.is_dir():
+            if safe_exists(user_dir, logger=logger) and safe_is_dir(
+                user_dir, logger=logger
+            ):
                 # Load all .yml and .yaml files
                 for pattern in ["*.yml", "*.yaml"]:
                     for preset_file in sorted(user_dir.glob(pattern)):
@@ -94,7 +102,7 @@ class PresetConfigLoader:
         # 3. Project presets (highest priority)
         if project_presets:
             for preset_file in project_presets:
-                if preset_file.exists():
+                if safe_exists(preset_file, logger=logger):
                     preset_files.append(preset_file)
                     logger.debug(f"Found project preset file: {preset_file}")
                 else:
@@ -109,12 +117,12 @@ class PresetConfigLoader:
         presets_dir = cls.get_user_presets_dir()
 
         # Create directories
-        user_dir.mkdir(exist_ok=True)
-        presets_dir.mkdir(exist_ok=True)
+        safe_mkdir(user_dir, parents=True, exist_ok=True, logger=logger)
+        safe_mkdir(presets_dir, parents=True, exist_ok=True, logger=logger)
 
         # Create example global preset if it doesn't exist
         global_preset = cls.get_global_preset_file()
-        if not global_preset.exists():
+        if not safe_exists(global_preset, logger=logger):
             example_content = """# Global m1f preset configuration
 # These settings apply to all m1f operations unless overridden
 
@@ -220,12 +228,12 @@ personal_projects:
       actions:
         - remove_empty_lines
 """
-            global_preset.write_text(example_content)
+            safe_write_text(global_preset, example_content, logger=logger)
             logger.info(f"Created example global preset: {global_preset}")
 
         # Create README
         readme = user_dir / "README.md"
-        if not readme.exists():
+        if not safe_exists(readme, logger=logger):
             readme_content = """# m1f User Configuration
 
 This directory contains your personal m1f preset configurations.
@@ -261,5 +269,5 @@ my_project:
         actions: []  # No processing
 ```
 """
-            readme.write_text(readme_content)
+            safe_write_text(readme, readme_content, logger=logger)
             logger.info(f"Created README: {readme}")

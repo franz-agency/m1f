@@ -1,57 +1,110 @@
-aiohttp==3.10.11
-application_properties==0.8.2
+# Core dependencies
+aiofiles==24.1.0
+aiohttp==3.12.14
+anyio==4.9.0
+application_properties==0.9.0
+beautifulsoup4==4.13.4
 black==25.1.0
-certifi==2025.4.26
+certifi==2025.6.15
 chardet==5.2.0
 charset-normalizer==3.4.2
-click==8.2.0
+click==8.2.1
 colorama==0.4.6
 Columnar==1.4.1
 detect-secrets==1.5.0
+html5lib==1.1
 idna==3.10
 iniconfig==2.1.0
-markdownify==0.14.1
-beautifulsoup4==4.12.3
-html5lib==1.1
+markdownify==1.1.0
 mypy_extensions==1.1.0
 packaging==25.0
 pathspec==0.12.1
 platformdirs==4.3.8
 pluggy==1.6.0
-pydantic==2.5.3
-pymarkdownlnt==0.9.29
-pytest==8.3.5
+pydantic==2.11.7
+pymarkdownlnt==0.9.30
+pytest==8.4.1
+pytest-asyncio==1.1.0a1
 pytest-timeout==2.4.0
-pytest-asyncio==0.25.2
 PyYAML==6.0.2
 regex==2024.11.6
-requests==2.32.3
-rich==13.7.0
+requests==2.32.4
+rich==14.1.0
 tiktoken==0.9.0
 tomli==2.2.1
 toolz==1.0.0
-typing_extensions==4.13.2
-urllib3==2.4.0
+typing_extensions==4.14.1
+urllib3==2.5.0
 wcwidth==0.2.13
 
-# Async file operations
-aiofiles==24.1.0
+# Claude Code SDK for m1f-claude
+claude-code-sdk==0.0.14
 
-# Optional dependencies for additional scrapers
-# Install with: pip install httpx selectolax
+# Web scraping dependencies
 httpx==0.27.2
-selectolax==0.3.26
-
-# Optional: Better BeautifulSoup parser
-# Install with: pip install lxml
-lxml==5.3.0
-
-# Install with: pip install scrapy
-scrapy==2.12.0
-
-# Install with: pip install playwright && playwright install
-playwright==1.50.0
+lxml==6.0.0
+playwright==1.53.0
+scrapy==2.13.3
+selectolax==0.3.31
 
 # Test server dependencies
-flask==3.1.1
-flask-cors==6.0.0
+Flask==3.1.1
+flask-cors==6.0.1
+
+# Additional dependencies (automatically installed)
+aiohappyeyeballs==2.6.1
+aiosignal==1.4.0
+annotated-types==0.7.0
+attrs==25.3.0
+Automat==25.4.16
+blinker==1.9.0
+cffi==1.17.1
+constantly==23.10.4
+cryptography==45.0.5
+cssselect==1.3.0
+defusedxml==0.8.0rc2
+filelock==3.18.0
+frozenlist==1.7.0
+greenlet==3.2.3
+h11==0.16.0
+httpcore==1.0.9
+hyperlink==21.0.0
+incremental==24.7.2
+itemadapter==0.11.0
+itemloaders==1.3.2
+itsdangerous==2.2.0
+Jinja2==3.1.6
+jmespath==1.0.1
+markdown-it-py==3.0.0
+MarkupSafe==3.0.2
+mdurl==0.1.2
+multidict==6.6.3
+nest-asyncio==1.6.0
+parsel==1.10.0
+propcache==0.3.2
+Protego==0.5.0
+pyasn1==0.6.1
+pyasn1_modules==0.4.2
+pycparser==2.22
+pydantic_core==2.33.2
+PyDispatcher==2.0.7
+pyee==13.0.0
+Pygments==2.19.2
+pyjson5==1.6.9
+pyOpenSSL==25.1.0
+queuelib==1.8.0
+requests-file==2.1.0
+service-identity==24.2.0
+setuptools==80.9.0
+six==1.17.0
+sniffio==1.3.1
+soupsieve==2.7
+tldextract==5.3.0
+truststore==0.10.1
+Twisted==25.5.0
+typing-inspection==0.4.1
+w3lib==2.3.1
+webencodings==0.5.1
+Werkzeug==3.1.3
+yarl==1.20.1
+zope.interface==7.2

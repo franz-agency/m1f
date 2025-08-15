@@ -97,11 +97,11 @@ my_project:
       max_file_size: "50KB"
       include_dot_paths: true
 
-    vendor_code:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      security_check: null # Don't check third-party code
-      max_file_size: "100KB" # Only include small files
-      actions: [] # No processing
+    documentation:
+      patterns: ["docs/**/*", "*.md"]
+      security_check: null # Don't check documentation
+      max_file_size: "100KB" # Keep docs concise
+      actions: [remove_empty_lines]
 ```
 
 ## Real-World Examples

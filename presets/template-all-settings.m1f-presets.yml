@@ -17,25 +17,21 @@ example_group_name:
   # When multiple groups match a file, higher priority wins
   priority: 10
   
-  # Base path for relative patterns (optional)
-  # All patterns in this group will be relative to this path
-  base_path: "src"
-  
   # Global settings that apply to all files in this group
   global_settings:
     # === ENCODING AND FORMATTING ===
     
     # Target character encoding for all files
-    # Options: utf-8, utf-16, utf-16-le, utf-16-be, ascii, latin-1, cp1252
-    encoding: "utf-8"
+    # Options: utf-8 (default), utf-16, utf-16-le, utf-16-be, ascii, latin-1, cp1252
+    # encoding: "utf-8"
     
     # Separator style between files in output
-    # Options: Standard, Detailed, Markdown, MachineReadable, None
-    separator_style: "Detailed"
+    # Options: Standard (default, best for AI), Detailed, Markdown, MachineReadable, None
+    # separator_style: "Standard"
     
     # Line ending style for generated content
-    # Options: lf, crlf
-    line_ending: "lf"
+    # Options: lf (default), crlf
+    # line_ending: "lf"
     
     # === INPUT/OUTPUT SETTINGS ===
     
@@ -129,14 +125,19 @@ example_group_name:
     include_dot_paths: false
     
     # Include binary files (default: false)
-    include_binary_files: false
+    # include_binary_files: false
     
     # Follow symbolic links (default: false)
     # WARNING: Be careful of symlink cycles!
-    include_symlinks: false
+    # include_symlinks: false
     
     # Disable default exclusions like node_modules, .git, etc (default: false)
-    no_default_excludes: false
+    # no_default_excludes: false
+    
+    # Include only documentation files (62 extensions) (default: false)
+    # Overrides include_extensions when set to true
+    # Includes: .md, .txt, .rst, .adoc, .man, .1-8, .changes, .pod, and 54 more
+    docs_only: false
     
     # v3.2 features
     enable_content_deduplication: true  # Deduplicate files by content
@@ -189,15 +190,12 @@ example_group_name:
         actions:
           - strip_tags      # Remove HTML tags
           - minify         # Remove unnecessary whitespace
-          - compress_whitespace
+          - remove_empty_lines
         strip_tags:
           - "script"       # Remove script tags
           - "style"        # Remove style tags
           - "meta"
           - "link"
-        preserve_tags:
-          - "pre"          # Keep pre tags
-          - "code"         # Keep code tags
         # File-specific overrides
         max_file_size: "500KB"  # HTML-specific size limit
         security_check: "warn"  # Less strict for HTML
@@ -213,25 +211,28 @@ example_group_name:
       # CSS files
       .css:
         actions:
-          - minify
-          - strip_comments
+          - minify  # Minify CSS
+      # Minified CSS - no processing needed
+      .min.css:
+        actions: []
       
       # JavaScript files
       .js:
         actions:
-          - strip_comments
-          - compress_whitespace
+          - remove_empty_lines  # Keep JS comments
+      # Minified JS - no processing needed
+      .min.js:
+        actions: []
       
       # Python files
       .py:
         actions:
-          - strip_comments    # Removes # comments, preserves docstrings
-          - remove_empty_lines
+          - remove_empty_lines    # Keep all comments and docstrings
       
       # JSON files
       .json:
         actions:
-          - compress_whitespace
+          - remove_empty_lines
       
       # Log files
       .log:
@@ -264,7 +265,6 @@ example_group_name:
       separator_style: "Markdown"
       
       # Include file metadata in output
-      include_metadata: true
       
       # Maximum lines to include (truncate after this)
       max_lines: 1000
@@ -295,17 +295,14 @@ example_group_name:
     source_code:
       extensions: [".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".c", ".cpp"]
       actions:
-        - strip_comments
-        - remove_empty_lines
-      include_metadata: true
+        - remove_empty_lines  # Keep source code comments
     
-    # Minified files - skip processing
+    # Minified files - prefer these over non-minified
     minified:
       patterns:
-        - "*.min.js"
-        - "*.min.css"
-      actions: []  # Empty list = no processing
-      include_metadata: false
+        - "**/*.min.js"  # Include minified JS
+        - "**/*.min.css"  # Include minified CSS
+      actions: []  # Empty list = no processing needed
     
     # Large data files
     data_files:
@@ -317,21 +314,15 @@ example_group_name:
         max_chars: 10000
       max_lines: 500
     
-    # Binary files that somehow got included
-    binary_fallback:
-      extensions: [".png", ".jpg", ".gif", ".pdf", ".zip"]
-      actions:
-        - custom
-      custom_processor: "truncate"
-      processor_args:
-        max_chars: 100  # Just show file info
+    # Note: Binary files are excluded by default
+    # m1f is designed for text files only
+    # If you need to reference binary files, create a text list instead
     
     # Default preset for unmatched files
     default:
       actions:
         - remove_empty_lines
-      include_metadata: true
-      separator_style: "Standard"
+      # separator_style defaults to "Standard"
 
 # Second group example - Production settings
 production:
@@ -340,11 +331,11 @@ production:
   priority: 20    # Higher priority than example_group_name
   
   global_settings:
-    # Override encoding for production
-    encoding: "utf-8"
-    separator_style: "MachineReadable"
+    # Override for production
+    # encoding uses default
+    separator_style: "MachineReadable"  # Override for machine processing
     
-    # Exclude all development files
+    # Exclude all development files (beyond defaults)
     exclude_patterns:
       - "test/**"
       - "tests/**"
@@ -352,8 +343,6 @@ production:
       - "*.test.*"
       - "*.spec.*"
       - "__tests__/**"
-      - "node_modules/**"
-      - ".git/**"
     
     # Strict file size limits
     max_file_size: "1MB"
@@ -368,9 +357,7 @@ production:
       extensions: [".html", ".css", ".js"]
       actions:
         - minify
-        - strip_tags
-        - strip_comments
-        - compress_whitespace
+        - strip_tags  # Remove unnecessary HTML tags
       strip_tags: ["script", "style", "meta", "link", "comment"]
 
 # Third group example - Development settings
@@ -381,7 +368,7 @@ development:
   
   global_settings:
     # Keep everything readable
-    separator_style: "Detailed"
+    # separator_style defaults to "Standard" (better for AI)
     
     # Include test files
     include_patterns:
@@ -404,12 +391,11 @@ development:
     source:
       extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
       actions: []  # No processing - keep as-is
-      include_metadata: true
 
 # Available Processing Actions:
 # - minify: Remove unnecessary whitespace (HTML, CSS, JS)
 # - strip_tags: Remove specified HTML tags
-# - strip_comments: Remove comments based on file type
+# - strip_comments: Remove comments (not recommended - removes context)
 # - compress_whitespace: Normalize whitespace
 # - remove_empty_lines: Remove all empty lines
 # - custom: Apply custom processor
@@ -420,6 +406,6 @@ development:
 # - extract_functions: Extract only function definitions (Python)
 
 # Usage Examples:
-# python -m tools.m1f -s . -o bundle.txt --preset this-file.yml
-# python -m tools.m1f -s . -o prod.txt --preset this-file.yml --preset-group production
-# python -m tools.m1f -s . -o dev.txt --preset this-file.yml --preset-group development
+# m1f -s . -o bundle.txt --preset this-file.yml
+# m1f -s . -o prod.txt --preset this-file.yml --preset-group production
+# m1f -s . -o dev.txt --preset this-file.yml --preset-group development

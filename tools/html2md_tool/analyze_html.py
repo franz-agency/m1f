@@ -23,6 +23,9 @@ from typing import List, Dict, Set, Tuple
 import json
 import sys
 
+from m1f.file_operations import safe_exists, safe_open
+from shared.colors import success, error, warning, info
+
 
 class HTMLAnalyzer:
     """Analyze HTML files to identify patterns for preprocessing."""
@@ -44,7 +47,7 @@ class HTMLAnalyzer:
     def analyze_file(self, file_path: Path) -> Dict:
         """Analyze a single HTML file."""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with safe_open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 html = f.read()
         except Exception as e:
             return {"error": str(e)}
@@ -227,13 +230,13 @@ def main():
     analyzer = HTMLAnalyzer()
 
     # Analyze all files
-    print(f"Analyzing {len(args.files)} files...")
+    info(f"Analyzing {len(args.files)} files...")
     for file_path in args.files:
         path = Path(file_path)
-        if path.exists() and path.suffix.lower() in [".html", ".htm"]:
+        if safe_exists(path) and path.suffix.lower() in [".html", ".htm"]:
             result = analyzer.analyze_file(path)
             if "error" in result:
-                print(f"Error analyzing {path}: {result['error']}")
+                error(f"Error analyzing {path}: {result['error']}")
 
     # Get suggestions
     config = analyzer.suggest_config()
@@ -241,27 +244,27 @@ def main():
     # Show report if requested
     if args.report:
         report = analyzer.get_report()
-        print("\n=== Analysis Report ===")
+        info("\n=== Analysis Report ===")
         print(json.dumps(report, indent=2))
 
     # Show suggested configuration
-    print("\n=== Suggested Preprocessing Configuration ===")
+    info("\n=== Suggested Preprocessing Configuration ===")
     print(json.dumps(config, indent=2))
 
     # Save to file if requested
     if args.output:
-        with open(args.output, "w") as f:
+        with safe_open(args.output, "w") as f:
             json.dump(config, f, indent=2)
-        print(f"\nConfiguration saved to: {args.output}")
+        success(f"\nConfiguration saved to: {args.output}")
 
-    print(
+    info(
         "\nTo use this configuration, create a preprocessing config in your conversion script."
     )
-    print("Example usage in Python:")
-    print("```python")
-    print("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
-    print("config = PreprocessingConfig(**<loaded_json>)")
-    print("```")
+    info("Example usage in Python:")
+    info("```python")
+    info("from tools.mf1-html2md.preprocessors import PreprocessingConfig")
+    info("config = PreprocessingConfig(**<loaded_json>)")
+    info("```")
 
 
 if __name__ == "__main__":

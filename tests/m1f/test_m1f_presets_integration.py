@@ -114,8 +114,8 @@ development:
   description: "Development environment"
   priority: 10
   global_settings:
-    source_directory: "{src_dir}"
-    output_file: "{temp_dir}/dev-bundle.txt"
+    source_directory: "{src_dir.as_posix()}"
+    output_file: "{temp_dir.as_posix()}/dev-bundle.txt"
     verbose: true
     include_extensions: [".js"]
     create_archive: false
@@ -128,8 +128,8 @@ production:
   description: "Production environment"
   priority: 10
   global_settings:
-    source_directory: "{dist_dir}"
-    output_file: "{temp_dir}/prod-bundle.txt"
+    source_directory: "{dist_dir.as_posix()}"
+    output_file: "{temp_dir.as_posix()}/prod-bundle.txt"
     quiet: true
     minimal_output: true
     create_archive: true
@@ -192,7 +192,7 @@ python_project:
   enabled_if_exists: "setup.py"  # Only active for Python projects
   
   global_settings:
-    source_directory: "{temp_dir}"
+    source_directory: "{temp_dir.as_posix()}"
     include_extensions: [".py", ".txt", ".md", ".yml", ".yaml"]
     exclude_patterns:
       - "__pycache__/**"
@@ -267,13 +267,13 @@ web_workflow:
   priority: 100
   
   global_settings:
-    source_directory: "{project_dir}"
-    output_file: "{temp_dir}/web-bundle.txt"
+    source_directory: "{project_dir.as_posix()}"
+    output_file: "{temp_dir.as_posix()}/web-bundle.txt"
     
     # Include docs as intro
     input_include_files:
-      - "{docs_dir}/README.md"
-      - "{docs_dir}/API.md"
+      - "{docs_dir.as_posix()}/README.md"
+      - "{docs_dir.as_posix()}/API.md"
     
     # Output settings
     add_timestamp: true
@@ -408,13 +408,13 @@ test_group:
         config_content = f"""
 bundles:
   docs:
-    source: "{temp_dir}"
+    source: "{temp_dir.as_posix()}"
     output: "docs-bundle.txt"
     preset: "docs-preset.yml"
     include_extensions: [".md", ".txt"]
   
   code:
-    source: "{temp_dir}"
+    source: "{temp_dir.as_posix()}"
     output: "code-bundle.txt"
     preset: "code-preset.yml"
     include_extensions: [".py", ".js"]

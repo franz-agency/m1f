@@ -7,7 +7,7 @@ using m1f.
 
 ### Module Import Error
 
-**Problem**: Running `python -m tools.m1f` results in:
+**Problem**: Running `m1f` results in:
 
 ```
 ModuleNotFoundError: No module named 'm1f'
@@ -16,7 +16,7 @@ ModuleNotFoundError: No module named 'm1f'
 **Solution**: Use the direct script invocation instead:
 
 ```bash
-python tools/m1f.py [options]
+m1f [options]
 ```
 
 Or set up the alias as described in the
@@ -59,7 +59,7 @@ PermissionError: [Errno 13] Permission denied: '/path/to/output.txt'
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --convert-to-charset utf-8
+m1f -s . -o output.txt --convert-to-charset utf-8
 ```
 
 ### Memory Issues with Large Projects
@@ -76,7 +76,7 @@ python tools/m1f.py -s . -o output.txt --convert-to-charset utf-8
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --max-file-size 1MB --include-extensions .py .md
+m1f -s . -o output.txt --max-file-size 1MB --include-extensions .py .md
 ```
 
 ### Symlink Cycles
@@ -103,7 +103,7 @@ python tools/m1f.py -s . -o output.txt --max-file-size 1MB --include-extensions 
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --security-check warn --excludes ".env" "config/secrets.yml"
+m1f -s . -o output.txt --security-check warn --excludes ".env" "config/secrets.yml"
 ```
 
 ## Error Messages
@@ -180,7 +180,7 @@ needed.
 For detailed debugging information:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --verbose
+m1f -s . -o output.txt --verbose
 ```
 
 This will show:
@@ -212,7 +212,7 @@ Understanding exit codes can help in scripting:
 Use in scripts:
 
 ```bash
-if python tools/m1f.py -s . -o output.txt; then
+if m1f -s . -o output.txt; then
     echo "Success"
 else
     echo "Failed with exit code: $?"

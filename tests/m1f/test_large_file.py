@@ -39,6 +39,7 @@ from contextlib import contextmanager
 # Add the tools directory to path to import the m1f module
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 from tools import m1f
+from tools.shared.colors import info, error, warning, success
 
 # Test constants
 TEST_DIR = Path(__file__).parent
@@ -99,18 +100,18 @@ class TestLargeFileHandlingRefactored:
     @classmethod
     def setup_class(cls):
         """Setup test environment once before all tests."""
-        print(f"\nRunning refactored large file tests for m1f.py")
-        print(f"Test directory: {TEST_DIR}")
-        print(f"Source directory: {SOURCE_DIR}")
+        info(f"\nRunning refactored large file tests for m1f.py")
+        info(f"Test directory: {TEST_DIR}")
+        info(f"Source directory: {SOURCE_DIR}")
 
         # Verify m1f can be imported
         try:
             from tools import m1f
 
-            print(f"Successfully imported m1f from: {m1f.__file__}")
-            print(f"m1f version: {getattr(m1f, '__version__', 'unknown')}")
+            success(f"Successfully imported m1f from: {m1f.__file__}")
+            info(f"m1f version: {getattr(m1f, '__version__', 'unknown')}")
         except Exception as e:
-            print(f"ERROR: Failed to from tools import m1f: {e}")
+            error(f"Failed to from tools import m1f: {e}")
             raise
 
     def setup_method(self):
@@ -131,7 +132,7 @@ class TestLargeFileHandlingRefactored:
                     try:
                         file_path.unlink()
                     except Exception as e:
-                        print(f"Warning: Could not delete {file_path}: {e}")
+                        warning(f"Could not delete {file_path}: {e}")
 
     def _create_large_test_file(self, file_path: Path, size_mb: float = 1.0) -> Path:
         """
@@ -144,7 +145,7 @@ class TestLargeFileHandlingRefactored:
         Returns:
             Path to the created file
         """
-        print(f"Creating test file {file_path} with size {size_mb}MB...")
+        info(f"Creating test file {file_path} with size {size_mb}MB...")
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Calculate approximate content size needed in bytes
@@ -196,13 +197,13 @@ class TestLargeFileHandlingRefactored:
                 # Progress indicator for large files
                 if iterations % 10000 == 0:
                     progress = (current_size_bytes / target_size_bytes) * 100
-                    print(
+                    info(
                         f"  Progress: {progress:.1f}% ({current_size_bytes}/{target_size_bytes} bytes)"
                     )
 
             if iterations >= max_iterations:
-                print(
-                    f"Warning: Reached maximum iterations ({max_iterations}) while creating test file"
+                warning(
+                    f"Reached maximum iterations ({max_iterations}) while creating test file"
                 )
 
             base_content += "\n" + "\n".join(lines)
@@ -216,7 +217,7 @@ class TestLargeFileHandlingRefactored:
             f.write(content_bytes)
 
         actual_size_mb = len(content_bytes) / (1024 * 1024)
-        print(f"Created test file: {actual_size_mb:.2f}MB")
+        success(f"Created test file: {actual_size_mb:.2f}MB")
         return file_path
 
     def _run_m1f_with_input_file(
@@ -233,7 +234,7 @@ class TestLargeFileHandlingRefactored:
         Returns:
             Execution time in seconds
         """
-        print(f"Running m1f with input file: {input_file_path}")
+        info(f"Running m1f with input file: {input_file_path}")
 
         # Create a temporary input paths file
         temp_input_file = OUTPUT_DIR / "temp_input_paths.txt"
@@ -241,7 +242,7 @@ class TestLargeFileHandlingRefactored:
             # Write absolute path to ensure m1f can find the file
             absolute_path = input_file_path.absolute()
             f.write(str(absolute_path))
-            print(f"Wrote to input file: {absolute_path}")
+            info(f"Wrote to input file: {absolute_path}")
 
         # Build argument list
         args = [
@@ -263,7 +264,7 @@ class TestLargeFileHandlingRefactored:
             elif value is not False:
                 args.extend([f"--{key.replace('_', '-')}", str(value)])
 
-        print(f"Running m1f with args: {args}")
+        info(f"Running m1f with args: {args}")
 
         # Measure execution time with timeout
         start_time = time.time()
@@ -271,7 +272,7 @@ class TestLargeFileHandlingRefactored:
             with timeout(60):  # 60 second timeout
                 self._run_m1f(args)
         except TimeoutError as e:
-            print(f"ERROR: {e}")
+            error(f"{e}")
             raise
         execution_time = time.time() - start_time
 
@@ -295,7 +296,7 @@ class TestLargeFileHandlingRefactored:
         # Enhanced mock input to handle various prompts
         def mock_input(prompt=None):
             if prompt:
-                print(f"Mock input received prompt: {prompt}")
+                info(f"Mock input received prompt: {prompt}")
             # Always return 'y' for yes/no questions, or empty string for other prompts
             if prompt and any(
                 word in prompt.lower()
@@ -313,20 +314,20 @@ class TestLargeFileHandlingRefactored:
                 __builtins__.input = mock_input
 
             # Call m1f.main() with debugging
-            print("Calling m1f.main()...")
+            info("Calling m1f.main()...")
 
             # The new m1f uses asyncio and sys.exit(), so we need to catch SystemExit
             try:
                 m1f.main()
             except SystemExit as e:
-                print(f"m1f.main() exited with code: {e.code}")
+                info(f"m1f.main() exited with code: {e.code}")
                 if e.code != 0:
                     raise RuntimeError(f"m1f exited with non-zero code: {e.code}")
 
-            print("m1f.main() completed")
+            success("m1f.main() completed")
 
         except Exception as e:
-            print(f"Error during m1f execution: {type(e).__name__}: {e}")
+            error(f"During m1f execution: {type(e).__name__}: {e}")
             raise
 
         finally:
@@ -376,7 +377,7 @@ class TestLargeFileHandlingRefactored:
         self._verify_file_content(output_file, self.EXPECTED_PATTERNS)
 
         # Log performance (but don't assert on it)
-        print(f"\nLarge file processing time: {execution_time:.2f} seconds")
+        info(f"\nLarge file processing time: {execution_time:.2f} seconds")
 
     @pytest.mark.timeout(180)  # Longer timeout for multiple file sizes
     def test_large_file_size_handling(self):
@@ -407,8 +408,8 @@ class TestLargeFileHandlingRefactored:
                     output_size_mb >= size_mb * 0.9
                 ), f"Output file seems too small for {size_mb}MB input"
 
-                print(
-                    f"\n{size_mb}MB file: processed in {execution_time:.2f}s, output size: {output_size_mb:.2f}MB"
+                success(
+                    f"{size_mb}MB file: processed in {execution_time:.2f}s, output size: {output_size_mb:.2f}MB"
                 )
 
     @pytest.mark.timeout(120)
@@ -447,10 +448,10 @@ class TestLargeFileHandlingRefactored:
         min_time = min(execution_times)
         max_time = max(execution_times)
 
-        print(f"\nPerformance baseline (n={num_runs}):")
-        print(f"  Average: {avg_time:.2f}s")
-        print(f"  Min: {min_time:.2f}s")
-        print(f"  Max: {max_time:.2f}s")
+        info(f"\nPerformance baseline (n={num_runs}):")
+        info(f"  Average: {avg_time:.2f}s")
+        info(f"  Min: {min_time:.2f}s")
+        info(f"  Max: {max_time:.2f}s")
 
         # Verify the file was processed correctly in all runs
         self._verify_file_content(output_file, self.EXPECTED_PATTERNS)
@@ -478,7 +479,7 @@ class TestLargeFileHandlingRefactored:
             assert output_file.stat().st_size > 0, "Output file is empty"
 
             # The fact that this completes without memory errors indicates efficient processing
-            print(f"\n10MB file processed successfully in {execution_time:.2f}s")
+            success(f"10MB file processed successfully in {execution_time:.2f}s")
 
     @pytest.mark.timeout(120)
     def test_large_file_content_integrity(self):
@@ -533,7 +534,7 @@ class TestLargeFileHandlingRefactored:
     @pytest.mark.timeout(30)
     def test_m1f_smoke_test(self):
         """Basic smoke test to verify m1f can run at all."""
-        print("\nRunning m1f smoke test...")
+        info("\nRunning m1f smoke test...")
 
         # Create a simple test file
         test_file = OUTPUT_DIR / "smoke_test_input.txt"
@@ -555,17 +556,17 @@ class TestLargeFileHandlingRefactored:
 
         try:
             # Try to run m1f
-            print(f"Running m1f with args: {args}")
+            info(f"Running m1f with args: {args}")
             self._run_m1f(args)
 
             # Verify output was created
             assert output_file.exists(), "m1f did not create output file"
             assert output_file.stat().st_size > 0, "m1f created empty output file"
 
-            print("Smoke test passed!")
+            success("Smoke test passed!")
 
         except Exception as e:
-            print(f"Smoke test failed: {type(e).__name__}: {e}")
+            error(f"Smoke test failed: {type(e).__name__}: {e}")
             raise
         finally:
             # Cleanup
@@ -579,7 +580,7 @@ if __name__ == "__main__":
     # Run with verbose output to see which test hangs
     import subprocess
 
-    print("Running tests individually to identify potential hangs...")
+    info("Running tests individually to identify potential hangs...")
 
     test_methods = [
         "test_m1f_smoke_test",  # Run smoke test first
@@ -595,9 +596,9 @@ if __name__ == "__main__":
     test_file_path = str(Path(__file__).resolve())
 
     for test_method in test_methods:
-        print(f"\n{'='*60}")
-        print(f"Running: {test_method}")
-        print(f"{'='*60}")
+        info(f"\n{'='*60}")
+        info(f"Running: {test_method}")
+        info(f"{'='*60}")
 
         try:
             # Run each test with a subprocess timeout
@@ -611,13 +612,13 @@ if __name__ == "__main__":
                 cwd=str(Path(__file__).parent.parent.parent),  # Run from project root
             )
 
-            print(f"Exit code: {result.returncode}")
+            info(f"Exit code: {result.returncode}")
             if result.stdout:
-                print("STDOUT:", result.stdout)
+                info(f"STDOUT: {result.stdout}")
             if result.stderr:
-                print("STDERR:", result.stderr)
+                error(f"STDERR: {result.stderr}")
 
         except subprocess.TimeoutExpired:
-            print(f"ERROR: Test {test_method} timed out after 120 seconds!")
+            error(f"Test {test_method} timed out after 120 seconds!")
 
-    print("\nTest run complete.")
+    success("\nTest run complete.")

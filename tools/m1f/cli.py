@@ -22,57 +22,32 @@ from typing import Optional, NoReturn
 
 from . import __version__
 
-# Try to import colorama for colored help
+# Use unified colorama module
 try:
-    from colorama import Fore, Style, init
-
-    init(autoreset=True)
-    COLORAMA_AVAILABLE = True
+    from shared.colors import ColoredHelpFormatter, Colors, COLORAMA_AVAILABLE
+    from shared.cli import CustomArgumentParser
 except ImportError:
     COLORAMA_AVAILABLE = False
 
+    # Fallback formatter
+    class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        pass
 
-class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
-    """Custom help formatter with colors if available."""
+    # Fallback CustomArgumentParser
+    class CustomArgumentParser(argparse.ArgumentParser):
+        """Custom argument parser with better error messages."""
 
-    def _format_action_invocation(self, action: argparse.Action) -> str:
-        """Format action with colors."""
-        parts = super()._format_action_invocation(action)
+        def error(self, message: str) -> NoReturn:
+            """Display error message with colors if available."""
+            error_msg = f"ERROR: {message}"
 
-        if COLORAMA_AVAILABLE:
-            # Color the option names
-            parts = parts.replace("-", f"{Fore.CYAN}-")
-            parts = f"{parts}{Style.RESET_ALL}"
+            if COLORAMA_AVAILABLE:
+                error_msg = f"{Colors.RED}ERROR: {message}{Colors.RESET}"
 
-        return parts
-
-    def _format_usage(self, usage: str, actions, groups, prefix: Optional[str]) -> str:
-        """Format usage line with colors."""
-        result = super()._format_usage(usage, actions, groups, prefix)
-
-        if COLORAMA_AVAILABLE and result:
-            # Highlight the program name
-            prog_name = self._prog
-            colored_prog = f"{Fore.GREEN}{prog_name}{Style.RESET_ALL}"
-            result = result.replace(prog_name, colored_prog, 1)
-
-        return result
-
-
-class CustomArgumentParser(argparse.ArgumentParser):
-    """Custom argument parser with better error messages."""
-
-    def error(self, message: str) -> NoReturn:
-        """Display error message with colors if available."""
-        error_msg = f"ERROR: {message}"
-
-        if COLORAMA_AVAILABLE:
-            error_msg = f"{Fore.RED}ERROR: {message}{Style.RESET_ALL}"
-
-        self.print_usage(sys.stderr)
-        print(f"\n{error_msg}", file=sys.stderr)
-        print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
-        self.exit(2)
+            self.print_usage(sys.stderr)
+            print(f"\n{error_msg}", file=sys.stderr)
+            print(f"\nFor detailed help, use: {self.prog} --help", file=sys.stderr)
+            self.exit(2)
 
 
 def create_parser() -> CustomArgumentParser:
@@ -126,7 +101,8 @@ Perfect for:
         "--source-directory",
         type=str,
         metavar="DIR",
-        help="Path to the directory containing files to combine",
+        action="append",
+        help="Path to the directory containing files to combine (can be specified multiple times)",
     )
 
     io_group.add_argument(
@@ -160,8 +136,8 @@ Perfect for:
     format_group.add_argument(
         "--separator-style",
         choices=["Standard", "Detailed", "Markdown", "MachineReadable", "None"],
-        default="Detailed",
-        help="Format of the separator between files (default: Detailed)",
+        default="Standard",
+        help="Format of the separator between files (default: Standard)",
     )
 
     format_group.add_argument(
@@ -213,6 +189,14 @@ Perfect for:
     )
 
     filter_group.add_argument(
+        "--includes",
+        type=str,
+        nargs="*",
+        metavar="PATTERN",
+        help="Include only files matching these patterns (gitignore format)",
+    )
+
+    filter_group.add_argument(
         "--include-extensions",
         type=str,
         nargs="*",
@@ -226,6 +210,12 @@ Perfect for:
         nargs="*",
         metavar="EXT",
         help="Exclude files with these extensions",
+    )
+
+    filter_group.add_argument(
+        "--docs-only",
+        action="store_true",
+        help="Include only documentation files (62 extensions including .md, .txt, .rst, etc.)",
     )
 
     filter_group.add_argument(
@@ -257,6 +247,12 @@ Perfect for:
         "--no-default-excludes",
         action="store_true",
         help="Disable default exclusions (node_modules, .git, etc.)",
+    )
+
+    filter_group.add_argument(
+        "--no-auto-gitignore",
+        action="store_true",
+        help="Disable automatic loading of .gitignore files (but .m1fignore is still loaded)",
     )
 
     filter_group.add_argument(
@@ -389,6 +385,12 @@ def parse_args(
 ) -> argparse.Namespace:
     """Parse command-line arguments."""
     parsed_args = parser.parse_args(args)
+
+    # Store the raw command line arguments to detect which were explicitly provided
+    # This helps with preset override logic
+    import sys
+
+    parsed_args._cli_args = args if args is not None else sys.argv[1:]
 
     # Skip validation if presets are being used - they may provide required values
     if not parsed_args.preset_files or parsed_args.disable_presets:

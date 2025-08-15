@@ -26,7 +26,7 @@ Usage:
     python test_local_scraping.py
 
 Requirements:
-    - Local test server running at http://localhost:8080
+    - Local test server running at http://localhost:8090 (or next available port)
     - Start server with: cd tests/html2md_server && python server.py
 
 Features:
@@ -37,6 +37,11 @@ Features:
     - Compatible with m1f --remove-scraped-metadata option
 """
 
+import os
+import subprocess
+import socket
+import platform
+import logging
 import requests
 import sys
 from pathlib import Path
@@ -46,8 +51,154 @@ from urllib.parse import urljoin
 import time
 import pytest
 
+# Add colorama imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from tools.shared.colors import info, error, warning, success, header
+
+# Add logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Test server configuration
-TEST_SERVER_URL = "http://localhost:8080"
+# Use a different port to avoid conflicts with other tests
+TEST_SERVER_PORT = 8090
+TEST_SERVER_URL = f"http://localhost:{TEST_SERVER_PORT}"
+
+
+def is_port_in_use(port):
+    """Check if a port is currently in use."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("localhost", port))
+            return False
+        except OSError:
+            return True
+
+
+@pytest.fixture(scope="module", autouse=True)
+def test_server():
+    """Start the test server before running tests."""
+    server_port = TEST_SERVER_PORT
+    server_path = (
+        Path(__file__).parent.parent.parent / "tests" / "html2md_server" / "server.py"
+    )
+
+    # Check if server script exists
+    if not server_path.exists():
+        pytest.fail(f"Server script not found: {server_path}")
+
+    # Check if port is already in use
+    if is_port_in_use(server_port):
+        logger.warning(
+            f"Port {server_port} is already in use. Assuming server is already running."
+        )
+        # Try to connect to existing server
+        try:
+            response = requests.get(TEST_SERVER_URL, timeout=5)
+            if response.status_code == 200:
+                logger.info("Connected to existing server")
+                yield
+                return
+        except requests.exceptions.RequestException:
+            pytest.fail(f"Port {server_port} is in use but server is not responding")
+
+    # Start server process
+    logger.info(f"Starting test server on port {server_port}...")
+
+    # Environment variables for the server
+    env = os.environ.copy()
+    env["FLASK_ENV"] = "testing"
+    env["FLASK_DEBUG"] = "0"
+    env["HTML2MD_SERVER_PORT"] = str(server_port)
+
+    # Platform-specific process creation
+    if platform.system() == "Windows":
+        # Windows-specific handling
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            bufsize=1,
+            universal_newlines=True,
+        )
+    else:
+        # Unix-like systems
+        process = subprocess.Popen(
+            [sys.executable, "-u", str(server_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            preexec_fn=os.setsid,
+            bufsize=1,
+            universal_newlines=True,
+        )
+
+    # Wait for server to start
+    max_wait = 30  # seconds
+    start_time = time.time()
+    server_ready = False
+
+    while time.time() - start_time < max_wait:
+        # Check if process is still running
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            logger.error(f"Server process terminated with code {process.returncode}")
+            if stdout:
+                logger.error(f"stdout: {stdout}")
+            if stderr:
+                logger.error(f"stderr: {stderr}")
+            pytest.fail("Server process terminated unexpectedly")
+
+        # Try to connect to server
+        try:
+            response = requests.get(f"{TEST_SERVER_URL}/api/test-pages", timeout=2)
+            if response.status_code == 200:
+                logger.info(
+                    f"Server started successfully after {time.time() - start_time:.2f} seconds"
+                )
+                server_ready = True
+                break
+        except requests.exceptions.RequestException:
+            # Server not ready yet
+            pass
+
+        time.sleep(0.5)
+
+    if not server_ready:
+        # Try to get process output for debugging
+        process.terminate()
+        stdout, stderr = process.communicate(timeout=5)
+        logger.error("Server failed to start within timeout")
+        if stdout:
+            logger.error(f"stdout: {stdout}")
+        if stderr:
+            logger.error(f"stderr: {stderr}")
+        pytest.fail(f"Server failed to start within {max_wait} seconds")
+
+    # Run tests
+    yield
+
+    # Cleanup: stop the server
+    logger.info("Stopping test server...")
+    try:
+        if platform.system() == "Windows":
+            # Windows: use terminate
+            process.terminate()
+        else:
+            # Unix: send SIGTERM to process group
+            import signal
+
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+
+        # Wait for process to terminate
+        process.wait(timeout=5)
+    except Exception as e:
+        logger.error(f"Error stopping server: {e}")
+        # Force kill if needed
+        process.kill()
+        process.wait()
 
 
 def check_server_connectivity():
@@ -55,33 +206,33 @@ def check_server_connectivity():
     try:
         response = requests.get(TEST_SERVER_URL, timeout=5)
         if response.status_code == 200:
-            print(f"✅ Test server is running at {TEST_SERVER_URL}")
+            success(f"Test server is running at {TEST_SERVER_URL}")
             return True
         else:
-            print(f"❌ Test server returned status {response.status_code}")
+            error(f"Test server returned status {response.status_code}")
             return False
     except requests.exceptions.ConnectionError:
-        print(f"❌ Cannot connect to test server at {TEST_SERVER_URL}")
-        print(
+        error(f"Cannot connect to test server at {TEST_SERVER_URL}")
+        error(
             "   Make sure the server is running with: cd tests/html2md_server && python server.py"
         )
         return False
     except Exception as e:
-        print(f"❌ Error connecting to test server: {e}")
+        error(f"Error connecting to test server: {e}")
         return False
 
 
-def test_server_connectivity():
+def test_server_connectivity(test_server):
     """Test if the test server is running and accessible (pytest compatible)."""
-    if not check_server_connectivity():
-        pytest.skip("Test server is not accessible - skipping test")
+    # The test_server fixture already ensures the server is running
+    assert check_server_connectivity(), "Test server should be accessible"
 
 
 def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None):
     """Scrape a page from the test server and convert it to Markdown."""
     url = f"{TEST_SERVER_URL}/page/{page_name}"
 
-    print(f"\n🔍 Scraping: {url}")
+    info(f"\n🔍 Scraping: {url}")
 
     try:
         # Fetch HTML
@@ -91,7 +242,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
 
-        print(f"   📄 Fetched {len(response.text)} characters")
+        info(f"   📄 Fetched {len(response.text)} characters")
 
         # Parse HTML
         soup = BeautifulSoup(response.text, "html.parser")
@@ -100,11 +251,11 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         if outermost_selector:
             content = soup.select_one(outermost_selector)
             if content:
-                print(f"   🎯 Applied selector: {outermost_selector}")
+                info(f"   🎯 Applied selector: {outermost_selector}")
                 soup = BeautifulSoup(str(content), "html.parser")
             else:
-                print(
-                    f"   ⚠️  Selector '{outermost_selector}' not found, using full page"
+                warning(
+                    f"   Selector '{outermost_selector}' not found, using full page"
                 )
 
         # Remove ignored elements
@@ -112,7 +263,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             for selector in ignore_selectors:
                 elements = soup.select(selector)
                 if elements:
-                    print(
+                    info(
                         f"   🗑️  Removed {len(elements)} elements matching '{selector}'"
                     )
                     for element in elements:
@@ -124,7 +275,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             html_content, heading_style="atx", bullets="-"
         )
 
-        print(f"   ✅ Converted to {len(markdown)} characters of Markdown")
+        success(f"   Converted to {len(markdown)} characters of Markdown")
 
         # Save to file
         output_dir = Path("tests/mf1-html2md/scraped_examples")
@@ -138,7 +289,7 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
             f.write(f"*Scraped at: {time.strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
             f.write(f"*Source URL: {url}*")
 
-        print(f"   💾 Saved to: {output_path}")
+        info(f"   💾 Saved to: {output_path}")
 
         return {
             "success": True,
@@ -149,14 +300,14 @@ def scrape_and_convert(page_name, outermost_selector=None, ignore_selectors=None
         }
 
     except Exception as e:
-        print(f"   ❌ Error: {e}")
+        error(f"   Error: {e}")
         return {"success": False, "url": url, "error": str(e)}
 
 
 def main():
     """Run local scraping tests."""
-    print("🚀 HTML2MD Local Scraping Test")
-    print("=" * 50)
+    header("🚀 HTML2MD Local Scraping Test")
+    info("=" * 50)
 
     # Check server connectivity
     if not check_server_connectivity():
@@ -192,10 +343,10 @@ def main():
 
     results = []
 
-    print(f"\n📋 Running {len(test_cases)} test cases...")
+    info(f"\n📋 Running {len(test_cases)} test cases...")
 
     for i, test_case in enumerate(test_cases, 1):
-        print(f"\n[{i}/{len(test_cases)}] {test_case['description']}")
+        info(f"\n[{i}/{len(test_cases)}] {test_case['description']}")
 
         result = scrape_and_convert(
             test_case["name"],
@@ -206,28 +357,31 @@ def main():
         results.append({**result, **test_case})
 
     # Summary
-    print("\n" + "=" * 50)
-    print("📊 SCRAPING TEST SUMMARY")
-    print("=" * 50)
+    info("\n" + "=" * 50)
+    header("📊 SCRAPING TEST SUMMARY")
+    info("=" * 50)
 
     successful = [r for r in results if r["success"]]
     failed = [r for r in results if not r["success"]]
 
-    print(f"✅ Successful: {len(successful)}/{len(results)}")
-    print(f"❌ Failed: {len(failed)}/{len(results)}")
+    success(f"Successful: {len(successful)}/{len(results)}")
+    if len(failed) > 0:
+        error(f"Failed: {len(failed)}/{len(results)}")
+    else:
+        info(f"Failed: {len(failed)}/{len(results)}")
 
     if successful:
-        print(f"\n📄 Generated Markdown files:")
+        info(f"\n📄 Generated Markdown files:")
         for result in successful:
-            print(f"   • {result['output_file']} ({result['markdown_length']} chars)")
+            info(f"   • {result['output_file']} ({result['markdown_length']} chars)")
 
     if failed:
-        print(f"\n❌ Failed conversions:")
+        error(f"\nFailed conversions:")
         for result in failed:
-            print(f"   • {result['name']}: {result['error']}")
+            error(f"   • {result['name']}: {result['error']}")
 
-    print(f"\n🔗 Test server: {TEST_SERVER_URL}")
-    print("💡 You can now examine the generated .md files to see conversion quality")
+    info(f"\n🔗 Test server: {TEST_SERVER_URL}")
+    info("💡 You can now examine the generated .md files to see conversion quality")
 
 
 if __name__ == "__main__":

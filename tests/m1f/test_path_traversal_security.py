@@ -32,7 +32,7 @@ class TestPathTraversalSecurity:
     def _create_test_args(self, **overrides):
         """Create test argparse.Namespace with all required attributes."""
         defaults = {
-            "source_directory": None,
+            "source_directory": [],
             "input_file": None,
             "output_file": "output.txt",
             "input_include_files": None,
@@ -60,6 +60,9 @@ class TestPathTraversalSecurity:
             "disable_security_check": False,
             "quiet": False,
         }
+        # Handle source_directory as a list
+        if "source_directory" in overrides:
+            overrides["source_directory"] = [overrides["source_directory"]]
         defaults.update(overrides)
         return argparse.Namespace(**defaults)
 
@@ -109,13 +112,15 @@ class TestPathTraversalSecurity:
         """Test that Config allows output files outside current directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Output paths should be allowed outside the base directory
+            output_file_path = Path(tmpdir) / "output.txt"
             args = self._create_test_args(
-                source_directory=".", output_file=f"{tmpdir}/output.txt"
+                source_directory=".", output_file=str(output_file_path)
             )
 
             # This should NOT raise an error
             config = Config.from_args(args)
-            assert str(config.output.output_file) == f"{tmpdir}/output.txt"
+            # Compare resolved paths for platform independence
+            assert config.output.output_file.resolve() == output_file_path.resolve()
 
     def test_config_builder_blocks_traversal_include_files(self):
         """Test that Config blocks path traversal in include files."""

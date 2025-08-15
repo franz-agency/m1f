@@ -88,7 +88,7 @@ class OutputConfig:
     force_overwrite: bool = False
     minimal_output: bool = False
     skip_output_file: bool = False
-    separator_style: SeparatorStyle = SeparatorStyle.DETAILED
+    separator_style: SeparatorStyle = SeparatorStyle.STANDARD
     line_ending: LineEnding = LineEnding.LF
     parallel: bool = True  # Default to parallel processing for better performance
     enable_content_deduplication: bool = True  # Enable content deduplication by default
@@ -102,12 +102,15 @@ class FilterConfig:
     exclude_patterns: List[str] = field(default_factory=list)
     exclude_paths_file: Optional[Union[str, List[str]]] = None
     include_paths_file: Optional[Union[str, List[str]]] = None
+    include_patterns: List[str] = field(default_factory=list)
     include_extensions: Set[str] = field(default_factory=set)
     exclude_extensions: Set[str] = field(default_factory=set)
+    docs_only: bool = False
     include_dot_paths: bool = False
     include_binary_files: bool = False
     include_symlinks: bool = False
     no_default_excludes: bool = False
+    no_auto_gitignore: bool = False  # Disable automatic loading of .gitignore (but not .m1fignore)
     max_file_size: Optional[int] = None  # Size in bytes
     remove_scraped_metadata: bool = False
 
@@ -148,7 +151,7 @@ class PresetConfig:
 class Config:
     """Main configuration class that combines all settings."""
 
-    source_directory: Optional[Path]
+    source_directories: List[Path]
     input_file: Optional[Path]
     input_include_files: List[Path]
     output: OutputConfig
@@ -170,7 +173,7 @@ class Config:
             config = cls._apply_preset_overrides(config, args)
 
         # Validate that we have required inputs after preset application
-        if not config.source_directory and not config.input_file:
+        if not config.source_directories and not config.input_file:
             raise ValueError(
                 "At least one of source_directory or input_file must be provided "
                 "(either via CLI arguments or preset configuration)"
@@ -187,11 +190,14 @@ class Config:
     @classmethod
     def _create_from_cli_args(cls, args: argparse.Namespace) -> Config:
         """Create initial configuration from CLI arguments."""
-        # Process source directory with path traversal validation
-        source_dir = None
+        # Process source directories with path traversal validation
+        source_dirs = []
         if args.source_directory:
-            resolved_path = Path(args.source_directory).resolve()
-            source_dir = validate_path_traversal(resolved_path)
+            # args.source_directory is now a list due to action="append"
+            for source_dir in args.source_directory:
+                resolved_path = Path(source_dir).resolve()
+                validated_path = validate_path_traversal(resolved_path)
+                source_dirs.append(validated_path)
 
         # Process input file with path traversal validation
         input_file = None
@@ -244,16 +250,19 @@ class Config:
             exclude_patterns=getattr(args, "excludes", []),
             exclude_paths_file=getattr(args, "exclude_paths_file", None),
             include_paths_file=getattr(args, "include_paths_file", None),
+            include_patterns=getattr(args, "includes", []),
             include_extensions=set(
                 normalize_extensions(getattr(args, "include_extensions", []))
             ),
             exclude_extensions=set(
                 normalize_extensions(getattr(args, "exclude_extensions", []))
             ),
+            docs_only=getattr(args, "docs_only", False),
             include_dot_paths=getattr(args, "include_dot_paths", False),
             include_binary_files=getattr(args, "include_binary_files", False),
             include_symlinks=getattr(args, "include_symlinks", False),
             no_default_excludes=getattr(args, "no_default_excludes", False),
+            no_auto_gitignore=getattr(args, "no_auto_gitignore", False),
             max_file_size=max_file_size_bytes,
             remove_scraped_metadata=getattr(args, "remove_scraped_metadata", False),
         )
@@ -300,7 +309,7 @@ class Config:
         )
 
         return cls(
-            source_directory=source_dir,
+            source_directories=source_dirs,
             input_file=input_file,
             input_include_files=include_files,
             output=output_config,
@@ -329,7 +338,7 @@ class Config:
         # Apply overrides - CLI arguments take precedence over presets
 
         # Input/Output overrides
-        source_dir = config.source_directory
+        source_dirs = config.source_directories
         input_file = config.input_file
         output_file = config.output.output_file
         input_include_files = config.input_include_files
@@ -338,7 +347,8 @@ class Config:
         # Paths from presets are trusted
         if not args.source_directory and global_settings.source_directory:
             resolved_path = Path(global_settings.source_directory).resolve()
-            source_dir = validate_path_traversal(resolved_path, from_preset=True)
+            validated_path = validate_path_traversal(resolved_path, from_preset=True)
+            source_dirs = [validated_path]
 
         if not args.input_file and global_settings.input_file:
             resolved_path = Path(global_settings.input_file).resolve()
@@ -382,18 +392,21 @@ class Config:
             or (global_settings.minimal_output or False),
             skip_output_file=getattr(args, "skip_output_file", False)
             or (global_settings.skip_output_file or False),
+            # CLI args always take precedence over preset
+            # Check if separator_style was explicitly set in CLI
             separator_style=(
                 SeparatorStyle(args.separator_style)
-                if args.separator_style != "Detailed"
+                if '--separator-style' in getattr(args, '_cli_args', [])
                 else (
                     SeparatorStyle(global_settings.separator_style)
                     if global_settings.separator_style
-                    else SeparatorStyle.DETAILED
+                    else SeparatorStyle.STANDARD
                 )
             ),
+            # CLI args always take precedence over preset
             line_ending=(
                 LineEnding.from_str(args.line_ending)
-                if args.line_ending != "lf"
+                if '--line-ending' in getattr(args, '_cli_args', [])
                 else (
                     LineEnding.from_str(global_settings.line_ending)
                     if global_settings.line_ending
@@ -438,7 +451,7 @@ class Config:
 
         # Return new config with overrides applied
         return cls(
-            source_directory=source_dir,
+            source_directories=source_dirs,
             input_file=input_file,
             input_include_files=input_include_files,
             output=output_config,

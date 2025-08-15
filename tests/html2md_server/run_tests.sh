@@ -42,12 +42,12 @@ cleanup() {
 trap cleanup EXIT
 
 # Check if server is running
-if ! curl -s http://localhost:8080 > /dev/null; then
+if ! curl -s http://localhost:8090 > /dev/null; then
     echo -e "${RED}Error: Test server failed to start${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}Test server running at http://localhost:8080${NC}"
+echo -e "${GREEN}Test server running at http://localhost:8090${NC}"
 echo ""
 
 # Run tests

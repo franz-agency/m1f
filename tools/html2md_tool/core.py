@@ -21,7 +21,10 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup, NavigableString, Tag
 from markdownify import markdownify
 
-from .config.models import ExtractorConfig, ProcessorConfig
+# Import safe file operations
+from m1f.file_operations import safe_open
+
+from html2md_tool.config.models import ExtractorConfig, ProcessorConfig
 
 
 class HTMLParser:
@@ -51,11 +54,12 @@ class HTMLParser:
 
         return soup
 
-    def parse_file(self, file_path) -> BeautifulSoup:
+    def parse_file(self, file_path, output_path=None) -> BeautifulSoup:
         """Parse HTML file.
 
         Args:
             file_path: Path to HTML file
+            output_path: Optional output path for relative link resolution
 
         Returns:
             BeautifulSoup object
@@ -70,7 +74,7 @@ class HTMLParser:
 
         for encoding in encodings:
             try:
-                with open(file_path, "r", encoding=encoding) as f:
+                with safe_open(file_path, "r", encoding=encoding) as f:
                     html_content = f.read()
                 break
             except (UnicodeDecodeError, LookupError):
@@ -78,13 +82,14 @@ class HTMLParser:
 
         if html_content is None:
             # Fallback: read as binary and decode with errors='ignore'
-            with open(file_path, "rb") as f:
+            with safe_open(file_path, "rb") as f:
                 html_content = f.read().decode(
                     self.config.encoding, errors=self.config.decode_errors
                 )
 
-        # Get base URL from file path for relative URL resolution
-        base_url = file_path.as_uri()
+        # Don't use file:// URLs - they cause absolute path issues
+        # Instead, we'll handle relative links in a post-processing step
+        base_url = None
 
         return self.parse(html_content, base_url)
 

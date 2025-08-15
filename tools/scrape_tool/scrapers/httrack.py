@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""HTTrack-based web scraper implementation."""
+"""HTTrack-based web scraper implementation with Python fallback."""
 
 import asyncio
 import logging
@@ -21,16 +21,23 @@ import shutil
 import shlex
 import tempfile
 from pathlib import Path
-from typing import AsyncGenerator, Optional, Set
+from typing import AsyncGenerator, Optional
 from urllib.parse import urlparse, urljoin
 
 from .base import WebScraperBase, ScrapedPage, ScraperConfig
+from .python_mirror import PythonMirrorScraper
+from ...m1f.file_operations import safe_exists, safe_is_file, safe_is_dir
+from ...html2md_tool.utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
 
-class HTTrackScraper(WebScraperBase):
-    """HTTrack-based web scraper for complete website mirroring."""
+class HTTrackScraper(PythonMirrorScraper):
+    """HTTrack-based web scraper with Python fallback.
+
+    This scraper attempts to use HTTrack for website mirroring, but falls back
+    to a pure Python implementation if HTTrack is not available or fails.
+    """
 
     def __init__(self, config: ScraperConfig):
         """Initialize the HTTrack scraper.
@@ -40,24 +47,33 @@ class HTTrackScraper(WebScraperBase):
         """
         super().__init__(config)
         self.httrack_path = shutil.which("httrack")
-        if not self.httrack_path:
-            raise RuntimeError(
-                "HTTrack not found. Please install HTTrack: "
+        self.use_httrack = bool(self.httrack_path)
+        if not self.use_httrack:
+            logger.warning(
+                "HTTrack not found. Using Python-based mirroring instead. "
+                "For better performance, install HTTrack: "
                 "apt-get install httrack (Linux) or "
-                "brew install httrack (macOS) or "
-                "download from https://www.httrack.com (Windows)"
+                "brew install httrack (macOS)"
             )
         self.temp_dir: Optional[Path] = None
 
     async def __aenter__(self):
-        """Create temporary directory for HTTrack output."""
+        """Create temporary directory for HTTrack output and initialize parent."""
+        # Initialize parent context manager for Python fallback
+        await super().__aenter__()
+
+        # Create temp dir for HTTrack
         self.temp_dir = Path(tempfile.mkdtemp(prefix="html2md_httrack_"))
         logger.debug(f"Created temporary directory: {self.temp_dir}")
         return self
 
     async def __aexit__(self, *args):
-        """Clean up temporary directory."""
-        if self.temp_dir and self.temp_dir.exists():
+        """Clean up temporary directory and parent resources."""
+        # Clean up parent resources
+        await super().__aexit__(*args)
+
+        # Clean up temp directory
+        if self.temp_dir and safe_exists(self.temp_dir):
             try:
                 shutil.rmtree(self.temp_dir)
                 logger.debug(f"Cleaned up temporary directory: {self.temp_dir}")
@@ -65,10 +81,11 @@ class HTTrackScraper(WebScraperBase):
                 logger.warning(f"Failed to clean up temp directory: {e}")
 
     async def scrape_url(self, url: str) -> ScrapedPage:
-        """Scrape a single URL using HTTrack.
+        """Scrape a single URL using HTTrack or Python fallback.
 
         Note: HTTrack is designed for full site mirroring, so this method
         will create a minimal mirror and extract just the requested page.
+        If HTTrack fails or is not available, uses Python implementation.
 
         Args:
             url: URL to scrape
@@ -76,6 +93,16 @@ class HTTrackScraper(WebScraperBase):
         Returns:
             ScrapedPage object containing the scraped content
         """
+        # If HTTrack is not available, use parent Python implementation
+        if not self.use_httrack:
+            return await super().scrape_url(url)
+
+        # HTTrack has issues with localhost, use Python implementation
+        parsed = urlparse(url)
+        if parsed.hostname in ["localhost", "127.0.0.1", "::1"]:
+            logger.info(f"Using Python implementation for localhost URL: {url}")
+            return await super().scrape_url(url)
+
         if not self.temp_dir:
             raise RuntimeError("Scraper must be used as async context manager")
 
@@ -104,6 +131,9 @@ class HTTrackScraper(WebScraperBase):
         if not self.config.verify_ssl:
             cmd.append("--assume-insecure")
 
+        if self.config.ignore_get_params:
+            cmd.append("-N0")  # Don't parse query strings
+
         # Run HTTrack
         logger.debug(f"Running HTTrack command: {' '.join(cmd)}")
         process = await asyncio.create_subprocess_exec(
@@ -114,18 +144,24 @@ class HTTrackScraper(WebScraperBase):
 
         if process.returncode != 0:
             error_msg = stderr.decode("utf-8", errors="replace")
-            raise RuntimeError(f"HTTrack failed: {error_msg}")
+            logger.warning(
+                f"HTTrack failed: {error_msg}. Falling back to Python implementation."
+            )
+            # Fall back to Python implementation
+            return await super().scrape_url(url)
 
         # Find the downloaded file
         # HTTrack creates files in a domain subdirectory
         parsed_url = urlparse(url)
+        # Sanitize domain name for Windows compatibility (remove colons, etc.)
+        sanitized_domain = sanitize_filename(parsed_url.netloc)
 
         # Try multiple possible locations
         possible_files = [
             # Domain/path structure
-            output_dir / parsed_url.netloc / parsed_url.path.lstrip("/"),
-            output_dir / parsed_url.netloc / (parsed_url.path.lstrip("/") + ".html"),
-            output_dir / parsed_url.netloc / "index.html",
+            output_dir / sanitized_domain / parsed_url.path.lstrip("/"),
+            output_dir / sanitized_domain / (parsed_url.path.lstrip("/") + ".html"),
+            output_dir / sanitized_domain / "index.html",
             # Sometimes HTTrack puts files directly in output dir
             output_dir / "index.html",
         ]
@@ -135,21 +171,21 @@ class HTTrackScraper(WebScraperBase):
             possible_files.insert(
                 0,
                 output_dir
-                / parsed_url.netloc
+                / sanitized_domain
                 / parsed_url.path.lstrip("/")
                 / "index.html",
             )
 
         expected_file = None
         for pf in possible_files:
-            if pf.exists() and pf.is_file():
+            if safe_exists(pf) and safe_is_file(pf):
                 expected_file = pf
                 break
 
         if not expected_file:
             # Try to find any HTML file in the domain directory
-            domain_dir = output_dir / parsed_url.netloc
-            if domain_dir.exists():
+            domain_dir = output_dir / sanitized_domain
+            if safe_exists(domain_dir):
                 html_files = list(domain_dir.rglob("*.html"))
                 # Exclude HTTrack's own index files
                 html_files = [f for f in html_files if "hts-cache" not in str(f)]
@@ -168,13 +204,22 @@ class HTTrackScraper(WebScraperBase):
             if html_files:
                 expected_file = html_files[0]
             else:
-                raise RuntimeError(f"HTTrack did not download any HTML files for {url}")
+                logger.warning(
+                    f"HTTrack did not download any HTML files for {url}. Falling back to Python implementation."
+                )
+                # Fall back to Python implementation
+                return await super().scrape_url(url)
 
         # Read the content
         try:
             content = expected_file.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             content = expected_file.read_text(encoding="latin-1")
+        except Exception as e:
+            logger.warning(
+                f"Failed to read HTTrack output file: {e}. Falling back to Python implementation."
+            )
+            return await super().scrape_url(url)
 
         # Extract title from content
         title = None
@@ -183,10 +228,38 @@ class HTTrackScraper(WebScraperBase):
             end = content.find("</title>")
             title = content[start:end].strip()
 
-        return ScrapedPage(url=url, content=content, title=title, encoding="utf-8")
+        # For single URL scraping, we don't apply deduplication checks
+        # but we still extract canonical URL for metadata
+        canonical_url_found = None
+        if "<link" in content and "canonical" in content:
+            import re
+
+            canonical_match = re.search(
+                r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']',
+                content,
+                re.IGNORECASE,
+            )
+            if not canonical_match:
+                canonical_match = re.search(
+                    r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']',
+                    content,
+                    re.IGNORECASE,
+                )
+            if canonical_match:
+                canonical_url_found = urljoin(url, canonical_match.group(1))
+
+        return ScrapedPage(
+            url=url,
+            content=content,
+            title=title,
+            encoding="utf-8",
+            normalized_url=url,
+            canonical_url=canonical_url_found,
+            content_checksum=None,  # Not calculated for single URL
+        )
 
     async def scrape_site(self, start_url: str) -> AsyncGenerator[ScrapedPage, None]:
-        """Scrape entire website using HTTrack.
+        """Scrape entire website using HTTrack or Python fallback.
 
         Args:
             start_url: URL to start crawling from
@@ -194,6 +267,22 @@ class HTTrackScraper(WebScraperBase):
         Yields:
             ScrapedPage objects as they are scraped
         """
+        # Initialize allowed paths configuration
+        self._initialize_allowed_paths(start_url)
+        # If HTTrack is not available, use parent Python implementation
+        if not self.use_httrack:
+            async for page in super().scrape_site(start_url):
+                yield page
+            return
+
+        # HTTrack has issues with localhost, use Python implementation
+        parsed = urlparse(start_url)
+        if parsed.hostname in ["localhost", "127.0.0.1", "::1"]:
+            logger.info(f"Using Python implementation for localhost URL: {start_url}")
+            async for page in super().scrape_site(start_url):
+                yield page
+            return
+
         if not self.temp_dir:
             raise RuntimeError("Scraper must be used as async context manager")
 
@@ -212,7 +301,7 @@ class HTTrackScraper(WebScraperBase):
             start_url,  # URL is validated by validate_url method
             "-O",
             str(output_dir),
-            f"-r{self.config.max_depth}",  # Max depth
+            f"-r{999999 if self.config.max_depth == -1 else self.config.max_depth}",  # Max depth (-1 = unlimited)
             "-%P",  # No external pages
             "--quiet",  # Quiet mode
             "--disable-security-limits",
@@ -220,10 +309,14 @@ class HTTrackScraper(WebScraperBase):
             "--timeout=" + str(int(self.config.timeout)),
             f"--sockets={concurrent_connections}",  # Max 2 connections
             f"--connection-per-second={connection_rate:.2f}",  # Max 0.5/sec
-            f"--max-files={self.config.max_pages}",
+            f"--max-files={self.config.max_pages if self.config.max_pages != -1 else 999999999}",  # Use very large number for unlimited
             "--max-rate=100000",  # Limit bandwidth to 100KB/s
             "--min-rate=1000",  # Minimum 1KB/s
         ]
+
+        # Parse start URL for domain and path restrictions
+        parsed = urlparse(start_url)
+        base_path = parsed.path.rstrip("/")
 
         # Add domain restrictions
         if self.config.allowed_domains:
@@ -231,8 +324,41 @@ class HTTrackScraper(WebScraperBase):
                 cmd.extend(["+*" + domain + "*"])
         else:
             # Restrict to same domain by default
-            parsed = urlparse(start_url)
             cmd.extend(["+*" + parsed.netloc + "*"])
+
+        # Add subdirectory restriction using base class configuration
+        if self._allowed_path_configs:
+            allowed_domains = set()  # Track domains we're allowing
+            for (
+                allowed_domain_config,
+                allowed_path_config,
+            ) in self._allowed_path_configs:
+                if allowed_domain_config:
+                    # Full URL specified
+                    logger.info(
+                        f"Restricting HTTrack crawl to URL: {allowed_domain_config}{allowed_path_config}"
+                    )
+                    # Allow the specified URL and everything under it
+                    cmd.extend([f"+*{allowed_domain_config}{allowed_path_config}/*"])
+                    allowed_domains.add(allowed_domain_config)
+                else:
+                    # Just a path - use the start URL's domain
+                    logger.info(
+                        f"Restricting HTTrack crawl to allowed path: {allowed_path_config}"
+                    )
+                    # Allow the specified path and everything under it
+                    cmd.extend([f"+*{parsed.netloc}{allowed_path_config}/*"])
+                    allowed_domains.add(parsed.netloc)
+
+            # Exclude everything else on each domain we're allowing from
+            for domain in allowed_domains:
+                cmd.extend([f"-*{domain}/*"])
+        elif base_path:
+            logger.info(f"Restricting HTTrack crawl to subdirectory: {base_path}")
+            # Allow the base path and everything under it
+            cmd.extend([f"+*{parsed.netloc}{base_path}/*"])
+            # Exclude everything else on the same domain
+            cmd.extend([f"-*{parsed.netloc}/*"])
 
         # Add exclusions
         if self.config.exclude_patterns:
@@ -241,6 +367,9 @@ class HTTrackScraper(WebScraperBase):
 
         if not self.config.verify_ssl:
             cmd.append("--assume-insecure")
+
+        if self.config.ignore_get_params:
+            cmd.append("-N0")  # Don't parse query strings
 
         if self.config.respect_robots_txt:
             cmd.append("--robots=3")  # Respect robots.txt
@@ -297,6 +426,101 @@ class HTTrackScraper(WebScraperBase):
                     except UnicodeDecodeError:
                         content = html_file.read_text(encoding="latin-1")
 
+                    # Store metadata for database
+                    normalized_url = url.rstrip("/")
+                    if self.config.ignore_get_params and "?" in normalized_url:
+                        normalized_url = normalized_url.split("?")[0]
+                    canonical_url_found = None
+                    content_checksum = None
+
+                    # Order: 1. GET parameter normalization (already done above)
+                    # 2. Canonical URL check
+                    if self.config.check_canonical:
+                        # Simple regex-based extraction for canonical URL
+                        import re
+
+                        canonical_match = re.search(
+                            r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']',
+                            content,
+                            re.IGNORECASE,
+                        )
+                        if not canonical_match:
+                            # Try alternate order
+                            canonical_match = re.search(
+                                r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']',
+                                content,
+                                re.IGNORECASE,
+                            )
+
+                        if canonical_match:
+                            canonical_url_found = canonical_match.group(1)
+                            # Make canonical URL absolute
+                            canonical_url_found = urljoin(url, canonical_url_found)
+                            # Normalize canonical URL too
+                            normalized_canonical = canonical_url_found.rstrip("/")
+                            if (
+                                self.config.ignore_get_params
+                                and "?" in normalized_canonical
+                            ):
+                                normalized_canonical = normalized_canonical.split("?")[
+                                    0
+                                ]
+
+                            if normalized_url != normalized_canonical:
+                                # Check if we should respect the canonical URL
+                                should_skip = True
+
+                                # Check allowed paths (single or multiple)
+                                allowed_paths_list = []
+                                if (
+                                    hasattr(self.config, "allowed_paths")
+                                    and self.config.allowed_paths
+                                ):
+                                    allowed_paths_list = self.config.allowed_paths
+                                elif self.config.allowed_path:
+                                    allowed_paths_list = [self.config.allowed_path]
+
+                                if allowed_paths_list:
+                                    # Parse URLs to check paths
+                                    current_parsed = urlparse(normalized_url)
+                                    canonical_parsed = urlparse(normalized_canonical)
+
+                                    # If current URL is within any allowed_path but canonical is outside all,
+                                    # don't skip - the user explicitly wants content from allowed_path
+                                    current_in_allowed = any(
+                                        current_parsed.path.startswith(allowed_path)
+                                        for allowed_path in allowed_paths_list
+                                    )
+                                    canonical_in_allowed = any(
+                                        canonical_parsed.path.startswith(allowed_path)
+                                        for allowed_path in allowed_paths_list
+                                    )
+
+                                    if current_in_allowed and not canonical_in_allowed:
+                                        should_skip = False
+                                        logger.info(
+                                            f"Not skipping {url} - canonical URL {canonical_url_found} is outside allowed_paths {allowed_paths_list}"
+                                        )
+
+                                if should_skip:
+                                    logger.info(
+                                        f"Skipping {url} - canonical URL differs: {canonical_url_found}"
+                                    )
+                                    continue  # Skip this file
+
+                    # 3. Content duplicate check
+                    if self.config.check_content_duplicates:
+                        from ..utils import calculate_content_checksum
+
+                        content_checksum = calculate_content_checksum(content)
+
+                        # Check if checksum exists using callback
+                        if self._checksum_callback and self._checksum_callback(
+                            content_checksum
+                        ):
+                            logger.info(f"Skipping {url} - duplicate content detected")
+                            continue  # Skip this file
+
                     # Extract title
                     title = None
                     if "<title>" in content and "</title>" in content:
@@ -307,7 +531,13 @@ class HTTrackScraper(WebScraperBase):
                     self.mark_visited(url)
 
                     yield ScrapedPage(
-                        url=url, content=content, title=title, encoding="utf-8"
+                        url=url,
+                        content=content,
+                        title=title,
+                        encoding="utf-8",
+                        normalized_url=normalized_url,
+                        canonical_url=canonical_url_found,
+                        content_checksum=content_checksum,
                     )
 
             except Exception as e:

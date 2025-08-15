@@ -46,10 +46,10 @@ Performance & Scalability
 pip install beautifulsoup4 markdownify chardet pyyaml
 
 # Basic conversion
-python tools/html2md.py --source-dir ./website --destination-dir ./markdown
+m1f-html2md --source-dir ./website --destination-dir ./markdown
 
 # Extract main content only
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./website \
     --destination-dir ./markdown \
     --outermost-selector "main" \
@@ -80,11 +80,11 @@ pip install pyyaml         # YAML frontmatter support
 
 ```
 # Check if html2md is working
-python tools/html2md.py --help
+m1f-html2md --help
 
 # Test with a simple conversion
 echo '<h1>Test</h1><p>Hello World</p>' > test.html
-python tools/html2md.py --source-dir . --destination-dir output
+m1f-html2md --source-dir . --destination-dir output
 ```
 
 ## Detailed Usage
@@ -109,7 +109,7 @@ python tools/html2md.py --source-dir . --destination-dir output
 #### Example 1: Documentation Site Conversion
 
 ```
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./docs-site \
     --destination-dir ./markdown-docs \
     --outermost-selector "article.documentation" \
@@ -122,7 +122,7 @@ python tools/html2md.py \
 #### Example 2: Blog Migration
 
 ```
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./wordpress-export \
     --destination-dir ./blog-markdown \
     --outermost-selector "div.post-content" \
@@ -136,7 +136,7 @@ python tools/html2md.py \
 #### Example 3: Knowledge Base Extraction
 
 ```
-python tools/html2md.py \
+m1f-html2md \
     --source-dir ./kb-site \
     --destination-dir ./kb-markdown \
     --outermost-selector "main#content" \
@@ -310,7 +310,7 @@ Try specifying `--source-encoding` or use `--target-encoding utf-8`
 
 # Enable debug output
 
-python tools/html2md.py \
+m1f-html2md \
  --source-dir ./website \
  --destination-dir ./output \
  --verbose \

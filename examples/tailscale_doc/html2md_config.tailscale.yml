@@ -1,0 +1,91 @@
+# Complete configuration file for m1f-html2md
+# All sections are optional - only include what differs from defaults
+
+# Extractor configuration
+extractor:
+  parser: "html.parser"  # BeautifulSoup parser
+  encoding: "utf-8"
+  decode_errors: "ignore"
+  prettify: false
+
+# Conversion options - Markdown formatting preferences
+conversion:
+  # Primary content selector (use comma-separated list for multiple)
+  outermost_selector: "main, .js-docHighlight"
+  
+  # Elements to remove from the content
+  ignore_selectors:
+    # Navigation (found in 5/5 files)
+    - "nav"
+    - "header"
+    - "header .container"
+    - ".fixed.inset-0.z-\\[90\\]"
+    - ".space-y-\\[22px\\]"
+    
+    # Footers (found in 5/5 files)
+    - "footer"
+    - "footer .container"
+    
+    # Sidebars/Asides (found in 5/5 files)
+    - "aside"
+    - "aside.js-docHighlight"
+    - ".col-span-2.xl\\:col-start-auto"
+    
+    # Interactive elements (found in 5/5 files)
+    - "button[aria-label='Open Menu']"
+    - ".fixed.bottom-0.left-0.right-0"
+    - "[class*='pointer-events-none']"
+    - ".fixed.inset-0"
+    
+    # Mobile navigation overlay
+    - ".transition-opacity.duration-200.will-change-\\[opacity\\]"
+    
+    # Scripts and styles
+    - "script"
+    - "style"
+    - "noscript"
+    - "link[rel='stylesheet']"
+    - "link[rel='preload']"
+    
+  strip_tags: ["script", "style", "noscript"]
+  keep_html_tags: [] # HTML tags to preserve in output
+  heading_style: "atx" # atx (###) or setext (underlines)
+  bold_style: "**" # ** or __
+  italic_style: "*" # * or _
+  link_style: "inline" # inline or reference
+  list_marker: "-" # -, *, or +
+  code_block_style: "fenced" # fenced (```) or indented
+  heading_offset: 0 # Adjust heading levels (e.g., 1 = h1→h2)
+  generate_frontmatter: true # Add YAML frontmatter with metadata
+  preserve_whitespace: false
+  wrap_width: 0 # 0 = no wrapping
+
+# Asset handling configuration
+assets:
+  download: false
+  directory: "assets"
+  max_size: 10485760  # 10MB in bytes
+
+# File handling options
+file_extensions: [".html", ".htm"]
+exclude_patterns: [".*", "_*", "node_modules", "__pycache__"]
+target_encoding: "utf-8"
+
+# Processing options
+parallel: false # Enable parallel processing
+max_workers: 4
+overwrite: false # Overwrite existing files
+
+# Analysis Summary:
+# - Analyzed 5 files representing different Tailscale documentation page types
+# - Primary selector 'main' works on 5/5 files
+# - Fallback selector '.js-docHighlight' provides additional coverage
+# - All files follow consistent Next.js structure with identical layout patterns
+#
+# Key Findings:
+# - Main content consistently uses 'main' element
+# - Header, footer, and navigation structure identical across all pages
+# - Grid-based responsive layout with consistent column patterns
+# - Mobile navigation overlay present in all files
+#
+# Confidence: High - structure is extremely consistent across all analyzed files

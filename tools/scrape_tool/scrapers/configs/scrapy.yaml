@@ -58,5 +58,5 @@ scrapy_config:
   SCHEDULER_MEMORY_QUEUE: 'scrapy.squeues.FifoMemoryQueue'
 
 # Example usage:
-# python -m tools.mf1-html2md crawl https://example.com -o output/ \
+# m1f-scrape https://example.com -o output/ \
 #   --scraper scrapy --scraper-config scrapy.yaml

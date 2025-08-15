@@ -1,0 +1,87 @@
+#!/bin/bash
+# m1f Git Pre-Commit Hook (External Projects)
+# This hook runs m1f auto-bundle before each commit if .m1f.config.yml exists
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}Running m1f pre-commit hook...${NC}"
+
+# Check if .m1f.config.yml exists
+if [ ! -f ".m1f.config.yml" ]; then
+    echo -e "${YELLOW}No .m1f.config.yml found. Skipping m1f auto-bundle.${NC}"
+    exit 0
+fi
+
+# Check if m1f is available
+if ! command -v m1f &> /dev/null && ! command -v m1f-update &> /dev/null; then
+    echo -e "${YELLOW}Warning: m1f not found in PATH${NC}"
+    echo "Please ensure m1f is installed and available in your PATH"
+    echo "Skipping auto-bundle..."
+    exit 0
+fi
+
+# Function to run m1f auto-bundle
+run_auto_bundle() {
+    echo -e "${BLUE}Running m1f auto-bundle...${NC}"
+    
+    # Try m1f-update first (newer command)
+    if command -v m1f-update &> /dev/null; then
+        if m1f-update --quiet; then
+            echo -e "${GREEN}✓ Auto-bundle completed successfully${NC}"
+            return 0
+        else
+            echo -e "${RED}✗ Auto-bundle failed${NC}"
+            return 1
+        fi
+    # Fall back to m1f auto-bundle
+    elif command -v m1f &> /dev/null; then
+        if m1f auto-bundle --quiet; then
+            echo -e "${GREEN}✓ Auto-bundle completed successfully${NC}"
+            return 0
+        else
+            echo -e "${RED}✗ Auto-bundle failed${NC}"
+            return 1
+        fi
+    fi
+    
+    return 1
+}
+
+# Track if we need to re-stage files
+FILES_MODIFIED=false
+
+# Run auto-bundle
+if run_auto_bundle; then
+    FILES_MODIFIED=true
+fi
+
+# Re-stage any m1f bundle files that were modified
+if [ "$FILES_MODIFIED" = true ]; then
+    echo -e "${BLUE}Re-staging m1f bundle files...${NC}"
+    
+    # Find and stage all .txt files in m1f directories
+    find . -path "*/m1f/*.txt" -type f | while read -r file; do
+        if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+            git add "$file"
+            echo -e "${GREEN}✓ Staged: $file${NC}"
+        fi
+    done
+    
+    # Also check for .ai-context directory if using presets
+    if [ -d ".ai-context" ]; then
+        find .ai-context -name "*.txt" -type f | while read -r file; do
+            if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+                git add "$file"
+                echo -e "${GREEN}✓ Staged: $file${NC}"
+            fi
+        done
+    fi
+fi
+
+echo -e "${GREEN}✓ m1f pre-commit hook completed${NC}"
+exit 0

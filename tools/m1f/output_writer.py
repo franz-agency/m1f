@@ -19,7 +19,9 @@ Output writer module for writing combined files with separators.
 from __future__ import annotations
 
 import asyncio
+import gc
 import hashlib
+import sys
 from pathlib import Path
 from typing import List, Tuple, Set, Optional
 import re
@@ -32,6 +34,10 @@ from .logging import LoggerManager
 from .separator_generator import SeparatorGenerator
 from .utils import calculate_checksum
 from .presets import PresetManager
+from .file_operations import (
+    safe_exists,
+    safe_open,
+)
 
 
 class OutputWriter:
@@ -227,11 +233,12 @@ class OutputWriter:
             # Open output file
             output_encoding = self.config.encoding.target_charset or "utf-8"
 
-            with open(
+            with safe_open(
                 output_path,
                 "w",
                 encoding=output_encoding,
                 newline=self.config.output.line_ending.value,
+                logger=self.logger,
             ) as outfile:
 
                 files_written = 0
@@ -252,6 +259,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _write_combined_file_parallel(
         self, output_path: Path, all_files: List[Tuple[Path, str]]
@@ -295,14 +306,19 @@ class OutputWriter:
                     elif result is not None:
                         processed_files.append((batch[j], result))
 
+                # Force garbage collection after each batch on Windows to release file handles
+                if sys.platform.startswith("win"):
+                    gc.collect()
+
             # Now write all processed files sequentially to maintain order
             output_encoding = self.config.encoding.target_charset or "utf-8"
 
-            with open(
+            with safe_open(
                 output_path,
                 "w",
                 encoding=output_encoding,
                 newline=self.config.output.line_ending.value,
+                logger=self.logger,
             ) as outfile:
                 files_written = 0
 
@@ -346,6 +362,10 @@ class OutputWriter:
 
         except IOError as e:
             raise PermissionError(f"Cannot write to output file: {e}")
+        finally:
+            # Ensure garbage collection to release any remaining file handles on Windows
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _process_single_file_parallel(
         self, file_path: Path, rel_path: str, file_num: int, total_files: int
@@ -446,6 +466,10 @@ class OutputWriter:
         except Exception as e:
             self.logger.error(f"Error processing file {file_path}: {e}")
             raise
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()
 
     async def _prepare_include_files(self) -> List[Tuple[Path, str]]:
         """Prepare include files from configuration."""
@@ -455,7 +479,7 @@ class OutputWriter:
             return include_files
 
         for i, include_path in enumerate(self.config.input_include_files):
-            if not include_path.exists():
+            if not safe_exists(include_path, logger=self.logger):
                 self.logger.warning(f"Include file not found: {include_path}")
                 continue
 
@@ -619,3 +643,7 @@ class OutputWriter:
             outfile.write(self.config.output.line_ending.value)
 
             return True
+        finally:
+            # Force garbage collection on Windows to ensure file handles are released
+            if sys.platform.startswith("win"):
+                gc.collect()

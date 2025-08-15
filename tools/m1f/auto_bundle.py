@@ -26,7 +26,13 @@ import subprocess
 import sys
 
 from .config import Config, OutputConfig, FilterConfig, SeparatorStyle, LineEnding
-from .constants import ANSI_COLORS
+from .file_operations import (
+    safe_exists,
+    safe_open,
+)
+
+# Use unified colorama module
+from shared.colors import Colors, info, success, error, warning
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +48,11 @@ class AutoBundleConfig:
 
     def load(self) -> bool:
         """Load configuration from YAML file."""
-        if not self.config_path.exists():
+        if not safe_exists(self.config_path):
             return False
 
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with safe_open(self.config_path, "r", encoding="utf-8") as f:
                 self.config_data = yaml.safe_load(f) or {}
 
             self.bundles = self.config_data.get("bundles", {})
@@ -82,7 +88,7 @@ class AutoBundler:
 
         while True:
             config_path = current / ".m1f.config.yml"
-            if config_path.exists():
+            if safe_exists(config_path):
                 if self.verbose:
                     self.print_info(f"Found config at: {config_path}")
                 return config_path
@@ -96,7 +102,7 @@ class AutoBundler:
 
     def check_config_exists(self) -> bool:
         """Check if auto-bundle config exists."""
-        return self.config_file.exists()
+        return safe_exists(self.config_file)
 
     def load_config(self) -> Optional[AutoBundleConfig]:
         """Load auto-bundle configuration."""
@@ -109,25 +115,23 @@ class AutoBundler:
         """Print info message."""
         if not self.quiet:
             if self.verbose:
-                print(f"{ANSI_COLORS['BLUE']}[INFO]{ANSI_COLORS['RESET']} {msg}")
+                info(msg)
             else:
-                print(msg)
+                info(msg)
 
     def print_success(self, msg: str):
         """Print success message."""
         if not self.quiet:
-            print(f"{ANSI_COLORS['GREEN']}[SUCCESS]{ANSI_COLORS['RESET']} {msg}")
+            success(msg)
 
     def print_error(self, msg: str):
         """Print error message."""
-        print(
-            f"{ANSI_COLORS['RED']}[ERROR]{ANSI_COLORS['RESET']} {msg}", file=sys.stderr
-        )
+        error(msg)
 
     def print_warning(self, msg: str):
         """Print warning message."""
         if not self.quiet:
-            print(f"{ANSI_COLORS['YELLOW']}[WARNING]{ANSI_COLORS['RESET']} {msg}")
+            warning(msg)
 
     def setup_directories(self, config: AutoBundleConfig):
         """Create necessary directories based on config."""
@@ -172,7 +176,7 @@ class AutoBundler:
                 # Add .py extension if missing
                 if not os.path.splitext(file)[1]:
                     test_path = self.project_root / file
-                    if not test_path.exists():
+                    if not safe_exists(test_path):
                         file += ".py"
                 cmd_parts.extend(["-s", str(self.project_root / file)])
 
@@ -192,7 +196,7 @@ class AutoBundler:
                             test_path = self.project_root / path / file
                         else:
                             test_path = self.project_root / file
-                        if not test_path.exists():
+                        if not safe_exists(test_path):
                             file += ".py"
 
                     # Create full path
@@ -209,6 +213,12 @@ class AutoBundler:
                 if "include_extensions" in source:
                     cmd_parts.append("--include-extensions")
                     cmd_parts.extend(source["include_extensions"])
+
+            # Handle includes at source level
+            if "includes" in source:
+                # Add includes patterns
+                cmd_parts.append("--includes")
+                cmd_parts.extend(source["includes"])
 
             # Collect excludes from source
             if "excludes" in source:
@@ -263,29 +273,46 @@ class AutoBundler:
         if "preset_group" in bundle_config:
             cmd_parts.extend(["--preset-group", bundle_config["preset_group"]])
 
-        # Exclude paths file(s)
+        # Exclude paths file(s) - check bundle config first, then global settings
+        exclude_files = None
         if "exclude_paths_file" in bundle_config:
             exclude_files = bundle_config["exclude_paths_file"]
+        elif (
+            "global_settings" in global_config
+            and "exclude_paths_file" in global_config["global_settings"]
+        ):
+            exclude_files = global_config["global_settings"]["exclude_paths_file"]
+
+        if exclude_files:
             if isinstance(exclude_files, str):
                 exclude_files = [exclude_files]
-            if exclude_files:
-                cmd_parts.append("--exclude-paths-file")
-                for file in exclude_files:
-                    cmd_parts.append(str(self.project_root / file))
+            cmd_parts.append("--exclude-paths-file")
+            for file in exclude_files:
+                cmd_parts.append(str(self.project_root / file))
 
-        # Include paths file(s)
+        # Include paths file(s) - check bundle config first, then global settings
+        include_files = None
         if "include_paths_file" in bundle_config:
             include_files = bundle_config["include_paths_file"]
+        elif (
+            "global_settings" in global_config
+            and "include_paths_file" in global_config["global_settings"]
+        ):
+            include_files = global_config["global_settings"]["include_paths_file"]
+
+        if include_files:
             if isinstance(include_files, str):
                 include_files = [include_files]
-            if include_files:
-                cmd_parts.append("--include-paths-file")
-                for file in include_files:
-                    cmd_parts.append(str(self.project_root / file))
+            cmd_parts.append("--include-paths-file")
+            for file in include_files:
+                cmd_parts.append(str(self.project_root / file))
 
         # Other options
         if bundle_config.get("filename_mtime_hash"):
             cmd_parts.append("--filename-mtime-hash")
+
+        if bundle_config.get("docs_only"):
+            cmd_parts.append("--docs-only")
 
         if bundle_config.get("minimal_output", True):
             cmd_parts.append("--minimal-output")
@@ -310,7 +337,7 @@ class AutoBundler:
 
         # Check conditional enabling
         enabled_if = bundle_config.get("enabled_if_exists", "")
-        if enabled_if and not (self.project_root / enabled_if).exists():
+        if enabled_if and not safe_exists(self.project_root / enabled_if):
             self.print_info(
                 f"Skipping bundle {bundle_name} (condition not met: {enabled_if})"
             )
@@ -331,7 +358,7 @@ class AutoBundler:
                 self.print_error(f"Command failed: {result.stderr}")
                 return False
             if self.verbose and result.stdout:
-                print(result.stdout)
+                info(result.stdout)
             self.print_success(f"Created: {bundle_name}")
             return True
         except Exception as e:
@@ -357,32 +384,32 @@ class AutoBundler:
             else:
                 ungrouped_bundles[bundle_name] = bundle_config
 
-        print("\nAvailable bundles:")
-        print("-" * 60)
+        info("\nAvailable bundles:")
+        info("-" * 60)
 
         # Show grouped bundles first
         for group_name in sorted(grouped_bundles.keys()):
-            print(f"\nGroup: {group_name}")
-            print("=" * 40)
+            info(f"\nGroup: {group_name}")
+            info("=" * 40)
             for bundle_name, bundle_config in grouped_bundles[group_name].items():
                 self._print_bundle_info(bundle_name, bundle_config)
 
         # Show ungrouped bundles
         if ungrouped_bundles:
             if grouped_bundles:
-                print("\nUngrouped bundles:")
-                print("=" * 40)
+                info("\nUngrouped bundles:")
+                info("=" * 40)
             for bundle_name, bundle_config in ungrouped_bundles.items():
                 self._print_bundle_info(bundle_name, bundle_config)
 
-        print("-" * 60)
+        info("-" * 60)
 
         # Show available groups
         if grouped_bundles:
-            print("\nAvailable groups:")
+            info("\nAvailable groups:")
             for group in sorted(grouped_bundles.keys()):
                 count = len(grouped_bundles[group])
-                print(f"  - {group} ({count} bundles)")
+                info(f"  - {group} ({count} bundles)")
 
     def _print_bundle_info(self, bundle_name: str, bundle_config: Dict[str, Any]):
         """Print information about a single bundle."""
@@ -391,13 +418,13 @@ class AutoBundler:
         output = bundle_config.get("output", "No output specified")
 
         status = "enabled" if enabled else "disabled"
-        print(f"\n  {bundle_name} ({status})")
-        print(f"    Description: {description}")
-        print(f"    Output: {output}")
+        info(f"\n  {bundle_name} ({status})")
+        info(f"    Description: {description}")
+        info(f"    Output: {output}")
 
         # Show conditional enabling
         if "enabled_if_exists" in bundle_config:
-            print(f"    Enabled if exists: {bundle_config['enabled_if_exists']}")
+            info(f"    Enabled if exists: {bundle_config['enabled_if_exists']}")
 
     def run(
         self,

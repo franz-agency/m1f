@@ -69,7 +69,6 @@ python s1f.py --input-file ./output/exotic_encodings_test.txt --destination-dire
 
 - All files were successfully extracted
 - Superior encoding preservation compared to UTF-8:
-
   - big5.txt: Successfully restored to Big5 encoding
   - koi8r.txt: Successfully restored to KOI8-R encoding
   - windows1256.txt: Successfully restored to Windows-1256 encoding
@@ -100,7 +99,6 @@ The difference in results is significant:
 
 3. The `--respect-encoding` option in s1f works best when combined with
    UTF-16-LE conversion in m1f, especially for:
-
    - Big5 (Traditional Chinese)
    - KOI8-R (Russian)
    - Windows-1256 (Arabic)

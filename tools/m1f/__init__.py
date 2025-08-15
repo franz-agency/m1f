@@ -4,12 +4,16 @@ m1f - Make One File
 A modern Python tool to combine multiple text files into a single output file.
 """
 
+# Get version from package metadata
 try:
-    from .._version import __version__, __version_info__
-except ImportError:
-    # Fallback when running as standalone script
-    __version__ = "3.1.0"
-    __version_info__ = (3, 1, 0)
+    from importlib.metadata import version
+
+    __version__ = version("m1f")
+    __version_info__ = tuple(int(x) for x in __version__.split(".")[:3])
+except Exception:
+    # During development, version might not be available
+    __version__ = "dev"
+    __version_info__ = (0, 0, 0)
 
 __author__ = "Franz und Franz (https://franz.agency)"
 __project__ = "https://m1f.dev"
@@ -19,6 +23,11 @@ from .config import Config
 from .logging import LoggerManager
 from .security_scanner import SecurityScanner
 from .file_processor import FileProcessor
+
+# Import safe file operations
+from .file_operations import (
+    safe_exists,
+)
 
 
 # Backward compatibility functions for tests
@@ -40,7 +49,7 @@ def _scan_files_for_sensitive_info(files_to_process):
     )
 
     config = Config(
-        source_directory=Path("."),
+        source_directories=[Path(".")],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("test.txt")),
@@ -85,7 +94,7 @@ def _detect_symlink_cycles(path):
 
     # Create basic config
     config = Config(
-        source_directory=Path("."),
+        source_directories=[Path(".")],
         input_file=None,
         input_include_files=[],
         output=OutputConfig(output_file=Path("test.txt")),
@@ -120,7 +129,7 @@ def main():
     current_dir = Path(__file__).parent
     main_script = current_dir.parent / "m1f.py"
 
-    if main_script.exists():
+    if safe_exists(main_script):
         # Import the main script module
         import importlib.util
 
@@ -158,7 +167,9 @@ def main():
         return 0
 
     except Exception as e:
-        print(f"Error running m1f: {e}")
+        import sys
+
+        sys.stderr.write(f"Error running m1f: {e}\n")
         return 1
 
 

@@ -23,11 +23,27 @@ First, let's get Claude up to speed on what m1f can do:
 
 ```bash
 cd /your/awesome/project
-m1f-link  # Creates m1f/m1f-docs.txt symlink
+m1f-init  # Quick setup: links docs, analyzes project, creates bundles
 ```
 
-Boom! 💥 Now you've got the complete m1f documentation sitting in your project.
-Claude can read this and instantly become an m1f expert.
+Boom! 💥 This command:
+
+- Creates m1f/m1f.txt symlink to the complete documentation
+- Analyzes your project structure
+- Generates initial bundles (complete and docs)
+- Creates a basic .m1f.config.yml
+
+For advanced setup with topic-specific bundles (Linux/macOS only):
+
+```bash
+# Interactive mode - will prompt for project description and priorities
+m1f-claude --setup
+
+# Or provide project info via command line
+m1f-claude --setup \
+  --project-description "E-commerce platform with React frontend and Django backend" \
+  --project-priorities "performance, security, maintainability"
+```
 
 ### Step 2: Start the Conversation
 
@@ -35,7 +51,7 @@ Here's where it gets fun. Just tell Claude what you need:
 
 ```
 Hey Claude, I need help setting up m1f for my project.
-Check out @m1f/m1f-docs.txt to see what m1f can do.
+Check out @m1f/m1f.txt to see what m1f can do.
 
 My project is a Python web app with:
 - Backend API in /api
@@ -86,36 +102,206 @@ Claude, I need different bundles for dev/staging/prod.
 Using m1f v3.2's preset system:
 
 1. Create environment-specific presets
-2. Use conditional presets (enabled_if_exists)
+2. Use enabled flag for environment control
 3. Set different security levels per environment
 4. Configure appropriate output formats
 
 Make it so I can just run: m1f --preset env.yml --preset-group production
 ```
 
-## Using m1f-claude: The Smart Assistant 🧠
+## Using m1f-claude: Advanced Project Setup 🧠
 
-We've supercharged Claude with m1f knowledge. Here's how to use it:
+For advanced project-specific configuration, use m1f-claude (Linux/macOS only):
 
 ```bash
-# Basic usage - Claude already knows about m1f!
-m1f-claude "Bundle my Python project for code review"
+# First, run the quick setup
+m1f-init
 
-# Interactive mode - have a conversation
-m1f-claude -i
-> Help me organize my WordPress theme files
-> Now create a bundle for just the custom post types
-> Can you exclude all the vendor files?
+# Then for advanced configuration with Claude's help
+m1f-claude --setup
 ```
 
 ### What Makes m1f-claude Special?
 
-When you use `m1f-claude`, it automatically:
+When you use `m1f-claude --setup`, it:
 
-- Knows where to find m1f documentation
-- Understands your project structure
-- Suggests optimal parameters
-- Can execute commands directly (with your permission)
+- Analyzes your project in detail with Claude's assistance
+- Creates topic-specific bundles (components, API, tests, etc.)
+- Optimizes configuration for your specific project type
+- Provides intelligent suggestions based on your codebase
+
+**Note**: m1f-claude requires Claude Code SDK and is not available on Windows.
+Windows users can manually customize their .m1f.config.yml after running
+m1f-init.
+
+### Permission System
+
+Control how Claude handles file operations with the `--permission-mode` flag:
+
+```bash
+# Auto-accept all file edits
+m1f-claude --permission-mode acceptEdits "Help me refactor this code"
+
+# Plan mode - Claude describes changes without executing
+m1f-claude --permission-mode plan "What changes would you make?"
+
+# Bypass all permission checks (use with caution)
+m1f-claude --permission-mode bypassPermissions "Fix all issues"
+
+# Default mode - prompts for each operation
+m1f-claude --permission-mode default "Update the config"
+```
+
+### Output Formats
+
+Choose how Claude's responses are formatted:
+
+```bash
+# Plain text output (default)
+m1f-claude --output-format text "Explain this code"
+
+# JSON output for programmatic processing
+m1f-claude --output-format json "Analyze project structure"
+
+# Streaming JSON for real-time processing
+m1f-claude --output-format stream-json "Refactor the codebase"
+```
+
+### MCP (Model Context Protocol) Support
+
+Extend Claude's capabilities with MCP servers:
+
+```bash
+# Load MCP configuration from file
+m1f-claude --mcp-config ./mcp-servers.json "Use the database tools"
+
+# Example MCP configuration file:
+cat > mcp-servers.json << 'EOF'
+{
+  "servers": {
+    "postgres-tools": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/postgres-server"],
+      "env": {
+        "DATABASE_URL": "postgresql://user:pass@localhost/mydb"
+      }
+    }
+  }
+}
+EOF
+```
+
+### Tool Control
+
+Fine-grained control over which tools Claude can use:
+
+```bash
+# Allow specific tools only
+m1f-claude --allowed-tools "Read,Write,Edit" "Update the documentation"
+
+# Disallow dangerous tools
+m1f-claude --disallowed-tools "Bash,System" "Review the code"
+
+# Combine both for precise control
+m1f-claude --allowed-tools "Read,Edit,MultiEdit,Write,Glob,Grep" \
+           --disallowed-tools "Bash" \
+           "Refactor without running commands"
+```
+
+### System Prompt Enhancement
+
+Append custom instructions to Claude's system prompt:
+
+```bash
+# Add specific instructions
+m1f-claude --append-system-prompt "Focus on security best practices" \
+           "Review this authentication code"
+
+# Multiple instructions
+m1f-claude --append-system-prompt "Be concise. Explain your reasoning. Focus on performance." \
+           "Optimize this algorithm"
+```
+
+### Working Directory Control
+
+Set a specific working directory for Claude:
+
+```bash
+# Work in a different directory than current
+m1f-claude --cwd /path/to/project "List all Python files"
+
+# Useful for monorepos
+m1f-claude --cwd ./packages/frontend "Set up the React components"
+```
+
+### Enhanced Message Handling
+
+m1f-claude handles all message types from Claude:
+
+- **System Messages**: Session initialization, permission prompts, notifications
+- **User Messages**: Tracked for conversation context
+- **Assistant Messages**: Handles both flat and nested content structures
+- **Tool Messages**: Tool use events with parameters, results with smart
+  truncation
+- **Result Messages**: Success/error/cancellation states, cost tracking,
+  metadata
+
+### Usage Examples
+
+#### Basic Setup with Enhanced Features
+
+```bash
+# Initialize with specific permissions and tools
+m1f-claude --setup \
+  --permission-mode acceptEdits \
+  --allowed-tools "Read,Write,Edit,MultiEdit,Glob,Grep" \
+  --project-description "E-commerce platform using Django" \
+  --project-priorities "Security, scalability, maintainability"
+```
+
+#### Interactive Mode with MCP
+
+```bash
+# Start interactive mode with database tools
+m1f-claude -i \
+  --mcp-config ./database-tools.json \
+  --append-system-prompt "You have access to PostgreSQL tools"
+```
+
+#### Automated Refactoring
+
+```bash
+# Refactor with auto-accept and specific output format
+m1f-claude --permission-mode acceptEdits \
+  --output-format json \
+  --max-turns 5 \
+  "Refactor all Python files to use type hints"
+```
+
+#### Safe Code Review
+
+```bash
+# Review without write permissions
+m1f-claude --allowed-tools "Read,Grep,Glob" \
+  --permission-mode default \
+  "Review the codebase for security issues"
+```
+
+### 💡 Important: Claude Code Subscription Recommended
+
+**We strongly recommend using Claude Code with a subscription plan** when using
+m1f-claude for project setup. Setting up m1f with Claude's assistance can
+involve:
+
+- Multiple file reads to analyze your project structure
+- Creating and editing configuration files
+- Running various commands to test configurations
+- Iterative refinement of bundles
+
+Since we don't know exactly how many tokens this process will consume, a
+subscription ensures you won't run into usage limits during critical setup
+phases. The investment pays off quickly through the time saved in properly
+configuring your project.
 
 ## Working with Claude Code
 
@@ -246,7 +432,7 @@ how to organize it with m1f bundles. Consider:
 - Logical groupings for different use cases
 - Size limits for AI context windows
 
-Use @m1f/m1f-docs.txt to understand all available options.
+Use @m1f/m1f.txt to understand all available options.
 ```
 
 ### 2. Provide Clear Context
@@ -259,7 +445,7 @@ Claude, here's my project structure from m1f:
 - Target use: Sharing with external auditors
 
 Create a secure bundling strategy using m1f v3.2's security features.
-Check @m1f/m1f-docs.txt for security parameters.
+Check @m1f/m1f.txt for security parameters.
 ```
 
 ### 3. Iterative Refinement
@@ -414,6 +600,15 @@ m1f-claude "Setup m1f for a typical Python project with tests and docs"
 # Interactive Claude session
 m1f-claude -i
 
+# With specific permissions and tools
+m1f-claude --permission-mode acceptEdits --allowed-tools "Read,Write,Edit" "Update the README"
+
+# JSON output for automation
+m1f-claude --output-format json "List all Python files"
+
+# With MCP database tools
+m1f-claude --mcp-config ./mcp.json "Query the user database"
+
 # Security audit bundle
 m1f -s . -o audit.txt --security-check error --minimal-output
 
@@ -451,4 +646,4 @@ Happy bundling! 🚀
 ---
 
 _P.S. - If Claude suggests something that seems off, just ask "Are you sure
-about that? Check @m1f/m1f-docs.txt again." Works every time! 😉_
+about that? Check @m1f/m1f.txt again." Works every time! 😉_

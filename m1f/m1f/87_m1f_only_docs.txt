@@ -5,16 +5,6 @@ Welcome to the m1f (Make One File) documentation. This tool combines multiple
 text files into a single output file, perfect for providing context to Large
 Language Models (LLMs) and creating bundled documentation.
 
-## What's New in v3.2
-
-- **Enhanced Security**: Path traversal protection, SSRF prevention, automatic
-  robots.txt compliance
-- **Performance**: Parallel file processing enabled by default (3-5x faster)
-- **Flexibility**: Control content deduplication and UTF-8 encoding preferences
-- **Reliability**: Improved error handling and security scanning
-
-See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
-
 ## Table of Contents
 
 ### Getting Started
@@ -43,6 +33,8 @@ See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
   with configuration files
 - [**21_development_workflow.md**](./21_development_workflow.md) - Best
   practices for development workflows
+- [**25_m1f_config_examples.md**](./25_m1f_config_examples.md) - Comprehensive
+  configuration examples for different project types
 
 ### AI Integration
 
@@ -61,7 +53,7 @@ See the [v3.2 Features Guide](./41_version_3_2_features.md) for details.
 ## Quick Start
 
 ```bash
-# Basic usage (parallel processing is automatic in v3.2)
+# Basic usage
 m1f -s ./your_project -o ./combined.txt
 
 # With file type filtering
@@ -88,11 +80,10 @@ with rich metadata, content deduplication, and async I/O support.
 
 ## Overview
 
-The m1f tool (v3.2.0) solves a common challenge when working with LLMs:
-providing sufficient context without exceeding token limits. Built with Python
-3.10+ and modern architecture patterns, it creates optimized reference files
-from multiple sources while automatically handling duplicates and providing
-comprehensive metadata.
+The m1f tool solves a common challenge when working with LLMs: providing
+sufficient context without exceeding token limits. It creates optimized
+reference files from multiple sources while automatically handling duplicates
+and providing comprehensive metadata.
 
 ## Key Features
 
@@ -100,29 +91,42 @@ comprehensive metadata.
   based on SHA256 checksums
 - **Async I/O**: High-performance file operations with concurrent processing
 - **Type Safety**: Full type annotations throughout the codebase
-- **Modern Architecture**: Modular package structure with clean separation of
-  concerns
 - **Smart Filtering**: Advanced file filtering with size limits, extensions, and
   patterns
 - **Symlink Support**: Intelligent symlink handling with cycle detection
 - **Professional Security**: Integration with detect-secrets for sensitive data
   detection
-- **Colorized Output**: Beautiful console output with progress indicators
 
 ## Quick Start
 
+### Initialize m1f in Your Project
+
+```bash
+# Quick setup for any project
+cd /your/project
+m1f-init
+
+# This creates in the m1f/ directory:
+# The place for your bundled files of the current project
+```
+
+### Basic m1f Commands
+
 ```bash
 # Basic usage with a source directory
-python -m tools.m1f -s ./your_project -o ./combined.txt
+m1f -s ./your_project -o ./combined.txt
 
 # Include only specific file types
-python -m tools.m1f -s ./your_project -o ./combined.txt --include-extensions .py .js .md
+m1f -s ./your_project -o ./combined.txt --include-extensions .py .js .md
+
+# Include only documentation files (62 extensions)
+m1f -s ./your_project -o ./docs_bundle.txt --docs-only
 
 # Exclude specific directories
-python -m tools.m1f -s ./your_project -o ./combined.txt --excludes "node_modules/" "build/" "dist/"
+m1f -s ./your_project -o ./combined.txt --excludes "node_modules/" "build/" "dist/"
 
 # Filter by file size (new in v2.0.0)
-python -m tools.m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
+m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 ```
 
 > **Note**: For a complete reference of all available options, see the
@@ -133,7 +137,7 @@ python -m tools.m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 
 | Option                      | Description                                                                                                                                                                                                                                                      |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-s, --source-directory`    | Path to the directory containing files to process                                                                                                                                                                                                                |
+| `-s, --source-directory`    | Path to the directory containing files to process. Can be specified multiple times to include files from multiple directories (e.g., `-s dir1 -s dir2`)                                                                                                          |
 | `-i, --input-file`          | Path to a file containing a list of files/directories to process. Can be used together with --source-directory to resolve relative paths in the input file against the source directory                                                                          |
 | `-o, --output-file`         | Path for the combined output file                                                                                                                                                                                                                                |
 | `-f, --force`               | Force overwrite of existing output file without prompting                                                                                                                                                                                                        |
@@ -141,9 +145,11 @@ python -m tools.m1f -s ./your_project -o ./combined.txt --max-file-size 50KB
 | `--filename-mtime-hash`     | Append a hash of file modification timestamps to the filename. The hash is created using all filenames and their modification dates, enabling caching mechanisms. Hash only changes when files are added/removed or their content changes                        |
 | `--include-extensions`      | Space-separated list of file extensions to include (e.g., `--include-extensions .py .js .html` will only process files with these extensions)                                                                                                                    |
 | `--exclude-extensions`      | Space-separated list of file extensions to exclude (e.g., `--exclude-extensions .log .tmp .bak` will skip these file types)                                                                                                                                      |
+| `--includes`                | Space-separated list of gitignore-style patterns to include (e.g., `--includes "*.py" "src/**" "!test.py"`). When combined with `--include-extensions`, files must match both criteria                                                                           |
+| `--docs-only`               | Include only documentation files (62 extensions including .md, .txt, .rst, .org, .tex, .info, etc.). Overrides include-extensions.                                                                                                                               |
 | `--max-file-size`           | Skip files larger than the specified size (e.g., `--max-file-size 50KB` will exclude files over 50 kilobytes). Supports units: B, KB, MB, GB, TB. Useful for filtering out large generated files, logs, or binary data when merging text files for LLM context   |
 | `--exclude-paths-file`      | Path to file containing paths or patterns to exclude. Supports both exact path lists and gitignore-style pattern formats. Can use a .gitignore file directly                                                                                                     |
-| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\***                                                                                         |
+| `--no-default-excludes`     | Disable default directory exclusions. By default, the following directories are excluded: vendor, node_modules, build, dist, cache, .git, .svn, .hg, \***\*pycache\*\*** (see [Default Excludes Guide](./26_default_excludes_guide.md) for complete list)        |
 | `--excludes`                | Space-separated list of paths to exclude. Supports directory names, exact file paths, and gitignore-style patterns (e.g., `--excludes logs "config/settings.json" "*.log" "build/" "!important.log"`)                                                            |
 | `--include-dot-paths`       | Include files and directories that start with a dot (e.g., .gitignore, .hidden/). By default, all dot files and directories are excluded.                                                                                                                        |
 | `--include-binary-files`    | Attempt to include files with binary extensions                                                                                                                                                                                                                  |
@@ -181,13 +187,13 @@ Presets are loaded in the following order (highest priority wins):
 
 ```bash
 # Use built-in WordPress preset
-python -m tools.m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+m1f -s ./wp-site -o bundle.txt --preset presets/wordpress.m1f-presets.yml
 
 # Use specific preset group
-python -m tools.m1f -s ./project -o bundle.txt --preset my-presets.yml --preset-group production
+m1f -s ./project -o bundle.txt --preset my-presets.yml --preset-group production
 
 # Load multiple preset files (merged in order)
-python -m tools.m1f -s . -o out.txt --preset defaults.yml project.yml overrides.yml
+m1f -s . -o out.txt --preset defaults.yml project.yml overrides.yml
 ```
 
 ### Available Processing Actions
@@ -211,17 +217,27 @@ For detailed preset documentation, see:
 
 ```bash
 # Basic command using a source directory
-python -m tools.m1f --source-directory /path/to/your/code \
+m1f --source-directory /path/to/your/code \
   --output-file /path/to/combined_output.txt
 
+# Using multiple source directories (new in v3.4.0)
+m1f -s ./src -s ./docs -s ./tests -o combined_output.txt
+
 # Using an input file containing paths to process (one per line)
-python -m tools.m1f -i filelist.txt -o combined_output.txt
+m1f -i filelist.txt -o combined_output.txt
 
 # Using both source directory and input file together
-python -m tools.m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+m1f -s ./source_code -i ./file_list.txt -o ./combined.txt
+
+# Using include patterns to filter files (new in v3.4.0)
+m1f -s ./project -o output.txt --includes "src/**" "*.py" "!*_test.py"
+
+# Combining includes with extensions for precise filtering
+m1f -s ./project -o docs.txt --include-extensions .md .rst \
+  --includes "docs/**" "README.md"
 
 # Remove scraped metadata from HTML2MD files (new in v2.0.0)
-python -m tools.m1f -s ./scraped_docs -o ./clean_docs.txt \
+m1f -s ./scraped_docs -o ./clean_docs.txt \
   --include-extensions .md --remove-scraped-metadata
 ```
 
@@ -229,19 +245,19 @@ python -m tools.m1f -s ./scraped_docs -o ./clean_docs.txt \
 
 ```bash
 # Using MachineReadable style with verbose logging
-python -m tools.m1f -s ./my_project -o ./output/bundle.m1f.txt \
+m1f -s ./my_project -o ./output/bundle.m1f.txt \
   --separator-style MachineReadable --force --verbose
 
 # Creating a combined file and a backup zip archive
-python -m tools.m1f -s ./source_code -o ./dist/combined.txt \
+m1f -s ./source_code -o ./dist/combined.txt \
   --create-archive --archive-type zip
 
 # Only include text files under 50KB to avoid large generated files
-python -m tools.m1f -s ./project -o ./text_only.txt \
+m1f -s ./project -o ./text_only.txt \
   --max-file-size 50KB --include-extensions .py .js .md .txt .json
 
 # Handle symlinks with cycle detection (new in v2.0.0)
-python -m tools.m1f -s ./project -o ./output.txt \
+m1f -s ./project -o ./output.txt \
   --include-symlinks --verbose
 ```
 
@@ -279,7 +295,7 @@ To create only the primary output file and skip the auxiliary files, use the
 
 ```bash
 # Create only the combined output file without any auxiliary files
-python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
+m1f -s ./src -o ./combined.txt --minimal-output
 ```
 
 ## Common Use Cases
@@ -288,21 +304,21 @@ python tools/m1f.py -s ./src -o ./combined.txt --minimal-output
 
 ```bash
 # Create a complete documentation bundle from all markdown files
-python tools/m1f.py -s ./docs -o ./doc_bundle.m1f.txt --include-extensions .md
+m1f -s ./docs -o ./doc_bundle.m1f.txt --include-extensions .md
 ```
 
 ### Code Review Preparation
 
 ```bash
 # Bundle specific components for code review
-python tools/m1f.py -i code_review_files.txt -o ./review_bundle.m1f.txt
+m1f -i code_review_files.txt -o ./review_bundle.m1f.txt
 ```
 
 ### WordPress Development
 
 ```bash
 # Combine theme or plugin files for AI analysis
-python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
+m1f -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
   --include-extensions .php .js .css --exclude-paths-file ./exclude_build_files.txt
 ```
 
@@ -310,20 +326,123 @@ python tools/m1f.py -s ./wp-content/themes/my-theme -o ./theme_context.m1f.txt \
 
 ```bash
 # Create a searchable knowledge base from project documentation
-python tools/m1f.py -s ./project -o ./knowledge_base.m1f.txt \
+m1f -s ./project -o ./knowledge_base.m1f.txt \
   --include-extensions .md .txt .rst --minimal-output
+```
+
+### Documentation Bundles
+
+```bash
+# Create a documentation-only bundle using --docs-only
+m1f -s ./project -o ./docs_bundle.txt --docs-only
+
+# Equivalent using include-extensions (more verbose)
+m1f -s ./project -o ./docs_bundle.txt --include-extensions \
+  .1 .1st .2 .3 .4 .5 .6 .7 .8 .adoc .asciidoc .changelog .changes \
+  .creole .faq .feature .help .history .info .lhs .litcoffee .ltx \
+  .man .markdown .markdown2 .md .mdown .mdtxt .mdtext .mdwn .mdx \
+  .me .mkd .mkdn .mkdown .ms .news .nfo .notes .org .pod .pod6 \
+  .qmd .rd .rdoc .readme .release .rmd .roff .rst .rtf .story \
+  .t .tex .texi .texinfo .text .textile .todo .tr .txt .wiki
 ```
 
 ### HTML2MD Integration
 
 ```bash
 # Combine scraped markdown files and remove metadata
-python tools/m1f.py -s ./scraped_content -o ./clean_content.m1f.txt \
+m1f -s ./scraped_content -o ./clean_content.m1f.txt \
   --include-extensions .md --remove-scraped-metadata
 
 # Merge multiple scraped websites into a clean documentation bundle
-python tools/m1f.py -s ./web_content -o ./web_docs.m1f.txt \
+m1f -s ./web_content -o ./web_docs.m1f.txt \
   --include-extensions .md --remove-scraped-metadata --separator-style Markdown
+```
+
+### Project Analysis and Overview
+
+```bash
+# Generate complete project file and directory lists for analysis
+m1f -s . -o m1f/project_analysis.txt --skip-output-file \
+  --exclude-paths-file .gitignore --excludes m1f/
+
+# This creates (without the main output file):
+# - m1f/project_analysis_filelist.txt  # All project files
+# - m1f/project_analysis_dirlist.txt   # All directories
+# - m1f/project_analysis.log           # Processing log
+```
+
+Use this when you need:
+
+- A complete overview of your project structure
+- To understand what files m1f will process
+- To verify your exclusion patterns are working correctly
+- To analyze project composition before creating bundles
+- Input for m1f-claude --init to create optimal configurations
+
+The file lists respect all m1f defaults (excluding .git, node_modules, etc.)
+plus your .gitignore patterns.
+
+## Output Files
+
+### Main Output File
+
+The primary output specified with `-o` contains the combined content of all
+processed files.
+
+### Auxiliary Files (Automatically Generated)
+
+For each m1f operation, auxiliary files are automatically created alongside the
+main output file:
+
+1. **File List** (`<output>_filelist.txt`)
+   - Complete list of all files included in the bundle
+   - One file path per line
+   - Useful for:
+     - Understanding what's in your bundle
+     - Creating custom file lists for specific m1f operations
+     - Input for other tools or scripts
+     - Selective inclusion/exclusion in future bundles
+
+2. **Directory List** (`<output>_dirlist.txt`)
+   - Complete list of all directories containing processed files
+   - One directory path per line
+   - Useful for:
+     - Understanding project structure
+     - Identifying which directories to include/exclude
+     - Creating directory-specific bundles
+
+3. **Processing Log** (`<output>.log`)
+   - Detailed processing information
+   - Includes timing, errors, and statistics
+
+### Working with File Lists
+
+The generated file lists can be edited and used as input for subsequent m1f
+operations:
+
+```bash
+# Initial project analysis
+m1f-init
+# Creates: m1f/<project>_complete_filelist.txt and m1f/<project>_docs_filelist.txt
+
+# Edit the file list to remove unwanted files
+vi m1f/myproject_complete_filelist.txt
+
+# Use the edited list for a custom bundle
+m1f -i m1f/myproject_complete_filelist.txt -o m1f/custom_bundle.txt
+
+# Combine multiple file lists
+cat m1f/*_filelist.txt | sort -u > m1f/all_files.txt
+m1f -i m1f/all_files.txt -o m1f/combined.txt
+```
+
+### Disabling Auxiliary Files
+
+Use `--minimal-output` to create only the main output file without auxiliary
+files:
+
+```bash
+m1f -s . -o output.txt --minimal-output
 ```
 
 ## Separator Styles
@@ -410,6 +529,26 @@ garbled/unreadable content in the output and significantly increase file size.
 The script uses UTF-8 as the default encoding for reading and writing files.
 When using `--convert-to-charset`, the original encoding of each file is
 automatically detected and recorded in the file metadata.
+
+### Documentation File Extensions
+
+m1f recognizes the following extensions as documentation files:
+
+- Man pages: .1, .1st, .2, .3, .4, .5, .6, .7, .8
+- Markup formats: .adoc, .asciidoc, .md, .markdown, .mdx, .rst, .org, .textile,
+  .wiki
+- Text formats: .txt, .text, .readme, .changelog, .changes, .todo, .notes
+- Developer docs: .pod, .rdoc, .yard, .lhs, .litcoffee
+- LaTeX/TeX: .tex, .ltx, .texi, .texinfo
+- Other: .rtf, .nfo, .faq, .help, .history, .info, .news, .release, .story
+
+When `--prefer-utf8-for-text-files` is enabled (default), m1f prefers UTF-8
+encoding for:
+
+- All Markdown variants (.md, .markdown, .mdx, .rmd, .qmd, etc.)
+- Plain text files (.txt, .text, .readme, .changelog, .todo, etc.)
+- Structured text formats (.rst, .org, .textile, .wiki, etc.)
+- Developer documentation (.pod, .rdoc, .lhs, .litcoffee, etc.)
 
 ### Line Ending Behavior
 
@@ -510,6 +649,8 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 
 - [Quick Reference](./09_quick_reference.md) - Common commands and patterns
 - [CLI Reference](./07_cli_reference.md) - Complete command-line reference
+- [Default Excludes Guide](./26_default_excludes_guide.md) - What's excluded
+  automatically
 - [Troubleshooting Guide](./08_troubleshooting.md) - Common issues and solutions
 
 **Preset System:**
@@ -535,98 +676,98 @@ m1f -s ./src -o output.txt --preset .m1f-presets.yml
 
 ```bash
 # Combine all files in current directory
-python tools/m1f.py -s . -o output.txt
+m1f -s . -o output.txt
 
 # Combine specific directory
-python tools/m1f.py -s ./src -o bundle.txt
+m1f -s ./src -o bundle.txt
 
 # Force overwrite existing output
-python tools/m1f.py -s . -o output.txt -f
+m1f -s . -o output.txt -f
 ```
 
 ### Using Presets (v3.2.0+)
 
 ```bash
 # Use a preset file (can define ALL parameters)
-python tools/m1f.py --preset production.yml -o output.txt
+m1f --preset production.yml -o output.txt
 
 # Preset can even define source and output
-python tools/m1f.py --preset full-config.yml
+m1f --preset full-config.yml
 
 # Override preset values with CLI
-python tools/m1f.py --preset prod.yml -o custom-output.txt -v
+m1f --preset prod.yml -o custom-output.txt -v
 ```
 
 ### File Type Filtering
 
 ```bash
 # Only Python files
-python tools/m1f.py -s . -o code.txt --include-extensions .py
+m1f -s . -o code.txt --include-extensions .py
 
 # Multiple file types
-python tools/m1f.py -s . -o docs.txt --include-extensions .md .txt .rst
+m1f -s . -o docs.txt --include-extensions .md .txt .rst
 
 # Exclude certain types
-python tools/m1f.py -s . -o output.txt --exclude-extensions .pyc .log
+m1f -s . -o output.txt --exclude-extensions .pyc .log
 ```
 
 ### Directory and Pattern Exclusions
 
 ```bash
 # Exclude specific directories
-python tools/m1f.py -s . -o output.txt --excludes "tests/" "docs/"
+m1f -s . -o output.txt --excludes "tests/" "docs/"
 
 # Exclude patterns
-python tools/m1f.py -s . -o output.txt --excludes "*.test.js" "*/tmp/*"
+m1f -s . -o output.txt --excludes "*.test.js" "*/tmp/*"
 
 # Use gitignore file
-python tools/m1f.py -s . -o output.txt --exclude-paths-file .gitignore
+m1f -s . -o output.txt --exclude-paths-file .gitignore
 ```
 
 ### Output Formatting
 
 ```bash
 # Markdown format
-python tools/m1f.py -s . -o output.md --separator-style Markdown
+m1f -s . -o output.md --separator-style Markdown
 
 # Machine-readable JSON metadata
-python tools/m1f.py -s . -o output.txt --separator-style MachineReadable
+m1f -s . -o output.txt --separator-style MachineReadable
 
 # No separators
-python tools/m1f.py -s . -o output.txt --separator-style None
+m1f -s . -o output.txt --separator-style None
 ```
 
 ### Size Management
 
 ```bash
 # Skip large files
-python tools/m1f.py -s . -o output.txt --max-file-size 100KB
+m1f -s . -o output.txt --max-file-size 100KB
 
 # Include only small text files
-python tools/m1f.py -s . -o small.txt --max-file-size 50KB --include-extensions .txt .md
+m1f -s . -o small.txt --max-file-size 50KB --include-extensions .txt .md
 ```
 
 ### Archive Creation
 
 ```bash
 # Create zip backup
-python tools/m1f.py -s . -o output.txt --create-archive
+m1f -s . -o output.txt --create-archive
 
 # Create tar.gz backup
-python tools/m1f.py -s . -o output.txt --create-archive --archive-type tar.gz
+m1f -s . -o output.txt --create-archive --archive-type tar.gz
 ```
 
 ### Using Presets
 
 ```bash
 # Use single preset
-python tools/m1f.py -s . -o output.txt --preset wordpress.m1f-presets.yml
+m1f -s . -o output.txt --preset wordpress.m1f-presets.yml
 
 # Use preset group
-python tools/m1f.py -s . -o output.txt --preset web.yml --preset-group frontend
+m1f -s . -o output.txt --preset web.yml --preset-group frontend
 
 # Multiple presets (merged in order)
-python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
+m1f -s . -o output.txt --preset base.yml project.yml
 ```
 
 ## Common Patterns
@@ -634,7 +775,7 @@ python tools/m1f.py -s . -o output.txt --preset base.yml project.yml
 ### Documentation Bundle
 
 ```bash
-python tools/m1f.py -s ./docs -o documentation.txt \
+m1f -s ./docs -o documentation.txt \
     --include-extensions .md .rst .txt \
     --separator-style Markdown
 ```
@@ -642,7 +783,7 @@ python tools/m1f.py -s ./docs -o documentation.txt \
 ### Source Code Bundle
 
 ```bash
-python tools/m1f.py -s ./src -o source-code.txt \
+m1f -s ./src -o source-code.txt \
     --include-extensions .py .js .ts .jsx .tsx \
     --excludes "*.test.*" "*.spec.*" \
     --max-file-size 500KB
@@ -651,7 +792,7 @@ python tools/m1f.py -s ./src -o source-code.txt \
 ### WordPress Theme/Plugin
 
 ```bash
-python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
+m1f -s ./wp-content/themes/mytheme -o theme.txt \
     --include-extensions .php .js .css \
     --excludes "node_modules/" "vendor/" \
     --preset presets/wordpress.m1f-presets.yml
@@ -660,7 +801,7 @@ python tools/m1f.py -s ./wp-content/themes/mytheme -o theme.txt \
 ### Clean Documentation Export
 
 ```bash
-python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
+m1f -s ./scraped_docs -o clean-docs.txt \
     --include-extensions .md \
     --remove-scraped-metadata \
     --separator-style Markdown
@@ -670,11 +811,11 @@ python tools/m1f.py -s ./scraped_docs -o clean-docs.txt \
 
 ```bash
 # Multiple exclude files (merged)
-python tools/m1f.py -s . -o output.txt \
+m1f -s . -o output.txt \
     --exclude-paths-file .gitignore .dockerignore custom-excludes.txt
 
 # Whitelist mode with include files
-python tools/m1f.py -s . -o api-bundle.txt \
+m1f -s . -o api-bundle.txt \
     --include-paths-file api-files.txt core-files.txt \
     --exclude-paths-file .gitignore
 ```
@@ -683,13 +824,13 @@ python tools/m1f.py -s . -o api-bundle.txt \
 
 ```bash
 # Single input file
-python tools/m1f.py -s . -i files.txt -o output.txt
+m1f -s . -i files.txt -o output.txt
 
 # Merge multiple file lists (Bash)
-python tools/m1f.py -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
+m1f -s . -i <(cat critical.txt important.txt nice-to-have.txt) -o output.txt
 
 # Combine with filters (input files bypass filters)
-python tools/m1f.py -s . -i must-include.txt -o output.txt \
+m1f -s . -i must-include.txt -o output.txt \
     --exclude-paths-file .gitignore
 ```
 
@@ -697,13 +838,13 @@ python tools/m1f.py -s . -i must-include.txt -o output.txt \
 
 ```bash
 # Create timestamped output
-python tools/m1f.py -s . -o build.txt -t
+m1f -s . -o build.txt -t
 
 # Minimal output for automation
-python tools/m1f.py -s . -o output.txt --minimal-output --quiet
+m1f -s . -o output.txt --minimal-output --quiet
 
 # With security check
-python tools/m1f.py -s . -o output.txt --security-check abort
+m1f -s . -o output.txt --security-check abort
 ```
 
 ## Quick Option Reference
@@ -738,7 +879,7 @@ Example: `--max-file-size 1.5MB`
 ## Exit on Success
 
 ```bash
-python tools/m1f.py -s . -o output.txt && echo "Success!"
+m1f -s . -o output.txt && echo "Success!"
 ```
 
 ## Aliases Setup
@@ -753,7 +894,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 
 ## Need Help?
 
-- Full options: `python tools/m1f.py --help`
+- Full options: `m1f --help`
 - [Complete CLI Reference](./02_cli_reference.md)
 - [Troubleshooting Guide](./03_troubleshooting.md)
 - [Preset Documentation](./10_m1f_presets.md)
@@ -762,7 +903,7 @@ alias m1f-code='m1f -s . -o code.txt --include-extensions .py .js'
 # m1f CLI Reference
 
 This is a comprehensive reference for all command-line parameters and flags
-available in m1f v3.2.0.
+available in m1f v3.4.0.
 
 ## Synopsis
 
@@ -772,14 +913,14 @@ m1f [-h] [--version] [-s DIR] [-i FILE] -o FILE
     [--separator-style {Standard,Detailed,Markdown,MachineReadable,None}]
     [--line-ending {lf,crlf}] [-t] [--filename-mtime-hash]
     [--excludes [PATTERN ...]] [--exclude-paths-file FILE ...]
-    [--include-paths-file FILE ...]
+    [--include-paths-file FILE ...] [--includes [PATTERN ...]]
     [--include-extensions [EXT ...]] [--exclude-extensions [EXT ...]]
-    [--include-dot-paths] [--include-binary-files] [--include-symlinks]
-    [--max-file-size SIZE] [--no-default-excludes]
+    [--docs-only] [--include-dot-paths] [--include-binary-files] [--include-symlinks]
+    [--max-file-size SIZE] [--no-default-excludes] [--no-auto-gitignore]
     [--remove-scraped-metadata]
     [--convert-to-charset {utf-8,utf-16,utf-16-le,utf-16-be,ascii,latin-1,cp1252}]
     [--abort-on-encoding-error] [--no-prefer-utf8-for-text-files]
-    [--security-check {error,warn,skip}]
+    [--security-check {abort,skip,warn}]
     [--create-archive] [--archive-type {zip,tar.gz}] [-f]
     [--minimal-output] [--skip-output-file] [--allow-duplicate-files]
     [-v] [-q]
@@ -795,7 +936,7 @@ Show help message and exit.
 
 ### `--version`
 
-Show program version and exit. Current version: v3.2.0
+Show program version and exit. Current version: v3.4.0
 
 ## Input/Output Options
 
@@ -889,14 +1030,23 @@ File(s) containing paths to exclude (supports gitignore format). Each pattern on
 a new line. Multiple files can be specified and will be merged. Non-existent
 files are skipped gracefully.
 
+**Automatic Loading**: m1f automatically loads `.gitignore` and `.m1fignore` files
+from source directories:
+- `.m1fignore` files are always loaded if present
+- `.gitignore` files are loaded by default (disable with `--no-auto-gitignore`)
+- These auto-loaded files are in addition to any explicitly specified with this option
+
 Examples:
 
 ```bash
-# Single file
-m1f -s . -o output.txt --exclude-paths-file .gitignore
+# Single file (plus auto-loaded .gitignore/.m1fignore)
+m1f -s . -o output.txt --exclude-paths-file custom-excludes.txt
 
 # Multiple files
 m1f -s . -o output.txt --exclude-paths-file .gitignore .m1fignore custom-excludes.txt
+
+# Disable automatic .gitignore loading
+m1f -s . -o output.txt --no-auto-gitignore
 ```
 
 ### `--include-paths-file FILE ...`
@@ -905,6 +1055,13 @@ File(s) containing patterns to include (supports gitignore format). When
 specified, only files matching these patterns will be included (whitelist mode).
 Multiple files can be specified and will be merged. Non-existent files are
 skipped gracefully.
+
+### `--includes [PATTERN ...]`
+
+Include only files matching these patterns (gitignore format). Works similarly to
+`--include-paths-file` but patterns are specified directly on the command line.
+
+Example: `--includes "*.py" "src/**/*" "!test_*.py"`
 
 **Processing Order**:
 
@@ -952,6 +1109,12 @@ Exclude files with these extensions.
 
 Example: `--exclude-extensions .pyc .pyo`
 
+### `--docs-only`
+
+Include only documentation files. This is a shortcut that includes 62 common
+documentation file extensions including .md, .txt, .rst, .adoc, .tex, and more.
+When used, this overrides any `--include-extensions` settings.
+
 ### `--include-dot-paths`
 
 Include files and directories starting with a dot (hidden files). By default,
@@ -965,6 +1128,16 @@ output.
 ### `--include-symlinks`
 
 Follow symbolic links. Be careful of infinite loops!
+
+**Deduplication behavior**:
+
+- By default (without `--allow-duplicate-files`), m1f intelligently handles
+  symlinks:
+  - Internal symlinks (pointing to files within source directories) are excluded
+    to avoid duplicates
+  - External symlinks (pointing outside source directories) are included
+- With `--allow-duplicate-files`, all symlinks are included regardless of their
+  target
 
 ### `--max-file-size SIZE`
 
@@ -980,6 +1153,13 @@ Disable default exclusions. By default, m1f excludes:
 - `node_modules/`, `venv/`, `.venv/`
 - `__pycache__/`, `*.pyc`
 - `.DS_Store`, `Thumbs.db`
+
+### `--no-auto-gitignore`
+
+Disable automatic loading of `.gitignore` files from source directories. By default,
+m1f automatically loads and applies `.gitignore` patterns from each source directory
+to exclude files that Git would ignore. `.m1fignore` files are still loaded even
+with this flag.
 
 ### `--remove-scraped-metadata`
 
@@ -1007,11 +1187,11 @@ contain UTF-8 emojis or special characters.
 
 ## Security Options
 
-### `--security-check {error,warn,skip}`
+### `--security-check {abort,skip,warn}`
 
 Check for sensitive information in files using detect-secrets.
 
-- **error**: Stop processing if secrets are found (default in v3.2)
+- **abort**: Stop processing if secrets are found
 - **warn**: Include files but show warnings
 - **skip**: Disable security scanning (not recommended)
 
@@ -1045,6 +1225,16 @@ Skip creating the main output file. Useful when only creating an archive.
 Allow files with identical content to be included in the output. By default, m1f
 deduplicates files based on their content checksum to save space and tokens.
 With this flag, all files are included even if they have identical content.
+
+**Special behavior with symlinks** (when used with `--include-symlinks`):
+
+- **Without** `--allow-duplicate-files`:
+  - Symlinks pointing to files **inside** the source directories are excluded
+    (the original file is already included)
+  - Symlinks pointing to files **outside** the source directories are included
+- **With** `--allow-duplicate-files`:
+  - All symlinks are included, regardless of where they point
+  - Both the original file and symlinks pointing to it can appear in the output
 
 ### `--verbose`, `-v`
 
@@ -1085,7 +1275,7 @@ Disable all preset processing, even if preset files are specified.
 ## Environment Variables
 
 **Note**: The following environment variables are documented for future
-implementation but are not currently supported in v3.2.0:
+implementation but are not currently supported in v3.4.0:
 
 - `M1F_DEFAULT_PRESET` - Path to default preset file (not implemented)
 - `M1F_SECURITY_CHECK` - Default security check mode (not implemented)
@@ -1113,6 +1303,19 @@ m1f auto-bundle --verbose
 m1f auto-bundle --quiet
 ```
 
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle`
+that can be used interchangeably:
+
+```bash
+# These are equivalent:
+m1f auto-bundle
+m1f-update
+
+# With specific bundle:
+m1f auto-bundle code
+m1f-update code
+```
+
 **Options:**
 
 - `BUNDLE_NAME`: Name of specific bundle to create (optional)
@@ -1125,9 +1328,8 @@ instructions.
 
 ## Notes
 
-1. **Module Invocation**: You can use either `python -m tools.m1f` or
-   `python tools/m1f.py`, or set up the `m1f` alias as described in the
-   development workflow.
+1. **Module Invocation**: You can use either `m1f` or `python -m tools.m1f`, or
+   set up the `m1f` alias as described in the development workflow.
 
 2. **Input Requirements**: At least one of `-s` (source directory) or `-i`
    (input file) must be specified. If neither is provided, m1f will show an
@@ -1149,7 +1351,7 @@ using m1f.
 
 ### Module Import Error
 
-**Problem**: Running `python -m tools.m1f` results in:
+**Problem**: Running `m1f` results in:
 
 ```
 ModuleNotFoundError: No module named 'm1f'
@@ -1158,7 +1360,7 @@ ModuleNotFoundError: No module named 'm1f'
 **Solution**: Use the direct script invocation instead:
 
 ```bash
-python tools/m1f.py [options]
+m1f [options]
 ```
 
 Or set up the alias as described in the
@@ -1201,7 +1403,7 @@ PermissionError: [Errno 13] Permission denied: '/path/to/output.txt'
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --convert-to-charset utf-8
+m1f -s . -o output.txt --convert-to-charset utf-8
 ```
 
 ### Memory Issues with Large Projects
@@ -1218,7 +1420,7 @@ python tools/m1f.py -s . -o output.txt --convert-to-charset utf-8
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --max-file-size 1MB --include-extensions .py .md
+m1f -s . -o output.txt --max-file-size 1MB --include-extensions .py .md
 ```
 
 ### Symlink Cycles
@@ -1245,7 +1447,7 @@ python tools/m1f.py -s . -o output.txt --max-file-size 1MB --include-extensions 
 Example:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --security-check warn --excludes ".env" "config/secrets.yml"
+m1f -s . -o output.txt --security-check warn --excludes ".env" "config/secrets.yml"
 ```
 
 ## Error Messages
@@ -1322,7 +1524,7 @@ needed.
 For detailed debugging information:
 
 ```bash
-python tools/m1f.py -s . -o output.txt --verbose
+m1f -s . -o output.txt --verbose
 ```
 
 This will show:
@@ -1354,12 +1556,212 @@ Understanding exit codes can help in scripting:
 Use in scripts:
 
 ```bash
-if python tools/m1f.py -s . -o output.txt; then
+if m1f -s . -o output.txt; then
     echo "Success"
 else
     echo "Failed with exit code: $?"
 fi
 ```
+
+======= 05_getting_started.md ======
+# Getting Started with m1f
+
+This guide will walk you through installing m1f and creating your first bundles
+using a real-world example.
+
+> **📦 Already installed?** Update with: `cd m1f && git pull && source ./scripts/install.sh`
+
+## Installation (3 Simple Steps)
+
+### For Users
+
+```bash
+# Step 1: Clone the repository
+git clone https://github.com/franz-agency/m1f.git
+
+# Step 2: Navigate to the directory
+cd m1f
+
+# Step 3: Run the installer
+source ./scripts/install.sh    # Linux/macOS
+.\scripts\install.ps1          # Windows (restart your shell after)
+```
+
+That's it! The installer automatically:
+
+- ✅ Checks for Python 3.10+
+- ✅ Creates a virtual environment
+- ✅ Installs all dependencies
+- ✅ Sets up global command aliases
+- ✅ Generates initial m1f bundles
+
+### For Developers
+
+If you want to contribute or modify m1f:
+
+```bash
+# Clone and enter directory
+git clone https://github.com/franz-agency/m1f.git
+cd m1f
+
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate it
+source .venv/bin/activate    # Linux/macOS
+.venv\Scripts\activate       # Windows
+
+# Install in development mode
+pip install -e .
+pip install -r requirements.txt
+```
+
+## Real Example: Bundling TailwindCSS Documentation
+
+Let's walk through a complete example of bundling the TailwindCSS documentation
+for use with AI assistants.
+
+### Step 1: Get the Repository
+
+```bash
+git clone https://github.com/tailwindlabs/tailwindcss.com
+cd tailwindcss.com
+```
+
+### Step 2: Initialize m1f
+
+```bash
+m1f-init
+```
+
+This command:
+
+- Scans the entire repository
+- Creates a `.m1f.config.yml` configuration file
+- Generates two default bundles in the `m1f/` directory:
+  - `tailwind_complete.txt` - All text files in the repository
+  - `tailwind_docs.txt` - Documentation files only
+
+### Step 3: Optional - Create Claude-Optimized Bundles
+
+```bash
+m1f-claude --setup
+```
+
+This creates additional bundles specifically optimized for Claude AI, with
+proper formatting and structure.
+
+### Using Your Bundles
+
+Now you can:
+
+1. **In Claude Desktop**: Reference files with `@m1f/tailwind_complete.txt`
+2. **Copy & Paste**: Open the bundle file and paste into any LLM
+3. **Check Token Count**: Run `m1f-token-counter m1f/tailwind_docs.txt`
+
+## Understanding m1f-init
+
+When you run `m1f-init` in any project directory:
+
+1. **Scans the repository** - Analyzes file types and structure
+2. **Creates `.m1f.config.yml`** - A configuration file with:
+   - Default bundle definitions
+   - Smart file patterns based on your project
+   - Sensible exclusions (node_modules, .git, etc.)
+3. **Generates bundles** - Creates initial bundles in the `m1f/` directory
+
+## Customizing Your Bundles
+
+After initialization, you can edit `.m1f.config.yml` to create custom bundles:
+
+```yaml
+bundles:
+  # Existing bundles...
+
+  # Add your custom bundle
+  api-docs:
+    description: "API documentation only"
+    patterns:
+      - "docs/api/**/*.md"
+      - "src/**/README.md"
+    exclude_patterns:
+      - "**/*test*"
+    output: "m1f/api_documentation.txt"
+```
+
+Then regenerate bundles:
+
+```bash
+m1f-update  # Updates all bundles
+# or
+m1f auto-bundle api-docs  # Update specific bundle
+```
+
+## Common Workflows
+
+### 1. Documentation Sites
+
+```bash
+# Clone documentation
+git clone https://github.com/vuejs/docs vuejs-docs
+cd vuejs-docs
+
+# Initialize and create bundles
+m1f-init
+
+# Feed to your AI
+#  m1f/vuejs-docs_complete.txt
+#  m1f/vuejs-docs_docs.txt
+```
+
+### 2. Your Own Projects
+
+```bash
+# In your project directory
+# This creates a .m1f.config.yml with default bundles
+m1f-init
+
+# Let claude check your project to create smaller bundles sorted by topics
+m1f-claude --setup
+
+# Edit .m1f.config.yml to customize
+# Then update bundles after code or config changes
+m1f-update
+```
+
+### 3. Web Documentation
+
+```bash
+# Scrape online docs
+m1f-scrape https://docs.python.org/3/ -o python-docs-html
+
+# Convert to markdown
+m1f-html2md convert python-docs-html -o python-docs-md
+
+# Bundle for AI
+cd python-docs-md
+m1f-init
+```
+
+## Next Steps
+
+- Learn about [configuration options](./25_m1f_config_examples.md)
+- Explore [preset systems](./10_m1f_presets.md) for specialized file handling
+- Set up [auto-bundling](./20_auto_bundle_guide.md) with git hooks
+- Read the [complete m1f documentation](./00_m1f.md)
+
+## Tips
+
+- **Start Simple**: Use `m1f-init` first, customize later
+- **Check Token Counts**: Always verify with `m1f-token-counter`
+- **Use Presets**: For WordPress, documentation sites, etc.
+- **Security**: m1f automatically scans for secrets before bundling
+
+## Getting Help
+
+- Run `m1f --help` for command options
+- Check [troubleshooting guide](./03_troubleshooting.md)
+- Visit [m1f.dev](https://m1f.dev) for updates
 
 ======= 10_m1f_presets.md ======
 # m1f Preset System Documentation
@@ -1375,26 +1777,26 @@ Instead of applying the same settings to all files, presets let you:
 - Strip comments from production code but keep them in documentation
 - Apply different separator styles for different file types
 - Truncate large data files while keeping full source code
-- **NEW**: Override security checks and size limits per file type
-- **NEW**: Integrate with auto-bundling for intelligent project organization
+- Override security checks and size limits per file type
+- Integrate with auto-bundling for intelligent project organization
 
 ## Quick Start
 
 1. **Use a built-in preset**:
 
    ```bash
-   python tools/m1f.py -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
+   m1f -s ./my-project -o bundle.txt --preset presets/wordpress.m1f-presets.yml
    ```
 
 2. **Specify a preset group**:
 
    ```bash
-   python tools/m1f.py -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
+   m1f -s ./site -o bundle.txt --preset presets/web-project.m1f-presets.yml --preset-group frontend
    ```
 
 3. **Use multiple preset files**:
    ```bash
-   python tools/m1f.py -s . -o bundle.txt --preset company-presets.yml project-presets.yml
+   m1f -s . -o bundle.txt --preset company-presets.yml project-presets.yml
    ```
 
 ## Preset Configuration File
@@ -1407,7 +1809,6 @@ my_project:
   description: "Processing rules for my project"
   enabled: true
   priority: 10 # Higher priority groups are checked first
-  base_path: "src" # Optional base path for patterns
 
   presets:
     # Preset for Python files
@@ -1415,6 +1816,7 @@ my_project:
       extensions: [".py"]
       patterns:
         - "*.py"
+        - "src/**/*.py" # Must include full path
         - "lib/**/*.py"
       actions:
         - strip_comments
@@ -1422,15 +1824,24 @@ my_project:
       separator_style: "Detailed"
       include_metadata: true
 
-    # Preset for HTML files
+    # Preset for HTML files - remove specific tags
     html:
       extensions: [".html", ".htm"]
       actions:
         - minify
         - strip_tags
-      strip_tags: ["script", "style"]
-      preserve_tags: ["pre", "code"]
+      strip_tags: ["script", "style", "meta", "link"]
       max_lines: 500 # Truncate after 500 lines
+
+    # Preset for HTML to text conversion - strip all but content tags
+    html_to_text:
+      extensions: [".html"]
+      actions:
+        - strip_tags
+      # Empty strip_tags means remove ALL tags
+      strip_tags: []
+      # But preserve content-relevant tags
+      preserve_tags: ["p", "h1", "h2", "h3", "pre", "code", "blockquote"]
 
     # Default preset for unmatched files
     default:
@@ -1442,7 +1853,8 @@ my_project:
 
 ### Built-in Actions
 
-1. **`minify`** - Reduces file size by removing unnecessary whitespace
+1. **`minify`** - Reduces file size by removing unnecessary whitespace. Keep in
+   mind that removing comments may remove valuable context for AI models.
 
    - HTML: Removes comments, compresses whitespace
    - CSS: Removes comments, compresses rules
@@ -1455,8 +1867,13 @@ my_project:
 
 3. **`strip_comments`** - Removes comments based on file type
 
+   - **WARNING**: Removing comments removes valuable context for AI models.
+     Comments often explain the "why" behind code, making it harder for AI to
+     understand intent. Only use this when file size reduction is critical.
    - Python: Removes # comments (preserves docstrings)
    - JS/Java/C/C++: Removes // and /\* \*/ comments
+   - CSS: Removes /\* \*/ comments
+   - HTML: Removes <!-- --> comments
 
 4. **`compress_whitespace`** - Normalizes whitespace
 
@@ -1465,39 +1882,80 @@ my_project:
 
 5. **`remove_empty_lines`** - Removes all empty lines
 
-6. **`custom`** - Apply custom processor
+6. **`join_paragraphs`** - Joins multi-line paragraphs into single lines
+   (Markdown files)
+
+   - Intelligently preserves code blocks, lists, tables, and other markdown
+     structures
+   - Helps maximize content density for LLMs that focus on first 200 lines
+   - Only affects regular paragraph text
+
+7. **`custom`** - Apply custom processor
    - Specify processor with `custom_processor`
    - Pass arguments with `processor_args`
 
 ### Built-in Custom Processors
 
+m1f includes three built-in custom processors:
+
 1. **`truncate`** - Limit content length
+
+   - Truncates content to specified number of characters
+   - Adds "[... truncated ...]" marker at the end
+   - Useful for large log files or data files
 
    ```yaml
    actions:
      - custom
    custom_processor: "truncate"
    processor_args:
-     max_chars: 1000
+     max_chars: 1000 # Default: 1000
    ```
 
 2. **`redact_secrets`** - Remove sensitive data
+
+   - Uses regex patterns to find and replace secrets
+   - Default patterns include: API keys, secrets, passwords, tokens, bearer
+     tokens
+   - Replaces matches with "[REDACTED]"
 
    ```yaml
    actions:
      - custom
    custom_processor: "redact_secrets"
    processor_args:
-     patterns:
+     patterns:  # Optional custom patterns
        - '(?i)api[_-]?key\s*[:=]\s*["\']?[\w-]+["\']?'
+       - '(?i)bearer\s+[\w-]+'
    ```
 
-3. **`extract_functions`** - Extract only function definitions (Python)
+3. **`extract_functions`** - Extract only function definitions (Python only)
+
+   - Uses Python's AST parser to extract function definitions
+   - Includes function names, signatures, and docstrings
+   - Only works with `.py` files
+
    ```yaml
    actions:
      - custom
    custom_processor: "extract_functions"
+   # No processor_args needed
    ```
+
+## Important Notes on Binary Files
+
+**m1f is designed for text files only.** Binary files (images, videos,
+executables, etc.) are:
+
+- Excluded by default
+- Cannot be meaningfully processed even with `include_binary_files: true`
+- Would need base64 encoding for proper inclusion (not implemented)
+
+For binary file references, consider:
+
+- Including just the filenames in a text list
+- Using external tools to convert binary to text formats first
+- Focusing on text-based assets for AI context
 
 ## Preset Options
 
@@ -1511,9 +1969,12 @@ my_project:
 - **`actions`**: List of processing actions to apply
 - **`strip_tags`**: HTML tags to remove
 - **`preserve_tags`**: HTML tags to keep when stripping
-- **`separator_style`**: Override default separator ("Standard", "Detailed",
-  "Markdown", "None")
-- **`include_metadata`**: Whether to include file metadata (default: true)
+- **`separator_style`**: Override separator style
+  - `"Standard"` (default) - Best for AI consumption: `--- FILE: path ---`
+  - `"Detailed"` - Includes metadata: `===== FILE: path | ENCODING: utf-8 =====`
+  - `"Markdown"` - Uses markdown code blocks
+  - `"MachineReadable"` - Structured format for parsing
+  - `"None"` - No separators
 - **`max_lines`**: Truncate file after N lines
 
 ### Custom Processing
@@ -1533,8 +1994,7 @@ wordpress:
     php:
       extensions: [".php"]
       actions:
-        - strip_comments
-        - remove_empty_lines
+        - remove_empty_lines # Keep comments for context
 
     config:
       patterns: ["wp-config*.php", ".env*"]
@@ -1545,7 +2005,7 @@ wordpress:
     sql:
       extensions: [".sql"]
       actions:
-        - strip_comments
+        - remove_empty_lines # Keep SQL comments
       max_lines: 1000 # Truncate large dumps
 ```
 
@@ -1559,8 +2019,8 @@ frontend:
     components:
       extensions: [".jsx", ".tsx", ".vue"]
       actions:
-        - strip_comments
         - compress_whitespace
+        - remove_empty_lines
 
     styles:
       extensions: [".css", ".scss"]
@@ -1568,13 +2028,14 @@ frontend:
         - minify
       # Note: exclude_patterns is available in global_settings, not in presets
 
-    images:
-      extensions: [".png", ".jpg", ".svg"]
+    # Large log files - show only beginning
+    logs:
+      extensions: [".log"]
       actions:
         - custom
       custom_processor: "truncate"
       processor_args:
-        max_chars: 50 # Just filename
+        max_chars: 5000 # Show first 5KB
 ```
 
 ### Documentation Project
@@ -1593,7 +2054,7 @@ documentation:
     code_examples:
       patterns: ["examples/**/*"]
       actions:
-        - strip_comments
+        - remove_empty_lines # Keep comments in examples
       max_lines: 50 # Keep examples concise
 ```
 
@@ -1613,16 +2074,16 @@ When multiple preset groups are loaded:
 
 ```bash
 # Use single preset file
-python tools/m1f.py -s . -o out.txt --preset my-presets.yml
+m1f -s . -o out.txt --preset my-presets.yml
 
 # Use specific group
-python tools/m1f.py -s . -o out.txt --preset presets.yml --preset-group backend
+m1f -s . -o out.txt --preset presets.yml --preset-group backend
 
 # Multiple preset files (merged in order)
-python tools/m1f.py -s . -o out.txt --preset base.yml project.yml
+m1f -s . -o out.txt --preset base.yml project.yml
 
 # Disable all presets
-python tools/m1f.py -s . -o out.txt --preset presets.yml --disable-presets
+m1f -s . -o out.txt --preset presets.yml --disable-presets
 ```
 
 ## Complete List of Supported Settings
@@ -1634,9 +2095,9 @@ These apply to all files unless overridden:
 ```yaml
 global_settings:
   # Encoding and formatting
-  encoding: "utf-8"
-  separator_style: "Detailed"
-  line_ending: "lf"
+  # encoding: "utf-8"  # Default encoding - supports: utf-8, utf-16, latin-1, cp1252, ascii, etc.
+  # separator_style: "Standard"  # Default - best for AI consumption
+  # line_ending: "lf"  # Default - Unix style (use "crlf" for Windows)
 
   # Include/exclude patterns
   include_patterns: ["src/**/*", "lib/**/*"]
@@ -1672,6 +2133,30 @@ global_settings:
 
   # Security
   security_check: "warn" # abort, skip, warn
+```
+
+### Encoding Options
+
+m1f provides comprehensive encoding support:
+
+**Supported Encodings**:
+
+- `utf-8` (default) - Unicode UTF-8
+- `utf-16` - Unicode UTF-16 with BOM detection
+- `utf-16-le` - UTF-16 Little Endian
+- `utf-16-be` - UTF-16 Big Endian
+- `ascii` - Basic ASCII (7-bit)
+- `latin-1` / `iso-8859-1` - Western European
+- `cp1252` / `windows-1252` - Windows Western European
+- Many more via Python's codecs module
+
+**Encoding Configuration**:
+
+```yaml
+global_settings:
+  encoding: "utf-8" # Target encoding for output (default)
+  abort_on_encoding_error: false # Continue on errors (default)
+  prefer_utf8_for_text_files: true # Auto UTF-8 for .md, .txt (default)
 ```
 
 ### Extension-Specific Settings
@@ -1758,9 +2243,9 @@ size_limits:
 
   presets:
     # Override for specific patterns
-    vendor_files:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      max_file_size: "10KB" # Very small for vendor files
+    config_files:
+      patterns: ["config/**/*.json", "*.config.js"]
+      max_file_size: "10KB" # Keep config files small in bundle
 ```
 
 ### Different Processing by Location
@@ -1770,20 +2255,21 @@ Process files differently based on their location:
 ```yaml
 conditional:
   presets:
-    # Production files - minify and strip
-    production:
-      patterns: ["dist/**/*", "build/**/*"]
-      actions: [minify, strip_comments]
-
-    # Development files - keep readable
-    development:
-      patterns: ["src/**/*", "dev/**/*"]
+    # Source files - keep readable
+    source:
+      patterns: ["src/**/*", "lib/**/*"]
       actions: [remove_empty_lines]
 
-    # Vendor files - skip processing
-    vendor:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      actions: [] # No processing
+    # Test files - minimal processing
+    tests:
+      patterns: ["test/**/*", "tests/**/*", "*.test.*"]
+      actions: [] # No processing needed
+
+    # Example/demo files - compress
+    examples:
+      patterns: ["examples/**/*", "demo/**/*"]
+      actions: [compress_whitespace]
+      max_lines: 100 # Keep examples concise
 ```
 
 ### Combining Multiple Presets
@@ -1791,7 +2277,7 @@ conditional:
 You can load multiple preset files that build on each other:
 
 ```bash
-python tools/m1f.py -s . -o bundle.txt \
+m1f -s . -o bundle.txt \
   --preset base-rules.yml \
   --preset project-specific.yml \
   --preset production-overrides.yml
@@ -1827,7 +2313,7 @@ python tools/m1f.py -s . -o bundle.txt \
 # GitHub Actions example
 - name: Create bundle with presets
   run: |
-    python tools/m1f.py \
+    m1f \
       -s . \
       -o release-bundle.txt \
       --preset .github/release-presets.yml \
@@ -2005,11 +2491,11 @@ my_project:
       max_file_size: "50KB"
       include_dot_paths: true
 
-    vendor_code:
-      patterns: ["vendor/**/*", "node_modules/**/*"]
-      security_check: null # Don't check third-party code
-      max_file_size: "100KB" # Only include small files
-      actions: [] # No processing
+    documentation:
+      patterns: ["docs/**/*", "*.md"]
+      security_check: null # Don't check documentation
+      max_file_size: "100KB" # Keep docs concise
+      actions: [remove_empty_lines]
 ```
 
 ## Real-World Examples
@@ -2206,10 +2692,10 @@ Use it with:
 
 ```bash
 # Module invocation (recommended)
-python -m tools.m1f -s ./src -o bundle.txt --preset my-preset.yml
+m1f -s ./src -o bundle.txt --preset my-preset.yml
 
-# Direct script invocation (alternative)
-python tools/m1f.py -s ./src -o bundle.txt --preset my-preset.yml
+# Direct command invocation (if installed)
+m1f -s ./src -o bundle.txt --preset my-preset.yml
 ```
 
 ## Preset File Format
@@ -2222,7 +2708,6 @@ group_name:
   description: "Optional description of this preset group"
   enabled: true # Can disable entire group
   priority: 10 # Higher numbers are processed first (default: 0)
-  base_path: "src" # Optional base path for all patterns in this group
 
   presets:
     # Preset name (for internal reference)
@@ -2291,13 +2776,11 @@ globals:
 
 ### Group-Level Settings
 
-| Setting             | Type    | Default | Description                     |
-| ------------------- | ------- | ------- | ------------------------------- |
-| `description`       | string  | none    | Human-readable description      |
-| `enabled`           | boolean | true    | Enable/disable this group       |
-| `priority`          | integer | 0       | Processing order (higher first) |
-| `base_path`         | string  | none    | Base path for pattern matching  |
-| `enabled_if_exists` | string  | none    | Only enable if this path exists |
+| Setting       | Type    | Default | Description                     |
+| ------------- | ------- | ------- | ------------------------------- |
+| `description` | string  | none    | Human-readable description      |
+| `enabled`     | boolean | true    | Enable/disable this group       |
+| `priority`    | integer | 0       | Processing order (higher first) |
 
 ### Global Settings (NEW in v3.2.0)
 
@@ -2465,16 +2948,6 @@ illustrative and would need to be implemented.
    patterns: ["src/**/*"]
    ```
 
-### Base Path Behavior
-
-```yaml
-group_name:
-  base_path: "src"
-  presets:
-    example:
-      patterns: ["components/*.js"] # Actually matches: src/components/*.js
-```
-
 ## Processing Order
 
 1. **Group Priority** - Higher priority groups are checked first
@@ -2509,7 +2982,7 @@ exclude files:
 
 2. **Use CLI Arguments**:
    ```bash
-   python tools/m1f.py -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
+   m1f -s . -o out.txt --exclude-patterns "*.min.js" "*.map"
    ```
 
 ### Settings Hierarchy
@@ -2565,22 +3038,27 @@ Understanding where settings can be applied:
 
 ## Advanced Features
 
-### Conditional Presets
+### Conditional Enabling
+
+To conditionally enable/disable preset groups:
 
 ```yaml
 production:
-  enabled_if_exists: ".env.production" # Only active in production
+  enabled: false # Manually disable this group
   presets:
     minify_all:
       extensions: [".js", ".css", ".html"]
-      actions: ["minify", "strip_comments"]
+      actions: ["minify"]
 ```
+
+**Note**: The `enabled_if_exists` feature is only available in auto-bundle
+configurations (`.m1f.config.yml`), not in preset files.
 
 ### Multiple Preset Files
 
 ```bash
 # Files are merged in order (later files override earlier ones)
-python tools/m1f.py -s . -o out.txt \
+m1f -s . -o out.txt \
   --preset base.yml \
   --preset project.yml \
   --preset overrides.yml
@@ -2629,7 +3107,7 @@ Usage comparison:
 **Before v3.2.0** (long command):
 
 ```bash
-python -m tools.m1f -s ./src -o dist/bundle.txt \
+m1f -s ./src -o dist/bundle.txt \
   --input-include-files README.md LICENSE \
   --add-timestamp --create-archive --archive-type tar.gz \
   --force --minimal-output --quiet \
@@ -2640,7 +3118,7 @@ python -m tools.m1f -s ./src -o dist/bundle.txt \
 **After v3.2.0** (simple command):
 
 ```bash
-python -m tools.m1f --preset production.m1f-presets.yml -o output.txt
+m1f --preset production.m1f-presets.yml -o output.txt
 ```
 
 ## Examples
@@ -2732,10 +3210,10 @@ Use with `--preset-group`:
 
 ```bash
 # Development build
-python -m tools.m1f --preset environments.yml --preset-group development
+m1f --preset environments.yml --preset-group development
 
 # Production build
-python -m tools.m1f --preset environments.yml --preset-group production
+m1f --preset environments.yml --preset-group production
 ```
 
 ## Debugging and Best Practices
@@ -2745,7 +3223,7 @@ python -m tools.m1f --preset environments.yml --preset-group production
 1. **Verbose Mode**
 
    ```bash
-   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose
+   m1f -s . -o out.txt --preset my.yml --verbose
    ```
 
    Shows which preset is applied to each file and processing details.
@@ -2753,7 +3231,7 @@ python -m tools.m1f --preset environments.yml --preset-group production
 2. **Check What's Applied**
 
    ```bash
-   python tools/m1f.py -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
+   m1f -s . -o out.txt --preset my.yml --verbose 2>&1 | grep "Applying preset"
    ```
 
 3. **Validate YAML**
@@ -2846,12 +3324,16 @@ bundles:
 
 ```bash
 m1f auto-bundle
+# Or use the convenient alias:
+m1f-update
 ```
 
 ### Create Specific Bundle
 
 ```bash
 m1f auto-bundle docs
+# Or use the convenient alias:
+m1f-update docs
 ```
 
 ### List Available Bundles
@@ -2864,7 +3346,12 @@ m1f auto-bundle --list
 
 ```bash
 m1f auto-bundle --group documentation
+# Or use the convenient alias:
+m1f-update --group documentation
 ```
+
+**Note**: The `m1f-update` command is a convenient alias for `m1f auto-bundle`
+that provides a simpler way to regenerate bundles.
 
 ## Bundle Groups
 
@@ -2917,7 +3404,7 @@ for config in $(find /home/projects -name ".m1f.config.yml" -type f); do
     echo "Updating bundles in: $project_dir"
 
     cd "$project_dir"
-    m1f auto-bundle --quiet
+    m1f-update --quiet
 done
 ```
 
@@ -2940,7 +3427,7 @@ Then update only specific projects:
 
 ```bash
 cd /path/to/project-a
-m1f auto-bundle --group project-a
+m1f-update --group project-a
 ```
 
 ### Automated Bundle Updates
@@ -2952,18 +3439,28 @@ Set up a cron job for automatic updates:
 0 2 * * * /usr/local/bin/update-all-bundles.sh
 ```
 
-### Centralized Bundle Storage
+### Organized Bundle Output
 
-Configure bundles to output to a central location:
+Keep bundles organized within your project:
 
 ```yaml
 bundles:
   project-bundle:
-    description: "Project bundle for central storage"
-    output: "/var/m1f-bundles/myproject/latest.txt"
+    description: "Main project bundle"
+    output: "bundles/latest/project.txt" # Relative to project root
+    sources:
+      - path: "src"
+
+  archived-bundle:
+    description: "Archived version with timestamp"
+    output: "bundles/archive/project-{timestamp}.txt"
+    add_timestamp: true
     sources:
       - path: "."
 ```
+
+**Note**: For security reasons, m1f only allows output paths within the project
+directory. Use relative paths for portability.
 
 ## Advanced Features
 
@@ -2999,6 +3496,15 @@ bundles:
         excludes: ["**/test_*.py"]
       - path: "."
         include_files: ["README.md", "CHANGELOG.md"]
+
+  # New in v3.4.0: Using includes patterns
+  tool-specific:
+    description: "Specific tool code only"
+    output: "m1f/tool-code.txt"
+    sources:
+      - path: "tools/"
+        include_extensions: [".py"]
+        includes: ["m1f/**", "s1f/**", "!**/test_*.py"]
 ```
 
 ### Using Presets
@@ -3030,7 +3536,7 @@ bash /path/to/m1f/scripts/install-git-hooks.sh
 
 The hook will:
 
-- Run `m1f auto-bundle` before each commit
+- Run `m1f-update` before each commit
 - Add generated bundles to the commit automatically
 - Block commits if bundle generation fails
 
@@ -3061,7 +3567,7 @@ config file searching from the current directory up to the root. Create a
 Check the verbose output:
 
 ```bash
-m1f auto-bundle --verbose
+m1f-update --verbose
 ```
 
 Common issues:
@@ -3127,6 +3633,25 @@ bundles:
         include_extensions: [".py", ".js", ".jsx", ".ts", ".tsx"]
 ```
 
+### Combining Multiple Directories (v3.4.0+)
+
+When you need to combine files from completely different directories:
+
+```yaml
+bundles:
+  # Combine documentation from multiple locations
+  all-docs:
+    description: "All project documentation"
+    output: "m1f/all-docs.txt"
+    sources:
+      - path: "docs"
+      - path: "src"
+        include_extensions: [".md"]
+      - path: "../shared-docs"
+      - path: "/absolute/path/to/external/docs"
+        includes: ["api/**", "guides/**"]
+```
+
 ### WordPress Plugin Bundle
 
 ```yaml
@@ -3173,51 +3698,90 @@ cd /path/to/your/project
 m1f -s . -o combined.txt
 ```
 
-### Method 2: Providing m1f Documentation to AI Tools (Claude Code, etc.)
+### Method 2: Quick Project Setup with m1f-init
 
-When you want to use m1f in a project with AI assistance (like Claude Code,
-Cursor, or other AI-powered development tools), the AI needs to understand how
-m1f works and what parameters are available. The `m1f-link` command solves this
-by creating a symlink to the complete m1f documentation.
+When starting a new project with m1f, use `m1f-init` for quick setup:
 
-#### Why this is important:
+```bash
+cd /path/to/your/project
+m1f-init
+```
 
-- AI tools need context to understand how to use m1f
-- The documentation contains all parameters, options, and examples
-- AI can help create custom configurations and commands
+#### What m1f-init does:
 
-#### How to use:
+1. **Links m1f documentation** (creates `m1f/m1f.txt`)
+   - Makes m1f docs available to AI tools
+   - Creates symlink on Linux/macOS, copies on Windows
+   - Use `--no-symlink` to skip this step if not needed
 
-1. Navigate to your project:
+2. **Analyzes your project**
+   - Detects project type and programming languages
+   - Supports Python, JavaScript, TypeScript, PHP, Java, C#, Go, Rust, Ruby
+   - Creates file and directory listings
+   - Shows clean output with created files listed at the end
+   - Automatically cleans up temporary analysis files
 
-   ```bash
-   cd /path/to/your/project
-   ```
+3. **Generates initial bundles with auxiliary files**
+   - `m1f/<project>_complete.txt` - Full project bundle
+   - `m1f/<project>_complete_filelist.txt` - List of all included files
+   - `m1f/<project>_complete_dirlist.txt` - List of all directories
+   - `m1f/<project>_docs.txt` - Documentation only bundle
+   - `m1f/<project>_docs_filelist.txt` - List of documentation files
+   - `m1f/<project>_docs_dirlist.txt` - Documentation directories
 
-2. Create documentation symlink:
+4. **Creates basic configuration**
+   - Generates `.m1f.config.yml` if not present
+   - Sets up sensible defaults
+   - Handles .gitignore correctly (only uses from current directory)
+   - Smart Git detection (clean messages for subdirectories)
 
-   ```bash
-   m1f-link
-   ```
+#### Using with AI Tools:
 
-   This creates: `.m1f/m1f-docs.txt -> /path/to/m1f/.m1f/m1f-doc/99_m1fdocs.txt`
+After running `m1f-init`, reference the documentation in your AI tool:
 
-3. Reference the documentation in your AI tool:
+```bash
+# For Claude Code, Cursor, or similar AI assistants:
+@m1f/m1f.txt
 
-   ```bash
-   # For Claude Code, Cursor, or similar AI assistants:
-   @.m1f/m1f-docs.txt
+# Example prompts:
+"Please read @m1f/m1f.txt and help me create custom bundles
+for my Python web application"
 
-   # Example prompts:
-   "Please read @.m1f/m1f-docs.txt and help me create a .m1f.config.yml
-   for bundling my Python project"
+"Based on @m1f/m1f.txt, how can I exclude test files
+while keeping fixture data?"
 
-   "Based on @.m1f/m1f-docs.txt, what's the best way to exclude test
-   files while keeping documentation?"
+"Using @m1f/m1f.txt as reference, help me optimize
+my .m1f.config.yml for a React project"
+```
 
-   "Using @.m1f/m1f-docs.txt as reference, help me set up auto-bundling
-   for a WordPress theme"
-   ```
+#### Advanced Setup (Linux/macOS only):
+
+For topic-specific bundles and Claude-assisted configuration:
+
+```bash
+m1f-claude --setup
+```
+
+#### Working with File Lists:
+
+The generated file lists are valuable for customizing bundles:
+
+```bash
+# View what files are included
+cat m1f/*_filelist.txt | wc -l  # Count total files
+
+# Edit file lists to customize bundles
+vi m1f/myproject_complete_filelist.txt
+# Remove lines for files you don't want
+# Add paths for files you do want
+
+# Create a custom bundle from edited list
+m1f -i m1f/myproject_complete_filelist.txt -o m1f/custom.txt
+
+# Combine multiple file lists
+cat m1f/*_docs_filelist.txt m1f/api_filelist.txt | sort -u > m1f/combined_list.txt
+m1f -i m1f/combined_list.txt -o m1f/docs_and_api.txt
+```
 
 This single documentation file contains:
 
@@ -3249,7 +3813,7 @@ The AI can then:
 2. Test changes directly:
 
    ```bash
-   python tools/m1f.py -s test_dir -o output.txt
+   python -m tools.m1f -s test_dir -o output.txt
    ```
 
 3. Run tests:
@@ -3377,7 +3941,7 @@ Add m1f to your CI pipeline:
 # Example GitHub Actions
 - name: Generate Documentation Bundle
   run: |
-    python tools/m1f.py -s docs -o docs-bundle.txt
+    python -m tools.m1f -s docs -o docs-bundle.txt
 
 - name: Upload Bundle
   uses: actions/upload-artifact@v2
@@ -3385,6 +3949,1702 @@ Add m1f to your CI pipeline:
     name: documentation
     path: docs-bundle.txt
 ```
+
+======= 25_m1f_config_examples.md ======
+# m1f Configuration Examples
+
+This guide provides comprehensive examples of `.m1f.config.yml` files for
+different project types. Each example includes detailed comments explaining the
+configuration choices.
+
+> **⚠️ IMPORTANT**: m1f automatically excludes many common directories
+> (node_modules, .git, **pycache**, etc.). See the
+> [Default Excludes Guide](./26_default_excludes_guide.md) for the complete
+> list. **Only add project-specific excludes to keep your configs minimal!**
+
+## 🚨 IMPORTANT: Use Standard Separator for AI Bundles!
+
+**The primary purpose of m1f bundles is to provide context to AI assistants like
+Claude, NOT for human reading in Markdown!**
+
+- ✅ **ALWAYS use**: `separator_style: Standard` (or omit it - Standard is the
+  default)
+- ❌ **AVOID**: `separator_style: Markdown` (this adds unnecessary ```language
+  blocks)
+- 🎯 **Why**: Standard format is clean and optimal for AI consumption
+
+```yaml
+# CORRECT - For AI consumption:
+bundles:
+  - name: my-bundle
+    separator_style: Standard  # ← This is optimal (or just omit it)
+
+# AVOID - Adds unnecessary markdown formatting:
+bundles:
+  - name: my-bundle
+    separator_style: Markdown  # ← Don't use for AI bundles!
+```
+
+**Note**: `MachineReadable` is only needed when you plan to use `s1f` to split
+the bundle back into individual files.
+
+## Minimal vs Verbose Configurations
+
+### ❌ BAD Example - Overly Verbose (Don't Do This!)
+
+```yaml
+global:
+  global_excludes:
+    # ❌ ALL of these are already excluded by default!
+    - "**/node_modules/**" # Auto-excluded
+    - "**/vendor/**" # Auto-excluded
+    - "**/__pycache__/**" # Auto-excluded
+    - "**/build/**" # Auto-excluded
+    - "**/dist/**" # Auto-excluded
+    - "**/.git/**" # Auto-excluded
+    - "**/cache/**" # Auto-excluded
+    - "**/.vscode/**" # Auto-excluded
+    - "**/.idea/**" # Auto-excluded
+
+    # ✅ Only these are needed (project-specific)
+    - "**/logs/**"
+    - "**/tmp/**"
+    - "/m1f/**"
+```
+
+### ✅ GOOD Example - Minimal Configuration
+
+```yaml
+global:
+  global_excludes:
+    # Only project-specific excludes
+    - "**/logs/**" # Your log files
+    - "**/tmp/**" # Your temp files
+    - "/m1f/**" # Output directory
+
+  global_settings:
+    # Let .gitignore handle most excludes
+    exclude_paths_file: ".gitignore"
+```
+
+## Table of Contents
+
+1. [m1f Tool Project (Current)](#m1f-tool-project-current)
+2. [Node.js/React Project](#nodejsreact-project)
+3. [Python/Django Project](#pythondjango-project)
+4. [WordPress Theme](#wordpress-theme)
+5. [Documentation Site](#documentation-site)
+6. [Mixed Language Project](#mixed-language-project)
+7. [Microservices Architecture](#microservices-architecture)
+8. [Mobile App Project](#mobile-app-project)
+
+## m1f Tool Project (Current)
+
+This is the actual configuration used by the m1f project itself - a Python-based
+tool with comprehensive documentation.
+
+```yaml
+# m1f Auto-Bundle Configuration
+
+# Global settings
+global:
+  # Exclusions that apply to all bundles
+  global_excludes:
+    - "/m1f/**" # Exclude output directory
+    - "**/*.pyc" # Python bytecode
+    - "**/*.log" # Log files
+    - "**/tmp/**" # Temporary directories
+    - "**/dev/**" # Development files
+    - "**/tests/**/source/**" # Test input data
+    - "**/tests/**/output/**" # Test output data
+    - "**/tests/**/expected/**" # Expected test results
+    - "**/tests/**/scraped_examples/**" # Scraped test examples
+
+  global_settings:
+    # Default security setting for all files
+    security_check: "warn" # Strict by default
+    # Use .gitignore as exclude file (can be single file or list)
+    exclude_paths_file:
+      - ".gitignore"
+      - ".m1fignore"
+
+    # Per-extension overrides
+    extensions:
+      .py:
+        security_check: "abort" # Strict for Python files
+
+  # Default settings for all bundles
+  defaults:
+    force_overwrite: true
+    max_file_size: "1MB"
+    minimal_output: false
+
+  # File watcher settings for auto-update
+  watcher:
+    enabled: true
+    debounce_seconds: 2
+    ignored_paths:
+      - "/m1f"
+      - ".git/"
+      - ".venv/"
+      - "tmp/"
+      - ".scrapes/"
+
+# Bundle definitions
+bundles:
+  # Documentation bundles - separate by tool
+  m1f-docs:
+    description: "m1f docs"
+    group: "documentation"
+    output: "m1f/m1f/87_m1f_only_docs.txt"
+    sources:
+      - path: "docs/01_m1f"
+
+  html2md-docs:
+    description: "html2md docs"
+    group: "documentation"
+    output: "m1f/m1f/88_html2md_docs.txt"
+    sources:
+      - path: "docs/03_html2md"
+
+  # Source code bundles - modular approach
+  m1f-code:
+    description: "m1f complete code"
+    group: "source"
+    output: "m1f/m1f/94_code.txt"
+    sources:
+      - path: "."
+        includes:
+          [
+            "README.md",
+            "SETUP.md",
+            "requirements.txt",
+            "tools/**",
+            "scripts/**",
+          ]
+      - path: "tests/"
+        excludes:
+          [
+            "**/tests/**/source/**",
+            "**/tests/**/extracted/**",
+            "**/tests/**/output/**",
+          ]
+
+  # Complete project bundle
+  all:
+    description: "All 1 One"
+    group: "complete"
+    output: "m1f/m1f/99_m1f_complete.txt"
+    sources:
+      - path: "."
+```
+
+## Node.js/React Project
+
+Configuration for a modern React application with TypeScript and testing.
+
+```yaml
+# React Application m1f Configuration
+
+global:
+  global_excludes:
+    # ⚠️ MINIMAL CONFIG - Only project-specific excludes!
+    # DON'T add node_modules, dist, build - they're auto-excluded!
+
+    # Next.js specific (not in defaults)
+    - "**/.next/**" # Next.js build cache
+    - "**/coverage/**" # Test coverage reports
+
+    # Log and temp files
+    - "**/*.log"
+    - "**/*.map" # Source maps
+    - "**/.DS_Store"
+    - "**/Thumbs.db"
+
+  global_settings:
+    security_check: "warn"
+    exclude_paths_file: [".gitignore", ".eslintignore"]
+
+    # JavaScript/TypeScript specific processing
+    extensions:
+      .js:
+        minify: true # Minify for AI context
+        remove_comments: true # Clean comments
+      .jsx:
+        minify: true
+        remove_comments: true
+      .ts:
+        minify: true
+        remove_comments: true
+      .tsx:
+        minify: true
+        remove_comments: true
+      .json:
+        minify: true # Compact JSON
+      .env:
+        security_check: "abort" # Never include env files
+
+  defaults:
+    force_overwrite: true
+    max_file_size: "500KB" # Smaller for JS files
+    minimal_output: true # Compact output
+
+bundles:
+  # Application source code
+  app-components:
+    description: "React components"
+    group: "frontend"
+    output: "m1f/01_components.txt"
+    sources:
+      - path: "src/components"
+        include_extensions: [".tsx", ".ts", ".css", ".scss"]
+      - path: "src/hooks"
+        include_extensions: [".ts", ".tsx"]
+
+  app-pages:
+    description: "Application pages/routes"
+    group: "frontend"
+    output: "m1f/02_pages.txt"
+    sources:
+      - path: "src/pages"
+      - path: "src/routes"
+      - path: "src/layouts"
+
+  app-state:
+    description: "State management (Redux/Context)"
+    group: "frontend"
+    output: "m1f/03_state.txt"
+    sources:
+      - path: "src/store"
+      - path: "src/redux"
+      - path: "src/context"
+      - path: "src/reducers"
+      - path: "src/actions"
+
+  # API and services
+  app-api:
+    description: "API integration layer"
+    group: "integration"
+    output: "m1f/10_api.txt"
+    sources:
+      - path: "src/api"
+      - path: "src/services"
+      - path: "src/graphql"
+        include_extensions: [".ts", ".graphql", ".gql"]
+
+  # Configuration and setup
+  app-config:
+    description: "Build configuration"
+    group: "config"
+    output: "m1f/20_config.txt"
+    sources:
+      - path: "."
+        includes:
+          [
+            "package.json",
+            "tsconfig.json",
+            "webpack.config.js",
+            "vite.config.js",
+            ".eslintrc.*",
+            ".prettierrc.*",
+            "babel.config.*",
+          ]
+
+  # Tests
+  app-tests:
+    description: "Test suites"
+    group: "testing"
+    output: "m1f/30_tests.txt"
+    sources:
+      - path: "src"
+        includes:
+          ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
+      - path: "__tests__"
+      - path: "cypress/integration"
+        include_extensions: [".js", ".ts"]
+
+  # Documentation
+  app-docs:
+    description: "Project documentation"
+    group: "docs"
+    output: "m1f/40_docs.txt"
+    sources:
+      - path: "."
+        includes: ["README.md", "CONTRIBUTING.md", "docs/**/*.md"]
+      - path: "src"
+        includes: ["**/*.md"]
+
+  # Quick reference bundle for AI assistance
+  app-quick-reference:
+    description: "Key files for quick AI context"
+    group: "reference"
+    output: "m1f/00_quick_reference.txt"
+    max_file_size: "100KB" # Keep small for quick loading
+    sources:
+      - path: "."
+        includes: ["package.json", "README.md", "src/App.tsx", "src/index.tsx"]
+      - path: "src/types" # TypeScript types
+```
+
+## Python/Django Project
+
+Configuration for a Django web application with REST API.
+
+```yaml
+# Django Project m1f Configuration
+
+global:
+  global_excludes:
+    # ⚠️ MINIMAL CONFIG - __pycache__, .pytest_cache, etc. are auto-excluded!
+
+    # Python bytecode (not in defaults)
+    - "**/*.pyc"
+    - "**/*.pyo"
+    - "**/*.pyd"
+
+    # Virtual environments (common names)
+    - "**/venv/**"
+    - "**/.venv/**"
+    - "**/env/**"
+
+    # Django specific
+    - "**/migrations/**" # Database migrations
+    - "**/media/**" # User uploads
+    - "**/static/**" # Collected static files
+    - "**/staticfiles/**"
+    - "**/*.sqlite3" # SQLite database
+    - "**/celerybeat-schedule"
+
+  global_settings:
+    security_check: "abort" # Strict for web apps
+    exclude_paths_file: ".gitignore"
+
+    extensions:
+      .py:
+        remove_docstrings: false # Keep docstrings for API
+        remove_comments: true # Remove inline comments
+      .html:
+        minify: true # Minify templates
+      .env:
+        security_check: "abort" # Never include
+      .yml:
+        security_check: "warn" # Check for secrets
+
+  defaults:
+    force_overwrite: true
+    max_file_size: "1MB"
+
+bundles:
+  # Django apps - one bundle per app
+  app-accounts:
+    description: "User accounts and authentication"
+    group: "apps"
+    output: "m1f/apps/01_accounts.txt"
+    sources:
+      - path: "accounts/"
+        excludes: ["migrations/", "__pycache__/", "*.pyc"]
+
+  app-api:
+    description: "REST API implementation"
+    group: "apps"
+    output: "m1f/apps/02_api.txt"
+    sources:
+      - path: "api/"
+        excludes: ["migrations/", "__pycache__/"]
+      - path: "."
+        includes: ["**/serializers.py", "**/viewsets.py"]
+
+  app-core:
+    description: "Core business logic"
+    group: "apps"
+    output: "m1f/apps/03_core.txt"
+    sources:
+      - path: "core/"
+        excludes: ["migrations/", "__pycache__/"]
+
+  # Project configuration
+  django-settings:
+    description: "Django settings and configuration"
+    group: "config"
+    output: "m1f/10_settings.txt"
+    sources:
+      - path: "config/" # Settings module
+      - path: "."
+        includes:
+          ["manage.py", "requirements*.txt", "Dockerfile", "docker-compose.yml"]
+
+  # Models across all apps
+  django-models:
+    description: "All database models"
+    group: "database"
+    output: "m1f/20_models.txt"
+    sources:
+      - path: "."
+        includes: ["**/models.py", "**/models/*.py"]
+
+  # Views and URLs
+  django-views:
+    description: "Views and URL patterns"
+    group: "views"
+    output: "m1f/21_views.txt"
+    sources:
+      - path: "."
+        includes: ["**/views.py", "**/views/*.py", "**/urls.py"]
+
+  # Templates
+  django-templates:
+    description: "HTML templates"
+    group: "frontend"
+    output: "m1f/30_templates.txt"
+    sources:
+      - path: "templates/"
+      - path: "."
+        includes: ["**/templates/**/*.html"]
+
+  # Tests
+  django-tests:
+    description: "Test suites"
+    group: "testing"
+    output: "m1f/40_tests.txt"
+    sources:
+      - path: "."
+        includes: ["**/tests.py", "**/tests/*.py", "**/test_*.py"]
+
+  # Management commands
+  django-commands:
+    description: "Custom management commands"
+    group: "utilities"
+    output: "m1f/50_commands.txt"
+    sources:
+      - path: "."
+        includes: ["**/management/commands/*.py"]
+
+  # Quick AI reference
+  django-quick-ref:
+    description: "Essential files for AI context"
+    group: "reference"
+    output: "m1f/00_quick_reference.txt"
+    max_file_size: "100KB"
+    sources:
+      - path: "."
+        includes:
+          [
+            "README.md",
+            "requirements.txt",
+            "config/settings/base.py",
+            "config/urls.py",
+          ]
+```
+
+## WordPress Theme
+
+Configuration for a custom WordPress theme with modern build tools.
+
+```yaml
+# WordPress Theme m1f Configuration
+
+global:
+  global_excludes:
+    # ⚠️ MINIMAL CONFIG - node_modules, vendor, build, dist are auto-excluded!
+
+    # WordPress specific (not in defaults)
+    - "wp-admin/**" # Core files
+    - "wp-includes/**" # Core files
+    - "wp-content/uploads/**" # User uploads
+    - "wp-content/cache/**" # Cache plugins
+    - "wp-content/backup/**" # Backup files
+    - "wp-content/upgrade/**" # Updates
+
+    # Sass cache (not in defaults)
+    - "**/.sass-cache/**"
+    - "**/*.map" # Source maps
+    - "**/*.log" # Log files
+
+  global_settings:
+    security_check: "warn"
+    exclude_paths_file: [".gitignore", ".wpignore"]
+
+    # Use WordPress preset for optimal processing
+    preset: "wordpress"
+
+    extensions:
+      .php:
+        remove_comments: true # Clean PHP comments
+      .js:
+        minify: true
+      .css:
+        minify: true
+      .scss:
+        minify: true
+
+  defaults:
+    force_overwrite: true
+    max_file_size: "500KB"
+
+bundles:
+  # Theme core files
+  theme-core:
+    description: "Theme core functionality"
+    group: "theme"
+    output: "m1f/01_theme_core.txt"
+    sources:
+      - path: "."
+        includes: [
+            "style.css", # Theme header
+            "functions.php",
+            "index.php",
+            "header.php",
+            "footer.php",
+            "sidebar.php",
+            "searchform.php",
+            "404.php",
+          ]
+
+  # Template files
+  theme-templates:
+    description: "Page and post templates"
+    group: "theme"
+    output: "m1f/02_templates.txt"
+    sources:
+      - path: "."
+        includes:
+          [
+            "single*.php",
+            "page*.php",
+            "archive*.php",
+            "category*.php",
+            "tag*.php",
+            "taxonomy*.php",
+            "front-page.php",
+            "home.php",
+          ]
+      - path: "template-parts/"
+      - path: "templates/"
+
+  # Theme includes/components
+  theme-includes:
+    description: "Theme includes and components"
+    group: "theme"
+    output: "m1f/03_includes.txt"
+    sources:
+      - path: "inc/"
+      - path: "includes/"
+      - path: "lib/"
+      - path: "components/"
+
+  # Custom post types and taxonomies
+  theme-cpt:
+    description: "Custom post types and taxonomies"
+    group: "functionality"
+    output: "m1f/10_custom_types.txt"
+    sources:
+      - path: "."
+        includes: ["**/post-types/*.php", "**/taxonomies/*.php"]
+      - path: "inc/"
+        includes: ["*cpt*.php", "*custom-post*.php", "*taxonom*.php"]
+
+  # ACF field groups
+  theme-acf:
+    description: "Advanced Custom Fields configuration"
+    group: "functionality"
+    output: "m1f/11_acf_fields.txt"
+    sources:
+      - path: "acf-json/" # ACF JSON exports
+      - path: "."
+        includes: ["**/acf-fields/*.php", "**/acf/*.php"]
+
+  # JavaScript and build files
+  theme-assets:
+    description: "Theme assets and build configuration"
+    group: "assets"
+    output: "m1f/20_assets.txt"
+    sources:
+      - path: "src/"
+        include_extensions: [".js", ".jsx", ".scss", ".css"]
+      - path: "assets/src/"
+      - path: "."
+        includes:
+          [
+            "webpack.config.js",
+            "gulpfile.js",
+            "package.json",
+            ".babelrc",
+            "postcss.config.js",
+          ]
+
+  # WooCommerce integration
+  theme-woocommerce:
+    description: "WooCommerce customizations"
+    group: "integrations"
+    output: "m1f/30_woocommerce.txt"
+    sources:
+      - path: "woocommerce/"
+      - path: "inc/"
+        includes: ["*woocommerce*.php", "*wc-*.php"]
+
+  # Documentation and setup
+  theme-docs:
+    description: "Theme documentation"
+    group: "docs"
+    output: "m1f/40_documentation.txt"
+    sources:
+      - path: "."
+        includes: ["README.md", "CHANGELOG.md", "style.css"]
+      - path: "docs/"
+
+  # Quick reference for AI
+  theme-quick-ref:
+    description: "Essential theme files for AI context"
+    group: "reference"
+    output: "m1f/00_quick_reference.txt"
+    max_file_size: "100KB"
+    sources:
+      - path: "."
+        includes: ["style.css", "functions.php", "README.md", "package.json"]
+```
+
+## Documentation Site
+
+Configuration for a documentation website using Markdown and static site
+generators.
+
+```yaml
+# Documentation Site m1f Configuration
+
+global:
+  global_excludes:
+    # Build outputs
+    - "_site/**"
+    - "public/**"
+    - "dist/**"
+    - ".cache/**"
+
+    # Development
+    - "**/node_modules/**"
+    - "**/.sass-cache/**"
+    - "**/tmp/**"
+
+  global_settings:
+    security_check: "skip" # Docs are public
+    exclude_paths_file: ".gitignore"
+
+    # Optimize for documentation
+    extensions:
+      .md:
+        preserve_formatting: true # Keep Markdown formatting
+        max_file_size: "2MB" # Allow larger docs
+      .mdx:
+        preserve_formatting: true
+      .yml:
+        minify: false # Keep YAML readable
+      .json:
+        minify: true
+
+  defaults:
+    force_overwrite: true
+    max_file_size: "1MB"
+    include_empty_dirs: false
+
+bundles:
+  # Documentation by section
+  docs-getting-started:
+    description: "Getting started guides"
+    group: "content"
+    output: "m1f/01_getting_started.txt"
+    sources:
+      - path: "docs/getting-started/"
+      - path: "content/getting-started/"
+      - path: "src/pages/docs/getting-started/"
+
+  docs-tutorials:
+    description: "Tutorial content"
+    group: "content"
+    output: "m1f/02_tutorials.txt"
+    sources:
+      - path: "docs/tutorials/"
+      - path: "content/tutorials/"
+      - path: "examples/"
+        include_extensions: [".md", ".mdx"]
+
+  docs-api-reference:
+    description: "API documentation"
+    group: "content"
+    output: "m1f/03_api_reference.txt"
+    sources:
+      - path: "docs/api/"
+      - path: "content/api/"
+      - path: "reference/"
+
+  docs-guides:
+    description: "How-to guides"
+    group: "content"
+    output: "m1f/04_guides.txt"
+    sources:
+      - path: "docs/guides/"
+      - path: "content/guides/"
+      - path: "content/how-to/"
+
+  # Site configuration and theming
+  site-config:
+    description: "Site configuration and theme"
+    group: "config"
+    output: "m1f/10_site_config.txt"
+    sources:
+      - path: "."
+        includes: [
+            "config*.yml",
+            "config*.yaml",
+            "config*.toml",
+            "config*.json",
+            "_config.yml", # Jekyll
+            "docusaurus.config.js", # Docusaurus
+            "gatsby-config.js", # Gatsby
+            "mkdocs.yml", # MkDocs
+            ".vuepress/config.js", # VuePress
+          ]
+      - path: "data/" # Data files
+        include_extensions: [".yml", ".yaml", ".json"]
+
+  # Theme and layouts
+  site-theme:
+    description: "Theme and layout files"
+    group: "theme"
+    output: "m1f/11_theme.txt"
+    sources:
+      - path: "_layouts/" # Jekyll
+      - path: "_includes/"
+      - path: "layouts/" # Hugo
+      - path: "themes/"
+      - path: "src/theme/"
+      - path: "src/components/"
+        include_extensions: [".jsx", ".tsx", ".vue", ".css", ".scss"]
+
+  # Code examples
+  docs-examples:
+    description: "Code examples and snippets"
+    group: "examples"
+    output: "m1f/20_examples.txt"
+    sources:
+      - path: "examples/"
+      - path: "snippets/"
+      - path: "code-examples/"
+      - path: "."
+        includes: ["**/*.example.*", "**/examples/**"]
+
+  # Search index and data
+  site-search:
+    description: "Search configuration and index"
+    group: "search"
+    output: "m1f/30_search.txt"
+    sources:
+      - path: "."
+        includes: ["**/search-index.json", "**/algolia*.js", "**/lunr*.js"]
+      - path: "search/"
+
+  # Complete documentation bundle
+  docs-complete:
+    description: "All documentation content"
+    group: "complete"
+    output: "m1f/99_all_docs.txt"
+    sources:
+      - path: "."
+        include_extensions: [".md", ".mdx"]
+        excludes: ["node_modules/", "_site/", "public/"]
+
+  # Quick reference
+  docs-quick-ref:
+    description: "Key documentation for AI context"
+    group: "reference"
+    output: "m1f/00_quick_reference.txt"
+    max_file_size: "100KB"
+    sources:
+      - path: "."
+        includes: ["README.md", "index.md", "docs/index.md"]
+      - path: "docs/"
+        includes: ["quick-start.md", "overview.md", "introduction.md"]
+```
+
+## Mixed Language Project
+
+Configuration for a project with multiple programming languages (e.g., Python
+backend, React frontend, Go microservices).
+
+```yaml
+# Mixed Language Project m1f Configuration
+
+global:
+  global_excludes:
+    # Language-specific build artifacts
+    - "**/node_modules/**" # JavaScript
+    - "**/__pycache__/**" # Python
+    - "**/venv/**"
+    - "**/vendor/**" # Go/PHP
+    - "**/target/**" # Rust/Java
+    - "**/bin/**" # Binaries
+    - "**/obj/**" # .NET
+
+    # Common excludes
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/*.log"
+    - "**/.cache/**"
+    - "**/tmp/**"
+
+  global_settings:
+    security_check: "warn"
+    exclude_paths_file: [".gitignore", ".dockerignore"]
+
+    # Language-specific processing
+    extensions:
+      # Frontend
+      .js:
+        minify: true
+        remove_comments: true
+      .ts:
+        minify: true
+        remove_comments: true
+      .jsx:
+        minify: true
+      .tsx:
+        minify: true
+
+      # Backend
+      .py:
+        remove_comments: true
+        remove_docstrings: false
+      .go:
+        remove_comments: true
+      .java:
+        remove_comments: true
+      .rs:
+        remove_comments: true
+
+      # Config files
+      .env:
+        security_check: "abort"
+      .yml:
+        security_check: "warn"
+
+  defaults:
+    force_overwrite: true
+    max_file_size: "1MB"
+
+bundles:
+  # Frontend - React/TypeScript
+  frontend-components:
+    description: "Frontend React components"
+    group: "frontend"
+    output: "m1f/frontend/01_components.txt"
+    sources:
+      - path: "frontend/src/components/"
+      - path: "frontend/src/hooks/"
+      - path: "frontend/src/utils/"
+
+  frontend-config:
+    description: "Frontend configuration"
+    group: "frontend"
+    output: "m1f/frontend/02_config.txt"
+    sources:
+      - path: "frontend/"
+        includes:
+          ["package.json", "tsconfig.json", "webpack.config.js", ".eslintrc.*"]
+
+  # Backend - Python/FastAPI
+  backend-api:
+    description: "Python API endpoints"
+    group: "backend"
+    output: "m1f/backend/01_api.txt"
+    sources:
+      - path: "backend/app/api/"
+      - path: "backend/app/routers/"
+
+  backend-models:
+    description: "Database models and schemas"
+    group: "backend"
+    output: "m1f/backend/02_models.txt"
+    sources:
+      - path: "backend/app/models/"
+      - path: "backend/app/schemas/"
+      - path: "backend/app/database/"
+
+  backend-services:
+    description: "Business logic services"
+    group: "backend"
+    output: "m1f/backend/03_services.txt"
+    sources:
+      - path: "backend/app/services/"
+      - path: "backend/app/core/"
+
+  # Microservices - Go
+  service-auth:
+    description: "Authentication service (Go)"
+    group: "microservices"
+    output: "m1f/services/01_auth.txt"
+    sources:
+      - path: "services/auth/"
+        include_extensions: [".go"]
+        excludes: ["vendor/", "*_test.go"]
+
+  service-notifications:
+    description: "Notification service (Go)"
+    group: "microservices"
+    output: "m1f/services/02_notifications.txt"
+    sources:
+      - path: "services/notifications/"
+        include_extensions: [".go"]
+        excludes: ["vendor/", "*_test.go"]
+
+  # Shared libraries
+  shared-proto:
+    description: "Protocol Buffers definitions"
+    group: "shared"
+    output: "m1f/shared/01_protobuf.txt"
+    sources:
+      - path: "proto/"
+        include_extensions: [".proto"]
+
+  shared-utils:
+    description: "Shared utilities across languages"
+    group: "shared"
+    output: "m1f/shared/02_utils.txt"
+    sources:
+      - path: "shared/"
+      - path: "common/"
+
+  # Infrastructure as Code
+  infrastructure:
+    description: "Infrastructure configuration"
+    group: "infrastructure"
+    output: "m1f/infra/01_infrastructure.txt"
+    sources:
+      - path: "infrastructure/"
+        include_extensions: [".tf", ".yml", ".yaml"]
+      - path: "."
+        includes: ["docker-compose*.yml", "Dockerfile*", ".dockerignore"]
+
+  # Testing
+  tests-frontend:
+    description: "Frontend tests"
+    group: "testing"
+    output: "m1f/tests/01_frontend.txt"
+    sources:
+      - path: "frontend/"
+        includes: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"]
+
+  tests-backend:
+    description: "Backend tests"
+    group: "testing"
+    output: "m1f/tests/02_backend.txt"
+    sources:
+      - path: "backend/"
+        includes: ["**/test_*.py", "**/*_test.py"]
+
+  tests-integration:
+    description: "Integration tests"
+    group: "testing"
+    output: "m1f/tests/03_integration.txt"
+    sources:
+      - path: "tests/integration/"
+      - path: "e2e/"
+
+  # Documentation
+  project-docs:
+    description: "Project documentation"
+    group: "docs"
+    output: "m1f/docs/01_documentation.txt"
+    sources:
+      - path: "."
+        includes: ["README.md", "CONTRIBUTING.md", "ARCHITECTURE.md"]
+      - path: "docs/"
+      - path: "frontend/README.md"
+      - path: "backend/README.md"
+      - path: "services/*/README.md"
+
+  # Quick reference bundle
+  project-overview:
+    description: "Project overview for AI context"
+    group: "reference"
+    output: "m1f/00_overview.txt"
+    max_file_size: "100KB"
+    sources:
+      - path: "."
+        includes:
+          [
+            "README.md",
+            "docker-compose.yml",
+            "frontend/package.json",
+            "backend/requirements.txt",
+            "services/auth/go.mod",
+          ]
+```
+
+## Microservices Architecture
+
+Configuration for a microservices-based application with multiple services.
+
+```yaml
+# Microservices Architecture m1f Configuration
+
+global:
+  global_excludes:
+    # Common excludes across all services
+    - "**/node_modules/**"
+    - "**/vendor/**"
+    - "**/target/**"
+    - "**/build/**"
+    - "**/dist/**"
+    - "**/.cache/**"
+    - "**/logs/**"
+    - "**/*.log"
+
+  global_settings:
+    security_check: "abort" # Strict for microservices
+    exclude_paths_file: [".gitignore", ".dockerignore"]
+
+    # Process by file type
+    extensions:
+      .env:
+        security_check: "abort"
+      .yml:
+        security_check: "warn"
+      .json:
+        minify: true
+      .proto:
+        preserve_formatting: true # Keep protobuf readable
+
+  defaults:
+    force_overwrite: true
+    max_file_size: "500KB" # Smaller for services
+
+  # Watch for changes in all services
+  watcher:
+    enabled: true
+    debounce_seconds: 3
+    ignored_paths:
+      - "**/node_modules"
+      - "**/vendor"
+      - "**/logs"
+
+bundles:
+  # API Gateway
+  gateway-main:
+    description: "API Gateway service"
+    group: "gateway"
+    output: "m1f/gateway/01_main.txt"
+    sources:
+      - path: "services/gateway/"
+        excludes: ["node_modules/", "dist/", "coverage/"]
+
+  # Individual microservices
+  service-users:
+    description: "User management service"
+    group: "services"
+    output: "m1f/services/01_users.txt"
+    sources:
+      - path: "services/users/"
+        excludes: ["vendor/", "bin/", "logs/"]
+
+  service-orders:
+    description: "Order processing service"
+    group: "services"
+    output: "m1f/services/02_orders.txt"
+    sources:
+      - path: "services/orders/"
+        excludes: ["vendor/", "bin/", "logs/"]
+
+  service-inventory:
+    description: "Inventory management service"
+    group: "services"
+    output: "m1f/services/03_inventory.txt"
+    sources:
+      - path: "services/inventory/"
+        excludes: ["vendor/", "bin/", "logs/"]
+
+  service-payments:
+    description: "Payment processing service"
+    group: "services"
+    output: "m1f/services/04_payments.txt"
+    sources:
+      - path: "services/payments/"
+        excludes: ["vendor/", "bin/", "logs/"]
+
+  # Shared configurations and contracts
+  shared-contracts:
+    description: "Service contracts and interfaces"
+    group: "shared"
+    output: "m1f/shared/01_contracts.txt"
+    sources:
+      - path: "contracts/"
+        include_extensions: [".proto", ".graphql", ".openapi.yml"]
+      - path: "schemas/"
+
+  shared-libs:
+    description: "Shared libraries and utilities"
+    group: "shared"
+    output: "m1f/shared/02_libraries.txt"
+    sources:
+      - path: "libs/"
+      - path: "packages/"
+      - path: "common/"
+
+  # Infrastructure and deployment
+  k8s-configs:
+    description: "Kubernetes configurations"
+    group: "infrastructure"
+    output: "m1f/k8s/01_configs.txt"
+    sources:
+      - path: "k8s/"
+        include_extensions: [".yml", ".yaml"]
+      - path: "helm/"
+
+  docker-configs:
+    description: "Docker configurations"
+    group: "infrastructure"
+    output: "m1f/docker/01_configs.txt"
+    sources:
+      - path: "."
+        includes: ["**/Dockerfile*", "**/.dockerignore", "docker-compose*.yml"]
+
+  # Monitoring and observability
+  monitoring:
+    description: "Monitoring and alerting configs"
+    group: "observability"
+    output: "m1f/monitoring/01_configs.txt"
+    sources:
+      - path: "monitoring/"
+      - path: "grafana/"
+      - path: "prometheus/"
+
+  # CI/CD pipelines
+  cicd:
+    description: "CI/CD pipeline definitions"
+    group: "devops"
+    output: "m1f/cicd/01_pipelines.txt"
+    sources:
+      - path: ".github/workflows/"
+      - path: ".gitlab-ci.yml"
+      - path: "jenkins/"
+      - path: ".circleci/"
+
+  # Service mesh configuration
+  service-mesh:
+    description: "Service mesh configurations"
+    group: "infrastructure"
+    output: "m1f/mesh/01_configs.txt"
+    sources:
+      - path: "istio/"
+      - path: "linkerd/"
+      - path: "consul/"
+
+  # Quick overview for new developers
+  architecture-overview:
+    description: "Architecture overview"
+    group: "reference"
+    output: "m1f/00_architecture.txt"
+    max_file_size: "150KB"
+    sources:
+      - path: "."
+        includes:
+          [
+            "README.md",
+            "ARCHITECTURE.md",
+            "docker-compose.yml",
+            "services/*/README.md",
+          ]
+```
+
+## Mobile App Project
+
+Configuration for a React Native or Flutter mobile application.
+
+```yaml
+# Mobile App m1f Configuration
+
+global:
+  global_excludes:
+    # Platform-specific builds
+    - "**/ios/build/**"
+    - "**/ios/Pods/**"
+    - "**/android/build/**"
+    - "**/android/.gradle/**"
+    - "**/android/app/build/**"
+
+    # React Native / Flutter
+    - "**/node_modules/**"
+    - "**/.dart_tool/**"
+    - "**/pubspec.lock"
+    - "**/package-lock.json"
+    - "**/yarn.lock"
+
+    # IDE and temp files
+    - "**/.idea/**"
+    - "**/.vscode/**"
+    - "**/tmp/**"
+    - "**/*.log"
+
+  global_settings:
+    security_check: "warn"
+    exclude_paths_file: [".gitignore", ".npmignore"]
+
+    extensions:
+      # Mobile-specific
+      .swift:
+        remove_comments: true
+      .kt:
+        remove_comments: true
+      .dart:
+        remove_comments: true
+      .java:
+        remove_comments: true
+      # JavaScript/TypeScript
+      .js:
+        minify: true
+      .jsx:
+        minify: true
+      .ts:
+        minify: true
+      .tsx:
+        minify: true
+
+  defaults:
+    force_overwrite: true
+    max_file_size: "500KB"
+
+bundles:
+  # Core application code
+  app-screens:
+    description: "App screens and navigation"
+    group: "app"
+    output: "m1f/app/01_screens.txt"
+    sources:
+      - path: "src/screens/" # React Native
+      - path: "lib/screens/" # Flutter
+      - path: "src/pages/"
+      - path: "src/navigation/"
+
+  app-components:
+    description: "Reusable UI components"
+    group: "app"
+    output: "m1f/app/02_components.txt"
+    sources:
+      - path: "src/components/"
+      - path: "lib/widgets/" # Flutter
+      - path: "src/ui/"
+
+  app-state:
+    description: "State management"
+    group: "app"
+    output: "m1f/app/03_state.txt"
+    sources:
+      - path: "src/store/" # Redux/MobX
+      - path: "src/context/" # React Context
+      - path: "lib/providers/" # Flutter Provider
+      - path: "lib/blocs/" # Flutter BLoC
+
+  app-services:
+    description: "API and service layer"
+    group: "app"
+    output: "m1f/app/04_services.txt"
+    sources:
+      - path: "src/services/"
+      - path: "src/api/"
+      - path: "lib/services/"
+      - path: "src/utils/"
+
+  # Platform-specific code
+  platform-ios:
+    description: "iOS specific code"
+    group: "platform"
+    output: "m1f/platform/01_ios.txt"
+    sources:
+      - path: "ios/"
+        include_extensions: [".swift", ".m", ".h", ".plist"]
+        excludes: ["Pods/", "build/"]
+
+  platform-android:
+    description: "Android specific code"
+    group: "platform"
+    output: "m1f/platform/02_android.txt"
+    sources:
+      - path: "android/"
+        include_extensions: [".java", ".kt", ".xml", ".gradle"]
+        excludes: ["build/", ".gradle/"]
+
+  # Assets and resources
+  app-assets:
+    description: "App assets and resources"
+    group: "assets"
+    output: "m1f/assets/01_resources.txt"
+    sources:
+      - path: "assets/"
+        includes: ["**/*.json", "**/*.xml", "**/strings.xml"]
+      - path: "src/assets/"
+      - path: "resources/"
+
+  # Configuration
+  app-config:
+    description: "App configuration"
+    group: "config"
+    output: "m1f/config/01_configuration.txt"
+    sources:
+      - path: "."
+        includes: [
+            "package.json",
+            "app.json", # React Native
+            "metro.config.js", # React Native
+            "babel.config.js",
+            "tsconfig.json",
+            "pubspec.yaml", # Flutter
+            ".env.example",
+          ]
+
+  # Tests
+  app-tests:
+    description: "Test suites"
+    group: "testing"
+    output: "m1f/tests/01_tests.txt"
+    sources:
+      - path: "__tests__/"
+      - path: "test/"
+      - path: "src/"
+        includes: ["**/*.test.js", "**/*.test.ts", "**/*.spec.js"]
+
+  # Native modules
+  native-modules:
+    description: "Native modules and bridges"
+    group: "native"
+    output: "m1f/native/01_modules.txt"
+    sources:
+      - path: "src/native/"
+      - path: "native-modules/"
+      - path: "."
+        includes: ["**/RN*.swift", "**/RN*.java", "**/RN*.kt"]
+
+  # Quick reference
+  app-quick-ref:
+    description: "Key files for AI context"
+    group: "reference"
+    output: "m1f/00_quick_reference.txt"
+    max_file_size: "100KB"
+    sources:
+      - path: "."
+        includes:
+          ["README.md", "package.json", "app.json", "src/App.js", "index.js"]
+```
+
+## Best Practices
+
+When creating your `.m1f.config.yml`:
+
+1. **Group Related Files**: Create focused bundles that group related
+   functionality
+2. **Use Meaningful Names**: Choose descriptive bundle names that indicate
+   content
+3. **Set Size Limits**: Keep bundles under 100KB for optimal AI performance
+4. **Security First**: Always configure proper security checks for sensitive
+   files
+5. **Leverage Presets**: Use built-in presets for common project types
+6. **Exclude Wisely**: Don't bundle generated files, dependencies, or build
+   artifacts
+7. **Document Purpose**: Add descriptions to help others understand each bundle
+8. **Test Configuration**: Run `m1f-update` and check bundle sizes with
+   `m1f-token-counter`
+
+## Common Patterns
+
+### Pattern 1: Separate by Layer
+
+```yaml
+bundles:
+  frontend: # UI components
+  backend: # Server logic
+  database: # Models and migrations
+  api: # API endpoints
+  tests: # Test suites
+```
+
+### Pattern 2: Separate by Feature
+
+```yaml
+bundles:
+  feature-auth: # Authentication
+  feature-payment: # Payment processing
+  feature-search: # Search functionality
+  feature-admin: # Admin panel
+```
+
+### Pattern 3: Separate by Purpose
+
+```yaml
+bundles:
+  quick-reference: # Essential files for context
+  documentation: # All docs
+  source-code: # Implementation
+  configuration: # Config files
+  deployment: # Deploy scripts
+```
+
+### Pattern 4: Progressive Detail
+
+```yaml
+bundles:
+  overview: # High-level summary (10KB)
+  core-logic: # Main functionality (50KB)
+  full-source: # Complete code (100KB)
+  everything: # All files (500KB)
+```
+
+Remember: The best configuration depends on your specific project needs and how
+you plan to use the bundles with AI assistants.
+
+======= 26_default_excludes_guide.md ======
+# m1f Default Excludes Guide
+
+This guide explains the files and directories that m1f excludes by default,
+helping you write minimal and efficient `.m1f.config.yml` configurations.
+
+## 🚨 CRITICAL: Correct Bundle Format
+
+**ALWAYS use the `sources:` array format, NOT `source_directory:`!**
+
+```yaml
+# ✅ CORRECT FORMAT:
+bundles:
+  - name: my-bundle
+    sources:
+      - "./src"
+    output_file: "m1f/my-bundle.txt"
+    separator_style: Standard  # Or omit - Standard is default
+
+# ❌ WRONG FORMAT (will cause errors):
+bundles:
+  my-bundle:
+    source_directory: "./src"  # This format causes "ERROR: At least one of -s/--source-directory..."
+    output_file: "m1f/my-bundle.txt"
+    separator_style: Detailed  # Don't use for AI bundles!
+```
+
+**ALWAYS test with `m1f-update` immediately after creating/editing
+.m1f.config.yml!**
+
+## Understanding Default Excludes
+
+**IMPORTANT**: m1f automatically excludes many common directories and files. You
+DON'T need to repeat these in your configuration - only add project-specific
+exclusions!
+
+## Default Excluded Directories
+
+The following directories are ALWAYS excluded unless you explicitly use
+`--no-default-excludes`:
+
+```yaml
+# These are excluded automatically - no need to add them to your config!
+- vendor/ # Composer dependencies (PHP)
+- node_modules/ # NPM dependencies (JavaScript)
+- build/ # Common build output directory
+- dist/ # Distribution/compiled files
+- cache/ # Cache directories
+- .git/ # Git repository data
+- .svn/ # Subversion data
+- .hg/ # Mercurial data
+- __pycache__/ # Python bytecode cache
+- .pytest_cache/ # Pytest cache
+- .mypy_cache/ # MyPy type checker cache
+- .tox/ # Tox testing cache
+- .coverage/ # Coverage.py data
+- .eggs/ # Python eggs
+- htmlcov/ # HTML coverage reports
+- .idea/ # IntelliJ IDEA settings
+- .vscode/ # Visual Studio Code settings
+```
+
+## Default Excluded Files
+
+These specific files are also excluded automatically:
+
+```yaml
+# These files are excluded by default:
+- LICENSE # License files (usually not needed in bundles)
+- package-lock.json # NPM lock file
+- composer.lock # Composer lock file
+- poetry.lock # Poetry lock file
+- Pipfile.lock # Pipenv lock file
+- yarn.lock # Yarn lock file
+```
+
+## Writing Minimal Configurations
+
+### ❌ BAD - Overly Verbose Configuration
+
+```yaml
+# DON'T DO THIS - repeating default excludes unnecessarily!
+global:
+  global_excludes:
+    - "**/node_modules/**" # Already excluded by default!
+    - "**/vendor/**" # Already excluded by default!
+    - "**/__pycache__/**" # Already excluded by default!
+    - "**/build/**" # Already excluded by default!
+    - "**/dist/**" # Already excluded by default!
+    - "**/.git/**" # Already excluded by default!
+    - "**/cache/**" # Already excluded by default!
+    - "**/.vscode/**" # Already excluded by default!
+    - "**/*.pyc" # Project-specific - OK
+    - "**/logs/**" # Project-specific - OK
+```
+
+### ✅ GOOD - Minimal Configuration
+
+```yaml
+# Only add project-specific exclusions!
+global:
+  global_excludes:
+    - "**/*.pyc" # Python bytecode
+    - "**/logs/**" # Your project's log files
+    - "**/tmp/**" # Your temporary directories
+    - "/m1f/**" # Output directory
+    - "**/secrets/**" # Sensitive data
+```
+
+## Common Patterns by Project Type
+
+### Python Projects
+
+```yaml
+# Only add what's NOT in default excludes
+global:
+  global_excludes:
+    - "**/*.pyc" # Bytecode files
+    - "**/*.pyo" # Optimized bytecode
+    - "**/*.pyd" # Python DLL files
+    - "**/venv/**" # Virtual environments
+    - "**/.venv/**" # Alternative venv naming
+    - "**/env/**" # Another venv naming
+```
+
+### Node.js Projects
+
+```yaml
+# node_modules is already excluded!
+global:
+  global_excludes:
+    - "**/.next/**" # Next.js build cache
+    - "**/.nuxt/**" # Nuxt.js build cache
+    - "**/coverage/**" # Test coverage reports
+    - "**/*.log" # Log files
+```
+
+### WordPress Projects
+
+```yaml
+# Only WordPress-specific excludes needed
+global:
+  global_excludes:
+    - "**/wp-content/uploads/**" # User uploads
+    - "**/wp-content/cache/**" # Cache plugins
+    - "**/wp-content/backup/**" # Backup files
+    - "wp-admin/**" # Core files
+    - "wp-includes/**" # Core files
+```
+
+## Using .gitignore as Exclude File
+
+Instead of manually listing excludes, use your existing .gitignore:
+
+```yaml
+global:
+  global_settings:
+    # This automatically uses your .gitignore patterns!
+    exclude_paths_file: ".gitignore"
+```
+
+Or use multiple exclude files:
+
+```yaml
+global:
+  global_settings:
+    exclude_paths_file:
+      - ".gitignore" # Version control ignores
+      - ".m1fignore" # m1f-specific ignores
+```
+
+## Checking What's Excluded
+
+To see all excluded paths (including defaults), use verbose mode:
+
+```bash
+m1f -s . -o test.txt --verbose
+```
+
+This will show:
+
+- Default excluded directories
+- Patterns from your config
+- Files matched by your exclude patterns
+
+## Disabling Default Excludes
+
+If you need to include normally excluded directories:
+
+```bash
+# Include everything, even node_modules, .git, etc.
+m1f -s . -o complete.txt --no-default-excludes
+```
+
+⚠️ **WARNING**: This can create HUGE bundles and include sensitive data!
+
+## Best Practices
+
+1. **Start Simple**: Begin with no excludes and add only as needed
+2. **Use .gitignore**: Leverage existing ignore patterns
+3. **Test First**: Run with `--verbose` to see what's excluded
+4. **Document Why**: Add comments explaining non-obvious excludes
+
+```yaml
+global:
+  global_excludes:
+    # Project-specific build artifacts
+    - "**/generated/**" # Auto-generated code
+    - "**/reports/**" # Test/coverage reports
+
+    # Large data files
+    - "**/*.sqlite" # Database files
+    - "**/*.csv" # Data exports
+
+    # Sensitive information
+    - "**/.env*" # Environment files
+    - "**/secrets/**" # API keys, certs
+```
+
+## Quick Reference
+
+### Already Excluded (Don't Repeat)
+
+- `node_modules/`, `vendor/`, `build/`, `dist/`
+- `.git/`, `.svn/`, `.hg/`
+- `__pycache__/`, `.pytest_cache/`, `.mypy_cache/`
+- `.idea/`, `.vscode/`
+- Lock files: `*.lock`, `package-lock.json`
+
+### Commonly Added (Project-Specific)
+
+- Virtual envs: `venv/`, `.venv/`, `env/`
+- Logs: `*.log`, `logs/`
+- Temp files: `tmp/`, `temp/`, `*.tmp`
+- Database: `*.sqlite`, `*.db`
+- Environment: `.env`, `.env.*`
+- Output: `/m1f/` (your bundle directory)
+
+## Summary
+
+Keep your `.m1f.config.yml` files clean and minimal by:
+
+1. NOT repeating default excludes
+2. Only adding project-specific patterns
+3. Using `.gitignore` when possible
+4. Documenting non-obvious exclusions
+
+This makes your configurations easier to read, maintain, and share with others!
 
 ======= 30_claude_workflows.md ======
 # Claude + m1f: Your AI-Powered Project Assistant 🤖
@@ -3412,11 +5672,27 @@ First, let's get Claude up to speed on what m1f can do:
 
 ```bash
 cd /your/awesome/project
-m1f-link  # Creates m1f/m1f-docs.txt symlink
+m1f-init  # Quick setup: links docs, analyzes project, creates bundles
 ```
 
-Boom! 💥 Now you've got the complete m1f documentation sitting in your project.
-Claude can read this and instantly become an m1f expert.
+Boom! 💥 This command:
+
+- Creates m1f/m1f.txt symlink to the complete documentation
+- Analyzes your project structure
+- Generates initial bundles (complete and docs)
+- Creates a basic .m1f.config.yml
+
+For advanced setup with topic-specific bundles (Linux/macOS only):
+
+```bash
+# Interactive mode - will prompt for project description and priorities
+m1f-claude --setup
+
+# Or provide project info via command line
+m1f-claude --setup \
+  --project-description "E-commerce platform with React frontend and Django backend" \
+  --project-priorities "performance, security, maintainability"
+```
 
 ### Step 2: Start the Conversation
 
@@ -3424,7 +5700,7 @@ Here's where it gets fun. Just tell Claude what you need:
 
 ```
 Hey Claude, I need help setting up m1f for my project.
-Check out @m1f/m1f-docs.txt to see what m1f can do.
+Check out @m1f/m1f.txt to see what m1f can do.
 
 My project is a Python web app with:
 - Backend API in /api
@@ -3475,36 +5751,206 @@ Claude, I need different bundles for dev/staging/prod.
 Using m1f v3.2's preset system:
 
 1. Create environment-specific presets
-2. Use conditional presets (enabled_if_exists)
+2. Use enabled flag for environment control
 3. Set different security levels per environment
 4. Configure appropriate output formats
 
 Make it so I can just run: m1f --preset env.yml --preset-group production
 ```
 
-## Using m1f-claude: The Smart Assistant 🧠
+## Using m1f-claude: Advanced Project Setup 🧠
 
-We've supercharged Claude with m1f knowledge. Here's how to use it:
+For advanced project-specific configuration, use m1f-claude (Linux/macOS only):
 
 ```bash
-# Basic usage - Claude already knows about m1f!
-m1f-claude "Bundle my Python project for code review"
+# First, run the quick setup
+m1f-init
 
-# Interactive mode - have a conversation
-m1f-claude -i
-> Help me organize my WordPress theme files
-> Now create a bundle for just the custom post types
-> Can you exclude all the vendor files?
+# Then for advanced configuration with Claude's help
+m1f-claude --setup
 ```
 
 ### What Makes m1f-claude Special?
 
-When you use `m1f-claude`, it automatically:
+When you use `m1f-claude --setup`, it:
 
-- Knows where to find m1f documentation
-- Understands your project structure
-- Suggests optimal parameters
-- Can execute commands directly (with your permission)
+- Analyzes your project in detail with Claude's assistance
+- Creates topic-specific bundles (components, API, tests, etc.)
+- Optimizes configuration for your specific project type
+- Provides intelligent suggestions based on your codebase
+
+**Note**: m1f-claude requires Claude Code SDK and is not available on Windows.
+Windows users can manually customize their .m1f.config.yml after running
+m1f-init.
+
+### Permission System
+
+Control how Claude handles file operations with the `--permission-mode` flag:
+
+```bash
+# Auto-accept all file edits
+m1f-claude --permission-mode acceptEdits "Help me refactor this code"
+
+# Plan mode - Claude describes changes without executing
+m1f-claude --permission-mode plan "What changes would you make?"
+
+# Bypass all permission checks (use with caution)
+m1f-claude --permission-mode bypassPermissions "Fix all issues"
+
+# Default mode - prompts for each operation
+m1f-claude --permission-mode default "Update the config"
+```
+
+### Output Formats
+
+Choose how Claude's responses are formatted:
+
+```bash
+# Plain text output (default)
+m1f-claude --output-format text "Explain this code"
+
+# JSON output for programmatic processing
+m1f-claude --output-format json "Analyze project structure"
+
+# Streaming JSON for real-time processing
+m1f-claude --output-format stream-json "Refactor the codebase"
+```
+
+### MCP (Model Context Protocol) Support
+
+Extend Claude's capabilities with MCP servers:
+
+```bash
+# Load MCP configuration from file
+m1f-claude --mcp-config ./mcp-servers.json "Use the database tools"
+
+# Example MCP configuration file:
+cat > mcp-servers.json << 'EOF'
+{
+  "servers": {
+    "postgres-tools": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/postgres-server"],
+      "env": {
+        "DATABASE_URL": "postgresql://user:pass@localhost/mydb"
+      }
+    }
+  }
+}
+EOF
+```
+
+### Tool Control
+
+Fine-grained control over which tools Claude can use:
+
+```bash
+# Allow specific tools only
+m1f-claude --allowed-tools "Read,Write,Edit" "Update the documentation"
+
+# Disallow dangerous tools
+m1f-claude --disallowed-tools "Bash,System" "Review the code"
+
+# Combine both for precise control
+m1f-claude --allowed-tools "Read,Edit,MultiEdit,Write,Glob,Grep" \
+           --disallowed-tools "Bash" \
+           "Refactor without running commands"
+```
+
+### System Prompt Enhancement
+
+Append custom instructions to Claude's system prompt:
+
+```bash
+# Add specific instructions
+m1f-claude --append-system-prompt "Focus on security best practices" \
+           "Review this authentication code"
+
+# Multiple instructions
+m1f-claude --append-system-prompt "Be concise. Explain your reasoning. Focus on performance." \
+           "Optimize this algorithm"
+```
+
+### Working Directory Control
+
+Set a specific working directory for Claude:
+
+```bash
+# Work in a different directory than current
+m1f-claude --cwd /path/to/project "List all Python files"
+
+# Useful for monorepos
+m1f-claude --cwd ./packages/frontend "Set up the React components"
+```
+
+### Enhanced Message Handling
+
+m1f-claude handles all message types from Claude:
+
+- **System Messages**: Session initialization, permission prompts, notifications
+- **User Messages**: Tracked for conversation context
+- **Assistant Messages**: Handles both flat and nested content structures
+- **Tool Messages**: Tool use events with parameters, results with smart
+  truncation
+- **Result Messages**: Success/error/cancellation states, cost tracking,
+  metadata
+
+### Usage Examples
+
+#### Basic Setup with Enhanced Features
+
+```bash
+# Initialize with specific permissions and tools
+m1f-claude --setup \
+  --permission-mode acceptEdits \
+  --allowed-tools "Read,Write,Edit,MultiEdit,Glob,Grep" \
+  --project-description "E-commerce platform using Django" \
+  --project-priorities "Security, scalability, maintainability"
+```
+
+#### Interactive Mode with MCP
+
+```bash
+# Start interactive mode with database tools
+m1f-claude -i \
+  --mcp-config ./database-tools.json \
+  --append-system-prompt "You have access to PostgreSQL tools"
+```
+
+#### Automated Refactoring
+
+```bash
+# Refactor with auto-accept and specific output format
+m1f-claude --permission-mode acceptEdits \
+  --output-format json \
+  --max-turns 5 \
+  "Refactor all Python files to use type hints"
+```
+
+#### Safe Code Review
+
+```bash
+# Review without write permissions
+m1f-claude --allowed-tools "Read,Grep,Glob" \
+  --permission-mode default \
+  "Review the codebase for security issues"
+```
+
+### 💡 Important: Claude Code Subscription Recommended
+
+**We strongly recommend using Claude Code with a subscription plan** when using
+m1f-claude for project setup. Setting up m1f with Claude's assistance can
+involve:
+
+- Multiple file reads to analyze your project structure
+- Creating and editing configuration files
+- Running various commands to test configurations
+- Iterative refinement of bundles
+
+Since we don't know exactly how many tokens this process will consume, a
+subscription ensures you won't run into usage limits during critical setup
+phases. The investment pays off quickly through the time saved in properly
+configuring your project.
 
 ## Working with Claude Code
 
@@ -3635,7 +6081,7 @@ how to organize it with m1f bundles. Consider:
 - Logical groupings for different use cases
 - Size limits for AI context windows
 
-Use @m1f/m1f-docs.txt to understand all available options.
+Use @m1f/m1f.txt to understand all available options.
 ```
 
 ### 2. Provide Clear Context
@@ -3648,7 +6094,7 @@ Claude, here's my project structure from m1f:
 - Target use: Sharing with external auditors
 
 Create a secure bundling strategy using m1f v3.2's security features.
-Check @m1f/m1f-docs.txt for security parameters.
+Check @m1f/m1f.txt for security parameters.
 ```
 
 ### 3. Iterative Refinement
@@ -3803,6 +6249,15 @@ m1f-claude "Setup m1f for a typical Python project with tests and docs"
 # Interactive Claude session
 m1f-claude -i
 
+# With specific permissions and tools
+m1f-claude --permission-mode acceptEdits --allowed-tools "Read,Write,Edit" "Update the README"
+
+# JSON output for automation
+m1f-claude --output-format json "List all Python files"
+
+# With MCP database tools
+m1f-claude --mcp-config ./mcp.json "Query the user database"
+
 # Security audit bundle
 m1f -s . -o audit.txt --security-check error --minimal-output
 
@@ -3840,7 +6295,7 @@ Happy bundling! 🚀
 ---
 
 _P.S. - If Claude suggests something that seems off, just ask "Are you sure
-about that? Check @m1f/m1f-docs.txt again." Works every time! 😉_
+about that? Check @m1f/m1f.txt again." Works every time! 😉_
 
 ======= 31_claude_code_integration.md ======
 # Claude Code Integration Guide
@@ -3900,6 +6355,182 @@ Create `.claude/settings.json` in the project root:
   }
 }
 ```
+
+## m1f Project Setup
+
+### Quick Setup with m1f-init
+
+The `m1f-init` command provides cross-platform project initialization:
+
+```bash
+# Run in your project directory
+m1f-init
+
+# With verbose output
+m1f-init --verbose
+```
+
+#### What m1f-init Does:
+
+1. **Links m1f Documentation**
+   - Creates m1f/m1f.txt symlink (or copies on Windows)
+   - Makes documentation accessible to AI tools
+
+2. **Project Analysis**
+   - Detects git repository boundaries
+   - Analyzes project structure and languages
+   - Creates file and directory lists in `m1f/` directory
+
+3. **Creates Initial Bundles with Auxiliary Files**
+   - `<project>_complete.txt` - Full project bundle
+   - `<project>_complete_filelist.txt` - List of all included files
+   - `<project>_complete_dirlist.txt` - List of all directories
+   - `<project>_docs.txt` - Documentation only bundle
+   - `<project>_docs_filelist.txt` - List of documentation files
+   - `<project>_docs_dirlist.txt` - Documentation directories
+
+4. **Generates Configuration**
+   - Creates basic .m1f.config.yml if not present
+   - Respects .gitignore patterns
+   - Excludes m1f/ directory automatically
+
+### Advanced Setup with m1f-claude (Linux/macOS only)
+
+The `m1f-claude` tool enhances project setup by creating topic-specific bundles
+based on your project's needs:
+
+```bash
+# Interactive mode - prompts for project details
+m1f-claude --setup
+
+# With project information provided
+m1f-claude --setup \
+  --project-description "SaaS dashboard with React frontend and Express API" \
+  --project-priorities "code modularity, API documentation, test coverage"
+```
+
+#### Project Information Options:
+
+- **--project-description**: Brief description of what your project does and its
+  main technologies
+- **--project-priorities**: What's important for this project (e.g.,
+  performance, security, documentation, maintainability)
+
+This information helps Claude create better-targeted bundles. For example:
+
+- If "security" is a priority, it will create dedicated auth/security bundles
+- If "documentation" is important, it will create more granular doc bundles
+- If "performance" matters, it will separate performance-critical code
+
+For topic-specific bundles and advanced configuration:
+
+```bash
+# First run m1f-init
+m1f-init
+
+# Then run advanced setup
+m1f-claude --setup
+```
+
+#### What --setup Does:
+
+- Claude analyzes your project structure in detail
+- Creates topic-specific bundles (models, views, tests, etc.)
+- Customizes configuration for your project type
+- Optimizes bundle organization for AI consumption
+- Requires Claude Code SDK installation
+
+**Note**: Windows users can achieve similar results by manually editing
+.m1f.config.yml after running m1f-init.
+
+### Working with Generated File Lists
+
+The file lists generated by m1f-init are powerful tools for customization:
+
+```bash
+# View statistics
+wc -l m1f/*_filelist.txt  # Count files in each bundle
+
+# Create a custom bundle by editing file lists
+cp m1f/myproject_complete_filelist.txt m1f/api_only_filelist.txt
+vi m1f/api_only_filelist.txt  # Keep only API-related files
+m1f -i m1f/api_only_filelist.txt -o m1f/api_bundle.txt
+
+# Combine multiple lists
+cat m1f/*_docs_filelist.txt m1f/tests_filelist.txt | sort -u > m1f/docs_and_tests.txt
+m1f -i m1f/docs_and_tests.txt -o m1f/combined.txt
+
+# Use directory lists to focus on specific areas
+grep "src/components" m1f/myproject_complete_dirlist.txt
+m1f -s src/components -o m1f/components_only.txt
+```
+
+3. **Configuration File**
+   - Creates `.m1f.config.yml` with complete and docs bundles
+   - Uses `docs_only: true` for documentation bundle
+   - No global file size limits
+   - Proper meta file exclusions (LICENSE*, CLAUDE.md, *.lock)
+
+4. **Advanced Segmentation (Optional)**
+   - If Claude Code is installed and advanced mode selected
+   - Analyzes project structure for components, API, styles, etc.
+   - Adds topic-specific bundles to existing configuration
+   - Uses `--allowedTools Read,Write,Edit,MultiEdit` for file operations
+
+#### Example Output:
+
+```
+🚀 Initializing m1f for your project...
+==================================================
+✅ Git repository detected: /home/user/my-project
+✅ m1f documentation already available
+⚠️  No m1f configuration found - will help you create one
+✅ Claude Code is available
+
+📊 Project Analysis
+==============================
+Analyzing project structure with m1f...
+📄 Created file list: project_analysis_filelist.txt
+📁 Created directory list: project_analysis_dirlist.txt
+✅ Found 127 files in 59 directories
+📁 Project Type: Next.js Application
+💻 Languages: JavaScript (37 files), TypeScript (30 files)
+📂 Code Dirs: src/app, src/components, src/lib
+
+📦 Creating Initial Bundles
+==============================
+Creating complete project bundle...
+✅ Created: m1f/complete.txt
+Creating documentation bundle...
+✅ Created: m1f/docs.txt
+
+📝 Creating .m1f.config.yml with basic bundles...
+✅ Configuration created with complete and docs bundles
+
+🤖 Claude Code for Advanced Segmentation
+──────────────────────────────────────────────────
+Basic bundles created! Now Claude can help you create topic-specific bundles.
+
+[Claude analyzes and adds topic-specific bundles]
+
+✅ Advanced segmentation complete!
+📝 Claude has analyzed your project and added topic-specific bundles.
+
+🚀 Next steps:
+• Your basic bundles are ready in m1f/
+  - complete.txt: Full project bundle
+  - docs.txt: All documentation files
+• Run 'm1f-update' to regenerate bundles after config changes
+• Use Claude to create topic-specific bundles as needed
+```
+
+#### Troubleshooting:
+
+- **Use --verbose** to see the full prompt and command parameters
+- **Check file permissions** if config isn't being modified
+- **Ensure Claude Code is installed**:
+  `npm install -g @anthropic-ai/claude-code`
+- **Analysis files are kept** in m1f/ directory for reference
 
 ## Using Claude Code with m1f Tools
 
@@ -4109,7 +6740,6 @@ critical data.
    ```
 
 2. **Use the provided validation utilities**:
-
    - `validate_safe_path()` in `tools/m1f/utils.py` ensures paths stay within
      allowed boundaries
    - All user-provided paths should be validated before use
@@ -4360,8 +6990,6 @@ a comprehensive overview of all v3.2 features and changes.
   - Automatic robots.txt fetching and parsing
   - Per-path access validation
   - User-agent specific rule support
-  - No configuration needed - always enabled
-- **Previously**: Only HTTrack respected robots.txt
 
 ### 4. SSL/TLS Certificate Validation
 
@@ -4551,17 +7179,14 @@ per_file_settings:
 ### From v3.1 to v3.2
 
 1. **Review Security Settings**:
-
    - Default security scanning may flag legitimate content
    - Use `--security-check warn` during migration
 
 2. **Check SSL Requirements**:
-
    - Sites with self-signed certificates need `--ignore-https-errors`
    - Review and update scraping scripts
 
 3. **Update Separator Parsing**:
-
    - If you parse m1f output, update to handle new separator format
    - s1f handles both formats automatically
 
