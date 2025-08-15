@@ -97,6 +97,19 @@ m1f-research "react state management" --urls 30 --scrape 15
 # Interactive URL review (recommended for important research)
 m1f-research "kubernetes security" --skip-review false
 
+# Control query expansion
+m1f-research "python asyncio" --max-queries 1  # Only use original query
+m1f-research "rust ownership" --max-queries 10  # More query variations
+
+# Provide custom query variations
+m1f-research "react hooks" --custom-queries \
+  "react hooks tutorial 2025" \
+  "useEffect vs useLayoutEffect" \
+  "custom react hooks patterns"
+
+# Interactive query input
+m1f-research "database optimization" --interactive-queries
+
 # Use the research bundle with Claude
 # The output file research_bundle.md can be uploaded directly to Claude's Project Knowledge
 
@@ -135,6 +148,9 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 🔍 Intelligent Search
 
 - **Query Expansion**: Generate multiple search variations for comprehensive coverage
+  - Control expansion with `--max-queries` (1 = no expansion)
+  - Provide custom queries with `--custom-queries`
+  - Interactive query input with `--interactive-queries`
 - Uses LLMs to find high-quality, relevant URLs
 - Manual URL support via `--urls-file`
 - Focuses on authoritative sources

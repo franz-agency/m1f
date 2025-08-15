@@ -12,6 +12,13 @@ and this project adheres to
 
 ### Added
 
+- **m1f-research**: Query control parameters for fine-grained search control
+  - `--max-queries N`: Control number of query variations (1 = original only, default: 5)
+  - `--custom-queries`: Provide specific query variations (overrides auto-expansion)
+  - `--interactive-queries`: Interactively enter custom query variations
+  - Enables precise control over search strategy for better research targeting
+  - Documentation updated in docs/06_research/ with examples and usage
+
 ### Changed
 
 - **m1f-research**: Renamed output files to consistent lowercase with prefix

@@ -490,6 +490,13 @@ and this project adheres to
 
 ### Added
 
+- **m1f-research**: Query control parameters for fine-grained search control
+  - `--max-queries N`: Control number of query variations (1 = original only, default: 5)
+  - `--custom-queries`: Provide specific query variations (overrides auto-expansion)
+  - `--interactive-queries`: Interactively enter custom query variations
+  - Enables precise control over search strategy for better research targeting
+  - Documentation updated in docs/06_research/ with examples and usage
+
 ### Changed
 
 - **m1f-research**: Renamed output files to consistent lowercase with prefix
@@ -16157,6 +16164,19 @@ m1f-research "react state management" --urls 30 --scrape 15
 # Interactive URL review (recommended for important research)
 m1f-research "kubernetes security" --skip-review false
 
+# Control query expansion
+m1f-research "python asyncio" --max-queries 1  # Only use original query
+m1f-research "rust ownership" --max-queries 10  # More query variations
+
+# Provide custom query variations
+m1f-research "react hooks" --custom-queries \
+  "react hooks tutorial 2025" \
+  "useEffect vs useLayoutEffect" \
+  "custom react hooks patterns"
+
+# Interactive query input
+m1f-research "database optimization" --interactive-queries
+
 # Use the research bundle with Claude
 # The output file research_bundle.md can be uploaded directly to Claude's Project Knowledge
 
@@ -16195,6 +16215,9 @@ m1f-research is included with the m1f toolkit. Ensure you have:
 ### 🔍 Intelligent Search
 
 - **Query Expansion**: Generate multiple search variations for comprehensive coverage
+  - Control expansion with `--max-queries` (1 = no expansion)
+  - Provide custom queries with `--custom-queries`
+  - Interactive query input with `--interactive-queries`
 - Uses LLMs to find high-quality, relevant URLs
 - Manual URL support via `--urls-file`
 - Focuses on authoritative sources
@@ -17041,12 +17064,19 @@ management commands)
 | `--no-analysis`  |       | Skip AI analysis (just scrape)     | False   |
 | `--interactive`  | `-i`  | Start in interactive mode          | False   |
 
+### Query Control Options
+
+| Option                    | Description                              | Default |
+| ------------------------- | ---------------------------------------- | ------- |
+| `--max-queries N`         | Maximum number of query variations (1 = original only) | 5       |
+| `--custom-queries Q1 Q2...` | Provide custom query variations (overrides auto-expansion) | None    |
+| `--interactive-queries`   | Interactively enter custom query variations | False   |
+
 ### Workflow Options
 
 | Option                    | Description                              | Default |
 | ------------------------- | ---------------------------------------- | ------- |
 | `--expand-queries`        | Enable query expansion phase             | True    |
-| `--max-queries N`         | Maximum number of expanded queries       | 5       |
 | `--skip-review`           | Skip URL review phase                    | False   |
 | `--crawl-depth N`         | How many levels deep to crawl links     | 0       |
 | `--max-pages-per-site N`  | Maximum pages to crawl per domain       | 10      |
@@ -17212,6 +17242,19 @@ m1f-research "python async patterns" --skip-review --max-queries 8
 
 # Detailed analysis with external link following
 m1f-research "AI research 2024" --follow-external --analysis-type detailed
+
+# Control query expansion precisely
+m1f-research "rust ownership" --max-queries 1  # No expansion, original only
+m1f-research "golang channels" --max-queries 10  # More variations
+
+# Provide custom query variations
+m1f-research "react performance" --custom-queries \
+  "react performance optimization 2025" \
+  "react memo and useMemo patterns" \
+  "react virtual DOM optimization"
+
+# Interactive query input for careful research
+m1f-research "database indexing" --interactive-queries
 ```
 
 ## Date Format Examples
@@ -17870,6 +17913,39 @@ m1f-research --interactive
 # > Number to scrape [10]: 15
 # > Template [general]: technical
 # > Start research? [Y/n]: y
+```
+
+### Query Control Examples
+
+```bash
+# No query expansion - use only the original query
+m1f-research "python type hints" --max-queries 1
+
+# More query variations for comprehensive research
+m1f-research "distributed systems" --max-queries 10
+
+# Provide specific query variations
+m1f-research "react hooks" --custom-queries \
+  "react hooks best practices 2025" \
+  "useState vs useReducer" \
+  "custom hooks patterns" \
+  "react hooks testing strategies"
+
+# Interactive query input - enter variations manually
+m1f-research "database optimization" --interactive-queries
+# This will prompt:
+# Original query: database optimization
+# Enter custom query variations (one per line, empty line to finish):
+# 1> database index optimization
+# 2> query performance tuning
+# 3> database normalization best practices
+# 4> 
+
+# Combine with other options
+m1f-research "microservices" --custom-queries \
+  "microservices architecture patterns" \
+  "microservices vs monoliths 2025" \
+  --urls 40 --scrape 20 --template technical
 ```
 
 ## Configuration File Examples
