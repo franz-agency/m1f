@@ -28733,7 +28733,16 @@ class ClaudeCodeProvider(LLMProvider):
 
         try:
             # Build command with WebSearch tool enabled for URL discovery
-            cmd = [self.binary_path, "-p", "--allowedTools", "WebSearch"]
+            # Use verbose and stream-json for real-time feedback
+            cmd = [
+                self.binary_path,
+                "-p",
+                "--allowedTools",
+                "WebSearch",
+                "--output-format",
+                "stream-json",
+                "--verbose",
+            ]
 
             # Add model if specified and not None
             if self.model and self.model not in [None, "default"]:
@@ -28748,6 +28757,7 @@ class ClaudeCodeProvider(LLMProvider):
             def run_claude():
                 import time
                 import sys
+                import json
 
                 # Try to import colors for better output
                 try:
@@ -28797,21 +28807,64 @@ class ClaudeCodeProvider(LLMProvider):
                         line = line.rstrip()  # Keep internal spacing
                         stdout_lines.append(line)
 
-                        # Show spinner periodically while processing
+                        # Parse JSON stream for progress updates
                         if show_progress:
                             current_time = time.time()
                             elapsed = current_time - start_time
 
-                            # Update spinner every 0.3 seconds
-                            if current_time - last_progress_time > 0.3:
-                                # Clear the line and show spinner
-                                sys.stdout.write("\r")
-                                sys.stdout.write(
-                                    f"  {spinner_chars[spinner_idx]} Processing... [{elapsed:.1f}s]"
-                                )
-                                sys.stdout.flush()
-                                spinner_idx = (spinner_idx + 1) % len(spinner_chars)
-                                last_progress_time = current_time
+                            try:
+                                # Try to parse as JSON for stream-json format
+                                json_obj = json.loads(line)
+                                msg_type = json_obj.get("type", "")
+
+                                # Show progress based on message type
+                                if (
+                                    msg_type == "tool_use"
+                                    and json_obj.get("name") == "WebSearch"
+                                ):
+                                    query_info = json_obj.get("input", {}).get(
+                                        "query", ""
+                                    )
+                                    sys.stdout.write(
+                                        "\r" + " " * 80 + "\r"
+                                    )  # Clear line
+                                    info(
+                                        f"  🔍 Searching web for: {query_info[:60]}..."
+                                    )
+                                elif (
+                                    msg_type == "tool_response"
+                                    and "search_results" in line
+                                ):
+                                    sys.stdout.write(
+                                        "\r" + " " * 80 + "\r"
+                                    )  # Clear line
+                                    info(f"  ✅ Found search results")
+                                elif msg_type == "assistant":
+                                    # Check for content mentioning URLs
+                                    message = json_obj.get("message", {})
+                                    if isinstance(message, dict):
+                                        content_parts = message.get("content", [])
+                                        for part in content_parts:
+                                            if (
+                                                isinstance(part, dict)
+                                                and part.get("type") == "text"
+                                            ):
+                                                text = part.get("text", "")
+                                                if "http" in text.lower():
+                                                    sys.stdout.write(
+                                                        "\r" + " " * 80 + "\r"
+                                                    )
+                                                    info(f"  📝 Processing URLs...")
+                            except json.JSONDecodeError:
+                                # Not JSON, show spinner for regular output
+                                if current_time - last_progress_time > 0.3:
+                                    sys.stdout.write("\r")
+                                    sys.stdout.write(
+                                        f"  {spinner_chars[spinner_idx]} Processing... [{elapsed:.1f}s]"
+                                    )
+                                    sys.stdout.flush()
+                                    spinner_idx = (spinner_idx + 1) % len(spinner_chars)
+                                    last_progress_time = current_time
 
                 # Clear the spinner line
                 if show_progress:
@@ -28828,8 +28881,30 @@ class ClaudeCodeProvider(LLMProvider):
                 # Wait for process to finish
                 process.wait(timeout=5)
 
-                # Return collected content
-                final_content = "\n".join(stdout_lines)
+                # Extract actual content from JSON stream
+                final_content = ""
+                for line in stdout_lines:
+                    try:
+                        json_obj = json.loads(line)
+                        # Look for assistant messages with text content
+                        if json_obj.get("type") == "assistant":
+                            message = json_obj.get("message", {})
+                            if isinstance(message, dict):
+                                content_parts = message.get("content", [])
+                                for part in content_parts:
+                                    if (
+                                        isinstance(part, dict)
+                                        and part.get("type") == "text"
+                                    ):
+                                        final_content += part.get("text", "")
+                    except json.JSONDecodeError:
+                        # If not JSON, include as-is (shouldn't happen with stream-json)
+                        pass
+
+                # If no JSON content found, fall back to raw output
+                if not final_content:
+                    final_content = "\n".join(stdout_lines)
+
                 return process.returncode, final_content, stderr
 
             returncode, stdout, stderr = await loop.run_in_executor(None, run_claude)
