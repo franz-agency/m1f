@@ -29,7 +29,10 @@ from tools.research.models import ScrapedContent
 
 def create_mock_session(mock_get_handler):
     """Create a mock aiohttp session with a custom get handler"""
-    mock_session = AsyncMock()
+    # Use Mock instead of AsyncMock to prevent auto-creation of async methods
+    from unittest.mock import Mock
+
+    mock_session = Mock()
 
     # Add a proper close method
     async def _close():
@@ -55,6 +58,10 @@ def create_mock_session(mock_get_handler):
         return MockContextManager(url, **kwargs)
 
     mock_session.get = mock_get_wrapper
+    # Add any other attributes that might be accessed
+    mock_session.closed = False
+    mock_session.connector = None
+    mock_session.timeout = None
     return mock_session
 
 
