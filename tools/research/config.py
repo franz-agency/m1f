@@ -91,6 +91,20 @@ class AnalysisConfig:
 
 
 @dataclass
+class WorkflowConfig:
+    """Workflow configuration for phased research"""
+
+    expand_queries: bool = True  # Generate search query variations
+    max_queries: int = 5  # Maximum expanded queries
+    skip_review: bool = False  # Skip URL review interface
+    crawl_depth: int = 0  # How many levels deep to crawl
+    max_pages_per_site: int = 10  # Maximum pages per domain
+    follow_external: bool = False  # Follow external links
+    generate_analysis: bool = True  # Generate AI analysis
+    analysis_type: str = "summary"  # Type of analysis to generate
+
+
+@dataclass
 class ResearchTemplate:
     """Research template configuration"""
 
@@ -120,6 +134,7 @@ class ResearchConfig:
     filtering: AnalysisConfig = field(
         default_factory=AnalysisConfig
     )  # For content filtering
+    workflow: WorkflowConfig = field(default_factory=WorkflowConfig)  # Workflow phases
 
     # Behavior settings
     interactive: bool = False
@@ -195,6 +210,19 @@ class ResearchConfig:
             language=analysis_data.get("language", "en"),
         )
 
+        # Parse workflow config
+        workflow_data = research_data.get("workflow", {})
+        workflow_config = WorkflowConfig(
+            expand_queries=workflow_data.get("expand_queries", True),
+            max_queries=workflow_data.get("max_queries", 5),
+            skip_review=workflow_data.get("skip_review", False),
+            crawl_depth=workflow_data.get("crawl_depth", 0),
+            max_pages_per_site=workflow_data.get("max_pages_per_site", 10),
+            follow_external=workflow_data.get("follow_external", False),
+            generate_analysis=workflow_data.get("generate_analysis", True),
+            analysis_type=workflow_data.get("analysis_type", "summary"),
+        )
+
         # Parse templates
         templates = {}
         templates_data = research_data.get("templates", {})
@@ -245,6 +273,7 @@ class ResearchConfig:
             scraping=scraping_config,
             output=output_config,
             analysis=analysis_config,
+            workflow=workflow_config,
             templates=templates,
         )
 
@@ -269,6 +298,7 @@ class ResearchConfig:
             base_config = cls.from_yaml(args.config)
             # Merge with base config
             config.llm = base_config.llm
+            config.workflow = base_config.workflow
             config.scraping = base_config.scraping
             config.output = base_config.output
             config.analysis = base_config.analysis

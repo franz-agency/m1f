@@ -43,6 +43,28 @@ and this project adheres to
   - Progress tracking for bulk deletion operations
   - Detailed error reporting for failed deletions
 
+- **m1f-research Advanced Workflow Features**: Major workflow redesign for better control and comprehensive research
+  - **Query Expansion**: Automatically generates multiple search query variations using LLM
+  - **Interactive URL Review**: Terminal UI for reviewing and curating URLs before crawling
+  - **Deep Crawling**: Recursive page discovery with configurable depth and per-site limits
+  - **Phased Workflow**: Clear phases with resume capability (initialization → query expansion → URL collection → review → crawling → bundling → analysis)
+  - **Separate Analysis Generation**: Creates RESEARCH_ANALYSIS.md with AI-powered insights separate from bundle
+  - **New Configuration Options**:
+    - `expand_queries`: Enable/disable query expansion (default: true)
+    - `max_queries`: Maximum query variations to generate (default: 5)
+    - `skip_review`: Skip interactive URL review (default: false)
+    - `crawl_depth`: How many levels deep to crawl (default: 0)
+    - `max_pages_per_site`: Maximum pages per domain (default: 10)
+    - `follow_external`: Follow external links (default: false)
+    - `generate_analysis`: Generate AI analysis (default: true)
+    - `analysis_type`: Type of analysis (summary/comparative/technical/trend)
+  - **New Components**:
+    - `QueryExpander`: Generates search variations for comprehensive coverage
+    - `URLReviewer`: Interactive interface for URL curation
+    - `DeepCrawler`: Handles recursive crawling with circular reference detection
+    - `AnalysisGenerator`: Creates separate analysis documents
+    - `WorkflowManager`: Manages phase transitions and persistence
+
 - **m1f-scrape Automatic Link Adjustment for allowed-path**: Intelligently adjusts internal links when using --allowed-path restrictions
   - Automatically strips redundant parent directory from links while preserving subdirectory structure
   - Links like `/parent/subdir/file.html` become `subdir/file.html` when scraping with `--allowed-path /parent/subdir/`
